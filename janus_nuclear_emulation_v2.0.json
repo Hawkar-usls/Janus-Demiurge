@@ -1,0 +1,113 @@
+{
+  "artifact_uuid": "JANUS-NUCLEAR-EMULATION-REGISTRY-V1.3",
+  "timestamp": "2026-02-25T16:30:00Z",
+  "version": "v1.3",
+  "description": "Реестр для эмуляции ядерных процессов с изотопами, всплесками, коллапсом и параметрами гомеостатического управления.",
+  "observer": "Hawkar Yaks / JANUS Quantum Observer",
+  "node_type": "nuclear_sim",
+
+  "warning": {
+    "text": "Эксперимент проводится в зоне активных боевых действий (Украина, Запорожье). Физическое присутствие крайне опасно. Наблюдение только через удалённые сенсоры.",
+    "coordinates": [47.8388, 35.1396],
+    "risk_level": "critical"
+  },
+
+  "emulation_parameters": {
+    "vocab_size": 1000,
+    "isotopes": [
+      {"name": "neutron", "range": [0, 99], "group": 0},
+      {"name": "stable", "range": [100, 299], "group": 1},
+      {"name": "unstable", "range": [300, 499], "group": 2},
+      {"name": "fragment", "range": [500, 699], "group": 3},
+      {"name": "hydrogen", "range": [700, 799], "group": 4},
+      {"name": "strontium", "range": [800, 899], "group": 5},
+      {"name": "plutonium", "range": [900, 999], "group": 6}
+    ],
+    "transition_probabilities": {
+      "from_neutron": [0.3, 0.2, 0.2, 0.1, 0.1, 0.05, 0.05],
+      "from_stable": [0.1, 0.5, 0.1, 0.1, 0.1, 0.05, 0.05],
+      "from_unstable": [0.2, 0.1, 0.3, 0.2, 0.1, 0.05, 0.05],
+      "from_fragment": [0.2, 0.2, 0.1, 0.2, 0.1, 0.1, 0.1],
+      "from_hydrogen": [0.1, 0.1, 0.1, 0.1, 0.3, 0.1, 0.2],
+      "from_strontium": [0.1, 0.2, 0.1, 0.1, 0.1, 0.3, 0.1],
+      "from_plutonium": [0.1, 0.1, 0.1, 0.2, 0.2, 0.1, 0.2]
+    },
+    "spike_prob": 0.01,
+    "collapse_prob": 0.005,
+    "decay_steps": 5,
+    "notes": "Вероятности можно настраивать для моделирования редких событий."
+  },
+
+  "homeostatic_control": {
+    "enrichment": {
+      "lr_mult": 1.2,
+      "gain_add": 0.1,
+      "mi_growth_threshold": 0.01,
+      "score_growth_threshold": 0.01
+    },
+    "depletion": {
+      "lr_mult": 0.5,
+      "temp_mult": 0.9,
+      "best_score_ratio": 0.95,
+      "gap_threshold": 0.05
+    },
+    "limits": {
+      "lr_min": 0.0001,
+      "lr_max": 0.01,
+      "gain_min": 0.3,
+      "gain_max": 2.5,
+      "temp_min": 0.3,
+      "temp_max": 2.0
+    },
+    "notes": "Параметры автоматического обогащения/обеднения (гомеостатический реактор). Используются в цикле Демиурга."
+  },
+
+  "metrics": {
+    "val_loss": "Кросс-энтропия на валидации. Базовый шум: ln(1000) ≈ 6.907.",
+    "diversity": "Доля уникальных последовательностей.",
+    "mutual_info_unbiased": "Взаимная информация с поправкой Миллера-Мэдоу.",
+    "gap": "Разница train_loss - val_loss.",
+    "composite_score": "-val_loss - 0.1*gap + 1.0*MI + 0.5*diversity",
+    "p_value": "Вероятность получить такое же MI при нулевой гипотезе."
+  },
+
+  "hypotheses": [
+    {
+      "id": "HYP_SPIKE_DETECTION",
+      "node_type": "nuclear_sim",
+      "description": "Модель, обученная на данных с частыми всплесками, будет показывать повышенную чувствительность к редким событиям (аномальные пики MI).",
+      "status": "PROPOSED"
+    },
+    {
+      "id": "HYP_COLLAPSE_MARKER",
+      "node_type": "nuclear_sim",
+      "description": "Наличие схлопываний в данных приведёт к появлению специальных паттернов в генерации (например, длинные последовательности нулевых токенов).",
+      "status": "PROPOSED"
+    },
+    {
+      "id": "HYP_ISOTOPE_COMPOSITION",
+      "node_type": "nuclear_sim",
+      "description": "Различные соотношения изотопов влияют на скорость обучения и максимальную сложность, которую может освоить модель.",
+      "status": "PROPOSED"
+    }
+  ],
+
+  "observations": [],
+
+  "next_steps": [
+    "1. Запустить pc_deep_optimizer.py с параметрами по умолчанию, собрать наблюдения.",
+    "2. Проанализировать влияние spike_prob и collapse_prob на MI.",
+    "3. Добавить в observations реальные результаты из логов."
+  ],
+
+  "provenance": {
+    "created_by": "Hawkar Yaks with JANUS assistant",
+    "date": "2026-02-25",
+    "based_on": [
+      "pc_deep_optimizer_v6.4.py",
+      "android_deep_optimizer_v3.1.py",
+      "Теория о наблюдателях"
+    ],
+    "notes": "Версия v1.3: добавлена секция homeostatic_control для управления обогащением/обеднением."
+  }
+}

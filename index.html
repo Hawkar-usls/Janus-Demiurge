@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#030508">
+    <title>HRAIN v76: JANUS LINK</title>
+    
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* ПАЛИТРА ЯДРА */
+            --bg-dark: #030508;
+            --bg-pulse: #0b101a; 
+            --c-default: #00ffa3; 
+            --c-danger: #ff2a6d;
+            --c-warn: #ffc107;
+            --c-info: #d300ff;
+            --c-ambient: #00ffa3;
+            --border: rgba(255, 255, 255, 0.15);
+        }
+
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: var(--bg-dark); font-family: 'Rajdhani', sans-serif; color: #e0e0e0; user-select: none; touch-action: none; position: fixed; }
+
+        /* --- ВИЗУАЛЬНЫЙ СЛОЙ --- */
+        #neural-bg { position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, var(--bg-pulse), var(--bg-dark)); z-index: 0; animation: breathe 12s infinite alternate; pointer-events: none; }
+        @keyframes breathe { 0% { opacity: 0.6; transform: scale(1); } 100% { opacity: 1; transform: scale(1.1); } }
+        
+        #particles { position: absolute; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: hidden; }
+        .particle { position: absolute; background: var(--c-ambient); border-radius: 50%; opacity: 0.3; animation: float 30s infinite linear; box-shadow: 0 0 10px var(--c-ambient); }
+        @keyframes float { 0% { transform: translateY(0); opacity: 0; } 50% { opacity: 0.5; } 100% { transform: translateY(-100vh); opacity: 0; } }
+
+        /* --- ИНТЕРФЕЙС --- */
+        .ui-layer { position: fixed; z-index: 20; pointer-events: none; width: 100%; height: 100%; top: 0; left: 0; }
+        .ui-interactive { pointer-events: auto !important; }
+        
+        #logo { position: absolute; top: 30px; left: 30px; font-family: 'Orbitron'; font-size: 1.4rem; letter-spacing: 2px; color: rgba(255,255,255,0.3); text-shadow: 0 0 15px rgba(0, 255, 163, 0.2); cursor: pointer; }
+        #logo span { color: var(--c-default); }
+        #status-light { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #444; margin-left: 10px; box-shadow: 0 0 5px #000; transition: 0.3s; }
+        #status-light.online { background: var(--c-default); box-shadow: 0 0 10px var(--c-default); }
+
+        .top-controls { position: absolute; top: 30px; right: 30px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; max-width: 70%; }
+        .btn { background: rgba(10, 15, 20, 0.8); border: 1px solid var(--border); color: rgba(255,255,255,0.8); backdrop-filter: blur(8px); padding: 10px 16px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 600; font-size: 0.75rem; cursor: pointer; transition: 0.2s; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
+        .btn:hover { border-color: var(--c-default); color: #fff; box-shadow: 0 0 15px rgba(0,255,163,0.3); }
+        .btn:active { transform: scale(0.95); }
+        .btn.active { border-color: var(--c-default); color: var(--c-default); background: rgba(0, 255, 163, 0.15); }
+        .btn.loading { border-color: var(--c-info); color: var(--c-info); animation: pulse-btn 1s infinite alternate; }
+        @keyframes pulse-btn { 0% { opacity: 0.7; } 100% { opacity: 1; box-shadow: 0 0 15px var(--c-info); } }
+
+        /* ИНФО ПАНЕЛЬ */
+        #info-panel {
+            position: absolute; bottom: 40px; left: 40px; max-width: 400px;
+            opacity: 0; transform: translateY(20px); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none; z-index: 25;
+        }
+        #info-panel.visible { opacity: 1; transform: translateY(0); }
+        
+        #info-title { 
+            font-family: 'Orbitron'; font-size: 1.4rem; color: var(--c-default); 
+            margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; 
+            text-shadow: 0 0 10px rgba(0,255,163,0.4); 
+        }
+        
+        #info-desc { 
+            font-family: 'Rajdhani'; font-size: 1rem; line-height: 1.5; 
+            color: #ddd; background: rgba(5, 8, 12, 0.9); 
+            padding: 15px; border-left: 3px solid var(--c-default); 
+            border: 1px solid var(--border); border-left-width: 3px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        #nav-context { position: absolute; top: 80px; left: 30px; display: flex; flex-direction: column; gap: 8px; opacity: 0; transition: 0.3s; }
+        #nav-context.visible { opacity: 1; }
+        .crumb { font-size: 0.85rem; color: #888; display: flex; align-items: center; gap: 5px; cursor: pointer; }
+        .crumb:hover { color: #fff; text-decoration: underline; }
+        .crumb.active { color: var(--c-default); font-weight: bold; }
+        #btn-ascend { padding: 6px 12px; font-size: 0.75rem; border: 1px solid var(--c-default); background: rgba(0,0,0,0.6); color: var(--c-default); width: fit-content; margin-top: 5px; }
+
+        /* ГЛАВНАЯ КНОПКА */
+        #main-btn { 
+            position: absolute; bottom: calc(40px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); 
+            width: 72px; height: 72px; border-radius: 50%; border: none; 
+            background: radial-gradient(circle at 40% 40%, rgba(40,40,40,0.5), rgba(0,0,0,0.95)); 
+            box-shadow: 0 0 0 1px var(--border), 0 10px 30px rgba(0,0,0,0.6); 
+            backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; 
+            cursor: pointer; transition: all 0.3s; -webkit-tap-highlight-color: transparent;
+            font-family: 'Orbitron'; font-size: 0.9rem; font-weight: 700; letter-spacing: 1px; color: var(--c-default);
+            text-shadow: 0 0 10px var(--c-default);
+        }
+        #main-btn:active { transform: translateX(-50%) scale(0.9); }
+        #main-btn.mode-edit { box-shadow: 0 0 0 2px var(--color-target, var(--c-default)), 0 0 50px var(--color-target, var(--c-default)); color: #fff; text-shadow: none; }
+        #main-btn.holding-delete { box-shadow: 0 0 0 2px var(--c-danger), 0 0 60px var(--c-danger); transform: translateX(-50%) scale(1.1); color: var(--c-danger); }
+
+        #btn-dive { position: absolute; bottom: 40px; left: 30px; border-color: var(--c-default); color: var(--c-default); font-family: 'Orbitron'; font-size: 1rem; padding: 12px 20px; box-shadow: 0 0 20px rgba(0, 255, 163, 0.1); opacity: 0; transform: translateY(20px); transition: 0.4s; pointer-events: none; background: rgba(0, 20, 10, 0.9); }
+        #btn-dive.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+        /* СТИЛИ ГРАФА (LOD) */
+        .lod-active .neuron-aura, .lod-active .emoji, .lod-active .label { display: none !important; }
+        .lod-active .neuron-core { box-shadow: none !important; stroke-width: 0 !important; }
+        .lod-active .link { stroke-width: 0.5px !important; opacity: 0.2 !important; }
+
+        #chart { width: 100%; height: 100%; position: relative; z-index: 1; }
+        .link { fill: none; stroke-width: 1.5px; opacity: 0.4; transition: opacity 0.3s; vector-effect: non-scaling-stroke; }
+        .impulse { filter: drop-shadow(0 0 8px currentColor); pointer-events: none; mix-blend-mode: screen; opacity: 0.8; }
+        
+        @keyframes bio-morph { 0% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; } 50% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; } 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; } }
+        @keyframes root-aura-pulse { 0% { box-shadow: 0 0 10px var(--node-color); opacity: 0.5; border-width: 2px; } 100% { box-shadow: 0 0 50px var(--node-color); opacity: 0.9; border-width: 6px; } }
+        
+        .node-foreign-object { overflow: visible; }
+        .node-body { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; position: relative; }
+        .neuron-aura { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: var(--node-bg, rgba(0,255,163,0.1)); border: 1px solid var(--node-color, #00ffa3); opacity: 0.3; animation: bio-morph 8s ease-in-out infinite; transition: all 0.3s; }
+        .neuron-core { width: 40%; height: 40%; background: var(--node-color, #00ffa3); border-radius: 50%; box-shadow: 0 0 15px var(--node-color); transition: 0.3s; z-index: 2; }
+        
+        .node-group.is-root .neuron-core { width: 60%; height: 60%; box-shadow: 0 0 40px var(--node-color), 0 0 80px var(--node-color); z-index: 10; border: 2px solid #fff; }
+        .node-group.is-root .neuron-aura { animation: bio-morph 10s ease-in-out infinite, root-aura-pulse 4s infinite alternate; border-style: solid; background: rgba(0,255,163,0.2); }
+        .node-group:hover .neuron-aura { opacity: 0.6; animation-duration: 2s; box-shadow: 0 0 20px var(--node-color); }
+        .node-group.selected .neuron-aura { opacity: 0.8; border-width: 2px; border-style: dashed; box-shadow: 0 0 30px var(--node-color); }
+        .node-group.selected .neuron-core { background: #fff; box-shadow: 0 0 30px #fff; }
+
+        .type-default { --node-color: var(--c-default); --node-bg: rgba(0, 255, 163, 0.15); }
+        .type-danger { --node-color: var(--c-danger); --node-bg: rgba(255, 42, 109, 0.15); }
+        .type-warn { --node-color: var(--c-warn); --node-bg: rgba(255, 193, 7, 0.15); }
+        .type-info { --node-color: var(--c-info); --node-bg: rgba(211, 0, 255, 0.15); }
+
+        text.emoji { font-size: 20px; text-anchor: middle; dominant-baseline: central; pointer-events: none; fill: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.8); transition: opacity 0.2s; }
+        text.label { font-family: 'Rajdhani'; font-size: 12px; font-weight: 700; fill: rgba(255,255,255,0.8); text-anchor: middle; pointer-events: none; text-shadow: 0 2px 5px #000; transition: opacity 0.2s; }
+
+        /* МОДАЛЬНЫЕ ОКНА */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); z-index: 3000; display: none; align-items: center; justify-content: center; }
+        .modal-box { width: 80%; max-width: 280px; padding: 25px; background: #080c10; border: 1px solid var(--border); box-shadow: 0 0 50px rgba(0,255,163,0.1); text-align: center; border-radius: 16px; }
+        #rename-input { width: 100%; background: transparent; border: none; border-bottom: 2px solid var(--c-default); color: #fff; font-size: 1.5rem; text-align: center; padding: 10px; margin-bottom: 20px; outline: none; font-family: 'Orbitron'; }
+        #btn-confirm { width: 100%; padding: 12px; font-size: 1rem; letter-spacing: 2px; border-color: var(--c-default); color: var(--c-default); }
+
+        #delete-hint { position: fixed; bottom: calc(130px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); color: var(--c-danger); font-size: 0.85rem; letter-spacing: 2px; font-weight: 700; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 50; }
+        #delete-hint.visible { opacity: 1; transform: translateX(-50%) translateY(-10px); }
+        
+        #toast-container { position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 10px; pointer-events: none; z-index: 4000; width: 90%; max-width: 350px; }
+        .toast { background: rgba(10, 15, 20, 0.95); border: 1px solid var(--border); color: #ddd; padding: 12px 16px; border-radius: 8px; font-family: 'Rajdhani'; font-weight: 600; font-size: 0.9rem; box-shadow: 0 4px 15px rgba(0,0,0,0.5); backdrop-filter: blur(5px); opacity: 0; transform: translateY(20px); transition: 0.3s; text-align: center; }
+        .toast.visible { opacity: 1; transform: translateY(0); }
+        .toast.error { border-color: var(--c-danger); color: var(--c-danger); box-shadow: 0 0 15px rgba(255, 42, 109, 0.2); }
+    </style>
+</head>
+<body>
+
+    <div id="neural-bg"></div>
+    <div id="particles"></div>
+
+    <div class="ui-layer">
+        <div id="logo">HR<span>ai</span>N <div id="status-light"></div></div>
+        
+        <div id="nav-context" class="ui-interactive">
+            <div id="breadcrumbs"></div>
+            <button id="btn-ascend" class="btn" onclick="App.ascend()">&#9650; ASCEND</button>
+        </div>
+
+        <div class="top-controls ui-interactive">
+            <button id="btn-synth" class="btn" onclick="Nerve.synthNode()">SYNTH</button>
+        </div>
+        
+        <div id="info-panel">
+            <div id="info-title"></div>
+            <div id="info-desc"></div>
+        </div>
+
+        <button id="btn-dive" class="btn ui-interactive" onclick="App.dive()">DIVE</button>
+        <button id="main-btn" class="ui-interactive"></button>
+        <div id="delete-hint">DISCONNECTING...</div>
+        <div id="toast-container"></div>
+    </div>
+
+    <div id="rename-modal" class="modal ui-interactive">
+        <div class="modal-box">
+            <input type="text" id="rename-input" placeholder="VOID..." autocomplete="off">
+            <button id="btn-confirm" class="btn" onclick="App.confirmRename()">CONFIRM</button>
+        </div>
+    </div>
+
+    <div id="chart"></div>
+
+<script>
+    const CONFIG = {
+        isMobile: window.innerWidth < 768,
+        validTypes: ['default', 'danger', 'warn', 'info'],
+        lodThreshold: 0.45 
+    };
+
+    function initParticles() {
+        const c = document.getElementById('particles');
+        for(let i=0; i<40; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random()*100+'%'; 
+            p.style.top = Math.random()*100+'%';
+            p.style.width = (Math.random()*3+2)+'px'; 
+            p.style.height = p.style.width;
+            p.style.animationDuration = (Math.random()*20+20)+'s';
+            p.style.animationDelay = -(Math.random()*20)+'s';
+            c.appendChild(p);
+        }
+    }
+
+    const App = {
+        globalNodes: [],
+        globalLinks: [],
+        viewNodes: [],
+        viewLinks: [],
+        contextStack: [],
+        selectedNode: null,
+        width: window.innerWidth,
+        height: window.innerHeight,
+        container: null, 
+
+        init: async () => {
+            initParticles();
+            App.setupVis();
+            await Nerve.loadInitial();
+            Nerve.connect();
+            App.bindEvents();
+            App.updateButtons(); 
+        },
+
+        setupVis: () => {
+            App.container = d3.select("#chart");
+            App.svg = App.container.append("svg").attr("width","100%").attr("height","100%");
+            App.g = App.svg.append("g");
+            App.linkG = App.g.append("g").attr("class","links");
+            App.impulseG = App.g.append("g").attr("class","impulses");
+            App.nodeG = App.g.append("g").attr("class","nodes");
+
+            App.zoom = d3.zoom()
+                .scaleExtent([0.01, 500])
+                .on("zoom", e => {
+                    App.g.attr("transform", e.transform);
+                    if(e.transform.k < CONFIG.lodThreshold) {
+                        App.container.classed("lod-active", true);
+                    } else {
+                        App.container.classed("lod-active", false);
+                    }
+                });
+            
+            App.svg.call(App.zoom)
+                    .call(App.zoom.transform, d3.zoomIdentity.translate(App.width/2, App.height/2).scale(0.3).translate(-App.width/2, -App.height/2))
+                    .on("dblclick.zoom", null);
+            
+            App.svg.on("click", e => { if(e.target.tagName==='svg') App.deselect(); });
+
+            App.sim = d3.forceSimulation()
+                .force("link", d3.forceLink().id(d=>d.id).distance(CONFIG.isMobile?160:220)) 
+                .force("charge", d3.forceManyBody().strength(-2500)) 
+                .force("collide", d3.forceCollide().radius(d => (d.connectionCount || 1) * 5 + 80).strength(0.8)) 
+                .force("x", d3.forceX(App.width/2).strength(0.012))
+                .force("y", d3.forceY(App.height/2).strength(0.012))
+                .velocityDecay(0.6);
+
+            animateVisuals();
+        },
+
+        getCurrentRoot: () => App.contextStack.length > 0 ? App.contextStack[App.contextStack.length-1] : null,
+
+        updateView: () => {
+            const rootId = App.getCurrentRoot();
+            
+            if(!rootId) {
+                App.viewNodes = App.globalNodes.filter(n => n.parentId == null);
+                document.getElementById('nav-context').classList.remove('visible');
+            } else {
+                const root = App.globalNodes.find(n => n.id === rootId);
+                if(!root) { App.contextStack.pop(); App.updateView(); return; }
+                root.fx = App.width/2; root.fy = App.height/2; 
+                App.viewNodes = App.globalNodes.filter(n => n.id === rootId || n.parentId === rootId);
+                App.updateNav();
+            }
+
+            const nodeMap = new Set(App.viewNodes.map(n => n.id));
+            App.viewLinks = App.globalLinks.filter(l => {
+                const s = l.source.id || l.source;
+                const t = l.target.id || l.target;
+                return nodeMap.has(s) && nodeMap.has(t);
+            }).map(l => ({ source: l.source.id || l.source, target: l.target.id || l.target }));
+
+            const counts = {};
+            App.viewNodes.forEach(n => counts[n.id] = 0);
+            App.viewLinks.forEach(l => {
+                const s = l.source.id || l.source;
+                const t = l.target.id || l.target;
+                counts[s] = (counts[s] || 0) + 1;
+                counts[t] = (counts[t] || 0) + 1;
+            });
+            App.viewNodes.forEach(n => n.connectionCount = counts[n.id] || 0);
+
+            App.render();
+            App.updateButtons();
+            App.sim.nodes(App.viewNodes);
+            App.sim.force("link").links(App.viewLinks);
+            App.sim.alpha(1).restart(); 
+        },
+
+        render: () => {
+            const l = App.linkG.selectAll(".link").data(App.viewLinks, d => (d.source.id||d.source)+"-"+(d.target.id||d.target));
+            l.exit().remove();
+            const lEnter = l.enter().append("path").attr("class","link");
+            const allL = lEnter.merge(l);
+            
+            allL.style("stroke", d => {
+                const target = App.viewNodes.find(n=>n.id===(d.target.id||d.target));
+                return target ? `var(--c-${target.type||'default'})` : 'var(--c-default)';
+            });
+
+            const n = App.nodeG.selectAll(".node-group").data(App.viewNodes, d=>d.id);
+            n.exit().transition().duration(200).style("opacity", 0).remove();
+            
+            const nEnter = n.enter().append("g").attr("class", "node-group")
+                .attr("opacity", 0)
+                .call(d3.drag()
+                    .on("start", (e,d) => { if(!e.active) App.sim.alphaTarget(0.3).restart(); d.fx=d.x; d.fy=d.y; })
+                    .on("drag", (e,d) => { d.fx=e.x; d.fy=e.y; })
+                    .on("end", (e,d) => { if(!e.active) App.sim.alphaTarget(0); if(d.id !== App.getCurrentRoot()) {d.fx=null; d.fy=null;} Nerve.push(); }))
+                .on("click", App.clickNode);
+
+            nEnter.transition().duration(800).ease(d3.easeElasticOut).attr("opacity", 1);
+
+            const fo = nEnter.append("foreignObject").attr("class", "node-foreign-object");
+            const div = fo.append("xhtml:div").attr("class", "node-body");
+            div.append("div").attr("class", "neuron-aura");
+            div.append("div").attr("class", "neuron-core");
+            
+            nEnter.append("text").attr("class","emoji").attr("dy", 1);
+            nEnter.append("text").attr("class","label");
+
+            const allN = nEnter.merge(n);
+            const rootId = App.getCurrentRoot();
+
+            allN.attr("class", d => {
+                let t = d.type || 'default';
+                if(!CONFIG.validTypes.includes(t)) t = 'default';
+                return `node-group type-${t} ${d===App.selectedNode?'selected':''} ${d.id===rootId?'is-root':''}`;
+            });
+            
+            allN.select(".node-foreign-object")
+                .attr("width", d => 80 + (d.connectionCount||0)*6)
+                .attr("height", d => 80 + (d.connectionCount||0)*6)
+                .attr("x", d => -(80 + (d.connectionCount||0)*6)/2)
+                .attr("y", d => -(80 + (d.connectionCount||0)*6)/2);
+
+            allN.select(".emoji").text(d => d.emoji || "\uD83E\uDDE0");
+            allN.select(".label").text(d => d.label).attr("dy", d => 45 + (d.connectionCount||0)*2);
+
+            App.sim.on("tick", () => {
+                allL.attr("d", d => {
+                    const dx = d.target.x - d.source.x, dy = d.target.y - d.source.y;
+                    const dr = Math.sqrt(dx * dx + dy * dy) * 1.5;
+                    return `M${d.source.x},${d.source.y}A${dr},${dr} 0 0,1 ${d.target.x},${d.target.y}`;
+                });
+                allN.attr("transform", d => `translate(${d.x},${d.y})`);
+            });
+        },
+
+        clickNode: (e, d) => {
+            if(e.defaultPrevented) return;
+            if(App.selectedNode === d) { App.deselect(); } 
+            else if(!App.selectedNode) { App.selectedNode = d; } 
+            else {
+                const s=App.selectedNode.id, t=d.id;
+                const idx = App.globalLinks.findIndex(l => { const ls = l.source.id||l.source; const lt = l.target.id||l.target; return (ls===s && lt===t) || (ls===t && lt===s); });
+                if(idx > -1) App.globalLinks.splice(idx, 1);
+                else App.globalLinks.push({source:s, target:t});
+                App.animateImpulse(App.selectedNode, d); App.selectedNode = d; App.updateView(); Nerve.push();
+            }
+            App.updateButtons(); App.render();
+        },
+
+        updateButtons: () => {
+            const mb = document.getElementById('main-btn');
+            const panel = document.getElementById('info-panel');
+            
+            mb.className = "ui-interactive " + (App.selectedNode ? "mode-edit" : "");
+            
+            if(App.selectedNode) {
+                mb.style.setProperty('--color-target', `var(--c-${App.selectedNode.type||'default'})`);
+                mb.textContent = "EDIT";
+                
+                if(App.selectedNode.id !== App.getCurrentRoot()) document.getElementById('btn-dive').classList.add('visible');
+                else document.getElementById('btn-dive').classList.remove('visible');
+                
+                document.getElementById('info-title').innerText = App.selectedNode.label;
+                document.getElementById('info-desc').innerText = 
+                    (App.selectedNode.description || "Node initialized. No data.") + 
+                    `\n[Connections: ${App.selectedNode.connectionCount || 0}]`;
+                panel.classList.add('visible');
+            } else {
+                mb.style.removeProperty('--color-target');
+                mb.textContent = "ADD";
+                panel.classList.remove('visible');
+                document.getElementById('btn-dive').classList.remove('visible');
+            }
+        },
+
+        updateNav: () => {
+            const bc = document.getElementById('breadcrumbs'); bc.innerHTML = "";
+            App.contextStack.forEach((id, idx) => {
+                const n = App.globalNodes.find(x => x.id === id);
+                if(n) {
+                    const el = document.createElement('span'); el.className = "crumb"; el.innerText = n.label + (idx < App.contextStack.length - 1 ? " > " : "");
+                    el.onclick = () => { while(App.contextStack.length > idx + 1) App.contextStack.pop(); App.updateView(); };
+                    bc.appendChild(el);
+                }
+            });
+            document.getElementById('nav-context').classList.add('visible');
+        },
+        createNode: () => {
+            const t = d3.zoomTransform(App.svg.node());
+            let x, y;
+            const currentParentId = App.getCurrentRoot();
+            if(App.selectedNode) {
+                const a = Math.random()*6.28; x = App.selectedNode.x + Math.cos(a)*120; y = App.selectedNode.y + Math.sin(a)*120;
+            } else {
+                x = (App.width/2 - t.x)/t.k; y = (App.height/2 - t.y)/t.k;
+            }
+            const newNode = { id: "n_" + Date.now(), label: "Void", emoji: "\uD83E\uDDE0", description: "This is a new node.", type: "default", x, y, parentId: currentParentId, isNew: true, chatHistory: [] };
+            App.globalNodes.push(newNode);
+            if(App.selectedNode) App.globalLinks.push({source:App.selectedNode.id, target:newNode.id});
+            else if(currentParentId) App.globalLinks.push({source:currentParentId, target:newNode.id});
+            App.updateView();
+            App.selectedNode = App.viewNodes.find(n=>n.id===newNode.id);
+            App.updateButtons(); App.render(); Nerve.push();
+            setTimeout(App.openRename, 50);
+        },
+        deleteNode: () => {
+            if(!App.selectedNode || App.selectedNode.id === App.getCurrentRoot()) return;
+            App.globalNodes = App.globalNodes.filter(n => n.id !== App.selectedNode.id);
+            App.globalLinks = App.globalLinks.filter(l => l.source.id !== App.selectedNode.id && l.target.id !== App.selectedNode.id);
+            App.deselect(); App.updateView(); Nerve.push();
+        },
+        dive: () => {
+            if(!App.selectedNode || App.selectedNode.id === App.getCurrentRoot()) return;
+            const children = App.globalNodes.filter(n => n.parentId === App.selectedNode.id);
+            children.forEach(child => { child.fx = null; child.fy = null; child.x = (App.width/2) + (Math.random()-0.5)*120; child.y = (App.height/2) + (Math.random()-0.5)*120; });
+            App.contextStack.push(App.selectedNode.id);
+            App.deselect(); App.updateView();
+            App.svg.transition().duration(1200).call(App.zoom.transform, d3.zoomIdentity.translate(App.width/2, App.height/2).scale(1.2).translate(-App.width/2, -App.height/2));
+        },
+        ascend: () => {
+            if(App.contextStack.length===0) return;
+            const oldRootId = App.contextStack.pop();
+            const oldRoot = App.globalNodes.find(n=>n.id===oldRootId);
+            if(oldRoot) { oldRoot.fx=null; oldRoot.fy=null; }
+            App.updateView();
+            App.svg.transition().duration(1000).call(App.zoom.scaleBy, 0.8);
+        },
+        openRename: () => { document.getElementById('rename-modal').style.display='flex'; const inp = document.getElementById('rename-input'); inp.value = App.selectedNode.isNew ? "" : App.selectedNode.label; if(App.selectedNode.isNew) delete App.selectedNode.isNew; setTimeout(()=>inp.focus(), 50); },
+        confirmRename: () => { const inp = document.getElementById('rename-input'); if(App.selectedNode && inp.value.trim() !== "") { App.selectedNode.label = inp.value.trim(); Nerve.push(); App.render(); } document.getElementById('rename-modal').style.display='none'; },
+        deselect: () => { App.selectedNode=null; App.updateButtons(); App.render(); },
+        animateImpulse: (source, target) => { if(!source || !target || isNaN(source.x)) return; let t = source.type || 'default'; if(!CONFIG.validTypes.includes(t)) t = 'default'; const color = `var(--c-${t})`; const spark = App.impulseG.append("circle").attr("class", "impulse").attr("r", 4).attr("cx", source.x).attr("cy", source.y).style("fill", "#fff").style("color", color); spark.transition().duration(800).ease(d3.easeQuadIn).attr("cx", target.x).attr("cy", target.y).style("fill", color).on("end", function() { d3.select(this).remove(); }); },
+        bindEvents: () => {
+            const mb = document.getElementById('main-btn'); const dh = document.getElementById('delete-hint'); let timer, long = false;
+            const start = (e) => { if(e.type==='touchstart') e.stopPropagation(); long = false; if(App.selectedNode) { mb.classList.add('holding-delete'); dh.classList.add('visible'); timer = setTimeout(() => { long = true; App.deleteNode(); }, 800); } else mb.style.transform = "translateX(-50%) scale(0.9)"; };
+            const end = (e) => { e.preventDefault(); clearTimeout(timer); mb.classList.remove('holding-delete'); dh.classList.remove('visible'); mb.style.transform = ""; if(long) return; if(App.selectedNode) App.openRename(); else App.createNode(); };
+            mb.addEventListener('mousedown', start); mb.addEventListener('touchstart', start, {passive:false}); mb.addEventListener('mouseup', end); mb.addEventListener('touchend', end);
+            document.getElementById('rename-input').addEventListener("keypress", (e) => { if(e.key === "Enter") App.confirmRename(); });
+            window.addEventListener('resize', () => { App.width=window.innerWidth; App.height=window.innerHeight; App.sim.force("center", d3.forceCenter(App.width/2, App.height/2)); App.sim.alpha(0.3).restart(); });
+        },
+        showToast: (txt, err=false) => { const c = document.getElementById('toast-container'); const t = document.createElement('div'); t.className = 'toast ' + (err?'error':''); t.innerText = txt; c.appendChild(t); requestAnimationFrame(() => t.classList.add('visible')); setTimeout(() => { t.classList.remove('visible'); setTimeout(() => t.remove(), 300); }, 3000); }
+    };
+
+    // --- СИСТЕМА NERVE v76 (Связь с сервером) ---
+    const Nerve = {
+        socket: null,
+        loadInitial: async () => { 
+            try { 
+                // Забираем текущий граф через API
+                const res = await fetch('/api/hrain/state'); 
+                if(!res.ok) throw new Error("Offline"); 
+                const data = await res.json(); 
+                if(data.nodes) { 
+                    App.globalNodes = data.nodes; 
+                    App.globalLinks = data.links; 
+                    App.globalNodes.forEach(n => { if(!n.chatHistory) n.chatHistory = []; }); 
+                    App.updateView(); 
+                } 
+            } catch(e) { console.warn("Local Mode"); App.showToast("Offline Mode", true); } 
+        },
+        connect: () => { 
+            const p = window.location.protocol === 'https:' ? 'wss:' : 'ws:'; 
+            try { 
+                Nerve.socket = new WebSocket(`${p}//${window.location.host}/ws`); 
+                Nerve.socket.onopen = () => document.getElementById('status-light').classList.add('online'); 
+                Nerve.socket.onclose = () => document.getElementById('status-light').classList.remove('online');
+                
+                // === ЖИВЫЕ ОБНОВЛЕНИЯ ===
+                Nerve.socket.onmessage = (msg) => {
+                    try {
+                        const d = JSON.parse(msg.data);
+                        // Если бэкенд обновил граф (например, модуль Genesis)
+                        if(d.type === 'UPDATE' && d.data) {
+                            App.globalNodes = d.data.nodes;
+                            App.globalLinks = d.data.links;
+                            App.updateView();
+                        }
+                    } catch(e) {}
+                };
+            } catch(e) {} 
+        },
+        push: async (notify=false) => { 
+            const cn = App.globalNodes.map(n => ({ id: n.id, label: n.label, emoji: n.emoji, type: n.type, x: n.x, y: n.y, parentId: n.parentId, chatHistory: n.chatHistory, description: n.description })); 
+            const cl = App.globalLinks.map(l => ({ source: l.source.id||l.source, target: l.target.id||l.target })); 
+            try { 
+                await fetch('/api/hrain/save', { method: 'POST', body: JSON.stringify({nodes: cn, links: cl}) }); 
+                if(notify) App.showToast("SAVED"); 
+            } catch(e) { if(notify) App.showToast("SAVE FAILED", true); } 
+        },
+        
+        // === ЛОГИКА СИНТЕЗА ===
+        synthNode: async () => {
+            if(!App.selectedNode) { App.showToast("Сначала выбери узел", true); return; }
+            const btn = document.querySelector('button[onclick*="synth"]'); 
+            btn.classList.add('loading'); btn.innerText = "ДУМАЮ...";
+            
+            try {
+                const siblings = App.viewNodes.filter(n => n.id !== App.selectedNode.id).map(n=>n.label).join(", ");
+                
+                // Отправляем промпт Янусу
+                const prompt = `SYSTEM: HRAIN_SYNTH_MODE. 
+Target Node: '${App.selectedNode.label}'.
+Context Siblings: ${siblings}.
+TASK: Generate 4 related concepts/ideas that expand on the Target Node.
+FORMAT: JSON with a 'newNodes' array. Each node must have: label, type (info/warn/danger), emoji.
+RESPONSE MUST BE ONLY JSON.`;
+
+                const res = await fetch('/api/janus/action', { 
+                    method: 'POST', 
+                    body: JSON.stringify({ text: prompt }) 
+                });
+                
+                const data = await res.json();
+                
+                // Бэкенд сам обновит граф через Synapse/Genesis модули
+                // Мы просто подтверждаем прием
+                if(data.result) {
+                    App.showToast("Сигнал отправлен");
+                } else {
+                    App.showToast("Нет ответа", true);
+                }
+
+            } catch(e) { console.error(e); App.showToast("Ошибка связи", true); }
+            btn.classList.remove('loading'); btn.innerText = "SYNTH";
+        }
+    };
+
+    function animateVisuals() {
+        if(App.viewLinks.length > 0 && Math.random() > 0.9) { const l = App.viewLinks[Math.floor(Math.random()*App.viewLinks.length)]; if(l.source.x && l.target.x) App.animateImpulse(l.source, l.target); }
+        requestAnimationFrame(animateVisuals);
+    }
+
+    window.onload = App.init;
+</script>
+</body>
+</html>
