@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-JANUS DEMIURGE CONFIG v7.2 — МЕТА-РЕЖИМ ЯНУСА С ИНСТИНКТАМИ
-"""
-
 import sys
 import io
 import os
@@ -11,7 +5,7 @@ import torch
 import numpy as np
 import logging
 
-# Устанавливаем кодировку stdout в UTF-8, чтобы эмодзи работали
+# Устанавливаем кодировку stdout в UTF-8, чтобы избежать ошибок при выводе эмодзи
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
@@ -32,34 +26,37 @@ N_EMBD_OPTIONS = [128, 256, 384, 512, 768]
 N_HEAD_OPTIONS = [4, 8, 12, 16]
 N_LAYER_RANGE = [4, 6, 8, 10, 12]
 
-# Суженные диапазоны для большей стабильности (v7.2)
-LR_RANGE = (1e-5, 5e-3)
-GAIN_RANGE = (0.5, 1.5)
-TEMP_RANGE = (0.5, 1.5)
-
+LR_RANGE = (1e-5, 5e-3)          # уменьшен верхний порог
+GAIN_RANGE = (0.5, 1.5)          # сужено для стабильности
+TEMP_RANGE = (0.5, 1.5)          # сужено для стабильности
 LR_DECAY_ENABLE = True
 HALF_LIFE_STEPS = 1000
+
 ALPHA = 0.1
 BETA = 1.0
 GAMMA = 0.5
-ADAPTIVE_CONTROL = True
 
+# ========== АДАПТИВНОЕ УПРАВЛЕНИЕ ==========
+ADAPTIVE_CONTROL = True
 GPU_LOAD_THRESHOLD_HIGH = 80
 GPU_LOAD_THRESHOLD_CRITICAL = 95
 CPU_LOAD_THRESHOLD_HIGH = 80
 MIN_BATCH_SIZE = 32
 MAX_PAUSE = 5.0
-
 POLL_INTERVAL = 2.0
+
+# ========== ПАРАМЕТРЫ МОНИТОРИНГА ==========
 CACHE_PROBE_INTERVAL = 3600
 CACHE_PROBE_SIZE_MB = 50
+
+# ========== ПАРАМЕТРЫ ЛОГИРОВАНИЯ ==========
 LOG_INTERVAL = 5
 LOG_ON_SUCCESS = True
 LOG_FAILURE_SUMMARY = True
 FAILURE_THRESHOLD = 3
 GENESIS_AUTO_INTERVAL = 31
 
-# ==================== ПАРАМЕТРЫ НОВЫХ МОДУЛЕЙ ====================
+# ========== ПАРАМЕТРЫ НОВЫХ МОДУЛЕЙ ==========
 SWARM_ENABLED = os.environ.get('JANUS_SWARM_ENABLED', '1') == '1'
 SWARM_SIZE = int(os.environ.get('JANUS_SWARM_SIZE', 5))
 SWARM_INERTIA = float(os.environ.get('JANUS_SWARM_INERTIA', 0.7))
@@ -84,25 +81,9 @@ HYPNOS_INTERVAL = int(os.environ.get('JANUS_HYPNOS_INTERVAL', 50))
 NEBUCHAD_INTERVAL = int(os.environ.get('JANUS_NEBUCHAD_INTERVAL', 30))
 OUROBOROS_INTERVAL = int(os.environ.get('JANUS_OUROBOROS_INTERVAL', 500))
 
-# ==================== КОНВЕРГЕНЦИЯ И ТЕРМОДИНАМИКА (v7.2) ====================
+# ========== КОНВЕРГЕНЦИЯ ==========
 CONVERGENCE_ENABLED = os.environ.get('JANUS_CONVERGENCE_ENABLED', '1') == '1'
 CONVERGENCE_WINDOW = int(os.environ.get('JANUS_CONVERGENCE_WINDOW', 100))
-
-# ========== ТЕРМОДИНАМИКА И ТАХИОННАЯ ЧИСТОТА (FAHRENHEIT) ==========
-THERMAL_MODE_FAHRENHEIT = True
-TARGET_TEMP_F = 113.0          # ~45°C — золотая зона
-CRITICAL_TEMP_F = 176.0        # ~80°C — критический перегрев
-
-HARDWARE_ENTROPY_ENABLED = True
-ENTROPY_SAMPLE_WINDOW = 100
-PURITY_THRESHOLD_GOLD = 1500.0
-
-OXYTOCIN_ENABLED = True
-BASE_REWARD_SCALE = 1.0
-COLD_EFFICIENCY_BONUS = 2.0
-
-ADAPTIVE_DEVICE_SWITCH = True
-GPU_PURITY_BIAS = 1.2
 
 # ========== ПУТИ ==========
 BASE_DIR = os.environ.get('JANUS_BASE_DIR', r"E:\Janus_BFaiN")
@@ -120,20 +101,21 @@ GPU_TICKET_PATH = os.path.join(RAW_LOGS_DIR, "gpu_ticket.json")
 DEBUG_MODE = os.environ.get('JANUS_DEBUG', '0') == '1'
 RESUME = os.environ.get('JANUS_RESUME', '0') == '1'
 
-# ========== ФИЛЬТР 37 + РЕЗОНАНС ==========
+# ========== ФИЛЬТР 37 ==========
 FILTER_37_ENABLED = os.environ.get('JANUS_FILTER_37', '1') == '1'
 FILTER_37_WEIGHT = 0.5
 TACHYON_MONITOR_ENABLED = True
 TACHYON_MONITOR_WINDOW = 10
 TACHYON_RESONANCE_THRESHOLD = 7
 TACHYON_SCALE = 1000
+
 POCKET_DETECTOR_ENABLED = True
 POCKET_WINDOW = 20
 POCKET_STD_THRESHOLD = 0.01
+
 TACHYON_ACQ_PENALTY = 0.1
 REGISTRY_SNAPSHOT_INTERVAL = 10
 HARMONIC_37_MULTIPLIER = 37
-
 EXTRA_RESONANT_EMBD = [111, 222, 333, 444, 555, 666, 777, 888, 999]
 N_EMBD_OPTIONS_RESONANT = sorted(set(N_EMBD_OPTIONS + EXTRA_RESONANT_EMBD))
 
@@ -166,9 +148,118 @@ def filter_hyperparams(config: dict) -> float:
     ratio = resonant_count / total_checked
     return ratio ** 2
 
-# ========== ТЕРМОДИНАМИЧЕСКИЙ РЕЗОНАНС ==========
+def apply_filter_to_candidates(candidates: list) -> list:
+    if not FILTER_37_ENABLED:
+        return [(c, 1.0) for c in candidates]
+    weighted = []
+    for cand in candidates:
+        weight = filter_hyperparams(cand)
+        if weight > 0.01:
+            weighted.append((cand, weight))
+    return weighted
+
+def is_tachyonic_resonance(metric: float, step: int, history: list) -> bool:
+    if not TACHYON_MONITOR_ENABLED:
+        return False
+    pseudo_freq = int(abs(metric * TACHYON_SCALE))
+    dr = digital_root(pseudo_freq)
+    if dr == 3:
+        history.append(1)
+    else:
+        history.append(0)
+    if len(history) > TACHYON_MONITOR_WINDOW:
+        history.pop(0)
+    return sum(history) >= TACHYON_RESONANCE_THRESHOLD
+
+def detect_pocket(scores: list, losses: list) -> bool:
+    if not POCKET_DETECTOR_ENABLED:
+        return False
+    if len(scores) < POCKET_WINDOW or len(losses) < POCKET_WINDOW:
+        return False
+    recent_scores = scores[-POCKET_WINDOW:]
+    recent_losses = losses[-POCKET_WINDOW:]
+    try:
+        if np.std(recent_scores) < POCKET_STD_THRESHOLD and np.std(recent_losses) < POCKET_STD_THRESHOLD:
+            return True
+    except:
+        pass
+    return False
+
+# ========== ТЕРМОДИНАМИКА И ТАХИОННАЯ ЧИСТОТА (FAHRENHEIT) ==========
+THERMAL_MODE_FAHRENHEIT = True          # Принудительно используем F для гранулярности
+TARGET_TEMP_F = 113.0                   # Цель: 45°C (Точка идеального метаболизма)
+CRITICAL_TEMP_F = 176.0                 # Порог перегрева: 80°C
+
+# Коэффициенты перевода (для внутреннего зеркала Януса)
+C_TO_F_FACTOR = 1.8
+C_TO_F_OFFSET = 32.0
+
+# Параметры энтропии железа
+HARDWARE_ENTROPY_ENABLED = True
+ENTROPY_SAMPLE_WINDOW = 100             # Окно замера джиттера
+PURITY_THRESHOLD_GOLD = 1500.0          # Порог для записи в Model_Zoo
+
+# Награды (Oxytocin System)
+OXYTOCIN_ENABLED = True
+BASE_REWARD_SCALE = 1.0
+COLD_EFFICIENCY_BONUS = 2.0             # Множитель наград при T < TARGET_TEMP_F
+
+# ========== ГЕТЕРОГЕННЫЕ ВЫЧИСЛЕНИЯ (ORBIT SELECT) ==========
+ADAPTIVE_DEVICE_SWITCH = True           # Разрешить Янусу прыгать между CPU и GPU
+GPU_PURITY_BIAS = 1.2                   # GPU должен быть на 20% чище для переключения
+
+# ========== ТЕРМОДИНАМИЧЕСКИЙ РЕЗОНАНС (37 + FAHRENHEIT) ==========
+
 def get_thermal_resonance_weight(temp_f: float, purity: float) -> float:
+    """
+    Вычисляет множитель удачи на основе резонанса температуры и числа 37.
+    Возвращает коэффициент, который можно использовать как дополнительный
+    множитель награды или веса решения.
+    """
     if not FILTER_37_ENABLED:
         return 1.0
+
+    # 1. Проверка резонанса температуры (целое число Фаренгейтов)
     temp_int = int(abs(temp_f))
-    is_temp_resonant =
+    is_temp_resonant = (temp_int % 37 == 0) or (digital_root(temp_int) == 3)
+
+    # 2. Базовый множитель от чистоты (Purity)
+    # Чем выше Purity, тем сильнее отклик резонанса
+    purity_boost = np.log1p(purity / 100.0)
+
+    # 3. Результирующий вес (Сингулярность)
+    # Если температура резонирует с 37, умножаем на HARMONIC_37_MULTIPLIER (37)
+    if is_temp_resonant:
+        resonance_weight = HARMONIC_37_MULTIPLIER * purity_boost
+        # Логирование (будет видно в логах Януса)
+        logger = logging.getLogger("JANUS")
+        logger.info(f"🌀 [RESONANCE] Температура {temp_int}F вошла в фазу с 37! Boost: {resonance_weight:.2f}")
+    else:
+        resonance_weight = purity_boost
+
+    return resonance_weight
+
+def apply_tachyonic_filter(config: dict, temp_f: float, purity: float) -> float:
+    """
+    Объединённый фильтр: параметры (37) * температура (37) * чистота.
+    Возвращает коэффициент для награды Агентов и веса в Model_Zoo.
+    """
+    base_filter = filter_hyperparams(config)
+    thermal_res = get_thermal_resonance_weight(temp_f, purity)
+    return base_filter * thermal_res
+
+# Небольшая вспомогательная функция для преобразования
+def celsius_to_fahrenheit(temp_c: float) -> float:
+    return temp_c * C_TO_F_FACTOR + C_TO_F_OFFSET
+
+def fahrenheit_to_celsius(temp_f: float) -> float:
+    return (temp_f - C_TO_F_OFFSET) / C_TO_F_FACTOR
+
+# ========== ДОПОЛНИТЕЛЬНЫЙ ЛОГГЕР ДЛЯ КОНФИГА (чтобы не было ошибок) ==========
+# Инициализируем логгер, если он ещё не создан
+if 'logger' not in locals():
+    logger = logging.getLogger("JANUS")
+    if not logger.handlers:
+        ch = logging.StreamHandler()
+        ch.setFormatter(logging.Formatter('%(message)s'))
+        logger.addHandler(ch)
