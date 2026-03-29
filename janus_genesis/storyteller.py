@@ -1,4 +1,4 @@
-# janus_genesis/storyteller.py
+# janus_genesis/storyteller.py (с сохранением failure_stories)
 """
 STORYTELLER — автономный генератор историй на основе микро-модели.
 """
@@ -12,11 +12,13 @@ from typing import Dict, Any, Optional, Tuple
 from .language_model import LanguageEngine
 from .social_learning import SocialLearningEngine
 from .vocab import get_vocab
+from config import RAW_LOGS_DIR   # добавлен импорт
 
 logger = logging.getLogger("JANUS")
 
 CONFIG = {
     'stories_file': 'stories.json',
+    'failures_file': 'failures.json',  # новый файл для неудачных историй
     'model_path': 'storyteller_model.pkl',
     'vocab_file': 'vocab.json',
     'max_len': 50,
@@ -33,13 +35,15 @@ class Storyteller:
     def __init__(self, stories_file=CONFIG['stories_file'], model_path=CONFIG['model_path'],
                  social_engine=None, vocab_file=CONFIG['vocab_file']):
         self.stories_file = stories_file
+        # Исправление: полный путь к failures_file
+        self.failures_file = os.path.join(RAW_LOGS_DIR, CONFIG['failures_file'])
         self.model_path = model_path
         self.social = social_engine
         self.stories = self.load_stories()
-        self.failure_stories = []  # истории, которые не прошли порог
+        self.failure_stories = self.load_failures()
         self.lang = LanguageEngine(
             vocab_file=vocab_file,
-            model_path=None,  # временно отключаем загрузку, чтобы избежать несоответствия словаря
+            model_path=None,
             n_layer=1, n_embd=32, block_size=32, n_head=4,
             mode='char'
         )
@@ -49,7 +53,6 @@ class Storyteller:
                 self.lang.train_step(story, lr=CONFIG['train_lr'])
 
     def load_stories(self):
-        """Загружает истории из файла."""
         if os.path.exists(self.stories_file):
             try:
                 with open(self.stories_file, 'r', encoding='utf-8') as f:
@@ -59,7 +62,6 @@ class Storyteller:
         return []
 
     def save_stories(self):
-        """Атомарно сохраняет истории."""
         try:
             os.makedirs(os.path.dirname(self.stories_file), exist_ok=True)
             tmp = self.stories_file + ".tmp"
@@ -69,8 +71,29 @@ class Storyteller:
         except Exception as e:
             logger.error(f"Ошибка сохранения историй: {e}")
 
+    def load_failures(self):
+        """Загружает неудачные истории из файла."""
+        if os.path.exists(self.failures_file):
+            try:
+                with open(self.failures_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except Exception as e:
+                logger.error(f"Ошибка загрузки неудачных историй: {e}")
+        return []
+
+    def save_failures(self):
+        """Сохраняет неудачные истории в файл."""
+        try:
+            # Создаём директорию, если её нет
+            os.makedirs(os.path.dirname(self.failures_file), exist_ok=True)
+            tmp = self.failures_file + ".tmp"
+            with open(tmp, 'w', encoding='utf-8') as f:
+                json.dump(self.failure_stories, f, ensure_ascii=False, indent=2)
+            os.replace(tmp, self.failures_file)
+        except Exception as e:
+            logger.error(f"Ошибка сохранения неудачных историй: {e}")
+
     def _get_meme_text(self) -> Optional[str]:
-        """Извлекает текст мема (если есть) из social_engine."""
         if not self.social:
             return None
         meme = self.social.get_random_meme()
@@ -81,14 +104,12 @@ class Storyteller:
         return meme
 
     def _build_prompt(self, context: Dict[str, Any]) -> str:
-        """Формирует промпт на основе контекста."""
         event_type = context.get('event_type')
         extra = context.get('extra', {})
         data = context.get('data', {})
         cycle = context.get('cycle', 0)
         meme_text = self._get_meme_text()
 
-        # Определяем базовый промпт
         if event_type == "EXTINCTION":
             species = extra.get('species_names', 'несколько видов')
             base_prompt = f"Цикл {cycle}: {species} исчезли из мира."
@@ -129,18 +150,15 @@ class Storyteller:
         return base_prompt
 
     def generate_story(self, context: Dict[str, Any], max_len=CONFIG['max_len']) -> str:
-        """Генерирует историю на основе контекста с повторными попытками при ошибке."""
         prompt = self._build_prompt(context)
         for attempt in range(CONFIG['max_retries']):
             try:
                 story, reward = self.lang.generate(prompt, max_len=max_len,
                                                    temperature=CONFIG['temperature'],
                                                    clean=True)
-                # Если история слишком короткая, возможно ошибка – пробуем снова
                 if len(story.split()) < 3:
                     logger.debug(f"Слишком короткая история (попытка {attempt+1})")
                     continue
-                # Если есть награда и она низкая, можно тоже регенерировать
                 if reward is not None and reward < 0.3 and attempt < CONFIG['max_retries']-1:
                     logger.debug(f"Низкая награда {reward:.2f}, регенерация")
                     continue
@@ -150,7 +168,6 @@ class Storyteller:
         return "Тишина в мире."
 
     def generate_story_with_reward(self, context: Dict[str, Any], max_len=CONFIG['max_len']) -> Tuple[str, float]:
-        """Генерирует историю и возвращает (текст, награда)."""
         prompt = self._build_prompt(context)
         story, reward = self.lang.generate(prompt, max_len=max_len,
                                            temperature=CONFIG['temperature'],
@@ -158,8 +175,6 @@ class Storyteller:
         return story, reward if reward is not None else 0.0
 
     def learn_from_cycle(self, world, memory, cycle):
-        """Генерирует историю, обучает модель и сохраняет."""
-        # Собираем контекст
         context = {
             'cycle': cycle,
             'population': len(world.population) if world.population else 0,
@@ -170,17 +185,16 @@ class Storyteller:
         }
         story, reward = self.generate_story_with_reward(context)
         if reward > CONFIG['reward_threshold']:
-            # Хорошая история – сохраняем и обучаем
             self.stories.append(story)
             if len(self.stories) > 1000:
                 self.stories.pop(0)
             self.save_stories()
             self.lang.train_step(story, lr=CONFIG['train_lr'])
         else:
-            # Плохая – запоминаем как неудачу (для CulturalDecadenceEngine)
             self.failure_stories.append(story)
             if len(self.failure_stories) > CONFIG['failures_to_remember']:
                 self.failure_stories.pop(0)
+            self.save_failures()  # сохраняем неудачи
             logger.debug(f"История не прошла порог (reward={reward:.2f})")
 
         if cycle % CONFIG['save_every'] == 0:
@@ -188,22 +202,18 @@ class Storyteller:
         return story
 
     def learn_from_failure(self, story: str):
-        """Обучается на неудачной истории (для CulturalDecadenceEngine)."""
         self.failure_stories.append(story)
         if len(self.failure_stories) > CONFIG['failures_to_remember']:
             self.failure_stories.pop(0)
-        # Можно также слабо обучить модель
+        self.save_failures()
         self.lang.train_step(story, lr=CONFIG['train_lr'] * 0.5)
 
     def get_failure_stories(self, n=5):
-        """Возвращает последние неудачные истории."""
         return self.failure_stories[-n:]
 
     def save_model(self):
-        """Сохраняет модель."""
         self.lang.save(self.model_path)
 
     def load_model(self):
-        """Загружает модель."""
         if os.path.exists(self.model_path):
             self.lang.load(self.model_path)

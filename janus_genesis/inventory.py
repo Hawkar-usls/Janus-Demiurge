@@ -2,6 +2,7 @@
 """
 INVENTORY v2.1 — экипировка, слоты, сеты, расходники, автоприменение.
 Добавлены поля knowledge (гиперпараметры) и fake (подделка).
+Добавлена генерация предметов с knowledge, применение knowledge через расходники.
 """
 
 import random
@@ -261,6 +262,10 @@ class Inventory:
         if item.item_type != "consumable":
             return False, "Not a consumable"
 
+        # Применяем knowledge (гиперпараметры) к агенту
+        if item.knowledge and hasattr(target, 'apply_hyper_effect'):
+            target.apply_hyper_effect(item.knowledge)
+
         # Применяем эффекты на агента
         for k, v in item.effect.items():
             if hasattr(target, k):
@@ -307,7 +312,7 @@ class Inventory:
         return inv
 
     # ---------- Генерация случайных предметов ----------
-    def random_item(self, rarity: str = "common") -> Item:
+    def random_item(self, rarity: str = "common", with_knowledge: bool = False) -> Item:
         """Создаёт случайный предмет (для тестов)."""
         # Базовые эффекты
         effects = {
@@ -331,6 +336,24 @@ class Inventory:
         prefix = random.choice(names.get(rarity, names["common"]))
         name = f"{prefix} {slot.capitalize()}"
 
+        # Добавляем knowledge с вероятностью
+        knowledge = {}
+        if with_knowledge and random.random() < 0.5:
+            possible_params = ['lr', 'gain', 'temperature', 'n_embd', 'n_head', 'n_layer']
+            param = random.choice(possible_params)
+            if param == 'lr':
+                knowledge[param] = random.uniform(1e-5, 1e-2)
+            elif param == 'gain':
+                knowledge[param] = random.uniform(0.3, 2.0)
+            elif param == 'temperature':
+                knowledge[param] = random.uniform(0.3, 2.0)
+            elif param == 'n_embd':
+                knowledge[param] = random.choice([128, 256, 384, 512, 768])
+            elif param == 'n_head':
+                knowledge[param] = random.choice([4, 8, 12, 16])
+            elif param == 'n_layer':
+                knowledge[param] = random.choice([4, 6, 8, 10, 12])
+
         item = Item(
             name=name,
             effect=effect,
@@ -340,6 +363,7 @@ class Inventory:
             slot=slot,
             rarity=rarity,
             set_name=None,
-            stackable=False
+            stackable=False,
+            knowledge=knowledge
         )
         return item

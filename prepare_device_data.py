@@ -1,14 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Генерирует device_data.json из нескольких источников:
-- wisdom_landscape.csv (история циклов Януса)
-- janus_beacon_log.csv (если есть)
-- PLATINUM.LOG (специальный формат логов)
-Запускай перед core.py, чтобы Янус учился на реальных данных.
-"""
-
 import os
+import sys
+import io
 import csv
 import json
 import random
@@ -16,29 +10,28 @@ import re
 from datetime import datetime
 from config import RAW_LOGS_DIR
 
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
 WISDOM_CSV = os.path.join(RAW_LOGS_DIR, "wisdom_landscape.csv")
 BEACON_CSV = os.path.join(RAW_LOGS_DIR, "janus_beacon_log.csv")
 PLATINUM_LOG = os.path.join(RAW_LOGS_DIR, "PLATINUM.LOG")
 OUTPUT_PATH = os.path.join(RAW_LOGS_DIR, "device_data.json")
 
 def safe_float(val, default=0.0):
-    """Безопасное преобразование в float."""
     try:
         return float(val)
     except (ValueError, TypeError):
         return default
 
 def parse_wisdom_csv():
-    """Читает wisdom_landscape.csv и возвращает список записей."""
     records = []
     if not os.path.exists(WISDOM_CSV):
-        print(f"[⚠️] {WISDOM_CSV} не найден.")
         return records
     with open(WISDOM_CSV, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
             try:
-                # Пропускаем строки, где не удаётся получить ключевые поля
                 loss = safe_float(row.get('val_loss'), None)
                 if loss is None:
                     continue
@@ -53,7 +46,6 @@ def parse_wisdom_csv():
                     'cpu_load': safe_float(row.get('cpu_load'), 30.0),
                     'cache_ratio': safe_float(row.get('cache_ratio'), 1.0),
                 }
-                # Добавляем случайные Android-метрики
                 rec['mag_x'] = random.uniform(-50, 50)
                 rec['mag_y'] = random.uniform(-50, 50)
                 rec['mag_z'] = random.uniform(-50, 50)
@@ -65,13 +57,11 @@ def parse_wisdom_csv():
     return records
 
 def parse_beacon_csv():
-    """Читает janus_beacon_log.csv и возвращает список записей."""
     records = []
     if not os.path.exists(BEACON_CSV):
         return records
     try:
         with open(BEACON_CSV, 'r', encoding='utf-8') as f:
-            # Пробуем определить разделитель
             sample = f.read(1024)
             f.seek(0)
             dialect = csv.Sniffer().sniff(sample)
@@ -102,7 +92,6 @@ def parse_beacon_csv():
     return records
 
 def parse_platinum_log():
-    """Парсит PLATINUM.LOG. Формат строки: [число] E:знач Q:знач T:знач H:знач P:знач S:знач"""
     records = []
     if not os.path.exists(PLATINUM_LOG):
         return records
@@ -122,7 +111,7 @@ def parse_platinum_log():
                         'loss': float(groups[1]),
                         'entropy': float(groups[2]),
                         'mi': 0.0,
-                        'gap': float(groups[3]) - float(groups[1]),  # T - E
+                        'gap': float(groups[3]) - float(groups[1]),
                         'gpu_load': float(groups[4]),
                         'gpu_temp': float(groups[5]),
                         'cpu_load': float(groups[6]),
@@ -150,12 +139,10 @@ def main():
         print("[⚠️] Нет записей для сохранения.")
         return
 
-    # Сортируем по времени (если есть timestamp) и оставляем последние 1000
     all_records.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
     if len(all_records) > 1000:
         all_records = all_records[:1000]
 
-    # Преобразуем в формат device_data.json
     output = []
     for rec in all_records:
         output.append({

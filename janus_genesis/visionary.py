@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-VISIONARY ENGINE v4.0 — Око Януса, адаптивное, эволюционирующее, самосознающее.
-Генерирует изображения в формате WebP с умным сжатием, учитывающим визуальное качество (SSIM),
-управляет промптами, значимостью событий и учится на эффективности сжатия.
+VISIONARY ENGINE v5.0 — Око Януса, адаптивное, эволюционирующее, самосознающее.
+- Генерирует изображения в формате WebP с умным сжатием (SSIM)
+- Управляет промптами, значимостью событий, учится на эффективности
+- Откладывает генерацию при активном игровом режиме (gaming_mode)
+- Вносит вклад в поиск P=NP через обновление мета-цели (discovery_progress)
 """
 
 import os
@@ -57,9 +59,11 @@ CONFIG = {
     'size_penalty_log_base': 10,
     'significance_novelty_weight': 0.6,
     'significance_impact_weight': 0.4,
-    'significance_threshold': 0.7,
+    'significance_threshold': 0.4,
     'quality_update_window': 20,
     'quality_percentile': 90,
+    'pnp_contribution_scale': 0.01,
+    'pnp_contribution_max_per_generation': 0.1,
 }
 
 class VisionaryEngine:
@@ -68,7 +72,6 @@ class VisionaryEngine:
     }
     IMPORTANT_EVENTS = {"RECORD", "EXTINCTION", "NEW_SPECIES", "RAID", "INSTITUTION_FOUNDED", "WORMHOLE"}
 
-    # Базовая важность слов для фильтрации промпта
     WORD_IMPORTANCE = {
         "epic": 1.2, "detailed": 1.1, "intricate": 1.1, "complex": 1.0,
         "minimalism": 1.2, "clean": 1.1, "focused": 1.1, "sharp": 1.0,
@@ -77,7 +80,11 @@ class VisionaryEngine:
     }
 
     def __init__(self, storyteller, tachyon=None, model_name="photoreal", device=None,
-                 save_png=False, webp_quality=90, enable_enhance=True):
+                 save_png=False, webp_quality=90, enable_enhance=True,
+                 meta_goal=None):
+        """
+        meta_goal: объект MetaGoalEngine (для обновления discovery_progress).
+        """
         self.storyteller = storyteller
         self.tachyon = tachyon
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
@@ -86,11 +93,12 @@ class VisionaryEngine:
         self.webp_quality = webp_quality
         self.model_name = model_name
         self.model_id = self.MODELS.get(model_name, self.MODELS["photoreal"])
+        self.meta_goal = meta_goal
 
         self.pipe = None
         self._model_loaded = False
 
-        logger.info(f"🔥 Visionary v4.0 инициализирован (модель будет загружена при первом использовании)")
+        logger.info(f"🔥 Visionary v5.0 инициализирован (модель будет загружена при первом использовании)")
 
         # История и статистика
         self.history = deque(maxlen=1000)
@@ -111,6 +119,10 @@ class VisionaryEngine:
         self.target_quality = CONFIG['target_quality']
         self.fast_generations = 0
         self.slow_generations = 0
+
+        # Очередь отложенных заданий (всегда работает, но задания добавляются только при gaming_mode=True)
+        self.pending_jobs = deque()
+        self._processing_lock = asyncio.Lock()
 
         # Подсистемы
         self.critic = VisionaryCritic()
@@ -154,7 +166,6 @@ class VisionaryEngine:
 
     # ---------- Метрики ----------
     def _evaluate_quality(self, image):
-        """Оценивает качество изображения (0..1) на основе лапласиана и энтропии."""
         img = np.array(image)
         gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
         laplacian = cv2.Laplacian(gray, cv2.CV_64F).var()
@@ -163,14 +174,12 @@ class VisionaryEngine:
         return float(quality)
 
     def _ssim_quality(self, original_img, compressed_img):
-        """Вычисляет SSIM между оригиналом и сжатой версией."""
         orig_gray = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
         comp_gray = cv2.cvtColor(compressed_img, cv2.COLOR_BGR2GRAY)
         score, _ = ssim(orig_gray, comp_gray, full=True)
         return float(score)
 
     def _compute_score(self, quality, time_spent, image_size_kb):
-        """Мульти-объективный score с сильным штрафом за размер."""
         size_penalty = math.log1p(image_size_kb) / CONFIG['size_penalty_log_base']
         return (quality * CONFIG['quality_weight'] +
                 (1.0 / (1.0 + time_spent)) * CONFIG['time_weight'] -
@@ -178,7 +187,6 @@ class VisionaryEngine:
 
     # ---------- Адаптивное сжатие ----------
     def _enhance_and_compress(self, img_bgr):
-        """Увеличивает разрешение и уменьшает шум для лучшего сжатия."""
         if not self.enable_enhance:
             return img_bgr
         h, w = img_bgr.shape[:2]
@@ -194,61 +202,44 @@ class VisionaryEngine:
         return denoised
 
     def _compress_adaptive(self, img_bgr, target_kb=CONFIG['target_size_kb']):
-        """
-        Подбирает качество WebP, чтобы размер был <= target_kb,
-        но качество (SSIM) не падало ниже 0.9 от целевого.
-        Возвращает (путь_к_временному_файлу, размер_кб, качество_ssim, качество_webp)
-        или None, если не удалось.
-        """
         best = None
         best_ssim = 0.0
-        # Сохраним оригинал для расчёта SSIM
         orig_path = "temp_orig.png"
         cv2.imwrite(orig_path, img_bgr)
         orig_img = cv2.imread(orig_path)
 
-        # Начинаем с текущего качества и уменьшаем
         for q in range(self.webp_quality, CONFIG['webp_quality_min'], -CONFIG['webp_quality_step']):
             tmp_path = f"temp_{q}.webp"
             cv2.imwrite(tmp_path, img_bgr, [int(cv2.IMWRITE_WEBP_QUALITY), q])
             size_kb = os.path.getsize(tmp_path) / 1024
-
-            # Оценка качества сжатой версии
             compressed_img = cv2.imread(tmp_path)
             if compressed_img is None:
                 continue
             ssim_val = self._ssim_quality(orig_img, compressed_img)
             if ssim_val > best_ssim:
                 best_ssim = ssim_val
-
-            # Условие: размер в пределах и SSIM не ниже 0.9 * target_quality
             if size_kb <= target_kb and ssim_val >= 0.9 * self.target_quality:
                 best = (tmp_path, size_kb, ssim_val, q)
                 break
 
-        # Удаляем временный оригинал
         if os.path.exists(orig_path):
             os.remove(orig_path)
         return best
 
     # ---------- Промпт-менеджмент ----------
     def _compress_prompt(self, prompt):
-        """Фильтрует промпт: убирает мусорные слова, оставляет ключевые."""
         keywords = []
         for word in prompt.split(","):
             word = word.strip()
             if not word:
                 continue
-            # Проверка на важность
             imp = self.WORD_IMPORTANCE.get(word.lower(), 0.0)
             if imp < 0:
                 continue
-            if len(word) > 2:  # короткие слова часто незначимы
+            if len(word) > 2:
                 keywords.append(word)
-        # Ограничиваем количество
         if len(keywords) > CONFIG['prompt_max_keywords']:
             keywords = keywords[:CONFIG['prompt_max_keywords']]
-        # Добавляем всегда минимализм для лучшего сжатия
         if "minimalism" not in [k.lower() for k in keywords]:
             keywords.append("minimalism")
         if "clean composition" not in [k.lower() for k in keywords]:
@@ -308,7 +299,7 @@ class VisionaryEngine:
             return seed, steps, source
 
         if self.tachyon and hasattr(self.tachyon, 'predict_outcome'):
-            # Можно добавить перебор, но пока оставим заглушку
+            # можно добавить предсказание
             pass
 
         if self.history:
@@ -363,7 +354,6 @@ class VisionaryEngine:
             full_prompt = f"{prompt}, {style}"
         else:
             full_prompt = prompt
-        # Сжимаем промпт
         full_prompt = self._compress_prompt(full_prompt)
 
         if seed is None or steps is None:
@@ -403,26 +393,22 @@ class VisionaryEngine:
     async def async_generate(self, prompt, negative_prompt="", seed=None, steps=None, style=None):
         return await asyncio.to_thread(self.generate, prompt, negative_prompt, seed, steps, style)
 
+    # ---------- Сохранение и вклад в P=NP ----------
     def save(self, image, event_name, prompt, quality, seed, steps, source, generation_time, importance, improvement_gain=0):
-        """Сохраняет изображение с адаптивным сжатием, обновляет статистику эффективности."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         safe_name = event_name.replace(" ", "_").replace("/", "_")[:30]
 
-        # Подготовка изображения
         img_np = np.array(image)
         img_bgr = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
         if self.enable_enhance:
             img_bgr = self._enhance_and_compress(img_bgr)
 
-        # Адаптивное сжатие
         compressed = self._compress_adaptive(img_bgr, target_kb=CONFIG['target_size_kb'])
         if compressed is None:
-            # fallback: сохраняем с текущим качеством
             quality_webp = self.webp_quality
             tmp_path = "temp_fallback.webp"
             cv2.imwrite(tmp_path, img_bgr, [int(cv2.IMWRITE_WEBP_QUALITY), quality_webp])
             size_kb = os.path.getsize(tmp_path) / 1024
-            # Оцениваем SSIM
             orig_path = "temp_orig.png"
             cv2.imwrite(orig_path, img_bgr)
             orig_img = cv2.imread(orig_path)
@@ -432,12 +418,10 @@ class VisionaryEngine:
             os.remove(tmp_path)
         else:
             tmp_path, size_kb, ssim_val, quality_webp = compressed
-            # Перемещаем файл в постоянное место
             filename_webp = f"event_{safe_name}_{timestamp}_q{quality:.3f}_s{seed}_{quality_webp}.webp"
             image_path_webp = os.path.join(self.image_dir, filename_webp)
             os.rename(tmp_path, image_path_webp)
 
-        # Если нужно сохранить PNG для отладки
         if self.save_png:
             filename_png = f"event_{safe_name}_{timestamp}_q{quality:.3f}_s{seed}.png"
             image_path_png = os.path.join(self.image_dir, filename_png)
@@ -487,7 +471,6 @@ class VisionaryEngine:
         # Обновляем историю эффективности
         eff = quality / (size_kb + 1e-6)
         self.size_efficiency.append(eff)
-        # Адаптация webp_quality
         if len(self.size_efficiency) > 20:
             avg_eff = np.mean(self.size_efficiency)
             if avg_eff < 0.002 and self.webp_quality > CONFIG['webp_quality_min'] + 5:
@@ -509,11 +492,148 @@ class VisionaryEngine:
             self.history.append(meta)
             self.history_by_event[event_name].append(meta)
 
+        # === ВКЛАД В ПОИСК P=NP ===
+        if self.meta_goal is not None:
+            contribution = min(score * CONFIG['pnp_contribution_scale'], CONFIG['pnp_contribution_max_per_generation'])
+            self.meta_goal.discovery_progress += contribution
+            self.meta_goal.discovery_progress = min(self.meta_goal.discovery_progress, 1.0)
+            logger.info(f"🧠 Visionary внёс вклад в P=NP: +{contribution:.4f} (прогресс: {self.meta_goal.discovery_progress:.4f})")
+            if quality > 0.8:
+                self.meta_goal.belief_p_equals_np += 0.01
+                self.meta_goal.belief_p_equals_np = min(self.meta_goal.belief_p_equals_np, 1.0)
+            elif quality < 0.4:
+                self.meta_goal.belief_p_equals_np -= 0.005
+                self.meta_goal.belief_p_equals_np = max(self.meta_goal.belief_p_equals_np, 0.0)
+
         return image_path_webp, score, size_kb
 
-    # ---------- Обработка событий ----------
-    async def on_event(self, event_type, event_data, world):
-        logger.info(f"🔮 Visionary.on_event: {event_type}, данные: {event_data}")
+    # ---------- Фоновая обработка очереди ----------
+    async def _process_single_job(self, job):
+        event_type = job['event_type']
+        event_data = job['event_data']
+        world = job['world']
+        significance = job['significance']
+        prompt_base = job['prompt_base']
+        style = job['style']
+        negative = job['negative']
+        seed = job['seed']
+        steps = job['steps']
+        try:
+            logger.info(f"🖼️ Начало фоновой генерации для события {event_type} (seed={seed}, steps={steps})")
+            self.last_event_type = event_type
+            self.last_event_details = event_data
+
+            max_iters = 3
+            if self.total_generations > 0:
+                avg_time = np.mean([h.get('generation_time', 1) for h in self.history]) if self.history else 5.0
+                if avg_time > 6:
+                    max_iters = 2
+                if avg_time > 8:
+                    max_iters = 1
+
+            best = None
+            prompt = prompt_base
+            all_results = []
+            for i in range(max_iters):
+                image, quality, seed_i, steps_i, source, elapsed = await self.async_generate(
+                    prompt, negative, seed=seed, steps=steps, style=style
+                )
+                result = {"image": image, "quality": quality, "seed": seed_i, "steps": steps_i,
+                          "time": elapsed, "prompt": prompt, "source": source}
+                all_results.append(result)
+
+                if best is None or quality > best["quality"]:
+                    best = result
+
+                critique = self.critic.analyze(prompt, quality, steps_i, elapsed)
+
+                if critique["status"] == "perfect":
+                    logger.info("💎 Достигнут идеал — стоп")
+                    break
+
+                if i == max_iters - 1:
+                    break
+
+                if quality > self.target_quality and elapsed < 5:
+                    logger.info("⚖️ Баланс достигнут — стоп")
+                    break
+
+                prompt = self._refine_prompt(prompt_base, critique["suggestions"])
+                if seed is None:
+                    seed = seed_i + random.randint(-10, 10)
+                else:
+                    seed += random.randint(-10, 10)
+                steps = int(steps_i * random.uniform(0.9, 1.1))
+                steps = max(self.steps_range[0], min(self.steps_range[1], steps))
+
+            best_image = best["image"]
+            best_quality = best["quality"]
+            best_seed = best["seed"]
+            best_steps = best["steps"]
+            best_elapsed = best["time"]
+            best_prompt = best["prompt"]
+            best_source = best["source"]
+
+            improvement_gain = best_quality - all_results[0]["quality"] if len(all_results) > 1 else 0.0
+
+            image_path, score, size_kb = self.save(
+                best_image, event_type, best_prompt, best_quality,
+                best_seed, best_steps, best_source, best_elapsed,
+                significance, improvement_gain
+            )
+
+            # Контрфакты (если есть)
+            if self.counterfactual and self.tachyon:
+                sys = self._get_system_state()
+                features = {
+                    "event_type": event_type,
+                    "importance": significance,
+                    "prompt_len": len(best_prompt),
+                    "steps": best_steps,
+                    "seed_mod": best_seed % 1000,
+                    "cpu": sys["cpu"],
+                    "ram": sys["ram"],
+                    "gpu": sys["gpu"],
+                    "style": style
+                }
+                real_outcome = {"quality": best_quality, "time": best_elapsed, "size": size_kb, "score": score}
+                sims = self.counterfactual.simulate(features)
+                self.counterfactual.learn_from_counterfactuals(features, real_outcome)
+                if self.counterfactual.evaluate_decision(real_outcome, sims):
+                    logger.info("🤯 Найдено лучшее альтернативное будущее (мы могли сделать лучше)")
+
+            self.self_model.update({"quality": best_quality, "time": best_elapsed, "score": score})
+
+            if self.counterfactual and 'sims' in locals():
+                alt_scores = [s['prediction'].get('score',0) for s in sims if s['prediction']]
+                regret = self.regret_engine.compute(score, alt_scores)
+                logger.info(f"😞 Сожаление: {regret:.3f}")
+                new_mode = self.strategy.adjust(self.self_model, regret)
+                logger.info(f"🧠 Новая стратегия: {new_mode}")
+
+            if hasattr(world, 'meta') and hasattr(world.meta, 'analyze'):
+                state_analysis = world.meta.analyze()
+                if state_analysis:
+                    reflection = self.narrative.reflect(state_analysis)
+                    self.narrative.speak(reflection)
+
+        except Exception as e:
+            logger.error(f"Ошибка фоновой генерации для события {event_type}: {e}", exc_info=True)
+
+    async def process_queue(self):
+        """Фоновый обработчик очереди заданий. Вызывается в отдельной задаче."""
+        while True:
+            if self.pending_jobs:
+                async with self._processing_lock:
+                    if self.pending_jobs:
+                        job = self.pending_jobs.popleft()
+                        await self._process_single_job(job)
+            else:
+                await asyncio.sleep(0.5)
+
+    # ---------- Обработка события (основной метод) ----------
+    async def on_event(self, event_type, event_data, world, gaming_mode=False):
+        logger.info(f"🔮 Visionary.on_event: {event_type}, данные: {event_data}, gaming_mode={gaming_mode}")
         if event_type not in self.IMPORTANT_EVENTS:
             logger.debug(f"Событие {event_type} не в списке важных, пропускаем")
             return
@@ -523,15 +643,13 @@ class VisionaryEngine:
                 logger.warning("Нет storyteller, пропускаем событие")
                 return
 
-            self.last_event_type = event_type
-            self.last_event_details = event_data
-
             # Вычисляем значимость
             significance = self._event_significance(event_type, event_data)
             if significance < CONFIG['significance_threshold']:
                 logger.info(f"🧊 Событие отфильтровано (significance={significance:.2f})")
                 return
 
+            # Подготовка данных для генерации
             extra = self._build_event_context(event_type, event_data, world)
             context = {
                 'event_type': event_type,
@@ -545,6 +663,7 @@ class VisionaryEngine:
             negative = "worst quality, low quality, ugly, deformed, blurry, text, watermark"
             style = self._get_style(event_type)
 
+            # Симуляция кандидатов и выбор лучших параметров
             candidates = self._simulate_candidates(event_type, prompt_base, style, significance)
             seed, steps = None, None
             if candidates:
@@ -558,10 +677,30 @@ class VisionaryEngine:
             else:
                 logger.info("⚠️ Не удалось сгенерировать кандидатов")
 
-            # Динамическое число итераций
+            # Если игровой режим – откладываем генерацию
+            if gaming_mode:
+                logger.info(f"🎮 Игровой режим: откладываем генерацию для события {event_type}")
+                job = {
+                    'event_type': event_type,
+                    'event_data': event_data,
+                    'world': world,
+                    'significance': significance,
+                    'prompt_base': prompt_base,
+                    'style': style,
+                    'negative': negative,
+                    'seed': seed,
+                    'steps': steps
+                }
+                self.pending_jobs.append(job)
+                return
+
+            # Иначе – синхронная генерация
+            self.last_event_type = event_type
+            self.last_event_details = event_data
+
             max_iters = 3
             if self.total_generations > 0:
-                avg_time = np.mean([h.get('generation_time', 1) for h in self.history])
+                avg_time = np.mean([h.get('generation_time', 1) for h in self.history]) if self.history else 5.0
                 if avg_time > 6:
                     max_iters = 2
                 if avg_time > 8:
@@ -656,6 +795,7 @@ class VisionaryEngine:
         except Exception as e:
             logger.error(f"Ошибка в VisionaryEngine.on_event: {e}", exc_info=True)
 
+    # ---------- Вспомогательные методы ----------
     def _build_event_context(self, event_type, event_data, world):
         extra = {}
         if event_type == "EXTINCTION":

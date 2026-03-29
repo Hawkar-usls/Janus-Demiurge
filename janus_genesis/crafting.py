@@ -3,38 +3,43 @@ import copy
 from collections import Counter
 from .inventory import Item
 
-# База рецептов (можно расширять)
+# База рецептов (можно расширять) – добавлены поля knowledge
 RECIPES = {
     ("Attention Crystal", "Attention Crystal"): Item(
         name="Dual Attention Crystal",
         effect={"n_head": 4},
         weight=8,
-        value=120
+        value=120,
+        knowledge={"n_head": 4}
     ),
     ("Entropy Stone", "Entropy Stone"): Item(
         name="Entropy Cluster",
         effect={"temperature": 0.25},
         weight=5,
-        value=80
+        value=80,
+        knowledge={"temperature": 0.25}
     ),
     ("Optimizer Core", "Gradient Shard"): Item(
         name="Stabilized Optimizer",
         effect={"lr": -0.0002, "gain": 0.1},
         weight=5,
-        value=150
+        value=150,
+        knowledge={"lr": 0.001, "gain": 0.5}
     ),
     ("Embedding Relic", "Layer Fragment"): Item(
         name="Deep Relic",
         effect={"n_embd": 128, "n_layer": 2},
         weight=10,
-        value=300
+        value=300,
+        knowledge={"n_embd": 256, "n_layer": 1}
     ),
     ("Artifact of Evolution", "Entropy Stone", "Optimizer Core"): Item(
         name="Genesis Artifact",
         effect={"mutation_bonus": 0.5, "gain": 0.3, "temperature": 0.3},
         weight=2,
         value=1000,
-        unique=True
+        unique=True,
+        knowledge={"mutation_bonus": 0.5, "gain": 0.3, "temperature": 0.3}
     ),
 }
 

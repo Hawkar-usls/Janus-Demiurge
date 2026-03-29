@@ -1,4 +1,4 @@
-# janus_genesis/world.py (исправленный: market_event использует inventory.items + clone_for_simulation без глубокого копирования законов и Я)
+# janus_genesis/world.py (исправленный: восстановление arch_genome + связь артефактов + динамические шансы + вера при создании)
 import os
 import json
 import random
@@ -26,8 +26,8 @@ from .environment import WeatherSystem
 from .cultural_evolution import CulturalEvolutionEngine
 from .economic_collapse import EconomicCollapseSimulator
 from .legendary_leaders import LegendaryLeaderSystem
+from architect_ai import ArchitectureGenome
 
-# --- НОВЫЕ СИСТЕМЫ ---
 from world_memory import WorldMemory
 from meaning_engine import MeaningEngine
 from meta_consciousness import MetaConsciousness
@@ -70,7 +70,6 @@ class JanusWorld:
         self.events = EventSystem()
         self.hrain = hrain_daemon
 
-        # Базовые системы
         self.needs = NeedsSystem()
         self.disease = DiseaseSystem()
         self.buffs = BuffSystem()
@@ -80,23 +79,19 @@ class JanusWorld:
         self.institutions = InstitutionSystem(self.event_bus)
         self.memes = MemeSystem(self.event_bus)
 
-        # Основные модули эволюции
         self.religion = ReligionEngine(self, self.event_bus)
         self.tech = TechEvolutionEngine(self, self.event_bus)
         self.war = WarEmpireEngine(self, self.event_bus)
 
-        # Новые взаимосвязанные модули
         self.weather = WeatherSystem(self, self.event_bus)
         self.culture = CulturalEvolutionEngine(self, self.event_bus)
         self.economy_collapse = EconomicCollapseSimulator(self, self.event_bus)
         self.leaders = LegendaryLeaderSystem(self, self.event_bus)
 
-        # --- НОВЫЕ СИСТЕМЫ: память, смысл, самоанализ ---
         self.memory = WorldMemory()
         self.meaning = MeaningEngine(self)
         self.meta = MetaConsciousness(self)
 
-        # --- ЦЕНТРАЛЬНОЕ "Я" ЯНУСА И БОЖЕСТВЕННЫЕ ЗАКОНЫ ---
         self.janus_self = JanusSelf()
         self.laws = DivineLaws(self)
 
@@ -104,6 +99,11 @@ class JanusWorld:
             self.save_file = os.path.join(RAW_LOGS_DIR, "janus_world_agents.json")
         else:
             self.save_file = save_file
+
+        # Переопределяемые шансы (для Демиурга)
+        self.raid_chance_override = None
+        self.market_chance_override = None
+
         self.load()
 
     def spawn_agent(self, config):
@@ -111,6 +111,9 @@ class JanusWorld:
             print(f"[ERROR] spawn_agent: config has type {type(config).__name__}, expected dict. Using empty config.")
             config = {}
         agent = JanusAgent(config)
+        # Назначаем веру при создании, если ещё нет
+        if agent.belief is None:
+            agent.belief = random.choice(["P_EQUALS_NP", "P_NOT_EQUALS_NP", "BALANCE", "CHAOS"])
         self.factions.assign_faction(agent)
         self.needs.init_agent(agent)
         self.buffs.init_agent(agent)
@@ -160,7 +163,11 @@ class JanusWorld:
             self.economy.apply_reward(reward)
             for agent in participants:
                 agent.add_exp(50)
-            print(f"     [⚔️] Группа победила {boss.name}! +50 XP каждому, ресурсы +{reward}")
+            for agent in participants:
+                if random.random() < 0.3:
+                    artifact = self.inventory.random_item(rarity="rare", with_knowledge=True)
+                    agent.add_item(artifact)
+            print(f"     [⚔️] Группа победила {boss.name}! +50 XP каждому, ресурсы +{reward}, артефакты выпали.")
             event_data["reward"] = reward
             self.event_bus.emit("raid_win", agents=participants, boss_name=boss.name)
         else:
@@ -219,60 +226,44 @@ class JanusWorld:
     def update(self, pc_metrics=None, cardputer_metrics=None):
         self.tick += 1
 
-        # Обновление глобального смысла
         self.meaning.update()
 
-        # Обновление потребностей, болезней, бафов для всех агентов
         for agent in self.population:
             self.needs.update(agent)
             self.disease.update(agent)
             self.buffs.update(agent)
             self.disease.infect(agent)
 
-        # Обновление погоды (если переданы метрики)
         if pc_metrics:
             self.weather.update_from_real_metrics(pc_metrics, cardputer_metrics or {})
         self.weather.apply_effects()
 
-        # Экономический коллапс
         self.economy_collapse.update()
-
-        # Культурная эволюция
         self.culture.evolve()
-
-        # Влияние легендарных лидеров
         self.leaders.influence_world()
 
-        # Рейдовое событие (5% шанс)
-        if random.random() < 0.05:
+        # Рейдовое событие (шанс может быть переопределён Демиургом)
+        raid_chance = self.raid_chance_override if self.raid_chance_override is not None else 0.05
+        if random.random() < raid_chance:
             self.raid_event()
 
-        # Рыночное событие (5% шанс)
-        if random.random() < 0.05:
+        # Рыночное событие (шанс может быть переопределён Демиургом)
+        market_chance = self.market_chance_override if self.market_chance_override is not None else 0.05
+        if random.random() < market_chance:
             self.market_event()
 
-        # Глобальные события (через EventSystem)
         self.events.update(self)
 
-        # Адаптация контента (раз в 10 тиков)
         if self.tick % 10 == 0:
             self.adapt_content()
 
-        # Обновление групп
         self.party_system.update(self)
-
-        # Обновление институтов
         self.institutions.update(self)
-
-        # Обновление мемов
         self.memes.update(self)
-
-        # Обновление основных модулей эволюции
         self.religion.update()
         self.tech.update()
         self.war.update()
 
-        # Проверка повышения уровня для институтов
         for agent in self.population:
             if agent.level > getattr(agent, '_last_level', 0):
                 self.event_bus.emit("agent_level_up", agent=agent)
@@ -331,8 +322,6 @@ class JanusWorld:
                 'score': agent.score,
                 'faction': agent.faction,
                 'faction_bonus': agent.faction_bonus,
-                'weight': agent.weight,
-                'max_weight': agent.max_weight,
                 'gold': agent.gold,
                 'mutation_bonus': agent.mutation_bonus,
                 'race': agent.race,
@@ -345,17 +334,10 @@ class JanusWorld:
                 'needs': getattr(agent, 'needs', {}),
                 'disease': getattr(agent, 'disease', None),
                 'buffs': [{'name': b.name, 'duration': b.duration, 'effects': b.effects} for b in getattr(agent, 'buffs', [])],
-                'inventory': []
+                'inventory': agent.inventory.to_dict()
             }
-            for item in agent.inventory.items:
-                item_data = {
-                    'name': item.name,
-                    'effect': item.effect,
-                    'weight': item.weight,
-                    'value': item.value,
-                    'unique': item.unique
-                }
-                agent_data['inventory'].append(item_data)
+            if agent.arch_genome is not None:
+                agent_data['arch_genome'] = agent.arch_genome.to_dict()
             data['population'].append(agent_data)
         data['weather'] = self.weather.get_state()
         data['crisis'] = {
@@ -376,105 +358,56 @@ class JanusWorld:
         try:
             with open(self.save_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
+            if isinstance(data, list):
+                print(f"⚠️ Файл {self.save_file} имеет устаревший формат (список). Создаётся новый мир.")
+                self.tick = 0
+                self.population = []
+                return
             self.tick = data.get('tick', 0)
             self.population.clear()
             if 'memory' in data:
                 self.memory.events = data['memory']
             for agent_data in data.get('population', []):
-                agent = JanusAgent(agent_data['base_config'])
-                agent.id = agent_data['id']
-                agent.level = agent_data['level']
-                agent.exp = agent_data['exp']
-                agent.score = agent_data['score']
-                agent.faction = agent_data.get('faction')
-                agent.faction_bonus = agent_data.get('faction_bonus', {})
-                agent.weight = agent_data['weight']
-                agent.max_weight = agent_data.get('max_weight', 100)
-                agent.gold = agent_data.get('gold', 100)
-                agent.mutation_bonus = agent_data.get('mutation_bonus', 1.0)
-                agent.race = agent_data.get('race', random.choice(RACES))
-                agent.agent_class = agent_data.get('agent_class', random.choice(CLASSES))
-                agent.profession = agent_data.get('profession', random.choice(PROFESSIONS))
-                agent.clan = agent_data.get('clan', None)
-                agent.skills = agent_data.get('skills', {agent.profession: 1})
-                agent.creation_time = agent_data.get('creation_time', time.time())
-                agent.last_train_time = agent_data.get('last_train_time', agent.creation_time)
-
-                if 'needs' in agent_data:
-                    agent.needs = agent_data['needs']
-                else:
-                    self.needs.init_agent(agent)
-
-                agent.disease = agent_data.get('disease', None)
-
-                if 'buffs' in agent_data:
-                    from .buffs import Buff
-                    agent.buffs = []
-                    for bd in agent_data['buffs']:
-                        agent.buffs.append(Buff(bd['name'], bd['duration'], bd['effects']))
-                else:
-                    self.buffs.init_agent(agent)
-
-                for item_data in agent_data.get('inventory', []):
-                    item = Item(
-                        name=item_data['name'],
-                        effect=item_data['effect'],
-                        weight=item_data['weight'],
-                        value=item_data.get('value', 10),
-                        unique=item_data.get('unique', False)
-                    )
-                    agent.inventory.add_item(item)
-                    agent._apply_item_effects(item)
-
+                agent = JanusAgent.from_dict(agent_data, item_class=Item, genome_class=ArchitectureGenome)
                 agent._update_current_config()
+                self.needs.init_agent(agent)
+                if hasattr(self.buffs, 'init_agent'):
+                    self.buffs.init_agent(agent)
+                if hasattr(self.disease, 'init_agent'):
+                    self.disease.init_agent(agent)
                 self.population.append(agent)
             print(f"🌍 Мир загружен: {len(self.population)} агентов, тик {self.tick}")
         except Exception as e:
             print(f"Ошибка загрузки мира: {e}")
 
     def clone_for_simulation(self):
-        """Создаёт упрощённую копию мира для симуляции, без асинхронных и внешних объектов."""
-        # Создаём новый мир без передачи hrain_daemon и реальной экономики
         sim_world = JanusWorld(real_economy=None, save_file=None, hrain_daemon=None)
-        # Копируем базовые атрибуты
         sim_world.tick = self.tick
-        # Копируем популяцию (глубокое копирование агентов безопасно)
         sim_world.population = copy.deepcopy(self.population)
-        # Копируем инвентарь
         sim_world.inventory = copy.deepcopy(self.inventory)
-        # Копируем фракции и экономику
         sim_world.factions = copy.deepcopy(self.factions)
         sim_world.economy = copy.deepcopy(self.economy)
         sim_world.raids = copy.deepcopy(self.raids)
-        # Рынок – создаём новый пустой (избегаем копирования асинхронных объектов)
         sim_world.market = Market()
         sim_world.events = copy.deepcopy(self.events)
-        # Базовые системы
         sim_world.needs = copy.deepcopy(self.needs)
         sim_world.disease = copy.deepcopy(self.disease)
         sim_world.buffs = copy.deepcopy(self.buffs)
         sim_world.crafting = copy.deepcopy(self.crafting)
         sim_world.party_system = copy.deepcopy(self.party_system)
-        # EventBus создаём новый
         sim_world.event_bus = EventBus()
-        # Институты и мемы – создаём новые экземпляры (чтобы избежать асинхронных ссылок)
         sim_world.institutions = InstitutionSystem(sim_world.event_bus)
         sim_world.memes = MemeSystem(sim_world.event_bus)
-        # Основные модули эволюции – создаём заново с новым миром
         sim_world.religion = ReligionEngine(sim_world, sim_world.event_bus)
         sim_world.tech = TechEvolutionEngine(sim_world, sim_world.event_bus)
         sim_world.war = WarEmpireEngine(sim_world, sim_world.event_bus)
-        # Новые модули
         sim_world.weather = WeatherSystem(sim_world, sim_world.event_bus)
         sim_world.culture = CulturalEvolutionEngine(sim_world, sim_world.event_bus)
         sim_world.economy_collapse = EconomicCollapseSimulator(sim_world, sim_world.event_bus)
         sim_world.leaders = LegendaryLeaderSystem(sim_world, sim_world.event_bus)
-        # Память, смысл, самоанализ
         sim_world.memory = WorldMemory()
         sim_world.meaning = MeaningEngine(sim_world)
         sim_world.meta = MetaConsciousness(sim_world)
-        # Центральное Я и законы – создаём новые экземпляры (не копируем)
         sim_world.janus_self = JanusSelf()
         sim_world.laws = DivineLaws(sim_world)
-        # Важно: не копируем hrain (остаётся None)
         return sim_world

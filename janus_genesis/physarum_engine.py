@@ -252,11 +252,14 @@ class PhysarumOptimizer:
     def update_fitness_map(self, history):
         """
         Обновляет карту фитнеса на основе истории конфигураций.
-        history: список словарей с ключами 'config' и 'score'.
+        history: список словарей с ключами 'config' и 'score' (или просто конфигурации).
         """
         self.fitness_map.fill(0.0)
         for entry in history:
-            config = entry['base_config'] if 'base_config' in entry else entry
+            # Если entry имеет ключ 'base_config', берём его, иначе считаем, что это сама конфигурация
+            config = entry.get('base_config', entry)
+            if not isinstance(config, dict):
+                continue
             vec = np.array([
                 config.get('lr', 0.001),
                 config.get('gain', 1.0),
@@ -273,11 +276,31 @@ class PhysarumOptimizer:
             y = max(0, min(self.height-1, y))
             self.fitness_map[y, x] += entry.get('score', 0)
 
-    def propose(self, memory, samples=10):
+    def contract(self, factor=0.5):
+        """
+        Сжимает граф решений, оставляя только наиболее сильные связи.
+        Используется в режиме CONTRACT для "кристаллизации" решения.
+        """
+        if not hasattr(self, 'swarm') or self.swarm is None:
+            return
+        # Уменьшаем радиус поиска или усиливаем испарение
+        if hasattr(self.swarm, 'evaporation'):
+            self.swarm.evaporation = max(0.5, self.swarm.evaporation * 1.5)
+        if hasattr(self.swarm, 'sensor_distance'):
+            self.swarm.sensor_distance = max(1, self.swarm.sensor_distance * factor)
+        logger.info(f"🧬 Physarum CONTRACT: evaporation повышен, сенсоры уменьшены")
+
+    def propose(self, memory, samples=10, thermal_eff=None):
         """
         Запускает несколько шагов слизевика и возвращает конфигурацию, соответствующую пику карты.
+        Если thermal_eff > 0.9, активирует сжатие (contract).
         """
         self.update_fitness_map(memory.history[-200:])
+
+        # Активация сжатия при высокой тепловой эффективности
+        if thermal_eff is not None and thermal_eff > 0.9:
+            self.contract(factor=0.7)
+
         for _ in range(10):
             self.swarm.step(self.fitness_map)
         trail = self.swarm.get_trail_map()
@@ -288,7 +311,9 @@ class PhysarumOptimizer:
         best_score = -float('inf')
         best_config = None
         for entry in memory.history[-200:]:
-            config = entry['base_config'] if 'base_config' in entry else entry
+            config = entry.get('base_config', entry)
+            if not isinstance(config, dict):
+                continue
             vec = np.array([
                 config.get('lr', 0.001),
                 config.get('gain', 1.0),

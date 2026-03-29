@@ -1,3 +1,4 @@
+# janus_genesis/social_learning.py (исправленный: защита от отрицательных вероятностей)
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -72,25 +73,36 @@ class SocialLearningEngine:
             self.trust[aid] *= self.params["trust_decay"]
 
     def select_with_trust(self, agent, others):
-        """Выбирает агента для подражания на основе trust и score."""
+        """Выбирает агента для подражания на основе trust и score.
+        Возвращает выбранного агента или None, если не удалось выбрать."""
         if not others:
             return None
         weights = []
         for other in others:
             trust = self.trust.get(other.id, 0.1)
-            # вес = trust * (score - среднее) + базовый
+            # вес = trust * (score + 0.1)
             weight = trust * (other.score + 0.1)
             weights.append(weight)
-        # Нормализация
-        total = sum(weights)
+        # Приводим к неотрицательным значениям
+        weights = np.maximum(weights, 0)
+        total = np.sum(weights)
         if total == 0:
+            # Если все веса нулевые, выбираем случайного
             return random.choice(others)
-        probs = [w / total for w in weights]
-        return np.random.choice(others, p=probs)
+        probs = weights / total
+        # Дополнительная проверка: вероятности должны быть неотрицательными и сумма ≈ 1
+        if np.any(probs < 0) or abs(np.sum(probs) - 1.0) > 1e-6:
+            logger.error(f"Некорректные вероятности: {probs}, сумма={np.sum(probs)}")
+            return random.choice(others)
+        try:
+            return np.random.choice(others, p=probs)
+        except ValueError as e:
+            logger.error(f"Ошибка выбора np.random.choice: {e}, probs={probs}")
+            return random.choice(others)
 
     # --- Школы с центроидом ---
     def assign_to_school(self, agent):
-        arch_type = agent.arch_genome.arch_type if hasattr(agent, 'arch_genome') else 'unknown'
+        arch_type = agent.arch_genome.arch_type if agent.arch_genome is not None else 'unknown'
         self.schools[arch_type].append(agent.id)
 
     def school_center(self, arch_type):
@@ -102,7 +114,7 @@ class SocialLearningEngine:
         # здесь нужен доступ к world, поэтому будем передавать world при вызове
         # но для удобства сделаем заглушку – возвращаем средние значения параметров из истории
         # Лучше передавать world в метод, который использует эту функцию
-        # Пока вернём словарь с None, а реальное вычисление будет в school_influence
+        # Пока вернём словарь с None, а реальное вычисление будет в school_influence, где есть доступ к world
         return None  # реальное вычисление сделаем в school_influence, где есть доступ к world
 
     def school_influence(self, agent, world):
@@ -110,7 +122,9 @@ class SocialLearningEngine:
         Если агент в школе, применяет влияние центроида школы.
         Возвращает новую конфигурацию (частично усреднённую с центроидом).
         """
-        arch_type = agent.arch_genome.arch_type if hasattr(agent, 'arch_genome') else 'unknown'
+        if agent.arch_genome is None:
+            return None
+        arch_type = agent.arch_genome.arch_type
         school_ids = self.schools.get(arch_type, [])
         if len(school_ids) < 2 or agent.id not in school_ids:
             return None
@@ -123,7 +137,10 @@ class SocialLearningEngine:
         center = {}
         keys = ['gain', 'temperature', 'lr', 'n_embd', 'n_head', 'n_layer']
         for k in keys:
-            vals = [getattr(a.base_config, k, None) for a in members if hasattr(a.base_config, k)]
+            vals = []
+            for a in members:
+                if hasattr(a, 'base_config') and k in a.base_config:
+                    vals.append(a.base_config[k])
             if vals:
                 center[k] = np.mean(vals)
         if not center:
@@ -169,7 +186,9 @@ class SocialLearningEngine:
     # --- Социальное давление ---
     def conformity_pressure(self, agent, world):
         """Вычисляет давление конформности (разница между score агента и средним по школе)."""
-        arch_type = agent.arch_genome.arch_type if hasattr(agent, 'arch_genome') else 'unknown'
+        if agent.arch_genome is None:
+            return 0.0
+        arch_type = agent.arch_genome.arch_type
         school_ids = self.schools.get(arch_type, [])
         if len(school_ids) < 5:
             return 0.0
@@ -390,7 +409,10 @@ class SocialLearningEngine:
         center = {}
         keys = ['gain', 'temperature', 'lr', 'n_embd', 'n_head', 'n_layer']
         for k in keys:
-            vals = [getattr(a.base_config, k, None) for a in members if hasattr(a.base_config, k)]
+            vals = []
+            for a in members:
+                if hasattr(a, 'base_config') and k in a.base_config:
+                    vals.append(a.base_config[k])
             if vals:
                 center[k] = np.mean(vals)
         return center

@@ -1,32 +1,39 @@
-# janus_genesis/agent.py (исправленный)
+# janus_genesis/agent.py (гибридный SAT-решатель с защитой от несовместимых решений в памяти)
 import uuid
 import random
 import time
+import logging
 from typing import Dict, List, Optional, Any, Tuple
 
 from .inventory import Inventory, Item
+
+logger = logging.getLogger("JANUS_AGENT")
 
 RACES = ["human", "synthetic", "mutant", "ancient"]
 CLASSES = ["warrior", "mage", "rogue", "engineer"]
 PROFESSIONS = ["miner", "blacksmith", "alchemist", "scribe", "trader"]
 
 PARAM_RANGES = {
-    'gain': (0.3, 2.0),
-    'temperature': (0.3, 2.0),
-    'lr': (1e-5, 1e-2),
+    'gain': (0.5, 1.5),
+    'temperature': (0.5, 1.5),
+    'lr': (1e-5, 5e-3),
     'n_embd': [128, 256, 384, 512, 768],
     'n_head': [4, 8, 12, 16],
     'n_layer': [4, 6, 8, 10, 12]
 }
 
 
+class Buff:
+    def __init__(self, name: str, duration: int, effects: Dict[str, float]):
+        self.name = name
+        self.duration = duration
+        self.effects = effects
+
+
 class JanusAgent:
     def __init__(self, config: Dict[str, Any]):
-        # === ЗАЩИТА ОТ НЕПРАВИЛЬНОГО ТИПА ===
         if not isinstance(config, dict):
-            print(f"[ERROR] JanusAgent.__init__: config is {type(config).__name__}, expected dict. Creating empty config.")
             config = {}
-        # ====================================
         self.id = str(uuid.uuid4())
         self.base_config = config.copy()
         self.current_config = config.copy()
@@ -35,7 +42,7 @@ class JanusAgent:
         self.score = 0
         self.faction = None
         self.faction_bonus = {}
-        self.inventory = Inventory(max_weight=100)   # новый инвентарь
+        self.inventory = Inventory(max_weight=100)
         self.gold = 100
         self.mutation_bonus = 1.0
 
@@ -53,7 +60,6 @@ class JanusAgent:
         self.learning_rate = 1.0
 
         self.arch_genome = None
-
         self.creation_time = time.time()
         self.last_train_time = self.creation_time
 
@@ -61,10 +67,64 @@ class JanusAgent:
         self.hypotheses: List[Dict[str, Any]] = []
         self.meta_goal: str = "SEARCH_P_VS_NP"
 
+        self.buffs: List[Buff] = []
+        self.disease: Optional[str] = None
+        self.relationships: Dict[str, float] = {}
+        self.needs: Dict[str, float] = {}
+
+        # Память хороших решений для meta-learning
+        self.sat_memory: List[List[bool]] = []
+
+        self.np_context = "DEFAULT"
+
     @property
     def config(self):
         return self.current_config
 
+    # ---------- Вспомогательные методы (болезни, баффы, отношения) ----------
+    def add_buff(self, name: str, duration: int, effects: Dict[str, float]) -> None:
+        self.buffs.append(Buff(name, duration, effects))
+
+    def remove_buff(self, name: str) -> None:
+        self.buffs = [b for b in self.buffs if b.name != name]
+
+    def update_buffs(self) -> None:
+        for buff in self.buffs[:]:
+            for attr, delta in buff.effects.items():
+                if hasattr(self, attr):
+                    setattr(self, attr, getattr(self, attr) * delta)
+            buff.duration -= 1
+            if buff.duration <= 0:
+                self.buffs.remove(buff)
+
+    def set_disease(self, disease_name: str) -> None:
+        self.disease = disease_name
+
+    def cure_disease(self) -> None:
+        self.disease = None
+
+    def update_disease(self, disease_config: Dict) -> None:
+        if not self.disease:
+            return
+        effect = disease_config.get(self.disease, {})
+        if "score_penalty" in effect:
+            self.score -= effect["score_penalty"]
+        if "learning_rate_penalty" in effect:
+            self.learning_rate *= (1 - effect["learning_rate_penalty"])
+
+    def update_relationship(self, other_id: str, delta: float) -> None:
+        current = self.relationships.get(other_id, 0.0)
+        self.relationships[other_id] = max(-1.0, min(1.0, current + delta))
+
+    def get_relationship(self, other_id: str) -> float:
+        return self.relationships.get(other_id, 0.0)
+
+    def apply_hyper_effect(self, knowledge: Dict[str, Any]) -> None:
+        for param, value in knowledge.items():
+            self.base_config[param] = value
+        self._update_current_config()
+
+    # ---------- Уровни, опыт, инвентарь ----------
     def add_exp(self, value: int) -> None:
         self.exp += value
         required = self._exp_for_level(self.level)
@@ -95,6 +155,7 @@ class JanusAgent:
         if "mutation_bonus" in item.effect:
             self.mutation_bonus *= (1 + item.effect["mutation_bonus"])
 
+    # ---------- Конфигурация и обучение ----------
     def set_faction(self, faction_name: str, faction_bonus: Dict[str, float]) -> None:
         self.faction = faction_name
         self.faction_bonus = faction_bonus.copy()
@@ -102,16 +163,13 @@ class JanusAgent:
 
     def _update_current_config(self) -> None:
         config = self.base_config.copy()
-        # Бонусы фракции
         for param, delta in self.faction_bonus.items():
             if param in config and isinstance(config[param], (int, float)):
                 config[param] += delta
-        # Эффекты экипировки и сетов
         effects = self.inventory.all_effects()
         for param, delta in effects.items():
             if param in config and isinstance(config[param], (int, float)):
                 config[param] += delta
-        # Ограничения
         for param, value in config.items():
             if param in PARAM_RANGES:
                 range_val = PARAM_RANGES[param]
@@ -189,7 +247,7 @@ class JanusAgent:
             low, high = PARAM_RANGES['lr']
             self.current_config["lr"] = random.uniform(low, high)
         elif self.belief == "BALANCE":
-            self.current_config["lr"] = min(1e-2, max(1e-5, self.current_config["lr"]))
+            self.current_config["lr"] = min(5e-3, max(1e-5, self.current_config["lr"]))
         for param, ranges in PARAM_RANGES.items():
             if isinstance(ranges, tuple):
                 low, high = ranges
@@ -240,6 +298,194 @@ class JanusAgent:
             return True
         return False
 
+    # ========== ГИБРИДНЫЙ РЕШАТЕЛЬ 3-SAT (Clause Weighting + Meta-learning) ==========
+
+    def _clause_satisfied(self, clause, assignment):
+        for var, neg in clause:
+            idx = var - 1
+            if idx < 0 or idx >= len(assignment):
+                continue
+            val = assignment[idx]
+            if neg:
+                val = not val
+            if val:
+                return True
+        return False
+
+    def _init_clause_weights(self, clauses):
+        return [1.0 for _ in clauses]
+
+    def _update_clause_weights(self, weights, assignment, clauses):
+        new_weights = weights.copy()
+        for i, clause in enumerate(clauses):
+            if not self._clause_satisfied(clause, assignment):
+                new_weights[i] += 0.2
+            else:
+                new_weights[i] *= 0.98
+        return [min(w, 10.0) for w in new_weights]
+
+    def _fitness_weighted(self, assignment, clauses, weights):
+        score = 0.0
+        for w, clause in zip(weights, clauses):
+            if self._clause_satisfied(clause, assignment):
+                score += w
+        return score
+
+    def _batch_fitness(self, population, clauses, weights):
+        scores = []
+        for sol in population:
+            scores.append(self._fitness_weighted(sol, clauses, weights))
+        return scores
+
+    def _walksat(self, solution, clauses, steps=60):
+        n_vars = len(solution)
+        for _ in range(steps):
+            unsat = []
+            for clause in clauses:
+                if not self._clause_satisfied(clause, solution):
+                    unsat.append(clause)
+            if not unsat:
+                return solution
+            clause = random.choice(unsat)
+            if random.random() < 0.5:
+                var = abs(random.choice(clause)[0]) - 1
+            else:
+                best_var = None
+                best_score = -1
+                for lit in clause:
+                    var_idx = abs(lit[0]) - 1
+                    if var_idx < 0 or var_idx >= n_vars:
+                        continue
+                    solution[var_idx] = not solution[var_idx]
+                    score = self._fitness_weighted(solution, clauses, [1.0]*len(clauses))
+                    solution[var_idx] = not solution[var_idx]
+                    if score > best_score:
+                        best_score = score
+                        best_var = var_idx
+                var = best_var
+            if var is not None and 0 <= var < n_vars:
+                solution[var] = not solution[var]
+        return solution
+
+    def _hill_climb(self, solution, clauses, steps=60):
+        n_vars = len(solution)
+        for _ in range(steps):
+            improved = False
+            base_score = self._fitness_weighted(solution, clauses, [1.0]*len(clauses))
+            for i in range(n_vars):
+                solution[i] = not solution[i]
+                score = self._fitness_weighted(solution, clauses, [1.0]*len(clauses))
+                if score > base_score:
+                    improved = True
+                    base_score = score
+                else:
+                    solution[i] = not solution[i]
+            if not improved:
+                break
+        return solution
+
+    def _inject_memory(self, population, n_vars):
+        """Внедряет в начало популяции мутированные копии из памяти хороших решений"""
+        if not self.sat_memory:
+            return population
+        memory_copy = []
+        # Берём до 5 случайных решений из памяти, но только совместимые по размеру
+        candidates = [sol for sol in self.sat_memory if len(sol) == n_vars]
+        if not candidates:
+            return population
+        for _ in range(min(5, len(candidates))):
+            base = random.choice(candidates)
+            mutated = base.copy()
+            for j in range(n_vars):
+                if random.random() < 0.1:
+                    mutated[j] = not mutated[j]
+            memory_copy.append(mutated)
+        for i, sol in enumerate(memory_copy):
+            if i < len(population):
+                population[i] = sol
+        return population
+
+    def solve_np_task(self, task, timeout=2.0):
+        n_vars = task.n_vars
+        clauses = task.clauses
+        n_clauses = len(clauses)
+
+        # Проверка корректности задачи
+        if clauses:
+            max_var = max(abs(lit[0]) for clause in clauses for lit in clause)
+            if max_var > n_vars:
+                logger.warning(f"Некорректная задача: максимальная переменная {max_var} > {n_vars}. Решение невозможно.")
+                return False, [], 0.0
+
+        # Защита от слишком низких параметров из мета-режима
+        base_gain = max(0.8, self.current_config.get('gain', 1.0))
+        base_temp = max(0.8, self.current_config.get('temperature', 1.0))
+        learning_rate = self.learning_rate
+
+        if n_vars > 30:
+            base_gain *= 1.5
+            base_temp *= 1.5
+
+        pop_size = max(32, int(64 * base_temp * learning_rate))
+        mutation_rate = 0.15 * base_gain
+
+        weights = self._init_clause_weights(clauses)
+
+        def random_solution():
+            return [random.choice([True, False]) for _ in range(n_vars)]
+
+        population = [random_solution() for _ in range(pop_size)]
+        population = self._inject_memory(population, n_vars)
+
+        best_solution = None
+        best_fitness = 0
+        total_weight = sum(weights)
+
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            scores = self._batch_fitness(population, clauses, weights)
+            ranked = sorted(zip(population, scores), key=lambda x: x[1], reverse=True)
+            population = [x[0] for x in ranked]
+
+            current_fitness = ranked[0][1]
+            if current_fitness > best_fitness:
+                best_fitness = current_fitness
+                best_solution = population[0].copy()
+
+            if best_fitness >= total_weight:
+                if best_solution and len(best_solution) == n_vars:
+                    self.sat_memory.append(best_solution)
+                    if len(self.sat_memory) > 50:
+                        self.sat_memory.pop(0)
+                reward_mult = 1.0 + task.difficulty() * 0.1
+                return True, best_solution, reward_mult
+
+            weights = self._update_clause_weights(weights, population[0], clauses)
+            total_weight = sum(weights)
+
+            new_pop = population[:8]
+            while len(new_pop) < pop_size:
+                parent = random.choice(population[:16])
+                child = parent.copy()
+                for i in range(n_vars):
+                    if random.random() < mutation_rate:
+                        child[i] = not child[i]
+                child = self._walksat(child, clauses, steps=40)
+                child = self._hill_climb(child, clauses, steps=40)
+                new_pop.append(child)
+            population = new_pop
+
+        if best_solution and best_fitness > 0.8 * n_clauses:
+            if len(best_solution) == n_vars:
+                self.sat_memory.append(best_solution)
+                if len(self.sat_memory) > 50:
+                    self.sat_memory.pop(0)
+
+        solved = best_fitness == n_clauses
+        reward_mult = (best_fitness / n_clauses) * (1 + task.difficulty() * 0.1) if not solved else 1.0 + task.difficulty() * 0.1
+        return solved, best_solution, reward_mult
+
+    # ---------- Сериализация ----------
     def to_dict(self) -> Dict[str, Any]:
         return {
             'id': self.id,
@@ -267,7 +513,11 @@ class JanusAgent:
             'config_memory': self.config_memory,
             'hypotheses': self.hypotheses,
             'meta_goal': self.meta_goal,
-            'inventory': self.inventory.to_dict()
+            'inventory': self.inventory.to_dict(),
+            'buffs': [{'name': b.name, 'duration': b.duration, 'effects': b.effects} for b in self.buffs],
+            'disease': self.disease,
+            'relationships': self.relationships,
+            'sat_memory': self.sat_memory,
         }
 
     @classmethod
@@ -300,6 +550,12 @@ class JanusAgent:
         agent.meta_goal = data.get('meta_goal', "SEARCH_P_VS_NP")
         if 'inventory' in data:
             agent.inventory = Inventory.from_dict(data['inventory'])
+        if 'buffs' in data:
+            for bd in data['buffs']:
+                agent.buffs.append(Buff(bd['name'], bd['duration'], bd['effects']))
+        agent.disease = data.get('disease', None)
+        agent.relationships = data.get('relationships', {})
+        agent.sat_memory = data.get('sat_memory', [])
         agent._update_current_config()
         return agent
 

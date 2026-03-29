@@ -1,74 +1,47 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-JANUS SYSTEM MONITOR v7.7 — ИСПРАВЛЕНЫ ЛОГИ И НОРМАЛИЗАЦИЯ CPU
+JANUS SYSTEM MONITOR v9.1 — TACHYONIC ENTROPY EDITION + БЕЗОПАСНЫЙ АУДИО-ПОТОК
 """
 
 import threading
 import time
 import psutil
 import os
-from datetime import datetime
-import numpy as np
-import logging
+import statistics
 import json
 import subprocess
 import ctypes
 import win32gui
 import win32process
 import win32con
+from datetime import datetime
 from collections import deque
+import numpy as np
+import logging
 
+# ========== ПУТИ ИЗ КОНФИГА ==========
+from config import CACHE_PROBE_INTERVAL, CACHE_PROBE_SIZE_MB, WORMHOLE_DIR, RAW_LOGS_DIR, MODEL_ZOO_DIR
+
+# ========== НАСТРОЙКА ЛОГГЕРА ==========
+logger = logging.getLogger("JANUS")
+
+# ========== ПРОВЕРКА НАЛИЧИЯ МОДУЛЕЙ ==========
+WMI_AVAILABLE = False
 try:
     import wmi
     WMI_AVAILABLE = True
 except ImportError:
-    WMI_AVAILABLE = False
-    logging.warning("⚠️ pywin32 не установлен, WMI недоступен. Часть метрик будет отсутствовать.")
+    pass
 
-from config import CACHE_PROBE_INTERVAL, CACHE_PROBE_SIZE_MB, WORMHOLE_DIR
-
-logger = logging.getLogger("JANUS")
-
-# ========== GPU (NVML) ==========
 NVML_AVAILABLE = False
 try:
     import pynvml
-    try:
-        pynvml.nvmlInit()
-        NVML_AVAILABLE = True
-        logger.info("NVML инициализирован через стандартный путь")
-    except pynvml.NVMLError_LibraryNotFound:
-        possible_paths = [
-            os.path.join(os.environ.get("ProgramFiles", "C:\\Program Files"), "NVIDIA Corporation", "NVSMI", "nvml.dll"),
-            os.path.join(os.environ.get("ProgramW6432", "C:\\Program Files"), "NVIDIA Corporation", "NVSMI", "nvml.dll"),
-            os.path.join("C:\\Windows", "System32", "nvml.dll"),
-            os.path.join("C:\\Windows", "SysWOW64", "nvml.dll"),
-        ]
-        loaded = False
-        for path in possible_paths:
-            if os.path.exists(path):
-                try:
-                    ctypes.CDLL(path)
-                    pynvml.nvmlInit()
-                    NVML_AVAILABLE = True
-                    logger.info(f"NVML загружен вручную из {path}")
-                    break
-                except Exception as e:
-                    logger.debug(f"Не удалось загрузить {path}: {e}")
-        if not NVML_AVAILABLE:
-            logger.warning("⚠️ NVML не удалось инициализировать, будет использован nvidia-smi")
-except ImportError:
-    logger.warning("⚠️ pynvml не установлен, будет использован nvidia-smi")
-
-# ========== iGPU (WMI) ==========
-WMI_IGPU_AVAILABLE = False
-if WMI_AVAILABLE:
-    try:
-        wmi.WMI()
-        WMI_IGPU_AVAILABLE = True
-    except:
-        pass
+    pynvml.nvmlInit()
+    NVML_AVAILABLE = True
+    logger.info("NVML инициализирован")
+except Exception:
+    pass
 
 # ========== АУДИО, ЭКРАН, ВВОД ==========
 try:
@@ -167,7 +140,7 @@ class IGpuMonitor:
         self.load = 0.0
         self.temp = 0.0
         self.lock = threading.Lock()
-        if WMI_IGPU_AVAILABLE:
+        if WMI_AVAILABLE:
             self._thread = threading.Thread(target=self._poll_loop, daemon=True)
             self._thread.start()
             logger.debug("💻 IGpuMonitor (WMI) запущен.")
@@ -202,7 +175,7 @@ class IGpuMonitor:
     def stop(self):
         self.running = False
 
-# ========== АУДИО-АНАЛИЗАТОР ==========
+# ========== АУДИО-АНАЛИЗАТОР (исправленный, безопасный) ==========
 class AudioSpectrumAnalyzer:
     def __init__(self, rate=44100, chunk=1024, bands=None, device_index=None):
         self.rate = rate
@@ -215,6 +188,8 @@ class AudioSpectrumAnalyzer:
         self.running = True
         self._thread = None
         self.device_index = device_index
+        self.stream = None
+        self.p = None
         if AUDIO_AVAILABLE:
             self.p = pyaudio.PyAudio()
             try:
@@ -237,7 +212,19 @@ class AudioSpectrumAnalyzer:
             self.stream = None
 
     def _audio_loop(self):
-        while self.running and self.stream and self.stream.is_active():
+        while self.running:
+            # Проверяем, что поток существует и открыт
+            if self.stream is None:
+                time.sleep(0.1)
+                continue
+            try:
+                if not self.stream.is_active():
+                    time.sleep(0.1)
+                    continue
+            except (OSError, AttributeError):
+                # Поток уже закрыт или недоступен
+                break
+
             try:
                 data = self.stream.read(self.chunk, exception_on_overflow=False)
                 samples = np.frombuffer(data, dtype=np.int16).astype(np.float32)
@@ -264,10 +251,16 @@ class AudioSpectrumAnalyzer:
     def stop(self):
         self.running = False
         if self.stream:
-            self.stream.stop_stream()
-            self.stream.close()
-        if hasattr(self, 'p'):
-            self.p.terminate()
+            try:
+                self.stream.stop_stream()
+                self.stream.close()
+            except Exception:
+                pass
+        if self.p:
+            try:
+                self.p.terminate()
+            except Exception:
+                pass
 
 # ========== МОНИТОР АУДИОУСТРОЙСТВ ==========
 class AudioDeviceMonitor:
@@ -601,6 +594,10 @@ class GameDetector:
             if name in system_procs:
                 return False
 
+            launchers = ['steam.exe', 'steamwebhelper.exe', 'epicgameslauncher.exe', 'origin.exe', 'battlenet.exe']
+            if name in launchers:
+                return False
+
             try:
                 exe_path = proc.exe()
                 exe_lower = exe_path.lower()
@@ -687,6 +684,38 @@ class GameDetector:
             'peak_gpu': self.peak_game_gpu
         }
 
+# ========== HARDWARE ENTROPY ==========
+class HardwareEntropy:
+    def __init__(self, samples=30):
+        self.samples = samples
+
+    def _test_operation(self):
+        x = 0
+        for i in range(10000):
+            x += i * i
+        return x
+
+    def measure(self):
+        timings = []
+        for _ in range(self.samples):
+            start = time.perf_counter()
+            self._test_operation()
+            timings.append(time.perf_counter() - start)
+
+        if len(timings) < 2:
+            return {'timing_jitter': 0.0, 'execution_variance': 0.0, 'stability_score': 1.0}
+
+        mean = statistics.mean(timings)
+        variance = statistics.variance(timings)
+        jitter = max(timings) - min(timings)
+
+        stability = 1.0 / (1.0 + variance * 1000)
+        return {
+            'timing_jitter': round(jitter, 6),
+            'execution_variance': round(variance, 8),
+            'stability_score': round(stability, 4)
+        }
+
 # ========== ПРЕДСКАЗАТЕЛЬ НАГРУЗКИ ==========
 class TachyonPredictor:
     def __init__(self):
@@ -743,14 +772,185 @@ class TachyonPredictor:
             'peak_game_gpu': peak_game_gpu
         }
 
+# ========== ТЕРМОДИНАМИЧЕСКИЕ КЛАССЫ ==========
+class ThermalEntropyAnalyzer:
+    def __init__(self, sample_size=100):
+        self.samples = deque(maxlen=sample_size)
+        self.lock = threading.Lock()
+        logger.info("🧊 Анализатор энтропии инициализирован (Шкала: Фаренгейт)")
+
+    def _measure_jitter(self):
+        t0 = time.perf_counter()
+        for _ in range(30000):
+            pass
+        return time.perf_counter() - t0
+
+    def get_metrics(self, cpu_temp_c):
+        jitter = self._measure_jitter()
+        temp_f = (cpu_temp_c * 9/5) + 32
+
+        with self.lock:
+            self.samples.append(jitter)
+            entropy = statistics.stdev(self.samples) if len(self.samples) > 2 else 0.001
+
+        purity = 1.0 / (entropy * temp_f + 1e-12)
+        purity = min(100.0, purity)
+
+        return {
+            'temp_f': round(temp_f, 2),
+            'hw_entropy': entropy,
+            'purity_score': purity
+        }
+
+
+class TachyonicRegulator:
+    def __init__(self, target_temp_f=113.0):
+        self.target_temp_f = target_temp_f
+        self.load_scale = 1.0
+        self.mode = "EXPLORE"
+
+    def process(self, metrics):
+        temp_f = metrics['temp_f']
+        entropy = metrics['hw_entropy']
+
+        if temp_f > self.target_temp_f or entropy > 0.002:
+            self.mode = "CONTRACT"
+            self.load_scale = max(0.1, self.load_scale - 0.05)
+        elif temp_f < self.target_temp_f - 10:
+            self.mode = "FREEZE"
+            self.load_scale = min(1.0, self.load_scale + 0.02)
+        else:
+            self.mode = "STABLE"
+
+        return {
+            'tachyonic_mode': self.mode,
+            'load_scale': round(self.load_scale, 2)
+        }
+
+
+class JanusVault:
+    def __init__(self):
+        for p in [RAW_LOGS_DIR, MODEL_ZOO_DIR, WORMHOLE_DIR]:
+            os.makedirs(p, exist_ok=True)
+        self.best_purity = 0.0
+        self.log_file = os.path.join(RAW_LOGS_DIR, "thermal_raw.jsonl")
+
+    def commit(self, metrics, tachy):
+        purity = metrics['purity_score'] * tachy['load_scale']
+        timestamp = datetime.now().isoformat()
+
+        entry = {**metrics, **tachy, 'purity_final': purity, 'ts': timestamp}
+
+        with open(self.log_file, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+
+        if purity > self.best_purity and tachy['tachyonic_mode'] != "EXPLORE":
+            self.best_purity = purity
+            zoo_path = os.path.join(MODEL_ZOO_DIR, f"gold_{int(time.time())}.json")
+            with open(zoo_path, "w") as f:
+                json.dump(entry, f, indent=4)
+            logger.info(f"🌟 Найдено Золотое Состояние: purity={purity:.4f}")
+
+        with open(os.path.join(WORMHOLE_DIR, "purity.signal"), "w") as f:
+            f.write(str(purity))
+
+    def auto_clean(self, max_mb=500):
+        if os.path.exists(self.log_file) and os.path.getsize(self.log_file) > max_mb * 1024 * 1024:
+            os.remove(self.log_file)
+            logger.info("🧹 Raw logs очищены по лимиту размера")
+
+    def learn(self, regulator):
+        files = [os.path.join(MODEL_ZOO_DIR, f) for f in os.listdir(MODEL_ZOO_DIR) if f.endswith('.json')]
+        if not files:
+            return
+
+        temps = []
+        for f in files[-10:]:
+            try:
+                with open(f, 'r') as jf:
+                    data = json.load(jf)
+                    temps.append(data['temp_f'])
+            except Exception:
+                continue
+        if temps:
+            new_target = sum(temps) / len(temps)
+            regulator.target_temp_f = new_target
+            logger.info(f"🧠 Обучение завершено. Новая целевая температура: {new_target:.2f}°F")
+
+# ========== ТЕМПЕРАТУРА CPU ==========
+def get_cpu_temperature():
+    if not WMI_AVAILABLE:
+        logger.debug("WMI недоступен, температура не получена")
+        return None
+    try:
+        import pythoncom
+        pythoncom.CoInitialize()
+        try:
+            w = wmi.WMI(namespace="root\\wmi")
+            temps = []
+            for temp in w.MSAcpi_ThermalZoneTemperature():
+                celsius = (temp.CurrentTemperature / 10.0) - 273.15
+                temps.append(celsius)
+            if temps:
+                logger.info(f"🌡️ Температура через MSAcpi: {round(temps[0], 1)}°C")
+                return round(temps[0], 1)
+        except Exception as e:
+            logger.debug(f"MSAcpi не работает: {e}")
+
+        try:
+            w = wmi.WMI(namespace="root\\OpenHardwareMonitor")
+            sensors = list(w.Sensor())
+            logger.info(f"🔍 OpenHardwareMonitor: найдено сенсоров: {len(sensors)}")
+            for sensor in sensors:
+                if sensor.SensorType == u'Temperature':
+                    logger.info(f"   Температурный сенсор: {sensor.Name} = {sensor.Value}°C")
+                    if 'CPU' in sensor.Name or 'Package' in sensor.Name or 'Core' in sensor.Name:
+                        logger.info(f"✅ Используем: {sensor.Name} = {sensor.Value}°C")
+                        return round(sensor.Value, 1)
+            for sensor in sensors:
+                if sensor.SensorType == u'Temperature':
+                    logger.info(f"⚠️ Используем первый найденный: {sensor.Name} = {sensor.Value}°C")
+                    return round(sensor.Value, 1)
+        except Exception as e:
+            logger.warning(f"OpenHardwareMonitor недоступен: {e}")
+
+        pythoncom.CoUninitialize()
+    except Exception as e:
+        logger.debug(f"Общая ошибка получения температуры: {e}")
+    return None
+
 # ========== ОСНОВНОЙ МОНИТОР ==========
 class SystemMonitor:
-    def __init__(self, poll_interval=2.0, audio_device=None, screen_interval=1.0, top_n=5):
+    def __init__(self, poll_interval=25.0, audio_device=None, screen_interval=1.0, top_n=5):
         self.poll_interval = poll_interval
         self.top_n = top_n
         self.running = True
         self.lock = threading.Lock()
-        self.metrics = {
+
+        self.cache_probe = CacheProbe(interval=CACHE_PROBE_INTERVAL, size_mb=CACHE_PROBE_SIZE_MB)
+        self.igpu_monitor = IGpuMonitor()
+        self.spectrum_analyzer = AudioSpectrumAnalyzer(device_index=audio_device) if AUDIO_AVAILABLE else None
+        self.audio_device_monitor = AudioDeviceMonitor() if AUDIO_DEVICES_AVAILABLE else None
+        self.keyboard_monitor = KeyboardMonitor() if INPUT_AVAILABLE else None
+        self.mouse_monitor = MouseMonitor() if INPUT_AVAILABLE else None
+        self.screen_monitor = ScreenMonitor(interval=screen_interval) if SCREEN_AVAILABLE else None
+        self.game_detector = GameDetector()
+        self.predictor = TachyonPredictor()
+        self.hw_entropy = HardwareEntropy(samples=30)
+
+        self.thermal_entropy = ThermalEntropyAnalyzer()
+        self.regulator = TachyonicRegulator()
+        self.vault = JanusVault()
+
+        self._learn_counter = 0
+        self._last_learn_time = time.time()
+
+        self.metrics = self._init_metrics_dict()
+        self._thread = threading.Thread(target=self._poll_loop, daemon=True)
+        self._thread.start()
+
+    def _init_metrics_dict(self):
+        return {
             'timestamp': None,
             'gpu': {},
             'igpu': {},
@@ -773,21 +973,15 @@ class SystemMonitor:
             'game_gpu': 0.0,
             'idle_cores': 0,
             'total_cores': psutil.cpu_count(logical=True),
-            'predicted': {}
+            'predicted': {},
+            'cpu_temperature': None,
+            'hardware_entropy': None,
+            'temp_f': None,
+            'hw_entropy': None,
+            'purity_score': None,
+            'tachyonic_mode': None,
+            'load_scale': None,
         }
-
-        self.cache_probe = CacheProbe(interval=CACHE_PROBE_INTERVAL, size_mb=CACHE_PROBE_SIZE_MB)
-        self.igpu_monitor = IGpuMonitor()
-        self.spectrum_analyzer = AudioSpectrumAnalyzer(device_index=audio_device) if AUDIO_AVAILABLE else None
-        self.audio_device_monitor = AudioDeviceMonitor() if AUDIO_DEVICES_AVAILABLE else None
-        self.keyboard_monitor = KeyboardMonitor() if INPUT_AVAILABLE else None
-        self.mouse_monitor = MouseMonitor() if INPUT_AVAILABLE else None
-        self.screen_monitor = ScreenMonitor(interval=screen_interval) if SCREEN_AVAILABLE else None
-        self.game_detector = GameDetector()
-        self.predictor = TachyonPredictor()
-
-        self._thread = threading.Thread(target=self._poll_loop, daemon=True)
-        self._thread.start()
 
     def _poll_loop(self):
         while self.running:
@@ -796,19 +990,33 @@ class SystemMonitor:
                 with self.lock:
                     self.metrics = snapshot
                 self.predictor.add_observation(snapshot)
+
+                now = time.time()
+                if now - self._last_learn_time > 3600:
+                    self.vault.learn(self.regulator)
+                    self._last_learn_time = now
+
+                self._learn_counter += 1
+                if self._learn_counter % 1000 == 0:
+                    self.vault.learn(self.regulator)
+
+                if now % 86400 < self.poll_interval:
+                    self.vault.auto_clean()
+
             except Exception as e:
-                logger.error(f"Ошибка в poll_loop: {e}")
-                import traceback
-                traceback.print_exc()
+                logger.error(f"Ошибка в poll_loop: {e}", exc_info=True)
             time.sleep(self.poll_interval)
 
     def _collect_metrics(self):
+        cpu_metrics = self._get_cpu_metrics()
+        idle_cores = cpu_metrics.get('idle_cores', 0)
+
         metrics = {
             'timestamp': datetime.now().isoformat(),
             'gpu': self._get_gpu_metrics(),
             'igpu': self.igpu_monitor.get_metrics(),
             'cache': self.cache_probe.get_metrics(),
-            'cpu': self._get_cpu_metrics(),
+            'cpu': cpu_metrics,
             'memory': self._get_memory_metrics(),
             'disk': self._get_disk_metrics(),
             'network': self._get_network_metrics(),
@@ -824,14 +1032,16 @@ class SystemMonitor:
             'game_cpu': 0.0,
             'game_mem': 0.0,
             'game_gpu': 0.0,
-            'idle_cores': self._get_idle_cores(),
+            'idle_cores': idle_cores,
             'total_cores': psutil.cpu_count(logical=True),
-            'predicted': {}
+            'predicted': {},
+            'cpu_temperature': get_cpu_temperature(),
+            'hardware_entropy': self.hw_entropy.measure(),
         }
 
         games = self.game_detector.scan_games()
         if games:
-            metrics['gaming_mode'] = True
+            metrics['gaming_mode'] = False
             metrics['games'] = games
             main_game = max(games, key=lambda g: g.get('gpu', 0))
             metrics['game_name'] = main_game['name']
@@ -843,8 +1053,21 @@ class SystemMonitor:
         if pred:
             metrics['predicted'] = pred
 
+        cpu_temp_c = metrics.get('cpu_temperature')
+        if cpu_temp_c is None:
+            cpu_temp_c = 40.0
+
+        entropy_metrics = self.thermal_entropy.get_metrics(cpu_temp_c)
+        tachyonic_data = self.regulator.process(entropy_metrics)
+
+        metrics.update(entropy_metrics)
+        metrics.update(tachyonic_data)
+
+        self.vault.commit(entropy_metrics, tachyonic_data)
+
         return metrics
 
+    # ---------- Остальные методы (без изменений) ----------
     def _get_gpu_metrics(self):
         if NVML_AVAILABLE:
             try:
@@ -924,10 +1147,6 @@ class SystemMonitor:
             'idle_cores': idle_cores
         }
 
-    def _get_idle_cores(self):
-        per_core = psutil.cpu_percent(percpu=True, interval=0.1)
-        return sum(1 for p in per_core if p < 30)
-
     def _get_memory_metrics(self):
         mem = psutil.virtual_memory()
         swap = psutil.swap_memory()
@@ -955,7 +1174,6 @@ class SystemMonitor:
                     'percent': usage.percent
                 })
             except OSError as e:
-                # Игнорируем тома, которые не удаётся прочитать (например, пустой CD/DVD)
                 logger.debug(f"Пропускаем том {part.mountpoint}: {e}")
                 continue
         return disks
@@ -976,9 +1194,14 @@ class SystemMonitor:
     def _get_top_processes(self):
         processes = []
         cpu_count = psutil.cpu_count()
+        my_pid = os.getpid()
         try:
             for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent']):
                 try:
+                    name = proc.info['name'].lower()
+                    pid = proc.info['pid']
+                    if name == 'system idle process' or pid == my_pid:
+                        continue
                     pinfo = proc.info
                     pinfo['cpu_percent_norm'] = pinfo['cpu_percent'] / cpu_count if cpu_count else pinfo['cpu_percent']
                     processes.append(pinfo)
@@ -1014,17 +1237,3 @@ class SystemMonitor:
                 pynvml.nvmlShutdown()
             except:
                 pass
-
-if __name__ == "__main__":
-    monitor = SystemMonitor(poll_interval=1)
-    try:
-        while True:
-            m = monitor.get_current_metrics()
-            print(f"Экран: ярк={m['screen'].get('brightness',0):.2f}, движ={m['screen'].get('motion',0):.2f}")
-            print(f"Мышь: клики/с={m['mouse'].get('clicks_per_sec',0):.2f}")
-            print(f"Свободных ядер: {m['idle_cores']}/{m['total_cores']}")
-            print(f"Игровой режим: {m['gaming_mode']}, Игра: {m['game_name']}, CPU: {m['game_cpu']:.1f}%, GPU: {m['game_gpu']:.1f}%")
-            print(f"Предсказание: {m['predicted']}")
-            time.sleep(2)
-    except KeyboardInterrupt:
-        monitor.stop()

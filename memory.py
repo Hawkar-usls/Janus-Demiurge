@@ -16,6 +16,7 @@ import logging
 import asyncio
 from datetime import datetime
 from typing import Dict, Any, Optional, List, Tuple
+from collections import deque
 from config import RAW_LOGS_DIR
 
 # Импортируем функции фильтра 37 из обновлённого конфига (если они там есть)
@@ -90,7 +91,23 @@ CONFIG = {
     'resonant_n_embd': [111, 222, 333, 444, 555, 666, 777, 888, 999],  # цифровой корень 3
     'filter_37_weight': 0.8,
     'resonance_boost': 1.2,
-    'resonant_choice_prob': 0.7
+    'resonant_choice_prob': 0.7,
+    # Метрики сложности NP-задач
+    'complexity_trend_window': 50,        # окно для тренда
+    'convergence_threshold': 0.05,        # порог стабильности для конвергенции
+    # НОВОЕ: адаптивное сужение диапазонов
+    'shrink_enabled': True,               # включить сужение
+    'shrink_factor_start': 0.5,           # начальный коэффициент сужения (новый диапазон = best ± factor * половина_текущего)
+    'shrink_factor_min': 0.1,             # минимальный коэффициент сужения
+    'shrink_decay': 0.9,                  # уменьшение фактора после каждого рекорда
+    'shrink_min_width': {                 # минимальная ширина диапазона для каждого параметра
+        'lr': 1e-6,
+        'gain': 0.05,
+        'temperature': 0.05,
+        'n_embd': 64,                     # для дискретных пока не используется
+        'n_head': 2,
+        'n_layer': 2
+    }
 }
 
 
@@ -156,10 +173,80 @@ class EvolutionaryMemory:
         self.resonance_history: List[bool] = []   # флаги резонанса для последних циклов
         self.pocket_configs: List[Dict] = []      # конфигурации, попавшие в карман
 
+        # Метрики сложности NP-задач
+        self.first_success_cycle: Optional[int] = None
+        self.first_success_time: Optional[float] = None
+        self.convergence_cycle: Optional[int] = None
+        self.complexity_trend: List[float] = []   # история сложности решённых задач
+        self.convergence_steps = 0                # сколько циклов стабильности
+
+        # НОВОЕ: адаптивное сужение диапазонов
+        self.active_ranges = self._copy_ranges(CONFIG['param_ranges'])
+        self.shrink_factor = CONFIG['shrink_factor_start']
+        self.record_count = 0                     # счётчик рекордов
+
+        # НОВОЕ: память плохих конфигураций
+        self.bad_configs = deque(maxlen=1000)     # хранилище неудачных конфигураций
+
         self._load_best_config()
         self._load_history_from_csv()
         self._load_lessons_stats()
         self._load_light_beacons()
+        self._load_metrics()                      # загрузка метрик сложности
+
+    def _copy_ranges(self, ranges):
+        """Глубокое копирование словаря диапазонов."""
+        new = {}
+        for k, v in ranges.items():
+            if isinstance(v, tuple):
+                new[k] = v
+            else:
+                new[k] = v[:]  # копия списка
+        return new
+
+    def _shrink_ranges(self, best_config: Dict[str, Any]):
+        """
+        Сужает активные диапазоны вокруг лучшей конфигурации.
+        """
+        if not CONFIG['shrink_enabled']:
+            return
+        self.record_count += 1
+        # Обновляем фактор сужения
+        self.shrink_factor = max(CONFIG['shrink_factor_min'],
+                                 self.shrink_factor * CONFIG['shrink_decay'])
+
+        for param, best_val in best_config.items():
+            if param not in self.active_ranges:
+                continue
+            curr_range = self.active_ranges[param]
+            if isinstance(curr_range, tuple):
+                low, high = curr_range
+                half_width = (high - low) / 2.0
+                new_half = half_width * self.shrink_factor
+                new_low = max(CONFIG['param_ranges'][param][0], best_val - new_half)
+                new_high = min(CONFIG['param_ranges'][param][1], best_val + new_half)
+                # Обеспечиваем минимальную ширину
+                min_width = CONFIG['shrink_min_width'].get(param, 1e-6)
+                if new_high - new_low < min_width:
+                    new_low = best_val - min_width/2
+                    new_high = best_val + min_width/2
+                    new_low = max(CONFIG['param_ranges'][param][0], new_low)
+                    new_high = min(CONFIG['param_ranges'][param][1], new_high)
+                self.active_ranges[param] = (new_low, new_high)
+                logger.info(f"📏 Адаптивное сужение {param}: [{low:.3e}, {high:.3e}] -> [{new_low:.3e}, {new_high:.3e}] (factor={self.shrink_factor:.2f})")
+            elif isinstance(curr_range, list):
+                # Для дискретных параметров: сужаем список, оставляя значения в пределах ± шага от best
+                if param in ('n_embd', 'n_head', 'n_layer'):
+                    try:
+                        idx = curr_range.index(best_val)
+                    except ValueError:
+                        continue
+                    # Оставляем 3 значения вокруг (если возможно)
+                    new_list = curr_range[max(0, idx-1):min(len(curr_range), idx+2)]
+                    if len(new_list) > 1:
+                        self.active_ranges[param] = new_list
+                        logger.info(f"📏 Адаптивное сужение {param}: {curr_range} -> {new_list} (best={best_val})")
+                # остальные оставляем как есть
 
     # ---------- Загрузка/сохранение ----------
     def _load_best_config(self) -> None:
@@ -207,6 +294,38 @@ class EvolutionaryMemory:
         if self.best_config and 'id' in self.best_config:
             self.light_beacons.append(self.best_config['id'])
 
+    def _load_metrics(self):
+        """Загружает метрики сложности из файла, если есть."""
+        metrics_path = os.path.join(RAW_LOGS_DIR, "np_metrics.json")
+        if os.path.exists(metrics_path):
+            try:
+                with open(metrics_path, 'r') as f:
+                    data = json.load(f)
+                self.first_success_cycle = data.get('first_success_cycle')
+                self.first_success_time = data.get('first_success_time')
+                self.convergence_cycle = data.get('convergence_cycle')
+                self.complexity_trend = data.get('complexity_trend', [])
+                self.convergence_steps = data.get('convergence_steps', 0)
+                logger.info("📈 Метрики сложности NP-задач загружены.")
+            except Exception as e:
+                logger.warning(f"Не удалось загрузить метрики NP: {e}")
+
+    def _save_metrics(self):
+        """Сохраняет метрики сложности в файл."""
+        metrics_path = os.path.join(RAW_LOGS_DIR, "np_metrics.json")
+        data = {
+            'first_success_cycle': self.first_success_cycle,
+            'first_success_time': self.first_success_time,
+            'convergence_cycle': self.convergence_cycle,
+            'complexity_trend': self.complexity_trend,
+            'convergence_steps': self.convergence_steps
+        }
+        try:
+            with open(metrics_path, 'w') as f:
+                json.dump(data, f, indent=2)
+        except Exception as e:
+            logger.error(f"Ошибка сохранения метрик NP: {e}")
+
     def save_lessons_stats(self) -> None:
         try:
             with open(self.lessons_stats_path, 'w') as f:
@@ -218,26 +337,105 @@ class EvolutionaryMemory:
         except Exception as e:
             logger.error(f"Ошибка сохранения lessons_stats: {e}")
 
-    def register_lesson(self, config: Dict[str, Any]) -> None:
-        self.total_lessons += 1
-        for param, value in config.items():
-            if param in self.lessons_stats and isinstance(value, (int, float)):
-                self.lessons_stats[param]['count'] += 1
-                self.lessons_stats[param]['values'].append(value)
-                if len(self.lessons_stats[param]['values']) > 100:
-                    self.lessons_stats[param]['values'] = self.lessons_stats[param]['values'][-100:]
-        self.save_lessons_stats()
-        logger.info("\U0001F4DA Янус извлёк урок из сложного опыта. Мудрость растёт.")
+    # ---------- Методы для работы с уроками и плохими конфигурациями ----------
+    def register_lesson(self, config: Dict[str, Any], penalty: bool = False) -> None:
+        """
+        Регистрирует конфигурацию как урок.
+        Если penalty=True, то запоминает как плохую (чтобы избегать в будущем).
+        """
+        if penalty:
+            self.bad_configs.append(config)
+            if len(self.bad_configs) > 1000:
+                self.bad_configs.pop(0)
+            logger.info("💀 Запомнена плохая конфигурация, чтобы избежать в будущем")
+        else:
+            self.total_lessons += 1
+            for param, value in config.items():
+                if param in self.lessons_stats and isinstance(value, (int, float)):
+                    self.lessons_stats[param]['count'] += 1
+                    self.lessons_stats[param]['values'].append(value)
+                    if len(self.lessons_stats[param]['values']) > 100:
+                        self.lessons_stats[param]['values'] = self.lessons_stats[param]['values'][-100:]
+            self.save_lessons_stats()
+            logger.info("\U0001F4DA Янус извлёк урок из сложного опыта. Мудрость растёт.")
 
     def register_growth(self, config: Dict[str, Any]) -> None:
         self.total_growth += 1
 
+    def is_bad_config(self, config: Dict[str, Any], threshold: float = 0.05) -> bool:
+        """Проверяет, не является ли конфигурация заведомо плохой."""
+        for bad in self.bad_configs:
+            if self._config_distance(config, bad) < threshold:
+                return True
+        return False
+
+    def _config_distance(self, c1: Dict, c2: Dict) -> float:
+        """Евклидово расстояние между двумя конфигурациями (нормированное)."""
+        keys = ['lr', 'gain', 'temperature', 'n_embd', 'n_head', 'n_layer']
+        diff = 0.0
+        for k in keys:
+            if k in c1 and k in c2:
+                v1 = c1[k]
+                v2 = c2[k]
+                # нормализация
+                if k == 'lr':
+                    v1 = np.log10(v1 + 1e-8)
+                    v2 = np.log10(v2 + 1e-8)
+                elif k in ['n_embd', 'n_head', 'n_layer']:
+                    v1 = v1 / 100.0
+                    v2 = v2 / 100.0
+                diff += (v1 - v2) ** 2
+        return np.sqrt(diff)
+
+    # ---------- Метрики сложности ----------
+    def update_complexity_metrics(self, cycle: int, difficulty: float, solved: bool):
+        """Обновляет метрики сложности на основе решения NP-задачи."""
+        if solved:
+            # Первый успех
+            if self.first_success_cycle is None:
+                self.first_success_cycle = cycle
+                self.first_success_time = time.time()
+                logger.info(f"🏆 ПЕРВЫЙ УСПЕХ в решении NP-задачи на цикле {cycle} (сложность {difficulty:.2f})")
+
+            # Тренд сложности
+            self.complexity_trend.append(difficulty)
+            if len(self.complexity_trend) > CONFIG['complexity_trend_window']:
+                self.complexity_trend.pop(0)
+
+            # Сброс счётчика стабильности при успехе
+            self.convergence_steps = 0
+
+        else:
+            # Неудача увеличивает счётчик стабильности (если есть уже успех)
+            if self.first_success_cycle is not None:
+                self.convergence_steps += 1
+                if self.convergence_steps >= CONFIG['complexity_trend_window'] and self.convergence_cycle is None:
+                    self.convergence_cycle = cycle
+                    logger.info(f"🎯 Достигнута конвергенция на цикле {cycle} (стабильность {self.convergence_steps} циклов)")
+
+        self._save_metrics()
+
+    def update_scaling_metrics(self, scaling_exponent: float, series_results: list) -> None:
+        """Обновляет метрики масштабирования сложности."""
+        if scaling_exponent is not None:
+            scaling_path = os.path.join(RAW_LOGS_DIR, "np_scaling_metrics.json")
+            try:
+                with open(scaling_path, 'r') as f:
+                    data = json.load(f)
+            except:
+                data = {"history": []}
+            data["history"].append({
+                "timestamp": datetime.now().isoformat(),
+                "scaling_exponent": scaling_exponent,
+                "series": series_results
+            })
+            with open(scaling_path, 'w') as f:
+                json.dump(data, f, indent=2)
+            logger.info(f"📈 Обновлены метрики масштабирования: exponent={scaling_exponent:.3f}")
+
     # ---------- Причинное ядро ----------
     def estimate_param_importance(self) -> Dict[str, float]:
-        """
-        Оценивает, какие параметры реально влияют на score.
-        Возвращает словарь {параметр: корреляция}.
-        """
+        """Оценивает, какие параметры реально влияют на score."""
         if len(self.history) < CONFIG['min_corr_samples']:
             return {}
 
@@ -247,17 +445,14 @@ class EvolutionaryMemory:
             scores = []
             for h in self.history:
                 if param in h and isinstance(h.get('score'), (int, float)) and h['score'] > -float('inf'):
-                    # нормализуем, если нужно
                     val = h[param]
                     if isinstance(ranges, tuple):
-                        # непрерывный параметр
                         low, high = ranges
                         if high - low > 0:
                             val_norm = (val - low) / (high - low)
                         else:
                             val_norm = 0.5
                     else:
-                        # категориальный: преобразуем в индекс
                         val_norm = ranges.index(val) / max(1, len(ranges)-1) if val in ranges else 0.5
                     values.append(val_norm)
                     scores.append(h['score'])
@@ -268,9 +463,7 @@ class EvolutionaryMemory:
 
     # ---------- Интеграция с Tachyon ----------
     def predict_future_score(self, config: Dict[str, Any]) -> float:
-        """
-        Прогнозирует будущее качество конфигурации через Tachyon.
-        """
+        """Прогнозирует будущее качество конфигурации через Tachyon."""
         if self.tachyon is None:
             return 0.0
         try:
@@ -296,9 +489,7 @@ class EvolutionaryMemory:
 
     # ---------- Мета-выравнивание ----------
     def _meta_alignment_bonus(self, config: Dict[str, Any]) -> float:
-        """
-        Бонус за соответствие мета-цели.
-        """
+        """Бонус за соответствие мета-цели."""
         if self.meta_goal == "APPROXIMATE_P_NP":
             bonus = 0.0
             if config.get('n_layer', 0) < 8:
@@ -310,20 +501,14 @@ class EvolutionaryMemory:
 
     # ---------- Стратегия ----------
     def update_strategy(self, score: float) -> None:
-        """
-        Обновляет параметры стратегии на основе успеха.
-        """
+        """Обновляет параметры стратегии на основе успеха."""
         if score > self.hope_score:
-            # успех: уменьшаем exploration, увеличиваем stability
             self.strategy["exploration"] *= CONFIG['strategy_exploration_decay']
             self.strategy["stability"] += CONFIG['strategy_stability_inc']
         else:
-            # неудача: увеличиваем exploration
             self.strategy["exploration"] += CONFIG['strategy_exploration_inc']
-        # ограничения
         self.strategy["exploration"] = max(0.1, min(0.9, self.strategy["exploration"]))
         self.strategy["stability"] = max(0.1, min(0.9, self.strategy["stability"]))
-        # risk зависит от разрыва между best и current
         if self.hope_score > -float('inf') and score > -float('inf'):
             diff = self.hope_score - score
             self.strategy["risk"] = min(0.9, max(0.1, diff / 2.0))
@@ -422,10 +607,6 @@ class EvolutionaryMemory:
 
     # ---------- Фильтр 37: резонансные методы ----------
     def _is_resonant_config(self, config: Dict[str, Any]) -> float:
-        """
-        Возвращает коэффициент резонанса конфигурации (0..1).
-        Чем больше параметров резонируют, тем выше коэффициент.
-        """
         param_keys = ['n_embd', 'n_head', 'n_layer', 'lr', 'gain', 'temperature']
         resonant_count = 0
         total_checked = 0
@@ -442,11 +623,7 @@ class EvolutionaryMemory:
         return resonant_count / total_checked
 
     def _select_resonant_option(self, options: List[int]) -> int:
-        """
-        Выбирает значение из списка с вероятностью предпочесть резонансные.
-        """
         if random.random() < CONFIG['resonant_choice_prob']:
-            # пробуем найти резонансное значение из расширенного списка
             resonant_opts = [o for o in CONFIG['resonant_n_embd'] if o in options]
             if resonant_opts:
                 return random.choice(resonant_opts)
@@ -454,12 +631,11 @@ class EvolutionaryMemory:
 
     # ---------- Модифицированные методы для генерации параметров ----------
     def _random_param(self, param: str):
-        ranges = CONFIG['param_ranges'][param]
+        ranges = self.active_ranges[param]  # используем активные
         if isinstance(ranges, tuple):
             low, high = ranges
             return random.uniform(low, high)
         else:
-            # для категориальных параметров добавляем резонансный выбор
             if param == 'n_embd':
                 return self._select_resonant_option(ranges)
             else:
@@ -470,11 +646,11 @@ class EvolutionaryMemory:
         conf['n_embd'] = int(round(conf['n_embd']))
         conf['n_head'] = int(round(conf['n_head']))
         conf['n_layer'] = int(round(conf['n_layer']))
+        # Проверка делимости
         if conf['n_embd'] % conf['n_head'] != 0:
-            for nh in sorted(CONFIG['param_ranges']['n_head']):
-                if conf['n_embd'] % nh == 0:
-                    conf['n_head'] = nh
-                    break
+            possible_heads = [h for h in CONFIG['param_ranges']['n_head'] if conf['n_embd'] % h == 0]
+            if possible_heads:
+                conf['n_head'] = min(possible_heads, key=lambda x: abs(x - conf['n_head']))
             else:
                 conf['n_head'] = 8
         return conf
@@ -495,35 +671,30 @@ class EvolutionaryMemory:
             elif gpu_load < 30:
                 gpu_factor = 1.3
 
-        # Получаем важность параметров
         importance = self.estimate_param_importance()
 
-        for param, ranges in CONFIG['param_ranges'].items():
+        for param, ranges in CONFIG['param_ranges'].items():  # перебираем все параметры, но мутируем в активных границах
             if random.random() < self.mutation_rate:
                 mutated = True
                 if random.random() < self.jump_prob:
-                    # большая мутация
-                    if isinstance(ranges, tuple):
-                        low, high = ranges
+                    # большая мутация: берём случайное значение из активного диапазона
+                    if isinstance(self.active_ranges[param], tuple):
+                        low, high = self.active_ranges[param]
                         individual[param] = random.uniform(low, high)
                     else:
-                        individual[param] = random.choice(ranges)
+                        individual[param] = random.choice(self.active_ranges[param])
                 else:
-                    # направленная мутация с использованием важности
-                    if isinstance(ranges, tuple):
-                        low, high = ranges
+                    if isinstance(self.active_ranges[param], tuple):
+                        low, high = self.active_ranges[param]
                         bias = importance.get(param, 0)
                         direction = 1 if bias > 0 else -1
                         step = (high - low) * 0.1 * abs(bias)
                         individual[param] += direction * step
                         individual[param] = np.clip(individual[param], low, high)
                     else:
-                        # для категориальных: смещаем в сторону резонанса
                         current_val = individual[param]
-                        # резонансное значение?
                         if not is_resonant(current_val) and random.random() < 0.5:
-                            # ищем ближайшее резонансное из допустимых
-                            options = ranges
+                            options = self.active_ranges[param]
                             resonant_opts = [o for o in CONFIG['resonant_n_embd'] if o in options]
                             if resonant_opts:
                                 nearest = min(resonant_opts, key=lambda x: abs(x - current_val))
@@ -531,100 +702,118 @@ class EvolutionaryMemory:
                             else:
                                 individual[param] = random.choice(options)
                         else:
-                            individual[param] = random.choice(ranges)
-        # корректировка целочисленных параметров
+                            individual[param] = random.choice(self.active_ranges[param])
+        # Коррекция целочисленных
+        individual['n_embd'] = int(round(individual['n_embd']))
+        individual['n_head'] = int(round(individual['n_head']))
+        individual['n_layer'] = int(round(individual['n_layer']))
         if individual['n_embd'] % individual['n_head'] != 0:
-            for nh in sorted(CONFIG['param_ranges']['n_head']):
-                if individual['n_embd'] % nh == 0:
-                    individual['n_head'] = nh
-                    break
+            possible_heads = [h for h in CONFIG['param_ranges']['n_head'] if individual['n_embd'] % h == 0]
+            if possible_heads:
+                individual['n_head'] = min(possible_heads, key=lambda x: abs(x - individual['n_head']))
             else:
                 individual['n_head'] = 8
         return individual, mutated
 
-    # ---------- Основной метод propose ----------
-    def propose(self, current_metrics: Optional[Dict] = None) -> Tuple[Optional[Dict], bool, bool]:
+    # ---------- Основной метод propose (с проверкой плохих конфигураций) ----------
+    def propose(self, current_metrics: Optional[Dict] = None, max_attempts: int = 5) -> Tuple[Optional[Dict], bool, bool]:
         """
-        Предлагает новую конфигурацию.
-        Возвращает (config, mutated, miracle).
-        Учитывает стратегию, предсказание Tachyon и фильтр 37.
+        Генерирует новую конфигурацию, избегая заведомо плохих.
+        При обнаружении плохой конфигурации делает повторную попытку до max_attempts.
         """
-        # Стратегия: если exploration высок, берём случайную конфигурацию
-        if random.random() < self.strategy["exploration"]:
-            conf = self._random_config()
-            conf['id'] = str(time.time()) + str(random.randint(0, 1000))
-            return conf, True, False
-
-        # Иммигранты: 5% шанс вернуть полностью случайную конфигурацию
-        if random.random() < 0.05:
-            conf = self._random_config()
-            conf['id'] = str(time.time()) + str(random.randint(0, 1000))
-            return conf, True, False
-
-        if len(self.history) < 2:
-            conf = self._random_config()
-            conf['id'] = str(time.time()) + str(random.randint(0, 1000))
-            return conf, False, False
-
-        elite = self._get_elite()
-        if len(elite) < 2:
-            conf = self._random_config()
-            conf['id'] = str(time.time()) + str(random.randint(0, 1000))
-            return conf, False, False
-
-        parent1, parent2 = self._select_parents(elite, current_metrics)
-        self.last_parents = (parent1, parent2)
-        child = self._crossover(parent1, parent2)
-        child, mutated = self._mutate(child, current_metrics)
-
-        # Учёт прошлых уроков
-        for param in ['lr', 'gain', 'temperature']:
-            if param in self.lessons_stats and len(self.lessons_stats[param]['values']) > 10:
-                lesson_mean = np.mean(self.lessons_stats[param]['values'])
-                rng = CONFIG['param_ranges'][param]
-                if abs(child[param] - lesson_mean) < 0.3 * (rng[1] - rng[0]):
-                    direction = 1 if random.random() > 0.5 else -1
-                    shift = 0.05 * (rng[1] - rng[0]) * direction
-                    child[param] = np.clip(child[param] + shift, rng[0], rng[1])
-                    mutated = True
-
-        child['gain'] = round(child['gain'], 5)
-        child['temperature'] = round(child['temperature'], 5)
-        child['lr'] = round(child['lr'], 5)
-
-        # Предсказание будущего скора через Tachyon
-        future_score = self.predict_future_score(child)
-        if future_score < CONFIG['predict_threshold']:
-            # слишком плохое предсказание — отбрасываем
-            logger.debug(f"Tachyon отклонил конфигурацию (predicted={future_score:.2f})")
-            return None, False, False
-        child['predicted_score'] = future_score
-
-        # Фильтр 37: проверяем резонанс и корректируем вес
-        resonance = self._is_resonant_config(child)
-        if resonance < 0.5:
-            # Нерезонансная конфигурация: возможно, отбрасываем или снижаем приоритет
-            # Здесь просто добавляем запись в историю для статистики
-            logger.debug(f"Нерезонансная конфигурация (resonance={resonance:.2f}), но оставляем")
-
-        # Чудеса (квантовое туннелирование)
-        is_miracle = False
-        if self.protective_field is not None:
-            dist = self._gravitational_distance(self.protective_field, child)
-            if dist < self.protection_radius:
-                if random.random() < self.miracle_prob:
-                    is_miracle = True
-                    logger.info("     [✨] ЧУДО! Конфигурация спаслась от забвения.")
+        for attempt in range(max_attempts):
+            if random.random() < self.strategy["exploration"]:
+                conf = self._random_config()
+                conf['id'] = str(time.time()) + str(random.randint(0, 1000))
+                if not self.is_bad_config(conf):
+                    return conf, True, False
                 else:
-                    self.protective_field['score'] = max(self.protective_field.get('score', 0), child.get('score', 0))
-                    self.protection_radius += self.protection_growth
-                    logger.info(f"     [\U0001F573\uFE0F] Этот опыт войдёт в копилку мудрости. Радиус защиты: {self.protection_radius:.3f}")
-                    return None, False, False
+                    logger.debug(f"Плохая конфигурация в exploration, регенерация (попытка {attempt+1})")
+                    continue
 
-        child['id'] = str(time.time()) + str(random.randint(0, 1000))
-        return child, mutated, is_miracle
+            if random.random() < 0.05:
+                conf = self._random_config()
+                conf['id'] = str(time.time()) + str(random.randint(0, 1000))
+                if not self.is_bad_config(conf):
+                    return conf, True, False
+                else:
+                    logger.debug(f"Плохая конфигурация в случайной, регенерация (попытка {attempt+1})")
+                    continue
 
-    # ---------- Остальные методы без изменений ----------
+            if len(self.history) < 2:
+                conf = self._random_config()
+                conf['id'] = str(time.time()) + str(random.randint(0, 1000))
+                if not self.is_bad_config(conf):
+                    return conf, False, False
+                else:
+                    logger.debug(f"Плохая конфигурация при малой истории, регенерация (попытка {attempt+1})")
+                    continue
+
+            elite = self._get_elite()
+            if len(elite) < 2:
+                conf = self._random_config()
+                conf['id'] = str(time.time()) + str(random.randint(0, 1000))
+                if not self.is_bad_config(conf):
+                    return conf, False, False
+                else:
+                    logger.debug(f"Плохая конфигурация при недостатке элиты, регенерация (попытка {attempt+1})")
+                    continue
+
+            parent1, parent2 = self._select_parents(elite, current_metrics)
+            self.last_parents = (parent1, parent2)
+            child = self._crossover(parent1, parent2)
+            child, mutated = self._mutate(child, current_metrics)
+
+            for param in ['lr', 'gain', 'temperature']:
+                if param in self.lessons_stats and len(self.lessons_stats[param]['values']) > 10:
+                    lesson_mean = np.mean(self.lessons_stats[param]['values'])
+                    rng = CONFIG['param_ranges'][param]
+                    if abs(child[param] - lesson_mean) < 0.3 * (rng[1] - rng[0]):
+                        direction = 1 if random.random() > 0.5 else -1
+                        shift = 0.05 * (rng[1] - rng[0]) * direction
+                        child[param] = np.clip(child[param] + shift, rng[0], rng[1])
+                        mutated = True
+
+            child['gain'] = round(child['gain'], 5)
+            child['temperature'] = round(child['temperature'], 5)
+            child['lr'] = round(child['lr'], 5)
+
+            future_score = self.predict_future_score(child)
+            if future_score < CONFIG['predict_threshold']:
+                logger.debug(f"Tachyon отклонил конфигурацию (predicted={future_score:.2f})")
+                continue
+
+            if self.is_bad_config(child):
+                logger.debug(f"Сгенерирована плохая конфигурация, регенерация (попытка {attempt+1})")
+                continue
+
+            resonance = self._is_resonant_config(child)
+            if resonance < 0.5:
+                logger.debug(f"Нерезонансная конфигурация (resonance={resonance:.2f}), но оставляем")
+
+            is_miracle = False
+            if self.protective_field is not None:
+                dist = self._gravitational_distance(self.protective_field, child)
+                if dist < self.protection_radius:
+                    if random.random() < self.miracle_prob:
+                        is_miracle = True
+                        logger.info("     [✨] ЧУДО! Конфигурация спаслась от забвения.")
+                    else:
+                        self.protective_field['score'] = max(self.protective_field.get('score', 0), child.get('score', 0))
+                        self.protection_radius += self.protection_growth
+                        logger.info(f"     [\U0001F573\uFE0F] Этот опыт войдёт в копилку мудрости. Радиус защиты: {self.protection_radius:.3f}")
+                        return None, False, False
+
+            child['id'] = str(time.time()) + str(random.randint(0, 1000))
+            return child, mutated, is_miracle
+
+        # Если после всех попыток не удалось сгенерировать хорошую конфигурацию, возвращаем случайную
+        logger.warning("Не удалось сгенерировать хорошую конфигурацию после нескольких попыток, возвращаем случайную")
+        conf = self._random_config()
+        conf['id'] = str(time.time()) + str(random.randint(0, 1000))
+        return conf, True, False
+
+    # ---------- Остальные методы ----------
     def _detect_anomaly(self, metric_name: str, current_value: float, window: int = 30) -> Tuple[bool, float, float, float]:
         recent = self.history[-window:]
         values = [h.get(metric_name, 0) for h in recent if metric_name in h and isinstance(h.get(metric_name), (int, float))]
@@ -650,9 +839,7 @@ class EvolutionaryMemory:
         config['score'] = score
         config['timestamp'] = datetime.now().isoformat()
         config['monotonic_ns'] = time.monotonic_ns()
-        # Мета-выравнивание
         config['meta_alignment'] = self._meta_alignment_bonus(config)
-        # Добавляем резонанс конфигурации
         config['resonance'] = self._is_resonant_config(config)
 
         if additional:
@@ -664,8 +851,28 @@ class EvolutionaryMemory:
             if loss_anom:
                 logger.warning(f"[\u26A0\uFE0F ОЗАРЕНИЕ LOSS] p-value: {loss_p:.2e} | Cohen's d: {loss_d:.2f}")
 
+            # Обновляем метрики сложности
+            if 'np_solved' in additional and additional['np_solved']:
+                self.update_complexity_metrics(
+                    cycle=additional.get('cycle', 0),
+                    difficulty=additional.get('np_difficulty', 1.0),
+                    solved=True
+                )
+            else:
+                self.update_complexity_metrics(
+                    cycle=additional.get('cycle', 0),
+                    difficulty=additional.get('np_difficulty', 1.0),
+                    solved=False
+                )
+
+            # Обновляем метрики масштабирования
+            if 'np_scaling_exponent' in additional and additional['np_scaling_exponent'] is not None:
+                self.update_scaling_metrics(
+                    scaling_exponent=additional['np_scaling_exponent'],
+                    series_results=additional.get('np_series_results', [])
+                )
+
         self.history.append(config)
-        # Логируем решение
         self.decision_log.append({
             "config": config,
             "score": score,
@@ -675,11 +882,10 @@ class EvolutionaryMemory:
         if len(self.decision_log) > 1000:
             self.decision_log = self.decision_log[-1000:]
 
-        # Атомарное сохранение CSV с фильтрацией None и лишних ключей
+        # Атомарное сохранение CSV
         tmp_csv = self.csv_path + ".tmp"
         try:
             file_exists = os.path.isfile(self.csv_path)
-            # Убираем ключи None из config для fieldnames
             safe_config = {k: v for k, v in config.items() if k is not None}
             fieldnames = safe_config.keys()
             with open(tmp_csv, 'w', newline='', encoding='utf-8') as f:
@@ -687,7 +893,6 @@ class EvolutionaryMemory:
                 if not file_exists:
                     writer.writeheader()
                 for h in self.history:
-                    # Оставляем только поля, которые есть в fieldnames
                     safe_h = {k: v for k, v in h.items() if k in fieldnames}
                     writer.writerow(safe_h)
             os.replace(tmp_csv, self.csv_path)
@@ -696,7 +901,6 @@ class EvolutionaryMemory:
 
         self.register_growth(config)
 
-        # Обновляем стратегию на основе успеха
         self.update_strategy(score)
 
         is_record = False
@@ -717,6 +921,10 @@ class EvolutionaryMemory:
             is_record = True
             self.protective_field = config
             self.protection_radius = CONFIG['protection_radius']
+
+            # НОВОЕ: сужение диапазонов при рекорде
+            self._shrink_ranges(config)
+            logger.info(f"📏 Активные диапазоны сужены вокруг рекордной конфигурации (score={score:.4f})")
 
         return is_record
 
@@ -753,7 +961,6 @@ class EvolutionaryMemory:
         return [h for h in self.history if h.get('id') in self.light_beacons]
 
     async def remember(self, dream_type: str, message: str) -> None:
-        """Сохраняет сон или другую мысль в отдельный файл (асинхронно)."""
         try:
             if os.path.exists(self.dreams_path):
                 def read_dreams():

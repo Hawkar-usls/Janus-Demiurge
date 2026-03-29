@@ -13,6 +13,7 @@ import logging
 import importlib
 import inspect
 import textwrap
+import numpy as np
 from typing import Dict, List, Any, Optional, Set, Tuple
 from collections import defaultdict, deque
 
@@ -187,17 +188,16 @@ class MonkeyPatcher:
         # Если у модуля уже был успешный патч, можно попробовать его же или улучшить
         if module.__name__ in self.module_patch_log:
             last_patch_name = self.module_patch_log[module.__name__]
-            # ищем патч с таким именем
             for p in self.available_patches:
                 if p.name == last_patch_name:
-                    # Если последний патч был успешен, можно его же и применить (или пробовать другой)
                     if random.random() < 0.3:
                         return p
-        # Иначе выбираем случайный, но с весами по успешности
-        total_weight = sum(self.patch_scores[p.name] for p in self.available_patches) + 1e-6
-        if total_weight == 0:
+        # Выбираем с весами по успешности
+        weights = [self.patch_scores[p.name] + 0.1 for p in self.available_patches]
+        total = sum(weights)
+        if total <= 0:
             return random.choice(self.available_patches)
-        probs = [(self.patch_scores[p.name] + 0.1) / total_weight for p in self.available_patches]
+        probs = [w / total for w in weights]
         return np.random.choice(self.available_patches, p=probs)
 
     def _record_patch_result(self, patch: BasePatch, module, success: bool, improvement: float):

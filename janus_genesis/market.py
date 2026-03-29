@@ -171,11 +171,8 @@ class Market:
             buyer.add_item(item)
             # Применяем знания, если есть
             if item.knowledge:
-                # обновляем конфигурацию покупателя
-                for param, value in item.knowledge.items():
-                    if param in buyer.base_config:
-                        buyer.base_config[param] = value
-                buyer._update_current_config()
+                # Используем метод агента для применения гиперпараметров
+                buyer.apply_hyper_effect(item.knowledge)
             # Убираем из листинга
             self.listings = [l for l in self.listings if not (l[0]==seller_id and l[1]==item)]
             self.save()

@@ -7,6 +7,7 @@ import random
 import math
 import time
 import uuid
+import numpy as np
 from collections import deque
 from typing import Dict, Any, Optional, List, Tuple
 from config import RAW_LOGS_DIR
@@ -37,9 +38,9 @@ CLASSES = ["warrior", "mage", "rogue", "engineer"]
 PROFESSIONS = ["miner", "blacksmith", "alchemist", "scribe", "trader"]
 
 PARAM_RANGES = {
-    'gain': (0.3, 2.0),
-    'temperature': (0.3, 2.0),
-    'lr': (1e-5, 1e-2),
+    'gain': (0.5, 1.5),
+    'temperature': (0.5, 1.5),
+    'lr': (1e-5, 5e-3),
     'n_embd': [128, 256, 384, 512, 768],
     'n_head': [4, 8, 12, 16],
     'n_layer': [4, 6, 8, 10, 12]
@@ -140,7 +141,6 @@ class SwarmAgent:
 
 # ========== JanusRPGState (игровое состояние) ==========
 class JanusRPGState:
-    # ... (без изменений, оставляем старый инвентарь как список строк)
     def __init__(self):
         self.level = 1
         self.exp = 0
@@ -183,6 +183,34 @@ class JanusRPGState:
         self.voice = JanusCognitiveVoice()
         self.emotion = JanusEmotion()
         self.last_prediction = None
+
+        # --- NP-задачи (старый режим) ---
+        self.current_np_task = None
+        self.np_difficulty = 1.0
+        self.np_task_solved_this_cycle = False
+        self.np_difficulty_solved = 0.0
+
+        # --- NP-серийный режим (расширенный) ---
+        self.np_series = []
+        self.np_series_index = 0
+        self.np_series_results = []
+        self.np_scaling_exponent = 1.5   # начальное значение
+        self.np_current_attempts = 0
+        self.np_series_failures = 0
+        self.np_series_total = 0
+        self.np_failure_queue = []
+        self.last_np_size = 20
+
+        # --- История решений для адаптивного таймаута ---
+        self.np_solution_history = {}   # ключи — int, значения — словарь
+
+        # --- Для Демиурга ---
+        self.np_reward_mult = 1.0
+        self.demiurge_batch_size = None
+        self.demiurge_reward_scale = 1.0
+
+    def add_buff(self, name: str, duration: int, effects: Dict[str, float]) -> None:
+        print(f"     ✨ Бафф '{name}' на {duration} тиков (эффекты: {effects})")
 
     def awaken(self):
         if self.self_model["aware"]:
@@ -401,7 +429,63 @@ class JanusRPGState:
         self.swarm = [a for a in self.swarm if a.alive]
         return killed, total_damage_taken, combat_log
 
+    # ========== Адаптивная история решений (с защитой от типов) ==========
+    def record_np_solution(self, n_vars: int, solved: bool, time_ms: float, attempts: int):
+        """Сохраняет результат решения задачи для адаптивного таймаута"""
+        n_vars = int(n_vars)  # на всякий случай
+        if n_vars not in self.np_solution_history:
+            self.np_solution_history[n_vars] = {
+                'times': [],
+                'solved': 0,
+                'failed': 0,
+                'avg_time': 0.0
+            }
+        hist = self.np_solution_history[n_vars]
+        if solved:
+            hist['solved'] += 1
+            hist['times'].append(time_ms / 1000.0)
+            recent = hist['times'][-10:]
+            hist['avg_time'] = sum(recent) / len(recent)
+        else:
+            hist['failed'] += 1
+        self._update_scaling_exponent()
+
+    def _update_scaling_exponent(self):
+        """Обновляет экспоненту масштабирования на основе успешных решений"""
+        solved_items = []
+        for n, h in self.np_solution_history.items():
+            if h['solved'] > 0:
+                # n может быть строкой при загрузке из JSON, преобразуем в int
+                n_int = int(n) if isinstance(n, str) else n
+                solved_items.append((n_int, h['avg_time']))
+        if len(solved_items) >= 2:
+            log_n = [math.log(n) for n, _ in solved_items]
+            log_t = [math.log(t) for _, t in solved_items]
+            slope, _ = np.polyfit(log_n, log_t, 1)
+            self.np_scaling_exponent = max(0.5, min(3.0, slope))
+        else:
+            self.np_scaling_exponent = 1.5
+
+    def get_adaptive_timeout(self, n_vars: int) -> float:
+        """Возвращает таймаут в секундах для задачи размера n_vars"""
+        n_vars = int(n_vars)
+        hist = self.np_solution_history.get(n_vars, {})
+        if hist.get('solved', 0) > 0 and hist.get('avg_time', 0) > 0:
+            timeout = max(1.0, hist['avg_time'] * 1.5)
+        else:
+            base_timeout = 2.0
+            exp = getattr(self, 'np_scaling_exponent', 1.5)
+            timeout = base_timeout * (n_vars / 20.0) ** exp
+        return min(10.0, max(1.0, timeout))
+
+    # ========== Сохранение/загрузка ==========
     def to_dict(self):
+        failure_queue_serialized = []
+        for item in self.np_failure_queue:
+            if hasattr(item, 'to_dict'):
+                failure_queue_serialized.append(item.to_dict())
+            else:
+                failure_queue_serialized.append(item)
         return {
             'level': self.level,
             'exp': self.exp,
@@ -425,7 +509,24 @@ class JanusRPGState:
             'lethal_count': self.lethal_count,
             'self_model': self.self_model,
             'self_identity': self.self.identity,
-            'last_prediction': self.last_prediction
+            'last_prediction': self.last_prediction,
+            'current_np_task': self.current_np_task.to_dict() if self.current_np_task else None,
+            'np_difficulty': self.np_difficulty,
+            'np_task_solved_this_cycle': self.np_task_solved_this_cycle,
+            'np_difficulty_solved': self.np_difficulty_solved,
+            'np_series': [task.to_dict() for task in self.np_series],
+            'np_series_index': self.np_series_index,
+            'np_series_results': self.np_series_results,
+            'np_scaling_exponent': self.np_scaling_exponent,
+            'np_current_attempts': self.np_current_attempts,
+            'np_series_failures': self.np_series_failures,
+            'np_series_total': self.np_series_total,
+            'np_failure_queue': failure_queue_serialized,
+            'last_np_size': self.last_np_size,
+            'np_solution_history': self.np_solution_history,
+            'np_reward_mult': self.np_reward_mult,
+            'demiurge_batch_size': self.demiurge_batch_size,
+            'demiurge_reward_scale': self.demiurge_reward_scale,
         }
 
     def load(self, data):
@@ -456,12 +557,69 @@ class JanusRPGState:
             self.self.identity = data['self_identity']
         self.last_prediction = data.get('last_prediction', None)
 
+        task_data = data.get('current_np_task')
+        if task_data:
+            try:
+                from janus_genesis.np_task import NPTask
+                self.current_np_task = NPTask.from_dict(task_data)
+            except ImportError:
+                self.current_np_task = None
+        else:
+            self.current_np_task = None
+        self.np_difficulty = data.get('np_difficulty', 1.0)
+        self.np_task_solved_this_cycle = data.get('np_task_solved_this_cycle', False)
+        self.np_difficulty_solved = data.get('np_difficulty_solved', 0.0)
+
+        series_data = data.get('np_series', [])
+        self.np_series = []
+        for td in series_data:
+            try:
+                from janus_genesis.np_task import NPTask
+                self.np_series.append(NPTask.from_dict(td))
+            except ImportError:
+                pass
+        self.np_series_index = data.get('np_series_index', 0)
+        self.np_series_results = data.get('np_series_results', [])
+        self.np_scaling_exponent = data.get('np_scaling_exponent', 1.5)
+        self.np_current_attempts = data.get('np_current_attempts', 0)
+        self.np_series_failures = data.get('np_series_failures', 0)
+        self.np_series_total = data.get('np_series_total', 0)
+        self.last_np_size = data.get('last_np_size', 20)
+
+        failure_queue_data = data.get('np_failure_queue', [])
+        self.np_failure_queue = []
+        for item in failure_queue_data:
+            try:
+                from janus_genesis.np_task import NPTask
+                if isinstance(item, dict):
+                    self.np_failure_queue.append(NPTask.from_dict(item))
+                else:
+                    self.np_failure_queue.append(item)
+            except ImportError:
+                self.np_failure_queue.append(item)
+
+        self.np_solution_history = data.get('np_solution_history', {})
+        # Преобразуем строковые ключи в целые числа, чтобы избежать ошибок типов
+        if self.np_solution_history:
+            new_hist = {}
+            for k, v in self.np_solution_history.items():
+                try:
+                    new_hist[int(k)] = v
+                except (ValueError, TypeError):
+                    new_hist[k] = v
+            self.np_solution_history = new_hist
+
+        self.np_reward_mult = data.get('np_reward_mult', 1.0)
+        self.demiurge_batch_size = data.get('demiurge_batch_size', None)
+        self.demiurge_reward_scale = data.get('demiurge_reward_scale', 1.0)
+
     def copy(self):
         import copy
         return copy.deepcopy(self)
 
 
 # ========== JanusAgent (агент мира) – ОБНОВЛЁННЫЙ ==========
+# (код JanusAgent здесь такой же, как в agent.py, но для обратной совместимости оставляем)
 class JanusAgent:
     def __init__(self, config: Dict[str, Any]):
         self.id = str(uuid.uuid4())
@@ -472,29 +630,23 @@ class JanusAgent:
         self.score = 0
         self.faction = None
         self.faction_bonus = {}
-        self.inventory = Inventory(max_weight=100)   # новый инвентарь
+        self.inventory = Inventory(max_weight=100)
         self.gold = 100
         self.mutation_bonus = 1.0
-
         self.race = random.choice(RACES)
         self.agent_class = random.choice(CLASSES)
         self.profession = random.choice(PROFESSIONS)
         self.clan = None
         self.reputation = {}
         self.skills = {self.profession: 1}
-
         self.belief = None
         self.risk_tolerance = 1.0
         self.aggression = 1.0
         self.greedy = 1.0
         self.learning_rate = 1.0
-
         self.arch_genome = None
-
         self.creation_time = time.time()
         self.last_train_time = self.creation_time
-
-        # Расширенные поля для памяти и гипотез
         self.config_memory: List[Dict[str, Any]] = []
         self.hypotheses: List[Dict[str, Any]] = []
         self.meta_goal: str = "SEARCH_P_VS_NP"
@@ -540,16 +692,13 @@ class JanusAgent:
 
     def _update_current_config(self) -> None:
         config = self.base_config.copy()
-        # Бонусы фракции
         for param, delta in self.faction_bonus.items():
             if param in config and isinstance(config[param], (int, float)):
                 config[param] += delta
-        # Эффекты экипировки и сетов
         effects = self.inventory.all_effects()
         for param, delta in effects.items():
             if param in config and isinstance(config[param], (int, float)):
                 config[param] += delta
-        # Ограничения
         for param, value in config.items():
             if param in PARAM_RANGES:
                 range_val = PARAM_RANGES[param]
@@ -571,41 +720,26 @@ class JanusAgent:
 
     def train_reward(self, score: float) -> None:
         self.score = score
-
-        # Запоминаем конфиг и результат
-        record = {
-            "config": self.current_config.copy(),
-            "score": score
-        }
+        record = {"config": self.current_config.copy(), "score": score}
         self.config_memory.append(record)
-
-        # Опыт и золото
         xp = max(1, int(abs(score) * 10))
         self.add_exp(xp)
         self.last_train_time = time.time()
         self.gold += max(1, int(score * 5))
-
-        # Генерируем гипотезу, если накопилось достаточно данных
         self.generate_hypothesis()
 
     def generate_hypothesis(self) -> Optional[Dict[str, Any]]:
         if len(self.config_memory) < 5:
             return None
-
         best = max(self.config_memory, key=lambda x: x["score"])
         worst = min(self.config_memory, key=lambda x: x["score"])
-
         for param in ['lr', 'gain', 'temperature']:
             if best["config"][param] > worst["config"][param]:
                 idea = f"increase_{param}"
             else:
                 idea = f"decrease_{param}"
             break
-
-        hypothesis = {
-            "idea": idea,
-            "confidence": random.random()
-        }
+        hypothesis = {"idea": idea, "confidence": random.random()}
         self.hypotheses.append(hypothesis)
         return hypothesis
 
@@ -642,7 +776,7 @@ class JanusAgent:
             low, high = PARAM_RANGES['lr']
             self.current_config["lr"] = random.uniform(low, high)
         elif self.belief == "BALANCE":
-            self.current_config["lr"] = min(1e-2, max(1e-5, self.current_config["lr"]))
+            self.current_config["lr"] = min(5e-3, max(1e-5, self.current_config["lr"]))
         for param, ranges in PARAM_RANGES.items():
             if isinstance(ranges, tuple):
                 low, high = ranges
@@ -654,12 +788,9 @@ class JanusAgent:
     def decide_action(self) -> str:
         if len(self.config_memory) < 10:
             return "EXPLORE"
-
         avg_score = sum(x["score"] for x in self.config_memory[-10:]) / 10
-
         if avg_score > 0.8:
             return "EXPLOIT"
-
         if self.belief == "P_EQUALS_NP":
             return "OPTIMIZE"
         if self.belief == "P_NOT_EQUALS_NP":
@@ -668,7 +799,6 @@ class JanusAgent:
             return "RANDOMIZE"
         if self.belief == "BALANCE":
             return "EXPLORE"
-
         return "EXPLORE"
 
     def choose_with_tachyon(self, tachyon, state) -> str:
@@ -685,10 +815,7 @@ class JanusAgent:
 
     def pursue_meta_goal(self) -> Dict[str, Any]:
         if self.meta_goal == "SEARCH_P_VS_NP":
-            return {
-                "action": "generate_counterexample",
-                "target": "complexity_boundary"
-            }
+            return {"action": "generate_counterexample", "target": "complexity_boundary"}
         return {"action": "idle"}
 
     def can_afford(self, price: int) -> bool:

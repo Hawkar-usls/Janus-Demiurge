@@ -20,7 +20,7 @@ CONFIG = {
     'grad_clip': 1.0,
     'quick_check_steps': 10,
     'quick_check_batch': 32,
-    'train_steps': 1000,  # по умолчанию, но переопределяется вызовом
+    'train_steps': 1000,
     'val_samples': 500
 }
 
@@ -51,9 +51,7 @@ class AdaptiveTransformer(nn.Module):
 
 
 def quick_check(config: Dict[str, Any], train_t: torch.Tensor, device: torch.device) -> Tuple[bool, float]:
-    """
-    Быстрая проверка на 10 шагах. Возвращает (lethal, grad_norm).
-    """
+    """Быстрая проверка на 10 шагах. Возвращает (lethal, grad_norm)."""
     try:
         model = AdaptiveTransformer(config['n_embd'], config['n_head'], config['n_layer']).to(device)
         optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'])
@@ -84,6 +82,14 @@ def quick_check(config: Dict[str, Any], train_t: torch.Tensor, device: torch.dev
 
 def _train_worker(seed: int, config: Dict[str, Any], train_t: torch.Tensor, val_t: torch.Tensor,
                   steps: int, batch_size: Optional[int] = None, device: torch.device = DEVICE) -> Tuple:
+    """
+    Обучает одну модель на указанном сиде.
+    Возвращает кортеж:
+        (val_loss, div, mi_unbiased, train_loss_avg,
+         gn_min, gn_max, gn_mean, weight_norm, vram_mb, step_time_ms,
+         state_dict, model_cpu)
+    При ошибке возвращает кортеж из 12 элементов, первый из которых None.
+    """
     torch.manual_seed(seed)
     model = AdaptiveTransformer(config['n_embd'], config['n_head'], config['n_layer']).to(device)
     base_lr = config['lr']
@@ -112,8 +118,8 @@ def _train_worker(seed: int, config: Dict[str, Any], train_t: torch.Tensor, val_
 
     gain = config.get('gain', 1.0)
     temp = config.get('temperature', 1.0)
-    gain = max(0.01, min(10.0, gain))
-    temp = max(0.01, min(10.0, temp))
+    gain = max(0.7, min(1.3, gain))
+    temp = max(0.7, min(1.3, temp))
 
     for step in range(steps):
         if lambda_decay > 0:
@@ -129,39 +135,71 @@ def _train_worker(seed: int, config: Dict[str, Any], train_t: torch.Tensor, val_
         if scaler is not None:
             with torch.amp.autocast('cuda'):
                 logits = model(x)
+                logits = torch.where(torch.isnan(logits) | torch.isinf(logits), torch.zeros_like(logits), logits)
+                logits = torch.clamp(logits, -10, 10)
                 effective_len = logits.size(1)
                 y_trimmed = y[:, :effective_len]
                 shift_logits = logits[:, :-1, :] * gain / temp
                 if torch.isnan(shift_logits).any():
-                    logger.error("NaN в logits после применения gain/temp. Используем fallback.")
-                    shift_logits = torch.nan_to_num(shift_logits, nan=0.0)
+                    shift_logits = torch.nan_to_num(shift_logits, nan=0.0, posinf=10.0, neginf=-10.0)
                 y_target = y_trimmed[:, 1:]
                 loss = F.cross_entropy(shift_logits.reshape(-1, VOCAB_SIZE), y_target.reshape(-1))
+            # Проверка на NaN/Inf перед backward
+            if not torch.isfinite(loss):
+                logger.warning(f"Обнаружен NaN/Inf loss (seed={seed}, step={step}). Пропускаем шаг, уменьшаем lr.")
+                for param_group in optimizer.param_groups:
+                    param_group['lr'] *= 0.5
+                continue
             scaler.scale(loss).backward()
             scaler.unscale_(optimizer)
             grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), CONFIG['grad_clip'])
             gn_val = grad_norm.item()
+            # Проверка градиентов
+            if not torch.isfinite(torch.tensor(gn_val)):
+                logger.warning(f"Градиенты содержат NaN/Inf (seed={seed}). Пропускаем шаг.")
+                optimizer.zero_grad()
+                # Обязательно вызываем step и update, чтобы скалер не остался в неопределённом состоянии
+                scaler.step(optimizer)
+                scaler.update()
+                continue
             grad_norms.append(gn_val)
             scaler.step(optimizer)
             scaler.update()
         else:
             logits = model(x)
+            logits = torch.where(torch.isnan(logits) | torch.isinf(logits), torch.zeros_like(logits), logits)
+            logits = torch.clamp(logits, -10, 10)
             effective_len = logits.size(1)
             y_trimmed = y[:, :effective_len]
             shift_logits = logits[:, :-1, :] * gain / temp
             if torch.isnan(shift_logits).any():
-                logger.error("NaN в logits после применения gain/temp. Используем fallback.")
-                shift_logits = torch.nan_to_num(shift_logits, nan=0.0)
+                shift_logits = torch.nan_to_num(shift_logits, nan=0.0, posinf=10.0, neginf=-10.0)
             y_target = y_trimmed[:, 1:]
             loss = F.cross_entropy(shift_logits.reshape(-1, VOCAB_SIZE), y_target.reshape(-1))
+            if not torch.isfinite(loss):
+                logger.warning(f"Обнаружен NaN/Inf loss (seed={seed}). Пропускаем шаг, уменьшаем lr.")
+                for param_group in optimizer.param_groups:
+                    param_group['lr'] *= 0.5
+                continue
             loss.backward()
             grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), CONFIG['grad_clip'])
             gn_val = grad_norm.item()
+            if not torch.isfinite(torch.tensor(gn_val)):
+                logger.warning(f"Градиенты содержат NaN/Inf (seed={seed}). Пропускаем шаг, уменьшаем lr.")
+                optimizer.zero_grad()
+                for param_group in optimizer.param_groups:
+                    param_group['lr'] *= 0.5
+                continue
             grad_norms.append(gn_val)
             optimizer.step()
 
         if step % 100 == 0:
             train_losses.append(loss.item())
+
+    # Проверка на NaN в градиентах после цикла
+    if any(math.isnan(gn) for gn in grad_norms):
+        logger.error("Обнаружены NaN в градиентах. Обучение прервано.")
+        return (None, None, None, None, None, None, None, None, None, None, None, None)
 
     train_loss_avg = np.mean(train_losses) if train_losses else float('inf')
     gn_min = float(np.min(grad_norms)) if grad_norms else 0.0
@@ -169,8 +207,9 @@ def _train_worker(seed: int, config: Dict[str, Any], train_t: torch.Tensor, val_
     gn_mean = float(np.mean(grad_norms)) if grad_norms else 0.0
     weight_norm = sum(p.norm().item() for p in model.parameters() if p.requires_grad)
     vram_mb = torch.cuda.max_memory_allocated() / (1024**2) if device.type == 'cuda' else 0
-    actual_steps = len(grad_norms) if grad_norms else 1
-    step_time_ms = ((time.time() - start_time) / actual_steps) * 1000
+    # Корректный расчёт времени шага: если все шаги пропущены, используем общее количество шагов
+    actual_steps = len(grad_norms) if grad_norms else steps
+    step_time_ms = ((time.time() - start_time) / max(1, actual_steps)) * 1000
 
     model.eval()
     with torch.no_grad():
@@ -181,33 +220,40 @@ def _train_worker(seed: int, config: Dict[str, Any], train_t: torch.Tensor, val_
         if scaler is not None:
             with torch.amp.autocast('cuda'):
                 logits_val = model(val_x)
+                logits_val = torch.where(torch.isnan(logits_val) | torch.isinf(logits_val), torch.zeros_like(logits_val), logits_val)
+                logits_val = torch.clamp(logits_val, -10, 10)
                 effective_len_val = logits_val.size(1)
                 val_y_trimmed = val_y[:, :effective_len_val]
                 shift_logits_val = logits_val[:, :-1, :] * gain / temp
                 if torch.isnan(shift_logits_val).any():
-                    shift_logits_val = torch.nan_to_num(shift_logits_val, nan=0.0)
+                    shift_logits_val = torch.nan_to_num(shift_logits_val, nan=0.0, posinf=10.0, neginf=-10.0)
                 val_y_target = val_y_trimmed[:, 1:]
                 val_loss = F.cross_entropy(shift_logits_val.reshape(-1, VOCAB_SIZE), val_y_target.reshape(-1)).item()
         else:
             logits_val = model(val_x)
+            logits_val = torch.where(torch.isnan(logits_val) | torch.isinf(logits_val), torch.zeros_like(logits_val), logits_val)
+            logits_val = torch.clamp(logits_val, -10, 10)
             effective_len_val = logits_val.size(1)
             val_y_trimmed = val_y[:, :effective_len_val]
             shift_logits_val = logits_val[:, :-1, :] * gain / temp
             if torch.isnan(shift_logits_val).any():
-                shift_logits_val = torch.nan_to_num(shift_logits_val, nan=0.0)
+                shift_logits_val = torch.nan_to_num(shift_logits_val, nan=0.0, posinf=10.0, neginf=-10.0)
             val_y_target = val_y_trimmed[:, 1:]
             val_loss = F.cross_entropy(shift_logits_val.reshape(-1, VOCAB_SIZE), val_y_target.reshape(-1)).item()
 
+        # Генерация для дивергенции и MI
         num_samples, gen_len = 100, 100
         tokens = torch.randint(0, VOCAB_SIZE, (num_samples, 1), device=device)
         for _ in range(1, gen_len):
             if scaler is not None:
                 with torch.amp.autocast('cuda'):
                     logts = model(tokens)[:, -1, :] * gain / temp
+                    logts = torch.where(torch.isnan(logts) | torch.isinf(logts), torch.zeros_like(logts), logts)
+                    logts = torch.clamp(logts, -10, 10)
             else:
                 logts = model(tokens)[:, -1, :] * gain / temp
-            if torch.isnan(logts).any():
-                logts = torch.nan_to_num(logts, nan=0.0)
+                logts = torch.where(torch.isnan(logts) | torch.isinf(logts), torch.zeros_like(logts), logts)
+                logts = torch.clamp(logts, -10, 10)
             probs = F.softmax(logts, dim=-1)
             probs = torch.nan_to_num(probs, nan=1.0/VOCAB_SIZE)
             probs = probs / probs.sum(dim=-1, keepdim=True)
@@ -235,8 +281,13 @@ def _train_worker(seed: int, config: Dict[str, Any], train_t: torch.Tensor, val_
     if device.type == 'cuda':
         torch.cuda.empty_cache()
 
-    return (val_loss, div, mi_unbiased, train_loss_avg, gn_min, gn_max, gn_mean,
-            weight_norm, vram_mb, step_time_ms, {k: v.cpu().clone() for k, v in model.state_dict().items()})
+    # Переносим модель на CPU для экономии памяти GPU
+    model_cpu = model.cpu()
+    state_dict_cpu = {k: v.cpu().clone() for k, v in model.state_dict().items()}
+
+    return (val_loss, div, mi_unbiased, train_loss_avg,
+            gn_min, gn_max, gn_mean, weight_norm, vram_mb, step_time_ms,
+            state_dict_cpu, model_cpu)
 
 
 def run_training_cluster(config: Dict[str, Any], train_t: torch.Tensor, val_t: torch.Tensor,
@@ -244,25 +295,32 @@ def run_training_cluster(config: Dict[str, Any], train_t: torch.Tensor, val_t: t
                          device: torch.device = DEVICE) -> Tuple:
     """
     Запускает кластерное обучение на нескольких случайных сидах.
-    Возвращает кортеж:
-    (success_count, score, avg_vl, avg_div, avg_mi, avg_train,
-     avg_gn_min, avg_gn_max, avg_gn_mean, avg_wnorm, avg_vram, avg_step_t, best_state)
+    Возвращает кортеж из 15 элементов:
+        (success_count, score, avg_vl, avg_div, avg_mi, avg_train,
+         avg_gn_min, avg_gn_max, avg_gn_mean, avg_wnorm, avg_vram, avg_step_t,
+         best_model_cpu, best_state_dict_cpu, config)
+    Если ни один сид не дал результата, success_count = 0, остальные значения None.
     """
     results = []
-    best_state, best_loss = None, float('inf')
+    best_loss = float('inf')
+    best_model = None
+    best_state_dict = None
 
     for s in range(seeds):
         res = _train_worker(s, config, train_t, val_t, steps, batch_size=batch_size, device=device)
+        # Первый элемент res — val_loss, если None — ошибка
         if res[0] is not None:
             results.append(res)
             if res[0] < best_loss:
                 best_loss = res[0]
-                best_state = res[10]
+                best_state_dict = res[10]   # state_dict
+                best_model = res[11]        # модель на CPU
 
     success_count = len(results)
 
     if success_count == 0:
-        return (0, None, None, None, None, None, None, None, None, None, None, None, None)
+        # Возвращаем success_count и 14 None (все остальные значения)
+        return (0, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
 
     avg_vl = float(np.mean([r[0] for r in results]))
     avg_div = float(np.mean([r[1] for r in results]))
@@ -278,5 +336,7 @@ def run_training_cluster(config: Dict[str, Any], train_t: torch.Tensor, val_t: t
     gap = avg_train - avg_vl
     score = -avg_vl - 0.5*gap + 1.0*avg_mi + 0.8*avg_div
 
+    # Возвращаем все 15 элементов
     return (success_count, score, avg_vl, avg_div, avg_mi, avg_train,
-            avg_gn_min, avg_gn_max, avg_gn_mean, avg_wnorm, avg_vram, avg_step_t, best_state)
+            avg_gn_min, avg_gn_max, avg_gn_mean, avg_wnorm, avg_vram, avg_step_t,
+            best_model, best_state_dict, config)
