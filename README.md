@@ -5,6 +5,16 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
+## [7.2.0] - 2026-03-29
+### Added
+- Мета-режим Януса с инстинктами: EXPLORE, EXPLOIT, SURVIVE, CHAOS, HUNT
+- Инерция режима (mode_strength)
+- Голод (hunger) — толкает в CHAOS при застое
+- SURVIVE-режим с откатом к лучшему состоянию + сохранением модели
+- Предиктивный выбор режима через self-model
+- Антиколлапсная система
+- Аморфные параметры с самостабилизацией
+
 ## 🚀 Возможности
 
 - **Автоматический выбор гиперпараметров** (размер модели, скорость обучения, gain, temperature)
