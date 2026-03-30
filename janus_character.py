@@ -8,9 +8,13 @@ import math
 import time
 import uuid
 import numpy as np
+import logging          # <--- ДОБАВЛЕНО
 from collections import deque
 from typing import Dict, Any, Optional, List, Tuple
 from config import RAW_LOGS_DIR
+
+# ========== ЛОГГЕР ==========
+logger = logging.getLogger("JANUS.CHARACTER")   # <--- ДОБАВЛЕНО
 
 # ========== Импорты для самосознания (если нужны) ==========
 try:
@@ -84,6 +88,36 @@ RAID_BOSSES = [
     {"name": "Титан Градиента", "health": 800, "attack": 70, "defense": 30, "reward_gold": 800, "reward_exp": 300},
     {"name": "Древний Энтропий", "health": 1200, "attack": 100, "defense": 40, "reward_gold": 1200, "reward_exp": 500}
 ]
+
+# ========== Глобальный доступ к тахионным метрикам (обновляется tachyon_bridge) ==========
+_current_tachyon_metrics = {
+    'entropy': 0.0,
+    'temperature': 0.0,
+    'pressure': 0.0,
+    'humidity': 0.0,
+    'gyro_x': 0.0,
+    'gyro_y': 0.0,
+    'gyro_z': 0.0,
+    'mic': 0.0,
+    'gps_lat': 0.0,
+    'gps_lng': 0.0,
+    'gps_alt': 0.0,
+    'gps_sats': 0,
+    'beacon_f1': 0.0,
+    'beacon_f2': 0.0,
+    'android_mag': 0.0,
+    'android_loss': 0.0,
+    'android_entropy': 0.0,
+    'android_m2r': 0.0,
+}
+
+def get_tachyon_metrics() -> Dict[str, Any]:
+    """Возвращает текущие метрики из тахионного моста."""
+    return _current_tachyon_metrics.copy()
+
+def update_tachyon_metrics(metrics: Dict[str, Any]) -> None:
+    """Обновляет глобальные тахионные метрики (вызывается из tachyon_bridge)."""
+    _current_tachyon_metrics.update(metrics)
 
 # ========== Вспомогательные классы ==========
 class Limb:
@@ -201,8 +235,10 @@ class JanusRPGState:
         self.np_failure_queue = []
         self.last_np_size = 20
 
-        # --- История решений для адаптивного таймаута ---
-        self.np_solution_history = {}   # ключи — int, значения — словарь
+        # --- История решений для адаптивного таймаута и обучения ---
+        # Теперь храним не только время и конфигурацию, но и тахионные метрики
+        self.np_solution_history = {}   # ключи — n_vars, значения — список записей вида {'time': float, 'config': dict, 'tachyon_metrics': dict}
+        self.tachyon_engine = None      # будет инициализирован позже (импорт TachyonEngine)
 
         # --- Для Демиурга ---
         self.np_reward_mult = 1.0
@@ -429,35 +465,37 @@ class JanusRPGState:
         self.swarm = [a for a in self.swarm if a.alive]
         return killed, total_damage_taken, combat_log
 
-    # ========== Адаптивная история решений (с защитой от типов) ==========
-    def record_np_solution(self, n_vars: int, solved: bool, time_ms: float, attempts: int):
-        """Сохраняет результат решения задачи для адаптивного таймаута"""
-        n_vars = int(n_vars)  # на всякий случай
+    # ========== Адаптивная история решений (с сохранением конфигурации и тахионных метрик) ==========
+    def record_np_solution(self, n_vars: int, solved: bool, time_ms: float, attempts: int,
+                           agent_config: Dict[str, Any] = None, tachyon_metrics: Dict[str, Any] = None):
+        """
+        Сохраняет результат решения задачи для адаптивного таймаута и обучения.
+        Если решено, сохраняем время, конфигурацию агента и текущие тахионные метрики.
+        """
+        n_vars = int(n_vars)
         if n_vars not in self.np_solution_history:
-            self.np_solution_history[n_vars] = {
-                'times': [],
-                'solved': 0,
-                'failed': 0,
-                'avg_time': 0.0
-            }
-        hist = self.np_solution_history[n_vars]
+            self.np_solution_history[n_vars] = {'successes': [], 'failures': 0}
         if solved:
-            hist['solved'] += 1
-            hist['times'].append(time_ms / 1000.0)
-            recent = hist['times'][-10:]
-            hist['avg_time'] = sum(recent) / len(recent)
+            record = {
+                'time': time_ms / 1000.0,
+                'config': agent_config.copy() if agent_config else {},
+                'tachyon_metrics': tachyon_metrics.copy() if tachyon_metrics else {}
+            }
+            self.np_solution_history[n_vars]['successes'].append(record)
+            if len(self.np_solution_history[n_vars]['successes']) > 100:
+                self.np_solution_history[n_vars]['successes'] = self.np_solution_history[n_vars]['successes'][-100:]
         else:
-            hist['failed'] += 1
+            self.np_solution_history[n_vars]['failures'] += 1
         self._update_scaling_exponent()
 
     def _update_scaling_exponent(self):
-        """Обновляет экспоненту масштабирования на основе успешных решений"""
+        """Обновляет экспоненту масштабирования на основе среднего времени успешных решений"""
         solved_items = []
-        for n, h in self.np_solution_history.items():
-            if h['solved'] > 0:
-                # n может быть строкой при загрузке из JSON, преобразуем в int
+        for n, data in self.np_solution_history.items():
+            if data['successes']:
+                avg_time = np.mean([rec['time'] for rec in data['successes']])
                 n_int = int(n) if isinstance(n, str) else n
-                solved_items.append((n_int, h['avg_time']))
+                solved_items.append((n_int, avg_time))
         if len(solved_items) >= 2:
             log_n = [math.log(n) for n, _ in solved_items]
             log_t = [math.log(t) for _, t in solved_items]
@@ -466,17 +504,131 @@ class JanusRPGState:
         else:
             self.np_scaling_exponent = 1.5
 
-    def get_adaptive_timeout(self, n_vars: int) -> float:
-        """Возвращает таймаут в секундах для задачи размера n_vars"""
-        n_vars = int(n_vars)
-        hist = self.np_solution_history.get(n_vars, {})
-        if hist.get('solved', 0) > 0 and hist.get('avg_time', 0) > 0:
-            timeout = max(1.0, hist['avg_time'] * 1.5)
+    def _init_tachyon_engine(self):
+        """Инициализирует TachyonEngine, если он ещё не создан."""
+        if self.tachyon_engine is None:
+            try:
+                from tachyon_engine import TachyonEngine
+                self.tachyon_engine = TachyonEngine()
+                logger.info("✅ TachyonEngine инициализирован для NP-предсказаний")
+            except ImportError:
+                logger.warning("TachyonEngine не найден, используется линейная регрессия")
+                self.tachyon_engine = None
+
+    def update_prediction_model(self):
+        """Переобучает модель предсказания времени на всех накопленных успешных решениях."""
+        self._init_tachyon_engine()
+        # Собираем обучающие данные
+        X = []   # признаки
+        y = []   # время
+        for n, data in self.np_solution_history.items():
+            for rec in data['successes']:
+                config = rec.get('config', {})
+                tm = rec.get('tachyon_metrics', {})
+                if not config:
+                    continue
+                # Признаки: размер, гиперпараметры, тахионные метрики
+                features = [
+                    n,
+                    config.get('gain', 1.0),
+                    config.get('temperature', 1.0),
+                    config.get('lr', 0.001),
+                    config.get('n_embd', 128),
+                    config.get('n_head', 8),
+                    config.get('n_layer', 6),
+                    tm.get('entropy', 0.0),
+                    tm.get('temperature', 0.0),   # температура из тахиона
+                    tm.get('pressure', 0.0),
+                    tm.get('humidity', 0.0),
+                    tm.get('gyro_x', 0.0),
+                    tm.get('gyro_y', 0.0),
+                    tm.get('gyro_z', 0.0),
+                    tm.get('mic', 0.0),
+                    tm.get('android_mag', 0.0),
+                    tm.get('android_entropy', 0.0),
+                ]
+                X.append(features)
+                y.append(rec['time'])
+        if len(X) < 10:
+            logger.info("Недостаточно данных для обучения модели предсказания времени")
+            return
+
+        if self.tachyon_engine is not None:
+            # Обучаем TachyonEngine на этих данных
+            self.tachyon_engine.train_on_np_data(X, y)
         else:
-            base_timeout = 2.0
+            # Fallback: линейная регрессия через sklearn
+            try:
+                from sklearn.linear_model import LinearRegression
+                self.np_prediction_model = LinearRegression()
+                self.np_prediction_model.fit(X, y)
+                self.np_prediction_model_ready = True
+                logger.info(f"✅ Линейная регрессия обучена на {len(X)} примерах")
+            except ImportError:
+                logger.warning("sklearn не установлен, модель не обучена")
+
+    def predict_time(self, n_vars: int, agent_config: Dict[str, Any], tachyon_metrics: Dict[str, Any] = None) -> float:
+        """
+        Предсказывает время решения задачи на основе размера, конфигурации агента и текущих тахионных метрик.
+        Если модель не готова, использует экспоненциальную экстраполяцию.
+        """
+        if tachyon_metrics is None:
+            tachyon_metrics = get_tachyon_metrics()
+        features = [
+            n_vars,
+            agent_config.get('gain', 1.0),
+            agent_config.get('temperature', 1.0),
+            agent_config.get('lr', 0.001),
+            agent_config.get('n_embd', 128),
+            agent_config.get('n_head', 8),
+            agent_config.get('n_layer', 6),
+            tachyon_metrics.get('entropy', 0.0),
+            tachyon_metrics.get('temperature', 0.0),
+            tachyon_metrics.get('pressure', 0.0),
+            tachyon_metrics.get('humidity', 0.0),
+            tachyon_metrics.get('gyro_x', 0.0),
+            tachyon_metrics.get('gyro_y', 0.0),
+            tachyon_metrics.get('gyro_z', 0.0),
+            tachyon_metrics.get('mic', 0.0),
+            tachyon_metrics.get('android_mag', 0.0),
+            tachyon_metrics.get('android_entropy', 0.0),
+        ]
+        if self.tachyon_engine is not None and self.tachyon_engine.trained:
+            try:
+                pred = self.tachyon_engine.predict_time(features)
+                return max(1.0, min(600.0, pred))
+            except Exception as e:
+                logger.debug(f"Ошибка предсказания TachyonEngine: {e}")
+        # Fallback: экспоненциальная экстраполяция
+        base_timeout = 5.0
+        exp = getattr(self, 'np_scaling_exponent', 1.5)
+        timeout = base_timeout * (n_vars / 20.0) ** exp
+        return min(600.0, max(1.0, timeout))
+
+    def get_adaptive_timeout(self, n_vars: int, agent_config: Dict[str, Any] = None,
+                             tachyon_metrics: Dict[str, Any] = None) -> float:
+        """
+        Возвращает таймаут в секундах для задачи размера n_vars.
+        Использует предсказание модели, если есть, иначе историю или экспоненту.
+        """
+        n_vars = int(n_vars)
+        if agent_config is None:
+            agent_config = {}
+        if tachyon_metrics is None:
+            tachyon_metrics = get_tachyon_metrics()
+        # Если есть обученная модель (TachyonEngine или линейная регрессия), используем её
+        if self.tachyon_engine is not None and self.tachyon_engine.trained:
+            return self.predict_time(n_vars, agent_config, tachyon_metrics)
+        # Иначе смотрим историю для этого размера
+        hist = self.np_solution_history.get(n_vars, {})
+        if hist.get('successes'):
+            avg_time = np.mean([rec['time'] for rec in hist['successes']])
+            timeout = max(1.0, avg_time * 1.5)
+        else:
+            base_timeout = 5.0
             exp = getattr(self, 'np_scaling_exponent', 1.5)
             timeout = base_timeout * (n_vars / 20.0) ** exp
-        return min(10.0, max(1.0, timeout))
+        return min(600.0, max(1.0, timeout))
 
     # ========== Сохранение/загрузка ==========
     def to_dict(self):
@@ -486,6 +638,13 @@ class JanusRPGState:
                 failure_queue_serialized.append(item.to_dict())
             else:
                 failure_queue_serialized.append(item)
+        # Сериализуем историю решений (без объектов модели)
+        solution_history_serialized = {}
+        for n, data in self.np_solution_history.items():
+            solution_history_serialized[n] = {
+                'successes': data['successes'],
+                'failures': data['failures']
+            }
         return {
             'level': self.level,
             'exp': self.exp,
@@ -523,7 +682,7 @@ class JanusRPGState:
             'np_series_total': self.np_series_total,
             'np_failure_queue': failure_queue_serialized,
             'last_np_size': self.last_np_size,
-            'np_solution_history': self.np_solution_history,
+            'np_solution_history': solution_history_serialized,
             'np_reward_mult': self.np_reward_mult,
             'demiurge_batch_size': self.demiurge_batch_size,
             'demiurge_reward_scale': self.demiurge_reward_scale,
@@ -598,20 +757,22 @@ class JanusRPGState:
             except ImportError:
                 self.np_failure_queue.append(item)
 
-        self.np_solution_history = data.get('np_solution_history', {})
-        # Преобразуем строковые ключи в целые числа, чтобы избежать ошибок типов
-        if self.np_solution_history:
-            new_hist = {}
-            for k, v in self.np_solution_history.items():
-                try:
-                    new_hist[int(k)] = v
-                except (ValueError, TypeError):
-                    new_hist[k] = v
-            self.np_solution_history = new_hist
+        solution_history_data = data.get('np_solution_history', {})
+        self.np_solution_history = {}
+        for n, rec in solution_history_data.items():
+            n_int = int(n) if isinstance(n, str) else n
+            self.np_solution_history[n_int] = {
+                'successes': rec.get('successes', []),
+                'failures': rec.get('failures', 0)
+            }
 
         self.np_reward_mult = data.get('np_reward_mult', 1.0)
         self.demiurge_batch_size = data.get('demiurge_batch_size', None)
         self.demiurge_reward_scale = data.get('demiurge_reward_scale', 1.0)
+
+        # Попробуем восстановить модель, если данных достаточно
+        self._init_tachyon_engine()
+        self.update_prediction_model()
 
     def copy(self):
         import copy
