@@ -7,14 +7,14 @@ import random
 import math
 import time
 import uuid
+import logging
 import numpy as np
-import logging          # <--- ДОБАВЛЕНО
 from collections import deque
 from typing import Dict, Any, Optional, List, Tuple
 from config import RAW_LOGS_DIR
 
 # ========== ЛОГГЕР ==========
-logger = logging.getLogger("JANUS.CHARACTER")   # <--- ДОБАВЛЕНО
+logger = logging.getLogger("JANUS.CHARACTER")
 
 # ========== Импорты для самосознания (если нужны) ==========
 try:
@@ -630,22 +630,39 @@ class JanusRPGState:
             timeout = base_timeout * (n_vars / 20.0) ** exp
         return min(600.0, max(1.0, timeout))
 
-    # ========== Сохранение/загрузка ==========
+    # ========== Сохранение/загрузка (с исправлением сериализации numpy-типов) ==========
     def to_dict(self):
+        import numpy as np
+        
+        def convert(obj):
+            """Рекурсивно преобразует numpy-типы в стандартные Python-типы для JSON."""
+            if isinstance(obj, (np.float32, np.float64)):
+                return float(obj)
+            if isinstance(obj, (np.int32, np.int64)):
+                return int(obj)
+            if isinstance(obj, np.ndarray):
+                return obj.tolist()
+            if isinstance(obj, dict):
+                return {convert(k): convert(v) for k, v in obj.items()}
+            if isinstance(obj, (list, tuple)):
+                return [convert(i) for i in obj]
+            return obj
+        
         failure_queue_serialized = []
         for item in self.np_failure_queue:
             if hasattr(item, 'to_dict'):
-                failure_queue_serialized.append(item.to_dict())
+                failure_queue_serialized.append(convert(item.to_dict()))
             else:
-                failure_queue_serialized.append(item)
-        # Сериализуем историю решений (без объектов модели)
+                failure_queue_serialized.append(convert(item))
+        
         solution_history_serialized = {}
         for n, data in self.np_solution_history.items():
-            solution_history_serialized[n] = {
-                'successes': data['successes'],
-                'failures': data['failures']
+            solution_history_serialized[convert(n)] = {
+                'successes': convert(data['successes']),
+                'failures': convert(data['failures'])
             }
-        return {
+        
+        return convert({
             'level': self.level,
             'exp': self.exp,
             'max_best': self.max_best,
@@ -686,7 +703,7 @@ class JanusRPGState:
             'np_reward_mult': self.np_reward_mult,
             'demiurge_batch_size': self.demiurge_batch_size,
             'demiurge_reward_scale': self.demiurge_reward_scale,
-        }
+        })
 
     def load(self, data):
         self.level = data.get('level', 1)
