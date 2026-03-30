@@ -236,9 +236,8 @@ class JanusRPGState:
         self.last_np_size = 20
 
         # --- История решений для адаптивного таймаута и обучения ---
-        # Теперь храним не только время и конфигурацию, но и тахионные метрики
-        self.np_solution_history = {}   # ключи — n_vars, значения — список записей вида {'time': float, 'config': dict, 'tachyon_metrics': dict}
-        self.tachyon_engine = None      # будет инициализирован позже (импорт TachyonEngine)
+        self.np_solution_history = {}
+        self.tachyon_engine = None
 
         # --- Для Демиурга ---
         self.np_reward_mult = 1.0
@@ -465,13 +464,9 @@ class JanusRPGState:
         self.swarm = [a for a in self.swarm if a.alive]
         return killed, total_damage_taken, combat_log
 
-    # ========== Адаптивная история решений (с сохранением конфигурации и тахионных метрик) ==========
+    # ========== Адаптивная история решений ==========
     def record_np_solution(self, n_vars: int, solved: bool, time_ms: float, attempts: int,
                            agent_config: Dict[str, Any] = None, tachyon_metrics: Dict[str, Any] = None):
-        """
-        Сохраняет результат решения задачи для адаптивного таймаута и обучения.
-        Если решено, сохраняем время, конфигурацию агента и текущие тахионные метрики.
-        """
         n_vars = int(n_vars)
         if n_vars not in self.np_solution_history:
             self.np_solution_history[n_vars] = {'successes': [], 'failures': 0}
@@ -489,7 +484,6 @@ class JanusRPGState:
         self._update_scaling_exponent()
 
     def _update_scaling_exponent(self):
-        """Обновляет экспоненту масштабирования на основе среднего времени успешных решений"""
         solved_items = []
         for n, data in self.np_solution_history.items():
             if data['successes']:
@@ -505,7 +499,6 @@ class JanusRPGState:
             self.np_scaling_exponent = 1.5
 
     def _init_tachyon_engine(self):
-        """Инициализирует TachyonEngine, если он ещё не создан."""
         if self.tachyon_engine is None:
             try:
                 from tachyon_engine import TachyonEngine
@@ -516,18 +509,14 @@ class JanusRPGState:
                 self.tachyon_engine = None
 
     def update_prediction_model(self):
-        """Переобучает модель предсказания времени на всех накопленных успешных решениях."""
         self._init_tachyon_engine()
-        # Собираем обучающие данные
-        X = []   # признаки
-        y = []   # время
+        X, y = [], []
         for n, data in self.np_solution_history.items():
             for rec in data['successes']:
                 config = rec.get('config', {})
                 tm = rec.get('tachyon_metrics', {})
                 if not config:
                     continue
-                # Признаки: размер, гиперпараметры, тахионные метрики
                 features = [
                     n,
                     config.get('gain', 1.0),
@@ -537,7 +526,7 @@ class JanusRPGState:
                     config.get('n_head', 8),
                     config.get('n_layer', 6),
                     tm.get('entropy', 0.0),
-                    tm.get('temperature', 0.0),   # температура из тахиона
+                    tm.get('temperature', 0.0),
                     tm.get('pressure', 0.0),
                     tm.get('humidity', 0.0),
                     tm.get('gyro_x', 0.0),
@@ -552,12 +541,9 @@ class JanusRPGState:
         if len(X) < 10:
             logger.info("Недостаточно данных для обучения модели предсказания времени")
             return
-
         if self.tachyon_engine is not None:
-            # Обучаем TachyonEngine на этих данных
             self.tachyon_engine.train_on_np_data(X, y)
         else:
-            # Fallback: линейная регрессия через sklearn
             try:
                 from sklearn.linear_model import LinearRegression
                 self.np_prediction_model = LinearRegression()
@@ -568,10 +554,6 @@ class JanusRPGState:
                 logger.warning("sklearn не установлен, модель не обучена")
 
     def predict_time(self, n_vars: int, agent_config: Dict[str, Any], tachyon_metrics: Dict[str, Any] = None) -> float:
-        """
-        Предсказывает время решения задачи на основе размера, конфигурации агента и текущих тахионных метрик.
-        Если модель не готова, использует экспоненциальную экстраполяцию.
-        """
         if tachyon_metrics is None:
             tachyon_metrics = get_tachyon_metrics()
         features = [
@@ -599,7 +581,6 @@ class JanusRPGState:
                 return max(1.0, min(600.0, pred))
             except Exception as e:
                 logger.debug(f"Ошибка предсказания TachyonEngine: {e}")
-        # Fallback: экспоненциальная экстраполяция
         base_timeout = 5.0
         exp = getattr(self, 'np_scaling_exponent', 1.5)
         timeout = base_timeout * (n_vars / 20.0) ** exp
@@ -607,19 +588,13 @@ class JanusRPGState:
 
     def get_adaptive_timeout(self, n_vars: int, agent_config: Dict[str, Any] = None,
                              tachyon_metrics: Dict[str, Any] = None) -> float:
-        """
-        Возвращает таймаут в секундах для задачи размера n_vars.
-        Использует предсказание модели, если есть, иначе историю или экспоненту.
-        """
         n_vars = int(n_vars)
         if agent_config is None:
             agent_config = {}
         if tachyon_metrics is None:
             tachyon_metrics = get_tachyon_metrics()
-        # Если есть обученная модель (TachyonEngine или линейная регрессия), используем её
         if self.tachyon_engine is not None and self.tachyon_engine.trained:
             return self.predict_time(n_vars, agent_config, tachyon_metrics)
-        # Иначе смотрим историю для этого размера
         hist = self.np_solution_history.get(n_vars, {})
         if hist.get('successes'):
             avg_time = np.mean([rec['time'] for rec in hist['successes']])
@@ -630,12 +605,34 @@ class JanusRPGState:
             timeout = base_timeout * (n_vars / 20.0) ** exp
         return min(600.0, max(1.0, timeout))
 
-    # ========== Сохранение/загрузка (с исправлением сериализации numpy-типов) ==========
+    # ========== Восстановление битого JSON ==========
+    def _repair_json(self, filepath: str) -> bool:
+        """Пытается восстановить повреждённый JSON-файл, обрезая до последней валидной позиции."""
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                content = f.read()
+            # Ищем последнюю позицию, где содержимое является валидным JSON
+            for i in range(len(content), 0, -1):
+                try:
+                    json.loads(content[:i])
+                    repaired = content[:i]
+                    with open(filepath, 'w', encoding='utf-8') as f:
+                        f.write(repaired)
+                    logger.info(f"JSON файл {filepath} восстановлен, обрезан до {i} символов")
+                    return True
+                except json.JSONDecodeError:
+                    continue
+            logger.warning(f"Не удалось восстановить JSON файл {filepath}: нет валидного префикса")
+            return False
+        except Exception as e:
+            logger.error(f"Ошибка при восстановлении JSON: {e}")
+            return False
+
+    # ========== Сохранение/загрузка с конвертацией numpy-типов и восстановлением ==========
     def to_dict(self):
         import numpy as np
         
         def convert(obj):
-            """Рекурсивно преобразует numpy-типы в стандартные Python-типы для JSON."""
             if isinstance(obj, (np.float32, np.float64)):
                 return float(obj)
             if isinstance(obj, (np.int32, np.int64)):
@@ -706,6 +703,55 @@ class JanusRPGState:
         })
 
     def load(self, data):
+        # Если data — это путь к файлу (строка), пробуем загрузить с восстановлением
+        if isinstance(data, str):
+            filepath = data
+            try:
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+            except (json.JSONDecodeError, OSError) as e:
+                logger.error(f"Ошибка загрузки состояния из {filepath}: {e}")
+                # Пробуем восстановить файл
+                if self._repair_json(filepath):
+                    try:
+                        with open(filepath, 'r', encoding='utf-8') as f:
+                            data = json.load(f)
+                    except Exception as e2:
+                        logger.error(f"Даже после восстановления не удалось загрузить: {e2}")
+                        # Пробуем бэкап
+                        backup_path = filepath + ".bak"
+                        if os.path.exists(backup_path):
+                            logger.info(f"Пробуем загрузить бэкап {backup_path}")
+                            try:
+                                with open(backup_path, 'r', encoding='utf-8') as f:
+                                    data = json.load(f)
+                            except Exception as be:
+                                logger.error(f"Бэкап тоже повреждён: {be}")
+                                return
+                        else:
+                            logger.warning("Бэкап не найден. Инициализация с нуля.")
+                            return
+                else:
+                    # Не удалось восстановить, пробуем бэкап
+                    backup_path = filepath + ".bak"
+                    if os.path.exists(backup_path):
+                        logger.info(f"Пробуем загрузить бэкап {backup_path}")
+                        try:
+                            with open(backup_path, 'r', encoding='utf-8') as f:
+                                data = json.load(f)
+                        except Exception as be:
+                            logger.error(f"Бэкап тоже повреждён: {be}")
+                            return
+                    else:
+                        logger.warning("Бэкап не найден. Инициализация с нуля.")
+                        return
+
+        # Теперь data — это словарь (или None, если загрузка не удалась)
+        if not isinstance(data, dict):
+            logger.warning("Некорректные данные состояния. Инициализация с нуля.")
+            return
+
+        # Основная загрузка данных (как в вашем оригинале)
         self.level = data.get('level', 1)
         self.exp = data.get('exp', 0)
         self.max_best = data.get('max_best', 0.0)
@@ -787,7 +833,6 @@ class JanusRPGState:
         self.demiurge_batch_size = data.get('demiurge_batch_size', None)
         self.demiurge_reward_scale = data.get('demiurge_reward_scale', 1.0)
 
-        # Попробуем восстановить модель, если данных достаточно
         self._init_tachyon_engine()
         self.update_prediction_model()
 
