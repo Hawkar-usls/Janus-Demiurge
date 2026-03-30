@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-JANUS GENESIS PROTOCOL v11.0 — Полностью адаптивный режим с самообучением
-- Адаптивная генерация серий (зона ближайшего развития)
-- Динамический таймаут на основе истории решений
-- Clause weighting + meta-learning в решателе
-- Повторение неудач и очередь отложенных задач
+JANUS GENESIS PROTOCOL v11.5 — Интеграция с тахионными метриками
+- Генерация серий из всех целых чисел
+- Адаптивный таймаут с использованием тахионных метрик (энтропия, температура, давление...)
+- Использование TachyonEngine для предсказания времени
+- Бонус за преодоление прогноза
 """
 
 import os
@@ -21,14 +21,13 @@ from collections import deque
 from typing import Dict, List, Any, Optional, Tuple
 
 from config import RAW_LOGS_DIR, WORMHOLE_DIR, MODEL_ZOO_DIR
-from janus_character import JanusRPGState, SwarmAgent
+from janus_character import JanusRPGState, SwarmAgent, get_tachyon_metrics
 import janus_db
 
-# Импорт NP-задач из отдельного модуля
-from janus_genesis.np_task import NPTask, generate_series, generate_adaptive_series
+from janus_genesis.np_task import NPTask, generate_series
 
 # ==========================================
-# ГЕНЕРАЦИЯ ПРОСТЫХ ЧИСЕЛ ДЛЯ NP-СЕРИЙ
+# ГЕНЕРАЦИЯ ПРОСТЫХ ЧИСЕЛ (для бонусов)
 # ==========================================
 def is_prime(n: int) -> bool:
     if n < 2:
@@ -55,7 +54,7 @@ def digital_root(n: int) -> int:
     return 1 + (n - 1) % 9
 
 # ==========================================
-# КОНФИГУРАЦИЯ
+# КОНФИГУРАЦИЯ (исправленная для больших размеров и всех чисел)
 # ==========================================
 GENESIS_CONFIG = {
     'auto_interval': 30,
@@ -97,29 +96,32 @@ GENESIS_CONFIG = {
     'np_task_bonus_xp': 200,
     'np_task_bonus_gold': 100,
     'np_task_difficulty_scale': 0.1,
-    'np_task_max_vars': 200,
+    'np_task_max_vars': 2000,
     'np_task_min_vars': 5,
-    'np_task_max_clauses': 800,
+    'np_task_max_clauses': 8000,
     'np_task_min_clauses': 10,
     'np_task_difficulty_increment': 0.2,
-    # === Серийный режим (адаптивный) ===
+    # === Серийный режим (адаптивный, все числа) ===
     'np_series_enabled': True,
     'np_series_tasks_per_size': 1,
-    'np_series_sizes': get_primes_in_range(20, 100),   # начальный диапазон
-    'np_series_adaptive': True,                        # адаптивный режим ВКЛЮЧЁН
+    'np_series_step': 25,
+    'np_series_use_primes_only': False,
+    'np_series_adaptive': True,
     # === Параметры адаптивного роста ===
-    'np_adaptive_min_step': 5,
-    'np_adaptive_max_range': 30,
+    'np_adaptive_min_step': 1,
+    'np_adaptive_max_range': 50,
     'np_adaptive_min_start': 20,
     # === Параметры повторения неудач ===
-    'np_max_attempts_per_task': 3,
+    'np_max_attempts_per_task': 1,
     'np_failure_queue_enabled': True,
     'np_adaptive_difficulty': True,
     'np_failure_threshold_ratio': 0.5,
-    'np_adaptive_down_step': 3,
+    'np_adaptive_down_step': 5,
     # === Фаза перехода ===
     'np_phase_transition_ratio': 4.26,
     'np_phase_transition_enabled': True,
+    # === Бонус за преодоление прогноза ===
+    'np_bonus_for_beating_prediction': 1.5,
 }
 
 # ==========================================
@@ -150,9 +152,6 @@ EVENT_PHRASES = [
     "Золото тихо позвякивает в кармане."
 ]
 
-# ==========================================
-# НАСТРОЙКА ЛОГГИРОВАНИЯ
-# ==========================================
 logger = logging.getLogger("JANUS_GENESIS")
 logger.setLevel(GENESIS_CONFIG['log_level'])
 if not logger.handlers:
@@ -670,13 +669,15 @@ def generate_np_task(state: JanusRPGState, purity: float, current_difficulty: fl
     return NPTask(n_vars, n_clauses, phase_transition=use_phase)
 
 def solve_np_task_with_agent(agent: Any, task: NPTask, timeout: float = 2.0) -> Tuple[bool, float, List[bool]]:
-    """Обёртка для вызова решателя с таймаутом"""
     solved, assignment, reward_mult = agent.solve_np_task(task, timeout=timeout)
     return solved, reward_mult, assignment
 
-def apply_np_reward(state: JanusRPGState, agent: Any, task: NPTask, reward_mult: float, solved: bool):
+def apply_np_reward(state: JanusRPGState, agent: Any, task: NPTask, reward_mult: float, solved: bool,
+                    actual_time: float = None, predicted_time: float = None):
     if solved:
         mult = getattr(state, 'np_reward_mult', 1.0)
+        if actual_time is not None and predicted_time is not None and actual_time < predicted_time:
+            mult *= GENESIS_CONFIG.get('np_bonus_for_beating_prediction', 1.5)
         xp_bonus = int(GENESIS_CONFIG['np_task_bonus_xp'] * reward_mult * mult)
         gold_bonus = int(GENESIS_CONFIG['np_task_bonus_gold'] * reward_mult * mult)
         state.exp += xp_bonus
@@ -694,26 +695,19 @@ def _get_best_agent(agents: List) -> Optional[Any]:
     return max(agents, key=lambda a: getattr(a, 'score', 0) + getattr(a, 'level', 0) * 10)
 
 # ==========================================
-# ОСНОВНАЯ ФУНКЦИЯ auto_update_world (адаптивная, с динамическим таймаутом)
+# ОСНОВНАЯ ФУНКЦИЯ auto_update_world (адаптивная, с интеграцией тахионных метрик)
 # ==========================================
 _dispatcher = ComputeOrbitalDispatcher()
 _mirror = JanusMirror()
 _neuro = NeuroRewardSystem()
 
 def auto_update_world(metrics: Optional[Dict[str, Any]], state: JanusRPGState, agents: Optional[List] = None) -> List[str]:
-    """
-    Обновляет мир на основе метрик. Вызывается из основного цикла Janus.
-    agents – список агентов (JanusAgent) из мира.
-    Возвращает список строк для логирования.
-    """
     if metrics is None:
         metrics = {}
 
-    # Сбрасываем флаги решения задачи перед обработкой
     state.np_task_solved_this_cycle = False
     state.np_difficulty_solved = 0.0
 
-    # Получаем термодинамические данные
     temp_f = metrics.get('temp_f', 120.0)
     entropy = metrics.get('hw_entropy', 0.005)
     active_sensor = metrics.get('active_sensor', None)
@@ -726,7 +720,6 @@ def auto_update_world(metrics: Optional[Dict[str, Any]], state: JanusRPGState, a
     current_loss = metrics.get('current_loss')
     loss_diff = metrics.get('loss_diff', 0.0)
 
-    # Исправлен вывод loss_str
     if prev_loss is not None and current_loss is not None:
         loss_str = f"{prev_loss:.4f} -> {current_loss:.4f}"
     elif current_loss is not None:
@@ -745,14 +738,13 @@ def auto_update_world(metrics: Optional[Dict[str, Any]], state: JanusRPGState, a
     reward_lines = apply_reward(state, purity, loss_diff, temp_f, agents)
     lines.extend(reward_lines)
 
-    # ========== NP-ЗАДАЧА: АДАПТИВНЫЙ СЕРИЙНЫЙ РЕЖИМ ==========
+    # ========== NP-ЗАДАЧА: АДАПТИВНЫЙ СЕРИЙНЫЙ РЕЖИМ (все числа) ==========
     series_enabled = GENESIS_CONFIG.get('np_series_enabled', True)
-    adaptive_series = GENESIS_CONFIG.get('np_series_adaptive', True)   # ВКЛЮЧЁН
+    adaptive_series = GENESIS_CONFIG.get('np_series_adaptive', True)
     use_phase = GENESIS_CONFIG.get('np_phase_transition_enabled', True)
-    max_attempts = GENESIS_CONFIG.get('np_max_attempts_per_task', 3)
+    max_attempts = GENESIS_CONFIG.get('np_max_attempts_per_task', 1)
     failure_queue_enabled = GENESIS_CONFIG.get('np_failure_queue_enabled', True)
 
-    # Инициализация полей серии, если их нет
     if not hasattr(state, 'np_series'):
         state.np_series = []
         state.np_series_index = 0
@@ -765,7 +757,7 @@ def auto_update_world(metrics: Optional[Dict[str, Any]], state: JanusRPGState, a
     if not hasattr(state, 'last_np_size'):
         state.last_np_size = 20
 
-    # Если нет активной серии, генерируем новую (с учётом очереди отложенных)
+    # Генерация новой серии
     if series_enabled and len(state.np_series) == 0:
         pending_tasks = []
         if failure_queue_enabled and hasattr(state, 'np_failure_queue') and state.np_failure_queue:
@@ -776,10 +768,8 @@ def auto_update_world(metrics: Optional[Dict[str, Any]], state: JanusRPGState, a
                     pending_tasks.append(item)
             lines.append(f"📋 [NP-SERIES] Добавлено {len(pending_tasks)} отложенных задач из очереди")
 
-        # Генерация новых задач (адаптивно)
         if adaptive_series:
             last_size = state.last_np_size
-            # Снижение сложности при высоком проценте неудач
             downshift = 0
             if GENESIS_CONFIG.get('np_adaptive_difficulty', True) and state.np_series_total > 0:
                 failure_ratio = state.np_series_failures / max(1, state.np_series_total)
@@ -787,13 +777,19 @@ def auto_update_world(metrics: Optional[Dict[str, Any]], state: JanusRPGState, a
                     downshift = GENESIS_CONFIG['np_adaptive_down_step']
                     lines.append(f"📉 [NP-SERIES] Высокая доля неудач ({failure_ratio:.1%}), снижаем сложность на {downshift}")
             min_n = max(GENESIS_CONFIG['np_adaptive_min_start'], last_size + GENESIS_CONFIG['np_adaptive_min_step'] - downshift)
-            max_n = min(200, min_n + GENESIS_CONFIG['np_adaptive_max_range'])
-            sizes = get_primes_in_range(min_n, max_n)
+            max_n = min(2000, min_n + GENESIS_CONFIG['np_adaptive_max_range'])
+            use_primes_only = GENESIS_CONFIG.get('np_series_use_primes_only', False)
+            step = GENESIS_CONFIG.get('np_series_step', 5)
+            if use_primes_only:
+                sizes = get_primes_in_range(min_n, max_n)
+            else:
+                sizes = list(range(min_n, max_n+1, step))
             if not sizes:
                 sizes = list(range(min_n, max_n+1, 5))[:5]
             tasks = generate_series(sizes, n_tasks_per_size=GENESIS_CONFIG['np_series_tasks_per_size'], phase_transition=use_phase)
         else:
-            sizes = GENESIS_CONFIG['np_series_sizes']
+            step = GENESIS_CONFIG.get('np_series_step', 5)
+            sizes = list(range(20, 2001, step))
             tasks = generate_series(sizes, n_tasks_per_size=GENESIS_CONFIG['np_series_tasks_per_size'], phase_transition=use_phase)
 
         state.np_series = pending_tasks + tasks
@@ -816,15 +812,18 @@ def auto_update_world(metrics: Optional[Dict[str, Any]], state: JanusRPGState, a
         best_agent = _get_best_agent(agents) if agents else None
         if best_agent:
             n_vars = task.n_vars
-            # Адаптивный таймаут на основе истории
-            timeout = state.get_adaptive_timeout(n_vars)
+            agent_config = best_agent.current_config.copy()
+            tachyon_metrics = get_tachyon_metrics()  # текущие метрики из тахионного моста
+            timeout = state.get_adaptive_timeout(n_vars, agent_config, tachyon_metrics)
+            predicted_time = state.predict_time(n_vars, agent_config, tachyon_metrics) if state.tachyon_engine is not None else None
 
             start_time = time.time()
             solved, reward_mult, assignment = solve_np_task_with_agent(best_agent, task, timeout=timeout)
             elapsed_ms = (time.time() - start_time) * 1000
+            actual_time = elapsed_ms / 1000.0
 
-            # Сохраняем результат в историю
-            state.record_np_solution(n_vars, solved, elapsed_ms, state.np_current_attempts + 1)
+            # Сохраняем результат с метриками
+            state.record_np_solution(n_vars, solved, elapsed_ms, state.np_current_attempts + 1, agent_config, tachyon_metrics)
 
             state.np_series_results.append({
                 'n_vars': n_vars,
@@ -832,14 +831,19 @@ def auto_update_world(metrics: Optional[Dict[str, Any]], state: JanusRPGState, a
                 'time_ms': elapsed_ms,
                 'difficulty': task.difficulty(),
                 'attempt': state.np_current_attempts + 1,
-                'timeout': timeout
+                'timeout': timeout,
+                'predicted_time': predicted_time,
+                'agent_config': agent_config,
+                'tachyon_metrics': tachyon_metrics
             })
-            lines.append(f"🧪 [NP-SERIES] Задача {state.np_series_index+1}/{len(state.np_series)} (n={n_vars}): {'✅ решена' if solved else '❌ не решена'} за {elapsed_ms:.1f} мс (попытка {state.np_current_attempts+1}, timeout={timeout:.1f}s)")
+            log_line = f"🧪 [NP-SERIES] Задача {state.np_series_index+1}/{len(state.np_series)} (n={n_vars}): {'✅ решена' if solved else '❌ не решена'} за {elapsed_ms:.1f} мс (попытка {state.np_current_attempts+1}, timeout={timeout:.1f}s)"
+            if predicted_time:
+                log_line += f", прогноз={predicted_time:.1f}s"
+            lines.append(log_line)
 
             if solved:
                 state.last_np_size = max(state.last_np_size, n_vars)
                 state.np_current_attempts = 0
-                # Награда
                 base_xp = GENESIS_CONFIG['np_task_bonus_xp']
                 base_gold = GENESIS_CONFIG['np_task_bonus_gold']
                 size_factor = (n_vars / 20.0) ** 2
@@ -852,6 +856,9 @@ def auto_update_world(metrics: Optional[Dict[str, Any]], state: JanusRPGState, a
                 if dr == 3:
                     resonance_bonus *= 1.3
                 total_bonus = size_factor * resonance_bonus
+                if predicted_time and actual_time < predicted_time:
+                    total_bonus *= GENESIS_CONFIG.get('np_bonus_for_beating_prediction', 1.5)
+                    lines.append(f"   🎯 Преодолён прогноз! Время {actual_time:.2f}s < {predicted_time:.2f}s")
                 xp_bonus = int(base_xp * total_bonus)
                 gold_bonus = int(base_gold * total_bonus)
                 state.exp += xp_bonus
@@ -859,7 +866,6 @@ def auto_update_world(metrics: Optional[Dict[str, Any]], state: JanusRPGState, a
                 best_agent.exp += xp_bonus // 2
                 best_agent.gold += gold_bonus // 2
                 lines.append(f"   +{xp_bonus} XP, +{gold_bonus} золота (резонансный множитель {total_bonus:.2f})")
-                # Переход к следующей задаче
                 state.np_series_index += 1
                 state.np_current_attempts = 0
             else:
@@ -881,7 +887,7 @@ def auto_update_world(metrics: Optional[Dict[str, Any]], state: JanusRPGState, a
             state.np_current_attempts = 0
 
     elif state.np_series and state.np_series_index >= len(state.np_series):
-        # Серия завершена – статистика
+        # Серия завершена – статистика и переобучение модели
         if state.np_series_results:
             solved_tasks = [r for r in state.np_series_results if r['solved']]
             if solved_tasks:
@@ -904,6 +910,11 @@ def auto_update_world(metrics: Optional[Dict[str, Any]], state: JanusRPGState, a
             lines.append(f"🏁 [NP-SERIES] Серия завершена. Решено: {solved_cnt}/{total}, неудач: {failed_cnt}. Последний решённый размер: {state.last_np_size}")
             if state.np_failure_queue:
                 lines.append(f"   📋 В очереди отложенных задач: {len(state.np_failure_queue)}")
+
+            # Переобучаем модель предсказания
+            state.update_prediction_model()
+            if state.tachyon_engine is not None and state.tachyon_engine.trained:
+                lines.append(f"🧠 [META] Модель TachyonEngine обновлена на {len(state.np_series_results)} примерах")
 
             np_metrics_path = os.path.join(RAW_LOGS_DIR, "np_scaling_metrics.json")
             try:
@@ -938,25 +949,30 @@ def auto_update_world(metrics: Optional[Dict[str, Any]], state: JanusRPGState, a
             task = state.current_np_task
             best_agent = _get_best_agent(agents) if agents else None
             if best_agent:
-                timeout = state.get_adaptive_timeout(task.n_vars)
+                agent_config = best_agent.current_config.copy()
+                tachyon_metrics = get_tachyon_metrics()
+                timeout = state.get_adaptive_timeout(task.n_vars, agent_config, tachyon_metrics)
+                predicted_time = state.predict_time(task.n_vars, agent_config, tachyon_metrics) if state.tachyon_engine is not None else None
+                start_time = time.time()
                 solved, reward_mult, assignment = solve_np_task_with_agent(best_agent, task, timeout=timeout)
+                elapsed_ms = (time.time() - start_time) * 1000
+                actual_time = elapsed_ms / 1000.0
+                state.record_np_solution(task.n_vars, solved, elapsed_ms, 1, agent_config, tachyon_metrics)
                 if solved:
-                    xp_bonus, gold_bonus = apply_np_reward(state, best_agent, task, reward_mult, solved)
+                    xp_bonus, gold_bonus = apply_np_reward(state, best_agent, task, reward_mult, solved, actual_time, predicted_time)
                     lines.append(f"🧠 [SAT] Агент {best_agent.id[:8]} решил 3-SAT задачу! +{xp_bonus} XP, +{gold_bonus} золота.")
                     state.np_task_solved_this_cycle = True
                     state.np_difficulty_solved = task.difficulty()
                     state.np_difficulty = getattr(state, 'np_difficulty', 1.0) + GENESIS_CONFIG['np_task_difficulty_increment']
                     state.current_np_task = None
                     state.last_np_size = max(state.last_np_size, task.n_vars)
-                    state.record_np_solution(task.n_vars, True, timeout*1000, 1)
                 else:
-                    state.record_np_solution(task.n_vars, False, timeout*1000, 1)
                     if random.random() < 0.1:
                         lines.append(f"🤔 [SAT] Агент {best_agent.id[:8]} не смог решить задачу.")
             else:
                 lines.append("⚠️ [SAT] Нет агентов для решения задачи.")
 
-    # Добавляем логирование орбиты и награды
+    # Логирование орбиты и награды
     sensor_info = f" | Sensor: {active_sensor}" if active_sensor else ""
     lines.append(f"ℹ️ [ORBIT] Active: {active_device.upper()} | Purity: {purity:.2f}{sensor_info} | ❤️ Oxytocin: {_neuro.total_oxytocin:.2f} | LR_Mult: {lr_mult:.2f}x")
     lines.append(f"ℹ️ [REWARD] {_neuro.distribute([state], reward)} | Янус атакует Хаос: Loss {loss_str}")
@@ -971,7 +987,6 @@ def auto_update_world(metrics: Optional[Dict[str, Any]], state: JanusRPGState, a
     else:
         state.status = "NORMAL"
 
-    # Периодическая очистка буфера БД
     if random.random() < 0.1:
         _db_buffer.flush()
 
