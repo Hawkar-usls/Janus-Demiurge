@@ -3,15 +3,18 @@
 # Janus Demiurge
 ### Legacy ML / optimization sandbox
 
-`historical` · `experimental` · `not a flagship research claim`
+![Status](https://img.shields.io/badge/status-legacy-8c959f)
+![Class](https://img.shields.io/badge/class-experimental%20sandbox-6e7681)
 
 </div>
 
-Janus Demiurge is a preserved Python sandbox for adaptive training loops, hyperparameter search, resource monitoring, experiment memory and game-like agent simulations.
+## Status
 
-It is useful as implementation history. It is **not** evidence of AGI, physical prediction or an externally validated scientific result.
+**Legacy.** This repository is preserved as implementation history and an experimental sandbox. It is not a current flagship research surface and is not presented as externally validated science.
 
-Machine-readable status: [`PROJECT_STATUS.json`](PROJECT_STATUS.json)
+## Abstract
+
+Janus Demiurge contains historical experiments in adaptive training loops, hyperparameter search, resource monitoring, experiment memory, optimization, and game-like agent simulations.
 
 ## Implemented / explored
 
@@ -27,6 +30,7 @@ Machine-readable status: [`PROJECT_STATUS.json`](PROJECT_STATUS.json)
 ## Boundary
 
 ```text
+MATURITY = LEGACY
 PROJECT_CLASS = LEGACY_EXPERIMENTAL_SANDBOX
 FLAGSHIP_RESEARCH = FALSE
 FUTURE_EVENT_PREDICTION = NOT_CLAIMED
@@ -35,31 +39,18 @@ AGI = NOT_CLAIMED
 SCIENTIFIC_VALIDATION = NOT_ESTABLISHED
 ```
 
-Historical names such as `tachyon_engine.py`, `subconscious.py` or `Demiurge` are compatibility/project vocabulary. They do not establish literal physical, cognitive or metaphysical properties.
+Historical names such as `tachyon_engine.py`, `subconscious.py`, or `Demiurge` are project vocabulary. They do not establish literal physical, cognitive, or metaphysical properties.
 
-## Run
+## Review
 
-Python 3.10–3.12:
+- Machine-readable project status: [`PROJECT_STATUS.json`](PROJECT_STATUS.json)
+- Portfolio maturity/visibility: [`portfolio-visibility.json`](https://github.com/Hawkar-usls/Janus/blob/main/portfolio-visibility.json)
+- Current primary work: [Hawkar profile](https://github.com/Hawkar-usls)
 
-```bash
-git clone https://github.com/Hawkar-usls/Janus-Demiurge.git
-cd Janus-Demiurge
-python -m venv venv
-pip install -r requirements.txt
-python core.py
-```
-
-Configuration is in `config.py` and `JANUS_*` environment variables.
-
-## Current research entry points
-
-For externally reviewable work, prefer:
-
-- [Janus-Fundamentum](https://github.com/Hawkar-usls/Janus-Fundamentum)
-- [AIFC](https://github.com/Hawkar-usls/AIFC)
-- [janus-io-public](https://github.com/Hawkar-usls/janus-io-public)
-- [janus-distributed-ai-swarm](https://github.com/Hawkar-usls/janus-distributed-ai-swarm)
+**Portfolio recommendation:** archive this repository in GitHub if it is no longer needed for active development; keep it unpinned either way.
 
 ## License
 
 MIT.
+
+Presentation follows the account's [public repository standard](https://github.com/Hawkar-usls/Janus/blob/main/docs/PUBLIC_REPOSITORY_PRESENTATION_STANDARD.md). No affiliation with MIT is implied by the presentation style.
