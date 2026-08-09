@@ -1,151 +1,144 @@
 # Janus Demiurge
 
-**Janus Demiurge** – эволюционный архитектор с самообучением, адаптивной оптимизацией гиперпараметров и игровой метафорой. Система автоматически подбирает гиперпараметры нейросетей, используя роевой интеллект, байесовскую оптимизацию, эволюционную память, социальное обучение и другие мета-методы. Включает виртуальный мир Genesis, где агенты взаимодействуют, обмениваются знаниями и эволюционируют.
+> **Legacy experimental sandbox — not a flagship research claim.**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+Janus Demiurge is an experimental Python project for exploring adaptive training loops, hyperparameter search, resource monitoring, evolutionary memory, and game-like agent simulations.
+
+The repository is preserved because it contains useful implementation experiments and historical ideas that later informed more focused JANUS projects. It should be read as an **engineering sandbox**, not as evidence of autonomous general intelligence, physical prediction, or a validated scientific result.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
-## [7.2.0] - 2026-03-29
-### Added
-- Мета-режим Януса с инстинктами: EXPLORE, EXPLOIT, SURVIVE, CHAOS, HUNT
-- Инерция режима (mode_strength)
-- Голод (hunger) — толкает в CHAOS при застое
-- SURVIVE-режим с откатом к лучшему состоянию + сохранением модели
-- Предиктивный выбор режима через self-model
-- Антиколлапсная система
-- Аморфные параметры с самостабилизацией
+## Current positioning
 
-## 🚀 Возможности
+```text
+PROJECT_CLASS = LEGACY_EXPERIMENTAL_SANDBOX
+FLAGSHIP_RESEARCH = FALSE
+HYPERPARAMETER_EXPERIMENTS = IMPLEMENTED
+RESOURCE_MONITORING = IMPLEMENTED
+AGENT_WORLD_SIMULATION = EXPERIMENTAL
+FUTURE_EVENT_PREDICTION = NOT_CLAIMED
+SCIENTIFIC_VALIDATION = NOT_ESTABLISHED
+```
 
-- **Автоматический выбор гиперпараметров** (размер модели, скорость обучения, gain, temperature)
-- **Адаптивное управление нагрузкой** (термальный контроль, iGPU/CPU offload)
-- **Интеграция с игровым миром Genesis** (агенты, фракции, экономика, рейды, культы)
-- **Эволюционная память** (запоминание удачных/неудачных конфигураций)
-- **Роевой интеллект, байесовская оптимизация, мета-модель**
-- **Подсознание** (Chronos, Hypnos, Nebuchadnezzar) для глубокого анализа
-- **Автономное предсказание будущего** (Tachyon Evolution)
-- **Генерация изображений** через Stable Diffusion (Visionary Engine)
-- **Мониторинг системы** (GPU, CPU, память, сеть, аудио, ввод)
-- **Полная настройка через переменные окружения**
+Historical module names and metaphors are retained for compatibility. They are not scientific claims.
 
-## 📦 Требования
+## Main capabilities
 
-- Python 3.10 – 3.12
-- ОС: Windows (рекомендуется), Linux, macOS (с некоторыми ограничениями по мониторингу)
-- GPU: NVIDIA с CUDA (опционально, но значительно ускоряет обучение)
-- Оперативная память: 8+ ГБ (рекомендуется 16 ГБ)
-- Свободное место на диске: 10+ ГБ
+- adaptive hyperparameter experiments;
+- resource-aware training controls;
+- evolutionary memory for previous configurations;
+- swarm and Bayesian optimization experiments;
+- background analysis modules;
+- game-like Genesis agent simulation;
+- Stable Diffusion integration experiments;
+- CPU/GPU/system monitoring;
+- SQLite-based event and metric storage;
+- web visualization through the HRain interface.
 
-## 🔧 Установка
+A historical module named `tachyon_engine.py` is best understood as an **experimental performance/result forecasting component**. The repository does not claim precognition, retrocausality, or access to future physical information.
 
-1. Клонируйте репозиторий:
-   ```bash
-   git clone https://github.com/Hawkar-usls/Janus-Demiurge.git
-   cd Janus-Demiurge
-Создайте виртуальное окружение (рекомендуется):
+## Version 7.2.0 — 2026-03-29
 
-bash
+Historical additions included:
+
+- adaptive operating modes: `EXPLORE`, `EXPLOIT`, `SURVIVE`, `CHAOS`, `HUNT`;
+- mode inertia;
+- stagnation-driven exploration pressure;
+- rollback to previously strong states;
+- self-model-assisted mode selection;
+- anti-collapse controls;
+- adaptive parameter stabilization.
+
+## Requirements
+
+- Python 3.10–3.12
+- Windows, Linux, or macOS
+- NVIDIA CUDA GPU optional
+- 8 GB RAM minimum; 16 GB recommended for larger experiments
+
+## Installation
+
+```bash
+git clone https://github.com/Hawkar-usls/Janus-Demiurge.git
+cd Janus-Demiurge
 python -m venv venv
-source venv/bin/activate   # Linux/Mac
-venv\Scripts\activate      # Windows
-Установите зависимости:
+```
 
-bash
+Activate the environment and install dependencies:
+
+```bash
 pip install -r requirements.txt
-Или для установки самого пакета:
+```
 
-bash
-pip install .
-Запустите основной цикл:
+Run the main loop:
 
-bash
+```bash
 python core.py
-(или janus-demiurge после установки)
+```
 
-⚙️ Настройка
-Все параметры можно изменить через переменные окружения или отредактировав config.py.
+## Configuration
 
-Основные переменные
-Переменная	Описание	Значение по умолчанию
-JANUS_VOCAB_SIZE	Размер словаря	257
-JANUS_TRAIN_SIZE	Количество обучающих последовательностей	5003
-JANUS_VAL_SIZE	Количество валидационных последовательностей	1009
-JANUS_STEPS_PER_CYCLE	Шагов обучения за цикл	1999
-JANUS_SEEDS_PER_CYCLE	Количество случайных сидов	2
-JANUS_BASE_BATCH_SIZE	Базовый размер батча	128
-JANUS_BLOCK_SIZE	Длина последовательности	32
-JANUS_BASE_DIR	Директория для данных	./janus_data
-JANUS_DEBUG	Режим отладки (1/0)	0
-JANUS_RESUME	Продолжить с сохранённого состояния (1/0)	0
-Отключение модулей
-JANUS_SWARM_ENABLED=0 – отключить роевой интеллект
+Configuration lives in `config.py` and environment variables.
 
-JANUS_BAYES_ENABLED=0 – отключить байесовскую оптимизацию
+Selected variables:
 
-JANUS_META_ENABLED=0 – отключить мета-модель
+| Variable | Purpose | Default |
+| --- | --- | ---: |
+| `JANUS_VOCAB_SIZE` | Vocabulary size | 257 |
+| `JANUS_TRAIN_SIZE` | Training sequences | 5003 |
+| `JANUS_VAL_SIZE` | Validation sequences | 1009 |
+| `JANUS_STEPS_PER_CYCLE` | Steps per cycle | 1999 |
+| `JANUS_SEEDS_PER_CYCLE` | Random seeds per cycle | 2 |
+| `JANUS_BASE_BATCH_SIZE` | Base batch size | 128 |
+| `JANUS_BLOCK_SIZE` | Sequence block length | 32 |
+| `JANUS_BASE_DIR` | Data directory | `./janus_data` |
+| `JANUS_DEBUG` | Debug mode | `0` |
+| `JANUS_RESUME` | Resume saved state | `0` |
 
-JANUS_ADAPTIVE_TEST_ENABLED=0 – отключить адаптивный тест
+Optional subsystems can be disabled with environment variables such as:
 
-JANUS_SUBCONSCIOUS_ENABLED=0 – отключить подсознание
+```text
+JANUS_SWARM_ENABLED=0
+JANUS_BAYES_ENABLED=0
+JANUS_META_ENABLED=0
+JANUS_ADAPTIVE_TEST_ENABLED=0
+JANUS_SUBCONSCIOUS_ENABLED=0
+```
 
-🧠 Архитектура
-Проект состоит из следующих основных модулей:
+## Architecture
 
-core.py – основной цикл, управление процессами
+Key modules include:
 
-config.py – конфигурация и настройки
+- `core.py` — main orchestration loop;
+- `config.py` — configuration;
+- `environment.py` — training-data generation;
+- `trainer.py` — model training;
+- `memory.py` — experiment memory;
+- `system_monitor.py` — system metrics;
+- `janus_genesis/` — game-like agent world;
+- `janus_character.py` — RPG state;
+- `tachyon_engine.py` — historical-name forecasting experiment;
+- `visionary.py` — image-generation integration;
+- `subconscious.py` — background analysis experiments;
+- `swarm_optimizer.py`, `bayes_optimizer.py`, `meta_model.py` — optimization experiments;
+- `igpu_offload.py`, `cpu_offload.py` — resource offload;
+- `janus_db.py` — SQLite persistence;
+- `server.py` — HRain visualization server.
 
-environment.py – генерация данных для обучения
+## Research boundary
 
-trainer.py – обучение модели
+This repository is intentionally **not** used as the evidence authority for the current flagship JANUS research lines. For externally reviewable work, see:
 
-memory.py – эволюционная память (уроки, успешные конфигурации)
+- [Janus-Fundamentum](https://github.com/Hawkar-usls/Janus-Fundamentum)
+- [AIFC](https://github.com/Hawkar-usls/AIFC)
+- [janus-io-public](https://github.com/Hawkar-usls/janus-io-public)
+- [janus-distributed-ai-swarm](https://github.com/Hawkar-usls/janus-distributed-ai-swarm)
 
-system_monitor.py – сбор системных метрик (GPU, CPU, память, ввод, аудио)
+## License
 
-janus_genesis/ – виртуальный мир Genesis (агенты, фракции, экономика, рейды, культы, религия)
+MIT License.
 
-janus_character.py – RPG-состояние Януса
+## Author
 
-tachyon_engine.py – предсказание будущих результатов
-
-visionary.py – генерация изображений
-
-subconscious.py – процессы подсознания (анализ прошлого, сновидения)
-
-swarm_optimizer.py, bayes_optimizer.py, meta_model.py – оптимизаторы
-
-igpu_offload.py, cpu_offload.py – адаптивная разгрузка ресурсов
-
-janus_db.py – база данных для метрик и событий
-
-server.py – веб-интерфейс для визуализации (HRAIN)
-
-🌍 Genesis – игровой мир
-Мир населён агентами, которые могут:
-
-объединяться в партии, основывать институты и религии
-
-торговать, крафтить предметы, участвовать в рейдах
-
-развивать культуру, технологии, экономику
-
-распространять мемы, эволюционировать
-
-Агенты используют свои конфигурации гиперпараметров для обучения модели, а награды (score) влияют на их развитие в мире.
-
-📈 Логирование и визуализация
-Системные метрики сохраняются в SQLite (таблица system_metrics)
-
-События Genesis – в genesis_events
-
-Веб-интерфейс HRAIN доступен по адресу http://localhost:1138 (при запуске сервера)
-
-🤝 Лицензия
-Проект распространяется под лицензией MIT. Подробнее см. файл LICENSE.
-
-✍️ Авторы
-Hawkar – автор
-
-🙏 Благодарности
-Проект вдохновлён идеями саморазвивающихся систем, эволюционного программирования и концепцией «вечного генератора».
+Hawkar / Oleksandr Ahapov — Ukraine
