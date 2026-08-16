@@ -1,0 +1,92 @@
+name: JANUS Demiurge Habitat Admission v1
+
+on:
+  pull_request:
+    paths:
+      - '.janus/HABITAT_LINK.json'
+      - '.janus/HABITAT_ADMISSION.json'
+      - 'PROJECT_STATUS.json'
+      - 'README.md'
+      - 'tools/validate_habitat_admission.py'
+      - 'tests/test_habitat_admission.py'
+      - '.github/workflows/janus-habitat-admission.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - '.janus/HABITAT_LINK.json'
+      - '.janus/HABITAT_ADMISSION.json'
+      - 'PROJECT_STATUS.json'
+      - 'README.md'
+      - 'tools/validate_habitat_admission.py'
+      - 'tests/test_habitat_admission.py'
+      - '.github/workflows/janus-habitat-admission.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify Habitat link is the pre-existing source contract
+        run: |
+          set -euo pipefail
+          test "$(git hash-object .janus/HABITAT_LINK.json)" = "0c1bfef793be483048a3249a24fa61fb38ee0e3c"
+      - name: Prove Habitat admission does not mutate Demiurge runtime history
+        run: |
+          set -euo pipefail
+          BASE=98974d9c02637cb471ef73f5b62cf81797895a44
+          git cat-file -e "$BASE^{commit}"
+          git diff --name-only "$BASE" HEAD > /tmp/habitat-delta.txt
+          cat /tmp/habitat-delta.txt
+          if grep -Ev '^(.janus/HABITAT_ADMISSION.json|README.md|tools/validate_habitat_admission.py|tests/test_habitat_admission.py|.github/workflows/janus-habitat-admission.yml)$' /tmp/habitat-delta.txt | grep -q .; then
+            echo 'Unexpected runtime/history mutation in Habitat admission:' >&2
+            grep -Ev '^(.janus/HABITAT_ADMISSION.json|README.md|tools/validate_habitat_admission.py|tests/test_habitat_admission.py|.github/workflows/janus-habitat-admission.yml)$' /tmp/habitat-delta.txt >&2
+            exit 1
+          fi
+      - name: Compile admission validator and tests
+        run: |
+          python -m py_compile tools/validate_habitat_admission.py
+          python -m py_compile tests/test_habitat_admission.py
+      - name: Validate current Habitat admission
+        run: python tools/validate_habitat_admission.py --json
+      - name: Run Habitat falsification regressions
+        run: python -m unittest -v tests.test_habitat_admission
+      - name: Enforce validator is local and read-only by import surface
+        run: |
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+
+          path = Path('tools/validate_habitat_admission.py')
+          tree = ast.parse(path.read_text(encoding='utf-8'))
+          forbidden_imports = {
+              'aiohttp', 'requests', 'socket', 'subprocess', 'urllib', 'httpx',
+              'boto3', 'paramiko'
+          }
+          imported = set()
+          calls = []
+          for node in ast.walk(tree):
+              if isinstance(node, ast.Import):
+                  imported.update(alias.name.split('.')[0] for alias in node.names)
+              elif isinstance(node, ast.ImportFrom) and node.module:
+                  imported.add(node.module.split('.')[0])
+              elif isinstance(node, ast.Call):
+                  func = node.func
+                  if isinstance(func, ast.Name):
+                      calls.append(func.id)
+                  elif isinstance(func, ast.Attribute):
+                      calls.append(func.attr)
+          assert not (imported & forbidden_imports), imported & forbidden_imports
+          destructive = {'unlink', 'remove', 'rmdir', 'removedirs', 'rename', 'replace'}
+          assert not (set(calls) & destructive), set(calls) & destructive
+          print('habitat-validator-effect-surface: PASS')
+          PY
