@@ -1,0 +1,77 @@
+{
+  "schema": "janus.habitat.demiurge_lab_supervisor_contract.v1",
+  "artifact_id": "JANUS-DEMIURGE-LAB-SUPERVISOR-2026-08-16-v1.0",
+  "parent_loop": {
+    "pull_request": "Hawkar-usls/Janus-Demiurge#3",
+    "head": "71bb2e72e8c72a03d715edb203e0e87e829ff5bb",
+    "state": "SELF_CYCLE_INSIDE_LOCAL_LAB_PASS__MERGE_HOLD"
+  },
+  "state_machine": [
+    "WAIT_NO_ADMITTED_OBJECTIVE",
+    "RUN_OBJECTIVE_WINDOWS",
+    "WAIT_FIXED_POINT",
+    "WAIT_PLATEAU",
+    "BUDGET_EXHAUSTED"
+  ],
+  "autonomy_semantics": {
+    "manual_intervention_between_windows_required": false,
+    "self_generated_objective": false,
+    "objective_must_be_admitted_input": true,
+    "plateau_causes_wait": true,
+    "fixed_point_causes_wait": true,
+    "budget_exhaustion_emits_continuation_checkpoint": true,
+    "same_objective_resume_allowed_only_from_budget_exhausted": true
+  },
+  "checkpoint": {
+    "canonical_sha256_receipt": true,
+    "objective_id_bound": true,
+    "resume_config_bound": true,
+    "resume_score_replayed": true,
+    "target_bound": true,
+    "weights_bound": true,
+    "root_seed_bound": true,
+    "absolute_window_offset_bound": true,
+    "generation_window_bound": true,
+    "candidate_count_bound": true,
+    "patience_policy_bound": true,
+    "parent_checkpoint_receipt_chain": true,
+    "crash_durable_by_itself": false,
+    "external_persistence_required_for_crash_recovery": true
+  },
+  "budgets": {
+    "max_windows_per_segment": 64,
+    "max_generations_per_window": 64,
+    "max_total_generations_per_segment": 4096,
+    "max_candidates_per_generation": 16,
+    "max_patience_windows": 16
+  },
+  "effect_boundary": {
+    "network": false,
+    "subprocess": false,
+    "filesystem_write": false,
+    "sqlite_write": false,
+    "source_mutation": false,
+    "automatic_merge": false,
+    "external_effect": false
+  },
+  "laws": [
+    "NO_ADMITTED_OBJECTIVE -> WAIT",
+    "PLATEAU -> WAIT",
+    "FIXED_POINT -> WAIT",
+    "AUTONOMY != BUSY_LOOP",
+    "AUTONOMY != SELF_GENERATED_PURPOSE",
+    "CHECKPOINT_IN_MEMORY != CRASH_DURABLE_CHECKPOINT",
+    "INTERNAL_STATE_ADOPTION != SOURCE_WRITEBACK",
+    "SELECTED != AUTHORIZED",
+    "CI_GREEN != MERGE_PERMISSION"
+  ],
+  "claim_ceiling": {
+    "self_cycle_within_admitted_objective": true,
+    "automatic_external_objective_generation": false,
+    "crash_recovery_without_external_persistence": false,
+    "autonomous_external_action": false,
+    "source_writeback": false,
+    "authority_delta": 0,
+    "mass_effect_budget_delta": 0
+  }
+}
