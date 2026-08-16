@@ -46,6 +46,9 @@ CORE_RANGES = {
     "gamma": (0.8, 0.999),
     "epsilon": (0.01, 0.9),
 }
+_SAFE_OBJECTIVE_CHARS = frozenset(
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.-"
+)
 
 
 class DemiurgeFaceError(ValueError):
@@ -92,6 +95,14 @@ def _repair_heads(n_embd: int, proposed_head: int) -> int:
     if not valid:
         raise DemiurgeFaceError("no admissible n_head divides n_embd")
     return min(valid, key=lambda head: abs(head - proposed_head))
+
+
+def _safe_objective_name(value: Any) -> str:
+    if not isinstance(value, str) or not value or len(value) > 64:
+        raise DemiurgeFaceError("objective must be a non-empty string <= 64 chars")
+    if value == "proposal_id" or any(char not in _SAFE_OBJECTIVE_CHARS for char in value):
+        raise DemiurgeFaceError("objective contains reserved or unsafe characters")
+    return value
 
 
 @dataclass(frozen=True)
@@ -243,6 +254,64 @@ class HabitatDemiurgeFace:
             out.append(row)
         return out
 
+    def _validated_proposal_ids(self, proposal_set: Mapping[str, Any]) -> set[str]:
+        if not isinstance(proposal_set, Mapping):
+            raise DemiurgeFaceError("proposal_set must be an object")
+        _closed_keys(
+            proposal_set,
+            {
+                "schema", "face_id", "source_commit", "request_id", "request_digest",
+                "proposal_count", "proposals", "execution_requested",
+                "source_writeback_requested", "selection_authority_claimed", "receipt_sha256"
+            },
+            "proposal_set",
+        )
+        if proposal_set.get("schema") != PROPOSAL_SCHEMA:
+            raise DemiurgeFaceError("invalid proposal_set schema")
+        if proposal_set.get("face_id") != self.face_id or proposal_set.get("source_commit") != SOURCE_COMMIT:
+            raise DemiurgeFaceError("proposal_set provenance mismatch")
+        if proposal_set.get("execution_requested") is not False:
+            raise DemiurgeFaceError("proposal_set requests execution")
+        if proposal_set.get("source_writeback_requested") is not False:
+            raise DemiurgeFaceError("proposal_set requests source writeback")
+        if proposal_set.get("selection_authority_claimed") is not False:
+            raise DemiurgeFaceError("proposal_set claims selection authority")
+
+        receipt = proposal_set.get("receipt_sha256")
+        if not isinstance(receipt, str) or len(receipt) != 64 or any(c not in "0123456789abcdef" for c in receipt):
+            raise DemiurgeFaceError("proposal_set receipt is malformed")
+        unsigned = dict(proposal_set)
+        unsigned.pop("receipt_sha256", None)
+        if canonical_sha256(unsigned) != receipt:
+            raise DemiurgeFaceError("proposal_set receipt mismatch")
+
+        proposals = proposal_set.get("proposals")
+        if not isinstance(proposals, list) or not 1 <= len(proposals) <= MAX_CANDIDATES:
+            raise DemiurgeFaceError("proposal_set proposals must be a bounded list")
+        if proposal_set.get("proposal_count") != len(proposals):
+            raise DemiurgeFaceError("proposal_count mismatch")
+
+        ids: set[str] = set()
+        for row in proposals:
+            if not isinstance(row, Mapping):
+                raise DemiurgeFaceError("proposal row must be an object")
+            _closed_keys(row, {"proposal_id", "config", "tested", "selected", "authorized"}, "proposal")
+            proposal_id = row.get("proposal_id")
+            if (
+                not isinstance(proposal_id, str)
+                or len(proposal_id) != 24
+                or any(c not in "0123456789abcdef" for c in proposal_id)
+            ):
+                raise DemiurgeFaceError("proposal_id must be 24 lowercase hex chars")
+            if proposal_id in ids:
+                raise DemiurgeFaceError("duplicate proposal_id")
+            if not isinstance(row.get("config"), Mapping):
+                raise DemiurgeFaceError("proposal config must be an object")
+            if row.get("tested") is not False or row.get("selected") is not False or row.get("authorized") is not False:
+                raise DemiurgeFaceError("input proposal_set may not pre-assert test/selection/authorization")
+            ids.add(proposal_id)
+        return ids
+
     def rank_evaluated(
         self,
         proposal_set: Mapping[str, Any],
@@ -254,13 +323,14 @@ class HabitatDemiurgeFace:
         """Rank only externally supplied finite measurements.
 
         This function never executes or evaluates a proposal itself. It merely
-        orders measurements already supplied by another face/harness.
+        orders measurements already supplied by another face/harness. The
+        proposal receipt is replayed before any ranking to bind evaluation to
+        the exact generated candidate set.
         """
-        if proposal_set.get("schema") != PROPOSAL_SCHEMA:
-            raise DemiurgeFaceError("invalid proposal_set schema")
-        ids = {row["proposal_id"] for row in proposal_set.get("proposals", [])}
-        if not ids:
-            raise DemiurgeFaceError("proposal_set contains no proposals")
+        objective = _safe_objective_name(objective)
+        ids = self._validated_proposal_ids(proposal_set)
+        if isinstance(evaluations, (str, bytes)) or not isinstance(evaluations, Sequence):
+            raise DemiurgeFaceError("evaluations must be a sequence of objects")
         seen: set[str] = set()
         ranked: list[dict[str, Any]] = []
         for row in evaluations:
@@ -268,11 +338,11 @@ class HabitatDemiurgeFace:
                 raise DemiurgeFaceError("evaluation row must be an object")
             _closed_keys(row, {"proposal_id", objective}, "evaluation")
             proposal_id = row.get("proposal_id")
-            if proposal_id not in ids:
+            if not isinstance(proposal_id, str) or proposal_id not in ids:
                 raise DemiurgeFaceError("evaluation references unknown proposal_id")
             if proposal_id in seen:
                 raise DemiurgeFaceError("duplicate evaluation proposal_id")
-            seen.add(str(proposal_id))
+            seen.add(proposal_id)
             ranked.append(
                 {
                     "proposal_id": proposal_id,
