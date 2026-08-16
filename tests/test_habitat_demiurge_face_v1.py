@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import ast
+import copy
 import math
 import unittest
 from pathlib import Path
@@ -32,6 +33,12 @@ class HabitatDemiurgeFaceTests(unittest.TestCase):
                 "n_layer": 6,
             },
         }
+
+    def _evaluations(self, proposal_set):
+        return [
+            {"proposal_id": row["proposal_id"], "score": float(index)}
+            for index, row in enumerate(proposal_set["proposals"])
+        ]
 
     def test_face_has_no_effect_or_execution_authority(self):
         desc = self.face.describe()
@@ -99,15 +106,15 @@ class HabitatDemiurgeFaceTests(unittest.TestCase):
 
     def test_rank_uses_only_complete_external_measurements(self):
         proposal_set = self.face.propose(self.arch_request)
-        evaluations = [
-            {"proposal_id": row["proposal_id"], "score": float(index)}
-            for index, row in enumerate(proposal_set["proposals"])
-        ]
+        evaluations = self._evaluations(proposal_set)
         ranking = self.face.rank_evaluated(proposal_set, evaluations)
         self.assertTrue(ranking["selection_is_recommendation_only"])
         self.assertFalse(ranking["authorized"])
         self.assertFalse(ranking["execution_requested"])
         self.assertEqual(ranking["selected_proposal_id"], evaluations[-1]["proposal_id"])
+        unsigned = dict(ranking)
+        receipt = unsigned.pop("receipt_sha256")
+        self.assertEqual(receipt, canonical_sha256(unsigned))
 
     def test_incomplete_or_unknown_external_evaluation_rejected(self):
         proposal_set = self.face.propose(self.arch_request)
@@ -118,23 +125,42 @@ class HabitatDemiurgeFaceTests(unittest.TestCase):
         ]
         with self.assertRaises(DemiurgeFaceError):
             self.face.rank_evaluated(proposal_set, incomplete)
-        unknown = [
-            {"proposal_id": row["proposal_id"], "score": 1.0}
-            for row in rows
-        ]
+        unknown = self._evaluations(proposal_set)
         unknown[0] = {"proposal_id": "not-a-real-proposal", "score": 1.0}
         with self.assertRaises(DemiurgeFaceError):
             self.face.rank_evaluated(proposal_set, unknown)
 
     def test_non_finite_measurement_rejected(self):
         proposal_set = self.face.propose(self.arch_request)
-        evaluations = [
-            {"proposal_id": row["proposal_id"], "score": float(index)}
-            for index, row in enumerate(proposal_set["proposals"])
-        ]
+        evaluations = self._evaluations(proposal_set)
         evaluations[0]["score"] = math.nan
         with self.assertRaises(DemiurgeFaceError):
             self.face.rank_evaluated(proposal_set, evaluations)
+
+    def test_tampered_proposal_body_is_rejected_before_ranking(self):
+        proposal_set = self.face.propose(self.arch_request)
+        tampered = copy.deepcopy(proposal_set)
+        tampered["proposals"][0]["config"]["n_layer"] = 12
+        with self.assertRaises(DemiurgeFaceError):
+            self.face.rank_evaluated(tampered, self._evaluations(proposal_set))
+
+    def test_preasserted_authorization_is_rejected_even_with_rehashed_receipt(self):
+        proposal_set = self.face.propose(self.arch_request)
+        forged = copy.deepcopy(proposal_set)
+        forged["proposals"][0]["authorized"] = True
+        unsigned = dict(forged)
+        unsigned.pop("receipt_sha256")
+        forged["receipt_sha256"] = canonical_sha256(unsigned)
+        with self.assertRaises(DemiurgeFaceError):
+            self.face.rank_evaluated(forged, self._evaluations(proposal_set))
+
+    def test_unsafe_or_reserved_objective_name_rejected(self):
+        proposal_set = self.face.propose(self.arch_request)
+        evaluations = self._evaluations(proposal_set)
+        with self.assertRaises(DemiurgeFaceError):
+            self.face.rank_evaluated(proposal_set, evaluations, objective="proposal_id")
+        with self.assertRaises(DemiurgeFaceError):
+            self.face.rank_evaluated(proposal_set, evaluations, objective="score/../../effect")
 
     def test_candidate_count_is_bounded(self):
         request = dict(self.arch_request)
