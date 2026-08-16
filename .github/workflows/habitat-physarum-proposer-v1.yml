@@ -1,0 +1,54 @@
+name: Habitat Physarum Proposer v1
+
+on:
+  pull_request:
+    paths:
+      - 'habitat/physarum_proposer.py'
+      - 'tests/test_habitat_physarum_proposer_v1.py'
+      - '.janus/PHYSARUM_PROPOSER_CONTRACT.json'
+      - '.github/workflows/habitat-physarum-proposer-v1.yml'
+  push:
+    branches:
+      - feature/habitat-physarum-proposer-v1
+
+permissions:
+  contents: read
+
+jobs:
+  physarum:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Validate contract
+        run: python -m json.tool .janus/PHYSARUM_PROPOSER_CONTRACT.json >/dev/null
+      - name: Compile proposer
+        run: python -m py_compile habitat/physarum_proposer.py tests/test_habitat_physarum_proposer_v1.py
+      - name: Replay bounded Demiurge parent face
+        run: python -m unittest -v tests.test_habitat_demiurge_face_v1
+      - name: Run Physarum adversarial tests
+        run: python -m unittest -v tests.test_habitat_physarum_proposer_v1
+      - name: Enforce effect ceiling
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = json.loads(Path('.janus/PHYSARUM_PROPOSER_CONTRACT.json').read_text(encoding='utf-8'))
+          assert p['input']['fitness_callable_allowed'] is False
+          assert p['algorithm']['coordinate_domain'] == '0_TO_SIZE_MINUS_ONE_CLOSED'
+          assert p['effect_boundary']['network'] is False
+          assert p['effect_boundary']['subprocess'] is False
+          assert p['effect_boundary']['filesystem_write'] is False
+          assert p['effect_boundary']['numpy_dependency'] is False
+          assert p['effect_boundary']['fitness_callback_execution'] is False
+          assert p['claim_ceiling']['autonomous_external_action'] is False
+          assert p['claim_ceiling']['source_writeback'] is False
+          assert p['claim_ceiling']['authority_delta'] == 0
+          assert p['claim_ceiling']['mass_effect_budget_delta'] == 0
+          PY
