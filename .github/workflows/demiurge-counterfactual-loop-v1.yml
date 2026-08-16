@@ -1,0 +1,57 @@
+name: Demiurge Counterfactual Loop v1
+
+on:
+  pull_request:
+    paths:
+      - 'habitat/demiurge_face.py'
+      - 'habitat/counterfactual_loop.py'
+      - '.janus/HABITAT_FACE_CONTRACT.json'
+      - '.janus/COUNTERFACTUAL_LOOP_CONTRACT.json'
+      - 'tests/test_habitat_demiurge_face_v1.py'
+      - 'tests/test_demiurge_counterfactual_loop_v1.py'
+      - '.github/workflows/demiurge-counterfactual-loop-v1.yml'
+  push:
+    branches:
+      - feature/habitat-demiurge-counterfactual-loop-v1
+
+permissions:
+  contents: read
+
+jobs:
+  loop:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Validate contracts
+        run: |
+          python -m json.tool .janus/HABITAT_FACE_CONTRACT.json >/dev/null
+          python -m json.tool .janus/COUNTERFACTUAL_LOOP_CONTRACT.json >/dev/null
+      - name: Compile loop
+        run: python -m py_compile habitat/demiurge_face.py habitat/counterfactual_loop.py tests/test_habitat_demiurge_face_v1.py tests/test_demiurge_counterfactual_loop_v1.py
+      - name: Replay parent face contract
+        run: python -m unittest -v tests.test_habitat_demiurge_face_v1
+      - name: Run closed-loop adversarial tests
+        run: python -m unittest -v tests.test_demiurge_counterfactual_loop_v1
+      - name: Enforce closed-loop authority ceiling
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = json.loads(Path('.janus/COUNTERFACTUAL_LOOP_CONTRACT.json').read_text(encoding='utf-8'))
+          assert p['claim_ceiling']['self_cycle_inside_local_lab'] is True
+          assert p['claim_ceiling']['autonomous_external_action'] is False
+          assert p['claim_ceiling']['future_prediction'] is False
+          assert p['effect_boundary']['network'] is False
+          assert p['effect_boundary']['subprocess'] is False
+          assert p['effect_boundary']['filesystem_write'] is False
+          assert p['effect_boundary']['source_mutation'] is False
+          assert p['claim_ceiling']['authority_delta'] == 0
+          assert p['claim_ceiling']['mass_effect_budget_delta'] == 0
+          PY
