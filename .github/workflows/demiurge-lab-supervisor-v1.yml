@@ -1,0 +1,73 @@
+name: Demiurge Lab Supervisor v1
+
+on:
+  pull_request:
+    paths:
+      - 'habitat/demiurge_face.py'
+      - 'habitat/counterfactual_loop.py'
+      - 'habitat/lab_supervisor.py'
+      - '.janus/HABITAT_FACE_CONTRACT.json'
+      - '.janus/COUNTERFACTUAL_LOOP_CONTRACT.json'
+      - '.janus/LAB_SUPERVISOR_CONTRACT.json'
+      - 'tests/test_habitat_demiurge_face_v1.py'
+      - 'tests/test_demiurge_counterfactual_loop_v1.py'
+      - 'tests/test_demiurge_lab_supervisor_v1.py'
+      - '.github/workflows/demiurge-lab-supervisor-v1.yml'
+  push:
+    branches:
+      - feature/habitat-demiurge-lab-supervisor-v1
+
+permissions:
+  contents: read
+
+jobs:
+  supervisor:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Validate contracts
+        run: |
+          python -m json.tool .janus/HABITAT_FACE_CONTRACT.json >/dev/null
+          python -m json.tool .janus/COUNTERFACTUAL_LOOP_CONTRACT.json >/dev/null
+          python -m json.tool .janus/LAB_SUPERVISOR_CONTRACT.json >/dev/null
+      - name: Compile supervisor chain
+        run: |
+          python -m py_compile \
+            habitat/demiurge_face.py \
+            habitat/counterfactual_loop.py \
+            habitat/lab_supervisor.py \
+            tests/test_habitat_demiurge_face_v1.py \
+            tests/test_demiurge_counterfactual_loop_v1.py \
+            tests/test_demiurge_lab_supervisor_v1.py
+      - name: Replay parent face contract
+        run: python -m unittest -v tests.test_habitat_demiurge_face_v1
+      - name: Replay parent self-cycle contract
+        run: python -m unittest -v tests.test_demiurge_counterfactual_loop_v1
+      - name: Run supervisor adversarial tests
+        run: python -m unittest -v tests.test_demiurge_lab_supervisor_v1
+      - name: Enforce supervisor authority ceiling
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = json.loads(Path('.janus/LAB_SUPERVISOR_CONTRACT.json').read_text(encoding='utf-8'))
+          assert p['autonomy_semantics']['manual_intervention_between_windows_required'] is False
+          assert p['autonomy_semantics']['self_generated_objective'] is False
+          assert p['autonomy_semantics']['plateau_causes_wait'] is True
+          assert p['autonomy_semantics']['fixed_point_causes_wait'] is True
+          assert p['checkpoint']['crash_durable_by_itself'] is False
+          assert p['effect_boundary']['network'] is False
+          assert p['effect_boundary']['subprocess'] is False
+          assert p['effect_boundary']['filesystem_write'] is False
+          assert p['effect_boundary']['source_mutation'] is False
+          assert p['claim_ceiling']['autonomous_external_action'] is False
+          assert p['claim_ceiling']['authority_delta'] == 0
+          assert p['claim_ceiling']['mass_effect_budget_delta'] == 0
+          PY
