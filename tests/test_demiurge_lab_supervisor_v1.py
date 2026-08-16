@@ -93,20 +93,21 @@ class DemiurgeLabSupervisorTests(unittest.TestCase):
             self.supervisor.resume_from_checkpoint(result["checkpoint"])
 
     def test_plateau_enters_wait_instead_of_busy_loop(self):
+        requested_window_ceiling = 20
         result = self.supervisor.run_objective(
             objective_id="objective-plateau",
             base_config=self.base,
             target_config=self.target,
             root_seed=2,
             generation_window=2,
-            max_windows=20,
+            max_windows=requested_window_ceiling,
             candidate_count=2,
             patience_windows=2,
             min_window_improvement=1.0,
         )
         self.assertEqual(result["state"], "WAIT_PLATEAU")
         self.assertEqual(result["windows_executed"], 2)
-        self.assertLess(result["windows_executed"], result["max_windows"])
+        self.assertLess(result["windows_executed"], requested_window_ceiling)
         with self.assertRaises(LabSupervisorError):
             self.supervisor.resume_from_checkpoint(result["checkpoint"])
 
