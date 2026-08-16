@@ -1,0 +1,51 @@
+name: Habitat Demiurge Face v1
+
+on:
+  pull_request:
+    paths:
+      - 'habitat/**'
+      - '.janus/HABITAT_FACE_CONTRACT.json'
+      - 'tests/test_habitat_demiurge_face_v1.py'
+      - 'docs/HABITAT_DEMIURGE_FACE_V1.md'
+      - '.github/workflows/habitat-demiurge-face-v1.yml'
+  push:
+    branches:
+      - feature/habitat-bounded-demiurge-face-v1
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Validate contract JSON
+        run: python -m json.tool .janus/HABITAT_FACE_CONTRACT.json >/dev/null
+      - name: Compile adapter and tests
+        run: python -m py_compile habitat/demiurge_face.py tests/test_habitat_demiurge_face_v1.py
+      - name: Run adversarial face tests
+        run: python -m unittest -v tests.test_habitat_demiurge_face_v1
+      - name: Enforce authority ceiling
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = json.loads(Path('.janus/HABITAT_FACE_CONTRACT.json').read_text(encoding='utf-8'))
+          assert p['write_back_default'] == 'DENY'
+          assert p['capabilities']['can_execute_proposal'] is False
+          assert p['capabilities']['can_mutate_source'] is False
+          assert p['capabilities']['can_trigger_external_effect'] is False
+          assert p['capabilities']['can_open_network'] is False
+          assert p['capabilities']['can_spawn_process'] is False
+          assert p['capabilities']['can_write_files'] is False
+          assert p['claim_ceiling']['authority_delta'] == 0
+          assert p['claim_ceiling']['mass_effect_budget_delta'] == 0
+          PY
