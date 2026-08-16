@@ -27,6 +27,31 @@ Janus Demiurge contains historical experiments in adaptive training loops, hyper
 - game-like Genesis simulation;
 - optional image-generation and HRain integration.
 
+## Git Habitat
+
+Janus Demiurge participates in the JANUS Git Habitat as a **legacy experimental sandbox reference**.
+
+The pre-existing repository link remains reference/handoff-only, while the admission contract adds an explicit review boundary around how Demiurge may be used by the wider JANUS program:
+
+- Habitat may catalog, read and index public repository material;
+- historical algorithms may be used as candidates for an explicit reviewed handoff;
+- Demiurge remains authoritative for its own source history;
+- Habitat does **not** gain automatic write-back, command, runtime, memory-import or Power-executor authority;
+- the current Habitat admission does not modify or activate historical Demiurge runtime modules.
+
+Machine-readable boundaries:
+
+- [`.janus/HABITAT_LINK.json`](.janus/HABITAT_LINK.json)
+- [`.janus/HABITAT_ADMISSION.json`](.janus/HABITAT_ADMISSION.json)
+
+```text
+HABITAT_REFERENCE != SOURCE_OWNERSHIP
+HABITAT_ADMISSION != RUNTIME_ACTIVATION
+READ_OR_INDEX != WRITE_BACK_PERMISSION
+DEMIURGE_OUTPUT != INDEPENDENT_EVIDENCE_BY_DEFAULT
+CI_GREEN != MERGE_PERMISSION
+```
+
 ## Boundary
 
 ```text
