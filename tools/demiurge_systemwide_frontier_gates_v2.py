@@ -15,6 +15,8 @@ import requests
 import demiurge_systemwide_frontier_gates as gate
 from demiurge_mail_research_swarm import USER_AGENT, scrub
 
+FRONTIER_GATE_VERSION = "2.1"
+
 # Prefer public surfaces that are reachable from GitHub-hosted runners.
 gate.MONOWAI_PDF = "https://files01.core.ac.uk/download/pdf/33672084.pdf"
 gate.SMETS_PDF = "https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2022JC018451"
@@ -49,22 +51,16 @@ def _filtered_mgds_uids(html: str) -> List[str]:
             hits.append(candidate)
 
     for tag in soup.find_all(["input", "a"]):
-        # Explicit data/file UID attributes are strongest.
         for key, value in tag.attrs.items():
             key_norm = str(key).lower().replace("-", "_")
             if key_norm in {"uid", "data_uid", "file_uid", "datauid", "fileuid"}:
                 add(value)
-
-        # Forms often encode a UID as: <input name="data_uid" value="4430">.
         control_name = str(tag.get("name") or tag.get("id") or "").lower().replace("-", "_")
         if "uid" in control_name:
             add(tag.get("value"))
-
-        # Download links may carry the identifier in a query parameter.
         href = str(tag.get("href") or "")
         for m in re.finditer(r"[?&](?:id|uid|data_uid|file_uid)=([A-Za-z0-9_.:-]+)", href, re.I):
             add(m.group(1))
-
     return hits[:30]
 
 
