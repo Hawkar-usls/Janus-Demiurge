@@ -175,7 +175,6 @@ def extract_download_candidates(base_url: str, html: str, allowed: Sequence[str]
 
 
 def parse_bounds(text: str) -> Optional[Dict[str, float]]:
-    # BODC prose: Southernmost Latitude 51.66967 S ... Northernmost Latitude 53.63483 N ...
     pats = {
         "south": r"Southernmost\s+Latitude\s+(%s)\s*([NS])" % FLOAT_RE,
         "north": r"Northernmost\s+Latitude\s+(%s)\s*([NS])" % FLOAT_RE,
@@ -281,9 +280,11 @@ def parse_delimited_track(text: str) -> List[Tuple[float, float]]:
     for i, line in enumerate(lines[:120]):
         for candidate in ("\t", ",", ";", "|"):
             cols = [c.strip().lower() for c in line.split(candidate)]
+            if len(cols) < 2:
+                continue
             li = next((j for j, c in enumerate(cols) if "latitude" in c or c in {"lat", "alatgp01"}), None)
             lo = next((j for j, c in enumerate(cols) if "longitude" in c or c in {"lon", "long", "alongp01"}), None)
-            if li is not None and lo is not None:
+            if li is not None and lo is not None and li != lo:
                 header_idx, lat_idx, lon_idx, sep = i, li, lo, candidate
                 break
         if header_idx is not None:
@@ -415,7 +416,6 @@ def gather_cruise(cruise_id: str, report: Dict[str, Any], allowed: Sequence[str]
             meta["download_attempts"] = evaluate_downloads(meta, allowed)
         series.append(meta)
 
-    # Merge direct file pointers found on seed/cruise pages into a small provenance list.
     dedup_raw = []
     seen_raw = set()
     for p in raw_pointers:
