@@ -1,0 +1,64 @@
+name: JANUS BGS HA10 Intersection Gate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/demiurge_bgs_ha10_intersection_gate.py'
+      - '.github/workflows/bgs-ha10-intersection-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: janus-bgs-ha10-intersection-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  bgs-intersection:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependency
+        run: python -m pip install --disable-pip-version-check requests
+      - name: Self-test
+        run: python tools/demiurge_bgs_ha10_intersection_gate.py --self-test
+      - name: Query BGS OGC collections for H10N1 and H10S2
+        run: |
+          mkdir -p runtime
+          python tools/demiurge_bgs_ha10_intersection_gate.py --output runtime/BGS-HA10-INTERSECTION.json
+          python - <<'PY'
+          import json
+          p=json.load(open('runtime/BGS-HA10-INTERSECTION.json',encoding='utf-8'))
+          print('BGS_HA10_VERDICT='+p['verdict'])
+          for target, block in p['targets'].items():
+              print(target)
+              for role, rec in block['collections'].items():
+                  print(' ', role, rec.get('status'), rec.get('number_matched'), rec.get('number_returned'))
+          PY
+      - name: Persist append-only gate receipt
+        shell: bash
+        run: |
+          OUT="scout_swarm/outbox/bgs_ha10_intersection/${{ github.run_id }}"
+          mkdir -p "$OUT" scout_swarm/state/bgs_ha10_intersection
+          cp runtime/BGS-HA10-INTERSECTION.json "$OUT/RESULT.json"
+          cp runtime/BGS-HA10-INTERSECTION.json scout_swarm/state/bgs_ha10_intersection/LATEST.json
+          git config user.name "janus-demiurge-bgs-gate"
+          git config user.email "janus-demiurge-bgs-gate@users.noreply.github.com"
+          git add -f scout_swarm/outbox/bgs_ha10_intersection scout_swarm/state/bgs_ha10_intersection
+          if git diff --cached --quiet; then
+            echo BGS_HA10_NO_CHANGES
+            exit 0
+          fi
+          git commit -m "BGS gate: persist HA10 intersection ${{ github.run_id }}"
+          git pull --rebase origin main
+          git push origin HEAD:main
