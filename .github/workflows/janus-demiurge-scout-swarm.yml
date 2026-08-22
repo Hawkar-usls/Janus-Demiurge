@@ -1,0 +1,124 @@
+name: JANUS Demiurge Scout Swarm 17
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/janus-demiurge-scout-swarm.yml'
+      - '.github/agents/**'
+      - 'tools/demiurge_scout_swarm.py'
+      - 'scout_swarm/SCOUT_SWARM_MANIFEST-v1.json'
+  workflow_dispatch:
+  schedule:
+    - cron: '41 */6 * * *'
+
+concurrency:
+  group: janus-demiurge-scout-swarm
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  copilot-requests: write
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: Checkout Demiurge control plane
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Self-test swarm contract
+        run: python tools/demiurge_scout_swarm.py --self-test
+      - name: Build 17-agent matrix
+        id: matrix
+        shell: bash
+        run: |
+          MATRIX=$(python tools/demiurge_scout_swarm.py --matrix)
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+
+  scout:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - name: Checkout Demiurge control plane
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install GitHub Copilot CLI
+        run: |
+          npm install -g @github/copilot
+          copilot --version
+      - name: Run ${{ matrix.id }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          COPILOT_AUTO_UPDATE: 'false'
+        run: |
+          mkdir -p runtime/${{ matrix.id }}
+          python tools/demiurge_scout_swarm.py \
+            --run-agent '${{ matrix.id }}' \
+            --output runtime/${{ matrix.id }}/report.json
+      - name: Upload Scout report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scout-${{ matrix.id }}
+          path: runtime/${{ matrix.id }}/report.json
+          if-no-files-found: error
+          retention-days: 14
+
+  aggregate:
+    if: always()
+    needs: [plan, scout]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Demiurge response repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download all Scout reports
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: scout-*
+          path: runtime/reports
+      - name: Consolidate swarm answer into Janus-Demiurge
+        run: |
+          python tools/demiurge_scout_swarm.py \
+            --consolidate runtime/reports \
+            --run-id '${{ github.run_id }}' \
+            --sha '${{ github.sha }}'
+      - name: Persist Demiurge swarm answer
+        shell: bash
+        run: |
+          git config user.name "janus-demiurge-scout-swarm"
+          git config user.email "janus-demiurge-scout-swarm@users.noreply.github.com"
+          git add scout_swarm/outbox scout_swarm/state
+          if git diff --cached --quiet; then
+            echo "JANUS_DEMIURGE_SWARM_NO_CHANGES"
+            exit 0
+          fi
+          git commit -m "Scout swarm: persist 17-agent reconnaissance run ${{ github.run_id }}"
+          git pull --rebase origin main
+          git push origin HEAD:main
+          echo "JANUS_DEMIURGE_SWARM_PERSIST=PASS"
