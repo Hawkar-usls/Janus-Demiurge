@@ -30,15 +30,16 @@ def blocked_exact_repeat(payload: dict[str, Any]) -> str | None:
     executed = str(previous.get("executed_gate") or "")
     data_boundary = new_result.get("data_boundary") is True
     access_changed = new_result.get("access_condition_changed") is True
-    candidate_ids = {
-        str(row["gate_id"])
-        for row in v1.load_mission().get("candidate_gates", [])
-        if isinstance(row, dict) and row.get("gate_id")
-    }
+    rankable_ids = set(
+        v1.BASE_BY_VERDICT.get(
+            verdict,
+            v1.BASE_BY_VERDICT["MIXED_OR_PARTIAL_PUBLIC_RESPONSE_EPOCH_ENCODING"],
+        )
+    )
     if (
         verdict.startswith("BLOCKED")
         and data_boundary
-        and executed in candidate_ids
+        and executed in rankable_ids
         and not access_changed
     ):
         return executed
