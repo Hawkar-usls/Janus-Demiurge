@@ -1,8 +1,15 @@
 import copy
-import json
+import sys
 import tempfile
+import types
 import unittest
 from pathlib import Path
+
+# species_engine only needs RAW_LOGS_DIR from the historical config module.
+# The real config imports torch, which is irrelevant to these contract tests.
+config_stub = types.ModuleType("config")
+config_stub.RAW_LOGS_DIR = tempfile.gettempdir()
+sys.modules.setdefault("config", config_stub)
 
 from auto_evolution import AutoEvolution
 from janus_core.convergence_engine import SolutionField
@@ -36,11 +43,6 @@ class DeterministicEvolution(AutoEvolution):
         candidate.utility = core.utility - 0.25
         candidate.alpha += 0.01
         return candidate
-
-
-class Agent:
-    def __init__(self, score):
-        self.score = score
 
 
 class SpiralEvolutionTests(unittest.TestCase):
