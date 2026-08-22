@@ -8,6 +8,7 @@ on:
       - 'tools/demiurge_systemwide_scout_runner.py'
       - 'tools/demiurge_systemwide_independent_evidence.py'
       - 'tools/demiurge_systemwide_frontier_gates.py'
+      - 'tools/demiurge_systemwide_frontier_gates_v2.py'
       - '.github/workflows/janus-systemwide-scout-directions.yml'
   push:
     branches: [main]
@@ -16,6 +17,7 @@ on:
       - 'tools/demiurge_systemwide_scout_runner.py'
       - 'tools/demiurge_systemwide_independent_evidence.py'
       - 'tools/demiurge_systemwide_frontier_gates.py'
+      - 'tools/demiurge_systemwide_frontier_gates_v2.py'
       - '.github/workflows/janus-systemwide-scout-directions.yml'
   workflow_dispatch:
 
@@ -40,7 +42,7 @@ jobs:
       - name: Validate whole-system mission and frontier gates
         run: |
           python tools/demiurge_systemwide_scout_runner.py --self-test
-          python tools/demiurge_systemwide_frontier_gates.py --self-test
+          python tools/demiurge_systemwide_frontier_gates_v2.py --self-test
       - name: Build 17-Scout matrix
         id: matrix
         shell: bash
@@ -72,9 +74,9 @@ jobs:
         run: |
           python tools/demiurge_systemwide_independent_evidence.py \
             --report runtime/${{ matrix.id }}/report.json
-      - name: Run high-information frontier gates
+      - name: Run hardened high-information frontier gates
         run: |
-          python tools/demiurge_systemwide_frontier_gates.py \
+          python tools/demiurge_systemwide_frontier_gates_v2.py \
             --report runtime/${{ matrix.id }}/report.json
       - name: Upload evidence report
         if: always()
