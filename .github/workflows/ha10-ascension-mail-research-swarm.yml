@@ -1,0 +1,156 @@
+name: JANUS HA10 Ascension Mail Research Swarm 17
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scout_swarm/missions/HA10_ASCENSION_MAIL_TRIAD-v1.json'
+      - 'tools/demiurge_mail_research_swarm.py'
+      - '.github/workflows/ha10-ascension-mail-research-swarm.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scout_swarm/missions/HA10_ASCENSION_MAIL_TRIAD-v1.json'
+      - 'tools/demiurge_mail_research_swarm.py'
+      - '.github/workflows/ha10-ascension-mail-research-swarm.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: janus-ha10-ascension-mail-research-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  copilot-requests: write
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      skip: ${{ steps.guard.outputs.skip }}
+    steps:
+      - name: Checkout mission branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Guard against persistence-only retrigger
+        id: guard
+        shell: bash
+        run: |
+          MSG="$(git log -1 --pretty=%s)"
+          if [[ "$MSG" == Mail\ research:\ persist* ]]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Set up Python
+        if: steps.guard.outputs.skip != 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install research dependencies
+        if: steps.guard.outputs.skip != 'true'
+        run: python -m pip install --disable-pip-version-check requests beautifulsoup4 pypdf
+      - name: Validate mission and evidence boundary
+        if: steps.guard.outputs.skip != 'true'
+        run: python tools/demiurge_mail_research_swarm.py --self-test
+      - name: Build 17-agent mission matrix
+        id: matrix
+        shell: bash
+        run: |
+          if [[ "${{ steps.guard.outputs.skip }}" == "true" ]]; then
+            echo 'matrix={"include":[{"id":"SKIP","track":"SKIP"}]}' >> "$GITHUB_OUTPUT"
+          else
+            MATRIX=$(python tools/demiurge_mail_research_swarm.py --matrix)
+            echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+          fi
+
+  scout:
+    if: needs.plan.outputs.skip != 'true'
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      max-parallel: 17
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - name: Checkout mission branch
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install research dependencies
+        run: python -m pip install --disable-pip-version-check requests beautifulsoup4 pypdf
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install GitHub Copilot CLI
+        run: |
+          npm install -g @github/copilot
+          copilot --version
+      - name: Run ${{ matrix.id }} / ${{ matrix.track }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          COPILOT_AUTO_UPDATE: 'false'
+        run: |
+          mkdir -p runtime/${{ matrix.id }}
+          python tools/demiurge_mail_research_swarm.py \
+            --run-agent '${{ matrix.id }}' \
+            --output runtime/${{ matrix.id }}/report.json
+      - name: Upload evidence-carrying report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mail-research-${{ matrix.id }}
+          path: runtime/${{ matrix.id }}/report.json
+          if-no-files-found: error
+          retention-days: 30
+
+  aggregate:
+    if: ${{ always() && needs.plan.outputs.skip != 'true' }}
+    needs: [plan, scout]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout mission branch for persistence
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install research dependencies
+        run: python -m pip install --disable-pip-version-check requests beautifulsoup4 pypdf
+      - name: Download all Scout reports
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: mail-research-*
+          path: runtime/reports
+      - name: Consolidate all findings into Demiurge
+        run: |
+          python tools/demiurge_mail_research_swarm.py \
+            --consolidate runtime/reports \
+            --run-id '${{ github.run_id }}' \
+            --sha '${{ github.sha }}'
+      - name: Persist append-only mission result
+        shell: bash
+        run: |
+          BRANCH='${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}'
+          git config user.name "janus-demiurge-mail-research-swarm"
+          git config user.email "janus-demiurge-mail-research-swarm@users.noreply.github.com"
+          git add -f scout_swarm/outbox/public_research scout_swarm/state/public_research
+          if git diff --cached --quiet; then
+            echo "JANUS_MAIL_RESEARCH_NO_CHANGES"
+            exit 0
+          fi
+          git commit -m "Mail research: persist HA10 Ascension triad ${{ github.run_id }}"
+          git pull --rebase origin "$BRANCH"
+          git push origin HEAD:"$BRANCH"
+          echo "JANUS_MAIL_RESEARCH_PERSIST=PASS"
