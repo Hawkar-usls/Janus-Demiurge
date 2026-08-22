@@ -22,25 +22,49 @@ gate.EVERS_2025_PDF = "https://pure.tudelft.nl/ws/portalfiles/portal/249944579/0
 gate.FRONTIER_DOMAINS.update({"core.ac.uk", "onlinelibrary.wiley.com", "agupubs.onlinelibrary.wiley.com"})
 
 
+def _plausible_uid(value: Any) -> str | None:
+    if value is None:
+        return None
+    value = str(value).strip()
+    if value.lower() in {"name", "value", "file", "data", "true", "false", "uid", "data_uid", "file_uid"}:
+        return None
+    if value.isdigit() or len(value) >= 8:
+        return value
+    return None
+
+
 def _filtered_mgds_uids(html: str) -> List[str]:
-    raw = gate.BeautifulSoup(html, "html.parser")
+    """Extract only plausible values associated with UID-labelled controls/links.
+
+    Do not treat literal HTML attribute names such as ``name`` or ``value`` as
+    candidate identifiers. A token remains only a candidate until the MGDS
+    download service accepts it and returns bytes.
+    """
+    soup = gate.BeautifulSoup(html, "html.parser")
     hits: List[str] = []
-    for tag in raw.find_all(["input", "a"]):
-        attrs = " ".join(f"{k}={v}" for k, v in tag.attrs.items())
-        label = f"{attrs} {tag.get_text(' ', strip=True)}"
-        for pat in (
-            r"(?:data[_-]?uid|file[_-]?uid|uid)[=:/\"'\s]+([A-Za-z0-9_.:-]{4,})",
-            r"FileDownloadServer[^\s\"']*[?&](?:id|uid|data_uid)=([A-Za-z0-9_.:-]+)",
-        ):
-            for m in re.finditer(pat, label, re.I):
-                value = m.group(1).strip()
-                if value.lower() in {"name", "value", "file", "data", "true", "false"}:
-                    continue
-                # A numeric token or a token with enough entropy to plausibly be a UID.
-                if not (value.isdigit() or len(value) >= 8):
-                    continue
-                if value not in hits:
-                    hits.append(value)
+
+    def add(value: Any) -> None:
+        candidate = _plausible_uid(value)
+        if candidate and candidate not in hits:
+            hits.append(candidate)
+
+    for tag in soup.find_all(["input", "a"]):
+        # Explicit data/file UID attributes are strongest.
+        for key, value in tag.attrs.items():
+            key_norm = str(key).lower().replace("-", "_")
+            if key_norm in {"uid", "data_uid", "file_uid", "datauid", "fileuid"}:
+                add(value)
+
+        # Forms often encode a UID as: <input name="data_uid" value="4430">.
+        control_name = str(tag.get("name") or tag.get("id") or "").lower().replace("-", "_")
+        if "uid" in control_name:
+            add(tag.get("value"))
+
+        # Download links may carry the identifier in a query parameter.
+        href = str(tag.get("href") or "")
+        for m in re.finditer(r"[?&](?:id|uid|data_uid|file_uid)=([A-Za-z0-9_.:-]+)", href, re.I):
+            add(m.group(1))
+
     return hits[:30]
 
 
@@ -103,7 +127,8 @@ def self_test() -> None:
     urls = _waveform_urls_v2()
     assert all("starttime=" in u and "endtime=" in u and "nodata=404" in u for u, _ in urls)
     assert all("location=--" in u for u, _ in urls)
-    assert _filtered_mgds_uids('<input name="uid" value="name"><input name="data_uid" value="4430">') == ["4430"]
+    sample = '<input name="uid" value="name"><input name="data_uid" value="4430"><a href="/x?file_uid=abc123456">x</a>'
+    assert _filtered_mgds_uids(sample) == ["4430", "abc123456"]
     print("JANUS_SYSTEMWIDE_FRONTIER_GATE_V2_SELF_TEST=PASS")
 
 
