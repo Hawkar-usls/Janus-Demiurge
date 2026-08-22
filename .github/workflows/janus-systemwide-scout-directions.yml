@@ -1,0 +1,288 @@
+name: JANUS Whole-System Scout Directions 17
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scout_swarm/missions/JANUS_FULL_SYSTEM_SCOUT_DIRECTIONS-2026-08-22-v1.json'
+      - 'scout_swarm/orchestrator/**'
+      - 'tools/demiurge_systemwide_scout_runner.py'
+      - 'tools/demiurge_systemwide_independent_evidence.py'
+      - 'tools/demiurge_systemwide_frontier_gates.py'
+      - 'tools/demiurge_systemwide_frontier_gates_v2.py'
+      - 'tools/demiurge_swarm_orchestrator.py'
+      - 'tools/demiurge_swarm_peer_round.py'
+      - '.github/workflows/janus-systemwide-scout-directions.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scout_swarm/missions/JANUS_FULL_SYSTEM_SCOUT_DIRECTIONS-2026-08-22-v1.json'
+      - 'scout_swarm/orchestrator/**'
+      - 'tools/demiurge_systemwide_scout_runner.py'
+      - 'tools/demiurge_systemwide_independent_evidence.py'
+      - 'tools/demiurge_systemwide_frontier_gates.py'
+      - 'tools/demiurge_systemwide_frontier_gates_v2.py'
+      - 'tools/demiurge_swarm_orchestrator.py'
+      - 'tools/demiurge_swarm_peer_round.py'
+      - '.github/workflows/janus-systemwide-scout-directions.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: janus-whole-system-scout-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      skip: ${{ steps.guard.outputs.skip }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
+          fetch-depth: 2
+      - name: Guard against persistence-only retrigger
+        id: guard
+        shell: bash
+        run: |
+          MSG="$(git log -1 --pretty=%s)"
+          if [[ "$MSG" == Whole-system\ scout:\ persist* ]]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-python@v5
+        if: steps.guard.outputs.skip != 'true'
+        with:
+          python-version: '3.11'
+      - if: steps.guard.outputs.skip != 'true'
+        run: python -m pip install --disable-pip-version-check requests beautifulsoup4 pypdf
+      - name: Validate mission, evidence gates and orchestrator
+        if: steps.guard.outputs.skip != 'true'
+        run: |
+          python tools/demiurge_systemwide_scout_runner.py --self-test
+          python tools/demiurge_systemwide_frontier_gates_v2.py --self-test
+          python tools/demiurge_swarm_orchestrator.py --self-test
+          python tools/demiurge_swarm_peer_round.py --self-test
+      - name: Build 17-Scout matrix
+        id: matrix
+        shell: bash
+        run: |
+          if [[ "${{ steps.guard.outputs.skip }}" == "true" ]]; then
+            echo 'matrix={"include":[{"id":"SKIP","track":"SKIP"}]}' >> "$GITHUB_OUTPUT"
+          else
+            MATRIX=$(python tools/demiurge_systemwide_scout_runner.py --matrix)
+            echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+          fi
+
+  scout_round1:
+    if: needs.plan.outputs.skip != 'true'
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      max-parallel: 17
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check requests beautifulsoup4 pypdf
+      - name: Run round 1 ${{ matrix.id }} / ${{ matrix.track }}
+        run: |
+          mkdir -p runtime/${{ matrix.id }}
+          python tools/demiurge_systemwide_scout_runner.py \
+            --run-agent '${{ matrix.id }}' \
+            --output runtime/${{ matrix.id }}/report.json
+      - name: Expand deterministic public evidence
+        run: |
+          python tools/demiurge_systemwide_independent_evidence.py \
+            --report runtime/${{ matrix.id }}/report.json
+      - name: Run hardened high-information frontier gates
+        run: |
+          python tools/demiurge_systemwide_frontier_gates_v2.py \
+            --report runtime/${{ matrix.id }}/report.json
+      - name: Upload round 1 evidence report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-systemwide-${{ matrix.id }}
+          path: runtime/${{ matrix.id }}/report.json
+          if-no-files-found: error
+          retention-days: 30
+
+  coordinate:
+    if: needs.plan.outputs.skip != 'true'
+    needs: [plan, scout_round1]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check requests beautifulsoup4 pypdf
+      - name: Download round 1 reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: janus-systemwide-SCOUT_*
+          path: runtime/round1
+      - name: Build identity-preserving blackboard and inboxes
+        run: |
+          python tools/demiurge_swarm_orchestrator.py \
+            --build-round runtime/round1 \
+            --output-dir runtime/orchestrator
+      - name: Upload communication bus
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-orchestrator-bus
+          path: runtime/orchestrator
+          if-no-files-found: error
+          retention-days: 30
+
+  scout_round2:
+    if: needs.plan.outputs.skip != 'true'
+    needs: [plan, coordinate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      max-parallel: 17
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check requests beautifulsoup4 pypdf
+      - name: Download round 1 reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: janus-systemwide-SCOUT_*
+          path: runtime/round1
+      - name: Download orchestrator bus
+        uses: actions/download-artifact@v4
+        with:
+          name: janus-orchestrator-bus
+          path: runtime/orchestrator
+      - name: Locate own parent report
+        id: parent
+        shell: bash
+        run: |
+          ORIGINAL=$(python - <<'PY'
+          import json
+          from pathlib import Path
+          target='${{ matrix.id }}'
+          for p in Path('runtime/round1').rglob('report.json'):
+              try:
+                  obj=json.loads(p.read_text())
+              except Exception:
+                  continue
+              if obj.get('scout_id') == target:
+                  print(p)
+                  break
+          PY
+          )
+          test -n "$ORIGINAL"
+          echo "path=$ORIGINAL" >> "$GITHUB_OUTPUT"
+      - name: Run peer-communication round ${{ matrix.id }}
+        run: |
+          mkdir -p runtime/peer/${{ matrix.id }}
+          python tools/demiurge_swarm_peer_round.py \
+            --agent '${{ matrix.id }}' \
+            --original '${{ steps.parent.outputs.path }}' \
+            --inbox 'runtime/orchestrator/inboxes/${{ matrix.id }}.json' \
+            --output runtime/peer/${{ matrix.id }}/report.json
+      - name: Expand deterministic peer evidence
+        run: |
+          python tools/demiurge_systemwide_independent_evidence.py \
+            --report runtime/peer/${{ matrix.id }}/report.json
+      - name: Run peer frontier gates
+        run: |
+          python tools/demiurge_systemwide_frontier_gates_v2.py \
+            --report runtime/peer/${{ matrix.id }}/report.json
+      - name: Upload peer report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-peer-${{ matrix.id }}
+          path: runtime/peer/${{ matrix.id }}/report.json
+          if-no-files-found: error
+          retention-days: 30
+
+  aggregate:
+    if: ${{ always() && needs.plan.outputs.skip != 'true' }}
+    needs: [plan, scout_round1, coordinate, scout_round2]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout mission branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check requests beautifulsoup4 pypdf
+      - name: Download round 1 reports
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: janus-systemwide-SCOUT_*
+          path: runtime/round1
+      - name: Download peer reports
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: janus-peer-SCOUT_*
+          path: runtime/round2
+      - name: Download orchestrator bus
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: janus-orchestrator-bus
+          path: runtime/orchestrator
+      - name: Consolidate original whole-system spiral turn
+        run: |
+          python tools/demiurge_systemwide_scout_runner.py \
+            --consolidate runtime/round1 \
+            --run-id '${{ github.run_id }}' \
+            --sha '${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}'
+      - name: Finalize identity-preserving orchestrated turn
+        run: |
+          python tools/demiurge_swarm_orchestrator.py \
+            --finalize \
+            --round1 runtime/round1 \
+            --round2 runtime/round2 \
+            --bus-dir runtime/orchestrator \
+            --run-id '${{ github.run_id }}' \
+            --sha '${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}'
+      - name: Persist append-only result and communication lineage
+        shell: bash
+        run: |
+          BRANCH='${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}'
+          git config user.name "janus-whole-system-scout"
+          git config user.email "janus-whole-system-scout@users.noreply.github.com"
+          git add -f scout_swarm/outbox/public_research scout_swarm/state/public_research
+          git add -f scout_swarm/orchestrator/outbox scout_swarm/orchestrator/state
+          if git diff --cached --quiet; then
+            echo "JANUS_ORCHESTRATED_NO_CHANGES"
+            exit 0
+          fi
+          git commit -m "Whole-system scout: persist orchestrated turn ${{ github.run_id }}"
+          git pull --rebase origin "$BRANCH"
+          git push origin HEAD:"$BRANCH"
+          echo "JANUS_ORCHESTRATED_PERSIST=PASS"
