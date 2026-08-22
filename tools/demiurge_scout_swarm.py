@@ -4,6 +4,10 @@
 Every resident keeps one persistent identity. Re-visiting a repository is a new
 spiral turn carrying forward lessons and unresolved checks; previous model text
 is context only and never independent evidence.
+
+Model synthesis is optional enrichment. A repository observation must remain
+useful when Copilot/model quota is unavailable: deterministic commit-bound
+facts survive and the unavailable model becomes a retained constraint/lesson.
 """
 
 from __future__ import annotations
@@ -72,7 +76,7 @@ def inherited_spiral_context(previous: Optional[Dict[str, Any]]) -> Dict[str, An
         }
     prev_spiral = previous.get("spiral") if isinstance(previous.get("spiral"), dict) else {}
     prev_analysis = previous.get("analysis") if isinstance(previous.get("analysis"), dict) else {}
-    retained_lessons = []
+    retained_lessons: List[str] = []
     for item in [
         *(prev_spiral.get("retained_lessons") or []),
         *(prev_spiral.get("new_lessons") or []),
@@ -81,7 +85,7 @@ def inherited_spiral_context(previous: Optional[Dict[str, Any]]) -> Dict[str, An
         text = str(item).strip()
         if text and text not in retained_lessons:
             retained_lessons.append(text)
-    retained_constraints = []
+    retained_constraints: List[str] = []
     for item in [
         *(prev_spiral.get("retained_constraints") or []),
         *(prev_analysis.get("next_checks") or []),
@@ -170,6 +174,68 @@ def repository_snapshot(repo: Path, agent: Dict[str, Any]) -> Dict[str, Any]:
         "recent_commits": commits,
         "selected_sources": selected,
         "snapshot_policy": "READ_ONLY_METADATA_AND_BOUNDED_TEXT_EXCERPTS",
+    }
+
+
+def deterministic_fallback_analysis(
+    agent: Dict[str, Any],
+    snapshot: Dict[str, Any],
+    spiral_context: Dict[str, Any],
+    model_error: str,
+) -> Dict[str, Any]:
+    """Produce useful evidence-bound analysis without any model inference."""
+    commit = str(snapshot.get("target_commit") or "")
+    observations: List[Dict[str, Any]] = []
+    if commit:
+        observations.append({
+            "claim": f"Observed {agent['target_repo']} at commit {commit} on ref {agent['target_ref']}.",
+            "support": {"path": "GIT_HEAD", "commit": commit},
+            "confidence": "HIGH",
+        })
+        observations.append({
+            "claim": f"Tracked repository file count at this turn: {int(snapshot.get('file_count') or 0)}.",
+            "support": {"path": "GIT_INDEX", "commit": commit},
+            "confidence": "HIGH",
+        })
+        recent = snapshot.get("recent_commits") if isinstance(snapshot.get("recent_commits"), list) else []
+        if recent:
+            observations.append({
+                "claim": f"Current git history head record: {str(recent[0])[:1200]}",
+                "support": {"path": "GIT_LOG", "commit": commit},
+                "confidence": "HIGH",
+            })
+        selected = snapshot.get("selected_sources") if isinstance(snapshot.get("selected_sources"), list) else []
+        if selected:
+            paths = [str(x.get("path")) for x in selected[:8] if isinstance(x, dict) and x.get("path")]
+            observations.append({
+                "claim": "Bounded source snapshot includes: " + ", ".join(paths),
+                "support": {"path": "GIT_INDEX", "commit": commit},
+                "confidence": "HIGH",
+            })
+
+    retained = [str(x) for x in spiral_context.get("retained_constraints", [])[:10]]
+    error_kind = "MODEL_SYNTHESIS_UNAVAILABLE"
+    lowered = model_error.lower()
+    if "quota" in lowered or "402" in lowered:
+        error_kind = "MODEL_QUOTA_UNAVAILABLE"
+    elif "timeout" in lowered:
+        error_kind = "MODEL_TIMEOUT"
+
+    return {
+        "analysis_mode": "DETERMINISTIC_REPOSITORY_FALLBACK",
+        "summary": (
+            f"Repository observation completed for {agent['target_repo']} at a concrete commit. "
+            f"Optional model synthesis was unavailable ({error_kind}); deterministic repository evidence is preserved."
+        ),
+        "observations": observations,
+        "risks": [f"{error_kind}: semantic synthesis was not available for this turn."],
+        "open_questions": retained,
+        "next_checks": retained or ["Retry optional semantic synthesis on a later spiral turn; do not repeat it as evidence."],
+        "lessons": [
+            "A model outage must degrade interpretation, not erase an otherwise successful repository observation.",
+            f"Retain {error_kind} as an operational constraint for the next turn.",
+        ],
+        "oracle_guidance": None,
     }
 
 
@@ -304,10 +370,13 @@ def normalize_analysis(obj: Dict[str, Any], commit: str) -> Dict[str, Any]:
             "support": {"path": str(support.get("path") or "UNSPECIFIED")[:500], "commit": commit},
             "confidence": str(item.get("confidence") or "LOW").upper() if str(item.get("confidence") or "").upper() in {"LOW", "MEDIUM", "HIGH"} else "LOW",
         })
+
     def bounded(name: str) -> List[str]:
         value = obj.get(name)
         return [str(x)[:1500] for x in value[:20]] if isinstance(value, list) else []
+
     return {
+        "analysis_mode": "MODEL_SYNTHESIS",
         "summary": str(obj.get("summary") or "")[:6000],
         "observations": observations,
         "risks": bounded("risks"),
@@ -348,6 +417,7 @@ def run_agent(agent_id: str, output: Path) -> None:
     session_token = secrets.token_urlsafe(48)
     token_fp = hashlib.sha256(session_token.encode()).hexdigest()[:16]
     model_error: Optional[str] = None
+    model_status = "NOT_ATTEMPTED"
 
     with tempfile.TemporaryDirectory(prefix=f"{agent_id.lower()}-") as td:
         repo = Path(td) / "target"
@@ -357,29 +427,31 @@ def run_agent(agent_id: str, output: Path) -> None:
             snapshot = repository_snapshot(repo, agent)
             try:
                 analysis = normalize_analysis(call_copilot(agent, snapshot, spiral_context), snapshot["target_commit"])
-                status = "OBSERVED_REPOSITORY_STATE"
+                model_status = "AVAILABLE"
             except Exception as exc:
-                model_error = f"{type(exc).__name__}:{exc}"[:2000]
-                analysis = {
-                    "summary": "Model synthesis failed closed; deterministic repository snapshot remains available.",
-                    "observations": [], "risks": [], "open_questions": [], "next_checks": [],
-                    "lessons": ["Model synthesis failure preserved; retry on a later spiral turn without treating it as evidence."],
-                    "oracle_guidance": None,
-                }
-                status = "DEGRADED_MODEL_UNAVAILABLE"
+                model_error = f"{type(exc).__name__}:{exc}"[:4000]
+                model_status = "UNAVAILABLE_FALLBACK_USED"
+                analysis = deterministic_fallback_analysis(agent, snapshot, spiral_context, model_error)
+            # The repository itself was observed successfully even if optional model enrichment failed.
+            status = "OBSERVED_REPOSITORY_STATE"
         except Exception as exc:
             snapshot = {
-                "target_repo": agent["target_repo"], "target_ref": agent["target_ref"],
-                "snapshot_error": f"{type(exc).__name__}:{exc}"[:2000]
+                "target_repo": agent["target_repo"],
+                "target_ref": agent["target_ref"],
+                "snapshot_error": f"{type(exc).__name__}:{exc}"[:2000],
             }
             analysis = {
+                "analysis_mode": "NO_TARGET_OBSERVATION",
                 "summary": "Target repository could not be observed in this turn.",
-                "observations": [], "risks": [], "open_questions": [],
+                "observations": [],
+                "risks": [],
+                "open_questions": [],
                 "next_checks": ["Retry target observation on the next spiral turn."],
                 "lessons": ["Transport failure is a retained constraint, not evidence about target state."],
                 "oracle_guidance": None,
             }
             model_error = snapshot["snapshot_error"]
+            model_status = "NOT_RUN_TARGET_UNAVAILABLE"
             status = "DEGRADED_TARGET_UNAVAILABLE"
 
     ascent_status = classify_ascent(previous, snapshot, analysis)
@@ -407,6 +479,7 @@ def run_agent(agent_id: str, output: Path) -> None:
             "ascent_status": ascent_status,
             "logical_ring": False,
         },
+        "model_status": model_status,
         "model_error": model_error,
         "janus_agent_token": {
             "scope": "EPHEMERAL_GITHUB_RUN_AGENT",
@@ -415,6 +488,7 @@ def run_agent(agent_id: str, output: Path) -> None:
         },
         "evidence_gate": {
             "repository_observation_bound_to_commit": bool(snapshot.get("target_commit")),
+            "deterministic_fallback_is_repository_evidence_only": True,
             "model_output_is_independent_confirmation": False,
             "previous_scout_report_is_independent_confirmation": False,
             "world_truth": False,
@@ -423,7 +497,10 @@ def run_agent(agent_id: str, output: Path) -> None:
     }
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"{agent_id}={status} spiral_turn={spiral_context['next_turn']} ascent={ascent_status}")
+    print(
+        f"{agent_id}={status} spiral_turn={spiral_context['next_turn']} "
+        f"ascent={ascent_status} model={model_status}"
+    )
 
 
 def consolidate(reports_root: Path, run_id: str, sha: str) -> None:
@@ -450,6 +527,7 @@ def consolidate(reports_root: Path, run_id: str, sha: str) -> None:
     missing = [x for x in expected if x not in reports]
     ok = [x for x in expected if reports.get(x, {}).get("status") == "OBSERVED_REPOSITORY_STATE"]
     degraded = [x for x in expected if x in reports and x not in ok]
+    fallback = [x for x in expected if reports.get(x, {}).get("model_status") == "UNAVAILABLE_FALLBACK_USED"]
     turns = {aid: reports[aid].get("spiral", {}).get("turn") for aid in reports}
     ascents = {aid: reports[aid].get("spiral", {}).get("ascent_status") for aid in reports}
     status = "LIVE_17_OF_17" if len(reports) == 17 and not degraded else ("DEGRADED_PARTIAL" if reports else "FAILED_NO_REPORTS")
@@ -464,11 +542,13 @@ def consolidate(reports_root: Path, run_id: str, sha: str) -> None:
         "agents_observed": len(ok),
         "agents_degraded": degraded,
         "agents_missing": missing,
+        "agents_model_fallback": fallback,
         "agent_spiral_turns": turns,
         "agent_ascent_status": ascents,
         "aura_oracle_agent": "SCOUT_AURA_ORACLE_01",
         "response_repository": "Hawkar-usls/Janus-Demiurge",
         "evolution_model": "SPIRAL_ACCUMULATIVE_NO_ENTITY_DELETION",
+        "model_synthesis_required_for_repository_observation": False,
         "world_truth": False,
         "write_authority_over_targets": False,
     }
@@ -499,7 +579,15 @@ def self_test() -> None:
     assert ctx["next_turn"] == 4
     assert ctx["previous_report_is_evidence"] is False
     assert "L1" in ctx["retained_lessons"]
-    print("JANUS_DEMIURGE_SCOUT_SWARM_SELF_TEST=PASS agents=17 spiral=TRUE")
+    fallback = deterministic_fallback_analysis(
+        agents[0],
+        {"target_commit": "abc", "file_count": 3, "recent_commits": [], "selected_sources": []},
+        ctx,
+        "quota_exceeded",
+    )
+    assert fallback["analysis_mode"] == "DETERMINISTIC_REPOSITORY_FALLBACK"
+    assert fallback["observations"][0]["support"]["commit"] == "abc"
+    print("JANUS_DEMIURGE_SCOUT_SWARM_SELF_TEST=PASS agents=17 spiral=TRUE fallback=TRUE")
 
 
 def main() -> int:
