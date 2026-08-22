@@ -6,6 +6,7 @@ on:
     paths:
       - 'tools/demiurge_native_cruise_gate.py'
       - 'tools/demiurge_bodc_linked_gate.py'
+      - 'tools/demiurge_bodc_inventory_fallback.py'
       - '.github/workflows/ha10-native-cruise-targeted.yml'
   workflow_dispatch:
 
@@ -27,6 +28,7 @@ jobs:
       - run: python -m pip install --disable-pip-version-check requests beautifulsoup4 pypdf
       - name: Run deterministic self-tests
         run: |
+          python tools/demiurge_bodc_inventory_fallback.py --self-test
           python tools/demiurge_native_cruise_gate.py --self-test
           python tools/demiurge_bodc_linked_gate.py --self-test
 
@@ -55,6 +57,8 @@ jobs:
         run: |
           mkdir -p runtime/${{ matrix.scout_id }}
           printf '{"schema":"janus.demiurge.native_probe.input.v1","scout_id":"%s","analysis":{"findings":[]},"discovery":{"sources":[]}}\n' '${{ matrix.scout_id }}' > runtime/${{ matrix.scout_id }}/report.json
+      - name: Prefetch BODC cruise inventory fallback
+        run: python tools/demiurge_bodc_inventory_fallback.py --report runtime/${{ matrix.scout_id }}/report.json
       - name: Probe native BODC/BAS cruise sources
         run: python tools/demiurge_native_cruise_gate.py --report runtime/${{ matrix.scout_id }}/report.json
       - name: Probe BODC NODB Linked Open Data fallback
