@@ -7,6 +7,7 @@ on:
       - 'scout_swarm/missions/HA10_ASCENSION_MAIL_TRIAD-v1.json'
       - 'tools/demiurge_mail_research_swarm.py'
       - 'tools/demiurge_independent_evidence.py'
+      - 'tools/demiurge_bgs_intersection_gate.py'
       - '.github/workflows/ha10-ascension-mail-research-swarm.yml'
   push:
     branches: [main]
@@ -14,6 +15,7 @@ on:
       - 'scout_swarm/missions/HA10_ASCENSION_MAIL_TRIAD-v1.json'
       - 'tools/demiurge_mail_research_swarm.py'
       - 'tools/demiurge_independent_evidence.py'
+      - 'tools/demiurge_bgs_intersection_gate.py'
       - '.github/workflows/ha10-ascension-mail-research-swarm.yml'
   workflow_dispatch:
 
@@ -59,6 +61,7 @@ jobs:
         run: |
           python tools/demiurge_mail_research_swarm.py --self-test
           python tools/demiurge_independent_evidence.py --self-test
+          python tools/demiurge_bgs_intersection_gate.py --self-test
       - name: Build 17-agent mission matrix
         id: matrix
         shell: bash
@@ -108,6 +111,10 @@ jobs:
       - name: Expand evidence and admit deterministic findings
         run: |
           python tools/demiurge_independent_evidence.py \
+            --report runtime/${{ matrix.id }}/report.json
+      - name: Resolve BGS point polygon and line intersections
+        run: |
+          python tools/demiurge_bgs_intersection_gate.py \
             --report runtime/${{ matrix.id }}/report.json
       - name: Upload evidence-carrying report
         if: always()
