@@ -12,6 +12,10 @@ on:
       - 'tools/demiurge_systemwide_frontier_gates_v2.py'
       - 'tools/demiurge_swarm_orchestrator.py'
       - 'tools/demiurge_swarm_peer_round.py'
+      - 'swarm_genome_ledger.py'
+      - 'spiral_evolution.py'
+      - 'swarm_genome_nervous_system.py'
+      - 'tests/test_swarm_genome_nervous_system.py'
       - '.github/workflows/janus-systemwide-scout-directions.yml'
   push:
     branches: [main]
@@ -24,6 +28,10 @@ on:
       - 'tools/demiurge_systemwide_frontier_gates_v2.py'
       - 'tools/demiurge_swarm_orchestrator.py'
       - 'tools/demiurge_swarm_peer_round.py'
+      - 'swarm_genome_ledger.py'
+      - 'spiral_evolution.py'
+      - 'swarm_genome_nervous_system.py'
+      - 'tests/test_swarm_genome_nervous_system.py'
       - '.github/workflows/janus-systemwide-scout-directions.yml'
   workflow_dispatch:
 
@@ -61,13 +69,15 @@ jobs:
           python-version: '3.11'
       - if: steps.guard.outputs.skip != 'true'
         run: python -m pip install --disable-pip-version-check requests beautifulsoup4 pypdf
-      - name: Validate mission, evidence gates and orchestrator
+      - name: Validate mission, evidence gates, orchestrator and genome nervous system
         if: steps.guard.outputs.skip != 'true'
         run: |
           python tools/demiurge_systemwide_scout_runner.py --self-test
           python tools/demiurge_systemwide_frontier_gates_v2.py --self-test
           python tools/demiurge_swarm_orchestrator.py --self-test
           python tools/demiurge_swarm_peer_round.py --self-test
+          python swarm_genome_nervous_system.py --self-test
+          python -m unittest discover -s tests -p 'test_swarm_genome_nervous_system.py'
       - name: Build 17-Scout matrix
         id: matrix
         shell: bash
@@ -270,7 +280,22 @@ jobs:
             --bus-dir runtime/orchestrator \
             --run-id '${{ github.run_id }}' \
             --sha '${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}'
-      - name: Persist append-only result and communication lineage
+      - name: Bind communication lineage into SWARM_GENOME_LEDGER
+        shell: bash
+        run: |
+          RESULT="scout_swarm/orchestrator/outbox/JANUS_FULL_SYSTEM_SCOUT_DIRECTIONS_2026_08_22_V1/${{ github.run_id }}/ORCHESTRATOR_RESULT.json"
+          GENOME="scout_swarm/orchestrator/outbox/JANUS_FULL_SYSTEM_SCOUT_DIRECTIONS_2026_08_22_V1/${{ github.run_id }}/GENOME_NERVOUS_SYSTEM.json"
+          python swarm_genome_nervous_system.py --input "$RESULT" --output "$GENOME"
+          test -s "$GENOME"
+          echo "JANUS_SWARM_GENOME_NERVOUS_SYSTEM_BINDING=PASS"
+      - name: Upload genome nervous-system artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-genome-nervous-system
+          path: scout_swarm/orchestrator/outbox/JANUS_FULL_SYSTEM_SCOUT_DIRECTIONS_2026_08_22_V1/${{ github.run_id }}/GENOME_NERVOUS_SYSTEM.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Persist append-only result, communication and genome lineage
         shell: bash
         run: |
           BRANCH='${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}'
