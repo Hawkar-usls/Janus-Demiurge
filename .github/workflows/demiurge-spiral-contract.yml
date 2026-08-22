@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'spiral_evolution.py'
+      - 'swarm_genome_ledger.py'
       - 'auto_evolution.py'
       - 'architect_ai.py'
       - 'species_engine.py'
@@ -12,13 +13,16 @@ on:
       - 'janus_genesis/demiurge.py'
       - 'tools/demiurge_scout_swarm.py'
       - 'protocol/DEMIURGE_SPIRAL_EVOLUTION-v1.json'
+      - 'protocol/SWARM_GENOME_LEDGER-v1.json'
       - 'scout_swarm/SCOUT_SWARM_MANIFEST-v1.json'
       - 'tests/test_spiral_evolution.py'
+      - 'tests/test_swarm_genome_ledger.py'
       - '.github/workflows/demiurge-spiral-contract.yml'
   push:
     branches: [main]
     paths:
       - 'spiral_evolution.py'
+      - 'swarm_genome_ledger.py'
       - 'auto_evolution.py'
       - 'architect_ai.py'
       - 'species_engine.py'
@@ -27,8 +31,10 @@ on:
       - 'janus_genesis/demiurge.py'
       - 'tools/demiurge_scout_swarm.py'
       - 'protocol/DEMIURGE_SPIRAL_EVOLUTION-v1.json'
+      - 'protocol/SWARM_GENOME_LEDGER-v1.json'
       - 'scout_swarm/SCOUT_SWARM_MANIFEST-v1.json'
       - 'tests/test_spiral_evolution.py'
+      - 'tests/test_swarm_genome_ledger.py'
 
 permissions:
   contents: read
@@ -47,6 +53,7 @@ jobs:
         run: |
           python -m py_compile \
             spiral_evolution.py \
+            swarm_genome_ledger.py \
             auto_evolution.py \
             architect_ai.py \
             species_engine.py \
@@ -54,8 +61,8 @@ jobs:
             janus_core/convergence_engine.py \
             janus_genesis/demiurge.py \
             tools/demiurge_scout_swarm.py
-      - name: Run spiral regression suite
-        run: python -m unittest discover -s tests -p 'test_spiral_evolution.py'
+      - name: Run spiral and genome regression suite
+        run: python -m unittest discover -s tests -p 'test_*spiral*.py' && python -m unittest discover -s tests -p 'test_swarm_genome_ledger.py'
       - name: Run Scout spiral self-test
         run: python tools/demiurge_scout_swarm.py --self-test
       - name: Validate machine-readable contracts
@@ -64,11 +71,15 @@ jobs:
           import json
           from pathlib import Path
           protocol = json.loads(Path('protocol/DEMIURGE_SPIRAL_EVOLUTION-v1.json').read_text())
+          genome = json.loads(Path('protocol/SWARM_GENOME_LEDGER-v1.json').read_text())
           manifest = json.loads(Path('scout_swarm/SCOUT_SWARM_MANIFEST-v1.json').read_text())
           assert protocol['status'] == 'CANONICAL'
           assert 'NO_LEARNING_ENTITY_DELETION' in protocol['laws']
           assert 'ITERATION_IS_SPIRAL_NOT_RING' in protocol['laws']
+          assert genome['status'] == 'CANONICAL'
+          assert genome['model'] == 'DUAL_STRAND_SPIRAL_GENEALOGY'
+          assert 'ANCESTRY_IS_APPEND_ONLY' in genome['laws']
           assert manifest['agent_count'] == 17
           assert 'FAILURE_BECOMES_LESSON' in manifest['invariants']
-          print('DEMIURGE_SPIRAL_CONTRACT=PASS')
+          print('DEMIURGE_SPIRAL_GENOME_CONTRACT=PASS')
           PY
