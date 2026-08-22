@@ -60,10 +60,10 @@ def test_mixed_result_selects_direct_triplet_gate():
     assert result["selected_next_gate"] == "COUSTEAU_HA10_PRE_POST_2013_CROSSTALK_TRIPLET_GATE_V1"
 
 
-def test_blocked_metadata_audit_selects_earliest_six_channel_backcast():
+def test_blocked_metadata_still_allows_raw_first_direct_triplet_gate():
     p = payload("BLOCKED_PUBLIC_RESPONSE_EPOCH_AUDIT")
     result = m.aggregate(all_votes(p), p)
-    assert result["selected_next_gate"] == "COUSTEAU_HA10_FIRST_AVAILABLE_SIX_CHANNEL_BASELINE_V1"
+    assert result["selected_next_gate"] == "COUSTEAU_HA10_PRE_POST_2013_CROSSTALK_TRIPLET_GATE_V1"
 
 
 def test_aggregate_rejects_missing_role():
