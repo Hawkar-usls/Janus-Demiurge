@@ -7,6 +7,12 @@ on:
       - 'scout_swarm/missions/HA10_ASCENSION_MAIL_TRIAD-v1.json'
       - 'tools/demiurge_mail_research_swarm.py'
       - '.github/workflows/ha10-ascension-mail-research-swarm.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scout_swarm/missions/HA10_ASCENSION_MAIL_TRIAD-v1.json'
+      - 'tools/demiurge_mail_research_swarm.py'
+      - '.github/workflows/ha10-ascension-mail-research-swarm.yml'
   workflow_dispatch:
 
 concurrency:
@@ -113,7 +119,7 @@ jobs:
       - name: Checkout mission branch for persistence
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
           fetch-depth: 0
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -132,10 +138,11 @@ jobs:
           python tools/demiurge_mail_research_swarm.py \
             --consolidate runtime/reports \
             --run-id '${{ github.run_id }}' \
-            --sha '${{ github.event.pull_request.head.sha }}'
+            --sha '${{ github.sha }}'
       - name: Persist append-only mission result
         shell: bash
         run: |
+          BRANCH='${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}'
           git config user.name "janus-demiurge-mail-research-swarm"
           git config user.email "janus-demiurge-mail-research-swarm@users.noreply.github.com"
           git add -f scout_swarm/outbox/public_research scout_swarm/state/public_research
@@ -144,6 +151,6 @@ jobs:
             exit 0
           fi
           git commit -m "Mail research: persist HA10 Ascension triad ${{ github.run_id }}"
-          git pull --rebase origin '${{ github.head_ref }}'
-          git push origin HEAD:'${{ github.head_ref }}'
+          git pull --rebase origin "$BRANCH"
+          git push origin HEAD:"$BRANCH"
           echo "JANUS_MAIL_RESEARCH_PERSIST=PASS"
