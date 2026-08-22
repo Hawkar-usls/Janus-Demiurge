@@ -61,6 +61,7 @@ class BeliefSystem:
         self.save_file = save_file or os.path.join(RAW_LOGS_DIR, "beliefs.json")
         self.beliefs: Dict[str, Belief] = {}
         self.spiral = SpiralLedger("JANUS_BELIEF_SYSTEM")
+        self.persisted_ancestry: List[Dict[str, Any]] = []
         self._init_beliefs()
         self.load_state()
 
@@ -70,9 +71,7 @@ class BeliefSystem:
             self.beliefs[name] = Belief(name, doctrine)
 
     def _snapshot(self, agents: List[Any] = None) -> Dict[str, Any]:
-        snapshot = {
-            "beliefs": {name: belief.to_dict() for name, belief in self.beliefs.items()},
-        }
+        snapshot = {"beliefs": {name: belief.to_dict() for name, belief in self.beliefs.items()}}
         if agents is not None:
             snapshot["agents"] = {
                 str(getattr(agent, "id", index)): getattr(agent, "belief", None)
@@ -163,11 +162,14 @@ class BeliefSystem:
     def narrate(self) -> List[str]:
         return [f"    {name}: {belief.followers}" for name, belief in self.beliefs.items()]
 
+    def _all_spiral_records(self) -> List[Dict[str, Any]]:
+        return [*self.persisted_ancestry, *[turn.to_dict() for turn in self.spiral.turns]]
+
     def save_state(self):
         state = {name: belief.to_dict() for name, belief in self.beliefs.items()}
         state["__spiral__"] = {
             "model": "SPIRAL_ACCUMULATIVE_NO_ENTITY_DELETION",
-            "turns": [turn.to_dict() for turn in self.spiral.turns],
+            "turns": self._all_spiral_records(),
         }
         try:
             tmp = self.save_file + ".tmp"
@@ -188,21 +190,12 @@ class BeliefSystem:
                 if name in self.beliefs and isinstance(belief_data, dict):
                     self.beliefs[name].followers = belief_data.get('followers', 0)
                     self.beliefs[name].effects = belief_data.get('effects', self.beliefs[name].effects)
-            # Existing turn hashes are stored as provenance in the state file; new runtime
-            # turns continue from the loaded count without pretending to re-verify old text.
             spiral_data = data.get("__spiral__") if isinstance(data, dict) else None
-            if isinstance(spiral_data, dict):
-                loaded_turns = spiral_data.get("turns") or []
-                for old in loaded_turns:
-                    self.spiral.ascend(
-                        state_before={"legacy_loaded_turn": old.get("turn") if isinstance(old, dict) else None},
-                        candidate_state={"loaded_fingerprint": old.get("fingerprint") if isinstance(old, dict) else None},
-                        active_state_after={"loaded": True},
-                        lessons=["Recovered persisted belief lineage marker."],
-                        promoted=False,
-                        outcome="RECOVERED_ANCESTRY",
-                    )
-            logger.info("📖 Belief system загружен: %s", self.get_dominant_belief())
+            if isinstance(spiral_data, dict) and isinstance(spiral_data.get("turns"), list):
+                # Preserve serialized historical receipts verbatim. Do not replay them into
+                # a new hash chain and do not pretend loading is a fresh evolution event.
+                self.persisted_ancestry = list(spiral_data["turns"])
+            logger.info("📖 Belief system загружен: %s; ancestry=%s", self.get_dominant_belief(), len(self.persisted_ancestry))
         except Exception as exc:
             logger.error("Ошибка загрузки belief system: %s", exc)
 
