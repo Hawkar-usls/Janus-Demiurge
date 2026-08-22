@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""GitHub-native 17-agent JANUS Scout Swarm controlled by Janus-Demiurge."""
+"""GitHub-native 17-agent JANUS Scout Swarm controlled by Janus-Demiurge.
+
+Every resident keeps one persistent identity. Re-visiting a repository is a new
+spiral turn carrying forward lessons and unresolved checks; previous model text
+is context only and never independent evidence.
+"""
 
 from __future__ import annotations
 
@@ -9,7 +14,6 @@ import json
 import os
 import re
 import secrets
-import shutil
 import subprocess
 import tempfile
 from datetime import datetime, timezone
@@ -31,13 +35,74 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
+def canonical_hash(value: Any) -> str:
+    raw = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), default=str)
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
 def load_manifest() -> Dict[str, Any]:
     return json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
 
 
 def agent_map() -> Dict[str, Dict[str, Any]]:
-    manifest = load_manifest()
-    return {a["id"]: a for a in manifest["agents"]}
+    return {a["id"]: a for a in load_manifest()["agents"]}
+
+
+def load_previous_agent_state(agent_id: str) -> Optional[Dict[str, Any]]:
+    path = ROOT / "scout_swarm" / "state" / "agents" / f"{agent_id}.json"
+    if not path.exists():
+        return None
+    try:
+        obj = json.loads(path.read_text(encoding="utf-8"))
+        return obj if isinstance(obj, dict) else None
+    except Exception:
+        return None
+
+
+def inherited_spiral_context(previous: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    if not previous:
+        return {
+            "previous_turn": None,
+            "next_turn": 0,
+            "parent_report_sha256": None,
+            "previous_target_commit": None,
+            "retained_lessons": [],
+            "retained_constraints": [],
+            "previous_report_is_evidence": False,
+        }
+    prev_spiral = previous.get("spiral") if isinstance(previous.get("spiral"), dict) else {}
+    prev_analysis = previous.get("analysis") if isinstance(previous.get("analysis"), dict) else {}
+    retained_lessons = []
+    for item in [
+        *(prev_spiral.get("retained_lessons") or []),
+        *(prev_spiral.get("new_lessons") or []),
+        *(prev_analysis.get("lessons") or []),
+    ]:
+        text = str(item).strip()
+        if text and text not in retained_lessons:
+            retained_lessons.append(text)
+    retained_constraints = []
+    for item in [
+        *(prev_spiral.get("retained_constraints") or []),
+        *(prev_analysis.get("next_checks") or []),
+        *(prev_analysis.get("risks") or []),
+    ]:
+        text = str(item).strip()
+        if text and text not in retained_constraints:
+            retained_constraints.append(text)
+    snapshot = previous.get("repository_snapshot") if isinstance(previous.get("repository_snapshot"), dict) else {}
+    previous_turn = prev_spiral.get("turn")
+    if not isinstance(previous_turn, int):
+        previous_turn = -1
+    return {
+        "previous_turn": previous_turn,
+        "next_turn": previous_turn + 1,
+        "parent_report_sha256": canonical_hash(previous),
+        "previous_target_commit": snapshot.get("target_commit"),
+        "retained_lessons": retained_lessons[-20:],
+        "retained_constraints": retained_constraints[-20:],
+        "previous_report_is_evidence": False,
+    }
 
 
 def scrub(text: str) -> str:
@@ -61,33 +126,30 @@ def safe_text(path: Path, limit: int = 7000) -> Optional[str]:
     if path.suffix.lower() not in {".md", ".json", ".yml", ".yaml", ".txt", ".toml", ".py"}:
         return None
     try:
-        raw = path.read_text(encoding="utf-8", errors="replace")[:limit]
+        return scrub(path.read_text(encoding="utf-8", errors="replace")[:limit])
     except Exception:
         return None
-    return scrub(raw)
 
 
 def select_source_files(repo: Path) -> List[Path]:
     priority_names = {
         "README.md", "PROJECT_STATUS.json", "AGENTS.md", "SEALED_ORACLE_SET_MODE.md",
-        "HABITAT_LINK.json", "SCOUT_RESIDENT-v1.json"
+        "HABITAT_LINK.json", "SCOUT_RESIDENT-v1.json", "DEMIURGE_SPIRAL_EVOLUTION-v1.json"
     }
-    candidates: List[Path] = []
+    candidates = []
     for rel in run(["git", "ls-files"], cwd=repo).splitlines():
         p = repo / rel
         if not p.is_file() or SECRETISH.search(p.name):
             continue
-        score = 0
-        if p.name in priority_names:
-            score += 100
+        score = 100 if p.name in priority_names else 0
         low = rel.lower()
-        for word in ("status", "manifest", "protocol", "contract", "receipt", "registry", "readme", ".janus"):
+        for word in ("status", "manifest", "protocol", "contract", "receipt", "registry", "readme", ".janus", "spiral"):
             if word in low:
                 score += 10
         if score:
             candidates.append((score, rel, p))
     candidates.sort(key=lambda x: (-x[0], x[1]))
-    return [p for _, _, p in candidates[:10]]
+    return [p for _, _, p in candidates[:12]]
 
 
 def repository_snapshot(repo: Path, agent: Dict[str, Any]) -> Dict[str, Any]:
@@ -97,9 +159,8 @@ def repository_snapshot(repo: Path, agent: Dict[str, Any]) -> Dict[str, Any]:
     selected = []
     for path in select_source_files(repo):
         text = safe_text(path)
-        if text is None:
-            continue
-        selected.append({"path": str(path.relative_to(repo)).replace("\\", "/"), "excerpt": text})
+        if text is not None:
+            selected.append({"path": str(path.relative_to(repo)).replace("\\", "/"), "excerpt": text})
     return {
         "target_repo": agent["target_repo"],
         "target_ref": agent["target_ref"],
@@ -156,18 +217,16 @@ def extract_copilot_jsonl(stdout: str) -> Dict[str, Any]:
             continue
         kind = str(event.get("type") or "")
         data = event.get("data") if isinstance(event.get("data"), dict) else {}
-        if kind == "assistant.message":
-            content = data.get("content")
-            if isinstance(content, str):
-                finals.append(content)
+        if kind == "assistant.message" and isinstance(data.get("content"), str):
+            finals.append(data["content"])
         elif kind == "assistant.message_delta":
             delta = data.get("deltaContent", data.get("delta"))
             if isinstance(delta, str):
                 deltas.append(delta)
         else:
-            for s in deep_strings(data):
-                if '"summary"' in s and "{" in s:
-                    finals.append(s)
+            for text in deep_strings(data):
+                if '"summary"' in text and "{" in text:
+                    finals.append(text)
     for candidate in reversed(finals):
         try:
             return extract_json_object(candidate)
@@ -180,9 +239,38 @@ def extract_copilot_jsonl(stdout: str) -> Dict[str, Any]:
     raise ValueError("SCOUT_COPILOT_JSONL_MISSING_ASSISTANT_JSON")
 
 
-def call_copilot(agent: Dict[str, Any], snapshot: Dict[str, Any]) -> Dict[str, Any]:
+def call_copilot(agent: Dict[str, Any], snapshot: Dict[str, Any], spiral_context: Dict[str, Any]) -> Dict[str, Any]:
     mission = (ROOT / agent["agent_file"]).read_text(encoding="utf-8")
-    prompt = f"""You are executing the JANUS Scout agent mission below.\n\n{mission}\n\nFOCUS:\n{agent['focus']}\n\nREPOSITORY SNAPSHOT (this is the only evidence available):\n{json.dumps(snapshot, ensure_ascii=False, indent=2)}\n\nReturn ONLY one JSON object with this schema:\n{{\n  \"summary\": \"concise repository-grounded summary\",\n  \"observations\": [{{\"claim\":\"...\",\"support\":{{\"path\":\"... or GIT_LOG\",\"commit\":\"exact target commit\"}},\"confidence\":\"LOW|MEDIUM|HIGH\"}}],\n  \"risks\": [\"...\"],\n  \"open_questions\": [\"...\"],\n  \"next_checks\": [\"...\"],\n  \"oracle_guidance\": null\n}}\nRules: do not invent facts, paths, measurements, organizations, dates or external evidence. A model output is never independent confirmation. For Aura Oracle, oracle/symbolic guidance must stay oracle/symbolic and must not be promoted to empirical fact."""
+    prompt = f"""You are executing the JANUS Scout agent mission below.
+
+{mission}
+
+FOCUS:
+{agent['focus']}
+
+SPIRAL CONTEXT FROM YOUR PREVIOUS TURN (memory/constraints only; NOT external evidence):
+{json.dumps(spiral_context, ensure_ascii=False, indent=2)}
+
+CURRENT REPOSITORY SNAPSHOT (this is the only empirical/repository evidence available for factual claims):
+{json.dumps(snapshot, ensure_ascii=False, indent=2)}
+
+Return ONLY one JSON object with this schema:
+{{
+  "summary": "concise repository-grounded summary",
+  "observations": [{{"claim":"...","support":{{"path":"... or GIT_LOG","commit":"exact target commit"}},"confidence":"LOW|MEDIUM|HIGH"}}],
+  "risks": ["..."],
+  "open_questions": ["..."],
+  "next_checks": ["..."],
+  "lessons": ["what this turn adds to the next turn"],
+  "oracle_guidance": null
+}}
+Rules:
+- do not invent facts, paths, measurements, organizations, dates or external evidence;
+- previous Scout/model output is memory, never independent confirmation;
+- re-check inherited constraints against the current snapshot instead of repeating them as facts;
+- if the target has not changed, say what was learned from the re-check or mark no new evidence;
+- for Aura Oracle, oracle/symbolic guidance stays symbolic and cannot become empirical fact.
+"""
     with tempfile.TemporaryDirectory(prefix="janus-demiurge-scout-") as td:
         env = os.environ.copy()
         env.update({
@@ -214,16 +302,40 @@ def normalize_analysis(obj: Dict[str, Any], commit: str) -> Dict[str, Any]:
         observations.append({
             "claim": str(item.get("claim") or "")[:2000],
             "support": {"path": str(support.get("path") or "UNSPECIFIED")[:500], "commit": commit},
-            "confidence": str(item.get("confidence") or "LOW").upper() if str(item.get("confidence") or "").upper() in {"LOW","MEDIUM","HIGH"} else "LOW",
+            "confidence": str(item.get("confidence") or "LOW").upper() if str(item.get("confidence") or "").upper() in {"LOW", "MEDIUM", "HIGH"} else "LOW",
         })
+    def bounded(name: str) -> List[str]:
+        value = obj.get(name)
+        return [str(x)[:1500] for x in value[:20]] if isinstance(value, list) else []
     return {
         "summary": str(obj.get("summary") or "")[:6000],
         "observations": observations,
-        "risks": [str(x)[:1500] for x in obj.get("risks", [])[:20]] if isinstance(obj.get("risks"), list) else [],
-        "open_questions": [str(x)[:1500] for x in obj.get("open_questions", [])[:20]] if isinstance(obj.get("open_questions"), list) else [],
-        "next_checks": [str(x)[:1500] for x in obj.get("next_checks", [])[:20]] if isinstance(obj.get("next_checks"), list) else [],
+        "risks": bounded("risks"),
+        "open_questions": bounded("open_questions"),
+        "next_checks": bounded("next_checks"),
+        "lessons": bounded("lessons"),
         "oracle_guidance": obj.get("oracle_guidance"),
     }
+
+
+def classify_ascent(previous: Optional[Dict[str, Any]], snapshot: Dict[str, Any], analysis: Dict[str, Any]) -> str:
+    if previous is None:
+        return "ASCENDED_INITIAL"
+    prior_snapshot = previous.get("repository_snapshot") if isinstance(previous.get("repository_snapshot"), dict) else {}
+    if snapshot.get("target_commit") and snapshot.get("target_commit") != prior_snapshot.get("target_commit"):
+        return "ASCENDED_NEW_EVIDENCE"
+    prior_analysis = previous.get("analysis") if isinstance(previous.get("analysis"), dict) else {}
+    current_signal = {
+        "observations": analysis.get("observations", []),
+        "risks": analysis.get("risks", []),
+        "open_questions": analysis.get("open_questions", []),
+        "next_checks": analysis.get("next_checks", []),
+        "lessons": analysis.get("lessons", []),
+    }
+    prior_signal = {k: prior_analysis.get(k, []) for k in current_signal}
+    if canonical_hash(current_signal) != canonical_hash(prior_signal):
+        return "INTEGRATED_LESSON"
+    return "NO_ASCENT"
 
 
 def run_agent(agent_id: str, output: Path) -> None:
@@ -231,9 +343,12 @@ def run_agent(agent_id: str, output: Path) -> None:
     if agent_id not in agents:
         raise SystemExit(f"UNKNOWN_AGENT:{agent_id}")
     agent = agents[agent_id]
+    previous = load_previous_agent_state(agent_id)
+    spiral_context = inherited_spiral_context(previous)
     session_token = secrets.token_urlsafe(48)
     token_fp = hashlib.sha256(session_token.encode()).hexdigest()[:16]
     model_error: Optional[str] = None
+
     with tempfile.TemporaryDirectory(prefix=f"{agent_id.lower()}-") as td:
         repo = Path(td) / "target"
         clone_url = f"https://github.com/{agent['target_repo']}.git"
@@ -241,35 +356,74 @@ def run_agent(agent_id: str, output: Path) -> None:
             run(["git", "clone", "--depth", "20", "--branch", agent["target_ref"], clone_url, str(repo)], timeout=180)
             snapshot = repository_snapshot(repo, agent)
             try:
-                analysis = normalize_analysis(call_copilot(agent, snapshot), snapshot["target_commit"])
+                analysis = normalize_analysis(call_copilot(agent, snapshot, spiral_context), snapshot["target_commit"])
                 status = "OBSERVED_REPOSITORY_STATE"
             except Exception as exc:
                 model_error = f"{type(exc).__name__}:{exc}"[:2000]
-                analysis = {"summary":"Model synthesis failed closed; deterministic repository snapshot remains available.","observations":[],"risks":[],"open_questions":[],"next_checks":[],"oracle_guidance":None}
+                analysis = {
+                    "summary": "Model synthesis failed closed; deterministic repository snapshot remains available.",
+                    "observations": [], "risks": [], "open_questions": [], "next_checks": [],
+                    "lessons": ["Model synthesis failure preserved; retry on a later spiral turn without treating it as evidence."],
+                    "oracle_guidance": None,
+                }
                 status = "DEGRADED_MODEL_UNAVAILABLE"
         except Exception as exc:
-            snapshot = {"target_repo":agent["target_repo"],"target_ref":agent["target_ref"],"snapshot_error":f"{type(exc).__name__}:{exc}"[:2000]}
-            analysis = {"summary":"Target repository could not be observed in this run.","observations":[],"risks":[],"open_questions":[],"next_checks":[],"oracle_guidance":None}
+            snapshot = {
+                "target_repo": agent["target_repo"], "target_ref": agent["target_ref"],
+                "snapshot_error": f"{type(exc).__name__}:{exc}"[:2000]
+            }
+            analysis = {
+                "summary": "Target repository could not be observed in this turn.",
+                "observations": [], "risks": [], "open_questions": [],
+                "next_checks": ["Retry target observation on the next spiral turn."],
+                "lessons": ["Transport failure is a retained constraint, not evidence about target state."],
+                "oracle_guidance": None,
+            }
             model_error = snapshot["snapshot_error"]
             status = "DEGRADED_TARGET_UNAVAILABLE"
+
+    ascent_status = classify_ascent(previous, snapshot, analysis)
+    retained_lessons = spiral_context["retained_lessons"]
+    new_lessons = analysis.get("lessons", [])
     report = {
-        "schema":"janus.demiurge.scout_agent.report.v1",
-        "agent_id":agent_id,
-        "role":agent["role"],
-        "created_at_utc":utc_now(),
-        "status":status,
-        "target":{"repository":agent["target_repo"],"ref":agent["target_ref"]},
-        "focus":agent["focus"],
-        "repository_snapshot":snapshot,
-        "analysis":analysis,
-        "model_error":model_error,
-        "janus_agent_token":{"scope":"EPHEMERAL_GITHUB_RUN_AGENT","fingerprint":token_fp,"raw_token_persisted":False},
-        "evidence_gate":{"repository_observation_bound_to_commit":bool(snapshot.get("target_commit")),"model_output_is_independent_confirmation":False,"world_truth":False},
-        "authority":{"target_repository_write":False,"demiurge_report_write":True}
+        "schema": "janus.demiurge.scout_agent.report.v2.spiral",
+        "agent_id": agent_id,
+        "role": agent["role"],
+        "created_at_utc": utc_now(),
+        "status": status,
+        "target": {"repository": agent["target_repo"], "ref": agent["target_ref"]},
+        "focus": agent["focus"],
+        "repository_snapshot": snapshot,
+        "analysis": analysis,
+        "spiral": {
+            "turn": spiral_context["next_turn"],
+            "parent_report_sha256": spiral_context["parent_report_sha256"],
+            "previous_target_commit": spiral_context["previous_target_commit"],
+            "identity_persistent": True,
+            "previous_report_is_evidence": False,
+            "retained_lessons": retained_lessons,
+            "retained_constraints": spiral_context["retained_constraints"],
+            "new_lessons": new_lessons,
+            "ascent_status": ascent_status,
+            "logical_ring": False,
+        },
+        "model_error": model_error,
+        "janus_agent_token": {
+            "scope": "EPHEMERAL_GITHUB_RUN_AGENT",
+            "fingerprint": token_fp,
+            "raw_token_persisted": False,
+        },
+        "evidence_gate": {
+            "repository_observation_bound_to_commit": bool(snapshot.get("target_commit")),
+            "model_output_is_independent_confirmation": False,
+            "previous_scout_report_is_independent_confirmation": False,
+            "world_truth": False,
+        },
+        "authority": {"target_repository_write": False, "demiurge_report_write": True},
     }
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(report, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
-    print(f"{agent_id}={status}")
+    output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(f"{agent_id}={status} spiral_turn={spiral_context['next_turn']} ascent={ascent_status}")
 
 
 def consolidate(reports_root: Path, run_id: str, sha: str) -> None:
@@ -287,33 +441,40 @@ def consolidate(reports_root: Path, run_id: str, sha: str) -> None:
                 pass
     run_dir = ROOT / "scout_swarm" / "outbox" / "runs" / str(run_id)
     run_dir.mkdir(parents=True, exist_ok=True)
+    state_dir = ROOT / "scout_swarm" / "state" / "agents"
+    state_dir.mkdir(parents=True, exist_ok=True)
     for aid, obj in sorted(reports.items()):
-        (run_dir / f"{aid}.json").write_text(json.dumps(obj, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
-        state_dir = ROOT / "scout_swarm" / "state" / "agents"
-        state_dir.mkdir(parents=True, exist_ok=True)
-        (state_dir / f"{aid}.json").write_text(json.dumps(obj, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
+        (run_dir / f"{aid}.json").write_text(json.dumps(obj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        (state_dir / f"{aid}.json").write_text(json.dumps(obj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
     missing = [x for x in expected if x not in reports]
     ok = [x for x in expected if reports.get(x, {}).get("status") == "OBSERVED_REPOSITORY_STATE"]
     degraded = [x for x in expected if x in reports and x not in ok]
+    turns = {aid: reports[aid].get("spiral", {}).get("turn") for aid in reports}
+    ascents = {aid: reports[aid].get("spiral", {}).get("ascent_status") for aid in reports}
     status = "LIVE_17_OF_17" if len(reports) == 17 and not degraded else ("DEGRADED_PARTIAL" if reports else "FAILED_NO_REPORTS")
     summary = {
-        "schema":"janus.demiurge.scout_swarm.status.v1",
-        "status":status,
-        "run_id":str(run_id),
-        "control_sha":sha,
-        "updated_at_utc":utc_now(),
-        "agents_expected":17,
-        "agents_received":len(reports),
-        "agents_observed":len(ok),
-        "agents_degraded":degraded,
-        "agents_missing":missing,
-        "aura_oracle_agent":"SCOUT_AURA_ORACLE_01",
-        "response_repository":"Hawkar-usls/Janus-Demiurge",
-        "world_truth":False,
-        "write_authority_over_targets":False
+        "schema": "janus.demiurge.scout_swarm.status.v2.spiral",
+        "status": status,
+        "run_id": str(run_id),
+        "control_sha": sha,
+        "updated_at_utc": utc_now(),
+        "agents_expected": 17,
+        "agents_received": len(reports),
+        "agents_observed": len(ok),
+        "agents_degraded": degraded,
+        "agents_missing": missing,
+        "agent_spiral_turns": turns,
+        "agent_ascent_status": ascents,
+        "aura_oracle_agent": "SCOUT_AURA_ORACLE_01",
+        "response_repository": "Hawkar-usls/Janus-Demiurge",
+        "evolution_model": "SPIRAL_ACCUMULATIVE_NO_ENTITY_DELETION",
+        "world_truth": False,
+        "write_authority_over_targets": False,
     }
-    (ROOT / "scout_swarm" / "state" / "SCOUT_SWARM_STATUS-v1.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
-    (run_dir / "SWARM_SUMMARY.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
+    state_root = ROOT / "scout_swarm" / "state"
+    (state_root / "SCOUT_SWARM_STATUS-v1.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    (run_dir / "SWARM_SUMMARY.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(summary, ensure_ascii=False))
 
 
@@ -324,10 +485,21 @@ def self_test() -> None:
     assert len(agents) == 17
     assert len({a["id"] for a in agents}) == 17
     assert len({(a["target_repo"], a["target_ref"]) for a in agents}) == 17
+    assert "NO_LEARNING_ENTITY_DELETION" in manifest.get("invariants", [])
+    assert "ITERATION_IS_SPIRAL_NOT_RING" in manifest.get("invariants", [])
     assert any(a["id"] == "SCOUT_AURA_ORACLE_01" and a["target_repo"] == "Hawkar-usls/aura-oracle-tg" for a in agents)
     for agent in agents:
         assert (ROOT / agent["agent_file"]).exists(), agent
-    print("JANUS_DEMIURGE_SCOUT_SWARM_SELF_TEST=PASS agents=17")
+    synthetic = {
+        "spiral": {"turn": 3, "new_lessons": ["L1"], "retained_constraints": ["C1"]},
+        "analysis": {"next_checks": ["C2"], "risks": []},
+        "repository_snapshot": {"target_commit": "abc"},
+    }
+    ctx = inherited_spiral_context(synthetic)
+    assert ctx["next_turn"] == 4
+    assert ctx["previous_report_is_evidence"] is False
+    assert "L1" in ctx["retained_lessons"]
+    print("JANUS_DEMIURGE_SCOUT_SWARM_SELF_TEST=PASS agents=17 spiral=TRUE")
 
 
 def main() -> int:
@@ -341,19 +513,24 @@ def main() -> int:
     parser.add_argument("--sha", default="UNKNOWN")
     args = parser.parse_args()
     if args.self_test:
-        self_test(); return 0
+        self_test()
+        return 0
     if args.matrix:
-        include = [{"id":a["id"],"role":a["role"],"repo":a["target_repo"],"ref":a["target_ref"]} for a in load_manifest()["agents"]]
-        print(json.dumps({"include":include}, separators=(",",":"))); return 0
+        include = [{"id": a["id"], "role": a["role"], "repo": a["target_repo"], "ref": a["target_ref"]} for a in load_manifest()["agents"]]
+        print(json.dumps({"include": include}, separators=(",", ":")))
+        return 0
     if args.run_agent:
         if not args.output:
             raise SystemExit("--output required")
-        run_agent(args.run_agent, Path(args.output)); return 0
+        run_agent(args.run_agent, Path(args.output))
+        return 0
     if args.consolidate:
         if not args.run_id:
             raise SystemExit("--run-id required")
-        consolidate(Path(args.consolidate), args.run_id, args.sha); return 0
-    parser.print_help(); return 2
+        consolidate(Path(args.consolidate), args.run_id, args.sha)
+        return 0
+    parser.print_help()
+    return 2
 
 
 if __name__ == "__main__":
