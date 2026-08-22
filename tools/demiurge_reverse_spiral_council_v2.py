@@ -2,10 +2,10 @@
 """JANUS HA10 reverse council v2: monotonic blocked-gate escape.
 
 V1 remains byte-preserved for historical council receipts. V2 adds one rule:
-when the exact previously executed gate returned a stable data/archive boundary,
-that same gate is ineligible for immediate re-selection unless the input explicitly
-records that the access condition changed. This prevents a deterministic council
-from converting BLOCKED into an infinite retry loop without new evidence.
+when the exact previously executed candidate gate returned a stable data/archive
+boundary, that same gate is ineligible for immediate re-selection unless the input
+explicitly records that the access condition changed. This prevents a deterministic
+council from converting BLOCKED into an infinite retry loop without new evidence.
 """
 from __future__ import annotations
 
@@ -24,10 +24,15 @@ def blocked_exact_repeat(payload: dict[str, Any]) -> str | None:
     executed = str(previous.get("executed_gate") or "")
     data_boundary = new_result.get("data_boundary") is True
     access_changed = new_result.get("access_condition_changed") is True
+    candidate_ids = {
+        str(row["gate_id"])
+        for row in v1.load_mission().get("candidate_gates", [])
+        if isinstance(row, dict) and row.get("gate_id")
+    }
     if (
         verdict.startswith("BLOCKED")
         and data_boundary
-        and executed
+        and executed in candidate_ids
         and not access_changed
     ):
         return executed
