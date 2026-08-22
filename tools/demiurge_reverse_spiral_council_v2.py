@@ -10,11 +10,17 @@ council from converting BLOCKED into an infinite retry loop without new evidence
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 from pathlib import Path
 from typing import Any
 
-from tools import demiurge_reverse_spiral_council as v1
+V1_PATH = Path(__file__).with_name("demiurge_reverse_spiral_council.py")
+_V1_SPEC = importlib.util.spec_from_file_location("demiurge_reverse_spiral_council_v1_frozen", V1_PATH)
+if _V1_SPEC is None or _V1_SPEC.loader is None:
+    raise RuntimeError("CANNOT_LOAD_FROZEN_COUNCIL_V1")
+v1 = importlib.util.module_from_spec(_V1_SPEC)
+_V1_SPEC.loader.exec_module(v1)
 
 
 def blocked_exact_repeat(payload: dict[str, Any]) -> str | None:
