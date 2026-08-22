@@ -8,6 +8,10 @@ on:
       - 'tools/demiurge_mail_research_swarm.py'
       - 'tools/demiurge_independent_evidence.py'
       - 'tools/demiurge_bgs_intersection_gate.py'
+      - 'tools/demiurge_bodc_inventory_fallback.py'
+      - 'tools/demiurge_bodc_inventory_series_gate.py'
+      - 'tools/demiurge_native_cruise_gate.py'
+      - 'tools/demiurge_bodc_linked_gate.py'
       - '.github/workflows/ha10-ascension-mail-research-swarm.yml'
   push:
     branches: [main]
@@ -16,6 +20,10 @@ on:
       - 'tools/demiurge_mail_research_swarm.py'
       - 'tools/demiurge_independent_evidence.py'
       - 'tools/demiurge_bgs_intersection_gate.py'
+      - 'tools/demiurge_bodc_inventory_fallback.py'
+      - 'tools/demiurge_bodc_inventory_series_gate.py'
+      - 'tools/demiurge_native_cruise_gate.py'
+      - 'tools/demiurge_bodc_linked_gate.py'
       - '.github/workflows/ha10-ascension-mail-research-swarm.yml'
   workflow_dispatch:
 
@@ -62,6 +70,10 @@ jobs:
           python tools/demiurge_mail_research_swarm.py --self-test
           python tools/demiurge_independent_evidence.py --self-test
           python tools/demiurge_bgs_intersection_gate.py --self-test
+          python tools/demiurge_bodc_inventory_fallback.py --self-test
+          python tools/demiurge_bodc_inventory_series_gate.py --self-test
+          python tools/demiurge_native_cruise_gate.py --self-test
+          python tools/demiurge_bodc_linked_gate.py --self-test
       - name: Build 17-agent mission matrix
         id: matrix
         shell: bash
@@ -115,6 +127,22 @@ jobs:
       - name: Resolve BGS point polygon and line intersections
         run: |
           python tools/demiurge_bgs_intersection_gate.py \
+            --report runtime/${{ matrix.id }}/report.json
+      - name: Prefetch BODC cruise inventory fallback
+        run: |
+          python tools/demiurge_bodc_inventory_fallback.py \
+            --report runtime/${{ matrix.id }}/report.json
+      - name: Extract BODC inventory series and track-chart pointers
+        run: |
+          python tools/demiurge_bodc_inventory_series_gate.py \
+            --report runtime/${{ matrix.id }}/report.json
+      - name: Resolve native cruise tracklines, swaths and raw pointers
+        run: |
+          python tools/demiurge_native_cruise_gate.py \
+            --report runtime/${{ matrix.id }}/report.json
+      - name: Resolve BODC linked-data series and delivery pointers
+        run: |
+          python tools/demiurge_bodc_linked_gate.py \
             --report runtime/${{ matrix.id }}/report.json
       - name: Upload evidence-carrying report
         if: always()
