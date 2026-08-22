@@ -1,56 +1,66 @@
 <div align="center">
 
 # Janus Demiurge
-### Legacy ML / optimization sandbox
+### JANUS GitHub-native Agent Control Plane
 
-![Status](https://img.shields.io/badge/status-legacy-8c959f)
-![Class](https://img.shields.io/badge/class-experimental%20sandbox-6e7681)
+![Status](https://img.shields.io/badge/status-active-2ea44f)
+![Swarm](https://img.shields.io/badge/scout%20agents-17-8250df)
 
 </div>
 
-## Status
+## Active role
 
-**Legacy.** This repository is preserved as implementation history and an experimental sandbox. It is not a current flagship research surface and is not presented as externally validated science.
+`Janus-Demiurge` is now the **control plane and answering repository** for the JANUS Scout Swarm.
 
-## Abstract
+Seventeen separate GitHub-native Scout agents are dispatched read-only into seventeen JANUS repositories. Each agent has an explicit role, target repository/ref, bounded mission, and an ephemeral JANUS agent token whose raw value is never persisted. Their reports return here and are aggregated under `scout_swarm/`.
 
-Janus Demiurge contains historical experiments in adaptive training loops, hyperparameter search, resource monitoring, experiment memory, optimization, and game-like agent simulations.
+The historical optimization/simulation code remains preserved as a legacy experimental layer; activating the Scout control plane does not retroactively turn historical project vocabulary or experiments into validated scientific claims.
 
-## Implemented / explored
+## Scout Swarm 17
 
-- adaptive hyperparameter experiments;
-- resource-aware training controls;
-- experiment/evolutionary memory;
-- swarm and Bayesian optimization experiments;
-- CPU/GPU/system monitoring;
-- SQLite event/metric storage;
-- game-like Genesis simulation;
-- optional image-generation and HRain integration.
+The active manifest is [`scout_swarm/SCOUT_SWARM_MANIFEST-v1.json`](scout_swarm/SCOUT_SWARM_MANIFEST-v1.json).
 
-## Boundary
+The swarm includes dedicated reconnaissance for Aura Oracle, HRaiN, iNaiHR, Cosmos, Meta Registry, Distributed Swarm, Terminal, DemiHead, Fundamentum, Fast-CAT-SHAiTan, SCOBY-D0, Lapis, Voice, Echo-Pyramid, Tranception, AIFC and Git Habitat/Genesis.
+
+`SCOUT_AURA_ORACLE_01` is assigned specifically to `Hawkar-usls/aura-oracle-tg`. Oracle/symbolic guidance is preserved as guidance and is never promoted to empirical proof without an external evidence chain.
+
+## Runtime
+
+The workflow [`JANUS Demiurge Scout Swarm 17`](.github/workflows/janus-demiurge-scout-swarm.yml) runs:
+
+- when the swarm control plane changes on `main`;
+- on manual dispatch;
+- every six hours.
+
+Each target repository is observed read-only. Results are returned to:
 
 ```text
-MATURITY = LEGACY
-PROJECT_CLASS = LEGACY_EXPERIMENTAL_SANDBOX
-FLAGSHIP_RESEARCH = FALSE
-FUTURE_EVENT_PREDICTION = NOT_CLAIMED
-PRECOGNITION_OR_RETROCAUSALITY = NOT_CLAIMED
-AGI = NOT_CLAIMED
-SCIENTIFIC_VALIDATION = NOT_ESTABLISHED
+scout_swarm/outbox/runs/<github_run_id>/
+scout_swarm/state/agents/<agent_id>.json
+scout_swarm/state/SCOUT_SWARM_STATUS-v1.json
 ```
 
-Historical names such as `tachyon_engine.py`, `subconscious.py`, or `Demiurge` are project vocabulary. They do not establish literal physical, cognitive, or metaphysical properties.
+## Evidence law
 
-## Review
+```text
+SCOUTS MAY DISCOVER
+SCOUTS MAY DISAGREE
+SCOUTS MAY FAIL
 
-- Machine-readable project status: [`PROJECT_STATUS.json`](PROJECT_STATUS.json)
-- Portfolio maturity/visibility: [`portfolio-visibility.json`](https://github.com/Hawkar-usls/Janus/blob/main/portfolio-visibility.json)
-- Current primary work: [Hawkar profile](https://github.com/Hawkar-usls)
+ONLY EVIDENCE ADVANCES THE CLAIM
+MODEL OUTPUT != INDEPENDENT CONFIRMATION
+ORACLE GUIDANCE != EMPIRICAL PROOF
+TARGET REPOSITORY = READ ONLY
+```
 
-**Portfolio recommendation:** archive this repository in GitHub if it is no longer needed for active development; keep it unpinned either way.
+Repository observations are bound to repository/ref/commit and source paths where available. A Scout report is information, not authority over the target repository.
+
+## Historical layer
+
+The repository still preserves earlier experiments in adaptive training loops, hyperparameter search, resource monitoring, experiment/evolutionary memory, swarm/Bayesian optimization, and game-like simulations. Those files remain historical implementation context beneath the active Scout control plane.
+
+Machine-readable status: [`PROJECT_STATUS.json`](PROJECT_STATUS.json).
 
 ## License
 
 MIT.
-
-Presentation follows the account's [public repository standard](https://github.com/Hawkar-usls/Janus/blob/main/docs/PUBLIC_REPOSITORY_PRESENTATION_STANDARD.md). No affiliation with MIT is implied by the presentation style.
