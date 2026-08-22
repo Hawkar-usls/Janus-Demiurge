@@ -37,6 +37,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
           fetch-depth: 2
       - name: Guard against persistence-only retrigger
         id: guard
@@ -81,6 +82,8 @@ jobs:
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -134,7 +137,7 @@ jobs:
           python tools/demiurge_systemwide_scout_runner.py \
             --consolidate runtime/reports \
             --run-id '${{ github.run_id }}' \
-            --sha '${{ github.sha }}'
+            --sha '${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}'
       - name: Persist append-only result
         shell: bash
         run: |
