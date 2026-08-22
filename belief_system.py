@@ -1,18 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-BELIEF SYSTEM — система вер, влияющих на поведение агентов.
-Каждая вера имеет количество последователей и доктрину.
-Вера влияет на параметры агентов (например, risk_tolerance).
-"""
+"""BELIEF SYSTEM — beliefs change by traceable spiral transitions, not resets."""
 
-import os
 import json
-import random
 import logging
+import os
+import random
 from typing import Dict, List, Any
 
 from config import RAW_LOGS_DIR
+from spiral_evolution import SpiralLedger
 
 logger = logging.getLogger("JANUS.BELIEF")
 
@@ -24,9 +21,10 @@ CONFIG = {
         'BALANCE': {'risk_tolerance': 1.0, 'learning_rate': 1.0, 'aggression': 1.0},
         'CHAOS': {'risk_tolerance': 1.5, 'learning_rate': 1.5, 'aggression': 1.3}
     },
-    'spread_chance': 0.1,  # увеличено с 0.01
+    'spread_chance': 0.1,
     'max_followers': 1000
 }
+
 
 class Belief:
     def __init__(self, name: str, doctrine: str):
@@ -62,6 +60,7 @@ class BeliefSystem:
     def __init__(self, save_file: str = None):
         self.save_file = save_file or os.path.join(RAW_LOGS_DIR, "beliefs.json")
         self.beliefs: Dict[str, Belief] = {}
+        self.spiral = SpiralLedger("JANUS_BELIEF_SYSTEM")
         self._init_beliefs()
         self.load_state()
 
@@ -70,99 +69,156 @@ class BeliefSystem:
             doctrine = f"Учение веры {name}"
             self.beliefs[name] = Belief(name, doctrine)
 
+    def _snapshot(self, agents: List[Any] = None) -> Dict[str, Any]:
+        snapshot = {
+            "beliefs": {name: belief.to_dict() for name, belief in self.beliefs.items()},
+        }
+        if agents is not None:
+            snapshot["agents"] = {
+                str(getattr(agent, "id", index)): getattr(agent, "belief", None)
+                for index, agent in enumerate(agents)
+            }
+        return snapshot
+
     def update(self, agents: List[Any], meta_goal: Any = None) -> None:
-        """
-        Обновляет веры на основе агентов и мета-цели.
-        """
         if not agents:
             return
+        before = self._snapshot(agents)
+        transitions = []
 
-        # Подсчёт текущих вер
         belief_counts = {name: 0 for name in self.beliefs}
         for agent in agents:
-            if agent.belief and agent.belief in belief_counts:
+            if getattr(agent, "belief", None) and agent.belief in belief_counts:
                 belief_counts[agent.belief] += 1
-
-        # Применяем к Belief объектам
         for name, count in belief_counts.items():
             self.beliefs[name].followers = count
 
-        # Случайное распространение веры (новые агенты получают веру)
         for agent in agents:
             if random.random() < CONFIG['spread_chance']:
-                # Выбираем веру с вероятностью, пропорциональной числу последователей
                 total = sum(b.followers for b in self.beliefs.values())
                 if total > 0:
                     names = list(self.beliefs.keys())
                     weights = [self.beliefs[n].followers for n in names]
                     chosen = random.choices(names, weights=weights, k=1)[0]
+                    previous = getattr(agent, "belief", None)
                     agent.belief = chosen
-                    logger.debug(f"Агент {agent.id[:8]} принял веру {chosen}")
+                    transitions.append({
+                        "agent_id": str(getattr(agent, "id", repr(agent))),
+                        "from": previous,
+                        "to": chosen,
+                        "reason": "SPREAD",
+                    })
+                    logger.debug("Агент %s принял веру %s", str(getattr(agent, "id", "?"))[:8], chosen)
 
-        # Если у некоторых агентов всё ещё нет веры, назначаем случайную
         for agent in agents:
-            if not agent.belief:
-                agent.belief = random.choice(CONFIG['beliefs'])
-                logger.debug(f"Агенту {agent.id[:8]} назначена случайная вера {agent.belief}")
+            if not getattr(agent, "belief", None):
+                chosen = random.choice(CONFIG['beliefs'])
+                agent.belief = chosen
+                transitions.append({
+                    "agent_id": str(getattr(agent, "id", repr(agent))),
+                    "from": None,
+                    "to": chosen,
+                    "reason": "INITIAL_ASSIGNMENT",
+                })
 
-        # Влияние веры на параметры агентов
+        parameter_changes = []
         for agent in agents:
-            if agent.belief and agent.belief in self.beliefs:
+            if getattr(agent, "belief", None) and agent.belief in self.beliefs:
                 belief = self.beliefs[agent.belief]
                 for param, factor in belief.effects.items():
                     if hasattr(agent, param):
                         current = getattr(agent, param)
-                        # Плавно подстраиваем параметр
                         new_val = current * (0.9 + factor * 0.2)
                         setattr(agent, param, new_val)
+                        parameter_changes.append({
+                            "agent_id": str(getattr(agent, "id", repr(agent))),
+                            "param": param,
+                            "before": current,
+                            "after": new_val,
+                            "belief": agent.belief,
+                        })
 
-        # Сохраняем состояние
+        after = self._snapshot(agents)
+        changed = before != after
+        self.spiral.ascend(
+            state_before=before,
+            candidate_state={
+                "meta_goal": meta_goal,
+                "belief_transitions": transitions,
+                "parameter_changes": parameter_changes,
+            },
+            active_state_after=after,
+            lessons=["Belief transitions preserved; changed beliefs are new turns of the same agents, not erased identities."],
+            promoted=changed,
+            outcome="ASCENDED" if changed else "NO_ASCENT",
+        )
         self.save_state()
 
     def get_dominant_belief(self) -> tuple:
-        """Возвращает (имя_веры, количество_последователей)."""
         if not self.beliefs:
             return (None, 0)
         dominant = max(self.beliefs.items(), key=lambda x: x[1].followers)
         return (dominant[0], dominant[1].followers)
 
     def narrate(self) -> List[str]:
-        """Возвращает строки для лога."""
-        lines = []
-        for name, belief in self.beliefs.items():
-            lines.append(f"    {name}: {belief.followers}")
-        return lines
+        return [f"    {name}: {belief.followers}" for name, belief in self.beliefs.items()]
 
     def save_state(self):
-        """Сохраняет состояние вер в файл."""
-        state = {
-            name: belief.to_dict() for name, belief in self.beliefs.items()
+        state = {name: belief.to_dict() for name, belief in self.beliefs.items()}
+        state["__spiral__"] = {
+            "model": "SPIRAL_ACCUMULATIVE_NO_ENTITY_DELETION",
+            "turns": [turn.to_dict() for turn in self.spiral.turns],
         }
         try:
             tmp = self.save_file + ".tmp"
-            with open(tmp, 'w', encoding='utf-8') as f:
-                json.dump(state, f, indent=2, ensure_ascii=False)
+            with open(tmp, 'w', encoding='utf-8') as handle:
+                json.dump(state, handle, indent=2, ensure_ascii=False)
             os.replace(tmp, self.save_file)
             logger.debug("💾 Belief system сохранён")
-        except Exception as e:
-            logger.error(f"Ошибка сохранения belief system: {e}")
+        except Exception as exc:
+            logger.error("Ошибка сохранения belief system: %s", exc)
 
     def load_state(self):
-        """Загружает состояние вер из файла."""
         if not os.path.exists(self.save_file):
             return
         try:
-            with open(self.save_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
+            with open(self.save_file, 'r', encoding='utf-8') as handle:
+                data = json.load(handle)
             for name, belief_data in data.items():
-                if name in self.beliefs:
-                    self.beliefs[name].followers = belief_data['followers']
-                    self.beliefs[name].effects = belief_data['effects']
-            logger.info(f"📖 Belief system загружен: {self.get_dominant_belief()}")
-        except Exception as e:
-            logger.error(f"Ошибка загрузки belief system: {e}")
+                if name in self.beliefs and isinstance(belief_data, dict):
+                    self.beliefs[name].followers = belief_data.get('followers', 0)
+                    self.beliefs[name].effects = belief_data.get('effects', self.beliefs[name].effects)
+            # Existing turn hashes are stored as provenance in the state file; new runtime
+            # turns continue from the loaded count without pretending to re-verify old text.
+            spiral_data = data.get("__spiral__") if isinstance(data, dict) else None
+            if isinstance(spiral_data, dict):
+                loaded_turns = spiral_data.get("turns") or []
+                for old in loaded_turns:
+                    self.spiral.ascend(
+                        state_before={"legacy_loaded_turn": old.get("turn") if isinstance(old, dict) else None},
+                        candidate_state={"loaded_fingerprint": old.get("fingerprint") if isinstance(old, dict) else None},
+                        active_state_after={"loaded": True},
+                        lessons=["Recovered persisted belief lineage marker."],
+                        promoted=False,
+                        outcome="RECOVERED_ANCESTRY",
+                    )
+            logger.info("📖 Belief system загружен: %s", self.get_dominant_belief())
+        except Exception as exc:
+            logger.error("Ошибка загрузки belief system: %s", exc)
 
     def reset(self):
-        """Сбрасывает все веры (для отладки)."""
+        """Legacy debug API: start a fresh active belief state while preserving parent state."""
+        before = self._snapshot()
+        self.beliefs = {}
         self._init_beliefs()
+        after = self._snapshot()
+        self.spiral.ascend(
+            state_before=before,
+            candidate_state={"legacy_reset_request": True},
+            active_state_after=after,
+            lessons=["Legacy reset converted into a traceable new active turn; parent belief state retained."],
+            constraints=["RESET_MUST_NOT_ERASE_LINEAGE"],
+            promoted=True,
+            outcome="ASCENDED_FROM_LEGACY_RESET",
+        )
         self.save_state()
