@@ -2,57 +2,62 @@
   "schema": "janus.demiurge.reverse_spiral_council_input.v1",
   "mission_id": "HA10_REVERSE_SPIRAL_COUNCIL_2026_08_22",
   "submitted_at": "2026-08-22",
-  "iteration": 2,
+  "iteration": 3,
   "source_repository": "Hawkar-usls/Janus-Cosmos",
   "source_branch": "audit/cousteau-immutable-positive-control-20260822",
   "source_summary": {
-    "path": "data/cousteau/JANUS-ECHO-COUSTEAU-HA10-PRE-POST-2013-CROSSTALK-TRIPLET-RUN-001-SUMMARY-2026-08-22-v1.0.json",
-    "git_blob_sha1": "a3a9c27b7c72df4aa50042f091dd774aee3946ed",
-    "source_commit": "8d6fddbc9d4b0bad73c08b7d12edcf4687fc16c0",
-    "actions_run_id": 32576256918,
-    "artifact_id": 9476639941,
-    "artifact_zip_sha256": "671b9696a41d6d5f724d94e44153e9ee8f6c1e7a74dd66f2bb29989e97f2b10e",
-    "receipt_sha256": "066c4c9fe076781cb5de93ec90b2d50b3d441368673f9bdf150f6fbdc2b3bf74"
+    "path": "data/cousteau/JANUS-ECHO-COUSTEAU-HA10-CALIBRATION-SEQUENCE-PUBLIC-RECOVERY-RUN-001-SUMMARY-2026-08-22-v1.0.json",
+    "git_blob_sha1": "cf6837b08573621c50ef187ca3af410c9eafe804",
+    "source_commit": "35dab8744f5d73611e5172fc555b84a1ea4d4dce"
   },
   "previous_council": {
-    "run_id": 32575681171,
-    "result_artifact_id": 9476483392,
-    "result_artifact_zip_sha256": "dcaf05b1a6f2a138a71f9a95cce3244b1071b6b28675a7a4dc6d63d49a95de0a",
+    "run_id": 32576807769,
+    "result_artifact_id": 9476759313,
+    "result_artifact_zip_sha256": "c123bd3115b6de936f3aaa8504da9417be986e413b075436880a7edfec647bab",
+    "result_member_sha256": "be845f9602f898e958cf1c7ba9ac66c95adb87f46cee8cb18df4607616012d9f",
     "roles_observed": 17,
     "top1_votes_for_executed_gate": 17,
-    "executed_gate": "COUSTEAU_HA10_PRE_POST_2013_CROSSTALK_TRIPLET_GATE_V1",
+    "executed_gate": "COUSTEAU_HA10_CALIBRATION_SEQUENCE_PUBLIC_RECOVERY_V1",
     "vetoed_gate": "COUSTEAU_HA10_119HZ_REINTERPRETATION"
   },
   "new_result": {
-    "verdict": "BLOCKED_PRE_POST_2013_TRIPLET_DATA",
+    "verdict": "CALIBRATION_SEQUENCE_PROVENANCE_RECOVERED__RAW_SEQUENCE_BYTES_NOT_PUBLICLY_RECOVERED_IN_THIS_PASS",
     "scientific_negative": false,
-    "data_boundary": true,
-    "pre_complete_six_channel_windows": 0,
-    "post_complete_six_channel_windows": 0,
-    "minimum_required_per_epoch": 15,
-    "frozen_windows_attempted": 40,
-    "station_waveform_requests_attempted": 240,
-    "station_waveform_requests_http_404_no_data": 240,
-    "response_level_stationxml_available_for_all_six_channels": true,
-    "interpretation": "The unanimous first-choice causal discriminator cannot currently be executed from the tested public EarthScope 2013 waveform route. This does not confirm or falsify cross-talk. It establishes that public response metadata presence is not public waveform availability and is not proof of physical channel health."
+    "data_boundary": false,
+    "formal_preregistered_protocol_before_web_search": false,
+    "public_provenance_recovered": true,
+    "raw_2013_calibration_sequence_bytes_recovered": false,
+    "idc_calibration_flag_start_end_table_recovered": false,
+    "interpretation": "Public CTBTO material establishes how deployed UWS calibration sequences are generated, that they are stored/processed at the IDC, and that H10S derived digitizer responses changed around the 2013 fault. The underlying calibration-sequence bytes were not recovered in this bounded pass. This is provenance recovery, not a preregistered causal test."
+  },
+  "progress_guard": {
+    "nonrepeatable_gate_ids": [
+      "COUSTEAU_HA10_PRE_POST_2013_CROSSTALK_TRIPLET_GATE_V1",
+      "COUSTEAU_HA10_CALIBRATION_SEQUENCE_PUBLIC_RECOVERY_V1"
+    ],
+    "reasons": {
+      "COUSTEAU_HA10_PRE_POST_2013_CROSSTALK_TRIPLET_GATE_V1": "The exact frozen 2013 EarthScope six-channel waveform gate already returned 240/240 HTTP 404 no-data requests. No access-condition change is known.",
+      "COUSTEAU_HA10_CALIBRATION_SEQUENCE_PUBLIC_RECOVERY_V1": "The council-selected bounded public recovery pass has just been completed. Repeating the same public search without a new source or custodian access path would not add independent evidence."
+    }
   },
   "whole_picture_so_far": {
-    "fact_1": "CTBTO material independently documents an H10S1 electronic-noise fault beginning 2013-07-19, evolving to persistent noise with varying cross-talk into H10S2/H10S3 and associated deployed calibration-response changes; possible riser failure was presented as an interpretation, not a proven mechanism.",
-    "fact_2": "The public EarthScope StationXML representation used by JANUS is static across the 2013 fault era for all six HA10 EDH channels: one 2004-open epoch, zero pre/post fixed-frequency response delta in the audit, and no fault-era metadata boundary.",
-    "fact_3": "Because the public response representation does not encode the documented 2013 change, applying that StationXML cannot explicitly compensate a time-varying fault-era transfer-path change absent from the metadata.",
-    "fact_4": "JANUS 2014-2015 public waveforms repeatedly show an approximately 12-13 dB broadband H10S2-over-H10N1 power excess. Raw-to-public-response-corrected cross-station ratios change only by roughly tenths of a dB, so the public correction neither creates nor removes the large offset.",
-    "fact_5": "The later S2/N1 offset is broadband/scale-like and persistent in December 2014, while January strict per-window scalar generalization fails despite central medians remaining near the same baseline scale. The compact morphology is persistent baseline plus episodic residuals, not one exact scalar in every window.",
-    "fact_6": "The in-band event positive control failed primarily on H10S2 because its matched-noise baseline was much higher; this is compatible with measurement-path contamination but does not identify the mechanism.",
-    "fact_7": "The JANUS-selected direct raw six-channel pre/post 2013 test is now blocked: every one of 240 frozen EarthScope waveform requests returned 404 no-data, while response metadata for all six channels remained available.",
-    "fact_8": "A physical seabed structure, if present, is independent of hydrophone electronics and must persist in native bathymetry/backscatter. PDC/01236 contains H10N1 in its bounding geometry but not H10S2, and exact native swath/track crossing at the frozen points remains an independent open gate.",
-    "assistant_current_hypothesis": "The most economical picture remains at least two superposed lanes: (A) a real, historically documented south-triplet measurement-path problem that is not represented by the public StationXML and may contribute to later H10S2 noise/scale behavior; plus (B) persistent site/propagation/seabed geometry that cannot be adjudicated by the electronics lane. The blocked 2013 public-waveform gate prevents assigning how much of the later 12-13 dB belongs to each lane.",
-    "strongest_countermodel": "The large S2/N1 baseline could substantially predate the 2013 fault and reflect persistent south-vs-north site/trunk/propagation differences, with the documented fault adding only intermittent residual contamination. The unavailable 2013 public waveforms mean this countermodel remains alive."
+    "fact_1": "CTBTO material documents an H10S1 electrical-noise event on 2013-07-19 that evolved into persistent noise with time-variable cross-talk into H10S2/H10S3; H10S1 was excluded from IDC Operations. Possible riser failure remains an interpretation, not a proven mechanism.",
+    "fact_2": "The deployed UWS calibration sequence is a digitizer-electronics test: the relay excludes hydrophone ceramic, preamplifier and riser cable. The public presentation says calibration data are stored at the CTBTO IDC and processed from a known pseudo-random broadband calibration sequence plus other components.",
+    "fact_3": "The same public CTBTO material reports H10S calibration-response changes around the fault era, including 0.8396 dB for H10S1 between March and September 2013 and two H10S2/H10S3 pair maxima of 4.7832 and 2.5340 dB in 1-100 Hz, while H10N 2013-vs-2017 changes are only thousandths of a dB.",
+    "fact_4": "EarthScope public StationXML does not encode this 2013 fault-era calibration history: all six EDH channels expose one static 2004-open response epoch in the JANUS audit.",
+    "fact_5": "The cleanest direct public waveform test across the 2013 fault is archive-blocked: 240/240 frozen EarthScope waveform requests returned no data although response metadata exist.",
+    "fact_6": "JANUS 2014-2015 public waveforms repeatedly show an approximately 12-13 dB broadband H10S2-over-H10N1 excess. Public StationXML response correction changes the ratio only by tenths of a dB and therefore neither creates nor removes it.",
+    "fact_7": "The published 2013 calibration-response deltas and the later 12-13 dB broadband cross-station power offset are different statistics and cannot be substituted as a one-to-one numerical explanation.",
+    "fact_8": "A distinct pre-2013 literature thread reports repetitive H10 data-logger electronic noise causing spurious coherent zero-lag cross-correlations roughly during 2005-2009. Therefore PRE-2013 cannot automatically be treated as instrument-clean, and this older phenomenon must remain separate from the 2013 H10S1 fault unless bridged independently.",
+    "fact_9": "December 2014 shows a persistent scale-like S2/N1 baseline; January strict per-window scalar generalization fails at two dayparts while central medians remain near that baseline, supporting persistent baseline plus episodic residuals rather than one exact scalar.",
+    "fact_10": "The physical geometry lane remains independent. PDC/01236 bounding geometry contains H10N1 but not H10S2; exact native swath/track crossing and morphology at the frozen points remain open.",
+    "assistant_current_hypothesis": "The strongest economical synthesis is a mixed superposition: persistent site/trunk/propagation/seabed or analogue-path baseline + an H10S measurement-chain problem not represented by public StationXML + episodic residual contamination. The available evidence does not yet partition their contributions.",
+    "strongest_countermodel": "The large baseline could primarily be persistent site/path physics, while documented H10S electronics faults add only intermittent contamination. Conversely, an unmeasured analogue/riser contribution could dominate the baseline. Earliest simultaneous six-channel waveforms and independent native seabed geometry are the cleanest remaining discriminators."
   },
   "available_next_discriminators": {
-    "first_available_six_channel_baseline": "Find the earliest public epoch where all six HA10 EDH waveform channels are simultaneously available; freeze windows before inspection, then measure whether the large S2/N1 baseline is already present and inspect six-channel coupling morphology.",
-    "calibration_sequence_public_recovery": "Search public/archival CTBTO, EarthScope/IRIS, papers, attachments and calibration-bit products for actual H10S calibration-sequence bytes/curves or earlier waveform/calibration records that can bridge the missing 2013 public time series.",
-    "native_bathymetry_swath_intersection": "Continue the independent physical lane and establish exact native multibeam/backscatter/swath crossing and morphology at the frozen H10 points without relying on hydrophone calibration.",
-    "custodian_reply": "Use EarthScope/CTBTO response to request/access authoritative historical waveform/calibration provenance if public archive remains incomplete."
+    "first_available_six_channel_baseline": "Find the earliest public epoch where all six HA10 EDH waveforms are simultaneously available using availability metadata or bounded date discovery before inspecting waveform values; then freeze windows and compare six-channel baseline/coupling morphology against 2014-2015.",
+    "native_bathymetry_swath_intersection": "Establish exact native multibeam/backscatter/swath crossing and physical morphology at H10N1/H10S2 independently of hydrophone calibration.",
+    "custodian_calibration_reply": "Obtain authoritative IDC/CTBTO calibration sequence bytes, calibration-event table or raw historical waveforms through custodian response/access rather than repeated public search."
   },
   "authority": {
     "frozen_119hz_verdict": "NEGATIVE_CONFIRMATORY_HA10_PUBLIC_SLICE",
@@ -61,5 +66,5 @@
     "target_identity": "UNCONFIRMED",
     "council_output_must_remain_advisory": true
   },
-  "question_to_janus": "Run all 17 JANUS reverse lenses on this exact BLOCKED result. Choose exactly one next gate that maximizes causal discrimination despite the 2013 public waveform boundary. Treat BLOCKED as an archive-access result, not as evidence against cross-talk. Prefer new evidence over repeated statistics. Keep the physical seabed lane independent, preserve all frozen negatives, and veto any attempt to rescue/reinterpret 119 Hz."
+  "question_to_janus": "Attack this updated whole picture with all 17 JANUS reverse lenses and choose exactly one next discriminating gate. Respect the v3 progress guard: do not repeat the archive-blocked 2013 waveform gate or the just-completed calibration public-recovery pass without changed access/evidence. Prefer a new evidence axis, preserve the independent bathymetry lane, and veto all 119-Hz reinterpretation."
 }
