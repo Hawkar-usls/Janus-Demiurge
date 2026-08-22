@@ -7,7 +7,16 @@ on:
       - '.github/workflows/janus-demiurge-scout-swarm.yml'
       - '.github/agents/**'
       - 'tools/demiurge_scout_swarm.py'
+      - 'spiral_evolution.py'
+      - 'auto_evolution.py'
+      - 'architect_ai.py'
+      - 'species_engine.py'
+      - 'swarm_optimizer.py'
+      - 'janus_core/convergence_engine.py'
+      - 'janus_genesis/demiurge.py'
+      - 'protocol/DEMIURGE_SPIRAL_EVOLUTION-v1.json'
       - 'scout_swarm/SCOUT_SWARM_MANIFEST-v1.json'
+      - 'tests/test_spiral_evolution.py'
   workflow_dispatch:
   schedule:
     - cron: '41 */6 * * *'
@@ -32,7 +41,11 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Self-test swarm contract
+      - name: Install spiral test dependency
+        run: python -m pip install --disable-pip-version-check numpy
+      - name: Test spiral evolution contract
+        run: python -m unittest tests.test_spiral_evolution
+      - name: Self-test Scout evidence and spiral boundary
         run: python tools/demiurge_scout_swarm.py --self-test
       - name: Build 17-agent matrix
         id: matrix
@@ -102,13 +115,13 @@ jobs:
         with:
           pattern: scout-*
           path: runtime/reports
-      - name: Consolidate swarm answer into Janus-Demiurge
+      - name: Consolidate spiral swarm answer into Janus-Demiurge
         run: |
           python tools/demiurge_scout_swarm.py \
             --consolidate runtime/reports \
             --run-id '${{ github.run_id }}' \
             --sha '${{ github.sha }}'
-      - name: Persist Demiurge swarm answer
+      - name: Persist Demiurge spiral lineage
         shell: bash
         run: |
           git config user.name "janus-demiurge-scout-swarm"
@@ -118,7 +131,7 @@ jobs:
             echo "JANUS_DEMIURGE_SWARM_NO_CHANGES"
             exit 0
           fi
-          git commit -m "Scout swarm: persist 17-agent reconnaissance run ${{ github.run_id }}"
+          git commit -m "Scout spiral: persist 17-agent reconnaissance turn ${{ github.run_id }}"
           git pull --rebase origin main
           git push origin HEAD:main
-          echo "JANUS_DEMIURGE_SWARM_PERSIST=PASS"
+          echo "JANUS_DEMIURGE_SPIRAL_PERSIST=PASS"
