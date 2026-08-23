@@ -7,6 +7,7 @@ on:
       - '.github/workflows/janus-demiurge-scout-swarm.yml'
       - '.github/agents/**'
       - 'tools/demiurge_scout_swarm.py'
+      - 'tools/demiurge_scout_snapshot_only.py'
       - 'tools/scout_observation_health.py'
       - 'spiral_evolution.py'
       - 'auto_evolution.py'
@@ -32,6 +33,56 @@ permissions:
   copilot-requests: write
 
 jobs:
+  model_preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      model_status: ${{ steps.probe.outputs.model_status }}
+    steps:
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install GitHub Copilot CLI
+        run: |
+          npm install -g @github/copilot
+          copilot --version
+      - name: Probe model availability once for the whole swarm
+        id: probe
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          COPILOT_AUTO_UPDATE: 'false'
+        shell: bash
+        run: |
+          set +e
+          copilot -p 'Return only this JSON object: {"preflight":"PASS"}' \
+            --model auto \
+            --output-format=json \
+            --no-ask-user \
+            --no-color \
+            --no-custom-instructions \
+            --no-remote \
+            --no-remote-export \
+            --disable-builtin-mcps \
+            --deny-tool=read \
+            --deny-tool=write \
+            --deny-tool=shell \
+            --deny-tool=url \
+            --deny-tool=memory \
+            > model-preflight.out 2>&1
+          RC=$?
+          cat model-preflight.out
+          if grep -q 'quota_exceeded' model-preflight.out; then
+            STATUS='QUOTA_EXHAUSTED'
+          elif [ "$RC" -eq 0 ] && grep -q 'PASS' model-preflight.out; then
+            STATUS='AVAILABLE'
+          else
+            STATUS='UNAVAILABLE'
+          fi
+          echo "model_status=$STATUS" >> "$GITHUB_OUTPUT"
+          echo "JANUS_SCOUT_MODEL_PREFLIGHT=$STATUS"
+          exit 0
+
   plan:
     runs-on: ubuntu-latest
     outputs:
@@ -53,6 +104,8 @@ jobs:
         run: python tools/demiurge_scout_swarm.py --self-test
       - name: Self-test snapshot/model health separation
         run: python tools/scout_observation_health.py --self-test
+      - name: Self-test shared-preflight snapshot-only fallback
+        run: python tools/demiurge_scout_snapshot_only.py --self-test
       - name: Build 17-agent matrix
         id: matrix
         shell: bash
@@ -61,7 +114,7 @@ jobs:
           echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
 
   scout:
-    needs: plan
+    needs: [plan, model_preflight]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
@@ -74,15 +127,18 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Set up Node
+      - name: Set up Node when model synthesis is available
+        if: needs.model_preflight.outputs.model_status == 'AVAILABLE'
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install GitHub Copilot CLI
+      - name: Install GitHub Copilot CLI when model synthesis is available
+        if: needs.model_preflight.outputs.model_status == 'AVAILABLE'
         run: |
           npm install -g @github/copilot
           copilot --version
-      - name: Run ${{ matrix.id }}
+      - name: Run ${{ matrix.id }} with model synthesis
+        if: needs.model_preflight.outputs.model_status == 'AVAILABLE'
         env:
           GITHUB_TOKEN: ${{ github.token }}
           COPILOT_AUTO_UPDATE: 'false'
@@ -91,6 +147,14 @@ jobs:
           python tools/demiurge_scout_swarm.py \
             --run-agent '${{ matrix.id }}' \
             --output runtime/${{ matrix.id }}/report.json
+      - name: Run ${{ matrix.id }} snapshot-only after shared model preflight block
+        if: needs.model_preflight.outputs.model_status != 'AVAILABLE'
+        run: |
+          mkdir -p runtime/${{ matrix.id }}
+          python tools/demiurge_scout_snapshot_only.py \
+            --run-agent '${{ matrix.id }}' \
+            --output runtime/${{ matrix.id }}/report.json \
+            --model-status '${{ needs.model_preflight.outputs.model_status }}'
       - name: Upload Scout report
         if: always()
         uses: actions/upload-artifact@v4
@@ -102,7 +166,7 @@ jobs:
 
   aggregate:
     if: always()
-    needs: [plan, scout]
+    needs: [plan, model_preflight, scout]
     runs-on: ubuntu-latest
     permissions:
       contents: write
