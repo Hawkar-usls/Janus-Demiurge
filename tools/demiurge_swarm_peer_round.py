@@ -91,12 +91,15 @@ def run_peer(
         for s in original.get("discovery", {}).get("sources", [])
         if isinstance(s, dict)
     }
-    peer_urls = [u for u in _uniq(peer_urls, 12) if u not in already]
-    peer_queries = _uniq(peer_queries, 12)
+    peer_urls = [u for u in _uniq(peer_urls, 8) if u not in already]
+    peer_queries = _uniq(peer_queries, 8)
 
     enriched = dict(agent)
-    enriched["seed_urls"] = _uniq(list(agent.get("seed_urls", [])) + peer_urls, 18)
-    enriched["queries"] = _uniq(list(agent.get("queries", [])) + peer_queries, 18)
+    # Execute the sealed peer cohort first. Legacy seeds/queries remain fallback
+    # backlog and cannot starve an admitted microkernel claim from the bounded
+    # eight-source execution surface.
+    enriched["seed_urls"] = _uniq(peer_urls + list(agent.get("seed_urls", [])), 18)
+    enriched["queries"] = _uniq(peer_queries + list(agent.get("queries", [])), 18)
     discovery = base.discover(enriched)
     analysis, model_error = base.model_analyze(enriched, discovery)
     parent_hash = base.canonical_hash(original)
