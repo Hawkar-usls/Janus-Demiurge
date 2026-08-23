@@ -30,7 +30,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Validate 17-of-17 TOPA v1.1 coverage
+      - name: Validate 17-of-17 TOPA v1.2 coverage
         run: |
           python - <<'PY'
           import json
@@ -38,31 +38,35 @@ jobs:
           binding=json.load(open('.janus/TOPA_FOUNDATION.json'))
           protocol=json.load(open('scout_swarm/orchestrator/TOPA_SCOUT_EPISTEMIC_PROTOCOL-v1.json'))
           manifest=json.load(open('scout_swarm/SCOUT_SWARM_MANIFEST-v1.json'))
-          assert binding['schema']=='janus.demiurge.topa_foundation_binding.v1.1'
-          assert binding['version']=='1.1'
-          assert binding['status']=='ACTIVE_SCOUT_EPISTEMIC_FOUNDATION'
+          assert binding['schema']=='janus.demiurge.topa_foundation_binding.v1.2'
+          assert binding['version']=='1.2'
           assert binding['applies_to']=='ALL_17_SCOUTS'
-          assert binding['kenshi_binding']['rule']=='SYNC_STATE_NOT_IDENTITY'
-          assert binding['case_corpus_lineage']['documented_occurrence_is_truth_of_claim'] is False
-          assert protocol['schema']=='janus.demiurge.topa_scout_epistemic_protocol.v1.1'
-          assert protocol['version']=='1.1'
-          assert protocol['applies_to_every_scout'] is True
+          assert binding['canonical_foundation']['version']=='1.2'
+          assert binding['case_corpus_lineage']['caller_records_at_adoption']==136
+          assert binding['observer_pattern']['source_is_fiction'] is True
+          assert binding['observer_pattern']['empirical_authority'] is False
+          assert binding['kenshi_binding']['provenance_may_be_erased_during_handoff'] is False
+          assert protocol['schema']=='janus.demiurge.topa_scout_epistemic_protocol.v1.2'
+          assert protocol['version']=='1.2'
           assert protocol['scout_count_expected']==17
-          assert protocol['closed_belief_loop_alarm']['name']=='CLOSED_BELIEF_LOOP_WARNING'
           assert manifest['agent_count']==17 and len(manifest['agents'])==17
           shared={p['id']:p for p in manifest['shared_epistemic_protocols']}
-          assert shared['TOPA']['required_for']=='ALL_17_SCOUTS' and shared['TOPA']['version']=='1.1'
-          required_invariants={'MISSING_DATA_STAYS_MISSING','AUDIENCE_SIZE_IS_NOT_CORROBORATION','REPETITION_IS_NOT_INDEPENDENCE','FAILED_TESTS_MUST_BE_ABLE_TO_LOWER_CONFIDENCE','MUNDANE_FIRST_WITHOUT_MUNDANE_ASSUMPTION','CLOSED_BELIEF_LOOP_WARNING_REQUIRED'}
-          assert required_invariants <= set(manifest['invariants'])
+          assert shared['TOPA']['version']=='1.2' and shared['TOPA']['required_for']=='ALL_17_SCOUTS'
+          required={'RAW_PROVENANCE_MUST_BE_PRESERVED','CHANNEL_CLASSIFICATION_REQUIRED','FIRSTHAND_AND_HEARSAY_MUST_BE_DISTINCT','MODELS_MAY_NOT_REWRITE_RAW_LEDGER','PREDICTIONS_MUST_BE_FROZEN_BEFORE_OUTCOME_SCORING','NO_POST_HOC_REDEFINITION_TO_SAVE_A_FAILED_PREDICTION','I_DO_NOT_KNOW_IS_A_VALID_OUTPUT'}
+          assert required <= set(manifest['invariants'])
           ids=set(); paths=set()
           for agent in manifest['agents']:
-              ids.add(agent['id']); path=Path(agent['agent_file']); paths.add(str(path)); text=path.read_text(encoding='utf-8')
-              assert 'TOPA_REQUIRED' in text, f'TOPA marker missing: {path}'
-              assert 'CLOSED_BELIEF_LOOP_WARNING' in text, f'TOPA v1.1 anti-loop marker missing: {path}'
-              assert 'Missing data stays missing' in text, f'TOPA v1.1 missing-data rule absent: {path}'
+              ids.add(agent['id']); p=Path(agent['agent_file']); paths.add(str(p)); text=p.read_text(encoding='utf-8')
+              assert 'TOPA_REQUIRED' in text
+              assert 'TOPA v1.2' in text
+              assert 'raw provenance' in text.lower()
+              assert 'firsthand' in text.lower() and 'hearsay' in text.lower()
+              assert 'post-hoc' in text.lower()
+              assert 'I_DO_NOT_KNOW' in text
           assert len(ids)==17 and len(paths)==17
           assert len(list(Path('.github/agents').glob('scout-*.agent.md')))==17
-          print('JANUS_TOPA_V1_1_SCOUT_COVERAGE=17/17')
-          print('JANUS_TOPA_V1_1_IDENTITY_COLLAPSE=0_BY_MANIFEST_UNIQUENESS')
-          print('JANUS_TOPA_V1_1_SCOUT_EPISTEMIC_LAYER=PASS')
+          print('JANUS_TOPA_V1_2_SCOUT_COVERAGE=17/17')
+          print('JANUS_TOPA_V1_2_PROVENANCE_COVERAGE=17/17')
+          print('JANUS_TOPA_V1_2_IDENTITY_COLLAPSE=0_BY_MANIFEST_UNIQUENESS')
+          print('JANUS_TOPA_V1_2_SCOUT_EPISTEMIC_LAYER=PASS')
           PY
