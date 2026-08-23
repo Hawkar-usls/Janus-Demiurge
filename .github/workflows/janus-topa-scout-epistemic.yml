@@ -1,0 +1,72 @@
+name: Validate TOPA Scout Epistemic Layer
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.janus/TOPA_FOUNDATION.json'
+      - '.github/agents/**'
+      - '.github/workflows/janus-topa-scout-epistemic.yml'
+      - 'scout_swarm/SCOUT_SWARM_MANIFEST-v1.json'
+      - 'scout_swarm/orchestrator/TOPA_SCOUT_EPISTEMIC_PROTOCOL-v1.json'
+  push:
+    branches: [main]
+    paths:
+      - '.janus/TOPA_FOUNDATION.json'
+      - '.github/agents/**'
+      - '.github/workflows/janus-topa-scout-epistemic.yml'
+      - 'scout_swarm/SCOUT_SWARM_MANIFEST-v1.json'
+      - 'scout_swarm/orchestrator/TOPA_SCOUT_EPISTEMIC_PROTOCOL-v1.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate 17-of-17 TOPA coverage
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          binding=json.load(open('.janus/TOPA_FOUNDATION.json'))
+          protocol=json.load(open('scout_swarm/orchestrator/TOPA_SCOUT_EPISTEMIC_PROTOCOL-v1.json'))
+          manifest=json.load(open('scout_swarm/SCOUT_SWARM_MANIFEST-v1.json'))
+
+          assert binding['status']=='ACTIVE_SCOUT_EPISTEMIC_FOUNDATION'
+          assert binding['applies_to']=='ALL_17_SCOUTS'
+          assert binding['kenshi_binding']['rule']=='SYNC_STATE_NOT_IDENTITY'
+          assert protocol['status']=='ACTIVE_REQUIRED_ALL_SCOUTS'
+          assert protocol['applies_to_every_scout'] is True
+          assert protocol['scout_count_expected']==17
+          assert protocol['motto']=='NOTHING SUPERNATURAL — ONLY NATURE NOT YET UNDERSTOOD.'
+          assert manifest['agent_count']==17
+          assert len(manifest['agents'])==17
+          shared={p['id']:p for p in manifest['shared_epistemic_protocols']}
+          assert shared['TOPA']['required_for']=='ALL_17_SCOUTS'
+          assert 'ANOMALY_IS_A_QUESTION_NOT_A_CONCLUSION' in manifest['invariants']
+          assert 'UNRESOLVED_IS_A_VALID_TERMINAL_STATE' in manifest['invariants']
+
+          ids=set()
+          paths=set()
+          for agent in manifest['agents']:
+              ids.add(agent['id'])
+              path=Path(agent['agent_file'])
+              paths.add(str(path))
+              text=path.read_text(encoding='utf-8')
+              assert 'TOPA_REQUIRED' in text, f"TOPA marker missing: {path}"
+
+          assert len(ids)==17
+          assert len(paths)==17
+          assert len(list(Path('.github/agents').glob('scout-*.agent.md')))==17
+          print('JANUS_TOPA_SCOUT_COVERAGE=17/17')
+          print('JANUS_TOPA_IDENTITY_COLLAPSE=0_BY_MANIFEST_UNIQUENESS')
+          print('JANUS_TOPA_SCOUT_EPISTEMIC_LAYER=PASS')
+          PY
