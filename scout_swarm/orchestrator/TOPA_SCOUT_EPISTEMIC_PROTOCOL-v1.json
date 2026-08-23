@@ -1,21 +1,26 @@
 {
-  "schema": "janus.demiurge.topa_scout_epistemic_protocol.v1",
-  "id": "TOPA_SCOUT_EPISTEMIC_PROTOCOL_V1",
+  "schema": "janus.demiurge.topa_scout_epistemic_protocol.v1.1",
+  "id": "TOPA_SCOUT_EPISTEMIC_PROTOCOL_V1_1",
+  "version": "1.1",
   "status": "ACTIVE_REQUIRED_ALL_SCOUTS",
   "name": "TOPA",
   "motto": "NOTHING SUPERNATURAL — ONLY NATURE NOT YET UNDERSTOOD.",
   "applies_to_every_scout": true,
   "scout_count_expected": 17,
+  "case_corpus_lineage": "Hawkar-usls/janus-meta-registry:data/JANUS-TOPA-ART-BELL-REAL-CALLER-ARCHIVE-v1.0.json",
   "purpose": "Give every Scout the same minimum epistemic discipline for unusual, anomalous, paranormal-labeled, mythic, symbolic or extraordinary material without erasing uncertainty or specialization.",
   "required_sequence": [
     "IDENTIFY_EXACT_CLAIM",
+    "PRESERVE_ORIGINAL_REPORT",
     "SEPARATE_REPORT_OBSERVATION_INTERPRETATION",
     "BIND_POSITIVE_FACTS_TO_SOURCE_POINTERS",
     "ENUMERATE_COMPETING_EXPLANATIONS",
+    "TEST_MUNDANE_EXPLANATIONS_EARLY_WITHOUT_ASSUMING_THEM_TRUE",
     "DEFINE_FALSIFIER_OR_DISCONFIRMATION_ROUTE",
     "CHECK_SOURCE_INDEPENDENCE",
     "RUN_OR_REQUEST_BOUNDED_TEST",
-    "PRESERVE_NEGATIVE_CONFLICTING_AND_UNRESOLVED_RESULTS",
+    "ALLOW_FAILED_TESTS_TO_LOWER_CONFIDENCE",
+    "PRESERVE_NEGATIVE_CONFLICTING_MISSING_AND_UNRESOLVED_RESULTS",
     "ASSIGN_BOUNDED_STATUS",
     "HAND_OFF_STATE_WITHOUT_COLLAPSING_IDENTITY"
   ],
@@ -33,32 +38,40 @@
     "forbidden_shortcuts": [
       "UNKNOWN_TO_SUPERNATURAL",
       "REPETITION_TO_INDEPENDENT_CONFIRMATION",
+      "AUDIENCE_SIZE_TO_CORROBORATION",
+      "MISSING_DATA_TO_POSITIVE_EVIDENCE",
       "CONSENSUS_TO_WORLD_TRUTH",
       "SYMBOLISM_TO_EMPIRICAL_FACT",
       "FAILED_FETCH_TO_PROOF_OF_ABSENCE",
-      "WORKFLOW_TRACE_TO_SCIENTIFIC_TRUTH"
+      "WORKFLOW_TRACE_TO_SCIENTIFIC_TRUTH",
+      "MUNDANE_EXPLANATION_TO_ASSUMED_TRUTH"
     ]
   },
   "required_scout_behavior": [
     "DO_NOT_DISMISS_ANOMALY_ONLY_BECAUSE_IT_IS_UNUSUAL",
     "DO_NOT_CONFIRM_ANOMALY_ONLY_BECAUSE_IT_IS_INTERESTING",
     "PRESERVE_ALTERNATIVES",
+    "TEST_MUNDANE_EXPLANATIONS_EARLY_WITHOUT_ASSUMING_THEM_TRUE",
+    "KEEP_MISSING_DATA_MISSING",
+    "DO_NOT_COUNT_AUDIENCE_SIZE_AS_CORROBORATION",
+    "DO_NOT_COUNT_REPETITION_AS_INDEPENDENCE",
+    "NAME_AN_OBSERVATION_OR_TEST_THAT_COULD_LOWER_CONFIDENCE",
+    "RAISE_CLOSED_BELIEF_LOOP_WARNING_WHEN_NO_SUCH_ROUTE_EXISTS",
+    "ALLOW_FAILED_TESTS_TO_LOWER_CONFIDENCE",
     "PRESERVE_NEGATIVE_RESULTS",
     "PRESERVE_CONTRADICTIONS",
     "ALLOW_UNRESOLVED",
     "PREFER_SOURCE_BOUND_TESTS_OVER_RETELLING",
     "MAKE_DISCONFIRMATION_VISIBLE"
   ],
+  "closed_belief_loop_alarm": {
+    "name": "CLOSED_BELIEF_LOOP_WARNING",
+    "trigger": "No possible observation, test or source result is named that could lower confidence in a favored interpretation.",
+    "effect": "Do not promote beyond hypothesis/context until a disconfirming route exists.",
+    "claim_false_implied": false
+  },
   "kenshi_event_semantics": {
-    "allowed_to_share": [
-      "OBSERVATION",
-      "SOURCE_POINTER",
-      "REQUEST_HELP",
-      "CONFLICT",
-      "LEARNED_CONSTRAINT",
-      "WORK_CLAIM",
-      "CAUSAL_ACK"
-    ],
+    "allowed_to_share": ["OBSERVATION","SOURCE_POINTER","REQUEST_HELP","CONFLICT","LEARNED_CONSTRAINT","WORK_CLAIM","CAUSAL_ACK"],
     "shared_event_is_empirical_evidence": false,
     "sender_identity_must_persist": true,
     "source_provenance_must_persist": true,
@@ -71,7 +84,7 @@
     "COHORT_KERNEL": "Seal competing checks before result quality is known.",
     "DRAIN_KERNEL": "Finish admitted checks and preserve failure/overflow.",
     "EVIDENCE_KERNEL": "Only source-bound evidence can advance positive factual claims.",
-    "POLICY_MEMORY_KERNEL": "Persist falsified, negative, conflicting and unresolved states."
+    "POLICY_MEMORY_KERNEL": "Persist falsified, negative, conflicting, missing and unresolved states."
   },
   "special_case_rules": {
     "AURA_ORACLE": "Oracle/symbolic guidance may suggest a route or hypothesis but never becomes empirical proof.",
@@ -83,9 +96,10 @@
   },
   "output_expectation": {
     "positive_claim": "source pointer + bounded wording + falsification route",
-    "extraordinary_interpretation": "competing alternatives + disconfirming route + explicit evidence ceiling",
+    "extraordinary_interpretation": "competing alternatives + mundane-first check + disconfirming route + explicit evidence ceiling",
     "insufficient_evidence": "UNRESOLVED",
-    "failed_hypothesis": "FALSIFIED or WEAKENED; preserve it as experience"
+    "failed_hypothesis": "FALSIFIED or WEAKENED; lower confidence where warranted and preserve it as experience",
+    "non_falsifiable_interpretation": "CLOSED_BELIEF_LOOP_WARNING"
   },
   "world_truth": false
 }

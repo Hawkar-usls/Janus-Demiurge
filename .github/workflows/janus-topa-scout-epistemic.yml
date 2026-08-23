@@ -30,43 +30,39 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Validate 17-of-17 TOPA coverage
+      - name: Validate 17-of-17 TOPA v1.1 coverage
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
-
           binding=json.load(open('.janus/TOPA_FOUNDATION.json'))
           protocol=json.load(open('scout_swarm/orchestrator/TOPA_SCOUT_EPISTEMIC_PROTOCOL-v1.json'))
           manifest=json.load(open('scout_swarm/SCOUT_SWARM_MANIFEST-v1.json'))
-
+          assert binding['schema']=='janus.demiurge.topa_foundation_binding.v1.1'
+          assert binding['version']=='1.1'
           assert binding['status']=='ACTIVE_SCOUT_EPISTEMIC_FOUNDATION'
           assert binding['applies_to']=='ALL_17_SCOUTS'
           assert binding['kenshi_binding']['rule']=='SYNC_STATE_NOT_IDENTITY'
-          assert protocol['status']=='ACTIVE_REQUIRED_ALL_SCOUTS'
+          assert binding['case_corpus_lineage']['documented_occurrence_is_truth_of_claim'] is False
+          assert protocol['schema']=='janus.demiurge.topa_scout_epistemic_protocol.v1.1'
+          assert protocol['version']=='1.1'
           assert protocol['applies_to_every_scout'] is True
           assert protocol['scout_count_expected']==17
-          assert protocol['motto']=='NOTHING SUPERNATURAL — ONLY NATURE NOT YET UNDERSTOOD.'
-          assert manifest['agent_count']==17
-          assert len(manifest['agents'])==17
+          assert protocol['closed_belief_loop_alarm']['name']=='CLOSED_BELIEF_LOOP_WARNING'
+          assert manifest['agent_count']==17 and len(manifest['agents'])==17
           shared={p['id']:p for p in manifest['shared_epistemic_protocols']}
-          assert shared['TOPA']['required_for']=='ALL_17_SCOUTS'
-          assert 'ANOMALY_IS_A_QUESTION_NOT_A_CONCLUSION' in manifest['invariants']
-          assert 'UNRESOLVED_IS_A_VALID_TERMINAL_STATE' in manifest['invariants']
-
-          ids=set()
-          paths=set()
+          assert shared['TOPA']['required_for']=='ALL_17_SCOUTS' and shared['TOPA']['version']=='1.1'
+          required_invariants={'MISSING_DATA_STAYS_MISSING','AUDIENCE_SIZE_IS_NOT_CORROBORATION','REPETITION_IS_NOT_INDEPENDENCE','FAILED_TESTS_MUST_BE_ABLE_TO_LOWER_CONFIDENCE','MUNDANE_FIRST_WITHOUT_MUNDANE_ASSUMPTION','CLOSED_BELIEF_LOOP_WARNING_REQUIRED'}
+          assert required_invariants <= set(manifest['invariants'])
+          ids=set(); paths=set()
           for agent in manifest['agents']:
-              ids.add(agent['id'])
-              path=Path(agent['agent_file'])
-              paths.add(str(path))
-              text=path.read_text(encoding='utf-8')
-              assert 'TOPA_REQUIRED' in text, f"TOPA marker missing: {path}"
-
-          assert len(ids)==17
-          assert len(paths)==17
+              ids.add(agent['id']); path=Path(agent['agent_file']); paths.add(str(path)); text=path.read_text(encoding='utf-8')
+              assert 'TOPA_REQUIRED' in text, f'TOPA marker missing: {path}'
+              assert 'CLOSED_BELIEF_LOOP_WARNING' in text, f'TOPA v1.1 anti-loop marker missing: {path}'
+              assert 'Missing data stays missing' in text, f'TOPA v1.1 missing-data rule absent: {path}'
+          assert len(ids)==17 and len(paths)==17
           assert len(list(Path('.github/agents').glob('scout-*.agent.md')))==17
-          print('JANUS_TOPA_SCOUT_COVERAGE=17/17')
-          print('JANUS_TOPA_IDENTITY_COLLAPSE=0_BY_MANIFEST_UNIQUENESS')
-          print('JANUS_TOPA_SCOUT_EPISTEMIC_LAYER=PASS')
+          print('JANUS_TOPA_V1_1_SCOUT_COVERAGE=17/17')
+          print('JANUS_TOPA_V1_1_IDENTITY_COLLAPSE=0_BY_MANIFEST_UNIQUENESS')
+          print('JANUS_TOPA_V1_1_SCOUT_EPISTEMIC_LAYER=PASS')
           PY
