@@ -3,7 +3,16 @@
   "orchestrator_id": "JANUS_SWARM_ORCHESTRATOR_01",
   "status": "ACTIVE",
   "purpose": "Coordinate persistent Scout identities, public-data collection, peer handoffs and verification without collapsing agents that observe the same fact.",
+  "foundation": {
+    "canonical": "Hawkar-usls/Janus_Genesis:.janus/KENSHI_SWARM_FOUNDATION.json",
+    "local_binding": ".janus/KENSHI_SWARM_FOUNDATION.json",
+    "blackboard_protocol": "scout_swarm/orchestrator/KENSHI_SWARM_BLACKBOARD-v1.json",
+    "model": "PERSISTENT_LOCAL_SCOUTS_SHARED_APPEND_ONLY_BLACKBOARD",
+    "core_rule": "SYNC_STATE_NOT_IDENTITY"
+  },
   "laws": [
+    "SYNC_STATE_NOT_IDENTITY",
+    "SHARED_BLACKBOARD_IS_HANDOFF_NOT_HIVE_MIND",
     "FACTS_MAY_CLUSTER__SCOUTS_MUST_NOT",
     "SOURCE_DEDUPLICATION_IS_EPISTEMIC_ACCOUNTING_NOT_IDENTITY_DELETION",
     "EVERY_SCOUT_IDENTITY_REMAINS_ADDRESSABLE",
@@ -20,11 +29,13 @@
     "deduplicate_scout_entities": false,
     "delete_scout_entities": false,
     "merge_scout_lineages": false,
+    "sync_shared_state_may_replace_identity": false,
     "fact_clusters_may_reference_many_scout_observations": true,
     "same_fact_observed_twice_preserves_two_observations": true
   },
   "communication": {
     "rounds": 2,
+    "semantics": "KENSHI_SHARED_BLACKBOARD_WITH_LOCAL_AGENT_VIEWS",
     "transport": "GITHUB_ACTIONS_ARTIFACT_BLACKBOARD_AND_PER_SCOUT_INBOX",
     "message_types": [
       "OBSERVATION_BUNDLE",
@@ -33,13 +44,18 @@
       "PEER_ROUND_RESPONSE"
     ],
     "full_message_log_preserved": true,
-    "peer_round_can_reuse_source_pointer_only_if_recipient_domain_policy_allows": true
+    "peer_round_can_reuse_source_pointer_only_if_recipient_domain_policy_allows": true,
+    "message_is_command": false,
+    "message_is_empirical_evidence": false
   },
   "coordination": {
     "identical_query_policy": "ONE_LEAD_PLUS_DISTINCT_WITNESSES",
     "lead_selection": "DETERMINISTIC_SCOUT_ID_ORDER",
     "witnesses_are_not_removed": true,
-    "cross_track_handoff_enabled": true
+    "cross_track_handoff_enabled": true,
+    "identical_work_may_coalesce": true,
+    "all_origin_messages_and_scouts_must_persist": true,
+    "lease_or_work_claim_grants_external_effect_authority": false
   },
   "track_routes": {
     "P0_A_HA10_POSITIVE_CONTROL": [
@@ -75,6 +91,8 @@
     "orchestrator_message_is_evidence": false,
     "peer_repetition_is_independent_confirmation": false,
     "deduplicated_fact_cluster_erases_observations": false,
-    "model_output_is_evidence": false
+    "model_output_is_evidence": false,
+    "blackboard_consensus_is_truth": false,
+    "causal_ack_proves_workflow_route_not_scientific_truth": true
   }
 }
