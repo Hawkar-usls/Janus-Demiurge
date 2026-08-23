@@ -1,0 +1,44 @@
+name: Validate Scout Model Preflight Fallback
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/demiurge_scout_snapshot_only.py'
+      - '.github/workflows/janus-demiurge-scout-swarm.yml'
+      - '.github/workflows/validate-scout-model-preflight.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/demiurge_scout_snapshot_only.py'
+      - '.github/workflows/janus-demiurge-scout-swarm.yml'
+      - '.github/workflows/validate-scout-model-preflight.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Self-test snapshot-only preflight fallback
+        run: python tools/demiurge_scout_snapshot_only.py --self-test
+      - name: Compile Scout fallback and canonical engine
+        run: python -m py_compile tools/demiurge_scout_snapshot_only.py tools/demiurge_scout_swarm.py
+      - name: Check workflow contains one shared preflight and bounded fallback
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text=Path('.github/workflows/janus-demiurge-scout-swarm.yml').read_text()
+          assert 'model_preflight:' in text
+          assert "STATUS='QUOTA_EXHAUSTED'" in text
+          assert "needs.model_preflight.outputs.model_status != 'AVAILABLE'" in text
+          assert 'demiurge_scout_snapshot_only.py' in text
+          assert 'model_call=SKIPPED' not in text  # emitted by helper, not fabricated in workflow
+          print('JANUS_SCOUT_SHARED_MODEL_PREFLIGHT_STATIC_GATE=PASS')
+          PY
