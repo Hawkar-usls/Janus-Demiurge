@@ -1,0 +1,54 @@
+name: JANUS Scout Microkernel Wave Rider
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scout_microkernel.py'
+      - 'tests/test_scout_microkernel.py'
+      - 'scout_swarm/orchestrator/SCOUT_MICROKERNEL_PROTOCOL-v1.json'
+      - 'tools/demiurge_swarm_peer_round.py'
+      - 'tools/demiurge_systemwide_frontier_gates_v2.py'
+      - '.github/workflows/janus-scout-microkernel.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scout_microkernel.py'
+      - 'tests/test_scout_microkernel.py'
+      - 'scout_swarm/orchestrator/SCOUT_MICROKERNEL_PROTOCOL-v1.json'
+      - 'tools/demiurge_swarm_peer_round.py'
+      - 'tools/demiurge_systemwide_frontier_gates_v2.py'
+      - '.github/workflows/janus-scout-microkernel.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  microkernel_contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check requests beautifulsoup4 pypdf
+      - name: Validate microkernel and Wave Rider laws
+        run: |
+          python scout_microkernel.py --self-test
+          python -m unittest tests.test_scout_microkernel
+          python tools/demiurge_swarm_peer_round.py --self-test
+          python tools/demiurge_systemwide_frontier_gates_v2.py --self-test
+      - name: Confirm old A18 architecture lineage is explicit
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('scout_swarm/orchestrator/SCOUT_MICROKERNEL_PROTOCOL-v1.json'))
+          paths=[x['path'] for x in p['source_architecture_lineage']]
+          assert 'data/JANUS-A18-WAVE-RIDER-COHORT-DRAIN-RESEARCH-CONTEXT-v1.0.0.json' in paths
+          assert 'data/JANUS-A18_40-CHALLENGE-A18_41-DYNAMIC-TARGET-MORPHING-v1.0.0.json' in paths
+          assert p['look_away_barrier']['enabled'] is True
+          assert p['adaptation_boundary']['architectural_principles_only'] is True
+          print('JANUS_SCOUT_MICROKERNEL_LINEAGE=PASS')
+          PY
