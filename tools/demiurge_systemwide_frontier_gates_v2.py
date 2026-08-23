@@ -2,12 +2,17 @@
 """Hardened adapter for JANUS whole-system frontier gates v1.
 
 V2 keeps the v1 evidence semantics but improves public-source fallbacks,
-waveform query syntax, zero-byte handling and MGDS UID filtering.
+waveform query syntax, zero-byte handling and MGDS UID filtering. For peer
+rounds it also closes the Scout microkernel drain after all deterministic
+frontier gates have written their findings, then embeds the trace in report.json.
 """
 from __future__ import annotations
 
 import hashlib
+import json
+from pathlib import Path
 import re
+import sys
 from typing import Any, Dict, List, Tuple
 
 import requests
@@ -15,7 +20,12 @@ import requests
 import demiurge_systemwide_frontier_gates as gate
 from demiurge_mail_research_swarm import USER_AGENT, scrub
 
-FRONTIER_GATE_VERSION = "2.1"
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+import scout_microkernel
+
+FRONTIER_GATE_VERSION = "2.2_MICROKERNEL"
 
 # Prefer public surfaces that are reachable from GitHub-hosted runners.
 gate.MONOWAI_PDF = "https://files01.core.ac.uk/download/pdf/33672084.pdf"
@@ -36,12 +46,7 @@ def _plausible_uid(value: Any) -> str | None:
 
 
 def _filtered_mgds_uids(html: str) -> List[str]:
-    """Extract only plausible values associated with UID-labelled controls/links.
-
-    Do not treat literal HTML attribute names such as ``name`` or ``value`` as
-    candidate identifiers. A token remains only a candidate until the MGDS
-    download service accepts it and returns bytes.
-    """
+    """Extract only plausible values associated with UID-labelled controls/links."""
     soup = gate.BeautifulSoup(html, "html.parser")
     hits: List[str] = []
 
@@ -118,6 +123,29 @@ gate._waveform_urls = _waveform_urls_v2
 gate.fetch_binary = _fetch_binary_v2
 
 
+def _close_microkernel_drain(argv: List[str]) -> None:
+    if "--report" not in argv:
+        return
+    idx = argv.index("--report")
+    if idx + 1 >= len(argv):
+        return
+    report_path = Path(argv[idx + 1])
+    if not report_path.exists():
+        return
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    if not isinstance(report, dict):
+        return
+    plan = report.get("microkernel_plan")
+    if not isinstance(plan, dict):
+        return
+    trace = scout_microkernel.finalize_trace(plan, report)
+    report["microkernel_trace"] = trace
+    report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    trace_path = report_path.parent / "MICROKERNEL_TRACE.json"
+    trace_path.write_text(json.dumps(trace, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print("JANUS_SCOUT_MICROKERNEL_DRAIN=" + str(trace.get("status")))
+
+
 def self_test() -> None:
     gate.self_test()
     urls = _waveform_urls_v2()
@@ -125,15 +153,18 @@ def self_test() -> None:
     assert all("location=--" in u for u, _ in urls)
     sample = '<input name="uid" value="name"><input name="data_uid" value="4430"><a href="/x?file_uid=abc123456">x</a>'
     assert _filtered_mgds_uids(sample) == ["4430", "abc123456"]
+    scout_microkernel.self_test()
     print("JANUS_SYSTEMWIDE_FRONTIER_GATE_V2_SELF_TEST=PASS")
 
 
 def main() -> int:
-    import sys
     if "--self-test" in sys.argv:
         self_test()
         return 0
-    return gate.main()
+    rc = gate.main()
+    if rc == 0:
+        _close_microkernel_drain(sys.argv)
+    return rc
 
 
 if __name__ == "__main__":
