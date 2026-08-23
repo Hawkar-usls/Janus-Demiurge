@@ -1,0 +1,36 @@
+name: Validate Scout Observation Health Planes
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/scout_observation_health.py'
+      - 'tests/test_scout_observation_health.py'
+      - '.github/workflows/validate-scout-observation-health.yml'
+      - '.github/workflows/janus-demiurge-scout-swarm.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/scout_observation_health.py'
+      - 'tests/test_scout_observation_health.py'
+      - '.github/workflows/validate-scout-observation-health.yml'
+      - '.github/workflows/janus-demiurge-scout-swarm.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Unit-test snapshot/model/transport separation
+        run: python -m unittest tests/test_scout_observation_health.py
+      - name: Self-test deterministic health normalizer
+        run: python tools/scout_observation_health.py --self-test
+      - name: Compile health-plane module
+        run: python -m py_compile tools/scout_observation_health.py
