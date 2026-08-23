@@ -1,0 +1,58 @@
+name: Copilot Auto Quota Canary
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/copilot-auto-quota-canary.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  copilot-requests: write
+
+jobs:
+  canary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install GitHub Copilot CLI
+        run: |
+          npm install -g @github/copilot
+          copilot --version
+      - name: Test one auto-model request after premium quota exhaustion
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          COPILOT_AUTO_UPDATE: 'false'
+        run: |
+          set +e
+          copilot -p 'Return only this JSON object: {"canary":"PASS"}' \
+            --model auto \
+            --output-format=json \
+            --no-ask-user \
+            --no-color \
+            --no-custom-instructions \
+            --no-remote \
+            --no-remote-export \
+            --disable-builtin-mcps \
+            --deny-tool=read \
+            --deny-tool=write \
+            --deny-tool=shell \
+            --deny-tool=url \
+            --deny-tool=memory \
+            > canary.out 2>&1
+          RC=$?
+          cat canary.out
+          if grep -q 'quota_exceeded' canary.out; then
+            echo 'JANUS_COPILOT_AUTO_AFTER_QUOTA=QUOTA_BLOCKED'
+            exit 42
+          fi
+          if [ "$RC" -ne 0 ]; then
+            echo "JANUS_COPILOT_AUTO_AFTER_QUOTA=OTHER_FAILURE:$RC"
+            exit "$RC"
+          fi
+          grep -q 'PASS' canary.out
+          echo 'JANUS_COPILOT_AUTO_AFTER_QUOTA=PASS'
