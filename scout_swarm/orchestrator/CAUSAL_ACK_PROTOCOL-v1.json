@@ -1,55 +1,75 @@
 {
   "schema": "janus.demiurge.causal_ack_protocol.v1",
   "status": "ACTIVE",
-  "purpose": "Provide machine-readable provenance from peer message to admitted work, execution, fetched source, observation and acknowledged interaction birth without collapsing Scout identity or promoting routing context to evidence.",
+  "purpose": "Provide machine-readable provenance from peer message(s) to coordinated work, execution, fetched source, observation, CAUSAL_ACK and state change without collapsing Scout identity or promoting routing context to evidence.",
   "canonical_chain": [
-    "SENDER_SCOUT",
-    "MESSAGE",
+    "SENDER_SCOUT_OR_SCOUTS",
+    "MESSAGE_OR_MESSAGES",
     "RECIPIENT_SCOUT",
-    "WORK_CLAIM",
+    "COORDINATED_WORK_CLAIM",
     "EXECUTED_QUERY_OR_SOURCE_POINTER",
     "FETCHED_SOURCE",
     "ROUND2_OBSERVATION",
     "CAUSAL_ACK",
-    "FACT_OR_STATE_CHANGE"
+    "INTERACTION_BIRTH_STATE_CHANGE"
   ],
   "work_claim_kinds": [
     "QUERY",
     "SOURCE_POINTER"
   ],
+  "work_coordination": {
+    "duplicate_same_target_work_may_cluster": true,
+    "origin_messages_must_be_preserved": true,
+    "origin_senders_must_be_preserved": true,
+    "scout_identity_may_be_clustered": false,
+    "observation_identity_may_be_clustered": false
+  },
   "causal_ack_statuses": [
     "COMPLETE_TRACE",
-    "AMBIGUOUS_MULTI_ROUTE_TRACE",
+    "AMBIGUOUS_MULTI_WORK_TRACE",
     "UNATTRIBUTED_OBSERVATION"
   ],
   "complete_trace_requirements": {
-    "origin_message_id_present": true,
+    "one_coordinated_work_claim_route": true,
+    "one_or_more_origin_message_ids_present": true,
     "work_claim_admitted_from_peer_message": true,
     "execution_record_present": true,
     "source_fetch_status_must_be": ["FETCHED", "FETCHED_NO_TEXT"],
-    "observation_must_cite_fetched_source": true,
-    "exactly_one_work_claim_route": true
+    "observation_must_cite_fetched_source": true
+  },
+  "origin_semantics": {
+    "single_origin_message_proven": "Exactly one preserved origin message belongs to the completed work route.",
+    "multi_origin_complete_trace": "The work route is complete, but multiple preserved messages contributed the same coordinated task; no unique message cause is asserted.",
+    "exact_workflow_trigger_claimed": "True only for a COMPLETE_TRACE with exactly one preserved origin message."
   },
   "interpretation": {
-    "COMPLETE_TRACE": "The workflow provenance chain is explicit enough to identify one peer-origin work route that produced a fetched source cited by the observation.",
-    "AMBIGUOUS_MULTI_ROUTE_TRACE": "Two or more peer-origin work routes can explain the observation, so no single trigger is claimed.",
+    "COMPLETE_TRACE": "The workflow provenance chain identifies one coordinated peer-origin work route that produced a fetched source cited by the observation.",
+    "AMBIGUOUS_MULTI_WORK_TRACE": "Two or more distinct work routes can explain the observation, so no exact work route is claimed.",
     "UNATTRIBUTED_OBSERVATION": "The observation remains preserved, but no exact peer-origin work route is demonstrated."
+  },
+  "state_change": {
+    "record_when": "A fact first appears for that Scout after the peer-directed round.",
+    "change_kind": "FACT_FIRST_OBSERVED_BY_SCOUT_AFTER_PEER_ROUND",
+    "scientific_causation_claimed": false
   },
   "laws": [
     "SCOUT_IDENTITIES_MUST_NOT_COLLAPSE",
+    "OBSERVATIONS_MUST_NOT_COLLAPSE",
+    "DUPLICATE_WORK_MAY_COORDINATE_WITHOUT_DELETING_ORIGIN_MESSAGES",
     "WORK_CLAIMS_ARE_APPEND_ONLY",
     "MESSAGES_ARE_ROUTING_CONTEXT_NOT_EMPIRICAL_EVIDENCE",
-    "EXACT_TRIGGER_REQUIRES_MESSAGE_TO_WORK_TO_EXECUTION_TO_SOURCE_TO_OBSERVATION_TRACE",
-    "AMBIGUOUS_MULTI_ROUTE_TRACE_MUST_REMAIN_AMBIGUOUS",
+    "COMPLETE_TRACE_REQUIRES_MESSAGE_TO_WORK_TO_EXECUTION_TO_SOURCE_TO_OBSERVATION",
+    "MULTI_ORIGIN_WORK_PRESERVES_ALL_ORIGINS_AND_DOES_NOT_INVENT_A_SINGLE_TRIGGER",
     "UNATTRIBUTED_OBSERVATIONS_MUST_REMAIN_IN_LINEAGE",
     "SAME_SOURCE_REPETITION_IS_NOT_INDEPENDENT_REPLICATION",
     "WORKFLOW_CAUSATION_IS_NOT_SCIENTIFIC_CAUSATION"
   ],
-  "identity_rule": "FACTS_AND_WORK_MAY_CLUSTER__SCOUTS_AND_OBSERVATIONS_MUST_NOT",
+  "identity_rule": "FACTS_AND_WORK_MAY_CLUSTER__SCOUTS_MESSAGES_AND_OBSERVATIONS_MUST_NOT_BE_ERASED",
   "evidence_boundary": {
     "peer_message_is_empirical_evidence": false,
     "complete_trace_proves_scientific_truth": false,
     "complete_trace_proves_workflow_provenance": true,
+    "multi_origin_complete_trace_proves_single_message_trigger": false,
     "same_source_multi_scout_is_independent_replication": false,
     "genome_or_dna_is_literal_biology": false
   }
