@@ -1,18 +1,15 @@
 #!/usr/bin/env python3
 """JANUS Scout CAUSAL_ACK / WORK_CLAIM ledger.
 
-This layer closes the machine-readable provenance chain:
+Closes the machine-readable provenance chain:
 
-sender -> message -> work claim -> executed query/source pointer -> fetched source
--> Scout observation -> causal acknowledgement.
+sender(s) -> message(s) -> coordinated WORK_CLAIM -> execution -> fetched source
+-> round-2 observation -> CAUSAL_ACK -> recorded state change.
 
-The word "causal" here is deliberately narrow. A COMPLETE_TRACE proves workflow
-provenance: a peer message generated an admitted work claim, that claim was
-executed, the execution produced/fetched a source, and a round-2 observation
-cited that source. It does NOT prove that the peer idea is scientifically true,
-nor that a message was the psychological cause of a discovery.
-
-Scout identity and observations remain append-only and are never deduplicated.
+A COMPLETE_TRACE proves workflow provenance only. It does not prove scientific
+truth or psychological causation. Duplicate instructions may coordinate into one
+work claim, while every origin message, sender, Scout identity and observation is
+preserved separately.
 """
 from __future__ import annotations
 
@@ -27,10 +24,12 @@ from swarm_genome_ledger import SwarmGenomeLedger
 
 CAUSAL_ACK_LAWS = (
     "SCOUT_IDENTITIES_MUST_NOT_COLLAPSE",
+    "OBSERVATIONS_MUST_NOT_COLLAPSE",
+    "DUPLICATE_WORK_MAY_COORDINATE_WITHOUT_DELETING_ORIGIN_MESSAGES",
     "WORK_CLAIMS_ARE_APPEND_ONLY",
     "MESSAGES_ARE_ROUTING_CONTEXT_NOT_EMPIRICAL_EVIDENCE",
-    "EXACT_TRIGGER_REQUIRES_MESSAGE_TO_WORK_TO_EXECUTION_TO_SOURCE_TO_OBSERVATION_TRACE",
-    "AMBIGUOUS_MULTI_ROUTE_TRACE_MUST_REMAIN_AMBIGUOUS",
+    "COMPLETE_TRACE_REQUIRES_MESSAGE_TO_WORK_TO_EXECUTION_TO_SOURCE_TO_OBSERVATION",
+    "MULTI_ORIGIN_WORK_PRESERVES_ALL_ORIGINS_AND_DOES_NOT_INVENT_A_SINGLE_TRIGGER",
     "UNATTRIBUTED_OBSERVATIONS_MUST_REMAIN_IN_LINEAGE",
     "SAME_SOURCE_REPETITION_IS_NOT_INDEPENDENT_REPLICATION",
     "WORKFLOW_CAUSATION_IS_NOT_SCIENTIFIC_CAUSATION",
@@ -51,8 +50,6 @@ def _norm_text(value: Any) -> str:
 
 
 def _norm_url(value: Any) -> str:
-    # Keep query strings because archive/API parameters are often semantically
-    # significant. Only whitespace and a terminal fragment are normalized.
     text = str(value or "").strip()
     return text.split("#", 1)[0]
 
@@ -66,14 +63,12 @@ def _uniq(values: Iterable[str]) -> List[str]:
     return out
 
 
-def _claim_id(scout_id: str, message_id: str, kind: str, target: str) -> str:
-    body = {
+def _work_claim_id(scout_id: str, kind: str, target: str) -> str:
+    return "WORK::" + fingerprint_payload({
         "scout_id": scout_id,
-        "message_id": message_id,
         "kind": kind,
         "target": target,
-    }
-    return "WORK::" + fingerprint_payload(body)[:28]
+    })[:28]
 
 
 def _execution_id(claim_id: str, payload: Mapping[str, Any]) -> str:
@@ -85,6 +80,14 @@ def _ack_id(scout_id: str, observation_id: str, candidate_claim_ids: Sequence[st
         "scout_id": scout_id,
         "observation_id": observation_id,
         "candidate_claim_ids": list(candidate_claim_ids),
+    })[:28]
+
+
+def _state_change_id(scout_id: str, observation_id: str, fact_id: str) -> str:
+    return "CHANGE::" + fingerprint_payload({
+        "scout_id": scout_id,
+        "observation_id": observation_id,
+        "fact_id": fact_id,
     })[:28]
 
 
@@ -111,60 +114,48 @@ def build_work_claims(
     inbox: Mapping[str, Any],
     peer_report: Mapping[str, Any],
 ) -> List[Dict[str, Any]]:
+    """Coordinate duplicate work while preserving every origin message.
+
+    One recipient Scout gets at most one WORK_CLAIM for the same normalized
+    QUERY or SOURCE_POINTER target. If several messages requested the same work,
+    all origin message IDs and senders remain attached to that work claim.
+    """
     peer_context = peer_report.get("peer_context") if isinstance(peer_report.get("peer_context"), dict) else {}
     admitted_queries = {_norm_text(q) for q in (peer_context.get("peer_queries_admitted", []) or [])}
     admitted_urls = {_norm_url(u) for u in (peer_context.get("peer_seed_urls_admitted", []) or [])}
-    claims: List[Dict[str, Any]] = []
+    grouped: Dict[Tuple[str, str], Dict[str, Any]] = {}
+
+    def admit(kind: str, target: str, message: Mapping[str, Any]) -> None:
+        key = (kind, target)
+        claim = grouped.setdefault(key, {
+            "work_claim_id": _work_claim_id(scout_id, kind, target),
+            "scout_id": scout_id,
+            "kind": kind,
+            "target": target,
+            "origin_message_ids": [],
+            "origin_sender_ids": [],
+            "admission": "ADMITTED_FROM_PEER_MESSAGE",
+            "coordination": "DUPLICATE_WORK_CLUSTERED__ORIGINS_PRESERVED",
+            "append_only": True,
+        })
+        mid = str(message.get("message_id") or "")
+        sender = str(message.get("sender_id") or "")
+        if mid and mid not in claim["origin_message_ids"]:
+            claim["origin_message_ids"].append(mid)
+        if sender and sender not in claim["origin_sender_ids"]:
+            claim["origin_sender_ids"].append(sender)
 
     for message in inbox.get("messages", []) or []:
-        if not isinstance(message, dict):
+        if not isinstance(message, dict) or not message.get("message_id"):
             continue
-        message_id = str(message.get("message_id") or "")
-        sender_id = str(message.get("sender_id") or "")
-        if not message_id:
-            continue
-
         for query in _message_queries(message):
-            if query not in admitted_queries:
-                continue
-            cid = _claim_id(scout_id, message_id, "QUERY", query)
-            claims.append({
-                "work_claim_id": cid,
-                "scout_id": scout_id,
-                "origin_message_id": message_id,
-                "origin_sender_id": sender_id,
-                "kind": "QUERY",
-                "target": query,
-                "admission": "ADMITTED_FROM_PEER_MESSAGE",
-                "append_only": True,
-            })
-
+            if query in admitted_queries:
+                admit("QUERY", query, message)
         for url in _message_urls(message):
-            if url not in admitted_urls:
-                continue
-            cid = _claim_id(scout_id, message_id, "SOURCE_POINTER", url)
-            claims.append({
-                "work_claim_id": cid,
-                "scout_id": scout_id,
-                "origin_message_id": message_id,
-                "origin_sender_id": sender_id,
-                "kind": "SOURCE_POINTER",
-                "target": url,
-                "admission": "ADMITTED_FROM_PEER_MESSAGE",
-                "append_only": True,
-            })
+            if url in admitted_urls:
+                admit("SOURCE_POINTER", url, message)
 
-    # Preserve distinct origin-message claims. Only an exact duplicate inside the
-    # same message is collapsed because it represents the same work instruction.
-    seen: set[str] = set()
-    out: List[Dict[str, Any]] = []
-    for claim in claims:
-        cid = claim["work_claim_id"]
-        if cid in seen:
-            continue
-        seen.add(cid)
-        out.append(claim)
-    return out
+    return [grouped[key] for key in sorted(grouped)]
 
 
 def _source_aliases(source: Mapping[str, Any]) -> List[str]:
@@ -180,10 +171,8 @@ def attach_execution_trace(
     sources = [s for s in (discovery.get("sources", []) or []) if isinstance(s, dict)]
 
     for claim in claims:
-        kind = claim["kind"]
         target = claim["target"]
-        execution: Dict[str, Any]
-        if kind == "QUERY":
+        if claim["kind"] == "QUERY":
             event = next((e for e in search_events if _norm_text(e.get("query")) == target), None)
             result_urls = _uniq(_norm_url(u) for u in ((event or {}).get("urls", []) or []))
             fetched: List[Dict[str, Any]] = []
@@ -195,7 +184,7 @@ def attach_execution_trace(
                         "status": source.get("status"),
                         "text_sha256": source.get("text_sha256"),
                     })
-            execution = {
+            execution: Dict[str, Any] = {
                 "executed": event is not None,
                 "query": target,
                 "result_urls": result_urls,
@@ -248,15 +237,14 @@ def build_causal_acks(
         obs_urls = {_norm_url(u) for u in (obs.get("source_urls", []) or [])}
         routes: List[Dict[str, Any]] = []
         for claim in claims:
-            fetched_urls = set(_claim_fetched_urls(claim))
-            matched = sorted(obs_urls & fetched_urls)
+            matched = sorted(obs_urls & set(_claim_fetched_urls(claim)))
             if not matched:
                 continue
             execution = claim.get("execution") if isinstance(claim.get("execution"), dict) else {}
             routes.append({
                 "work_claim_id": claim.get("work_claim_id"),
-                "origin_message_id": claim.get("origin_message_id"),
-                "origin_sender_id": claim.get("origin_sender_id"),
+                "origin_message_ids": list(claim.get("origin_message_ids") or []),
+                "origin_sender_ids": list(claim.get("origin_sender_ids") or []),
                 "execution_id": execution.get("execution_id"),
                 "kind": claim.get("kind"),
                 "target": claim.get("target"),
@@ -266,13 +254,17 @@ def build_causal_acks(
         candidate_ids = _uniq(str(r.get("work_claim_id")) for r in routes if r.get("work_claim_id"))
         if len(candidate_ids) == 1:
             status = "COMPLETE_TRACE"
-            exact_trigger_claimed = True
+            work_route_proven = True
+            origin_ids = _uniq(str(x) for x in (routes[0].get("origin_message_ids") or []))
+            single_origin = len(origin_ids) == 1
         elif len(candidate_ids) > 1:
-            status = "AMBIGUOUS_MULTI_ROUTE_TRACE"
-            exact_trigger_claimed = False
+            status = "AMBIGUOUS_MULTI_WORK_TRACE"
+            work_route_proven = False
+            single_origin = False
         else:
             status = "UNATTRIBUTED_OBSERVATION"
-            exact_trigger_claimed = False
+            work_route_proven = False
+            single_origin = False
 
         fact_id = str(obs.get("fact_id") or "")
         acks.append({
@@ -283,13 +275,40 @@ def build_causal_acks(
             "interaction_birth": fact_id in new_fact_ids,
             "status": status,
             "candidate_routes": routes,
-            "exact_workflow_trigger_claimed": exact_trigger_claimed,
+            "work_route_proven": work_route_proven,
+            "single_origin_message_proven": single_origin,
+            "exact_workflow_trigger_claimed": single_origin,
             "workflow_causation_only": True,
             "scientific_causation_claimed": False,
             "peer_message_is_empirical_evidence": False,
             "append_only": True,
         })
     return acks
+
+
+def build_state_changes(acks: Sequence[Mapping[str, Any]]) -> List[Dict[str, Any]]:
+    changes: List[Dict[str, Any]] = []
+    for ack in acks:
+        if not ack.get("interaction_birth"):
+            continue
+        changes.append({
+            "state_change_id": _state_change_id(
+                str(ack.get("scout_id") or ""),
+                str(ack.get("observation_id") or ""),
+                str(ack.get("fact_id") or ""),
+            ),
+            "scout_id": ack.get("scout_id"),
+            "fact_id": ack.get("fact_id"),
+            "observation_id": ack.get("observation_id"),
+            "change_kind": "FACT_FIRST_OBSERVED_BY_SCOUT_AFTER_PEER_ROUND",
+            "causal_ack_id": ack.get("causal_ack_id"),
+            "trace_status": ack.get("status"),
+            "work_route_proven": ack.get("work_route_proven"),
+            "single_origin_message_proven": ack.get("single_origin_message_proven"),
+            "scientific_causation_claimed": False,
+            "append_only": True,
+        })
+    return changes
 
 
 class _GenomeProjection:
@@ -307,8 +326,7 @@ class _GenomeProjection:
         parents: Optional[Sequence[Tuple[str, str]]] = None,
         relation: str = "CAUSAL_ACK_EVENT",
     ) -> str:
-        entity_id = key
-        ledger = self.spirals.setdefault(entity_id, SpiralLedger(entity_id))
+        ledger = self.spirals.setdefault(key, SpiralLedger(key))
         before = ledger.turns[-1].active_state_after if ledger.turns else None
         turn = ledger.ascend(
             state_before=before,
@@ -318,15 +336,15 @@ class _GenomeProjection:
             outcome=relation,
             constraints=list(CAUSAL_ACK_LAWS),
         )
-        parent_ids = [pid for pid, _ in (parents or [])]
+        parent_pairs = list(parents or [])
         node = self.genome.register_spiral_turn(
             turn,
             identity_strand=state,
             evidence_strand=evidence,
-            extra_parent_ids=parent_ids,
+            extra_parent_ids=[pid for pid, _ in parent_pairs],
             relation=relation,
         )
-        for parent_id, edge_relation in parents or []:
+        for parent_id, edge_relation in parent_pairs:
             body = {
                 "parent_genome_id": parent_id,
                 "child_genome_id": node.genome_id,
@@ -346,16 +364,14 @@ def project_genome(
     result: Mapping[str, Any],
     work_claims: Sequence[Mapping[str, Any]],
     acks: Sequence[Mapping[str, Any]],
+    state_changes: Sequence[Mapping[str, Any]],
 ) -> Dict[str, Any]:
-    mission_id = str(result.get("mission_id") or "UNKNOWN_MISSION")
-    run_id = str(result.get("run_id") or "UNKNOWN_RUN")
-    p = _GenomeProjection(mission_id, run_id)
+    p = _GenomeProjection(
+        str(result.get("mission_id") or "UNKNOWN_MISSION"),
+        str(result.get("run_id") or "UNKNOWN_RUN"),
+    )
 
-    scout_ids = sorted({
-        str(a.get("scout_id")) for a in acks if a.get("scout_id")
-    } | {
-        str(c.get("scout_id")) for c in work_claims if c.get("scout_id")
-    })
+    scout_ids = sorted({str(x.get("scout_id")) for x in [*work_claims, *acks] if x.get("scout_id")})
     for sid in scout_ids:
         p.add(
             f"SCOUT_ROUND2::{sid}",
@@ -364,16 +380,23 @@ def project_genome(
             relation="SCOUT_ROUND2_CAUSAL_ANCHOR",
         )
 
-    message_nodes: Dict[str, str] = {}
+    message_meta: Dict[str, Dict[str, Any]] = {}
     for claim in work_claims:
-        mid = str(claim.get("origin_message_id") or "")
-        if mid and mid not in message_nodes:
-            message_nodes[mid] = p.add(
-                f"MESSAGE::{mid}",
-                {"message_id": mid, "sender_id": claim.get("origin_sender_id")},
-                {"peer_message_is_empirical_evidence": False},
-                relation="MESSAGE_ANCHOR",
-            )
+        senders = list(claim.get("origin_sender_ids") or [])
+        for index, mid in enumerate(claim.get("origin_message_ids") or []):
+            mid = str(mid)
+            meta = message_meta.setdefault(mid, {"message_id": mid, "sender_ids": []})
+            if index < len(senders) and senders[index] not in meta["sender_ids"]:
+                meta["sender_ids"].append(senders[index])
+    message_nodes = {
+        mid: p.add(
+            f"MESSAGE::{mid}",
+            {"message_id": mid, "sender_ids": meta.get("sender_ids", [])},
+            {"peer_message_is_empirical_evidence": False},
+            relation="MESSAGE_ANCHOR",
+        )
+        for mid, meta in sorted(message_meta.items())
+    }
 
     claim_nodes: Dict[str, str] = {}
     exec_nodes: Dict[str, str] = {}
@@ -382,12 +405,13 @@ def project_genome(
         cid = str(claim.get("work_claim_id"))
         sid = str(claim.get("scout_id"))
         parents: List[Tuple[str, str]] = []
-        mid = str(claim.get("origin_message_id") or "")
-        if mid in message_nodes:
-            parents.append((message_nodes[mid], "MESSAGE_CREATED_WORK_CLAIM"))
-        scout_anchor = p.node_by_key.get(f"SCOUT_ROUND2::{sid}")
-        if scout_anchor:
-            parents.append((scout_anchor, "WORK_CLAIM_ASSIGNED_TO_SCOUT"))
+        for mid in claim.get("origin_message_ids") or []:
+            mid = str(mid)
+            if mid in message_nodes:
+                parents.append((message_nodes[mid], "MESSAGE_CONTRIBUTED_TO_WORK_CLAIM"))
+        anchor = p.node_by_key.get(f"SCOUT_ROUND2::{sid}")
+        if anchor:
+            parents.append((anchor, "WORK_CLAIM_ASSIGNED_TO_SCOUT"))
         cnode = p.add(
             f"WORK_CLAIM::{cid}",
             {
@@ -395,33 +419,39 @@ def project_genome(
                 "scout_id": sid,
                 "kind": claim.get("kind"),
                 "target": claim.get("target"),
+                "origin_message_ids": list(claim.get("origin_message_ids") or []),
             },
-            {"admission": claim.get("admission"), "append_only": True},
-            parents=parents,
+            {
+                "admission": claim.get("admission"),
+                "coordination": claim.get("coordination"),
+                "append_only": True,
+            },
+            parents=list(dict.fromkeys(parents)),
             relation="WORK_CLAIM",
         )
         claim_nodes[cid] = cnode
 
         execution = claim.get("execution") if isinstance(claim.get("execution"), dict) else {}
         eid = str(execution.get("execution_id") or "")
-        if eid:
-            enode = p.add(
-                f"EXECUTION::{eid}",
-                {"execution_id": eid, "executed": execution.get("executed")},
-                {"execution": execution},
-                parents=[(cnode, "EXECUTES_WORK_CLAIM")],
-                relation="WORK_EXECUTION",
+        if not eid:
+            continue
+        enode = p.add(
+            f"EXECUTION::{eid}",
+            {"execution_id": eid, "executed": execution.get("executed")},
+            {"execution": execution},
+            parents=[(cnode, "EXECUTES_WORK_CLAIM")],
+            relation="WORK_EXECUTION",
+        )
+        exec_nodes[eid] = enode
+        for url in _claim_fetched_urls(claim):
+            skey = (eid, url)
+            source_nodes[skey] = p.add(
+                f"SOURCE::{fingerprint_payload({'execution_id': eid, 'url': url})[:28]}",
+                {"url": url, "execution_id": eid},
+                {"fetched": True},
+                parents=[(enode, "EXECUTION_FETCHED_SOURCE")],
+                relation="FETCHED_SOURCE",
             )
-            exec_nodes[eid] = enode
-            for url in _claim_fetched_urls(claim):
-                skey = (eid, url)
-                source_nodes[skey] = p.add(
-                    f"SOURCE::{fingerprint_payload({'execution_id': eid, 'url': url})[:28]}",
-                    {"url": url, "execution_id": eid},
-                    {"fetched": True},
-                    parents=[(enode, "EXECUTION_FETCHED_SOURCE")],
-                    relation="FETCHED_SOURCE",
-                )
 
     observation_nodes: Dict[str, str] = {}
     for ack in acks:
@@ -439,9 +469,6 @@ def project_genome(
                 node = source_nodes.get((eid, _norm_url(url)))
                 if node:
                     parents.append((node, "SOURCE_CITED_BY_OBSERVATION"))
-        # De-duplicate identical parent node/relation pairs only; this does not
-        # deduplicate observations or Scout identities.
-        parents = list(dict.fromkeys(parents))
         onode = p.add(
             f"OBSERVATION::{oid}",
             {
@@ -451,11 +478,12 @@ def project_genome(
                 "interaction_birth": ack.get("interaction_birth"),
             },
             {"causal_ack_status": ack.get("status")},
-            parents=parents,
+            parents=list(dict.fromkeys(parents)),
             relation="ROUND2_OBSERVATION",
         )
         observation_nodes[oid] = onode
 
+    ack_nodes: Dict[str, str] = {}
     for ack in acks:
         aid = str(ack.get("causal_ack_id"))
         oid = str(ack.get("observation_id"))
@@ -471,11 +499,11 @@ def project_genome(
                 parents.append((claim_nodes[cid], "ACKNOWLEDGES_WORK_CLAIM"))
             if eid in exec_nodes:
                 parents.append((exec_nodes[eid], "ACKNOWLEDGES_EXECUTION"))
-            mid = str(route.get("origin_message_id") or "")
-            if mid in message_nodes:
-                parents.append((message_nodes[mid], "ACKNOWLEDGES_ORIGIN_MESSAGE"))
-        parents = list(dict.fromkeys(parents))
-        p.add(
+            for mid in route.get("origin_message_ids", []) or []:
+                mid = str(mid)
+                if mid in message_nodes:
+                    parents.append((message_nodes[mid], "ACKNOWLEDGES_ORIGIN_MESSAGE"))
+        anode = p.add(
             f"CAUSAL_ACK::{aid}",
             {
                 "causal_ack_id": aid,
@@ -483,16 +511,44 @@ def project_genome(
                 "interaction_birth": ack.get("interaction_birth"),
             },
             {
-                "exact_workflow_trigger_claimed": ack.get("exact_workflow_trigger_claimed"),
+                "work_route_proven": ack.get("work_route_proven"),
+                "single_origin_message_proven": ack.get("single_origin_message_proven"),
                 "workflow_causation_only": True,
                 "scientific_causation_claimed": False,
             },
-            parents=parents,
+            parents=list(dict.fromkeys(parents)),
             relation="CAUSAL_ACK",
         )
+        ack_nodes[aid] = anode
 
-    genome_obj = p.genome.to_dict()
-    return {"genome": genome_obj, "typed_edges": p.typed_edges}
+    for change in state_changes:
+        cid = str(change.get("state_change_id"))
+        aid = str(change.get("causal_ack_id"))
+        parents: List[Tuple[str, str]] = []
+        if aid in ack_nodes:
+            parents.append((ack_nodes[aid], "CAUSAL_ACK_RECORDS_STATE_CHANGE"))
+        oid = str(change.get("observation_id"))
+        if oid in observation_nodes:
+            parents.append((observation_nodes[oid], "OBSERVATION_BECAME_INTERACTION_BIRTH"))
+        p.add(
+            f"STATE_CHANGE::{cid}",
+            {
+                "state_change_id": cid,
+                "scout_id": change.get("scout_id"),
+                "fact_id": change.get("fact_id"),
+                "change_kind": change.get("change_kind"),
+            },
+            {
+                "trace_status": change.get("trace_status"),
+                "work_route_proven": change.get("work_route_proven"),
+                "single_origin_message_proven": change.get("single_origin_message_proven"),
+                "scientific_causation_claimed": False,
+            },
+            parents=list(dict.fromkeys(parents)),
+            relation="INTERACTION_BIRTH_STATE_CHANGE",
+        )
+
+    return {"genome": p.genome.to_dict(), "typed_edges": p.typed_edges}
 
 
 def build_bundle_from_objects(
@@ -506,49 +562,54 @@ def build_bundle_from_objects(
     all_acks: List[Dict[str, Any]] = []
 
     for scout_id, peer_report in sorted(peer_reports.items()):
-        inbox = inboxes.get(scout_id) or {"messages": []}
-        claims = attach_execution_trace(build_work_claims(scout_id, inbox, peer_report), peer_report)
+        claims = attach_execution_trace(
+            build_work_claims(scout_id, inboxes.get(scout_id) or {"messages": []}, peer_report),
+            peer_report,
+        )
         round2_obs = [
             o for o in observations
             if str(o.get("scout_id")) == scout_id and int(o.get("round") or 0) == 2
         ]
         meta = identity_rounds.get(scout_id) if isinstance(identity_rounds.get(scout_id), dict) else {}
-        acks = build_causal_acks(
+        all_claims.extend(claims)
+        all_acks.extend(build_causal_acks(
             scout_id,
             claims,
             round2_obs,
             meta.get("new_fact_ids_after_peer_round", []) or [],
-        )
-        all_claims.extend(claims)
-        all_acks.extend(acks)
+        ))
 
-    projection = project_genome(result, all_claims, all_acks)
+    state_changes = build_state_changes(all_acks)
+    projection = project_genome(result, all_claims, all_acks, state_changes)
     counts = {
         "COMPLETE_TRACE": sum(a.get("status") == "COMPLETE_TRACE" for a in all_acks),
-        "AMBIGUOUS_MULTI_ROUTE_TRACE": sum(a.get("status") == "AMBIGUOUS_MULTI_ROUTE_TRACE" for a in all_acks),
+        "AMBIGUOUS_MULTI_WORK_TRACE": sum(a.get("status") == "AMBIGUOUS_MULTI_WORK_TRACE" for a in all_acks),
         "UNATTRIBUTED_OBSERVATION": sum(a.get("status") == "UNATTRIBUTED_OBSERVATION" for a in all_acks),
     }
-    exact_births = sum(
-        bool(a.get("interaction_birth")) and a.get("status") == "COMPLETE_TRACE"
-        for a in all_acks
-    )
     bundle: Dict[str, Any] = {
         "schema": "janus.swarm.causal_ack_ledger.v1",
         "mission_id": result.get("mission_id"),
         "run_id": result.get("run_id"),
         "parent_orchestrator_result_sha256": result.get("result_sha256"),
-        "model": "MESSAGE_TO_WORK_TO_EXECUTION_TO_SOURCE_TO_OBSERVATION_PROVENANCE",
+        "model": "MESSAGE_TO_WORK_TO_EXECUTION_TO_SOURCE_TO_OBSERVATION_TO_CHANGE_PROVENANCE",
         "laws": list(CAUSAL_ACK_LAWS),
         "work_claims": all_claims,
         "causal_acks": all_acks,
+        "state_changes": state_changes,
         "genome": projection["genome"],
         "typed_edges": projection["typed_edges"],
         "stats": {
             "scout_count": len(peer_reports),
             "work_claim_count": len(all_claims),
             "causal_ack_count": len(all_acks),
+            "state_change_count": len(state_changes),
             "status_counts": counts,
-            "exact_interaction_birth_count": exact_births,
+            "complete_trace_interaction_birth_count": sum(
+                a.get("interaction_birth") and a.get("status") == "COMPLETE_TRACE" for a in all_acks
+            ),
+            "single_origin_interaction_birth_count": sum(
+                a.get("interaction_birth") and a.get("single_origin_message_proven") for a in all_acks
+            ),
             "genome_node_count": len(projection["genome"].get("nodes", {})),
             "typed_edge_count": len(projection["typed_edges"]),
         },
@@ -556,6 +617,7 @@ def build_bundle_from_objects(
             "complete_trace_proves_workflow_provenance": True,
             "complete_trace_proves_scientific_truth": False,
             "complete_trace_proves_psychological_causation": False,
+            "multi_origin_complete_trace_proves_single_message_trigger": False,
             "peer_message_is_empirical_evidence": False,
             "same_source_multi_scout_is_independent_replication": False,
         },
@@ -571,12 +633,10 @@ def build_from_run_dir(run_dir: Path) -> Dict[str, Any]:
     inboxes: Dict[str, Dict[str, Any]] = {}
     for path in sorted((run_dir / "agents").glob("*/round2.json")):
         report = _read_json(path)
-        sid = str(report.get("scout_id") or path.parent.name)
-        peer_reports[sid] = report
+        peer_reports[str(report.get("scout_id") or path.parent.name)] = report
     for path in sorted((run_dir / "inboxes").glob("*.json")):
         inbox = _read_json(path)
-        sid = str(inbox.get("scout_id") or path.stem)
-        inboxes[sid] = inbox
+        inboxes[str(inbox.get("scout_id") or path.stem)] = inbox
     return build_bundle_from_objects(result, peer_reports, inboxes)
 
 
@@ -589,53 +649,37 @@ def write_bundle(run_dir: Path, output: Path) -> Path:
 
 def _synthetic() -> Tuple[Dict[str, Any], Dict[str, Dict[str, Any]], Dict[str, Dict[str, Any]]]:
     url = "https://example.org/source"
-    message_id = "MSG::one"
-    scout_id = "SCOUT_B"
     result = {
         "mission_id": "TEST",
         "run_id": "1",
         "result_sha256": "parent",
-        "identity_rounds": {
-            scout_id: {"new_fact_ids_after_peer_round": ["FACT_NEW"]}
-        },
+        "identity_rounds": {"SCOUT_B": {"new_fact_ids_after_peer_round": ["FACT_NEW"]}},
         "observations": [{
             "observation_id": "OBS1",
-            "scout_id": scout_id,
+            "scout_id": "SCOUT_B",
             "round": 2,
             "fact_id": "FACT_NEW",
             "source_urls": [url],
         }],
     }
     peer = {
-        "scout_id": scout_id,
-        "peer_context": {
-            "peer_queries_admitted": ["find exact source"],
-            "peer_seed_urls_admitted": [],
-        },
+        "scout_id": "SCOUT_B",
+        "peer_context": {"peer_queries_admitted": ["find exact source"], "peer_seed_urls_admitted": []},
         "discovery": {
-            "search_events": [{
-                "query": "find exact source",
-                "urls": [url],
-                "result_count": 1,
-            }],
-            "sources": [{
-                "url": url,
-                "final_url": url,
-                "status": "FETCHED",
-                "text_sha256": "abc",
-            }],
+            "search_events": [{"query": "find exact source", "urls": [url], "result_count": 1}],
+            "sources": [{"url": url, "final_url": url, "status": "FETCHED", "text_sha256": "abc"}],
         },
     }
     inbox = {
-        "scout_id": scout_id,
+        "scout_id": "SCOUT_B",
         "messages": [{
-            "message_id": message_id,
+            "message_id": "MSG::one",
             "sender_id": "SCOUT_A",
             "kind": "REQUEST_HELP",
             "payload": {"suggested_queries": ["find exact source"]},
         }],
     }
-    return result, {scout_id: peer}, {scout_id: inbox}
+    return result, {"SCOUT_B": peer}, {"SCOUT_B": inbox}
 
 
 def self_test() -> None:
@@ -643,15 +687,17 @@ def self_test() -> None:
     bundle = build_bundle_from_objects(result, peers, inboxes)
     assert bundle["stats"]["work_claim_count"] == 1
     assert bundle["stats"]["status_counts"]["COMPLETE_TRACE"] == 1
-    assert bundle["stats"]["exact_interaction_birth_count"] == 1
+    assert bundle["stats"]["complete_trace_interaction_birth_count"] == 1
+    assert bundle["stats"]["state_change_count"] == 1
     ack = bundle["causal_acks"][0]
-    assert ack["exact_workflow_trigger_claimed"] is True
+    assert ack["work_route_proven"] is True
+    assert ack["single_origin_message_proven"] is True
     assert ack["scientific_causation_claimed"] is False
-    assert ack["candidate_routes"][0]["origin_message_id"] == "MSG::one"
-    assert bundle["genome"]["schema"] == "janus.swarm.genome_ledger.v1"
+    assert ack["candidate_routes"][0]["origin_message_ids"] == ["MSG::one"]
 
-    # Two origin messages pointing to the same executed route stay ambiguous;
-    # they are not silently deduplicated into a fake single cause.
+    # Same task arriving from two messages coordinates into one WORK_CLAIM.
+    # Both origins remain preserved, so the work route is complete while no
+    # single origin message is invented as the unique cause.
     inboxes2 = json.loads(json.dumps(inboxes))
     inboxes2["SCOUT_B"]["messages"].append({
         "message_id": "MSG::two",
@@ -660,9 +706,12 @@ def self_test() -> None:
         "payload": {"suggested_queries": ["find exact source"]},
     })
     bundle2 = build_bundle_from_objects(result, peers, inboxes2)
-    assert bundle2["stats"]["work_claim_count"] == 2
-    assert bundle2["stats"]["status_counts"]["AMBIGUOUS_MULTI_ROUTE_TRACE"] == 1
-    assert bundle2["causal_acks"][0]["exact_workflow_trigger_claimed"] is False
+    assert bundle2["stats"]["work_claim_count"] == 1
+    assert bundle2["stats"]["status_counts"]["COMPLETE_TRACE"] == 1
+    ack2 = bundle2["causal_acks"][0]
+    assert ack2["work_route_proven"] is True
+    assert ack2["single_origin_message_proven"] is False
+    assert len(ack2["candidate_routes"][0]["origin_message_ids"]) == 2
     print("JANUS_CAUSAL_ACK_LEDGER_SELF_TEST=PASS")
 
 
@@ -677,8 +726,7 @@ def main() -> int:
         return 0
     if not args.run_dir or not args.output:
         parser.error("--run-dir and --output are required")
-    path = write_bundle(Path(args.run_dir), Path(args.output))
-    print(path)
+    print(write_bundle(Path(args.run_dir), Path(args.output)))
     return 0
 
 
