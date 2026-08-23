@@ -7,6 +7,7 @@ on:
       - '.github/workflows/janus-demiurge-scout-swarm.yml'
       - '.github/agents/**'
       - 'tools/demiurge_scout_swarm.py'
+      - 'tools/scout_observation_health.py'
       - 'spiral_evolution.py'
       - 'auto_evolution.py'
       - 'architect_ai.py'
@@ -17,6 +18,7 @@ on:
       - 'protocol/DEMIURGE_SPIRAL_EVOLUTION-v1.json'
       - 'scout_swarm/SCOUT_SWARM_MANIFEST-v1.json'
       - 'tests/test_spiral_evolution.py'
+      - 'tests/test_scout_observation_health.py'
   workflow_dispatch:
   schedule:
     - cron: '41 */6 * * *'
@@ -45,8 +47,12 @@ jobs:
         run: python -m pip install --disable-pip-version-check numpy
       - name: Test spiral evolution contract
         run: python -m unittest discover -s tests -p 'test_spiral_evolution.py'
+      - name: Test Scout observation health planes
+        run: python -m unittest tests/test_scout_observation_health.py
       - name: Self-test Scout evidence and spiral boundary
         run: python tools/demiurge_scout_swarm.py --self-test
+      - name: Self-test snapshot/model health separation
+        run: python tools/scout_observation_health.py --self-test
       - name: Build 17-agent matrix
         id: matrix
         shell: bash
@@ -121,6 +127,10 @@ jobs:
             --consolidate runtime/reports \
             --run-id '${{ github.run_id }}' \
             --sha '${{ github.sha }}'
+      - name: Normalize repository-snapshot and model-synthesis health planes
+        run: |
+          python tools/scout_observation_health.py \
+            --run-id '${{ github.run_id }}'
       - name: Persist Demiurge spiral lineage
         shell: bash
         run: |
