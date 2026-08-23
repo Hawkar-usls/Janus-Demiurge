@@ -1,0 +1,56 @@
+{
+  "schema": "janus.demiurge.causal_ack_protocol.v1",
+  "status": "ACTIVE",
+  "purpose": "Provide machine-readable provenance from peer message to admitted work, execution, fetched source, observation and acknowledged interaction birth without collapsing Scout identity or promoting routing context to evidence.",
+  "canonical_chain": [
+    "SENDER_SCOUT",
+    "MESSAGE",
+    "RECIPIENT_SCOUT",
+    "WORK_CLAIM",
+    "EXECUTED_QUERY_OR_SOURCE_POINTER",
+    "FETCHED_SOURCE",
+    "ROUND2_OBSERVATION",
+    "CAUSAL_ACK",
+    "FACT_OR_STATE_CHANGE"
+  ],
+  "work_claim_kinds": [
+    "QUERY",
+    "SOURCE_POINTER"
+  ],
+  "causal_ack_statuses": [
+    "COMPLETE_TRACE",
+    "AMBIGUOUS_MULTI_ROUTE_TRACE",
+    "UNATTRIBUTED_OBSERVATION"
+  ],
+  "complete_trace_requirements": {
+    "origin_message_id_present": true,
+    "work_claim_admitted_from_peer_message": true,
+    "execution_record_present": true,
+    "source_fetch_status_must_be": ["FETCHED", "FETCHED_NO_TEXT"],
+    "observation_must_cite_fetched_source": true,
+    "exactly_one_work_claim_route": true
+  },
+  "interpretation": {
+    "COMPLETE_TRACE": "The workflow provenance chain is explicit enough to identify one peer-origin work route that produced a fetched source cited by the observation.",
+    "AMBIGUOUS_MULTI_ROUTE_TRACE": "Two or more peer-origin work routes can explain the observation, so no single trigger is claimed.",
+    "UNATTRIBUTED_OBSERVATION": "The observation remains preserved, but no exact peer-origin work route is demonstrated."
+  },
+  "laws": [
+    "SCOUT_IDENTITIES_MUST_NOT_COLLAPSE",
+    "WORK_CLAIMS_ARE_APPEND_ONLY",
+    "MESSAGES_ARE_ROUTING_CONTEXT_NOT_EMPIRICAL_EVIDENCE",
+    "EXACT_TRIGGER_REQUIRES_MESSAGE_TO_WORK_TO_EXECUTION_TO_SOURCE_TO_OBSERVATION_TRACE",
+    "AMBIGUOUS_MULTI_ROUTE_TRACE_MUST_REMAIN_AMBIGUOUS",
+    "UNATTRIBUTED_OBSERVATIONS_MUST_REMAIN_IN_LINEAGE",
+    "SAME_SOURCE_REPETITION_IS_NOT_INDEPENDENT_REPLICATION",
+    "WORKFLOW_CAUSATION_IS_NOT_SCIENTIFIC_CAUSATION"
+  ],
+  "identity_rule": "FACTS_AND_WORK_MAY_CLUSTER__SCOUTS_AND_OBSERVATIONS_MUST_NOT",
+  "evidence_boundary": {
+    "peer_message_is_empirical_evidence": false,
+    "complete_trace_proves_scientific_truth": false,
+    "complete_trace_proves_workflow_provenance": true,
+    "same_source_multi_scout_is_independent_replication": false,
+    "genome_or_dna_is_literal_biology": false
+  }
+}
