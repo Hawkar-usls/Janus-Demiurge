@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Execute a second Scout collection round from orchestrator peer messages.
+"""Execute a second Scout collection round through the JANUS microkernel bus.
 
-When a Scout microkernel plan is supplied, the peer round consumes only the
-admitted work claims from the sealed cohort. This keeps intake/admission/cohort
-formation separate from execution and preserves deferred work for later turns.
+Every peer round now builds or consumes a sealed microkernel work plan before
+execution. Intake/admission/cohort formation therefore happens before discovery
+results are visible, while deferred work and every origin message remain in the
+Scout lineage.
 """
 from __future__ import annotations
 
@@ -32,6 +33,11 @@ def _read(path: Path) -> Dict[str, Any]:
     return obj
 
 
+def _write(path: Path, obj: Dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(obj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
 def _uniq(values: List[str], cap: int) -> List[str]:
     out: List[str] = []
     for x in values:
@@ -41,24 +47,6 @@ def _uniq(values: List[str], cap: int) -> List[str]:
         if len(out) >= cap:
             break
     return out
-
-
-def _legacy_peer_inputs(messages: List[Dict[str, Any]], agent: Dict[str, Any]) -> tuple[List[str], List[str]]:
-    peer_urls: List[str] = []
-    peer_queries: List[str] = []
-    for msg in messages:
-        payload = msg.get("payload") if isinstance(msg.get("payload"), dict) else {}
-        for url in payload.get("source_urls", []) or []:
-            if base.host_allowed(str(url), agent.get("allowed_domains", [])):
-                peer_urls.append(str(url))
-        for fact in payload.get("facts", []) or []:
-            if isinstance(fact, dict):
-                for url in fact.get("source_urls", []) or []:
-                    if base.host_allowed(str(url), agent.get("allowed_domains", [])):
-                        peer_urls.append(str(url))
-        for q in payload.get("suggested_queries", []) or []:
-            peer_queries.append(str(q))
-    return peer_urls, peer_queries
 
 
 def run_peer(
@@ -79,45 +67,24 @@ def run_peer(
     agent = dict(agents[agent_id])
     messages = [m for m in inbox.get("messages", []) if isinstance(m, dict)]
 
-    microkernel_context: Dict[str, Any] = {
-        "enabled": False,
-        "fallback_legacy_message_intake": True,
-    }
-    if microkernel_plan_path is not None:
-        plan = _read(microkernel_plan_path)
-        if str(plan.get("scout_id") or "") != agent_id:
-            raise ValueError("microkernel plan identity mismatch")
-        inputs = scout_microkernel.execution_inputs(plan)
-        peer_urls = [
-            str(url)
-            for url in inputs["source_urls"]
-            if base.host_allowed(str(url), agent.get("allowed_domains", []))
-        ]
-        peer_queries = [str(q) for q in inputs["queries"]]
-        microkernel_context = {
-            "enabled": True,
-            "fallback_legacy_message_intake": False,
-            "plan_sha256": plan.get("plan_sha256"),
-            "status": plan.get("status"),
-            "admitted_work_claim_ids": [
-                str(x.get("work_claim_id"))
-                for x in plan.get("admitted_work_claims", [])
-                if isinstance(x, dict) and x.get("work_claim_id")
-            ],
-            "deferred_work_claim_ids": [
-                str(x.get("work_claim_id"))
-                for x in plan.get("deferred_work_claims", [])
-                if isinstance(x, dict) and x.get("work_claim_id")
-            ],
-            "cohort_ids": [
-                str(x.get("cohort_id"))
-                for x in plan.get("cohorts", [])
-                if isinstance(x, dict) and x.get("cohort_id")
-            ],
-            "look_away_admission_barrier": plan.get("look_away_admission_barrier"),
-        }
+    # Microkernel admission is the default path. If no externally prepared plan
+    # is supplied, seal one locally before discovery begins.
+    if microkernel_plan_path is None:
+        microkernel_plan_path = output.parent / "MICROKERNEL_PLAN.json"
+        plan = scout_microkernel.build_plan(agent_id, inbox)
+        _write(microkernel_plan_path, plan)
     else:
-        peer_urls, peer_queries = _legacy_peer_inputs(messages, agent)
+        plan = _read(microkernel_plan_path)
+    if str(plan.get("scout_id") or "") != agent_id:
+        raise ValueError("microkernel plan identity mismatch")
+
+    inputs = scout_microkernel.execution_inputs(plan)
+    peer_urls = [
+        str(url)
+        for url in inputs["source_urls"]
+        if base.host_allowed(str(url), agent.get("allowed_domains", []))
+    ]
+    peer_queries = [str(q) for q in inputs["queries"]]
 
     already = {
         str(s.get("final_url") or s.get("url") or "")
@@ -134,7 +101,7 @@ def run_peer(
     analysis, model_error = base.model_analyze(enriched, discovery)
     parent_hash = base.canonical_hash(original)
     report = {
-        "schema": "janus.demiurge.public_research_agent_report.v3.peer_round.microkernel_ready",
+        "schema": "janus.demiurge.public_research_agent_report.v3.peer_round.microkernel",
         "mission_id": mission["mission_id"],
         "scout_id": agent_id,
         "track": agent["track"],
@@ -148,7 +115,30 @@ def run_peer(
             "identity_preserved": True,
             "message_count": len(messages),
         },
-        "microkernel_context": microkernel_context,
+        "microkernel_context": {
+            "enabled": True,
+            "default_execution_path": True,
+            "plan_sha256": plan.get("plan_sha256"),
+            "status": plan.get("status"),
+            "plan_local_path": str(microkernel_plan_path),
+            "admitted_work_claim_ids": [
+                str(x.get("work_claim_id"))
+                for x in plan.get("admitted_work_claims", [])
+                if isinstance(x, dict) and x.get("work_claim_id")
+            ],
+            "deferred_work_claim_ids": [
+                str(x.get("work_claim_id"))
+                for x in plan.get("deferred_work_claims", [])
+                if isinstance(x, dict) and x.get("work_claim_id")
+            ],
+            "cohort_ids": [
+                str(x.get("cohort_id"))
+                for x in plan.get("cohorts", [])
+                if isinstance(x, dict) and x.get("cohort_id")
+            ],
+            "look_away_admission_barrier": plan.get("look_away_admission_barrier"),
+        },
+        "microkernel_plan": plan,
         "janus_agent_token": {
             "scope": "EPHEMERAL_GITHUB_RUN_AGENT",
             "fingerprint": hashlib.sha256((agent_id + parent_hash).encode()).hexdigest()[:16],
@@ -164,10 +154,10 @@ def run_peer(
             "peer_message_is_routing_context_not_evidence": True,
             "identity_cannot_be_deduplicated": True,
             "microkernel_workflow_provenance_is_not_scientific_truth": True,
+            "admission_was_sealed_before_result_quality_was_seen": True,
         },
     }
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    _write(output, report)
 
 
 def self_test() -> None:
