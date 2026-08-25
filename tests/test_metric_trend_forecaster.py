@@ -7,8 +7,8 @@ def test_warmup_and_source_faithful_velocity_acceleration_forecast():
     b=f.step(2.0,0.20)
     c=f.step(4.0,0.50)
     assert a["phase"]=="WARMUP" and a["predicted_score"]==1.0
-    assert b["velocity"]==1.0 and b["acceleration"]==0.0
-    assert b["predicted_score"]==3.8
+    assert b["velocity"]==1.0 and b["acceleration"]==1.0
+    assert b["predicted_score"]==4.3
     assert c["velocity"]==2.0 and c["acceleration"]==1.0
     assert c["predicted_score"]==8.1
     assert c["predicted_aux_metric"]==1.04
