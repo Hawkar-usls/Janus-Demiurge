@@ -1,7 +1,9 @@
 from __future__ import annotations
-import hashlib, json, math, os, tempfile
+import hashlib, json, math
 from pathlib import Path
 from typing import Any, Iterable
+
+from .artifact_io import atomic_write_text
 
 SCHEMA="janus.homeostasis.health.v1"
 STATE_SCHEMA="janus.homeostasis.state.v1"
@@ -53,14 +55,8 @@ def verify_state(state:dict[str,Any])->bool:
 
 def write_state_atomic(path:str|Path,state:dict[str,Any])->None:
     if not verify_state(state): raise ValueError("invalid homeostasis state receipt")
-    dst=Path(path); dst.parent.mkdir(parents=True,exist_ok=True)
-    fd,tmp=tempfile.mkstemp(prefix=dst.name+".",dir=str(dst.parent))
-    try:
-        with os.fdopen(fd,"w",encoding="utf-8",newline="\n") as f:
-            json.dump(state,f,ensure_ascii=False,sort_keys=True,indent=2); f.write("\n")
-        os.replace(tmp,dst)
-    finally:
-        if os.path.exists(tmp): os.unlink(tmp)
+    text=json.dumps(state,ensure_ascii=False,sort_keys=True,indent=2)+"\n"
+    atomic_write_text(path,text)
 
 
 def load_state(path:str|Path)->dict[str,Any]:
