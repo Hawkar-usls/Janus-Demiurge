@@ -2,7 +2,6 @@ from __future__ import annotations
 import hashlib, json, sqlite3
 from pathlib import Path
 from typing import Any, Iterable
-from urllib.parse import quote
 
 SCHEMA = "janus.chronos.backup_candidate.v1"
 REPORT_SCHEMA = "janus.chronos.scavenge_report.v1"
@@ -27,7 +26,7 @@ def discover_backups(root: str | Path, suffixes: Iterable[str] = (".db", ".sqlit
 
 
 def _connect_read_only(path: Path) -> sqlite3.Connection:
-    uri = "file:" + quote(str(path.resolve()), safe="/:\\") + "?mode=ro"
+    uri = path.resolve().as_uri() + "?mode=ro"
     return sqlite3.connect(uri, uri=True)
 
 
