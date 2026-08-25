@@ -1,0 +1,74 @@
+name: Slime Log Feedback Router v5.1
+
+on:
+  push:
+    paths:
+      - 'models/slime/slime_semantic_candidate_router.py'
+      - 'models/slime/slime_semantic_candidate_router_v2.py'
+      - 'models/slime/slime_semantic_candidate_router_v3.py'
+      - 'models/slime/slime_semantic_candidate_router_v4.py'
+      - 'models/slime/slime_semantic_candidate_router_v5.py'
+      - 'models/slime/slime_semantic_candidate_router_v5_1.py'
+      - '.github/workflows/slime-log-feedback-router-v5-1.yml'
+  pull_request:
+    paths:
+      - 'models/slime/slime_semantic_candidate_router.py'
+      - 'models/slime/slime_semantic_candidate_router_v2.py'
+      - 'models/slime/slime_semantic_candidate_router_v3.py'
+      - 'models/slime/slime_semantic_candidate_router_v4.py'
+      - 'models/slime/slime_semantic_candidate_router_v5.py'
+      - 'models/slime/slime_semantic_candidate_router_v5_1.py'
+      - '.github/workflows/slime-log-feedback-router-v5-1.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  candidate-generator-v5-1:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile complete Slime chain
+        run: |
+          python -m py_compile models/slime/slime_semantic_candidate_router.py
+          python -m py_compile models/slime/slime_semantic_candidate_router_v2.py
+          python -m py_compile models/slime/slime_semantic_candidate_router_v3.py
+          python -m py_compile models/slime/slime_semantic_candidate_router_v4.py
+          python -m py_compile models/slime/slime_semantic_candidate_router_v5.py
+          python -m py_compile models/slime/slime_semantic_candidate_router_v5_1.py
+      - name: Run authoritative v5.1 self-test
+        run: python models/slime/slime_semantic_candidate_router_v5_1.py
+      - name: Verify generator-verifier firewall
+        run: |
+          python - <<'PY'
+          import inspect
+          from models.slime.slime_semantic_candidate_router_v5_1 import (
+              CAPABILITY_EXPONENT_Q,
+              SlimeLogFeedbackCandidateRouter,
+              selftest,
+          )
+          assert CAPABILITY_EXPONENT_Q == 2
+          r=selftest()
+          assert r['repair']=='V5_001_FIXTURE_DRIFT_ONLY'
+          assert r['candidate_count']==8
+          assert r['c5_cap']==6 and r['c6_cap']==5 and r['v4_choice_cap']==6
+          assert r['max_c6_cycle_rank']==3
+          assert r['arbitrary_relation_graph_counting_admitted'] is False
+          params=list(inspect.signature(SlimeLogFeedbackCandidateRouter.generate_manifest).parameters)
+          assert params==['self','clauses']
+          source=inspect.getsource(SlimeLogFeedbackCandidateRouter.generate_manifest)
+          for token in ['assignment_signatures(', 'ps_cut_signatures(', 'truth_table(', 'solve_sat(', 'sat_oracle(']:
+              assert token not in source, token
+          print('SLIME_LOG_FEEDBACK_V5_1_FIREWALL = PASS')
+          print('SELFTEST =',r)
+          PY
+      - name: Claim ceiling
+        run: |
+          echo 'V5_001 = FIXTURE DRIFT ONLY'
+          echo 'LOG_FEEDBACK_RELATION_CAP = RESTRICTED POLYNOMIAL MESSAGE LANGUAGE'
+          echo '4^r <= L^2 IS FROZEN'
+          echo 'ARBITRARY_RELATION_GRAPH_COUNTING NOT ADMITTED'
+          echo 'P_VS_NP = OPEN'
