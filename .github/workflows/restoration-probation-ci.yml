@@ -1,0 +1,63 @@
+name: Restoration Probation CI
+
+on:
+  push:
+    paths:
+      - 'restored/**'
+      - 'tests/test_*.py'
+      - '.github/workflows/restoration-probation-ci.yml'
+  pull_request:
+    paths:
+      - 'restored/**'
+      - 'tests/test_*.py'
+      - '.github/workflows/restoration-probation-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  restored-membranes:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Compile restored probation code
+        run: python -m compileall -q restored
+      - name: Install test runner
+        run: python -m pip install --disable-pip-version-check pytest
+      - name: Run restoration probation tests
+        run: |
+          python -m pytest -q \
+            tests/test_restored_runtime_organs.py \
+            tests/test_restoration_pass5.py \
+            tests/test_yaks_phase_backbone.py \
+            tests/test_module_identity.py \
+            tests/test_blueprint_normalizer.py \
+            tests/test_hrain_event_outbox.py \
+            tests/test_chronos_backup_scavenger.py \
+            tests/test_synapse_graph_integrity.py \
+            tests/test_salo_log_pressure_filter.py \
+            tests/test_argus_pressure_observer.py \
+            tests/test_hephaestus_storage_analyzer.py \
+            tests/test_hrain_action_scorer.py \
+            tests/test_homeostasis_guard.py \
+            tests/test_symbiosis_resource_planner.py \
+            tests/test_graph_selection_assessor.py \
+            tests/test_metric_trend_forecaster.py \
+            tests/test_hrain_graph_flow_projector.py \
+            tests/test_hrain_similarity_planner.py \
+            tests/test_ghost_rider_adversarial_challenger.py \
+            tests/test_transport_failover_planner.py \
+            tests/test_numerical_divergence_guard.py \
+            tests/test_config_neighborhood_estimator.py \
+            tests/test_modules_live_migration_planner.py \
+            tests/test_archivist_memory_graph_projector.py \
+            tests/test_technoviking_event_loop_observer.py \
+            tests/test_modules_live_evidence_classifier.py \
+            tests/test_memory_graph_query.py
