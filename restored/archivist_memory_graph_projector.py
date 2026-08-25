@@ -4,7 +4,8 @@ import hashlib
 import json
 from typing import Any, Iterable
 
-SCHEMA = "janus.archivist_memory_graph_projection.v1"
+SCHEMA = "janus.archivist_memory_graph_projection.v2"
+HISTORICAL_SOURCE_SHA256 = "4b1c2571c9e053663ed0748d5bacc1fd0f84176ae52a2519aa3a3b7b4fd5d2d3"
 
 
 def _canon(value: Any) -> bytes:
@@ -20,6 +21,35 @@ def _tags(value: Any) -> list[str]:
     if isinstance(value, (list, tuple, set)):
         return [str(x).strip() for x in value if str(x).strip()]
     return [str(value).strip()]
+
+
+def derive_checkpoint(existing_node_ids: Iterable[str]) -> dict[str, Any]:
+    checkpoint = 0
+    recognized: list[str] = []
+    ignored: list[str] = []
+    for raw in existing_node_ids:
+        value = str(raw)
+        if not value.startswith("MEM_"):
+            ignored.append(value)
+            continue
+        suffix = value[4:]
+        if not suffix.isdigit():
+            ignored.append(value)
+            continue
+        memory_id = int(suffix)
+        checkpoint = max(checkpoint, memory_id)
+        recognized.append(value)
+    body = {
+        "schema": "janus.archivist.checkpoint.v1",
+        "checkpoint_max_memory_id": checkpoint,
+        "recognized_node_ids": sorted(set(recognized)),
+        "ignored_node_ids": sorted(set(ignored)),
+        "historical_source_sha256": HISTORICAL_SOURCE_SHA256,
+        "authority": {"reads_database": False, "writes_database": False, "writes_graph": False},
+        "law": "CHECKPOINT_DERIVATION_NE_DATABASE_CURSOR_OR_GRAPH_WRITE_AUTHORITY",
+    }
+    body["checkpoint_sha256"] = hashlib.sha256(_canon(body)).hexdigest()
+    return body
 
 
 def _row(value: Any) -> dict[str, Any]:
@@ -53,11 +83,12 @@ def _row(value: Any) -> dict[str, Any]:
 
 def project_rows(rows: Iterable[Any], existing_node_ids: Iterable[str] = (), core_id: str = "CORE") -> dict[str, Any]:
     existing = {str(x) for x in existing_node_ids}
+    existing_checkpoint = derive_checkpoint(existing)
     normalized = sorted((_row(row) for row in rows), key=lambda x: x["id"])
     nodes: list[dict[str, Any]] = []
     links: list[dict[str, str]] = []
     skipped: list[dict[str, Any]] = []
-    checkpoint = 0
+    checkpoint = existing_checkpoint["checkpoint_max_memory_id"]
 
     for row in normalized:
         checkpoint = max(checkpoint, row["id"])
@@ -114,10 +145,12 @@ def project_rows(rows: Iterable[Any], existing_node_ids: Iterable[str] = (), cor
     body: dict[str, Any] = {
         "schema": SCHEMA,
         "status": "APPEND_ONLY_GRAPH_PROJECTION_PLAN",
+        "existing_checkpoint": existing_checkpoint,
         "checkpoint_max_memory_id": checkpoint,
         "nodes_to_append": nodes,
         "links_to_append": links,
         "skipped": skipped,
+        "historical_source_sha256": HISTORICAL_SOURCE_SHA256,
         "authority": {
             "reads_database": False,
             "writes_database": False,
@@ -127,6 +160,7 @@ def project_rows(rows: Iterable[Any], existing_node_ids: Iterable[str] = (), cor
         },
         "laws": [
             "MEMORY_PROJECTION_NE_GRAPH_WRITE_AUTHORITY",
+            "CHECKPOINT_DERIVATION_NE_DATABASE_CURSOR_OR_GRAPH_WRITE_AUTHORITY",
             "TOMBSTONE_PRESERVES_EXISTENCE_WITHOUT_REPUBLISHING_FULL_CONTENT",
             "TOMBSTONE_TAG_OVERRIDES_DISPLAY_SOURCE_CLASS",
             "APPEND_ONLY_NE_UNBOUNDED_RENDER_REQUIREMENT",
