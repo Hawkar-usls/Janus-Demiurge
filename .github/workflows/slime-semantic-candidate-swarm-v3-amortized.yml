@@ -1,0 +1,115 @@
+name: Slime Semantic Candidate Swarm v3 Amortized
+
+on:
+  push:
+    paths:
+      - 'models/slime/slime_semantic_candidate_router.py'
+      - 'models/slime/slime_semantic_candidate_swarm_v2.py'
+      - 'models/slime/slime_semantic_candidate_swarm_v3_amortized.py'
+      - 'audits/JANUS_SLIME_SEMANTIC_CANDIDATE_SWARM_V3_AMORTIZED.json'
+      - '.github/workflows/slime-semantic-candidate-swarm-v3-amortized.yml'
+  pull_request:
+    paths:
+      - 'models/slime/slime_semantic_candidate_router.py'
+      - 'models/slime/slime_semantic_candidate_swarm_v2.py'
+      - 'models/slime/slime_semantic_candidate_swarm_v3_amortized.py'
+      - 'audits/JANUS_SLIME_SEMANTIC_CANDIDATE_SWARM_V3_AMORTIZED.json'
+      - '.github/workflows/slime-semantic-candidate-swarm-v3-amortized.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  order-equivalence-and-cost:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile v1-v3 producers
+        run: |
+          python -m py_compile models/slime/slime_semantic_candidate_router.py
+          python -m py_compile models/slime/slime_semantic_candidate_swarm_v2.py
+          python -m py_compile models/slime/slime_semantic_candidate_swarm_v3_amortized.py
+      - name: Run v3 self-test
+        run: python models/slime/slime_semantic_candidate_swarm_v3_amortized.py
+      - name: Verify exact v2 order equivalence on frozen v10 and v11 source domains
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          import random
+          from models.slime.slime_semantic_candidate_swarm_v2 import SlimeSemanticCandidateSwarmV2
+          from models.slime.slime_semantic_candidate_swarm_v3_amortized import SlimeSemanticCandidateSwarmV3Amortized
+
+          def random_connected_3cnf(seed, variable_count=7, clause_count=10):
+              rng=random.Random(seed)
+              clauses=[]
+              for start in range(1, variable_count-1):
+                  variables=[start,start+1,start+2]
+                  clauses.append(tuple(v if rng.getrandbits(1) else -v for v in variables))
+              seen={tuple(sorted(c,key=lambda x:(abs(x),x<0))) for c in clauses}
+              while len(clauses)<clause_count:
+                  variables=rng.sample(range(1,variable_count+1),3)
+                  clause=tuple(v if rng.getrandbits(1) else -v for v in variables)
+                  key=tuple(sorted(clause,key=lambda x:(abs(x),x<0)))
+                  if key in seen:
+                      continue
+                  seen.add(key); clauses.append(clause)
+              return tuple(clauses)
+
+          def order_map(manifest):
+              return {c.name:tuple(c.linear_leaf_order) for c in manifest.candidates}
+
+          v2=SlimeSemanticCandidateSwarmV2()
+          v3=SlimeSemanticCandidateSwarmV3Amortized()
+          seeds=list(range(906500,906532))+list(range(907000,907032))
+          rows=[]
+          old_total=0; new_total=0
+          for seed in seeds:
+              formula=random_connected_3cnf(seed)
+              old=v2.generate_manifest(formula)
+              new=v3.generate_manifest(formula)
+              assert order_map(old)==order_map(new), seed
+              assert len(new.candidates)==16
+              assert new.total_generation_ops < old.total_generation_ops, (seed,old.total_generation_ops,new.total_generation_ops)
+              old_total += old.total_generation_ops
+              new_total += new.total_generation_ops
+              rows.append((seed,old.total_generation_ops,new.total_generation_ops))
+
+          projection={
+              'seeds':seeds,
+              'rows':rows,
+              'v2_total_ops':old_total,
+              'v3_total_ops':new_total,
+              'ratio_v3_over_v2':new_total/old_total,
+              'all_16_orders_exactly_equal':True,
+          }
+          digest=hashlib.sha256(json.dumps(projection,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+          print('SLIME_V3_V2_ORDER_EQUIVALENCE = PASS')
+          print('FORMULAS_CHECKED =',len(seeds))
+          print('V2_TOTAL_OPS =',old_total)
+          print('V3_TOTAL_OPS =',new_total)
+          print('V3_OVER_V2 =',new_total/old_total)
+          print('EQUIVALENCE_RECEIPT_SHA256 =',digest)
+          print('P_VS_NP = OPEN')
+          PY
+      - name: Verify producer firewall
+        run: |
+          python - <<'PY'
+          import inspect
+          from models.slime.slime_semantic_candidate_swarm_v3_amortized import SlimeSemanticCandidateSwarmV3Amortized
+          params=list(inspect.signature(SlimeSemanticCandidateSwarmV3Amortized.generate_manifest).parameters)
+          assert params==['self','clauses'], params
+          source=inspect.getsource(SlimeSemanticCandidateSwarmV3Amortized.generate_manifest)
+          forbidden=['score_candidate(', 'assignment_signatures(', 'ps_cut_value(', 'solve_sat(', 'truth_table(', 'sat_oracle(']
+          for token in forbidden:
+              assert token not in source, token
+          print('SLIME_V3_GENERATOR_VERIFIER_FIREWALL = PASS')
+          PY
+      - name: Claim ceiling
+        run: |
+          echo 'CHEAPER_ORDER_EQUIVALENT_DISCOVERY != UNIVERSAL_LOW_PSWIDTH_GUARANTEE'
+          echo 'POLYNOMIAL_CANDIDATE_DISCOVERY != POLYNOMIAL_PER_CANDIDATE_STATE'
+          echo 'P_VS_NP = OPEN'
