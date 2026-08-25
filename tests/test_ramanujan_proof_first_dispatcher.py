@@ -17,9 +17,24 @@ def test_proof_first_stops_after_true_certificate():
     assert receipt["proof_receipt"]["tail_bound_le_requested"] is True
 
 
-def test_function_without_proof_lane_falls_back_but_stays_empirical():
+def test_theta2_is_now_promoted_to_certified_symbolic_lane():
     receipt = proof_first_evaluate(
         "theta2",
+        q="0.2",
+        precision="1e-12",
+        proof_max_terms=128,
+    )
+    assert receipt["status"] == CERTIFIED
+    assert receipt["assurance_class"] == "ANALYTIC_CERTIFIED_ERROR_BOUND"
+    assert receipt["proof_route"]["available"] is True
+    assert receipt["proof_route"]["eligible"] is True
+    assert receipt["empirical_route"]["attempted"] is False
+    assert receipt["proof_receipt"]["certified_object"] == "EXACT_SYMBOLIC_ALGEBRAIC_PARTIAL_SUM_PLUS_RATIONAL_ANALYTIC_TAIL_BOUND"
+
+
+def test_function_without_proof_lane_falls_back_but_stays_empirical():
+    receipt = proof_first_evaluate(
+        "phi_product",
         q=0.2,
         precision="1e-12",
         empirical_start_terms=4,
@@ -82,6 +97,6 @@ def test_failed_proof_with_fallback_disabled_fails_closed():
 
 def test_dispatcher_never_grants_runtime_authority():
     certified = proof_first_evaluate("psi", q="0.5", precision="1e-12")
-    empirical = proof_first_evaluate("theta2", q=0.2, precision="1e-12", empirical_max_terms=128)
+    empirical = proof_first_evaluate("phi_product", q=0.2, precision="1e-12", empirical_max_terms=128)
     assert all(value is False for value in certified["authority"].values())
     assert all(value is False for value in empirical["authority"].values())
