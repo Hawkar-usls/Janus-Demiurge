@@ -1,0 +1,55 @@
+{
+  "artifact_id": "JANUS-SLIME-SEMANTIC-CANDIDATE-SWARM-V3-AMORTIZED",
+  "status": "ORDER_EQUIVALENCE_AND_DISCOVERY_COST_REPAIR_PENDING_PROVIDER",
+  "parent": "JANUS-SLIME-SEMANTIC-CANDIDATE-SWARM-V2",
+  "source_module": "models/slime/slime_semantic_candidate_swarm_v3_amortized.py",
+  "repair_scope": "DISCOVERY_IMPLEMENTATION_AND_COST_ONLY",
+  "portfolio_changes": {
+    "candidate_count_changed": false,
+    "structured_front_parameters_changed": false,
+    "exploration_domain_changed": false,
+    "source_features_changed": false,
+    "runtime_semantic_oracle_added": false,
+    "exact_pswidth_feedback_added": false
+  },
+  "required_equivalence": {
+    "candidate_names": "EXACT_MATCH_V2",
+    "all_16_linear_leaf_orders": "BIT_FOR_BIT_MATCH_V2",
+    "frozen_v10_seed_domain": "906500..906531",
+    "frozen_v11_seed_domain": "907000..907031",
+    "transfer_rule": "If source formula and all candidate orders match v2 exactly, every previously measured exact caterpillar PS-width for those orders transfers identically; no repeated exponential PS probe is scientifically necessary."
+  },
+  "exact_incremental_identities": {
+    "edge_pressure": "cross(S union {u}) = cross(S) + deg(u) - 2*|N(u) intersect S|",
+    "semantic_pressure_state": "Maintain counts of directed crossing group pairs (group(selected endpoint), group(outside endpoint)).",
+    "semantic_trial_delta": [
+      "for neighbor v already in S: decrement (group(v), group(u))",
+      "for neighbor v outside S: increment (group(u), group(v))"
+    ],
+    "semantic_frontier": "number of group-pair counters with positive count"
+  },
+  "complexity_contract": {
+    "r": "number of incidence leaves = variables + clauses",
+    "e": "number of incidence edges = total literal occurrences",
+    "one_trial_candidate": "O(deg(u)) local edge/group-pair work plus O(1) scalar pressure updates",
+    "one_round_all_remaining": "O(e) incident-edge visits up to a constant factor because sum of remaining degrees <= 2e",
+    "one_structured_front": "O(r*e) incident-edge visits plus polynomial ordering overhead",
+    "eight_structured_fronts": "O(r*e) up to frozen constant factor 8",
+    "exploration_fronts": "linear leaf permutations with fixed count 8",
+    "claim": "POLYNOMIAL_DISCOVERY_IMPLEMENTATION_FOR_THIS_FIXED_V2_PORTFOLIO_ONLY"
+  },
+  "accounting_rule": [
+    "shared source incidence index is built and charged once per formula",
+    "every neighbor membership test and group-pair delta is charged",
+    "trace arithmetic and candidate comparison-key evaluation are charged",
+    "no exact PS audit cost is mixed into producer generation cost"
+  ],
+  "authority_firewall": [
+    "ORDER_EQUIVALENT_CHEAPER_DISCOVERY != UNIVERSAL_LOW_PSWIDTH_GUARANTEE",
+    "POLYNOMIAL_DISCOVERY_OF_16_CANDIDATES != POLYNOMIAL_STATE_FOR_ANY_CANDIDATE",
+    "TRANSFERRED_FINITE_V11_WIDTHS != ASYMPTOTIC_THEOREM",
+    "P_VS_NP = OPEN"
+  ],
+  "next_gate_after_pass": "RUNTIME_PROOF_CARRYING_COMPILER_CAP_PER_CANDIDATE",
+  "p_vs_np": "OPEN"
+}
