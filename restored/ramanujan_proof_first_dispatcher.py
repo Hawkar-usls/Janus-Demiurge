@@ -36,14 +36,16 @@ from restored.ramanujan_certified_bounds import (
     certify_q_series,
     certify_ramanujan_f,
 )
+from restored.ramanujan_theta2_certified import certify_theta2
 
-SCHEMA = "janus.ramanujan_proof_first_dispatcher.v1"
+SCHEMA = "janus.ramanujan_proof_first_dispatcher.v2"
 EMPIRICAL_ONLY = "EMPIRICAL_CONVERGENCE_ONLY"
 NO_NUMERICAL_ASSURANCE = "NO_NUMERICAL_ASSURANCE"
 
 CERTIFIED_Q_FUNCTIONS = frozenset(
     {
         "phi",
+        "theta2",
         "theta3",
         "theta4",
         "psi",
@@ -230,7 +232,15 @@ def proof_first_evaluate(
     empirical_receipt: dict[str, Any] | None = None
 
     if route["available"] and route["eligible"]:
-        if function in CERTIFIED_Q_FUNCTIONS:
+        if function == "theta2":
+            proof_receipt = certify_theta2(
+                q=route["q"],
+                abs_error=precision,
+                start_terms=proof_start_terms,
+                max_terms=proof_max_terms,
+                growth=proof_growth,
+            )
+        elif function in CERTIFIED_Q_FUNCTIONS:
             proof_receipt = certify_q_series(
                 function,
                 q=route["q"],
@@ -379,7 +389,8 @@ def canonical_dispatch_suite() -> dict[str, Any]:
     return {
         "schema": SCHEMA,
         "certified_phi": proof_first_evaluate("phi", q="0.9", precision="1e-12"),
-        "empirical_theta2": proof_first_evaluate("theta2", q=0.2, precision="1e-12", empirical_max_terms=256),
+        "certified_theta2": proof_first_evaluate("theta2", q="0.2", precision="1e-12", proof_max_terms=128),
+        "empirical_phi_product": proof_first_evaluate("phi_product", q=0.2, precision="1e-12", empirical_max_terms=256),
         "complex_theta3": proof_first_evaluate("theta3", q=0.6 * complex(math.cos(0.3), math.sin(0.3)), precision="1e-12", empirical_max_terms=256),
         "authority": "MATHEMATICS_ONLY",
     }
