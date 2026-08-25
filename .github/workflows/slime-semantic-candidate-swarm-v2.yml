@@ -1,0 +1,63 @@
+name: Slime Semantic Candidate Swarm v2
+
+on:
+  push:
+    paths:
+      - 'models/slime/slime_semantic_candidate_swarm_v2.py'
+      - 'audits/JANUS_SLIME_SEMANTIC_CANDIDATE_SWARM_V2.json'
+      - '.github/workflows/slime-semantic-candidate-swarm-v2.yml'
+  pull_request:
+    paths:
+      - 'models/slime/slime_semantic_candidate_swarm_v2.py'
+      - 'audits/JANUS_SLIME_SEMANTIC_CANDIDATE_SWARM_V2.json'
+      - '.github/workflows/slime-semantic-candidate-swarm-v2.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  producer-firewall:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile v1 and v2 Slime producers
+        run: |
+          python -m py_compile models/slime/slime_semantic_candidate_router.py
+          python -m py_compile models/slime/slime_semantic_candidate_swarm_v2.py
+      - name: Run v2 selftest
+        run: python models/slime/slime_semantic_candidate_swarm_v2.py
+      - name: Verify multi-front generator firewall
+        run: |
+          python - <<'PY'
+          import inspect
+          from models.slime.slime_semantic_candidate_swarm_v2 import SlimeSemanticCandidateSwarmV2
+          params=list(inspect.signature(SlimeSemanticCandidateSwarmV2.generate_manifest).parameters)
+          assert params==['self','clauses'], params
+          source=inspect.getsource(SlimeSemanticCandidateSwarmV2.generate_manifest)
+          forbidden=['score_candidate(', 'assignment_signatures(', 'ps_cut_value(', 'solve_sat(', 'truth_table(', 'sat_oracle(']
+          for token in forbidden:
+              assert token not in source, token
+          f=((1,2,3),(-1,2,4),(2,-3,5),(-2,4,5),(1,-4,6))
+          r=SlimeSemanticCandidateSwarmV2()
+          a=r.generate_manifest(f); b=r.generate_manifest(f)
+          assert a.manifest_sha256==b.manifest_sha256
+          assert a.artifact_id=='JANUS-SLIME-SEMANTIC-CANDIDATE-SWARM-V2'
+          assert len(a.candidates)==16
+          assert len({c.name for c in a.candidates})==16
+          assert sum(c.name.startswith('MF_HASH_EXPLORE_') for c in a.candidates)==8
+          assert a.feature_certificate['assignment_independent'] is True
+          assert a.feature_certificate['probe_feedback_free'] is True
+          assert a.exact_ps_width_computed_inside_generator is False
+          assert a.sat_oracle_used is False
+          print('SLIME_MULTI_FRONT_GENERATOR_FIREWALL = PASS')
+          print('MANIFEST_SHA256 =', a.manifest_sha256)
+          print('TOTAL_GENERATION_OPS =', a.total_generation_ops)
+          PY
+      - name: Claim ceiling
+        run: |
+          echo 'POLYNOMIAL_CANDIDATE_COUNT != POLYNOMIAL_PER_CANDIDATE_STATE'
+          echo 'BEST_FINITE_FRONT != UNIVERSAL_COMPLETENESS'
+          echo 'P_VS_NP = OPEN'
