@@ -6,12 +6,14 @@ Assurance order:
     CERTIFIED_ERROR_BOUND > EMPIRICAL_CONVERGENCE_ONLY > NO_NUMERICAL_ASSURANCE
 
 Exact complex input must be explicit: ``(re, im)``, ``[re, im]`` or
-``{"re":..., "im":...}``.  Ordinary Python ``complex`` remains empirical so a
+``{"re":..., "im":...}``. Ordinary Python ``complex`` remains empirical so a
 binary floating value is never silently promoted to exact evidence.
 
-Version 5 routes exact Gaussian-rational complex inputs through analytic direct
-series AND product-side certificates wherever implemented.  Complex theta2
-remains outside the certified lane because q^(1/4) still needs branch-aware
+Version 6 routes exact Gaussian-rational complex inputs through analytic direct
+series and product-side certificates over the full exact open unit disk |q|<1.
+The certificate uses exact squared modulus plus the rational AM-GM majorant
+(1+|q|^2)/2, optionally tightened by the L1 majorant. Complex theta2 remains
+outside the certified lane because q^(1/4) still requires branch-aware
 validated algebraic/ball arithmetic.
 """
 
@@ -24,19 +26,16 @@ from restored.ramanujan_adaptive_precision import CONVERGED, NOT_CONVERGED, adap
 from restored.ramanujan_certified_bounds import CERTIFIED, NOT_CERTIFIED, MAX_TERMS, certify_q_series, certify_ramanujan_f
 from restored.ramanujan_theta2_certified import certify_theta2
 from restored.ramanujan_product_certified import certify_phi_product, certify_psi_product, certify_ramanujan_f_product
-from restored.ramanujan_complex_certified import (
-    as_empirical_complex,
-    certify_complex_q_series,
-    certify_complex_ramanujan_f,
-    is_exact_complex_container,
-)
-from restored.ramanujan_complex_product_certified import (
-    certify_complex_phi_product,
-    certify_complex_psi_product,
-    certify_complex_ramanujan_f_product,
+from restored.ramanujan_complex_certified import as_empirical_complex, is_exact_complex_container
+from restored.ramanujan_complex_unit_disk_certified import (
+    certify_complex_q_series_disk,
+    certify_complex_ramanujan_f_disk,
+    certify_complex_phi_product_disk,
+    certify_complex_psi_product_disk,
+    certify_complex_ramanujan_f_product_disk,
 )
 
-SCHEMA = "janus.ramanujan_proof_first_dispatcher.v5"
+SCHEMA = "janus.ramanujan_proof_first_dispatcher.v6"
 EMPIRICAL_ONLY = "EMPIRICAL_CONVERGENCE_ONLY"
 NO_NUMERICAL_ASSURANCE = "NO_NUMERICAL_ASSURANCE"
 
@@ -128,9 +127,9 @@ def _proof_route(function: str, *, q: Any, a: Any, b: Any) -> dict[str, Any]:
             return {
                 "available": True,
                 "eligible": function in COMPLEX_CERTIFIED_Q_FUNCTIONS,
-                "mode": "EXACT_GAUSSIAN_RATIONAL_Q",
+                "mode": "EXACT_GAUSSIAN_RATIONAL_UNIT_DISK_Q",
                 "reason": (
-                    "EXACT_COMPLEX_COMPONENTS_ROUTE_TO_GAUSSIAN_RATIONAL_CERTIFICATE"
+                    "EXACT_COMPLEX_COMPONENTS_ROUTE_TO_FULL_UNIT_DISK_CERTIFICATE"
                     if function in COMPLEX_CERTIFIED_Q_FUNCTIONS
                     else f"NO_EXACT_COMPLEX_CERTIFICATE_IMPLEMENTED_FOR_{function.upper()}"
                 ),
@@ -154,9 +153,9 @@ def _proof_route(function: str, *, q: Any, a: Any, b: Any) -> dict[str, Any]:
             return {
                 "available": True,
                 "eligible": function in COMPLEX_CERTIFIED_GENERAL_FUNCTIONS,
-                "mode": "EXACT_GAUSSIAN_RATIONAL_GENERAL",
+                "mode": "EXACT_GAUSSIAN_RATIONAL_UNIT_DISK_GENERAL",
                 "reason": (
-                    "EXACT_COMPLEX_COMPONENTS_ROUTE_TO_GAUSSIAN_RATIONAL_CERTIFICATE"
+                    "EXACT_COMPLEX_COMPONENTS_ROUTE_TO_FULL_AB_UNIT_DISK_CERTIFICATE"
                     if function in COMPLEX_CERTIFIED_GENERAL_FUNCTIONS
                     else f"NO_EXACT_COMPLEX_CERTIFICATE_IMPLEMENTED_FOR_{function.upper()}"
                 ),
@@ -198,16 +197,16 @@ def _empirical(function: str, *, q: Any, a: Any, b: Any, precision: float, max_t
 
 def _certified_attempt(function: str, *, route: dict[str, Any], precision: Any, start_terms: int, max_terms: int, growth: float) -> dict[str, Any]:
     mode = route["mode"]
-    if mode == "EXACT_GAUSSIAN_RATIONAL_Q":
+    if mode == "EXACT_GAUSSIAN_RATIONAL_UNIT_DISK_Q":
         if function == "phi_product":
-            return certify_complex_phi_product(q=route["q"], abs_error=precision, start_terms=start_terms, max_terms=max_terms, growth=growth)
+            return certify_complex_phi_product_disk(q=route["q"], abs_error=precision, start_terms=start_terms, max_terms=max_terms, growth=growth)
         if function == "psi_product":
-            return certify_complex_psi_product(q=route["q"], abs_error=precision, start_terms=start_terms, max_terms=max_terms, growth=growth)
-        return certify_complex_q_series(function, q=route["q"], abs_error=precision, start_terms=start_terms, max_terms=max_terms, growth=growth)
-    if mode == "EXACT_GAUSSIAN_RATIONAL_GENERAL":
+            return certify_complex_psi_product_disk(q=route["q"], abs_error=precision, start_terms=start_terms, max_terms=max_terms, growth=growth)
+        return certify_complex_q_series_disk(function, q=route["q"], abs_error=precision, start_terms=start_terms, max_terms=max_terms, growth=growth)
+    if mode == "EXACT_GAUSSIAN_RATIONAL_UNIT_DISK_GENERAL":
         if function == "ramanujan_f_product":
-            return certify_complex_ramanujan_f_product(a=route["a"], b=route["b"], abs_error=precision, start_terms=start_terms, max_terms=max_terms, growth=growth)
-        return certify_complex_ramanujan_f(a=route["a"], b=route["b"], abs_error=precision, start_terms=start_terms, max_terms=max_terms, growth=growth)
+            return certify_complex_ramanujan_f_product_disk(a=route["a"], b=route["b"], abs_error=precision, start_terms=start_terms, max_terms=max_terms, growth=growth)
+        return certify_complex_ramanujan_f_disk(a=route["a"], b=route["b"], abs_error=precision, start_terms=start_terms, max_terms=max_terms, growth=growth)
     if function == "theta2":
         return certify_theta2(q=route["q"], abs_error=precision, start_terms=start_terms, max_terms=max_terms, growth=growth)
     if function == "phi_product":
@@ -266,6 +265,7 @@ def proof_first_evaluate(
                     "PROOF_FIRST",
                     "CERTIFIED_ERROR_BOUND_GT_EMPIRICAL_CONVERGENCE",
                     "EXACT_COMPLEX_INPUT_MUST_BE_EXPLICIT_NOT_INFERRED_FROM_PYTHON_COMPLEX_FLOAT",
+                    "FULL_EXACT_OPEN_UNIT_DISK_CERTIFICATE_GT_L1_DIAMOND_ONLY_CERTIFICATE",
                     "EMPIRICAL_CONVERGENCE_MUST_NEVER_PROMOTE_ITSELF_TO_CERTIFICATE",
                     "NUMERICAL_ASSURANCE_NE_RUNTIME_AUTHORITY",
                 ],
@@ -316,8 +316,9 @@ def canonical_dispatch_suite() -> dict[str, Any]:
         "certified_phi": proof_first_evaluate("phi", q="0.9", precision="1e-12"),
         "certified_theta2_real": proof_first_evaluate("theta2", q="0.2", precision="1e-12", proof_max_terms=128),
         "certified_complex_theta3": proof_first_evaluate("theta3", q=("0.3", "0.2"), precision="1e-12", proof_max_terms=128),
-        "certified_complex_phi_product": proof_first_evaluate("phi_product", q=("0.3", "0.2"), precision="1e-12", proof_max_terms=128),
-        "certified_complex_general_product": proof_first_evaluate("ramanujan_f_product", a=("0.2", "0.1"), b=("0.3", "-0.05"), precision="1e-12", proof_max_terms=128),
+        "certified_complex_old_l1_hole": proof_first_evaluate("theta3", q=("0.8", "0.3"), precision="1e-12", proof_max_terms=128),
+        "certified_complex_phi_product": proof_first_evaluate("phi_product", q=("0.8", "0.3"), precision="1e-12", proof_max_terms=256),
+        "certified_complex_general_product": proof_first_evaluate("ramanujan_f_product", a=("0.8", "0.6"), b=("0.5", "-0.4"), precision="1e-12", proof_max_terms=256),
         "python_complex_empirical": proof_first_evaluate("theta3", q=0.3 + 0.2j, precision="1e-12", empirical_max_terms=256),
         "authority": "MATHEMATICS_ONLY",
     }
