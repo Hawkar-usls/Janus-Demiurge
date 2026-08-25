@@ -1,4 +1,4 @@
-from restored.archivist_memory_graph_projector import project_rows
+from restored.archivist_memory_graph_projector import project_rows, derive_checkpoint
 
 
 def test_digest_tombstone_overrides_source_class_and_preserves_boundary():
@@ -19,6 +19,7 @@ def test_existing_and_trivial_rows_are_skipped_and_checkpoint_advances():
         (3, "FILE:test", "file memory", ""),
     ], existing_node_ids=["MEM_1"])
     assert r["checkpoint_max_memory_id"] == 3
+    assert r["existing_checkpoint"]["checkpoint_max_memory_id"] == 1
     assert [x["id"] for x in r["skipped"]] == [1, 2]
     assert [x["id"] for x in r["nodes_to_append"]] == ["MEM_3"]
 
@@ -35,3 +36,12 @@ def test_reply_edge_is_explicit_and_projection_is_deterministic():
     assert links["MEM_10"] == "CORE"
     assert links["MEM_11"] == "MEM_10"
     assert "EXPLICIT_REPLY_EDGE_NE_POSITIONAL_PREVIOUS_NODE_HEURISTIC" in a["laws"]
+
+
+def test_checkpoint_derivation_recognizes_only_mem_numeric_ids():
+    r = derive_checkpoint(["MEM_2", "MEM_19", "MEM_x", "CORE", "mem_99", "MEM_0007"])
+    assert r["checkpoint_max_memory_id"] == 19
+    assert r["recognized_node_ids"] == ["MEM_0007", "MEM_19", "MEM_2"]
+    assert r["ignored_node_ids"] == ["CORE", "MEM_x", "mem_99"]
+    assert r["authority"]["reads_database"] is False
+    assert r["authority"]["writes_graph"] is False
