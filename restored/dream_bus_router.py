@@ -1,7 +1,9 @@
 from __future__ import annotations
-import hashlib, json, os, tempfile
+import hashlib, json
 from pathlib import Path
 from typing import Any, Iterable
+
+from restored.artifact_io import atomic_write_text
 
 SCHEMA = "janus.dream_bus.envelope.v1"
 BLUEPRINT_TYPES = {"NEW_MODULE_BLUEPRINT","NEW_MODULE_IDEA","CODE_GENERATION"}
@@ -39,7 +41,7 @@ def route_events(events: Iterable[Any], source: str = "unknown") -> dict[str, li
         lanes[env["lane"]].append(env)
     return lanes
 
-def route_file(input_path: str | os.PathLike[str], output_path: str | os.PathLike[str], source: str = "legacy_dreams_json") -> dict[str, Any]:
+def route_file(input_path: str | Path, output_path: str | Path, source: str = "legacy_dreams_json") -> dict[str, Any]:
     src, dst = Path(input_path), Path(output_path)
     if src.resolve() == dst.resolve():
         raise ValueError("output must differ from input; source bus is immutable")
@@ -56,16 +58,10 @@ def route_file(input_path: str | os.PathLike[str], output_path: str | os.PathLik
         "lane_counts": {k: len(v) for k, v in lanes.items()},
         "lanes": lanes,
         "destructive_consume": False,
+        "output_authority": "SCOPED_OUTPUT_ARTIFACT_WRITE_ONLY",
     }
-    dst.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(prefix=dst.name+".", dir=str(dst.parent))
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(receipt, f, ensure_ascii=False, sort_keys=True, indent=2)
-            f.write("\n")
-        os.replace(tmp, dst)
-    finally:
-        if os.path.exists(tmp): os.unlink(tmp)
+    encoded = json.dumps(receipt, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
+    atomic_write_text(dst, encoded, immutable_sources=[src])
     after = hashlib.sha256(src.read_bytes()).hexdigest()
     if before != after: raise RuntimeError("source bus changed during routing")
     return receipt
