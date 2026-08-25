@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import importlib.util
 from pathlib import Path
+import sys
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -14,7 +15,14 @@ def load_module(name: str, relpath: str):
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot import {path}")
     mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
+    # dataclasses and other runtime introspection expect the module to be
+    # registered while its class bodies are executed.
+    sys.modules[name] = mod
+    try:
+        spec.loader.exec_module(mod)
+    except Exception:
+        sys.modules.pop(name, None)
+        raise
     return mod
 
 
