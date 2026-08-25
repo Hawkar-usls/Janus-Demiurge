@@ -17,34 +17,28 @@ def test_proof_first_stops_after_true_certificate():
     assert receipt["proof_receipt"]["tail_bound_le_requested"] is True
 
 
-def test_theta2_is_now_promoted_to_certified_symbolic_lane():
+def test_theta2_is_promoted_to_certified_symbolic_lane():
     receipt = proof_first_evaluate(
-        "theta2",
-        q="0.2",
-        precision="1e-12",
-        proof_max_terms=128,
+        "theta2", q="0.2", precision="1e-12", proof_max_terms=128,
     )
     assert receipt["status"] == CERTIFIED
     assert receipt["assurance_class"] == "ANALYTIC_CERTIFIED_ERROR_BOUND"
-    assert receipt["proof_route"]["available"] is True
     assert receipt["proof_route"]["eligible"] is True
     assert receipt["empirical_route"]["attempted"] is False
     assert receipt["proof_receipt"]["certified_object"] == "EXACT_SYMBOLIC_ALGEBRAIC_PARTIAL_SUM_PLUS_RATIONAL_ANALYTIC_TAIL_BOUND"
 
 
-def test_function_without_proof_lane_falls_back_but_stays_empirical():
-    receipt = proof_first_evaluate(
-        "phi_product",
-        q=0.2,
-        precision="1e-12",
-        empirical_start_terms=4,
-        empirical_max_terms=128,
-    )
-    assert receipt["status"] == CONVERGED
-    assert receipt["assurance_class"] == EMPIRICAL_ONLY
-    assert receipt["proof_route"]["available"] is False
-    assert receipt["empirical_route"]["attempted"] is True
-    assert receipt["proof_receipt"] is None
+def test_product_representations_are_now_certified_first():
+    receipts = [
+        proof_first_evaluate("phi_product", q="0.5", precision="1e-12", proof_max_terms=128),
+        proof_first_evaluate("psi_product", q="0.5", precision="1e-12", proof_max_terms=128),
+        proof_first_evaluate("ramanujan_f_product", a="0.2", b="0.3", precision="1e-12", proof_max_terms=128),
+    ]
+    for receipt in receipts:
+        assert receipt["status"] == CERTIFIED
+        assert receipt["assurance_class"] == "ANALYTIC_CERTIFIED_ERROR_BOUND"
+        assert receipt["proof_receipt"]["error_bound_le_requested"] is True
+        assert receipt["empirical_route"]["attempted"] is False
 
 
 def test_complex_q_cannot_enter_real_certificate_lane():
@@ -62,6 +56,21 @@ def test_complex_q_cannot_enter_real_certificate_lane():
     assert receipt["proof_route"]["eligible"] is False
     assert "COMPLEX_INPUT" in receipt["proof_route"]["reason"]
     assert receipt["empirical_route"]["attempted"] is True
+
+
+def test_theta2_negative_real_is_domain_ineligible_for_certificate_and_falls_back():
+    receipt = proof_first_evaluate(
+        "theta2",
+        q=-0.2,
+        precision="1e-12",
+        empirical_start_terms=4,
+        empirical_max_terms=128,
+    )
+    assert receipt["proof_route"]["available"] is True
+    assert receipt["proof_route"]["eligible"] is False
+    assert "THETA2_CERTIFICATE_REQUIRES" in receipt["proof_route"]["reason"]
+    assert receipt["status"] == CONVERGED
+    assert receipt["assurance_class"] == EMPIRICAL_ONLY
 
 
 def test_failed_proof_budget_can_fall_back_without_claim_upgrade():
@@ -96,7 +105,7 @@ def test_failed_proof_with_fallback_disabled_fails_closed():
 
 
 def test_dispatcher_never_grants_runtime_authority():
-    certified = proof_first_evaluate("psi", q="0.5", precision="1e-12")
-    empirical = proof_first_evaluate("phi_product", q=0.2, precision="1e-12", empirical_max_terms=128)
+    certified = proof_first_evaluate("psi_product", q="0.5", precision="1e-12", proof_max_terms=128)
+    empirical = proof_first_evaluate("theta3", q=0.6 + 0.1j, precision="1e-12", empirical_max_terms=256)
     assert all(value is False for value in certified["authority"].values())
     assert all(value is False for value in empirical["authority"].values())
