@@ -12,11 +12,13 @@ on:
       - 'janus_core/convergence_engine.py'
       - 'janus_genesis/demiurge.py'
       - 'tools/demiurge_scout_swarm.py'
+      - 'restored/**'
       - 'protocol/DEMIURGE_SPIRAL_EVOLUTION-v1.json'
       - 'protocol/SWARM_GENOME_LEDGER-v1.json'
       - 'scout_swarm/SCOUT_SWARM_MANIFEST-v1.json'
       - 'tests/test_spiral_evolution.py'
       - 'tests/test_swarm_genome_ledger.py'
+      - 'tests/test_restored_*.py'
       - '.github/workflows/demiurge-spiral-contract.yml'
   push:
     branches: [main]
@@ -30,11 +32,14 @@ on:
       - 'janus_core/convergence_engine.py'
       - 'janus_genesis/demiurge.py'
       - 'tools/demiurge_scout_swarm.py'
+      - 'restored/**'
       - 'protocol/DEMIURGE_SPIRAL_EVOLUTION-v1.json'
       - 'protocol/SWARM_GENOME_LEDGER-v1.json'
       - 'scout_swarm/SCOUT_SWARM_MANIFEST-v1.json'
       - 'tests/test_spiral_evolution.py'
       - 'tests/test_swarm_genome_ledger.py'
+      - 'tests/test_restored_*.py'
+      - '.github/workflows/demiurge-spiral-contract.yml'
 
 permissions:
   contents: read
@@ -47,9 +52,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install test dependency
-        run: python -m pip install --disable-pip-version-check numpy
-      - name: Compile migrated modules
+      - name: Install test dependencies
+        run: python -m pip install --disable-pip-version-check numpy pytest
+      - name: Compile migrated and restored modules
         run: |
           python -m py_compile \
             spiral_evolution.py \
@@ -61,8 +66,11 @@ jobs:
             janus_core/convergence_engine.py \
             janus_genesis/demiurge.py \
             tools/demiurge_scout_swarm.py
+          python -m compileall -q restored
       - name: Run spiral and genome regression suite
         run: python -m unittest discover -s tests -p 'test_*spiral*.py' && python -m unittest discover -s tests -p 'test_swarm_genome_ledger.py'
+      - name: Run restored authority membrane
+        run: python -m pytest -q tests/test_restored_authority_membrane.py
       - name: Run Scout spiral self-test
         run: python tools/demiurge_scout_swarm.py --self-test
       - name: Validate machine-readable contracts
