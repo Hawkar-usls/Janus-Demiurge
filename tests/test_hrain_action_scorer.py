@@ -12,7 +12,8 @@ def test_scores_direct_and_edge_evidence_without_mutation_authority():
     assert r["status"]=="PROPOSAL"
     assert r["selected_action"]=="EXPLORE"
     assert r["scores"]["EXPLORE"]==2.0
-    assert r["scores"]["EXPLOIT"]==0.8
+    assert r["scores"]["EXPLOIT"]==0.9
+    assert len(r["evidence"]["EXPLOIT"])==2
     assert r["authority"]["executes_action"] is False
     assert r["authority"]["mutates_graph"] is False
 
