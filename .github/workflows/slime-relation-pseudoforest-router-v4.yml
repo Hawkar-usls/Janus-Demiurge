@@ -1,0 +1,68 @@
+name: Slime Relation Pseudoforest Router v4
+
+on:
+  push:
+    paths:
+      - 'models/slime/slime_semantic_candidate_router.py'
+      - 'models/slime/slime_semantic_candidate_router_v2.py'
+      - 'models/slime/slime_semantic_candidate_router_v3.py'
+      - 'models/slime/slime_semantic_candidate_router_v4.py'
+      - '.github/workflows/slime-relation-pseudoforest-router-v4.yml'
+  pull_request:
+    paths:
+      - 'models/slime/slime_semantic_candidate_router.py'
+      - 'models/slime/slime_semantic_candidate_router_v2.py'
+      - 'models/slime/slime_semantic_candidate_router_v3.py'
+      - 'models/slime/slime_semantic_candidate_router_v4.py'
+      - '.github/workflows/slime-relation-pseudoforest-router-v4.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  candidate-generator-v4:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile Slime semantic routers
+        run: |
+          python -m py_compile models/slime/slime_semantic_candidate_router.py
+          python -m py_compile models/slime/slime_semantic_candidate_router_v2.py
+          python -m py_compile models/slime/slime_semantic_candidate_router_v3.py
+          python -m py_compile models/slime/slime_semantic_candidate_router_v4.py
+      - name: Run v4 self-test
+        run: python models/slime/slime_semantic_candidate_router_v4.py
+      - name: Verify generator-verifier firewall
+        run: |
+          python - <<'PY'
+          import inspect
+          from models.slime.slime_semantic_candidate_router_v4 import SlimeRelationPseudoforestCandidateRouter
+          params=list(inspect.signature(SlimeRelationPseudoforestCandidateRouter.generate_manifest).parameters)
+          assert params==['self','clauses'], params
+          source=inspect.getsource(SlimeRelationPseudoforestCandidateRouter.generate_manifest)
+          for token in ['assignment_signatures(', 'ps_cut_signatures(', 'truth_table(', 'solve_sat(', 'sat_oracle(']:
+              assert token not in source, token
+          formula=((1,2,-3),(-2,-3,4),(-3,-4,-5),(1,4,-3),(5,2,-1),(-4,-5,-1),(-4,2,5))
+          m=SlimeRelationPseudoforestCandidateRouter().generate_manifest(formula)
+          assert m.artifact_id=='JANUS-SLIME-SEMANTIC-CANDIDATE-MANIFEST-V4'
+          assert len(m.candidates)==7
+          assert m.candidates[-1].name=='SLIME_RELATION_PSEUDOFOREST_PRESSURE'
+          assert m.exact_ps_width_computed_inside_generator is False
+          assert m.sat_oracle_used is False
+          theorem=m.feature_certificate['relation_pseudoforest_theorem']
+          assert theorem['at_most_one_cycle_per_component'] is True
+          assert theorem['unicyclic_count_by_break_edge_and_endpoint_conditioning'] is True
+          assert theorem['arbitrary_relation_graph_counting_admitted'] is False
+          print('SLIME_RELATION_PSEUDOFOREST_V4_FIREWALL = PASS')
+          print('MANIFEST_SHA256 =',m.manifest_sha256)
+          print('TOTAL_GENERATION_OPS =',m.total_generation_ops)
+          PY
+      - name: Claim ceiling
+        run: |
+          echo 'PSEUDOFOREST_RELATION_CAP = CERTIFIED UPPER BOUND ONLY'
+          echo 'ARBITRARY_RELATION_GRAPH_COUNTING NOT ADMITTED'
+          echo 'SLIME_V4_PROPOSAL != DECOMPOSITION_PROOF'
+          echo 'P_VS_NP = OPEN'
