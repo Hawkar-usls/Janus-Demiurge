@@ -1,0 +1,73 @@
+name: Slime Neighborhood Cluster Tree v5
+
+on:
+  push:
+    paths:
+      - 'models/slime/slime_neighborhood_cluster_tree_v5.py'
+      - 'audits/JANUS_SLIME_NEIGHBORHOOD_CLUSTER_TREE_V5.json'
+      - '.github/workflows/slime-neighborhood-cluster-tree-v5.yml'
+  pull_request:
+    paths:
+      - 'models/slime/slime_neighborhood_cluster_tree_v5.py'
+      - 'audits/JANUS_SLIME_NEIGHBORHOOD_CLUSTER_TREE_V5.json'
+      - '.github/workflows/slime-neighborhood-cluster-tree-v5.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  source-driven-tree-producer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile producer
+        run: |
+          python -m py_compile models/slime/slime_neighborhood_cluster_tree_v5.py
+      - name: Run deterministic selftest
+        run: python models/slime/slime_neighborhood_cluster_tree_v5.py
+      - name: Verify generator firewall and exact leaf coverage
+        run: |
+          python - <<'PY'
+          import inspect, random
+          from models.slime.slime_neighborhood_cluster_tree_v5 import SlimeNeighborhoodClusterTreeV5, tree_leaves, VARIANTS
+
+          assert list(inspect.signature(SlimeNeighborhoodClusterTreeV5.generate_manifest).parameters)==['self','clauses']
+          source=inspect.getsource(SlimeNeighborhoodClusterTreeV5.generate_manifest)
+          for token in ['score_candidate(', 'solve_sat(', 'sat_oracle(', 'truth_table(', 'assignment_signatures(']:
+              assert token not in source, token
+
+          def dense(seed,n,m):
+              rng=random.Random(seed); clauses=[]
+              for start in range(1,n-1):
+                  vs=[start,start+1,start+2]
+                  clauses.append(tuple(v if rng.getrandbits(1) else -v for v in vs))
+              seen={tuple(sorted(c,key=lambda x:(abs(x),x<0))) for c in clauses}
+              while len(clauses)<m:
+                  vs=rng.sample(range(1,n+1),3)
+                  c=tuple(v if rng.getrandbits(1) else -v for v in vs)
+                  key=tuple(sorted(c,key=lambda x:(abs(x),x<0)))
+                  if key in seen: continue
+                  seen.add(key); clauses.append(c)
+              return tuple(clauses)
+
+          producer=SlimeNeighborhoodClusterTreeV5()
+          formulas=[dense(909010,10,42),dense(910010,10,42),dense(910016,16,67)]
+          for formula in formulas:
+              a=producer.generate_manifest(formula); b=producer.generate_manifest(formula)
+              assert a.manifest_sha256==b.manifest_sha256
+              assert len(a.candidates)==len(VARIANTS)==5
+              expected=sorted([f'v:{i}' for i in range(1,max(abs(l) for c in formula for l in c)+1)] + [f'c:{i}' for i in range(len(formula))])
+              for candidate in a.candidates:
+                  assert sorted(tree_leaves(candidate.tree))==expected
+                  assert candidate.merge_count==len(expected)-1
+          print('SLIME_V5_SOURCE_DRIVEN_TREE_FIREWALL = PASS')
+          print('FORMULAS_CHECKED =',len(formulas))
+          PY
+      - name: Claim ceiling
+        run: |
+          echo 'SOURCE_NEIGHBORHOOD_TREE != LOW_PSWIDTH_CERTIFICATE'
+          echo 'POLYNOMIAL_TREE_DISCOVERY != UNIVERSAL_Q1_COMPLETENESS'
+          echo 'P_VS_NP = OPEN'
