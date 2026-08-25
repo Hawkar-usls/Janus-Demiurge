@@ -1,0 +1,31 @@
+name: Slime Log Feedback Router v5 Debug
+
+on:
+  push:
+    paths:
+      - '.github/workflows/slime-log-feedback-router-v5-debug.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  debug-calibration-counts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Print unchanged 910000 calibration counts
+        run: |
+          python - <<'PY'
+          from models.slime.slime_semantic_candidate_router_v5 import (
+              v1, log_feedback_relation_signature_cap,
+          )
+          formula=((1,2,-3),(2,3,5),(1,4,5),(1,-3,-5),(1,4,-3),(2,4,-5),(-4,5,-2))
+          cnf=v1.canonical_cnf(formula)
+          prefix={'c:0','v:2','c:4','v:5','c:3'}
+          for leaf in ['c:5','c:6','v:4']:
+              r=log_feedback_relation_signature_cap(cnf,prefix|{leaf})
+              print(leaf,r)
+          PY
