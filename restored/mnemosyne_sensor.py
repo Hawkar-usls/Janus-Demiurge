@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Iterable, Any
 
 SCHEMA="janus.mnemosyne.manifest.v1"
+STABILITY_SCHEMA="janus.mnemosyne.stability.v1"
 DEFAULT_SUFFIXES=(".py",".json",".md",".txt",".yml",".yaml")
 
 def sha256_file(path: Path) -> str:
@@ -34,6 +35,33 @@ def compare(old: dict[str,Any], new: dict[str,Any]) -> dict[str,list[str]]:
       "removed_observed":sorted(set(a)-set(b)),
       "changed":sorted(p for p in set(a)&set(b) if a[p]!=b[p]),
       "unchanged":sorted(p for p in set(a)&set(b) if a[p]==b[p]),
+    }
+
+def classify_stability(old: dict[str,Any], new: dict[str,Any], hot_start_threshold: float=0.80) -> dict[str,Any]:
+    diff=compare(old,new)
+    current_count=len(new.get("files",[]))
+    stable_count=len(diff["unchanged"])
+    stability=(stable_count/current_count) if current_count else 1.0
+    drift=bool(diff["added"] or diff["removed_observed"] or diff["changed"])
+    hot_hint=(stability>hot_start_threshold and not diff["changed"] and not diff["added"])
+    return {
+      "schema":STABILITY_SCHEMA,
+      "old_manifest_sha256":old.get("manifest_sha256"),
+      "new_manifest_sha256":new.get("manifest_sha256"),
+      "trusted":diff["unchanged"],
+      "dirty":diff["changed"],
+      "new":diff["added"],
+      "removed_observed":diff["removed_observed"],
+      "stability_fraction":round(stability,12),
+      "drift_observed":drift,
+      "hot_start_hint":hot_hint,
+      "authority":{
+        "skip_security_checks":False,
+        "skip_integrity_checks":False,
+        "auto_trust_changed_code":False,
+        "schedule_expensive_reanalysis_hint_only":True
+      },
+      "law":"HOT_START_HINT != PERMISSION_TO_SKIP_SECURITY_OR_INTEGRITY_GATES"
     }
 
 def write_manifest(manifest: dict[str,Any], path: str|Path) -> None:
