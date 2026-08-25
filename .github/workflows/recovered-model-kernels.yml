@@ -1,0 +1,37 @@
+name: Recovered Model Kernels
+
+on:
+  push:
+    paths:
+      - 'models/slime/**'
+      - 'models/trinity/**'
+      - 'tests/test_recovered_slime_trinity.py'
+      - '.github/workflows/recovered-model-kernels.yml'
+  pull_request:
+    paths:
+      - 'models/slime/**'
+      - 'models/trinity/**'
+      - 'tests/test_recovered_slime_trinity.py'
+      - '.github/workflows/recovered-model-kernels.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Compile recovered kernels
+        run: |
+          python -m py_compile models/slime/slime_quantization_kernel.py
+          python -m py_compile models/trinity/trinity_core.py
+      - name: Run recovery regression tests
+        run: python -m unittest -v tests/test_recovered_slime_trinity.py
