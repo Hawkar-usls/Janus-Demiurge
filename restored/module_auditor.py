@@ -4,8 +4,22 @@ from typing import Any
 
 SCHEMA="janus.module_audit.receipt.v1"
 FORBIDDEN_IMPORT_ROOTS={"subprocess","socket","ctypes"}
-FORBIDDEN_CALLS={"eval","exec","compile","__import__","os.system","os.popen"}
+FORBIDDEN_CALLS={
+    "eval","exec","compile","__import__","input",
+    "os.system","os.popen","sys.exit","shutil.rmtree",
+    "subprocess.call","subprocess.Popen"
+}
 BARE_MARKERS={"python","py"}
+
+def _call_name(node: ast.Call) -> str|None:
+    if isinstance(node.func,ast.Name): return node.func.id
+    if isinstance(node.func,ast.Attribute):
+        parts=[]; cur=node.func
+        while isinstance(cur,ast.Attribute):
+            parts.append(cur.attr); cur=cur.value
+        if isinstance(cur,ast.Name):
+            parts.append(cur.id); return ".".join(reversed(parts))
+    return None
 
 def audit_source(source:str)->dict[str,Any]:
     sha=hashlib.sha256(source.encode("utf-8")).hexdigest()
@@ -27,10 +41,7 @@ def audit_source(source:str)->dict[str,Any]:
                 if name in FORBIDDEN_IMPORT_ROOTS:
                     findings.append({"kind":"FORBIDDEN_IMPORT","name":name,"line":getattr(node,"lineno",None)})
         if isinstance(node,ast.Call):
-            fn=None
-            if isinstance(node.func,ast.Name): fn=node.func.id
-            elif isinstance(node.func,ast.Attribute) and isinstance(node.func.value,ast.Name):
-                fn=f"{node.func.value.id}.{node.func.attr}"
+            fn=_call_name(node)
             if fn in FORBIDDEN_CALLS:
                 findings.append({"kind":"FORBIDDEN_CALL","name":fn,"line":getattr(node,"lineno",None)})
         if isinstance(node,ast.Expr) and isinstance(node.value,ast.Name) and node.value.id in BARE_MARKERS:
