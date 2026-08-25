@@ -1,0 +1,90 @@
+name: Slime Balanced Branch Tree v4
+
+on:
+  push:
+    paths:
+      - 'models/slime/slime_balanced_branch_tree_v4.py'
+      - 'audits/JANUS_SLIME_BALANCED_BRANCH_TREE_V4.json'
+      - '.github/workflows/slime-balanced-branch-tree-v4.yml'
+  pull_request:
+    paths:
+      - 'models/slime/slime_balanced_branch_tree_v4.py'
+      - 'audits/JANUS_SLIME_BALANCED_BRANCH_TREE_V4.json'
+      - '.github/workflows/slime-balanced-branch-tree-v4.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  topology-only-producer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile Slime producer lineage
+        run: |
+          python -m py_compile models/slime/slime_semantic_candidate_router.py
+          python -m py_compile models/slime/slime_semantic_candidate_swarm_v2.py
+          python -m py_compile models/slime/slime_semantic_candidate_swarm_v3_amortized.py
+          python -m py_compile models/slime/slime_balanced_branch_tree_v4.py
+      - name: Run v4 selftest
+        run: python models/slime/slime_balanced_branch_tree_v4.py
+      - name: Verify topology-only transformation on frozen calibration sources
+        run: |
+          python - <<'PY'
+          import random
+          from models.slime.slime_semantic_candidate_swarm_v3_amortized import SlimeSemanticCandidateSwarmV3Amortized
+          from models.slime.slime_balanced_branch_tree_v4 import SlimeBalancedBranchTreeV4, tree_leaves, tree_height
+
+          def dense(seed,n,m):
+              rng=random.Random(seed); clauses=[]
+              for start in range(1,n-1):
+                  vs=[start,start+1,start+2]
+                  clauses.append(tuple(v if rng.getrandbits(1) else -v for v in vs))
+              seen={tuple(sorted(c,key=lambda x:(abs(x),x<0))) for c in clauses}
+              while len(clauses)<m:
+                  vs=rng.sample(range(1,n+1),3)
+                  c=tuple(v if rng.getrandbits(1) else -v for v in vs)
+                  key=tuple(sorted(c,key=lambda x:(abs(x),x<0)))
+                  if key in seen: continue
+                  seen.add(key); clauses.append(c)
+              return tuple(clauses)
+
+          v3=SlimeSemanticCandidateSwarmV3Amortized()
+          v4=SlimeBalancedBranchTreeV4()
+          checked=0
+          for n,m,seed in [(10,42,909010),(12,50,909012),(16,67,909016),(20,84,909020)]:
+              f=dense(seed,n,m)
+              old=v3.generate_manifest(f)
+              new=v4.generate_manifest(f)
+              old_orders={c.name:tuple(c.linear_leaf_order) for c in old.candidates}
+              new_orders={c.name:tuple(c.leaf_order) for c in new.candidates}
+              assert old_orders==new_orders
+              assert new.source_v3_manifest_sha256==old.manifest_sha256
+              for c in new.candidates:
+                  assert tree_leaves(c.tree)==c.leaf_order
+                  r=len(c.leaf_order)
+                  assert c.topology_generation_ops==2*r-1
+                  assert tree_height(c.tree)<= (r-1).bit_length()
+              checked += 1
+          print('SLIME_V4_TOPOLOGY_ONLY_TRANSFORM = PASS')
+          print('CALIBRATION_SOURCES_CHECKED =',checked)
+          PY
+      - name: Verify generator firewall
+        run: |
+          python - <<'PY'
+          import inspect
+          from models.slime.slime_balanced_branch_tree_v4 import SlimeBalancedBranchTreeV4
+          assert list(inspect.signature(SlimeBalancedBranchTreeV4.generate_manifest).parameters)==['self','clauses']
+          source=inspect.getsource(SlimeBalancedBranchTreeV4.generate_manifest)
+          for token in ['pswidth','score_candidate(', 'solve_sat(', 'sat_oracle(', 'truth_table(']:
+              assert token not in source.lower() if token=='pswidth' else token not in source
+          print('SLIME_V4_GENERATOR_FIREWALL = PASS')
+          PY
+      - name: Claim ceiling
+        run: |
+          echo 'BALANCED_TOPOLOGY != LOW_PSWIDTH_CERTIFICATE'
+          echo 'V13_RIGHT_LINEAR_FAILURE != BALANCED_TREE_FAILURE'
+          echo 'P_VS_NP = OPEN'
