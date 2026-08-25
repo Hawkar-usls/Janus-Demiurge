@@ -1,0 +1,51 @@
+{
+  "artifact_id": "JANUS-SLIME-NEIGHBORHOOD-CLUSTER-TREE-V5",
+  "status": "SOURCE_DRIVEN_NONCONTIGUOUS_TREE_PRODUCER_FROZEN_BEFORE_FRESH_VALIDATION",
+  "source_module": "models/slime/slime_neighborhood_cluster_tree_v5.py",
+  "motivation": "PF5 v13 and v14 exhausted q=1 for both right-linear and simple balanced-contiguous transforms on dense connected 3-CNF; the next axis is source-driven non-contiguous incidence partitioning.",
+  "candidate_variants": [
+    "NCT_COMMON_NEIGHBORS",
+    "NCT_JACCARD_NEIGHBORS",
+    "NCT_SYMDIFF_NEIGHBORS",
+    "NCT_SIGNED_JACCARD",
+    "NCT_HYBRID_SIGNED_ADJACENCY"
+  ],
+  "algorithm": "deterministic agglomerative average-linkage over incidence leaves with exact source-only pair similarities and incremental cluster cross-sum updates",
+  "source_features": [
+    "incidence adjacency",
+    "common-neighbor overlap",
+    "Jaccard neighborhood overlap",
+    "symmetric-difference neighborhood distance",
+    "signed literal-incidence token overlap",
+    "direct variable-clause adjacency in hybrid variant"
+  ],
+  "complexity_contract": {
+    "pairwise_leaf_similarity_precompute": "O(r^2 * source_feature_cost)",
+    "agglomerative_pair_selection": "O(r^3) pair comparisons per fixed variant",
+    "cluster_similarity_update": "O(r^2) exact cross-sum updates",
+    "fixed_variants": 5,
+    "overall": "POLYNOMIAL_SOURCE_ONLY_CANDIDATE_DISCOVERY"
+  },
+  "firewall": {
+    "assignment_independent": true,
+    "pswidth_inside_generator": false,
+    "sat_oracle": false,
+    "truth_table": false,
+    "cap_feedback": false,
+    "probe_feedback": false,
+    "post_probe_tree_rotation": false
+  },
+  "fresh_validation_rule": {
+    "q": 1,
+    "seed_domain": "TOPA PF5 v15 911xxx dense connected 3-CNF",
+    "producer_must_be_pinned_before_seed_probe": true,
+    "outcome_neutral_ci": true
+  },
+  "authority_firewall": [
+    "NEIGHBORHOOD_CLUSTERING != LOW_PSWIDTH_PROOF",
+    "FINITE_Q1_RECOVERY != UNIVERSAL_Q1_COMPLETENESS",
+    "FINITE_Q1_FAILURE != ARBITRARY_BRANCH_DECOMPOSITION_LOWER_BOUND",
+    "P_VS_NP = OPEN"
+  ],
+  "p_vs_np": "OPEN"
+}
