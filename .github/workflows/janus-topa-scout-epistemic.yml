@@ -55,6 +55,10 @@ jobs:
           assert protocol['status']=='ACTIVE_REQUIRED_ALL_SCOUTS'
           assert protocol['applies_to_every_scout'] is True
           assert protocol['scout_count_expected']==17
+          hard=set(protocol['hard_rules'])
+          assert 'NO_POST_HOC_REDEFINITION_TO_SAVE_A_FAILED_PREDICTION' in hard
+          assert 'FAILED_RUNS_AND_NEGATIVE_RESULTS_MUST_SURVIVE' in hard
+          assert 'I_DO_NOT_KNOW_IS_A_VALID_OUTPUT' in hard
 
           assert manifest['agent_count']==17 and len(manifest['agents'])==17
           shared={p['id']:p for p in manifest['shared_epistemic_protocols']}
@@ -106,7 +110,6 @@ jobs:
               assert 'falsifier' in lower or 'disconfirmation' in lower
               assert 'independence' in lower
               assert 'multiplicity' in lower
-              assert 'post-hoc' in lower
               assert 'I_DO_NOT_KNOW' in text
 
           assert len(ids)==17 and len(paths)==17
