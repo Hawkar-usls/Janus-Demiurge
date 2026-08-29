@@ -1,0 +1,81 @@
+name: JANUS Activator Dispatch Receiver
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'protocol/ACTIVATOR_DISPATCH_RECEIVER-v0.1.json'
+      - 'tools/activator_dispatch_receiver.py'
+      - 'tests/test_activator_dispatch_receiver.py'
+      - '.github/workflows/janus-activator-dispatch-receiver.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'protocol/ACTIVATOR_DISPATCH_RECEIVER-v0.1.json'
+      - 'tools/activator_dispatch_receiver.py'
+      - 'tests/test_activator_dispatch_receiver.py'
+      - '.github/workflows/janus-activator-dispatch-receiver.yml'
+  workflow_dispatch:
+    inputs:
+      packet_json:
+        description: 'Sealed janus.activator.dispatch_packet.v0.3 JSON'
+        required: true
+        type: string
+  repository_dispatch:
+    types: [janus-activator-dispatch-v0.3]
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile receiver
+        run: python -m compileall -q tools/activator_dispatch_receiver.py
+      - name: Validate protocol JSON
+        run: python -c "import json; json.load(open('protocol/ACTIVATOR_DISPATCH_RECEIVER-v0.1.json', encoding='utf-8'))"
+      - name: Test receiver
+        run: python -m unittest tests/test_activator_dispatch_receiver.py
+
+  receive:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'repository_dispatch'
+    needs: contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Materialize transport packet
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          MANUAL_PACKET: ${{ inputs.packet_json }}
+          REPOSITORY_PACKET: ${{ toJson(github.event.client_payload.packet) }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/activator-dispatch
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            printf '%s' "$MANUAL_PACKET" > runtime/activator-dispatch/packet.json
+          else
+            printf '%s' "$REPOSITORY_PACKET" > runtime/activator-dispatch/packet.json
+          fi
+          python -m json.tool runtime/activator-dispatch/packet.json >/dev/null
+      - name: Validate packet and emit ACK without execution
+        run: |
+          python tools/activator_dispatch_receiver.py \
+            --packet runtime/activator-dispatch/packet.json \
+            --output runtime/activator-dispatch/ack.json
+      - name: Upload transport ACK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-activator-dispatch-ack-${{ github.run_id }}
+          path: runtime/activator-dispatch/ack.json
+          if-no-files-found: error
+          retention-days: 14
