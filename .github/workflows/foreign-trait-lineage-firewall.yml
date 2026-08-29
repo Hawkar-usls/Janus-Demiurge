@@ -1,0 +1,26 @@
+name: Foreign Trait Lineage Firewall Guard
+
+on:
+  push:
+    branches:
+      - security/foreign-trait-lineage-firewall-clean
+  pull_request:
+    paths:
+      - "swarm_genome_ledger.py"
+      - "tests/test_foreign_trait_lineage_firewall.py"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile
+        run: python -m py_compile spiral_evolution.py swarm_genome_ledger.py
+      - name: Unit tests
+        run: python -m unittest discover -s tests -p "test_foreign_trait_lineage_firewall.py" -v
