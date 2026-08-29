@@ -1,3 +1,5 @@
+import unittest
+
 from tools.activator_dispatch_receiver import canonical_hash, receive, verify_ack
 
 
@@ -36,52 +38,53 @@ def reseal(obj):
     return obj
 
 
-def test_valid_packet_is_acknowledged_without_execution():
-    ack = receive(packet())
-    assert ack["accepted"] is True
-    assert ack["terminal"] == "ACK_ACCEPTED_NO_EXECUTION"
-    assert ack["execution_authorized"] is False
-    assert ack["execution_performed"] is False
-    assert ack["claim_authority_granted"] is False
-    assert ack["external_effect_authorized"] is False
-    assert verify_ack(ack) is True
+class ActivatorDispatchReceiverTests(unittest.TestCase):
+    def test_valid_packet_is_acknowledged_without_execution(self):
+        ack = receive(packet())
+        self.assertTrue(ack["accepted"])
+        self.assertEqual(ack["terminal"], "ACK_ACCEPTED_NO_EXECUTION")
+        self.assertFalse(ack["execution_authorized"])
+        self.assertFalse(ack["execution_performed"])
+        self.assertFalse(ack["claim_authority_granted"])
+        self.assertFalse(ack["external_effect_authorized"])
+        self.assertTrue(verify_ack(ack))
+
+    def test_tampered_packet_is_rejected(self):
+        p = packet()
+        p["route_match"] = "tampered"
+        ack = receive(p)
+        self.assertFalse(ack["accepted"])
+        self.assertEqual(ack["terminal"], "ACK_REJECTED_INVALID_PACKET")
+        self.assertFalse(ack["execution_performed"])
+
+    def test_wrong_target_is_rejected_even_when_resealed(self):
+        p = packet(target="Hawkar-usls/Demi_Head")
+        ack = receive(p)
+        self.assertFalse(ack["accepted"])
+        self.assertEqual(ack["terminal"], "ACK_REJECTED_WRONG_TARGET")
+
+    def test_authority_escalation_is_rejected_even_when_resealed(self):
+        p = packet()
+        p["external_effect_authorized"] = True
+        p = reseal(p)
+        ack = receive(p)
+        self.assertFalse(ack["accepted"])
+        self.assertEqual(ack["terminal"], "ACK_REJECTED_AUTHORITY_ESCALATION")
+        self.assertFalse(ack["execution_authorized"])
+
+    def test_write_operation_is_rejected_even_when_identity_and_hash_are_recomputed(self):
+        p = packet()
+        p["operation"] = "EXECUTE_AND_WRITE"
+        p["packet_id"] = "dsp-" + canonical_hash({
+            "activation_receipt_hash": p["activation_receipt_hash"],
+            "target_organ": p["target_organ"],
+            "operation": p["operation"],
+        })
+        p = reseal(p)
+        ack = receive(p)
+        self.assertFalse(ack["accepted"])
+        self.assertEqual(ack["terminal"], "ACK_REJECTED_AUTHORITY_ESCALATION")
 
 
-def test_tampered_packet_is_rejected():
-    p = packet()
-    p["route_match"] = "tampered"
-    ack = receive(p)
-    assert ack["accepted"] is False
-    assert ack["terminal"] == "ACK_REJECTED_INVALID_PACKET"
-    assert ack["execution_performed"] is False
-
-
-def test_wrong_target_is_rejected_even_when_resealed():
-    p = packet(target="Hawkar-usls/Demi_Head")
-    ack = receive(p)
-    assert ack["accepted"] is False
-    assert ack["terminal"] == "ACK_REJECTED_WRONG_TARGET"
-
-
-def test_authority_escalation_is_rejected_even_when_resealed():
-    p = packet()
-    p["external_effect_authorized"] = True
-    p = reseal(p)
-    ack = receive(p)
-    assert ack["accepted"] is False
-    assert ack["terminal"] == "ACK_REJECTED_AUTHORITY_ESCALATION"
-    assert ack["execution_authorized"] is False
-
-
-def test_write_operation_is_rejected_even_when_identity_and_hash_are_recomputed():
-    p = packet()
-    p["operation"] = "EXECUTE_AND_WRITE"
-    p["packet_id"] = "dsp-" + canonical_hash({
-        "activation_receipt_hash": p["activation_receipt_hash"],
-        "target_organ": p["target_organ"],
-        "operation": p["operation"],
-    })
-    p = reseal(p)
-    ack = receive(p)
-    assert ack["accepted"] is False
-    assert ack["terminal"] == "ACK_REJECTED_AUTHORITY_ESCALATION"
+if __name__ == "__main__":
+    unittest.main()
