@@ -40,7 +40,9 @@ jobs:
       - name: Validate protocol JSON
         run: python -c "import json; json.load(open('protocol/ACTIVATOR_DISPATCH_RECEIVER-v0.1.json', encoding='utf-8'))"
       - name: Test receiver
-        run: python tests/test_activator_dispatch_receiver.py
+        env:
+          PYTHONPATH: .
+        run: python -m unittest discover -s tests -p 'test_activator_dispatch_receiver.py' -v
 
   receive:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'repository_dispatch'
