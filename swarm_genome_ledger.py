@@ -7,6 +7,11 @@ both directions: ancestor -> descendants and current state -> origins.
 
 The genome metaphor is structural only: identity/state is one strand and
 provenance/evidence/lessons is the other. No biological claim is implied.
+
+FOREIGN_TRAIT_LINEAGE_FIREWALL:
+Cross-entity identity inheritance is a trust boundary. Merely existing in the
+ledger does not authorize a node to become an extra parent of JANUS identity.
+Only explicitly approved JANUS-owned lineage may be used as an extra parent.
 """
 from __future__ import annotations
 
@@ -22,8 +27,14 @@ GENOME_LAWS = (
     "FAILURE_REMAINS_IN_LINEAGE",
     "ACTIVE_FRONTIER_DOES_NOT_ERASE_ANCESTORS",
     "CROSS_ENTITY_DERIVATION_REQUIRES_EXPLICIT_PARENT",
+    "CROSS_ENTITY_IDENTITY_PARENT_REQUIRES_APPROVED_JANUS_LINEAGE",
+    "UNKNOWN_OR_FOREIGN_LINEAGE_CANNOT_BECOME_EXTRA_IDENTITY_PARENT",
     "ANCESTOR_AND_DESCENDANT_TRAVERSAL_ARE_BIDIRECTIONALLY_INDEXED",
 )
+
+TRUSTED_SOURCE_CLASS = "JANUS_OWNED"
+LEGACY_SOURCE_CLASS = "LEGACY_UNTRUSTED"
+JANUS_LINEAGE_PREFIX = "JANUS:"
 
 
 def _normal(value: Any) -> Any:
@@ -38,6 +49,11 @@ def _normal(value: Any) -> Any:
     return repr(value)
 
 
+def _is_janus_lineage(lineage_id: str) -> bool:
+    value = str(lineage_id or "").strip().upper()
+    return value.startswith(JANUS_LINEAGE_PREFIX)
+
+
 @dataclass
 class GenomeNode:
     genome_id: str
@@ -49,6 +65,9 @@ class GenomeNode:
     relation: str
     identity_strand: Any
     evidence_strand: Any
+    source_class: str = LEGACY_SOURCE_CLASS
+    lineage_id: str = ""
+    approved_for_identity_derivation: bool = False
     fingerprint: str = ""
 
     def seal(self) -> "GenomeNode":
@@ -59,6 +78,14 @@ class GenomeNode:
 
     def to_dict(self) -> Dict[str, Any]:
         return _normal(asdict(self))
+
+    @property
+    def trusted_as_cross_entity_parent(self) -> bool:
+        return (
+            str(self.source_class).upper() == TRUSTED_SOURCE_CLASS
+            and _is_janus_lineage(self.lineage_id)
+            and bool(self.approved_for_identity_derivation)
+        )
 
 
 class SwarmGenomeLedger:
@@ -78,6 +105,15 @@ class SwarmGenomeLedger:
         )[:24]
         return f"{entity_id}:{int(entity_turn)}:{short}"
 
+    def _require_trusted_extra_parent(self, parent_id: str) -> GenomeNode:
+        parent_id = str(parent_id)
+        if parent_id not in self.nodes:
+            raise ValueError(f"unknown genome parent: {parent_id}")
+        parent = self.nodes[parent_id]
+        if not parent.trusted_as_cross_entity_parent:
+            raise ValueError(f"FOREIGN_OR_UNTRUSTED_IDENTITY_PARENT:{parent_id}")
+        return parent
+
     def register_spiral_turn(
         self,
         turn: SpiralTurn,
@@ -86,7 +122,20 @@ class SwarmGenomeLedger:
         evidence_strand: Any = None,
         extra_parent_ids: Optional[Iterable[str]] = None,
         relation: str = "SPIRAL_ASCENT",
+        source_class: str = LEGACY_SOURCE_CLASS,
+        lineage_id: str = "",
+        approved_for_identity_derivation: bool = False,
     ) -> GenomeNode:
+        """Register one turn while enforcing the lineage trust boundary.
+
+        Existing same-entity primary ancestry remains backwards-compatible.
+        Cross-entity ``extra_parent_ids`` are stronger: every such parent must be
+        explicitly ``JANUS_OWNED``, carry a ``JANUS:*`` lineage, and be approved.
+
+        New nodes default to LEGACY_UNTRUSTED. Callers that intend a state to be
+        eligible for future cross-entity identity derivation must opt in
+        explicitly with the three provenance arguments.
+        """
         entity_id = str(turn.entity_id)
         entity_turn = int(turn.turn)
         existing_line = self.by_entity.get(entity_id, [])
@@ -108,8 +157,7 @@ class SwarmGenomeLedger:
             parents.append(primary_parent_id)
         for parent_id in extra_parent_ids or []:
             parent_id = str(parent_id)
-            if parent_id not in self.nodes:
-                raise ValueError(f"unknown genome parent: {parent_id}")
+            self._require_trusted_extra_parent(parent_id)
             if parent_id not in parents:
                 parents.append(parent_id)
 
@@ -121,6 +169,14 @@ class SwarmGenomeLedger:
             return node
         if turn.fingerprint in self.by_spiral_fingerprint:
             raise ValueError("spiral fingerprint already bound to a different genome node")
+
+        source_class = str(source_class or LEGACY_SOURCE_CLASS).upper()
+        lineage_id = str(lineage_id or "")
+        approved = bool(approved_for_identity_derivation)
+        if approved and not (
+            source_class == TRUSTED_SOURCE_CLASS and _is_janus_lineage(lineage_id)
+        ):
+            raise ValueError("IDENTITY_DERIVATION_APPROVAL_REQUIRES_JANUS_OWNED_LINEAGE")
 
         identity = turn.active_state_after if identity_strand is None else identity_strand
         evidence = {
@@ -141,6 +197,9 @@ class SwarmGenomeLedger:
             relation=str(relation),
             identity_strand=_normal(identity),
             evidence_strand=_normal(evidence),
+            source_class=source_class,
+            lineage_id=lineage_id,
+            approved_for_identity_derivation=approved,
         ).seal()
 
         self.nodes[node.genome_id] = node
@@ -232,14 +291,22 @@ class SwarmGenomeLedger:
     def to_dict(self) -> Dict[str, Any]:
         self.validate()
         return {
-            "schema": "janus.swarm.genome_ledger.v1",
+            "schema": "janus.swarm.genome_ledger.v1.1-trait-lineage-firewall",
             "genome_id": self.genome_id,
             "model": "DUAL_STRAND_SPIRAL_GENEALOGY",
             "laws": list(GENOME_LAWS),
+            "trait_lineage_firewall": {
+                "cross_entity_parent_policy": "APPROVED_JANUS_OWNED_ONLY",
+                "legacy_default": LEGACY_SOURCE_CLASS,
+                "required_lineage_prefix": JANUS_LINEAGE_PREFIX,
+            },
             "nodes": {key: self.nodes[key].to_dict() for key in sorted(self.nodes)},
             "children": {key: list(value) for key, value in sorted(self.children.items())},
             "entities": {key: list(value) for key, value in sorted(self.by_entity.items())},
         }
 
 
-__all__ = ["GENOME_LAWS", "GenomeNode", "SwarmGenomeLedger"]
+__all__ = [
+    "GENOME_LAWS", "TRUSTED_SOURCE_CLASS", "LEGACY_SOURCE_CLASS",
+    "JANUS_LINEAGE_PREFIX", "GenomeNode", "SwarmGenomeLedger"
+]
