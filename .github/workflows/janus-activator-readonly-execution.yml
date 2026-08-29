@@ -1,0 +1,119 @@
+name: JANUS Activator Readonly Execution
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'protocol/ACTIVATOR_READONLY_EXECUTION-v0.1.json'
+      - 'protocol/ACTIVATOR_EXECUTION_RECEIPT-v0.1.schema.json'
+      - 'tools/activator_readonly_execution.py'
+      - 'tests/test_activator_readonly_execution.py'
+      - '.github/workflows/janus-activator-readonly-execution.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'protocol/ACTIVATOR_READONLY_EXECUTION-v0.1.json'
+      - 'protocol/ACTIVATOR_EXECUTION_RECEIPT-v0.1.schema.json'
+      - 'tools/activator_readonly_execution.py'
+      - 'tests/test_activator_readonly_execution.py'
+      - '.github/workflows/janus-activator-readonly-execution.yml'
+  workflow_dispatch:
+    inputs:
+      grant_json:
+        description: 'Sealed janus.activator.execution_grant.v0.7 JSON'
+        required: true
+        type: string
+  repository_dispatch:
+    types: [janus-activator-execution-grant-v0.7]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-activator-readonly-execution-${{ github.event_name }}-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile bounded executor and tests
+        run: python -m compileall -q tools/activator_readonly_execution.py tests/test_activator_readonly_execution.py
+      - name: Validate contracts
+        run: |
+          python -m json.tool protocol/ACTIVATOR_READONLY_EXECUTION-v0.1.json >/dev/null
+          python -m json.tool protocol/ACTIVATOR_EXECUTION_RECEIPT-v0.1.schema.json >/dev/null
+      - name: Run bounded executor adversarial tests
+        env:
+          PYTHONPATH: .
+        run: python -m pytest -q tests/test_activator_readonly_execution.py
+
+  execute:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'repository_dispatch'
+    needs: contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Materialize execution grant
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          MANUAL_GRANT: ${{ inputs.grant_json }}
+          DISPATCH_GRANT: ${{ toJson(github.event.client_payload.grant) }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/activator-execution
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            printf '%s' "$MANUAL_GRANT" > runtime/activator-execution/grant.json
+          else
+            printf '%s' "$DISPATCH_GRANT" > runtime/activator-execution/grant.json
+          fi
+          python -m json.tool runtime/activator-execution/grant.json >/dev/null
+
+      - name: Execute only bounded repository-local orientation
+        env:
+          SOURCE_ACTOR: ${{ github.actor }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/activator_readonly_execution.py \
+            --grant runtime/activator-execution/grant.json \
+            --repo-root . \
+            --target-head-sha "$GITHUB_SHA" \
+            --source-actor "$SOURCE_ACTOR" \
+            --receipt-out runtime/activator-execution/receipt.json \
+            --snapshot-out runtime/activator-execution/snapshot.json
+          test -f runtime/activator-execution/receipt.json
+          test -f runtime/activator-execution/snapshot.json
+          git diff --exit-code
+          test -z "$(git status --porcelain --untracked-files=no)"
+          echo "TARGET_REPOSITORY_WRITE=FALSE"
+          echo "TARGET_MODEL_ACCESS=FALSE"
+          echo "TARGET_PROCESS_NETWORK_ACCESS=FALSE"
+          echo "TARGET_EXTERNAL_WORLD_EFFECT=FALSE"
+
+      - name: Upload execution receipt and orientation snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-activator-execution-receipt-${{ github.run_id }}
+          path: |
+            runtime/activator-execution/receipt.json
+            runtime/activator-execution/snapshot.json
+          if-no-files-found: error
+          retention-days: 14
