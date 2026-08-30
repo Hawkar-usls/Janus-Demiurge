@@ -1,0 +1,93 @@
+{
+  "schema": "janus.demiurge.activator_oidc_mailbox_identity.v1.1",
+  "status": "PACKET_ACK_IDENTITY_GATE_ONLY",
+  "issuer": "https://token.actions.githubusercontent.com",
+  "jwks": "https://token.actions.githubusercontent.com/.well-known/jwks",
+  "purpose": "Cryptographically bind each credentialless mailbox packet and ACK to the GitHub Actions workflow identity that emitted it without exporting a cross-repository credential.",
+  "identities": {
+    "home": {
+      "repository": "Hawkar-usls/Hawkar-usls",
+      "repository_id": "1328314567",
+      "repository_owner": "Hawkar-usls",
+      "repository_owner_id": "242020399",
+      "ref": "refs/heads/main",
+      "allowed_event_names": ["push", "workflow_dispatch"],
+      "allowed_workflow_refs": [
+        "Hawkar-usls/Hawkar-usls/.github/workflows/janus-oidc-mailbox-roundtrip.yml@refs/heads/main"
+      ]
+    },
+    "target": {
+      "repository": "Hawkar-usls/Janus-Demiurge",
+      "repository_id": "1188744620",
+      "repository_owner": "Hawkar-usls",
+      "repository_owner_id": "242020399",
+      "ref": "refs/heads/main",
+      "allowed_event_names": ["push", "schedule", "workflow_dispatch"],
+      "allowed_workflow_refs": [
+        "Hawkar-usls/Janus-Demiurge/.github/workflows/janus-activator-credentialless-mailbox.yml@refs/heads/main"
+      ]
+    }
+  },
+  "audience_binding": {
+    "request": "urn:janus:mailbox-request:v1.1:<object_kind>:<object_id>:<object_hash>",
+    "response": "urn:janus:mailbox-response:v1.1:<request_message_hash>:<response_core_hash>"
+  },
+  "required_claims": [
+    "iss",
+    "aud",
+    "iat",
+    "nbf",
+    "exp",
+    "repository",
+    "repository_id",
+    "repository_owner",
+    "repository_owner_id",
+    "ref",
+    "event_name",
+    "workflow_ref",
+    "workflow_sha",
+    "run_id",
+    "run_attempt"
+  ],
+  "subject_policy": {
+    "exact_sub_match_required": false,
+    "reason": "Repository and owner immutable IDs plus repository/ref/workflow claims are verified directly; the evolving default GitHub subject format is not treated as the identity root."
+  },
+  "historical_attestation_semantics": {
+    "jwt_is_bearer_authorization": false,
+    "jwt_is_object_bound_identity_assertion": true,
+    "current_time_may_be_after_exp_when_polled": true,
+    "bound_at_must_be_within_token_iat_nbf_exp_window": true,
+    "maximum_token_lifetime_seconds": 900,
+    "signature_issuer_and_audience_must_still_verify": true
+  },
+  "stage_v1_1": {
+    "accepted_object_kinds": ["DISPATCH_PACKET"],
+    "execution_grant_enabled": false,
+    "execution_claim_enabled": false,
+    "required_success": "BIDIRECTIONAL_OIDC_PACKET_ACK_ONLY"
+  },
+  "authority_ceiling": {
+    "command_authority_granted": false,
+    "claim_authority_granted": false,
+    "scientific_evidence_authority_granted": false,
+    "world_truth_authority_granted": false,
+    "external_effect_authorized": false,
+    "physical_runtime_effect_authorized": false,
+    "target_execution_authorized": false,
+    "target_execution_performed": false
+  },
+  "laws": [
+    "OIDC_IDENTITY != COMMAND_AUTHORITY",
+    "OIDC_IDENTITY != SCIENTIFIC_TRUTH",
+    "OIDC_PACKET_ACK != P12_EXECUTION_GRANT",
+    "PUBLIC_HASH_BOUND_MESSAGE_WITHOUT_VALID_OIDC != AUTHENTICATED_SOURCE",
+    "SOURCE_OIDC_VERIFIED + TARGET_UNSIGNED_RESPONSE != BIDIRECTIONAL_IDENTITY",
+    "AUDIENCE_MISMATCH == IDENTITY_REJECT",
+    "REPOSITORY_ID_MISMATCH == IDENTITY_REJECT",
+    "WORKFLOW_REF_MISMATCH == IDENTITY_REJECT",
+    "REF_MISMATCH == IDENTITY_REJECT",
+    "BOUND_AT_OUTSIDE_TOKEN_WINDOW == IDENTITY_REJECT",
+    "SILENCE != NEGATIVE_EVIDENCE"
+  ]
+}
