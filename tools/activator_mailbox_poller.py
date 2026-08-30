@@ -100,7 +100,6 @@ def response_exists(
 
 
 def verify_message(envelope: Dict[str, Any]) -> bool:
-    """Verify legacy v1.0 dispatch-only envelope; never grants identity proof."""
     if not isinstance(envelope, dict):
         return False
     claimed = str(envelope.get("message_hash") or "")
@@ -253,6 +252,7 @@ def poll(
         "skipped_existing_response": skipped_existing,
         "credentialless_execution_enabled": False,
         "execution_claim_allowed": False,
+        "execution_claim_allowed_before_identity_verification": False,
         "oidc_packet_identity_enabled": True,
         "bidirectional_oidc_response_required_for_v1_1": True,
         "discovery": "GIT_TREES_RECURSIVE_NOT_CONTENTS_DIRECTORY_LISTING",
