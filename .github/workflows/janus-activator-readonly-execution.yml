@@ -55,10 +55,20 @@ jobs:
             tools/activator_execution_claim.py \
             tests/test_activator_readonly_execution.py \
             tests/test_activator_execution_claim.py
-      - name: Validate contracts
+      - name: Validate contracts and manual dispatch wiring
         run: |
           python -m json.tool protocol/ACTIVATOR_READONLY_EXECUTION-v0.1.json >/dev/null
           python -m json.tool protocol/ACTIVATOR_EXECUTION_RECEIPT-v0.1.schema.json >/dev/null
+          python - <<'PY'
+          from pathlib import Path
+          text=Path('.github/workflows/janus-activator-readonly-execution.yml').read_text(encoding='utf-8')
+          required = "MANUAL_GRANT: $" + "{{ inputs.grant_json }}"
+          assert required in text, 'MANUAL_GRANT_MUST_BIND_GRANT_JSON_INPUT'
+          assert 'inputs.packet_json' not in text, 'PACKET_INPUT_MUST_NOT_ENTER_EXECUTION_WORKFLOW'
+          assert "printf '%s' \"$MANUAL_GRANT\" > runtime/activator-execution/grant.json" in text
+          assert 'target_head_sha="$(git rev-parse HEAD)"' in text
+          print('EXECUTION_WORKFLOW_STATIC_CONTRACT=PASS')
+          PY
       - name: Run bounded executor and exactly-once adversarial tests
         env:
           PYTHONPATH: .
@@ -84,14 +94,14 @@ jobs:
       - name: Materialize execution grant
         env:
           EVENT_NAME: ${{ github.event_name }}
-          MANUAL_GRANT: ${{ inputs.packet_json }}
+          MANUAL_GRANT: ${{ inputs.grant_json }}
           DISPATCH_GRANT: ${{ toJson(github.event.client_payload.grant) }}
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p runtime/activator-execution
           if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-            printf '%s' "${{ inputs.grant_json }}" > runtime/activator-execution/grant.json
+            printf '%s' "$MANUAL_GRANT" > runtime/activator-execution/grant.json
           else
             printf '%s' "$DISPATCH_GRANT" > runtime/activator-execution/grant.json
           fi
