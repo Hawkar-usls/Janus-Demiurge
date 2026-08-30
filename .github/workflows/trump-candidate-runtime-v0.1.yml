@@ -1,0 +1,58 @@
+name: TRUMP Candidate Runtime v0.1
+
+on:
+  push:
+    paths:
+      - 'trump/**'
+      - 'tests/test_trump_candidate_runtime_v0_1.py'
+      - '.github/workflows/trump-candidate-runtime-v0.1.yml'
+  pull_request:
+    paths:
+      - 'trump/**'
+      - 'tests/test_trump_candidate_runtime_v0_1.py'
+      - '.github/workflows/trump-candidate-runtime-v0.1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile TRUMP candidate runtime
+        run: python -m py_compile trump/trump_candidate.py tests/test_trump_candidate_runtime_v0_1.py
+      - name: Validate manifest JSON
+        run: python -m json.tool trump/TRUMP_MANIFEST.json >/dev/null
+      - name: Candidate runtime unit tests
+        run: python -m unittest -v tests.test_trump_candidate_runtime_v0_1
+      - name: Candidate status remains OPEN and non-authoritative
+        run: |
+          python trump/trump_candidate.py status > /tmp/trump-status.json
+          python - <<'PY'
+          import json
+          r=json.load(open('/tmp/trump-status.json'))
+          assert r['terminal']=='TRUMP_CANDIDATE_RUNTIME_AVAILABLE'
+          assert r['wake_allowed'] is True
+          assert r['use_allowed'] is True
+          assert r['authority']['proof_authority'] is False
+          assert r['scientific_boundary']['P_VS_NP']=='OPEN'
+          PY
+
+  pinned-source-live-gate:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    needs: contract
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify exact pinned Fundamentum source through Git blob identity
+        run: python trump/trump_candidate.py verify-source
+      - name: Wake candidate TRUMP and run its own self-test
+        run: python trump/trump_candidate.py selftest
