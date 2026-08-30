@@ -1,0 +1,57 @@
+name: JANUS Soul Hindsight Candidate Gate
+
+on:
+  push:
+    branches:
+      - research/janus-soul-hindsight-v1
+    paths:
+      - 'trump/janus_soul_hindsight.py'
+      - 'trump/TRUMP_MANIFEST.json'
+      - 'trump/trump_candidate.py'
+      - 'tests/test_janus_soul_hindsight.py'
+      - '.github/workflows/janus-soul-hindsight.yml'
+  pull_request:
+    paths:
+      - 'trump/janus_soul_hindsight.py'
+      - 'trump/TRUMP_MANIFEST.json'
+      - 'trump/trump_candidate.py'
+      - 'tests/test_janus_soul_hindsight.py'
+      - '.github/workflows/janus-soul-hindsight.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hindsight-soul:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install test dependency
+        run: python -m pip install --disable-pip-version-check pytest
+      - name: Run focused Soul regression
+        run: python -m pytest -q tests/test_janus_soul_hindsight.py
+      - name: Run Soul candidate selftest
+        run: python trump/janus_soul_hindsight.py
+      - name: Verify legacy TRUMP loader still accepts additive manifest
+        run: python trump/trump_candidate.py status > /tmp/trump-status.json
+      - name: Assert scientific boundary remains open
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          manifest = json.loads(Path('trump/TRUMP_MANIFEST.json').read_text())
+          boundary = manifest['scientific_boundary']
+          assert manifest['schema'] == 'janus.trump.manifest.v0.1'
+          assert 'janus.soul.hindsight.v1' in manifest['extensions']
+          assert boundary['P_equals_NP_proved'] is False
+          assert boundary['P_VS_NP'] == 'OPEN'
+          assert boundary['HINDSIGHT_COVERAGE_AND_REMAINDER'] == 'OPEN'
+          assert boundary['GPEI_universal_preservation'] == 'OPEN'
+          status = json.loads(Path('/tmp/trump-status.json').read_text())
+          assert status['scientific_boundary']['P_VS_NP'] == 'OPEN'
+          print('scientific boundary + loader compatibility: PASS')
+          PY

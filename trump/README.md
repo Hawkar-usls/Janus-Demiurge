@@ -23,6 +23,42 @@ experiments/direct/janus_unified_proof_carrying_akinator_jec.py
 
 The candidate itself is explicitly fail-closed and may return `OPEN`. A finite run, green CI, candidate improvement, or successful self-test cannot promote `P=NP` or any other open scientific claim.
 
+## JANUS Soul — hindsight obligation compiler
+
+`janus_soul_hindsight.py` is the first executable candidate for the JANUS Soul layer.
+
+Its design translates retrospective learning into proof-safe mechanics:
+
+```text
+verified past failure
+  -> exact failure receipt
+  -> bounded known-bad guard
+  -> future rejection of the same certified dead route
+```
+
+The v1 runtime deliberately refuses the dangerous leap:
+
+```text
+PAST_IS_OBSERVABLE != FUTURE_IS_KNOWN
+HINDSIGHT != ORACLE
+NOT_KNOWN_BAD != PROVED_GOOD
+```
+
+JANUS therefore has two faces:
+
+- **LEARNING_FACE** may inspect append-only history and compile candidate lessons.
+- **THEOREM_FACE** freezes one finite snapshot before the input is seen and forbids runtime learning or post-hoc repair.
+
+The Soul also carries the `NO_HOTEL_CALIFORNIA` progress gate: a state transition is not progress merely because the state changed. A theorem-mode macrostep must strictly decrease a frozen, polynomially capped well-founded rank; otherwise it is rejected.
+
+The key remaining mathematical bridge is still open:
+
+```text
+HINDSIGHT_COVERAGE_AND_REMAINDER_LEMMA
+```
+
+Historical guards can prove that some routes are bad. They do **not** yet prove that every reachable nonterminal SAT state always leaves at least one exact useful action that can be found within polynomial total work.
+
 Self-improvement is allowed as candidate work: JANUS may generate/test/compare improved TRUMP candidates and stage reviewed candidate-branch changes. Direct `main` writeback and automatic merge remain disabled.
 
 Canonical rendezvous remains:
