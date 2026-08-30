@@ -121,9 +121,7 @@ def build_response(
     identity_issuer: Callable[[str], Dict[str, Any]] | None = None,
 ) -> Dict[str, Any]:
     if str(envelope.get("object_kind") or "") == "EXECUTION_GRANT":
-        # Preserve the original identity-gate diagnostic while recording that
-        # v1.1 is still packet/ACK stage even after identity infrastructure exists.
-        raise PermissionError("MAILBOX_EXECUTION_IDENTITY_GATE_REQUIRED_V11_PACKET_STAGE")
+        raise PermissionError("MAILBOX_EXECUTION_IDENTITY_GATE_REQUIRED_AND_STAGE_GATE_REQUIRED_V11")
     if envelope.get("object_kind") != "DISPATCH_PACKET":
         raise ValueError("MAILBOX_OBJECT_KIND_UNSUPPORTED")
 
