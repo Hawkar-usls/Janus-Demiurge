@@ -84,14 +84,14 @@ jobs:
       - name: Materialize execution grant
         env:
           EVENT_NAME: ${{ github.event_name }}
-          MANUAL_GRANT: ${{ inputs.grant_json }}
+          MANUAL_GRANT: ${{ inputs.packet_json }}
           DISPATCH_GRANT: ${{ toJson(github.event.client_payload.grant) }}
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p runtime/activator-execution
           if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-            printf '%s' "$MANUAL_GRANT" > runtime/activator-execution/grant.json
+            printf '%s' "${{ inputs.grant_json }}" > runtime/activator-execution/grant.json
           else
             printf '%s' "$DISPATCH_GRANT" > runtime/activator-execution/grant.json
           fi
@@ -124,10 +124,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          target_head_sha="$(git rev-parse HEAD)"
           python tools/activator_readonly_execution.py \
             --grant runtime/activator-execution/grant.json \
             --repo-root . \
-            --target-head-sha "$GITHUB_SHA" \
+            --target-head-sha "$target_head_sha" \
             --source-actor "$SOURCE_ACTOR" \
             --receipt-out runtime/activator-execution/receipt.json \
             --snapshot-out runtime/activator-execution/snapshot.json
@@ -135,6 +136,7 @@ jobs:
           test -f runtime/activator-execution/snapshot.json
           git diff --exit-code
           test -z "$(git status --porcelain --untracked-files=no)"
+          echo "TARGET_CHECKED_OUT_SHA=$target_head_sha"
           echo "TARGET_MAIN_REPOSITORY_WRITE=FALSE"
           echo "TARGET_MODEL_ACCESS=FALSE"
           echo "TARGET_EXECUTION_PROCESS_NETWORK_ACCESS=FALSE"
