@@ -1,10 +1,12 @@
 from pathlib import Path
 import importlib.util
+import sys
 
 
 MODULE = Path(__file__).resolve().parents[1] / "trump" / "janus_soul_hindsight.py"
 SPEC = importlib.util.spec_from_file_location("janus_soul_hindsight", MODULE)
 MOD = importlib.util.module_from_spec(SPEC)
+sys.modules[SPEC.name] = MOD
 assert SPEC.loader is not None
 SPEC.loader.exec_module(MOD)
 
