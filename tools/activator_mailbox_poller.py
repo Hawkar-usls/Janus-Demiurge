@@ -19,7 +19,8 @@ TARGET_BRANCH = "janus/activator-mailbox"
 HOME_OUTBOX = ".janus/mailbox/outbox"
 TARGET_INBOX = ".janus/mailbox/inbox"
 MESSAGE_SCHEMA = "janus.activator.mailbox_message.v1.0"
-ALLOWED_KINDS = {"DISPATCH_PACKET", "EXECUTION_GRANT"}
+ALLOWED_KINDS_V1 = {"DISPATCH_PACKET"}
+BLOCKED_KINDS_V1 = {"EXECUTION_GRANT"}
 PACKET_ID_RE = re.compile(r"^dsp-[0-9a-f]{64}$")
 GRANT_ID_RE = re.compile(r"^xg-[0-9a-f]{64}$")
 
@@ -43,8 +44,7 @@ def _request(url: str) -> urllib.request.Request:
 def public_json(url: str, *, opener: Callable[..., Any] = urllib.request.urlopen) -> Any:
     try:
         response = opener(_request(url), timeout=20.0)
-        raw = response.read()
-        return json.loads(raw.decode("utf-8"))
+        return json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         if exc.code == 404:
             return None
@@ -106,31 +106,30 @@ def verify_message(envelope: Dict[str, Any]) -> bool:
     if envelope.get("target_repository") != TARGET_REPOSITORY:
         return False
     kind = str(envelope.get("object_kind") or "")
-    if kind not in ALLOWED_KINDS:
+    # v1.0 has no authenticated source identity. Therefore execution grants are
+    # rejected at the mailbox ingress itself, before response existence checks,
+    # local materialization, exactly-once claims, or any execution worker.
+    if kind in BLOCKED_KINDS_V1:
+        return False
+    if kind not in ALLOWED_KINDS_V1:
         return False
     if not _valid_object_id(kind, envelope.get("object_id")):
         return False
-    if envelope.get("command_authority_granted") is not False:
-        return False
-    if envelope.get("claim_authority_granted") is not False:
-        return False
-    if envelope.get("scientific_evidence_authority_granted") is not False:
-        return False
-    if envelope.get("external_effect_authorized") is not False:
-        return False
-    if envelope.get("physical_runtime_effect_authorized") is not False:
-        return False
+    for field in (
+        "command_authority_granted",
+        "claim_authority_granted",
+        "scientific_evidence_authority_granted",
+        "external_effect_authorized",
+        "physical_runtime_effect_authorized",
+    ):
+        if envelope.get(field) is not False:
+            return False
     obj = envelope.get("object")
     if not isinstance(obj, dict):
         return False
-    if kind == "DISPATCH_PACKET":
-        return (
-            envelope.get("object_id") == obj.get("packet_id")
-            and envelope.get("object_hash") == obj.get("packet_hash")
-        )
     return (
-        envelope.get("object_id") == obj.get("grant_id")
-        and envelope.get("object_hash") == obj.get("grant_hash")
+        envelope.get("object_id") == obj.get("packet_id")
+        and envelope.get("object_hash") == obj.get("packet_hash")
     )
 
 
@@ -147,8 +146,6 @@ def _decode_blob(blob: Dict[str, Any]) -> Dict[str, Any] | None:
 
 
 def iter_home_envelopes(*, opener: Callable[..., Any] = urllib.request.urlopen) -> Iterable[Dict[str, Any]]:
-    # Do not use the Contents directory listing here: GitHub caps it at 1,000
-    # entries, which is incompatible with an append-only long-lived mailbox.
     branch = public_json(home_branch_url(), opener=opener)
     if branch is None:
         return []
@@ -163,8 +160,6 @@ def iter_home_envelopes(*, opener: Callable[..., Any] = urllib.request.urlopen) 
     if not isinstance(tree, dict) or not isinstance(tree.get("tree"), list):
         raise ValueError("HOME_MAILBOX_TREE_MALFORMED")
     if tree.get("truncated") is True:
-        # Tree truncation is UNKNOWN_RESOURCE_LIMIT, never evidence that no mail
-        # exists. Refuse a partial traversal instead of silently dropping rows.
         raise RuntimeError("HOME_MAILBOX_TREE_TRUNCATED_UNKNOWN_RESOURCE_LIMIT")
 
     prefix = HOME_OUTBOX + "/"
@@ -189,9 +184,13 @@ def poll(out_dir: str | Path, *, opener: Callable[..., Any] = urllib.request.url
     root.mkdir(parents=True, exist_ok=True)
     accepted: list[Dict[str, str]] = []
     rejected = 0
+    blocked_execution_identity_required = 0
     skipped_existing = 0
 
     for envelope in iter_home_envelopes(opener=opener):
+        if str(envelope.get("object_kind") or "") in BLOCKED_KINDS_V1:
+            blocked_execution_identity_required += 1
+            continue
         if not verify_message(envelope):
             rejected += 1
             continue
@@ -200,11 +199,8 @@ def poll(out_dir: str | Path, *, opener: Callable[..., Any] = urllib.request.url
         if response_exists(kind, object_id, opener=opener):
             skipped_existing += 1
             continue
-        suffix = "packet" if kind == "DISPATCH_PACKET" else "grant"
-        path = (root / f"{object_id}.{suffix}.envelope.json").resolve()
+        path = (root / f"{object_id}.packet.envelope.json").resolve()
         if path.parent != root:
-            # Defense in depth even though deterministic ID grammar already
-            # excludes separators, absolute paths and traversal components.
             rejected += 1
             continue
         path.write_text(json.dumps(envelope, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -214,7 +210,10 @@ def poll(out_dir: str | Path, *, opener: Callable[..., Any] = urllib.request.url
         "schema": "janus.demiurge.mailbox_poll_manifest.v1.0",
         "accepted": accepted,
         "rejected_invalid": rejected,
+        "blocked_execution_identity_required": blocked_execution_identity_required,
         "skipped_existing_response": skipped_existing,
+        "credentialless_execution_enabled": False,
+        "execution_claim_allowed_before_identity_verification": False,
         "discovery": "GIT_TREES_RECURSIVE_NOT_CONTENTS_DIRECTORY_LISTING",
         "tree_truncation_semantics": "UNKNOWN_RESOURCE_LIMIT",
         "silence_interpretation": "NOOP_NOT_NEGATIVE_EVIDENCE",
