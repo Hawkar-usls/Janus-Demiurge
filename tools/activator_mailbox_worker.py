@@ -64,8 +64,6 @@ def _oidc_response(
     if SHA_RE.fullmatch(str(target_head_sha)) is None:
         raise ValueError("OIDC_TARGET_HEAD_SHA_INVALID")
 
-    # Independent second verification wall. The poller may already have checked
-    # this request, but worker authority never trusts a prior process result.
     source_verification = verify_request_envelope(envelope, decoder=oidc_decoder)
     if source_verification.get("ok") is not True or source_verification.get("identity_proof") is not True:
         raise PermissionError("OIDC_HOME_SOURCE_IDENTITY_NOT_VERIFIED")
@@ -122,10 +120,10 @@ def build_response(
     oidc_decoder=None,
     identity_issuer: Callable[[str], Dict[str, Any]] | None = None,
 ) -> Dict[str, Any]:
-    # EXECUTION_GRANT stays physically forbidden in v1.1 packet/ACK stage,
-    # even if a caller bypasses poller materialization and invokes the worker.
     if str(envelope.get("object_kind") or "") == "EXECUTION_GRANT":
-        raise PermissionError("MAILBOX_EXECUTION_IDENTITY_AND_STAGE_GATE_REQUIRED")
+        # Preserve the original identity-gate diagnostic while recording that
+        # v1.1 is still packet/ACK stage even after identity infrastructure exists.
+        raise PermissionError("MAILBOX_EXECUTION_IDENTITY_GATE_REQUIRED_V11_PACKET_STAGE")
     if envelope.get("object_kind") != "DISPATCH_PACKET":
         raise ValueError("MAILBOX_OBJECT_KIND_UNSUPPORTED")
 
