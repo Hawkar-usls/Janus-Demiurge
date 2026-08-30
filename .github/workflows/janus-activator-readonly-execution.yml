@@ -63,8 +63,9 @@ jobs:
           from pathlib import Path
           text=Path('.github/workflows/janus-activator-readonly-execution.yml').read_text(encoding='utf-8')
           required = "MANUAL_GRANT: $" + "{{ inputs.grant_json }}"
+          forbidden = "inputs." + "packet_json"
           assert required in text, 'MANUAL_GRANT_MUST_BIND_GRANT_JSON_INPUT'
-          assert 'inputs.packet_json' not in text, 'PACKET_INPUT_MUST_NOT_ENTER_EXECUTION_WORKFLOW'
+          assert forbidden not in text, 'PACKET_INPUT_MUST_NOT_ENTER_EXECUTION_WORKFLOW'
           assert "printf '%s' \"$MANUAL_GRANT\" > runtime/activator-execution/grant.json" in text
           assert 'target_head_sha="$(git rev-parse HEAD)"' in text
           print('EXECUTION_WORKFLOW_STATIC_CONTRACT=PASS')
