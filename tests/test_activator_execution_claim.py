@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import base64
-import io
 import json
 import urllib.error
 
@@ -74,10 +73,12 @@ def test_second_lane_is_suppressed_by_existing_same_hash_claim():
 
     def opener(request, timeout=20.0):
         if request.get_method() == "PUT":
-            payload = json.loads(request.data.decode("utf-8"))
-            stored["claim"] = json.loads(base64.b64decode(payload["content"]).decode("utf-8"))
+            # GitHub Contents create-only semantics: a second create attempt does
+            # not overwrite the object that already won the claim race.
             if stored.get("put_seen"):
                 raise urllib.error.HTTPError(request.full_url, 422, "exists", {}, None)
+            payload = json.loads(request.data.decode("utf-8"))
+            stored["claim"] = json.loads(base64.b64decode(payload["content"]).decode("utf-8"))
             stored["put_seen"] = True
             return Response(201)
         return Response(200, json.dumps(stored["claim"]).encode("utf-8"))
