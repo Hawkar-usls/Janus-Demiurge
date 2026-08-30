@@ -1,16 +1,29 @@
 from __future__ import annotations
 
+import base64
 import json
 import urllib.error
+
+import pytest
 
 from tools.activator_mailbox_poller import (
     HOME_REPOSITORY,
     TARGET_REPOSITORY,
     canonical_hash,
+    iter_home_envelopes,
     poll,
     verify_message,
 )
 from tools.activator_mailbox_worker import build_response
+
+
+class Response:
+    def __init__(self, body, status=200):
+        self.status = status
+        self._body = json.dumps(body).encode("utf-8") if not isinstance(body, bytes) else body
+
+    def read(self):
+        return self._body
 
 
 def packet() -> dict:
@@ -80,6 +93,62 @@ def test_object_tamper_invalidates_envelope_even_with_old_hash():
     env = envelope()
     env["object"]["operation"] = "DO_SOMETHING_ELSE"
     assert verify_message(env) is False
+
+
+def test_path_like_object_id_is_rejected_even_when_envelope_rehashed():
+    env = envelope()
+    unsafe = "../../poison"
+    env["object_id"] = unsafe
+    env["object"]["packet_id"] = unsafe
+    env["object"]["packet_hash"] = canonical_hash({k: v for k, v in env["object"].items() if k != "packet_hash"})
+    env["object_hash"] = env["object"]["packet_hash"]
+    env["message_hash"] = canonical_hash({k: v for k, v in env.items() if k != "message_hash"})
+    assert verify_message(env) is False
+
+
+def test_tree_discovery_reads_blob_without_contents_directory_listing():
+    env = envelope()
+    commit_sha = "1" * 40
+    blob_url = f"https://api.github.com/repos/{HOME_REPOSITORY}/git/blobs/abc123"
+    encoded = base64.b64encode(json.dumps(env).encode("utf-8")).decode("ascii")
+    seen = []
+
+    def opener(request, timeout=20.0):
+        url = request.full_url
+        seen.append(url)
+        if "/branches/" in url:
+            return Response({"commit": {"sha": commit_sha}})
+        if f"/git/trees/{commit_sha}" in url:
+            return Response({
+                "truncated": False,
+                "tree": [{
+                    "path": ".janus/mailbox/outbox/example.json",
+                    "type": "blob",
+                    "url": blob_url,
+                }],
+            })
+        if url == blob_url:
+            return Response({"encoding": "base64", "content": encoded})
+        raise AssertionError(url)
+
+    rows = list(iter_home_envelopes(opener=opener))
+    assert rows == [env]
+    assert all("/contents/.janus/mailbox/outbox" not in url for url in seen)
+
+
+def test_truncated_tree_is_unknown_resource_limit_not_empty_mailbox():
+    commit_sha = "2" * 40
+
+    def opener(request, timeout=20.0):
+        url = request.full_url
+        if "/branches/" in url:
+            return Response({"commit": {"sha": commit_sha}})
+        if f"/git/trees/{commit_sha}" in url:
+            return Response({"truncated": True, "tree": []})
+        raise AssertionError(url)
+
+    with pytest.raises(RuntimeError, match="UNKNOWN_RESOURCE_LIMIT"):
+        list(iter_home_envelopes(opener=opener))
 
 
 def test_missing_home_mailbox_is_noop_not_negative_evidence(tmp_path):
