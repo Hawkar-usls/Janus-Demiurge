@@ -7,7 +7,9 @@ on:
       - 'protocol/ACTIVATOR_READONLY_EXECUTION-v0.1.json'
       - 'protocol/ACTIVATOR_EXECUTION_RECEIPT-v0.1.schema.json'
       - 'tools/activator_readonly_execution.py'
+      - 'tools/activator_execution_claim.py'
       - 'tests/test_activator_readonly_execution.py'
+      - 'tests/test_activator_execution_claim.py'
       - '.github/workflows/janus-activator-readonly-execution.yml'
   push:
     branches: [main]
@@ -15,7 +17,9 @@ on:
       - 'protocol/ACTIVATOR_READONLY_EXECUTION-v0.1.json'
       - 'protocol/ACTIVATOR_EXECUTION_RECEIPT-v0.1.schema.json'
       - 'tools/activator_readonly_execution.py'
+      - 'tools/activator_execution_claim.py'
       - 'tests/test_activator_readonly_execution.py'
+      - 'tests/test_activator_execution_claim.py'
       - '.github/workflows/janus-activator-readonly-execution.yml'
   workflow_dispatch:
     inputs:
@@ -44,16 +48,21 @@ jobs:
           python-version: '3.11'
       - name: Install contract test dependency
         run: python -m pip install --disable-pip-version-check pytest
-      - name: Compile bounded executor and tests
-        run: python -m compileall -q tools/activator_readonly_execution.py tests/test_activator_readonly_execution.py
+      - name: Compile bounded executor, exactly-once claim and tests
+        run: |
+          python -m compileall -q \
+            tools/activator_readonly_execution.py \
+            tools/activator_execution_claim.py \
+            tests/test_activator_readonly_execution.py \
+            tests/test_activator_execution_claim.py
       - name: Validate contracts
         run: |
           python -m json.tool protocol/ACTIVATOR_READONLY_EXECUTION-v0.1.json >/dev/null
           python -m json.tool protocol/ACTIVATOR_EXECUTION_RECEIPT-v0.1.schema.json >/dev/null
-      - name: Run bounded executor adversarial tests
+      - name: Run bounded executor and exactly-once adversarial tests
         env:
           PYTHONPATH: .
-        run: python -m pytest -q tests/test_activator_readonly_execution.py
+        run: python -m pytest -q tests/test_activator_readonly_execution.py tests/test_activator_execution_claim.py
 
   execute:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'repository_dispatch'
@@ -61,7 +70,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
-      contents: read
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -88,7 +97,28 @@ jobs:
           fi
           python -m json.tool runtime/activator-execution/grant.json >/dev/null
 
+      - name: Acquire exactly-once grant claim across all Activator lanes
+        id: claim
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PYTHONPATH: .
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/activator_execution_claim.py \
+            --grant runtime/activator-execution/grant.json \
+            --transport-lane "${GITHUB_EVENT_NAME^^}_SECRET_OR_MANUAL_PUSH" \
+            --workflow-run-id "$GITHUB_RUN_ID" \
+            --output runtime/activator-execution/claim.json
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          row=json.load(open('runtime/activator-execution/claim.json'))
+          print('execution_permitted=' + ('true' if row.get('execution_permitted') is True else 'false'))
+          print('claim_terminal=' + str(row.get('terminal','UNKNOWN')))
+          PY
+
       - name: Execute only bounded repository-local orientation
+        if: steps.claim.outputs.execution_permitted == 'true'
         env:
           SOURCE_ACTOR: ${{ github.actor }}
         shell: bash
@@ -105,17 +135,25 @@ jobs:
           test -f runtime/activator-execution/snapshot.json
           git diff --exit-code
           test -z "$(git status --porcelain --untracked-files=no)"
-          echo "TARGET_REPOSITORY_WRITE=FALSE"
+          echo "TARGET_MAIN_REPOSITORY_WRITE=FALSE"
           echo "TARGET_MODEL_ACCESS=FALSE"
-          echo "TARGET_PROCESS_NETWORK_ACCESS=FALSE"
+          echo "TARGET_EXECUTION_PROCESS_NETWORK_ACCESS=FALSE"
           echo "TARGET_EXTERNAL_WORLD_EFFECT=FALSE"
 
+      - name: Record duplicate-lane suppression
+        if: steps.claim.outputs.execution_permitted != 'true'
+        run: |
+          echo "EXECUTION_SUPPRESSED_BY_EXACTLY_ONCE_CLAIM=TRUE"
+          echo "CLAIM_TERMINAL=${{ steps.claim.outputs.claim_terminal }}"
+
       - name: Upload execution receipt and orientation snapshot
+        if: steps.claim.outputs.execution_permitted == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: janus-activator-execution-receipt-${{ github.run_id }}
           path: |
             runtime/activator-execution/receipt.json
             runtime/activator-execution/snapshot.json
+            runtime/activator-execution/claim.json
           if-no-files-found: error
           retention-days: 14
