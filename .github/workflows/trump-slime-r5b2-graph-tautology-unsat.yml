@@ -1,0 +1,66 @@
+name: TRUMP Slime R5B2 Graph Tautology UNSAT Frozen Gate
+
+on:
+  pull_request:
+    paths:
+      - 'trump/TRUMP_SLIME_R5B2_GRAPH_TAUTOLOGY_UNSAT_FROZEN_BENCH_V1.json'
+      - 'trump/run_trump_slime_r5b2_graph_tautology_benchmark.py'
+      - 'tests/test_trump_slime_r5b2_graph_tautology.py'
+      - '.github/workflows/trump-slime-r5b2-graph-tautology-unsat.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-r5b2-graph-tautology:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pytest
+        run: python -m pip install --disable-pip-version-check pytest
+      - name: Verify unchanged merged R5 runtime blob
+        run: test "$(git hash-object trump/trump_slime_preelim_compression_r5.py)" = "bb9471e3e3c7129ec394ad02f727d9ca6691439b"
+      - name: Compile R5B2
+        run: |
+          python -m py_compile trump/run_trump_slime_r5b2_graph_tautology_benchmark.py
+          python -m py_compile tests/test_trump_slime_r5b2_graph_tautology.py
+      - name: Validate frozen R5B2 spec
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          s=json.loads(Path('trump/TRUMP_SLIME_R5B2_GRAPH_TAUTOLOGY_UNSAT_FROZEN_BENCH_V1.json').read_text())
+          assert s['status']=='FROZEN_BEFORE_R5B2_IMPLEMENTATION'
+          assert s['winner_preregistered'] is False
+          assert s['runtime_under_test']['git_blob_sha']=='bb9471e3e3c7129ec394ad02f727d9ca6691439b'
+          assert s['runtime_under_test']['R5_runtime_modification_allowed'] is False
+          assert s['profile']=={'cap_exponent':1,'extension_exponent':0,'bounded_resolution_width':3}
+          assert s['holdout']['formula_count']==24
+          assert s['holdout']['GT6']['seeds']==list(range(9101,9113))
+          assert s['holdout']['GT7']['seeds']==list(range(9201,9213))
+          assert s['gate']['minimum_total_OPEN_to_R5_UNSAT_rescues']==12
+          assert s['gate']['minimum_GT6_rescues']==4
+          assert s['gate']['minimum_GT7_rescues']==4
+          assert s['gate']['minimum_rescue_fraction_among_canonical_OPEN']==0.5
+          print('PASS frozen R5B2 spec')
+          PY
+      - name: Structural truth and renaming tests
+        run: pytest -q tests/test_trump_slime_r5b2_graph_tautology.py
+      - name: Execute frozen R5B2 holdout
+        run: |
+          python trump/run_trump_slime_r5b2_graph_tautology_benchmark.py \
+            --output trump-slime-r5b2-graph-tautology-result.json \
+            --require-pass
+      - name: Upload frozen R5B2 result even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trump-slime-r5b2-graph-tautology-frozen-result
+          path: trump-slime-r5b2-graph-tautology-result.json
+          if-no-files-found: warn
+          retention-days: 30
