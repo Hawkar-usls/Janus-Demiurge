@@ -1,0 +1,166 @@
+{
+  "schema": "janus.trump.slime_exact_lookahead_r4.frozen_benchmark.v1",
+  "benchmark_id": "JANUS_TRUMP_SLIME_EXACT_LOOKAHEAD_R4_FROZEN_C1K0_BENCH_V1",
+  "date": "2026-08-31",
+  "status": "FROZEN_BEFORE_R4_IMPLEMENTATION",
+  "winner_preregistered": false,
+  "purpose": "Test whether Keymaster/Pivot-Slime current-residual structural shortlist plus exact one-step lookahead can rescue canonical C025 OPEN cases without ever overwriting a canonical decisive result.",
+  "solver": {
+    "repository": "Hawkar-usls/Janus-Fundamentum",
+    "commit": "377668585178995217b681d5ddb1b34b0f8dc386",
+    "path": "experiments/direct/janus_unified_proof_carrying_akinator_jec.py",
+    "git_blob_sha": "230ca949bb51f6eeb5e7dbeea364a0752f9d0636"
+  },
+  "keymaster_donors": {
+    "repository": "Hawkar-usls/Janus-Fundamentum",
+    "branch": "research/janus-keymaster-calibration-pivot-slime-topa-2026-08-28",
+    "branch_commit_observed": "5f975cc215d7ee613ea9d502c86301fd067d2212",
+    "feature_microscope": "experiments/mad_lab/keymaster_pivot_feature_microscope.py",
+    "persistent_memory": "experiments/mad_lab/keymaster_m2r_persistent_memory.py",
+    "gradation_table": "data/keymaster/KEYMASTER_PIVOT_GRADATION_TABLE_v1.0.json",
+    "architecture": "data/keymaster/KEYMASTER_SLIME_M2R_TOPA_ARCHITECTURE_v1.0.json",
+    "donor_laws": [
+      "learn structural features, never transferable numeric pivot labels",
+      "top-k proposals followed by exact verification",
+      "keep at least one structurally dissimilar alternate in top-k",
+      "exact fit/overflow and exact transition replay remain authority",
+      "M2R resource metrics are advisory and exact-receipt grounded"
+    ]
+  },
+  "profile": {
+    "cap_exponent": 1,
+    "extension_exponent": 0,
+    "bounded_resolution_width": 3
+  },
+  "outer_ecology": {
+    "canonical_baseline_always_runs_first": true,
+    "canonical_SAT_or_UNSAT": "return replay-confirmed canonical result; R4 is not invoked",
+    "canonical_OPEN": "restart from original CNF under R4 exact-lookahead selector",
+    "canonical_decisive_can_be_overwritten": false,
+    "same_theorem_face_learning": false,
+    "persistent_M2R_memory_enabled_in_this_gate": false,
+    "reason_memory_disabled": "R4 first isolates the exact-lookahead mechanism on a holdout-only cold start; learned memory may be tested only in a separately frozen later gate."
+  },
+  "cheap_structural_features": {
+    "source": "Keymaster pivot feature microscope pre-elimination plane",
+    "per_live_pivot": [
+      "degree_d = positive_parent_count + negative_parent_count",
+      "positive_p",
+      "negative_q",
+      "balance_ratio = min(p,q)/max(1,max(p,q))",
+      "parent_pairs = p*q",
+      "positive_parent_mean_width",
+      "negative_parent_mean_width",
+      "retained_clause_count",
+      "retained_units",
+      "single_conflict_mass_per_pair",
+      "same_sign_mass_per_pair",
+      "support_overlap_mass_per_pair"
+    ],
+    "forbidden": [
+      "SAT/UNSAT truth",
+      "probe feedback",
+      "local numeric pivot id as transferable feature",
+      "exact pair enumeration during cheap shortlist formation",
+      "same-run learned weights"
+    ]
+  },
+  "shortlist": {
+    "max_unique_pivots": 4,
+    "always_include": "first pivot in original canonical_pivot_order",
+    "view_1_low_pair_risk": "minimum lexicographic (parent_pairs, retained_units, positive_parent_mean_width+negative_parent_mean_width, canonical_index)",
+    "view_2_conflict_cancellation": "maximum single_conflict_mass_per_pair, ties by lower parent_pairs then canonical_index",
+    "view_3_structural_diversity": {
+      "anchor": "view_1_low_pair_risk if distinct, otherwise canonical",
+      "feature_axes": [
+        "degree_d",
+        "balance_ratio",
+        "parent_pairs",
+        "positive_parent_mean_width+negative_parent_mean_width",
+        "retained_units",
+        "single_conflict_mass_per_pair",
+        "same_sign_mass_per_pair",
+        "support_overlap_mass_per_pair"
+      ],
+      "normalization": "within-current-residual min-max to [0,1], zero range contributes 0",
+      "selection": "maximum Manhattan distance from anchor across normalized axes, ties by canonical_index"
+    },
+    "deduplication": "preserve first occurrence of each pivot; if fewer than four unique views exist, shortlist may be smaller",
+    "pivot_set_expansion": false
+  },
+  "exact_lookahead": {
+    "for_each_shortlisted_pivot": [
+      "run unchanged eliminate_var_capped(current_residual, pivot, state_cap)",
+      "charge the same proposal, pair and certificate-discovery ledger work as stock first_capped_elimination",
+      "if elimination returns a candidate, independently run unchanged verify_elimination_transition",
+      "charge the same verification ledger work as stock first_capped_elimination",
+      "only verified successful candidates are eligible for selection"
+    ],
+    "selection_among_verified_candidates": [
+      "certificate_readiness_tier: 0 if post-state contains empty clause or every clause width <=2, else 1",
+      "lower exact progress_phi(post_state)",
+      "lower exact canonical state_units(post_state)",
+      "lower exact raw_units from elimination stats",
+      "lower exact parent-pair work",
+      "lower original canonical pivot index"
+    ],
+    "if_no_shortlisted_candidate_fits": "return None to unchanged macro/fail-closed machinery",
+    "selected_transition_recomputed": false,
+    "selected_transition_must_already_be_exact_verified": true,
+    "formula_semantics_changed": false
+  },
+  "feature_work_accounting": {
+    "per_shortlist_call": "clause_scan_units + 4*literal_updates + 12*live_variable_feature_rows + 8*live_variable_normalization_rows",
+    "clause_scan_units": "sum(1+clause_width) over current residual",
+    "literal_updates": "sum over each current literal contribution to its pivot structural counters",
+    "charged_separately_from_C025_ledger": true,
+    "R4_total_fallback_work": "R4 exact solver paid_work (which includes all exact lookahead attempts) + R4 feature_work"
+  },
+  "formula_generator": {
+    "version": "CONNECTED_RANDOM_3CNF_V1",
+    "variables": 10,
+    "clauses": 42,
+    "width": 3,
+    "algorithm": [
+      "Use Python random.Random(seed).",
+      "Start with connectivity backbone i=1..8 on supports [i,i+1,i+2] with independent rng.getrandbits(1) signs.",
+      "Sample three distinct variables uniformly from 1..10 with independent signs until 42 unique canonical non-tautological width-3 clauses exist.",
+      "Canonical literal order is (abs(literal), literal<0); preserve insertion order.",
+      "No R1/R2/R3 result, SAT result, Keymaster score, or previous holdout output participates in generation."
+    ]
+  },
+  "holdout": {
+    "seeds": [5101,5102,5103,5104,5105,5106,5107,5108,5109,5110,5111,5112,5113,5114,5115,5116,5117,5118,5119,5120,5121,5122,5123,5124],
+    "formula_count": 24,
+    "all_seeds_new_relative_to_R1_R2_R3": true,
+    "training": false,
+    "policy_selection_on_holdout": false
+  },
+  "gate": {
+    "canonical_decisive_results_must_be_preserved": true,
+    "contradictory_exact_decisive_replays": 0,
+    "R4_ecology_decisive_count_must_be_at_least_canonical": true,
+    "strict_capability_gain_required_for_PASS": "R4 ecology decisive_count > canonical decisive_count",
+    "work_reporting_required": [
+      "canonical exact paid work",
+      "R4 fallback exact paid work",
+      "R4 feature work",
+      "R4 combined fallback work",
+      "exact lookahead candidate count",
+      "exact verified candidate count",
+      "mean shortlist size"
+    ],
+    "speedup_claim_allowed": false,
+    "all_authority_and_replay_invariants": true
+  },
+  "pass_claim": "KEYMASTER_EXACT_LOOKAHEAD_OPEN_RESCUE_COVERAGE_BOOST_WITHIN_FROZEN_C1K0_HOLDOUT",
+  "fail_claim": "NO_SCOPED_KEYMASTER_EXACT_LOOKAHEAD_OPEN_RESCUE_ESTABLISHED",
+  "scientific_boundary": {
+    "P_VS_NP": "OPEN",
+    "P_equals_NP_proved": false,
+    "finite_holdout_implies_polynomial": false,
+    "coverage_boost_implies_speedup": false,
+    "cheap_feature_score_is_proof": false,
+    "exact_one_step_best_is_global_optimum": false
+  }
+}
