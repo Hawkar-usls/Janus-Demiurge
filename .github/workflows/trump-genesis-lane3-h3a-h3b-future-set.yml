@@ -1,0 +1,55 @@
+name: TRUMP Genesis Lane 3 Mechanical Future Set H3A H3B
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'trump/packets/GENESIS_LANE3_MECHANICAL_FUTURE_SET_H3A_H3B_DOMAIN_EVIDENCE_v1.json'
+      - '.github/workflows/trump-genesis-lane3-h3a-h3b-future-set.yml'
+      - 'trump/physarius_final_gate.py'
+      - 'trump/PHYSARIUS_FINAL_ADMISSION_CONTRACT_v1.json'
+      - 'trump/TRUMP_MANIFEST.json'
+
+permissions:
+  contents: read
+
+jobs:
+  trump-final-domain-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run TRUMP final domain evidence gate
+        run: |
+          mkdir -p out/trump-h3
+          python trump/physarius_final_gate.py \
+            --packet trump/packets/GENESIS_LANE3_MECHANICAL_FUTURE_SET_H3A_H3B_DOMAIN_EVIDENCE_v1.json \
+            --out out/trump-h3/receipt.json
+      - name: Assert fail-closed H3A/H3B ceiling
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('trump/packets/GENESIS_LANE3_MECHANICAL_FUTURE_SET_H3A_H3B_DOMAIN_EVIDENCE_v1.json'))
+          r=json.load(open('out/trump-h3/receipt.json'))
+          assert p['domain_state']['H3A_CHALLENGE_RESISTANT_PRECONDITIONING']=='SUPPORTED_IN_HEART'
+          assert p['domain_state']['H3B_POST_LOCK_CHALLENGE_RESISTANT_FUTURE_SET_REWRITE']=='NOT_ESTABLISHED'
+          assert p['domain_state']['MECHANICAL_EXIT_COUPLING']=='OPEN'
+          assert p['domain_state']['SCIENTIFIC_BREAKTHROUGH'] is False
+          assert r['stage']=='DOMAIN_EVIDENCE_CANDIDATE'
+          assert r['admitted'] is True
+          assert r['verdict']=='DOMAIN_EVIDENCE_ACCEPTED_NO_PROMOTION'
+          assert r['next_authority']=='JANUS_GENESIS_DOMAIN_LANE_ONLY'
+          assert r['scientific_claim_promoted'] is False
+          assert r['proof_promoted'] is False
+          assert r['external_effect_authorized'] is False
+          assert r['physical_effect_authorized'] is False
+          assert r['missing']==[] and r['unknown']==[] and r['violations']==[]
+          print('TRUMP_H3A_H3B_DOMAIN_ADMISSION_PASS',r['receipt_sha256'])
+          PY
+      - name: Upload TRUMP H3A H3B receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: trump-h3a-h3b-${{ github.run_id }}
+          path: out/trump-h3/receipt.json
+          retention-days: 30
