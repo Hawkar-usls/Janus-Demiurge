@@ -1,0 +1,29 @@
+name: Validate Slime decomposition router
+
+on:
+  push:
+    branches: [slime-decomposition-router-v1]
+  pull_request:
+    paths:
+      - 'models/slime/slime_decomposition_router.py'
+      - '.github/workflows/validate-slime-decomposition-router.yml'
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run deterministic selftest
+        run: python models/slime/slime_decomposition_router.py
+      - name: Enforce authority boundary
+        run: |
+          python - <<'PY'
+          from models.slime.slime_decomposition_router import SlimeDecompositionRouter
+          p=SlimeDecompositionRouter().propose(['a','b','c'], [('a','b'),('b','c')])
+          assert p.role == 'HEURISTIC_CANDIDATE_GENERATOR_NOT_PROOF'
+          assert p.heuristic_width == 1
+          print('SLIME_DECOMPOSITION_ROUTER_AUTHORITY_BOUNDARY = PASS')
+          PY
