@@ -1,0 +1,98 @@
+{
+  "schema": "janus.trump.slime_pivot_r1.frozen_benchmark.v1",
+  "benchmark_id": "JANUS_TRUMP_SLIME_PIVOT_R1_FROZEN_C1K0_BENCH_V1",
+  "date": "2026-08-31",
+  "status": "FROZEN_BEFORE_ADAPTER_AND_RUNNER",
+  "winner_preregistered": false,
+  "solver": {
+    "repository": "Hawkar-usls/Janus-Fundamentum",
+    "commit": "377668585178995217b681d5ddb1b34b0f8dc386",
+    "path": "experiments/direct/janus_unified_proof_carrying_akinator_jec.py",
+    "git_blob_sha": "230ca949bb51f6eeb5e7dbeea364a0752f9d0636"
+  },
+  "donor": {
+    "repository": "Hawkar-usls/Janus-Demiurge",
+    "commit": "988ed7335fb51911889a7af5e58efcc0f3c27979",
+    "v3_path": "models/slime/slime_semantic_candidate_swarm_v3_amortized.py",
+    "v3_git_blob_sha": "730980f9d081eb67d4a2066b2dc5eaed48439e1d",
+    "expected_candidate_count": 16
+  },
+  "adapter_contract": {
+    "proposal_only": true,
+    "root_manifest_generated_once_per_formula": true,
+    "pivot_priority": "filter candidate linear_leaf_order to v:<integer> leaves in emitted order",
+    "per_residual_order": "live proposed root pivots in frozen priority, then all remaining live pivots in canonical solver order",
+    "allowed_pivot_set_must_equal_canonical": true,
+    "eliminate_var_capped_unchanged": true,
+    "verify_elimination_transition_unchanged": true,
+    "macro_restore_unchanged_except_same_pivot_priority_applies_to its roots-only elimination",
+    "certificate_portfolio_unchanged": true,
+    "witness_recovery_unchanged": true,
+    "formula_semantics_changed": false,
+    "theorem_authority": false
+  },
+  "solver_profile": {
+    "cap_exponent": 1,
+    "extension_exponent": 0,
+    "bounded_resolution_width": 3,
+    "purpose": "Tight-cap regime chosen before execution to expose order sensitivity; it is a scoped candidate benchmark, not a universal SAT claim."
+  },
+  "formula_generator": {
+    "version": "CONNECTED_RANDOM_3CNF_V1",
+    "variables": 10,
+    "clauses": 42,
+    "width": 3,
+    "algorithm": [
+      "Use Python random.Random(seed).",
+      "Start with a connectivity backbone for i=1..8 using support [i,i+1,i+2]; each literal sign is chosen by rng.getrandbits(1).",
+      "Then sample 3 distinct variables uniformly from 1..10 and independent signs until 42 unique canonical non-tautological width-3 clauses exist.",
+      "Canonical clause order is ascending by (abs(literal), literal<0); formula clause order is insertion order.",
+      "No SAT result, solver result, Slime score, or previous benchmark output participates in generation."
+    ]
+  },
+  "split": {
+    "training_seeds": [1101,1102,1103,1104,1105,1106,1107,1108,1109,1110,1111,1112],
+    "holdout_seeds": [2101,2102,2103,2104,2105,2106,2107,2108,2109,2110,2111,2112],
+    "fingerprint_separated": true,
+    "holdout_results_visible_during_front_selection": false
+  },
+  "front_selection": {
+    "candidates": "all 16 frozen v3 fronts only",
+    "training_rank": [
+      "higher exact decisive count (SAT or UNSAT)",
+      "lower total exact solver paid_work",
+      "lexicographically smaller front name"
+    ],
+    "canonical_baseline_not_eligible_as_selected_slime_front": true
+  },
+  "paid_work": {
+    "exact_solver_fields": [
+      "proposal_work",
+      "certificate_discovery_work",
+      "verification_work",
+      "elimination_pair_work",
+      "recompression_work",
+      "witness_recovery_work",
+      "bounded_width_resolution_work",
+      "two_sat_work",
+      "gf2_work"
+    ],
+    "slime_generation_ops": "reported separately and never hidden",
+    "end_to_end_wall_clock_or_net_resource_speedup_claimed_by_this_gate": false
+  },
+  "holdout_gate": {
+    "contradictory_exact_decisive_results": 0,
+    "selected_front_decisive_count_must_be_at_least_canonical": true,
+    "if_decisive_counts_equal_selected_exact_paid_work_must_be_at_most_canonical": true,
+    "strict_improvement_required": "selected has more decisive results OR equal decisive results and strictly lower exact paid_work",
+    "all_exact_replay_and_authority_invariants_must_hold": true
+  },
+  "pass_claim": "PIVOT_ORDER_EXACT_SEARCH_BOOST_WITHIN_FROZEN_C1K0_HOLDOUT",
+  "fail_claim": "NO_SCOPED_PIVOT_BOOST_ESTABLISHED",
+  "scientific_boundary": {
+    "P_VS_NP": "OPEN",
+    "P_equals_NP_proved": false,
+    "finite_holdout_implies_polynomial": false,
+    "Slime_order_is_proof": false
+  }
+}
