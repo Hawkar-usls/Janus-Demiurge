@@ -1,0 +1,81 @@
+name: TRUMP Slime R6.3 Natural Mix Frozen Gate
+
+on:
+  pull_request:
+    paths:
+      - 'trump/TRUMP_SLIME_R6_3_NATURAL_MIX_REPLICATION_FROZEN_BENCH_V1.json'
+      - 'trump/run_trump_slime_r6_3_natural_mix_benchmark.py'
+      - 'tests/test_trump_slime_r6_3_natural_mix.py'
+      - '.github/workflows/trump-slime-r6-3-natural-mix.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-r6-3-natural-mix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install pytest
+        run: python -m pip install --upgrade pytest
+
+      - name: Verify promoted R5/R6 runtime blobs unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object trump/trump_slime_preelim_compression_r5.py)" = "bb9471e3e3c7129ec394ad02f727d9ca6691439b"
+          test "$(git hash-object trump/trump_slime_r6_keymaster_m2r.py)" = "d043abe6ccfc9ca00ba46999cab990c175abc570"
+          test "$(git hash-object trump/TRUMP_SLIME_R6_KEYMASTER_M2R_ROOT_ROUTING_FROZEN_BENCH_V1.json)" = "b019f126feec611028bb83ec54a3f04a00a84929"
+          test "$(git hash-object trump/trump_slime_r6_1_regret_guard.py)" = "dbac55a9eb1f507e9f87ad7456cddc52c2562eca"
+          test "$(git hash-object trump/TRUMP_SLIME_R6_1_REGRET_BOUNDED_EXPLORATION_FROZEN_BENCH_V1.json)" = "6b07c3dc613d36148edbc2bad75c9e795a8cbb33"
+
+      - name: Compile R6.3
+        run: python -m py_compile trump/run_trump_slime_r6_3_natural_mix_benchmark.py
+
+      - name: Validate frozen R6.3 spec
+        env:
+          PYTHONPATH: trump
+        run: |
+          python - <<'PY'
+          import run_trump_slime_r6_3_natural_mix_benchmark as r63
+          s = r63.load_frozen_spec()
+          assert s['status'] == 'FROZEN_BEFORE_R6_3_BENCHMARK_IMPLEMENTATION'
+          assert s['winner_preregistered'] is False
+          assert s['fresh_fixed_unenriched_holdout']['formula_count'] == 60
+          assert s['fresh_fixed_unenriched_holdout']['selection_by_exploration_trigger_forbidden'] is True
+          print(r63.selftest())
+          PY
+
+      - name: Re-run promoted R6 firewalls
+        env:
+          PYTHONPATH: trump
+        run: pytest -q tests/test_trump_slime_r6_keymaster_m2r.py tests/test_trump_slime_r6_1_regret_guard.py
+
+      - name: R6.3 natural-mix firewall
+        env:
+          PYTHONPATH: trump
+        run: pytest -q tests/test_trump_slime_r6_3_natural_mix.py
+
+      - name: Execute frozen R6.3 natural mix
+        env:
+          PYTHONPATH: trump
+        run: |
+          python trump/run_trump_slime_r6_3_natural_mix_benchmark.py \
+            --output trump-slime-r6-3-natural-mix-result.json \
+            --require-base-pass
+
+      - name: Upload frozen R6.3 result even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trump-slime-r6-3-natural-mix-result
+          path: trump-slime-r6-3-natural-mix-result.json
+          if-no-files-found: warn
+          retention-days: 30
