@@ -1,0 +1,49 @@
+name: TRUMP Genesis Lane 3 Mechanical Exit Hysteresis
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'trump/packets/GENESIS_LANE3_MECHANICAL_EXIT_HYSTERESIS_DOMAIN_EVIDENCE_v1.json'
+      - '.github/workflows/trump-genesis-lane3-mechanical-exit-hysteresis.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  trump-final-domain-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run TRUMP final domain evidence gate
+        run: |
+          mkdir -p out/trump-meh
+          python trump/physarius_final_gate.py \
+            --packet trump/packets/GENESIS_LANE3_MECHANICAL_EXIT_HYSTERESIS_DOMAIN_EVIDENCE_v1.json \
+            --out out/trump-meh/receipt.json
+      - name: Assert fail-closed ceiling and open frontier preservation
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('trump/packets/GENESIS_LANE3_MECHANICAL_EXIT_HYSTERESIS_DOMAIN_EVIDENCE_v1.json'))
+          r=json.load(open('out/trump-meh/receipt.json'))
+          assert p['domain_state']['mechanical_exit_coupling']=='OPEN'
+          assert p['domain_state']['durable_tissue_future_set_rewrite']=='NOT_ESTABLISHED'
+          assert r['admitted'] is True
+          assert r['verdict']=='DOMAIN_EVIDENCE_ACCEPTED_NO_PROMOTION'
+          assert r['next_authority']=='JANUS_GENESIS_DOMAIN_LANE_ONLY'
+          assert r['scientific_claim_promoted'] is False
+          assert r['proof_promoted'] is False
+          assert r['external_effect_authorized'] is False
+          assert r['physical_effect_authorized'] is False
+          assert r['missing']==[] and r['unknown']==[] and r['violations']==[]
+          print('TRUMP_MECHANICAL_EXIT_HYSTERESIS_PASS',r['receipt_sha256'])
+          PY
+      - name: Upload TRUMP receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: trump-mechanical-exit-hysteresis-${{ github.run_id }}
+          path: out/trump-meh/receipt.json
+          retention-days: 30
