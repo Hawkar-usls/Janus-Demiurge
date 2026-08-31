@@ -1,0 +1,62 @@
+name: TRUMP Slime Contextual M2R R2 Frozen Gate
+
+on:
+  pull_request:
+    paths:
+      - 'trump/TRUMP_SLIME_CONTEXTUAL_M2R_R2_FROZEN_BENCH_V1.json'
+      - 'trump/trump_slime_contextual_m2r_r2.py'
+      - 'trump/run_trump_slime_contextual_m2r_r2_benchmark.py'
+      - 'tests/test_trump_slime_contextual_m2r_r2.py'
+      - '.github/workflows/trump-slime-contextual-m2r-r2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-contextual-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pytest
+        run: python -m pip install --disable-pip-version-check pytest
+      - name: Compile R2
+        run: |
+          python -m py_compile trump/trump_slime_contextual_m2r_r2.py
+          python -m py_compile trump/run_trump_slime_contextual_m2r_r2_benchmark.py
+      - name: Validate frozen R2 spec
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          s = json.loads(Path('trump/TRUMP_SLIME_CONTEXTUAL_M2R_R2_FROZEN_BENCH_V1.json').read_text())
+          assert s['status'] == 'FROZEN_BEFORE_R2_IMPLEMENTATION'
+          assert s['winner_preregistered'] is False
+          assert s['contextual_policy']['no_training'] is True
+          assert s['contextual_policy']['no_persistent_memory_in_this_gate'] is True
+          assert s['feature_work_accounting']['feature_work_is_charged_to_R2_total'] is True
+          assert len(s['holdout']['seeds']) == 24
+          assert len(set(s['holdout']['seeds'])) == 24
+          print('PASS frozen R2 spec')
+          PY
+      - name: Adversarial contextual tests
+        run: pytest -q tests/test_trump_slime_contextual_m2r_r2.py
+      - name: Live pinned R2 selftest
+        run: python trump/trump_slime_contextual_m2r_r2.py
+      - name: Execute frozen R2 holdout
+        run: |
+          python trump/run_trump_slime_contextual_m2r_r2_benchmark.py \
+            --output trump-slime-contextual-m2r-r2-result.json \
+            --require-pass
+      - name: Upload frozen R2 result even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trump-slime-contextual-m2r-r2-frozen-result
+          path: trump-slime-contextual-m2r-r2-result.json
+          if-no-files-found: warn
+          retention-days: 30
