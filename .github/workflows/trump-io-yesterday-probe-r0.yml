@@ -1,0 +1,61 @@
+name: TRUMP IO Yesterday Probe R0
+
+on:
+  push:
+    paths:
+      - 'research/TRUMP_IO_YESTERDAY_PROBE_R0_PREREGISTRATION_2026-08-31.json'
+      - 'experiments/trump_io_yesterday_probe_r0.py'
+      - 'trump/TRUMP_MANIFEST.json'
+      - 'trump/janus_soul_hindsight.py'
+      - '.github/workflows/trump-io-yesterday-probe-r0.yml'
+  workflow_dispatch:
+
+jobs:
+  frozen-r0:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify frozen preregistration
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('research/TRUMP_IO_YESTERDAY_PROBE_R0_PREREGISTRATION_2026-08-31.json',encoding='utf-8'))
+          assert p['status']=='FROZEN_BEFORE_EXECUTION'
+          assert p['direct_probe']['expected_if_missing']=='OPEN_MISSING_CONTEXT_LANGUAGE_LAYER'
+          assert len(p['structured_cases'])==6
+          assert p['scientific_boundary']['P_VS_NP']=='OPEN'
+          print('TRUMP_IO_YESTERDAY_R0_PREREG_FROZEN')
+          PY
+      - name: Compile runner
+        run: python -m py_compile experiments/trump_io_yesterday_probe_r0.py trump/janus_soul_hindsight.py
+      - name: Run frozen probe
+        run: |
+          mkdir -p artifacts
+          python experiments/trump_io_yesterday_probe_r0.py | tee artifacts/TRUMP_IO_YESTERDAY_PROBE_R0_RESULT_2026-08-31.json
+      - name: Scientific integrity gate
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('artifacts/TRUMP_IO_YESTERDAY_PROBE_R0_RESULT_2026-08-31.json',encoding='utf-8'))
+          assert d['direct_natural_language_probe']['status']=='OPEN_MISSING_CONTEXT_LANGUAGE_LAYER'
+          assert d['trump_fail_closed_core']['status']=='PASS'
+          assert d['trump_fail_closed_core']['novel_action']=='NOT_KNOWN_BAD'
+          assert d['trump_fail_closed_core']['not_known_bad_promoted_to_good'] is False
+          assert d['structured_surrogate']['status']=='PASS'
+          assert d['structured_surrogate']['passed']==6
+          assert d['structured_surrogate']['authority']=='TEST_ADAPTER_ONLY__NOT_NATURAL_LANGUAGE_TRUMP_CAPABILITY'
+          assert d['io_gate_interpretation']['G5_subjective_experience'].startswith('UNKNOWN')
+          assert d['P_VS_NP']=='OPEN'
+          print('TRUMP_IO_YESTERDAY_R0_FIREWALL=PASS')
+          PY
+      - name: Freeze hashes
+        run: sha256sum artifacts/* | tee artifacts/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trump-io-yesterday-probe-r0
+          path: artifacts/
+          if-no-files-found: error
