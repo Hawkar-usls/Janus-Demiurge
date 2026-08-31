@@ -1,0 +1,59 @@
+name: TRUMP Genesis Lane 3 H3B Chronic Cardiac Search
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'trump/packets/GENESIS_LANE3_H3B_CHRONIC_CARDIAC_SAME_CHALLENGE_SEARCH_v1.json'
+      - '.github/workflows/trump-genesis-lane3-h3b-chronic-cardiac-search.yml'
+      - 'trump/physarius_final_gate.py'
+      - 'trump/PHYSARIUS_FINAL_ADMISSION_CONTRACT_v1.json'
+      - 'trump/TRUMP_MANIFEST.json'
+
+permissions:
+  contents: read
+
+jobs:
+  trump-final-h3b-search-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run TRUMP final domain evidence gate
+        run: |
+          mkdir -p out/trump-h3b
+          python trump/physarius_final_gate.py \
+            --packet trump/packets/GENESIS_LANE3_H3B_CHRONIC_CARDIAC_SAME_CHALLENGE_SEARCH_v1.json \
+            --out out/trump-h3b/receipt.json
+      - name: Assert nonfinding never becomes absence or H3B
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('trump/packets/GENESIS_LANE3_H3B_CHRONIC_CARDIAC_SAME_CHALLENGE_SEARCH_v1.json'))
+          r=json.load(open('out/trump-h3b/receipt.json'))
+          d=p['domain_state']
+          assert d['CHRONIC_CARDIAC_MATURE_LOCK_ROOTS'].startswith('FOUND_')
+          assert d['QUALIFYING_CHRONIC_SAME_ROOT_RETAC_AFTER_MATURE_LOCK']=='NOT_LOCATED_IN_THIS_SEARCH_PASS'
+          assert d['ABSENCE_PROVEN'] is False
+          assert d['H3B_POST_LOCK_SAME_CHALLENGE_REWRITE']=='OPEN_NOT_ESTABLISHED'
+          assert d['MECHANICAL_EXIT_COUPLING']=='OPEN'
+          assert d['SCIENTIFIC_BREAKTHROUGH'] is False
+          assert 'SEARCH_NONFINDING_NE_PROOF_OF_ABSENCE' in p['critical_boundaries']
+          assert r['stage']=='DOMAIN_EVIDENCE_CANDIDATE'
+          assert r['admitted'] is True
+          assert r['verdict']=='DOMAIN_EVIDENCE_ACCEPTED_NO_PROMOTION'
+          assert r['next_authority']=='JANUS_GENESIS_DOMAIN_LANE_ONLY'
+          assert r['scientific_claim_promoted'] is False
+          assert r['proof_promoted'] is False
+          assert r['external_effect_authorized'] is False
+          assert r['physical_effect_authorized'] is False
+          assert r['missing']==[] and r['unknown']==[] and r['violations']==[]
+          print('TRUMP_H3B_CHRONIC_CARDIAC_SEARCH_PASS',r['receipt_sha256'])
+          PY
+      - name: Upload TRUMP H3B search receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: trump-h3b-chronic-cardiac-${{ github.run_id }}
+          path: out/trump-h3b/receipt.json
+          retention-days: 30
