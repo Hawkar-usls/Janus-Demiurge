@@ -1,0 +1,34 @@
+name: TRUMP R5A2 Graph Tautology Collision Development Calibration
+
+on:
+  pull_request:
+    paths:
+      - 'trump/dev_r5a2_gt_collision_calibration.py'
+      - '.github/workflows/trump-r5a2-gt-collision-development.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  calibrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify unchanged merged R5 runtime blob
+        run: test "$(git hash-object trump/trump_slime_preelim_compression_r5.py)" = "bb9471e3e3c7129ec394ad02f727d9ca6691439b"
+      - name: Compile calibration
+        run: python -m py_compile trump/dev_r5a2_gt_collision_calibration.py
+      - name: Run burned GT6/GT7 collision microscope
+        run: python trump/dev_r5a2_gt_collision_calibration.py | tee r5a2-gt-collision-development.json
+      - name: Upload development result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trump-r5a2-gt-collision-development
+          path: r5a2-gt-collision-development.json
+          retention-days: 7
