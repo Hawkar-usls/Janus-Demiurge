@@ -46,7 +46,7 @@ def load_frozen_spec() -> dict[str, Any]:
 
 def same_result(left: dict[str, Any], right: dict[str, Any]) -> bool:
     return json.dumps(left, sort_keys=True, separators=(",", ":")) == json.dumps(
-        right, sort_keys=True, separators=(",", ":"))
+        right, sort_keys=True, separators=(",", ":")
     )
 
 
