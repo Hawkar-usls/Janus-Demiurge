@@ -85,6 +85,14 @@ def gate(manifest: dict, contract: dict, packet: dict) -> dict:
             if key in packet and not is_true(packet[key]):
                 receipt["violations"].append(f"{key.upper()}_NOT_TRUE")
 
+    elif stage == "DOMAIN_EVIDENCE_CANDIDATE":
+        for key in (
+            "timing_classified", "claim_ceiling_frozen", "human_translation_blocked",
+            "independent_replication_not_inflated", "source_read_only", "lineage_roles_preserved"
+        ):
+            if key in packet and not is_true(packet[key]):
+                receipt["violations"].append(f"{key.upper()}_NOT_TRUE")
+
     elif stage == "SCIENTIFIC_PROMOTION_CANDIDATE":
         for key in (
             "prefrozen_quantitative_claim", "raw_or_new_data_result", "independent_replication",
@@ -115,6 +123,7 @@ def gate(manifest: dict, contract: dict, packet: dict) -> dict:
     receipt["next_authority"] = (
         "SEARCH_PIPELINE_ONLY" if stage == "DISCOVERY_ONLY" and admitted else
         "FROZEN_CONTENT_PULL_REVIEW" if stage == "CONTENT_PULL_CANDIDATE" and admitted else
+        "JANUS_GENESIS_DOMAIN_LANE_ONLY" if stage == "DOMAIN_EVIDENCE_CANDIDATE" and admitted else
         "JANUS_FUNDAMENTUM_SCIENTIFIC_PROMOTION_GATE" if stage == "SCIENTIFIC_PROMOTION_CANDIDATE" and admitted else
         "NONE"
     )
