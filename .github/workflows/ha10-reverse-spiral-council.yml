@@ -1,0 +1,134 @@
+name: JANUS HA10 Reverse Spiral Council 17
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scout_swarm/council_inputs/HA10_REVERSE_SPIRAL_COUNCIL_INPUT.json'
+      - 'scout_swarm/missions/HA10_REVERSE_SPIRAL_COUNCIL-v1.json'
+      - 'tools/demiurge_reverse_spiral_council.py'
+      - 'tools/demiurge_reverse_spiral_council_v2.py'
+      - 'tools/demiurge_reverse_spiral_council_v3.py'
+      - 'tests/test_demiurge_reverse_spiral_council.py'
+      - 'tests/test_demiurge_reverse_spiral_council_v2.py'
+      - 'tests/test_demiurge_reverse_spiral_council_v3.py'
+      - '.github/workflows/ha10-reverse-spiral-council.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: Checkout exact triggering revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+      - name: Verify council implementation blobs
+        shell: bash
+        run: |
+          test "$(git hash-object scout_swarm/missions/HA10_REVERSE_SPIRAL_COUNCIL-v1.json)" = "9cf69c93b30237597db989c9ab5a9e32ce589be8"
+          test "$(git hash-object tools/demiurge_reverse_spiral_council.py)" = "11c36badce6759d2aa2af81cfeb9f19005646474"
+          test "$(git hash-object tests/test_demiurge_reverse_spiral_council.py)" = "8717bc4377207d9a3e61f970c3569e97125a01e5"
+          test "$(git hash-object tools/demiurge_reverse_spiral_council_v2.py)" = "30e400564c8be046a7bb1dfc051ec102c3eb06e8"
+          test "$(git hash-object tests/test_demiurge_reverse_spiral_council_v2.py)" = "554b54b161ece1434576bb70859aa556978f121e"
+          test "$(git hash-object tools/demiurge_reverse_spiral_council_v3.py)" = "eb298d6edafe1099c771449d852dac8097238947"
+          test "$(git hash-object tests/test_demiurge_reverse_spiral_council_v3.py)" = "0c24926179f218ff32612edc8ef68df117eec744"
+      - name: Install test runner
+        run: python -m pip install --disable-pip-version-check 'pytest>=8,<9'
+      - name: Validate council engines
+        run: |
+          python -m pytest -q \
+            tests/test_demiurge_reverse_spiral_council.py \
+            tests/test_demiurge_reverse_spiral_council_v2.py \
+            tests/test_demiurge_reverse_spiral_council_v3.py
+      - name: Build 17-role matrix
+        id: matrix
+        shell: bash
+        run: |
+          MATRIX=$(python - <<'PY'
+          import json
+          m=json.load(open('scout_swarm/missions/HA10_REVERSE_SPIRAL_COUNCIL-v1.json',encoding='utf-8'))
+          print(json.dumps({'include':[{'role':r['id']} for r in m['roles']]},separators=(',',':')))
+          PY
+          )
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+
+  council-role:
+    needs: plan
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 17
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - name: Checkout exact triggering revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+      - name: Run ${{ matrix.role }} reverse lens with v3 progress guard
+        run: |
+          mkdir -p runtime
+          python tools/demiurge_reverse_spiral_council_v3.py \
+            --input scout_swarm/council_inputs/HA10_REVERSE_SPIRAL_COUNCIL_INPUT.json \
+            --role '${{ matrix.role }}' \
+            --output 'runtime/${{ matrix.role }}.json'
+      - name: Upload exact role vote
+        uses: actions/upload-artifact@v4
+        with:
+          name: reverse-council-${{ matrix.role }}
+          path: runtime/${{ matrix.role }}.json
+          if-no-files-found: error
+          retention-days: 30
+
+  aggregate:
+    needs: [plan, council-role]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact triggering revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+      - name: Download all 17 role votes
+        uses: actions/download-artifact@v4
+        with:
+          pattern: reverse-council-*
+          path: runtime/votes
+          merge-multiple: true
+      - name: Aggregate council with v3 progress guard
+        run: |
+          python tools/demiurge_reverse_spiral_council_v3.py \
+            --input scout_swarm/council_inputs/HA10_REVERSE_SPIRAL_COUNCIL_INPUT.json \
+            --votes-dir runtime/votes \
+            --output runtime/COUNCIL_RESULT.json
+      - name: Validate authority and monotonic progress firewalls
+        run: |
+          python - <<'PY'
+          import json
+          r=json.load(open('runtime/COUNCIL_RESULT.json',encoding='utf-8'))
+          assert r['roles_observed']==17
+          assert r['selected_next_gate']!='COUSTEAU_HA10_119HZ_REINTERPRETATION'
+          assert r['authority']['council_output_is_scientific_evidence'] is False
+          assert r['authority']['authority_delta_for_119hz']==0
+          assert r['authority']['target_identity']=='UNCONFIRMED'
+          assert r['selector_version']=='V3_MONOTONIC_EVIDENCE_PROGRESS'
+          for gate in r.get('nonrepeatable_due_to_data_boundary',[]):
+              assert r['selected_next_gate'] != gate
+          print(r['canonical_answer'])
+          PY
+      - name: Prove no source writeback
+        run: test -z "$(git status --porcelain)"
+      - name: Upload council result
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-ha10-reverse-council-${{ github.run_id }}
+          path: runtime/COUNCIL_RESULT.json
+          if-no-files-found: error
+          retention-days: 30
