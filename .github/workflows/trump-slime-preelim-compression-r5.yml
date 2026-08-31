@@ -1,0 +1,65 @@
+name: TRUMP Slime Pre-Elimination Compression R5 Frozen Gate
+
+on:
+  pull_request:
+    paths:
+      - 'trump/TRUMP_SLIME_PREELIM_COMPRESSION_R5_FROZEN_BENCH_V1.json'
+      - 'trump/trump_slime_preelim_compression_r5.py'
+      - 'trump/run_trump_slime_preelim_compression_r5_benchmark.py'
+      - 'tests/test_trump_slime_preelim_compression_r5.py'
+      - '.github/workflows/trump-slime-preelim-compression-r5.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-preelim-compression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pytest
+        run: python -m pip install --disable-pip-version-check pytest
+      - name: Compile R5
+        run: |
+          python -m py_compile trump/trump_slime_preelim_compression_r5.py
+          python -m py_compile trump/run_trump_slime_preelim_compression_r5_benchmark.py
+          python -m py_compile tests/test_trump_slime_preelim_compression_r5.py
+      - name: Validate frozen R5 spec
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          s=json.loads(Path('trump/TRUMP_SLIME_PREELIM_COMPRESSION_R5_FROZEN_BENCH_V1.json').read_text())
+          assert s['status']=='FROZEN_BEFORE_R5_IMPLEMENTATION'
+          assert s['winner_preregistered'] is False
+          assert s['profile']=={'cap_exponent':1,'extension_exponent':0,'bounded_resolution_width':3}
+          assert s['bounded_continuation']['unique_residual_node_budget']=='min(N^2, 128)'
+          assert s['bounded_continuation']['maximum_factor_depth']==8
+          assert s['outer_ecology']['persistent_M2R_memory_enabled_in_this_gate'] is False
+          assert len(s['holdout']['seeds'])==24 and len(set(s['holdout']['seeds']))==24
+          assert min(s['holdout']['seeds'])==6101 and max(s['holdout']['seeds'])==6124
+          assert s['gate']['every_R5_rescue_must_have_verified_split_DAG'] is True
+          print('PASS frozen R5 spec')
+          PY
+      - name: Adversarial R5 tests
+        run: pytest -q tests/test_trump_slime_preelim_compression_r5.py
+      - name: Live pinned R5 selftest
+        run: python trump/trump_slime_preelim_compression_r5.py
+      - name: Execute frozen R5 holdout
+        run: |
+          python trump/run_trump_slime_preelim_compression_r5_benchmark.py \
+            --output trump-slime-preelim-compression-r5-result.json \
+            --require-pass
+      - name: Upload frozen R5 result even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trump-slime-preelim-compression-r5-frozen-result
+          path: trump-slime-preelim-compression-r5-result.json
+          if-no-files-found: warn
+          retention-days: 30
