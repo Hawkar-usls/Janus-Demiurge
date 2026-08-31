@@ -1,0 +1,93 @@
+{
+  "schema": "janus.trump.slime_contextual_m2r_r2.frozen_benchmark.v1",
+  "benchmark_id": "JANUS_TRUMP_SLIME_CONTEXTUAL_M2R_R2_FROZEN_C1K0_BENCH_V1",
+  "date": "2026-08-31",
+  "status": "FROZEN_BEFORE_R2_IMPLEMENTATION",
+  "winner_preregistered": false,
+  "previous_result_not_reused_as_holdout": true,
+  "solver": {
+    "repository": "Hawkar-usls/Janus-Fundamentum",
+    "commit": "377668585178995217b681d5ddb1b34b0f8dc386",
+    "path": "experiments/direct/janus_unified_proof_carrying_akinator_jec.py",
+    "git_blob_sha": "230ca949bb51f6eeb5e7dbeea364a0752f9d0636"
+  },
+  "profile": {
+    "cap_exponent": 1,
+    "extension_exponent": 0,
+    "bounded_resolution_width": 3
+  },
+  "contextual_policy": {
+    "id": "M2R_CERTIFIED_RAW_UPPER_CONTEXTUAL_V1",
+    "recompute_on_every_canonical_pivot_order_call": true,
+    "input": "current exact residual CNF and current state_cap only",
+    "no_training": true,
+    "no_persistent_memory_in_this_gate": true,
+    "no_SAT_truth_or_probe_feedback": true,
+    "per_live_variable": [
+      "positive = number of current residual clauses containing +v",
+      "negative = number of current residual clauses containing -v",
+      "incident_units = sum(1+clause_width) over current residual clauses containing either sign of v",
+      "retained_units = total_current_units - incident_units",
+      "parent_pairs = positive * negative",
+      "max_positive_tail = max(clause_width-1 over +v parents), or 0",
+      "max_negative_tail = max(clause_width-1 over -v parents), or 0",
+      "max_resolvent_width_upper = max_positive_tail + max_negative_tail when parent_pairs>0 else 0",
+      "certified_raw_upper_units = retained_units + parent_pairs * (1 + max_resolvent_width_upper)",
+      "certified_cap_safe = certified_raw_upper_units <= state_cap"
+    ],
+    "proof_carrying_reason": "Every non-tautological parent pair can add at most one resolvent of width at most max_positive_tail+max_negative_tail; counting every pair, including duplicates and pairs that actually become tautologies, can only overestimate raw units. Therefore certified_raw_upper_units is an upper bound on eliminate_var_capped raw_units.",
+    "rank_tuple_ascending": [
+      "0 if certified_cap_safe else 1",
+      "certified_raw_upper_units",
+      "parent_pairs",
+      "canonical_pivot_index"
+    ],
+    "pivot_set_change_allowed": false,
+    "tie_break": "original canonical pivot order",
+    "same_theorem_face_learning": false
+  },
+  "feature_work_accounting": {
+    "per_pivot_order_call": "clause_scan_units + 4*literal_updates + 8*live_variable_scores",
+    "clause_scan_units": "sum(1+clause_width) over current residual",
+    "literal_updates": "sum(clause_width) over current residual",
+    "live_variable_scores": "number of live variables returned by original canonical_pivot_order",
+    "feature_work_is_charged_to_R2_total": true,
+    "canonical_baseline_feature_work": 0
+  },
+  "formula_generator": {
+    "version": "CONNECTED_RANDOM_3CNF_V1",
+    "variables": 10,
+    "clauses": 42,
+    "width": 3,
+    "algorithm": [
+      "Use Python random.Random(seed).",
+      "Start with connectivity backbone i=1..8 on supports [i,i+1,i+2] with independent rng.getrandbits(1) signs.",
+      "Sample three distinct variables uniformly from 1..10 with independent signs until 42 unique canonical non-tautological width-3 clauses exist.",
+      "Canonical clause literal order is (abs(literal), literal<0); formula clause insertion order is preserved.",
+      "No SAT result, prior R1 result, Slime score or exact solver output participates in generation."
+    ]
+  },
+  "holdout": {
+    "seeds": [3101,3102,3103,3104,3105,3106,3107,3108,3109,3110,3111,3112,3113,3114,3115,3116,3117,3118,3119,3120,3121,3122,3123,3124],
+    "formula_count": 24,
+    "all_seeds_new_relative_to_R1": true,
+    "no_policy_selection_on_holdout": true
+  },
+  "gate": {
+    "contradictory_exact_decisive_results": 0,
+    "R2_decisive_count_must_be_at_least_canonical": true,
+    "R2_combined_work": "R2 exact solver paid_work + contextual feature_work",
+    "if_decisive_counts_equal_R2_combined_work_must_be_at_most_canonical_exact_paid_work": true,
+    "strict_improvement_required": "R2 has more decisive results OR equal decisive results and strictly lower combined_work",
+    "all_exact_replay_and_authority_invariants": true
+  },
+  "pass_claim": "CONTEXTUAL_M2R_PIVOT_BOOST_WITHIN_FROZEN_C1K0_HOLDOUT_AFTER_FEATURE_COST",
+  "fail_claim": "NO_SCOPED_CONTEXTUAL_M2R_PIVOT_BOOST_ESTABLISHED",
+  "scientific_boundary": {
+    "P_VS_NP": "OPEN",
+    "P_equals_NP_proved": false,
+    "finite_holdout_implies_polynomial": false,
+    "certified_raw_upper_is_exact_elimination_result": false,
+    "heuristic_order_is_proof": false
+  }
+}
