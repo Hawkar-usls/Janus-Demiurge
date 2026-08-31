@@ -1,0 +1,67 @@
+name: TRUMP Slime Pivot R1 Frozen Gate
+
+on:
+  pull_request:
+    paths:
+      - 'trump/TRUMP_SLIME_PIVOT_R1_FROZEN_BENCH_V1.json'
+      - 'trump/trump_slime_pivot_adapter_r1.py'
+      - 'trump/run_trump_slime_pivot_r1_benchmark.py'
+      - 'tests/test_trump_slime_pivot_adapter_r1.py'
+      - '.github/workflows/trump-slime-pivot-r1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-pivot-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pytest
+        run: python -m pip install --disable-pip-version-check pytest
+      - name: Compile adapter and frozen runner
+        run: |
+          python -m py_compile trump/trump_slime_pivot_adapter_r1.py
+          python -m py_compile trump/run_trump_slime_pivot_r1_benchmark.py
+      - name: Validate frozen spec
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('trump/TRUMP_SLIME_PIVOT_R1_FROZEN_BENCH_V1.json')
+          s = json.loads(p.read_text())
+          assert s['status'] == 'FROZEN_BEFORE_ADAPTER_AND_RUNNER'
+          assert s['winner_preregistered'] is False
+          assert s['solver_profile'] == {
+              'cap_exponent': 1,
+              'extension_exponent': 0,
+              'bounded_resolution_width': 3,
+              'purpose': s['solver_profile']['purpose'],
+          }
+          assert len(s['split']['training_seeds']) == 12
+          assert len(s['split']['holdout_seeds']) == 12
+          assert set(s['split']['training_seeds']).isdisjoint(s['split']['holdout_seeds'])
+          print('PASS frozen spec')
+          PY
+      - name: Adversarial pivot adapter tests
+        run: pytest -q tests/test_trump_slime_pivot_adapter_r1.py
+      - name: Live pinned adapter selftest
+        run: python trump/trump_slime_pivot_adapter_r1.py
+      - name: Execute frozen train then holdout gate
+        run: |
+          python trump/run_trump_slime_pivot_r1_benchmark.py \
+            --output trump-slime-pivot-r1-result.json \
+            --require-pass
+      - name: Upload frozen result even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trump-slime-pivot-r1-frozen-result
+          path: trump-slime-pivot-r1-result.json
+          if-no-files-found: warn
+          retention-days: 30
