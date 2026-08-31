@@ -1,0 +1,34 @@
+name: TRUMP R5 Graph Tautology Development Calibration
+
+on:
+  pull_request:
+    paths:
+      - 'trump/dev_r5_graph_tautology_calibration.py'
+      - '.github/workflows/trump-r5-gt-development-calibration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  calibrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify unchanged merged R5 runtime blob
+        run: test "$(git hash-object trump/trump_slime_preelim_compression_r5.py)" = "bb9471e3e3c7129ec394ad02f727d9ca6691439b"
+      - name: Compile development calibration
+        run: python -m py_compile trump/dev_r5_graph_tautology_calibration.py
+      - name: Run GT6-GT8 development calibration
+        run: python trump/dev_r5_graph_tautology_calibration.py | tee gt-development-calibration.json
+      - name: Upload development result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trump-r5-gt-development-calibration
+          path: gt-development-calibration.json
+          retention-days: 7
