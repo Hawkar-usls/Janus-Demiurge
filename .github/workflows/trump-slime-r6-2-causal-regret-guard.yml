@@ -1,0 +1,96 @@
+name: TRUMP Slime R6.2 Causal Regret Guard Frozen Gate
+
+on:
+  pull_request:
+    paths:
+      - 'trump/TRUMP_SLIME_R6_2_CAUSAL_REGRET_GUARD_EXPOSURE_FROZEN_BENCH_V1.json'
+      - 'trump/TRUMP_SLIME_R6_KEYMASTER_M2R_ROOT_ROUTING_FROZEN_BENCH_V1.json'
+      - 'trump/TRUMP_SLIME_R6_1_REGRET_BOUNDED_EXPLORATION_FROZEN_BENCH_V1.json'
+      - 'trump/trump_slime_r6_keymaster_m2r.py'
+      - 'trump/trump_slime_r6_1_regret_guard.py'
+      - 'trump/run_trump_slime_r6_2_causal_regret_guard_benchmark.py'
+      - 'tests/test_trump_slime_r6_keymaster_m2r.py'
+      - 'tests/test_trump_slime_r6_1_regret_guard.py'
+      - 'tests/test_trump_slime_r6_2_causal_regret_guard.py'
+      - '.github/workflows/trump-slime-r6-2-causal-regret-guard.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-r6-2-causal-regret-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install pytest
+        run: python -m pip install --upgrade pytest
+
+      - name: Verify immutable R5/R6/R6.1 runtime blobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object trump/trump_slime_preelim_compression_r5.py)" = "bb9471e3e3c7129ec394ad02f727d9ca6691439b"
+          test "$(git hash-object trump/trump_slime_r6_keymaster_m2r.py)" = "d043abe6ccfc9ca00ba46999cab990c175abc570"
+          test "$(git hash-object trump/TRUMP_SLIME_R6_KEYMASTER_M2R_ROOT_ROUTING_FROZEN_BENCH_V1.json)" = "b019f126feec611028bb83ec54a3f04a00a84929"
+          test "$(git hash-object trump/trump_slime_r6_1_regret_guard.py)" = "dbac55a9eb1f507e9f87ad7456cddc52c2562eca"
+          test "$(git hash-object trump/TRUMP_SLIME_R6_1_REGRET_BOUNDED_EXPLORATION_FROZEN_BENCH_V1.json)" = "6b07c3dc613d36148edbc2bad75c9e795a8cbb33"
+
+      - name: Compile R6.2
+        run: |
+          python -m py_compile trump/trump_slime_r6_keymaster_m2r.py
+          python -m py_compile trump/trump_slime_r6_1_regret_guard.py
+          python -m py_compile trump/run_trump_slime_r6_2_causal_regret_guard_benchmark.py
+
+      - name: Validate frozen R6.2 spec
+        env:
+          PYTHONPATH: trump
+        run: |
+          python - <<'PY'
+          import run_trump_slime_r6_2_causal_regret_guard_benchmark as r62
+          s = r62.load_frozen_spec()
+          assert s['status'] == 'FROZEN_BEFORE_R6_2_BENCHMARK_IMPLEMENTATION'
+          assert s['winner_preregistered'] is False
+          assert s['fresh_pre_result_candidate_pool']['formula_selection_uses_exact_solver_result'] is False
+          assert s['counterfactual_lane']['role'] == 'MEASUREMENT_ONLY_NO_PROOF_OR_SELECTION_AUTHORITY'
+          print('R6.2 frozen spec PASS')
+          PY
+
+      - name: Re-run inherited R6/R6.1 adversarial firewalls
+        env:
+          PYTHONPATH: trump
+        run: |
+          pytest -q tests/test_trump_slime_r6_keymaster_m2r.py tests/test_trump_slime_r6_1_regret_guard.py
+
+      - name: R6.2 causal-exposure adversarial firewall
+        env:
+          PYTHONPATH: trump
+        run: pytest -q tests/test_trump_slime_r6_2_causal_regret_guard.py
+
+      - name: Live R6.2 selftest
+        env:
+          PYTHONPATH: trump
+        run: python trump/run_trump_slime_r6_2_causal_regret_guard_benchmark.py --selftest
+
+      - name: Execute frozen R6.2 causal exposure benchmark
+        env:
+          PYTHONPATH: trump
+        run: |
+          python trump/run_trump_slime_r6_2_causal_regret_guard_benchmark.py \
+            --output trump-slime-r6-2-causal-regret-guard-result.json \
+            --require-pass
+
+      - name: Upload frozen R6.2 result even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trump-slime-r6-2-causal-regret-guard-result
+          path: trump-slime-r6-2-causal-regret-guard-result.json
+          if-no-files-found: warn
+          retention-days: 30
