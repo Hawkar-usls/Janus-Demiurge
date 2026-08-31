@@ -1,0 +1,96 @@
+name: TRUMP Slime Forge R0 Gate
+
+on:
+  pull_request:
+    paths:
+      - 'trump/trump_slime_forge_r0.py'
+      - 'trump/trump_slime_forge_runner_r0.py'
+      - 'trump/TRUMP_SLIME_FORGE_R0_CONSTITUTION.json'
+      - 'trump/TRUMP_SLIME_FULL_CORPUS_AUDIT_R0.json'
+      - 'trump/TRUMP_SLIME_V3_AMORTIZED_DONOR_R0.json'
+      - 'trump/verify_slime_v3_donor_r0.py'
+      - 'tests/test_trump_slime_forge_r0.py'
+      - '.github/workflows/trump-slime-forge-r0.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install test dependency
+        run: python -m pip install --disable-pip-version-check pytest
+      - name: Compile Slime Forge
+        run: |
+          python -m py_compile trump/trump_slime_forge_r0.py
+          python -m py_compile trump/trump_slime_forge_runner_r0.py
+          python -m py_compile trump/verify_slime_v3_donor_r0.py
+      - name: Validate JSON contracts
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for p in [
+              Path('trump/TRUMP_SLIME_FORGE_R0_CONSTITUTION.json'),
+              Path('trump/TRUMP_SLIME_FULL_CORPUS_AUDIT_R0.json'),
+              Path('trump/TRUMP_SLIME_V3_AMORTIZED_DONOR_R0.json'),
+          ]:
+              json.loads(p.read_text(encoding='utf-8'))
+              print('PASS', p)
+          PY
+      - name: Adversarial Slime Forge tests
+        run: pytest -q tests/test_trump_slime_forge_r0.py
+      - name: Slime Forge selftest
+        run: python trump/trump_slime_forge_r0.py
+      - name: Verify pinned v3 amortized donor
+        run: python trump/verify_slime_v3_donor_r0.py > slime-v3-donor-verification.json
+      - name: Live pinned TRUMP candidate gate
+        run: |
+          printf '%s\n' '[[1],[-1]]' > slime-forge-live-input.json
+          python trump/trump_slime_forge_runner_r0.py solve \
+            --input slime-forge-live-input.json > slime-forge-live-receipt.json
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          p = Path('slime-forge-live-receipt.json')
+          r = json.loads(p.read_text())
+          claimed = r.pop('receipt_hash')
+          raw = json.dumps(r, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode()
+          assert hashlib.sha256(raw).hexdigest() == claimed
+          assert r['candidate_result_promoted'] is False
+          assert r['learning_performed_in_this_theorem_face'] is False
+          assert r['scientific_boundary']['P_VS_NP'] == 'OPEN'
+          assert r['scientific_boundary']['P_equals_NP_proved'] is False
+          assert r['attempted_profile_count'] <= r['declared_profile_count']
+          assert r['slime_advice']['candidate_set_changed'] is False
+          assert all(v is False for v in r['authority'].values())
+          if r['decisive_stop']:
+              assert r['attempts'][-1]['replay_match'] is True
+              assert r['final_candidate_status'] in {'SAT', 'UNSAT'}
+          else:
+              assert r['final_candidate_status'] == 'OPEN'
+          print(json.dumps({
+              'status': 'PASS',
+              'final_candidate_status': r['final_candidate_status'],
+              'attempted_profile_count': r['attempted_profile_count'],
+              'declared_profile_count': r['declared_profile_count'],
+              'profiles_not_executed_after_exact_decisive_stop': r['profiles_not_executed_after_exact_decisive_stop'],
+              'P_VS_NP': r['scientific_boundary']['P_VS_NP'],
+          }, sort_keys=True))
+          PY
+      - name: Upload machine receipts
+        uses: actions/upload-artifact@v4
+        with:
+          name: trump-slime-forge-r0-gate
+          path: |
+            slime-v3-donor-verification.json
+            slime-forge-live-receipt.json
+          if-no-files-found: error
+          retention-days: 30
