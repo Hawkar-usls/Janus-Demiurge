@@ -2,8 +2,14 @@
   "schema": "janus.trump.slime_r6_keymaster_m2r_root_routing.frozen_benchmark.v1",
   "benchmark_id": "JANUS_TRUMP_SLIME_R6_KEYMASTER_M2R_ROOT_ROUTING_FROZEN_C1K0_BENCH_V1",
   "date": "2026-08-31",
-  "status": "FROZEN_BEFORE_R6_IMPLEMENTATION",
+  "status": "FROZEN_BEFORE_R6_IMPLEMENTATION__COST_LEAK_CORRECTED_PREIMPLEMENTATION",
   "winner_preregistered": false,
+  "freeze_lineage": {
+    "initial_preimplementation_freeze_commit": "56443225c2208ca8ef938f7c24b46402566558f0",
+    "correction_reason": "The initial draft treated unchanged R5 branch_pressure as an online pivot candidate. Materializing that candidate would itself execute all-pivot exact restrictions and consume the work R6 is intended to avoid. Before any R6 implementation or result existed, the baseline was corrected to a fallback sentinel that is never materialized during supported-memory routing.",
+    "results_observed_before_correction": false,
+    "holdout_or_threshold_changed_by_correction": false
+  },
   "purpose": "Test whether receipt-grounded Keymaster/Pivot-Slime + M2R structural memory can reduce online exact R5 work by choosing only the first exact R5 split, while preserving unchanged C025/R5 proof authority, decisive coverage, exact fallback and all replay invariants.",
   "R5_evidence_prerequisite": {
     "meta_repository": "Hawkar-usls/janus-meta-registry",
@@ -28,22 +34,9 @@
     "feature_microscope": "experiments/mad_lab/keymaster_pivot_feature_microscope.py",
     "persistent_memory": "experiments/mad_lab/keymaster_m2r_persistent_memory.py",
     "architecture": "data/keymaster/KEYMASTER_SLIME_M2R_TOPA_ARCHITECTURE_v1.0.json",
-    "inherited_laws": [
-      "PIVOT_ID_IS_WITNESS_LOCAL_NOT_TRANSFERABLE",
-      "FEATURE_CORRELATION_IS_NOT_THEOREM",
-      "EXACT_C025_OR_R5_REPLAY_REMAINS_AUTHORITY",
-      "M2R_MEMORY_IS_ADVISORY",
-      "SOURCE_IS_EXACT_VERIFIED_RECEIPTS_ONLY",
-      "TOP_K_PROPOSAL_MUST_KEEP_A_STRUCTURALLY_DISSIMILAR_ALTERNATE",
-      "SAME_RUN_THEOREM_PROMOTION_IS_FORBIDDEN",
-      "P_VS_NP_IS_OPEN"
-    ]
+    "inherited_laws": ["PIVOT_ID_IS_WITNESS_LOCAL_NOT_TRANSFERABLE","FEATURE_CORRELATION_IS_NOT_THEOREM","EXACT_C025_OR_R5_REPLAY_REMAINS_AUTHORITY","M2R_MEMORY_IS_ADVISORY","SOURCE_IS_EXACT_VERIFIED_RECEIPTS_ONLY","TOP_K_PROPOSAL_MUST_KEEP_A_STRUCTURALLY_DISSIMILAR_ALTERNATE","SAME_RUN_THEOREM_PROMOTION_IS_FORBIDDEN","P_VS_NP_IS_OPEN"]
   },
-  "profile": {
-    "cap_exponent": 1,
-    "extension_exponent": 0,
-    "bounded_resolution_width": 3
-  },
+  "profile": {"cap_exponent": 1, "extension_exponent": 0, "bounded_resolution_width": 3},
   "authority_constitution": {
     "canonical_C025_always_runs_first": true,
     "canonical_decisive_result": "replay-confirm and return; R6 is not invoked",
@@ -57,87 +50,41 @@
   },
   "finalized_calibration_sources": {
     "rule": "Only historical formulas already named in merged finalized R5 receipts may seed calibration. For each such historical subject, R6 may generate new exact forced-root calibration receipts before holdout; every calibration route must independently verify its root split and exact final replay. Calibration is completed and memory frozen before any holdout formula is evaluated.",
-    "initial_R5_receipt": {
-      "main_commit": "dbdde1d06e638d3a139b46f1156956fee69ccfe4",
-      "path": "trump/TRUMP_SLIME_PREELIM_COMPRESSION_R5_FROZEN_PASS_RECEIPT_2026-08-31.json",
-      "training_subjects": {"family": "CONNECTED_RANDOM_3CNF_V1", "seeds": [6101,6102,6103,6104,6105,6106,6107,6108]}
-    },
-    "R5B2_receipt": {
-      "main_commit": "bd03c54e89715a7ce086351395fef40b5dc9d4a3",
-      "path": "trump/TRUMP_SLIME_R5B2_GRAPH_TAUTOLOGY_UNSAT_FROZEN_PASS_RECEIPT_2026-08-31.json",
-      "training_subjects": {
-        "GT6": [9101,9102,9103,9104],
-        "GT7": [9201,9202,9203,9204]
-      }
-    },
-    "R5A2_receipt": {
-      "main_commit": "befa8efd4a2ebbc3d9c6e22d679669eb04f079d5",
-      "path": "trump/TRUMP_SLIME_R5A2_WRAPPED_GT_HASH_CONS_FROZEN_PASS_RECEIPT_2026-08-31.json",
-      "training_subjects": {
-        "GT6_WRAPPED": [11101,11102,11103,11104],
-        "GT7_WRAPPED": [11201,11202,11203,11204]
-      }
-    },
+    "initial_R5_receipt": {"main_commit": "dbdde1d06e638d3a139b46f1156956fee69ccfe4", "path": "trump/TRUMP_SLIME_PREELIM_COMPRESSION_R5_FROZEN_PASS_RECEIPT_2026-08-31.json", "training_subjects": {"family": "CONNECTED_RANDOM_3CNF_V1", "seeds": [6101,6102,6103,6104,6105,6106,6107,6108]}},
+    "R5B2_receipt": {"main_commit": "bd03c54e89715a7ce086351395fef40b5dc9d4a3", "path": "trump/TRUMP_SLIME_R5B2_GRAPH_TAUTOLOGY_UNSAT_FROZEN_PASS_RECEIPT_2026-08-31.json", "training_subjects": {"GT6": [9101,9102,9103,9104], "GT7": [9201,9202,9203,9204]}},
+    "R5A2_receipt": {"main_commit": "befa8efd4a2ebbc3d9c6e22d679669eb04f079d5", "path": "trump/TRUMP_SLIME_R5A2_WRAPPED_GT_HASH_CONS_FROZEN_PASS_RECEIPT_2026-08-31.json", "training_subjects": {"GT6_WRAPPED": [11101,11102,11103,11104], "GT7_WRAPPED": [11201,11202,11203,11204]}},
     "historical_formula_count": 24,
     "holdout_formula_may_enter_calibration": false
   },
   "structural_feature_plane": {
     "source": "Keymaster pivot feature microscope pre-elimination structural plane",
-    "per_live_pivot": [
-      "case_n = number of live variables",
-      "root_units",
-      "cap",
-      "degree_d = positive_p + negative_q",
-      "positive_p",
-      "negative_q",
-      "balance_ratio = min(p,q)/max(1,max(p,q))",
-      "parent_pairs = p*q",
-      "positive_parent_mean_width",
-      "negative_parent_mean_width",
-      "retained_clause_count",
-      "retained_units",
-      "single_conflict_mass_per_pair",
-      "same_sign_mass_per_pair",
-      "support_overlap_mass_per_pair"
-    ],
-    "forbidden": [
-      "local numeric pivot ID as transferable feature",
-      "SAT/UNSAT truth",
-      "probe outcome from the current formula",
-      "exact elimination pair enumeration during feature extraction",
-      "holdout-derived weights or thresholds"
-    ],
+    "per_live_pivot": ["case_n = number of live variables","root_units","cap","degree_d = positive_p + negative_q","positive_p","negative_q","balance_ratio = min(p,q)/max(1,max(p,q))","parent_pairs = p*q","positive_parent_mean_width","negative_parent_mean_width","retained_clause_count","retained_units","single_conflict_mass_per_pair","same_sign_mass_per_pair","support_overlap_mass_per_pair"],
+    "forbidden": ["local numeric pivot ID as transferable feature","SAT/UNSAT truth","probe outcome from the current formula","exact elimination pair enumeration during feature extraction","holdout-derived weights or thresholds","calling R5 branch_pressure merely to discover the fallback pivot during supported-memory routing"],
     "feature_work_charge_per_call": "clause_scan_units + 4*literal_updates + 20*live_variable_feature_rows"
   },
   "M2R_context_bucket": {
     "must_match_donor_semantics": true,
-    "bucket_fields": ["case_n", "degree_d", "positive_p", "negative_q", "positive_parent_mean_width rounded 2", "negative_parent_mean_width rounded 2", "retained_clause_count", "single_conflict_mass_per_pair rounded 3", "same_sign_mass_per_pair rounded 3", "support_overlap_mass_per_pair rounded 3"],
+    "bucket_fields": ["case_n","degree_d","positive_p","negative_q","positive_parent_mean_width rounded 2","negative_parent_mean_width rounded 2","retained_clause_count","single_conflict_mass_per_pair rounded 3","same_sign_mass_per_pair rounded 3","support_overlap_mass_per_pair rounded 3"],
     "bucket_hash": "stable canonical JSON SHA256 prefix 24 hex characters",
     "numeric_pivot_id_in_bucket": false
   },
   "candidate_views": {
-    "max_unique_root_pivots": 4,
-    "view_order": ["R5_BASELINE", "LOW_PAIR_RISK", "CONFLICT_CANCELLATION", "STRUCTURAL_DIVERSITY"],
-    "R5_BASELINE": "unchanged R5 branch_pressure selected root pivot",
+    "max_unique_materialized_root_pivots": 3,
+    "view_order": ["LOW_PAIR_RISK","CONFLICT_CANCELLATION","STRUCTURAL_DIVERSITY"],
     "LOW_PAIR_RISK": "minimum lexicographic (parent_pairs, retained_units, positive_parent_mean_width+negative_parent_mean_width, canonical_index)",
     "CONFLICT_CANCELLATION": "maximum single_conflict_mass_per_pair, ties lower parent_pairs then canonical_index",
-    "STRUCTURAL_DIVERSITY": "maximum Manhattan distance from LOW_PAIR_RISK if distinct else R5_BASELINE over within-root min-max normalized axes [degree_d,balance_ratio,parent_pairs,parent_mean_width_sum,retained_units,conflict_per_pair,aligned_per_pair,overlap_per_pair], ties canonical_index",
+    "STRUCTURAL_DIVERSITY": "maximum Manhattan distance from LOW_PAIR_RISK over within-root min-max normalized axes [degree_d,balance_ratio,parent_pairs,parent_mean_width_sum,retained_units,conflict_per_pair,aligned_per_pair,overlap_per_pair], ties canonical_index",
     "deduplication": "preserve first view occurrence",
-    "pivot_set_expansion": false
+    "pivot_set_expansion": false,
+    "R5_BASELINE_FALLBACK_SENTINEL": "unchanged full R5 is always available as fallback but its branch_pressure pivot is not materialized during online memory selection; if memory has no supported candidate, run unchanged R5 directly"
   },
   "exact_calibration_episode": {
     "for_each_historical_formula": "only if canonical C025 is OPEN; canonical decisive historical formulas contribute no R6 route-cost episode",
-    "for_each_candidate_view": [
-      "force only that root pivot",
-      "construct both children with unchanged C025 restrict",
-      "independently verify the exact root split with unchanged R5 verify_split",
-      "continue below root with unchanged R5Context branch_pressure, hash-consing, C025 child solver, caps, node budget and max depth",
-      "compose SAT or UNSAT only under unchanged exact R5 semantics",
-      "independently replay any decisive route receipt"
-    ],
+    "for_each_materialized_candidate_view": ["force only that root pivot","construct both children with unchanged C025 restrict","independently verify the exact root split with unchanged R5 verify_split","continue below root with unchanged R5Context branch_pressure, hash-consing, C025 child solver, caps, node budget and max depth","compose SAT or UNSAT only under unchanged exact R5 semantics","independently replay any decisive route receipt"],
+    "baseline_reference": "unchanged standard R5 may be measured separately for calibration reporting but is not inserted into M2R candidate buckets and does not require an online branch_pressure probe",
     "decisive_route_target": "combined exact execution work = child_C025_exact_paid_work + structural_work + split_verification_work; replay work stored separately",
     "OPEN_route": "store immutable exposure receipt but do not convert OPEN to numeric bad-cost target and do not treat it as failure evidence",
-    "episode_provenance": ["historical receipt id", "formula fingerprint", "family", "seed", "candidate view", "local pivot id provenance only", "structural feature vector", "context bucket", "exact status", "exact execution work", "exact replay work", "exact telemetry"],
+    "episode_provenance": ["historical receipt id","formula fingerprint","family","seed","candidate view","local pivot id provenance only","structural feature vector","context bucket","exact status","exact execution work","exact replay work","exact telemetry"],
     "calibration_work_is_free": false
   },
   "M2R_memory_fit": {
@@ -153,36 +100,23 @@
   },
   "Keymaster_online_selection": {
     "input": "current canonical-OPEN root structural candidate views plus frozen M2R memory",
-    "memory_best": "supported candidate with minimum predicted_execution_work, ties by candidate view order then canonical index",
-    "baseline_if_no_supported_candidate": true,
-    "diversity_alternate": "among supported candidates distinct from memory_best, choose maximum Manhattan feature distance from memory_best; if none supported use a distinct candidate only as shadow and never execute it",
-    "exploration_floor": {
-      "rate": "approximately 10 percent deterministic",
-      "trigger": "int(root_fingerprint first 8 hex,16) mod 10 == 0",
-      "action": "execute supported diversity alternate if one exists; otherwise execute memory_best/baseline",
-      "purpose": "prevent permanent champion lock without randomness or same-run learning"
-    },
-    "top_k_plan": "memory_best, supported diversity alternate if any, R5 baseline if distinct; plan is advisory metadata only",
+    "memory_best": "supported materialized candidate with minimum predicted_execution_work, ties by candidate view order then canonical index",
+    "baseline_if_no_supported_candidate": "run unchanged full R5 directly without any forced root route",
+    "diversity_alternate": "among supported candidates distinct from memory_best, choose maximum Manhattan feature distance from memory_best; unsupported candidates may appear only as shadow metadata and are never executed",
+    "exploration_floor": {"rate": "approximately 10 percent deterministic", "trigger": "int(root_fingerprint first 8 hex,16) mod 10 == 0", "action": "execute supported diversity alternate if one exists; otherwise execute memory_best or unchanged R5 fallback", "purpose": "prevent permanent champion lock without randomness or same-run learning"},
+    "top_k_plan": "memory_best, supported diversity alternate if any, R5 fallback sentinel; plan is advisory metadata only",
     "selected_root_split_must_be_exact_verified": true,
     "prediction_may_promote_verdict": false
   },
   "R6_online_ecology": {
     "canonical_C025_first": true,
-    "on_canonical_OPEN": [
-      "execute unchanged standard R5 once as frozen reference baseline and record full exact work",
-      "derive R6 structural features and advisory root route from frozen memory",
-      "execute one exact-verified forced root split followed by unchanged R5 below root",
-      "if forced route returns replay-clean SAT/UNSAT, it is eligible as R6 exact result",
-      "if forced route returns OPEN or fails admission, execute unchanged standard R5 fallback from the original root and charge both attempts",
-      "if baseline R5 is decisive and R6 exact result contradicts it, hard fail",
-      "if baseline R5 is decisive and R6 forced route is OPEN, fallback must restore the baseline result or hard fail"
-    ],
+    "on_canonical_OPEN": ["execute unchanged standard R5 once as frozen reference baseline and record full exact work","derive R6 cheap structural features and candidate views without materializing unchanged R5 branch_pressure","if no supported memory candidate exists, execute no forced route and use unchanged standard R5 result as R6 final result","otherwise execute one exact-verified forced root split followed by unchanged R5 below root","if forced route returns replay-clean SAT/UNSAT, it is eligible as R6 exact result","if forced route returns OPEN or fails admission, execute unchanged standard R5 fallback from the original root and charge both attempts","if baseline R5 is decisive and R6 exact result contradicts it, hard fail","if baseline R5 is decisive and R6 forced route is OPEN, fallback must restore the baseline result or hard fail"],
     "same_holdout_learning": false,
     "post_formula_memory_update": false,
     "baseline_R5_result_can_be_overwritten_without_exact_replay": false
   },
   "source_identity_cold_reset": {
-    "if_any_of_R5_blob_C025_blob_donor_commit_changes": "disable frozen memory predictions and fall back to R5 baseline; retain immutable calibration history but mark aggregates stale",
+    "if_any_of_R5_blob_C025_blob_donor_commit_changes": "disable frozen memory predictions and run unchanged R5 fallback directly; retain immutable calibration history but mark aggregates stale",
     "history_deletion": false,
     "cold_reset_is_tested_adversarially": true
   },
@@ -201,9 +135,9 @@
   "online_work_accounting": {
     "baseline_execution_work": "sum unchanged R5 combined_fallback_work for every canonical-OPEN formula",
     "baseline_full_work": "baseline_execution_work + unchanged R5 decisive replay work",
-    "R6_execution_work": "selected forced-route combined execution work + any exact R5 fallback execution work",
+    "R6_execution_work": "selected forced-route combined execution work + any exact R5 fallback execution work; zero forced-route execution work when no memory candidate is supported",
     "R6_full_work": "R6_execution_work + all selected-route/fallback replay work + feature/inference work",
-    "feature_inference_work": "frozen feature_work_charge_per_call + 8 units per candidate context lookup + 8 units per supported candidate prediction + 8 units for selection/diversity bookkeeping",
+    "feature_inference_work": "frozen feature_work_charge_per_call + 8 units per materialized candidate context lookup + 8 units per supported candidate prediction + 8 units for selection/diversity bookkeeping",
     "calibration_work": "reported separately and never hidden from amortized totals",
     "primary_gate_excludes_calibration_cost": true,
     "reason": "first R6 gate isolates online routing effect after a frozen prior-receipt calibration state; it may not claim amortized end-to-end speedup",
@@ -228,15 +162,5 @@
   },
   "pass_claim": "RECEIPT_GROUNDED_KEYMASTER_M2R_ROOT_ROUTING_REDUCED_ONLINE_EXACT_R5_WORK_WITHOUT_DECISIVE_COVERAGE_LOSS_ON_FROZEN_SAME_FAMILY_MIX",
   "fail_claim": "NO_SCOPED_RECEIPT_GROUNDED_R6_ONLINE_R5_WORK_REDUCTION_ESTABLISHED",
-  "scientific_boundary": {
-    "P_VS_NP": "OPEN",
-    "P_equals_NP_proved": false,
-    "R6_prediction_is_proof": false,
-    "finite_same_family_holdout_is_generalization": false,
-    "online_work_reduction_is_general_speedup": false,
-    "calibration_cost_is_amortized_away": false,
-    "neural_Pivot_Slime_teacher_or_student_is_deployed": false,
-    "TOPA_relation_has_runtime_authority": false,
-    "R5_or_C025_completeness_established": false
-  }
+  "scientific_boundary": {"P_VS_NP": "OPEN", "P_equals_NP_proved": false, "R6_prediction_is_proof": false, "finite_same_family_holdout_is_generalization": false, "online_work_reduction_is_general_speedup": false, "calibration_cost_is_amortized_away": false, "neural_Pivot_Slime_teacher_or_student_is_deployed": false, "TOPA_relation_has_runtime_authority": false, "R5_or_C025_completeness_established": false}
 }
