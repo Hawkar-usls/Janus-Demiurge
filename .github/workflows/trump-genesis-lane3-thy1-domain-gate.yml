@@ -1,0 +1,69 @@
+name: TRUMP Genesis Lane 3 Thy-1 Domain Gate
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'trump/packets/GENESIS_LANE3_THY1_DOMAIN_EVIDENCE_v1.json'
+      - 'trump/PHYSARIUS_FINAL_ADMISSION_CONTRACT_v1.json'
+      - 'trump/physarius_final_gate.py'
+      - '.github/workflows/trump-genesis-lane3-thy1-domain-gate.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  final-domain-admission:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact upstream bindings remain public and immutable-by-packet
+        run: |
+          python - <<'PY'
+          import json, urllib.request
+          p=json.load(open('trump/packets/GENESIS_LANE3_THY1_DOMAIN_EVIDENCE_v1.json'))
+          b=p['source_binding']
+          urls=[
+            f"https://raw.githubusercontent.com/Hawkar-usls/Janus_Genesis/{b['genesis_commit']}/lanes/lane-3-longgevity-survivor/THY1_P38_HIGH_TENSION_SKIN_FATE_PACKET_v1.json",
+            f"https://raw.githubusercontent.com/Hawkar-usls/janus-lapis/{b['lapis_commit']}/longevity-survivor/THY1-P38-HIGH-TENSION-SKIN-FATE-GATE-2026-08-31-v1.0.json"
+          ]
+          docs=[]
+          for u in urls:
+              req=urllib.request.Request(u,headers={'User-Agent':'JANUS-TRUMP-Lane3/1.0'})
+              with urllib.request.urlopen(req,timeout=60) as r: docs.append(json.loads(r.read()))
+          genesis,lapis=docs
+          assert genesis['source']['doi']==b['doi']
+          assert genesis['timing_gate']['classification']=='PRECONDITIONING_ONLY_NOT_DELAYED_RESCUE'
+          assert genesis['timing_gate']['strict_delayed_mechanical_lock_pass'] is False
+          assert lapis['timing_gate']['strict_delayed_mechanical_lock_pass'] is False
+          assert p['human_translation_blocked'] is True
+          assert p['independent_replication_not_inflated'] is True
+          print('TRUMP_LANE3_BINDING_PASS')
+          PY
+      - name: Pass Lane 3 domain evidence through TRUMP last
+        run: |
+          python trump/physarius_final_gate.py \
+            --packet trump/packets/GENESIS_LANE3_THY1_DOMAIN_EVIDENCE_v1.json \
+            --out /tmp/trump-lane3-receipt.json
+      - name: Assert no claim inflation
+        run: |
+          python - <<'PY'
+          import json
+          r=json.load(open('/tmp/trump-lane3-receipt.json'))
+          assert r['verdict']=='DOMAIN_EVIDENCE_ACCEPTED_NO_PROMOTION', r
+          assert r['admitted'] is True
+          assert r['next_authority']=='JANUS_GENESIS_DOMAIN_LANE_ONLY'
+          assert r['scientific_claim_promoted'] is False
+          assert r['proof_promoted'] is False
+          assert r['external_effect_authorized'] is False
+          assert r['physical_effect_authorized'] is False
+          print('TRUMP_GENESIS_LANE3_DOMAIN_GATE_PASS')
+          print('receipt_sha256=',r['receipt_sha256'])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trump-genesis-lane3-thy1-${{ github.run_id }}
+          path: /tmp/trump-lane3-receipt.json
+          retention-days: 30
