@@ -78,6 +78,11 @@ class FakeSolver:
 
     @staticmethod
     def canonical_pivot_order(state, cnf=None):
+        # Unit tests may pass an explicit live-variable list to exercise the
+        # extension suffix contract. During fake solve execution cnf is a
+        # tuple-of-clauses, so preserve the intended root canonical [1, 2].
+        if isinstance(cnf, list) and all(isinstance(x, int) for x in cnf):
+            return list(cnf)
         return [1, 2]
 
     def solve_fail_closed(self, clauses, **profile):
@@ -98,7 +103,7 @@ def test_pivot_patch_preserves_exact_live_set_and_canonical_suffix():
         state = SimpleNamespace(residual=(), state_cap=100)
         assert solver.canonical_pivot_order(state, [1, 2, 7]) == [2, 1, 7]
     assert telemetry["pivot_order_calls"] == 1
-    assert set(FakeSolver.canonical_pivot_order(None, [1, 2, 7])) == {1, 2}
+    assert FakeSolver.canonical_pivot_order(None, [1, 2, 7]) == [1, 2, 7]
 
 
 def test_canonical_decisive_never_generates_or_runs_swarm():
