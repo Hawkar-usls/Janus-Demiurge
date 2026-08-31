@@ -1,0 +1,134 @@
+{
+  "schema": "janus.trump.slime_r5a2_wrapped_gt_hash_cons.frozen_benchmark.v1",
+  "benchmark_id": "JANUS_TRUMP_SLIME_R5A2_WRAPPED_GT_HASH_CONS_FROZEN_C1K0_BENCH_V1",
+  "date": "2026-08-31",
+  "status": "FROZEN_BEFORE_R5A2_IMPLEMENTATION",
+  "winner_preregistered": false,
+  "purpose": "Causally confirm on fresh wrapped Graph Tautology renamings that the hash-cons memoization already present in merged R5 avoids repeated exact residual-subtree work when two independently verified selector branches converge to the same canonical hard residual.",
+  "discovery_boundary": {
+    "development_probe_pr": 63,
+    "development_run": 33430503295,
+    "burned_exact_instances": ["WRAPPED_GT6_CANONICAL_NUMBERING", "WRAPPED_GT7_CANONICAL_NUMBERING"],
+    "development_observation": "Both wrapped GT6 and wrapped GT7 remained canonical OPEN, unchanged R5 selected selector 1 first, reached exact identical children, returned replay-clean UNSAT, and recorded one live hash-cons hit.",
+    "confirmatory_scope": "Fresh seeded numeric bijections inside already-selected wrapped GT6/GT7 families; representational confirmation of repeated-residual memoization, not natural-workload collision frequency."
+  },
+  "runtime_under_test": {
+    "repository": "Hawkar-usls/Janus-Demiurge",
+    "main_commit_before_R5A2": "bd03c54e89715a7ce086351395fef40b5dc9d4a3",
+    "R5_runtime_merge_commit": "7c5579d83d91bbf81e5f62f81e6d9ae4073fac1b",
+    "path": "trump/trump_slime_preelim_compression_r5.py",
+    "git_blob_sha": "bb9471e3e3c7129ec394ad02f727d9ca6691439b",
+    "R5_runtime_modification_allowed": false
+  },
+  "profile": {
+    "cap_exponent": 1,
+    "extension_exponent": 0,
+    "bounded_resolution_width": 3
+  },
+  "collision_construction": {
+    "selector_variable": 1,
+    "base_family": "Graph Tautology",
+    "base_variable_ids": "fresh seeded bijection onto 2..m+1, where m=C(order,2)",
+    "root_transform": "for every base clause C emit both (1 OR C) and (-1 OR C)",
+    "exact_identity": "restrict(root,1,0) == restrict(root,1,1) == base_GT",
+    "semantic_identity": "(s OR C) AND (-s OR C) is exactly equivalent to C for every C; therefore wrapped root is equivalent to the structurally UNSAT base Graph Tautology",
+    "expected_live_hash_cons_opportunity": "after first selector child is solved, the second selector child has the identical canonical fingerprint and must be eligible for memo reuse"
+  },
+  "truth_and_collision_certificate": {
+    "runtime_authority": false,
+    "base_GT_UNSAT_basis": "a finite 3-cycle-free tournament is transitive and has a minimum, contradicting Graph Tautology non-minimality clauses",
+    "wrapper_equivalence_basis": "(s OR C) AND (-s OR C) iff C",
+    "required_checks": [
+      "inverse numeric renaming reconstructs the exact logical GT clause set",
+      "both unchanged C025 selector restrictions equal the canonical base GT exactly",
+      "both selector child fingerprints are identical",
+      "tiny wrapped GT3 brute-force regression returns UNSAT"
+    ]
+  },
+  "holdout": {
+    "GT6_WRAPPED": {
+      "order": 6,
+      "seeds": [11101,11102,11103,11104,11105,11106,11107,11108,11109,11110,11111,11112]
+    },
+    "GT7_WRAPPED": {
+      "order": 7,
+      "seeds": [11201,11202,11203,11204,11205,11206,11207,11208,11209,11210,11211,11212]
+    },
+    "formula_count": 24,
+    "all_seeds_frozen_before_execution": true,
+    "development_numberings_reused": false,
+    "posthoc_formula_replacement_forbidden": true,
+    "training": false
+  },
+  "eligibility": {
+    "formula_is_eligible_for_hash_cons_measurement_only_if": [
+      "structural truth/collision certificate passes",
+      "canonical C025 root status is OPEN",
+      "unchanged R5 branch_pressure selects selector variable 1 at the root",
+      "root selector restrictions are exact identical canonical children"
+    ],
+    "minimum_total_eligible_formulas": 12,
+    "minimum_GT6_eligible": 4,
+    "minimum_GT7_eligible": 4,
+    "noneligible_frozen_formulas_are_reported_not_replaced": true
+  },
+  "actual_R5_measurement": {
+    "authority": "UNCHANGED_MERGED_R5",
+    "requirements_on_every_eligible_formula": [
+      "final result is replay-clean UNSAT",
+      "hash_cons_cache_hits >= 1",
+      "no node/depth budget exhaustion before the decisive receipt",
+      "zero SAT soundness drift"
+    ]
+  },
+  "no_memo_counterfactual": {
+    "runtime_authority": false,
+    "purpose": "measure causal repeated-subtree work that would be paid if the same exact R5 state machine could never retrieve memoized residual results",
+    "implementation_constraint": "instantiate the unchanged R5Context with the same root CNF, profile, root state cap, node budget and max depth, but replace only its memo mapping with a benchmark-local mapping whose membership test always returns false while writes remain allowed; call the unchanged R5Context.solve_node(root,0,root_known_open=True)",
+    "forbidden_changes": [
+      "no pivot-policy change",
+      "no cap or budget change",
+      "no child-solver change",
+      "no proof or replay promotion from the counterfactual",
+      "no truth feedback"
+    ],
+    "required_result": "UNSAT on every eligible formula; any OPEN/SAT counterfactual is reported and cannot support a work-saving PASS claim"
+  },
+  "causal_work_metrics": {
+    "compare_actual_vs_no_memo": [
+      "canonical_child_calls",
+      "child_c025_exact_paid_work",
+      "structural_work",
+      "split_verification_work",
+      "combined_fallback_work = child_c025_exact_paid_work + structural_work + split_verification_work"
+    ],
+    "actual_hash_hit_count_is_not_itself_a_speedup_claim": true
+  },
+  "gate": {
+    "minimum_total_eligible_formulas": 12,
+    "minimum_GT6_eligible": 4,
+    "minimum_GT7_eligible": 4,
+    "every_eligible_actual_R5_replay_clean_UNSAT": true,
+    "every_eligible_actual_hash_cons_hits_minimum": 1,
+    "every_eligible_no_memo_counterfactual_UNSAT": true,
+    "zero_actual_SAT_soundness_failures": true,
+    "zero_actual_replay_contradictions": true,
+    "total_actual_canonical_child_calls_strictly_less_than_no_memo": true,
+    "total_actual_child_exact_paid_work_strictly_less_than_no_memo": true,
+    "total_actual_combined_fallback_work_strictly_less_than_no_memo": true,
+    "minimum_saved_canonical_child_calls": 12,
+    "runtime_semantics_must_equal_merged_R5": true,
+    "general_speedup_claim_allowed": false
+  },
+  "pass_claim": "R5_HASH_CONS_CAUSALLY_SAVES_REPEATED_EXACT_RESIDUAL_SUBTREE_WORK_ON_FRESH_WRAPPED_GT_COLLISIONS_WITHIN_FROZEN_C1K0_SCOPE",
+  "fail_claim": "R5_HASH_CONS_REPEATED_SUBTREE_WORK_SAVING_NOT_CONFIRMED_TO_PREREGISTERED_THRESHOLD_ON_FRESH_WRAPPED_GT_COLLISIONS",
+  "scientific_boundary": {
+    "P_VS_NP": "OPEN",
+    "P_equals_NP_proved": false,
+    "measured_collision_benefit_implies_natural_collision_frequency": false,
+    "measured_repeated_subtree_saving_implies_general_solver_speedup": false,
+    "counterfactual_has_proof_authority": false,
+    "wrapped_GT_confirmation_is_independent_family_generalization": false,
+    "hash_cons_changes_exact_verdict_authority": false
+  }
+}
