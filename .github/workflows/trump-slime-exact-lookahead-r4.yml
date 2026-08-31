@@ -1,0 +1,63 @@
+name: TRUMP Slime Exact-Lookahead R4 Frozen Gate
+
+on:
+  pull_request:
+    paths:
+      - 'trump/TRUMP_SLIME_EXACT_LOOKAHEAD_R4_FROZEN_BENCH_V1.json'
+      - 'trump/trump_slime_exact_lookahead_r4.py'
+      - 'trump/run_trump_slime_exact_lookahead_r4_benchmark.py'
+      - 'tests/test_trump_slime_exact_lookahead_r4.py'
+      - '.github/workflows/trump-slime-exact-lookahead-r4.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-exact-lookahead:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pytest
+        run: python -m pip install --disable-pip-version-check pytest
+      - name: Compile R4
+        run: |
+          python -m py_compile trump/trump_slime_exact_lookahead_r4.py
+          python -m py_compile trump/run_trump_slime_exact_lookahead_r4_benchmark.py
+      - name: Validate frozen R4 spec
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          s = json.loads(Path('trump/TRUMP_SLIME_EXACT_LOOKAHEAD_R4_FROZEN_BENCH_V1.json').read_text())
+          assert s['status'] == 'FROZEN_BEFORE_R4_IMPLEMENTATION'
+          assert s['winner_preregistered'] is False
+          assert s['outer_ecology']['canonical_baseline_always_runs_first'] is True
+          assert s['outer_ecology']['persistent_M2R_memory_enabled_in_this_gate'] is False
+          assert s['shortlist']['max_unique_pivots'] == 4
+          assert s['exact_lookahead']['selected_transition_must_already_be_exact_verified'] is True
+          assert len(s['holdout']['seeds']) == 24
+          assert len(set(s['holdout']['seeds'])) == 24
+          print('PASS frozen R4 spec')
+          PY
+      - name: Adversarial R4 tests
+        run: pytest -q tests/test_trump_slime_exact_lookahead_r4.py
+      - name: Live pinned R4 selftest
+        run: python trump/trump_slime_exact_lookahead_r4.py
+      - name: Execute frozen R4 holdout
+        run: |
+          python trump/run_trump_slime_exact_lookahead_r4_benchmark.py \
+            --output trump-slime-exact-lookahead-r4-result.json \
+            --require-pass
+      - name: Upload frozen R4 result even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trump-slime-exact-lookahead-r4-frozen-result
+          path: trump-slime-exact-lookahead-r4-result.json
+          if-no-files-found: warn
+          retention-days: 30
