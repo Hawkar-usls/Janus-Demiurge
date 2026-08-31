@@ -1,0 +1,65 @@
+name: TMP Finalize R6.1 Exact Receipt PR
+
+on:
+  push:
+    branches:
+      - research/tmp-r61-pass-receipt-generator-2026-08-31
+    paths:
+      - '.github/workflows/tmp-finalize-r61-receipt.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: read
+  checks: read
+
+jobs:
+  validate-watch-merge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CLEAN_BRANCH: research/trump-r6-1-pass-receipt-2026-08-31
+      RECEIPT: trump/TRUMP_SLIME_R6_1_REGRET_BOUNDED_EXPLORATION_FROZEN_PASS_RECEIPT_2026-08-31.json
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve clean receipt PR and validate one-file diff
+        id: pr
+        run: |
+          PR="$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$CLEAN_BRANCH" --state open --json number --jq '.[0].number')"
+          test -n "$PR"
+          echo "number=$PR" >> "$GITHUB_OUTPUT"
+          FILES="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}/files" --jq '.[].filename')"
+          test "$(printf '%s\n' "$FILES" | sed '/^$/d' | wc -l)" -eq 1
+          test "$FILES" = "$RECEIPT"
+      - name: Validate canonical receipt content from clean branch
+        run: |
+          PR='${{ steps.pr.outputs.number }}'
+          gh api "repos/${GITHUB_REPOSITORY}/contents/${RECEIPT}?ref=${CLEAN_BRANCH}" --jq '.content' | tr -d '\n' | base64 -d > /tmp/receipt.json
+          python - <<'PY'
+          import json
+          r=json.load(open('/tmp/receipt.json'))
+          assert r['status']=='CANONICAL_FROZEN_SCOPED_PASS_RECEIPT'
+          assert r['freeze']['commit_before_implementation']=='9a9cc0a53d7aaeea351630644d45dbdb900a0020'
+          assert r['provenance']['dedicated_frozen_workflow']['run_id']==33434716083
+          assert r['supported_interpretation']['decisive_coverage_preserved'] is True
+          assert r['supported_interpretation']['all_high_regret_triggered_alternates_shadow_blocked'] is True
+          assert r['supported_interpretation']['no_high_regret_alternate_exact_executed'] is True
+          assert all(r['frozen_result']['gate'].values())
+          assert r['P_VS_NP']=='OPEN'
+          print('PASS exact R6.1 canonical receipt')
+          PY
+      - name: Wait for all clean receipt PR checks
+        run: |
+          PR='${{ steps.pr.outputs.number }}'
+          gh pr checks "$PR" --repo "$GITHUB_REPOSITORY" --watch --interval 10 --fail-fast
+      - name: Merge clean receipt PR only after GREEN
+        run: |
+          PR='${{ steps.pr.outputs.number }}'
+          HEAD_SHA="$(gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json headRefOid --jq '.headRefOid')"
+          gh api --method PUT "repos/${GITHUB_REPOSITORY}/pulls/${PR}/merge" \
+            -f merge_method=squash \
+            -f sha="$HEAD_SHA" \
+            -f commit_title='TRUMP: preserve exact R6.1 frozen regret-bounded PASS receipt' \
+            -f commit_message='Append-only artifact-derived R6.1 frozen PASS receipt. Exact metrics are generated from immutable run 33434716083; all clean PR checks were GREEN before merge. Scoped online work reduction with decisive coverage preserved; no general/amortized speedup or P=NP claim.'
