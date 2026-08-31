@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Execute the pre-frozen TRUMP Slime pivot-order R1 benchmark."""
+"""Execute the pre-execution-frozen TRUMP Slime pivot-order R1 benchmark."""
 from __future__ import annotations
 
 import argparse
@@ -21,6 +21,9 @@ from trump_slime_pivot_adapter_r1 import (
 
 HERE = Path(__file__).resolve().parent
 SPEC_PATH = HERE / "TRUMP_SLIME_PIVOT_R1_FROZEN_BENCH_V1.json"
+INITIAL_INTENDED_FREEZE = "b035cf9babc2d69bfc122b6d5602b74ab6905ec9"
+VALID_PRE_EXECUTION_FREEZE = "cc1dd0dcd67a5fe3a916ac412990251776f6cf65"
+INITIAL_VALIDATION_ONLY_RUN = 33418886137
 
 
 def canonical_clause(values: Sequence[int]) -> tuple[int, ...]:
@@ -238,7 +241,14 @@ def execute() -> dict[str, Any]:
         "benchmark_id": spec["benchmark_id"],
         "status": status,
         "claim": claim,
-        "freeze_commit_before_adapter_and_runner": "b035cf9babc2d69bfc122b6d5602b74ab6905ec9",
+        "freeze_lineage": {
+            "initial_intended_spec_commit_before_adapter": INITIAL_INTENDED_FREEZE,
+            "initial_intended_spec_valid_json": False,
+            "initial_validation_only_run_id": INITIAL_VALIDATION_ONLY_RUN,
+            "initial_run_reached_adapter_or_benchmark": False,
+            "valid_spec_commit_before_first_benchmark_execution": VALID_PRE_EXECUTION_FREEZE,
+            "repair": "syntax-only missing-colon repair; seeds, pins, profile, metrics, selection and PASS criteria unchanged"
+        },
         "winner_preregistered": False,
         "selected_front_from_training_only": selected,
         "profile": profile,
