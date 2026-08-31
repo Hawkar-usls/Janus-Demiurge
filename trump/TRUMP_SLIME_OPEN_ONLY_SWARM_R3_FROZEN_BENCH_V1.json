@@ -1,0 +1,88 @@
+{
+  "schema": "janus.trump.slime_open_only_swarm_r3.frozen_benchmark.v1",
+  "benchmark_id": "JANUS_TRUMP_SLIME_OPEN_ONLY_SWARM_R3_FROZEN_C1K0_BENCH_V1",
+  "date": "2026-08-31",
+  "status": "FROZEN_BEFORE_R3_IMPLEMENTATION",
+  "winner_preregistered": false,
+  "solver": {
+    "repository": "Hawkar-usls/Janus-Fundamentum",
+    "commit": "377668585178995217b681d5ddb1b34b0f8dc386",
+    "path": "experiments/direct/janus_unified_proof_carrying_akinator_jec.py",
+    "git_blob_sha": "230ca949bb51f6eeb5e7dbeea364a0752f9d0636"
+  },
+  "donor": {
+    "repository": "Hawkar-usls/Janus-Demiurge",
+    "commit": "988ed7335fb51911889a7af5e58efcc0f3c27979",
+    "v3_path": "models/slime/slime_semantic_candidate_swarm_v3_amortized.py",
+    "v3_git_blob_sha": "730980f9d081eb67d4a2066b2dc5eaed48439e1d",
+    "candidate_count": 16,
+    "front_order": "exact manifest emission order; 8 structured fronts followed by 8 deterministic source-hash exploration fronts"
+  },
+  "profile": {
+    "cap_exponent": 1,
+    "extension_exponent": 0,
+    "bounded_resolution_width": 3
+  },
+  "ecology_policy": {
+    "canonical_baseline_always_runs_first": true,
+    "if_canonical_status_is_SAT_or_UNSAT": "return canonical immediately; zero Slime donor generation or challenger execution",
+    "if_canonical_status_is_OPEN": [
+      "generate the pinned v3 16-front manifest once from the root CNF",
+      "for each front in manifest emission order, filter linear_leaf_order to v:<integer> root pivot priority",
+      "run the unchanged pinned C025 exact solver under that proposal-only priority",
+      "if result is OPEN continue to next front",
+      "if result is SAT or UNSAT rerun the identical front from the original CNF",
+      "only matching exact replay may stop the swarm and return the decisive candidate result"
+    ],
+    "same_theorem_face_learning": false,
+    "holdout_selection_or_weight_fitting": false,
+    "front_skipping_based_on_previous_benchmark_results": false,
+    "canonical_result_can_be_overwritten": false,
+    "pivot_set_change_allowed": false
+  },
+  "work_accounting": {
+    "canonical_exact_paid_work": "paid_work of the baseline C1/K0 call",
+    "challenger_exact_paid_work": "sum paid_work of every logically executed challenger first pass; replay work is verification overhead and is reported separately",
+    "replay_verification_work": "sum paid_work of matching decisive replay calls",
+    "slime_generation_ops": "pinned v3 total_generation_ops, charged once only on canonical OPEN formulas",
+    "pivot_projection_ops": "sum len(linear_leaf_order) over all 16 candidates, charged once only on canonical OPEN formulas",
+    "combined_ecology_work": "canonical_exact_paid_work + challenger_exact_paid_work + replay_verification_work + slime_generation_ops + pivot_projection_ops",
+    "wall_clock_speedup_claimed": false
+  },
+  "formula_generator": {
+    "version": "CONNECTED_RANDOM_3CNF_V1",
+    "variables": 10,
+    "clauses": 42,
+    "width": 3,
+    "algorithm": [
+      "Use Python random.Random(seed).",
+      "Start with connectivity backbone i=1..8 on supports [i,i+1,i+2] with independent rng.getrandbits(1) signs.",
+      "Sample three distinct variables uniformly from 1..10 with independent signs until 42 unique canonical non-tautological width-3 clauses exist.",
+      "Canonical literal order is (abs(literal), literal<0); preserve formula insertion order.",
+      "No R1/R2 result, SAT result, Slime score, or prior holdout output participates in generation."
+    ]
+  },
+  "holdout": {
+    "seeds": [4101,4102,4103,4104,4105,4106,4107,4108,4109,4110,4111,4112,4113,4114,4115,4116],
+    "formula_count": 16,
+    "all_seeds_new_relative_to_R1_and_R2": true,
+    "no_training": true
+  },
+  "gate": {
+    "canonical_decisive_results_must_be_preserved": true,
+    "contradictory_exact_decisive_replays": 0,
+    "ecology_decisive_count_must_be_at_least_canonical": true,
+    "strict_capability_gain_required": "ecology decisive_count > canonical decisive_count",
+    "combined_work_is_reported_but_not_used_to_claim_speedup": true,
+    "all_authority_and_exact_replay_invariants": true
+  },
+  "pass_claim": "OPEN_ONLY_SLIME_SWARM_DECISIVE_COVERAGE_BOOST_WITHIN_FROZEN_C1K0_HOLDOUT",
+  "fail_claim": "NO_SCOPED_OPEN_ONLY_SWARM_COVERAGE_BOOST_ESTABLISHED",
+  "scientific_boundary": {
+    "P_VS_NP": "OPEN",
+    "P_equals_NP_proved": false,
+    "finite_holdout_implies_polynomial": false,
+    "coverage_boost_implies_speedup": false,
+    "Slime_front_is_proof": false
+  }
+}
