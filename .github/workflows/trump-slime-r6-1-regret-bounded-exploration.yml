@@ -1,0 +1,78 @@
+name: TRUMP Slime R6.1 Regret-Bounded Exploration Frozen Gate
+
+on:
+  pull_request:
+    paths:
+      - 'trump/TRUMP_SLIME_R6_1_REGRET_BOUNDED_EXPLORATION_FROZEN_BENCH_V1.json'
+      - 'trump/TRUMP_SLIME_R6_KEYMASTER_M2R_ROOT_ROUTING_FROZEN_BENCH_V1.json'
+      - 'trump/trump_slime_r6_keymaster_m2r.py'
+      - 'trump/trump_slime_r6_1_regret_guard.py'
+      - 'trump/run_trump_slime_r6_1_regret_bounded_benchmark.py'
+      - 'tests/test_trump_slime_r6_keymaster_m2r.py'
+      - 'tests/test_trump_slime_r6_1_regret_guard.py'
+      - '.github/workflows/trump-slime-r6-1-regret-bounded-exploration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-r6-1-regret-bounded:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pytest
+        run: python -m pip install --disable-pip-version-check pytest
+      - name: Verify unchanged exact runtime and inherited R6 base blobs
+        run: |
+          test "$(git hash-object trump/trump_slime_preelim_compression_r5.py)" = "bb9471e3e3c7129ec394ad02f727d9ca6691439b"
+          test "$(git hash-object trump/trump_slime_r6_keymaster_m2r.py)" = "d043abe6ccfc9ca00ba46999cab990c175abc570"
+          test "$(git hash-object trump/TRUMP_SLIME_R6_KEYMASTER_M2R_ROOT_ROUTING_FROZEN_BENCH_V1.json)" = "b019f126feec611028bb83ec54a3f04a00a84929"
+      - name: Compile R6.1
+        run: |
+          python -m py_compile trump/trump_slime_r6_keymaster_m2r.py
+          python -m py_compile trump/trump_slime_r6_1_regret_guard.py
+          python -m py_compile trump/run_trump_slime_r6_1_regret_bounded_benchmark.py
+          python -m py_compile tests/test_trump_slime_r6_1_regret_guard.py
+      - name: Validate frozen R6.1 spec
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          s=json.loads(Path('trump/TRUMP_SLIME_R6_1_REGRET_BOUNDED_EXPLORATION_FROZEN_BENCH_V1.json').read_text())
+          assert s['status']=='FROZEN_BEFORE_R6_1_IMPLEMENTATION'
+          assert s['winner_preregistered'] is False
+          assert s['single_successor_change']['exact_execution_threshold']==1.25
+          assert s['single_successor_change']['exploration_floor_removed'] is False
+          assert s['single_successor_change']['regret_guard_may_update_threshold_on_holdout'] is False
+          assert s['fresh_holdout']['formula_count']==24
+          assert s['fresh_holdout']['CONNECTED_RANDOM_3CNF_V1']==list(range(15101,15109))
+          assert s['fresh_holdout']['GT6']==list(range(16101,16105))
+          assert s['fresh_holdout']['GT7']==list(range(16201,16205))
+          assert s['fresh_holdout']['GT6_WRAPPED']==list(range(17101,17105))
+          assert s['fresh_holdout']['GT7_WRAPPED']==list(range(17201,17205))
+          print('PASS frozen R6.1 spec')
+          PY
+      - name: Re-run inherited R6 adversarial firewall
+        run: pytest -q tests/test_trump_slime_r6_keymaster_m2r.py
+      - name: R6.1 regret-guard adversarial tests
+        run: pytest -q tests/test_trump_slime_r6_1_regret_guard.py
+      - name: Live R6.1 selftest
+        run: python trump/trump_slime_r6_1_regret_guard.py
+      - name: Execute frozen R6.1 calibration and holdout
+        run: |
+          python trump/run_trump_slime_r6_1_regret_bounded_benchmark.py \
+            --output trump-slime-r6-1-regret-bounded-result.json \
+            --require-pass
+      - name: Upload frozen R6.1 result even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trump-slime-r6-1-regret-bounded-frozen-result
+          path: trump-slime-r6-1-regret-bounded-result.json
+          if-no-files-found: warn
+          retention-days: 30
