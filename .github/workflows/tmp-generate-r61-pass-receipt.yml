@@ -1,0 +1,60 @@
+name: TMP Generate R6.1 Exact PASS Receipt
+
+on:
+  push:
+    branches:
+      - research/tmp-r61-pass-receipt-generator-2026-08-31
+    paths:
+      - '.github/workflows/tmp-generate-r61-pass-receipt.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  generate-clean-receipt-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Download exact frozen R6.1 artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: '33434716083'
+          ARTIFACT_NAME: trump-slime-r6-1-regret-bounded-frozen-result
+        run: |
+          mkdir -p /tmp/r61
+          gh run download "$RUN_ID" -n "$ARTIFACT_NAME" -D /tmp/r61
+          ARTIFACT_ID="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/artifacts" --jq ".artifacts[] | select(.name==\"${ARTIFACT_NAME}\") | .id")"
+          ARTIFACT_DIGEST="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/artifacts" --jq ".artifacts[] | select(.name==\"${ARTIFACT_NAME}\") | .digest")"
+          RUNTIME_MERGE_COMMIT="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/68" --jq '.merge_commit_sha')"
+          RESULT="$(find /tmp/r61 -type f -name 'trump-slime-r6-1-regret-bounded-result.json' -print -quit)"
+          test -n "$RESULT"
+          python trump/tmp_generate_r61_pass_receipt.py \
+            --result "$RESULT" \
+            --artifact-id "$ARTIFACT_ID" \
+            --artifact-digest "$ARTIFACT_DIGEST" \
+            --runtime-merge-commit "$RUNTIME_MERGE_COMMIT" \
+            --output trump/TRUMP_SLIME_R6_1_REGRET_BOUNDED_EXPLORATION_FROZEN_PASS_RECEIPT_2026-08-31.json
+      - name: Commit exact receipt on temporary generator branch
+        run: |
+          git config user.name 'JANUS R6.1 Receipt Generator'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add trump/TRUMP_SLIME_R6_1_REGRET_BOUNDED_EXPLORATION_FROZEN_PASS_RECEIPT_2026-08-31.json
+          git commit -m 'tmp: materialize exact R6.1 frozen PASS receipt from artifact'
+          git push origin HEAD:${GITHUB_REF_NAME}
+      - name: Create clean receipt branch from current main
+        run: |
+          TEMP_BRANCH="${GITHUB_REF_NAME}"
+          CLEAN_BRANCH='research/trump-r6-1-pass-receipt-2026-08-31'
+          git fetch origin main
+          git switch -C "$CLEAN_BRANCH" origin/main
+          git checkout "$TEMP_BRANCH" -- trump/TRUMP_SLIME_R6_1_REGRET_BOUNDED_EXPLORATION_FROZEN_PASS_RECEIPT_2026-08-31.json
+          git add trump/TRUMP_SLIME_R6_1_REGRET_BOUNDED_EXPLORATION_FROZEN_PASS_RECEIPT_2026-08-31.json
+          git commit -m 'TRUMP: preserve exact R6.1 frozen PASS receipt'
+          git push --force-with-lease origin HEAD:"$CLEAN_BRANCH"
