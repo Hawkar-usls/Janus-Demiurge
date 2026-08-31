@@ -1,0 +1,65 @@
+name: TRUMP Slime R5A Collision-Rich Hash-Cons Frozen Gate
+
+on:
+  pull_request:
+    paths:
+      - 'trump/TRUMP_SLIME_R5A_COLLISION_RICH_HASH_CONS_FROZEN_BENCH_V1.json'
+      - 'trump/run_trump_slime_r5a_collision_hash_cons_benchmark.py'
+      - 'tests/test_trump_slime_r5a_collision_hash_cons.py'
+      - '.github/workflows/trump-slime-r5a-collision-hash-cons.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-r5a-collision-hash-cons:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pytest
+        run: python -m pip install --disable-pip-version-check pytest
+      - name: Verify unchanged merged R5 runtime blob
+        run: |
+          test "$(git hash-object trump/trump_slime_preelim_compression_r5.py)" = "bb9471e3e3c7129ec394ad02f727d9ca6691439b"
+      - name: Compile R5A
+        run: |
+          python -m py_compile trump/run_trump_slime_r5a_collision_hash_cons_benchmark.py
+          python -m py_compile tests/test_trump_slime_r5a_collision_hash_cons.py
+      - name: Validate frozen R5A spec
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          s=json.loads(Path('trump/TRUMP_SLIME_R5A_COLLISION_RICH_HASH_CONS_FROZEN_BENCH_V1.json').read_text())
+          assert s['status']=='FROZEN_BEFORE_R5A_IMPLEMENTATION'
+          assert s['winner_preregistered'] is False
+          assert s['runtime_under_test']['git_blob_sha']=='bb9471e3e3c7129ec394ad02f727d9ca6691439b'
+          assert s['runtime_under_test']['R5_runtime_modification_allowed'] is False
+          assert s['profile']=={'cap_exponent':1,'extension_exponent':0,'bounded_resolution_width':3}
+          assert s['holdout']['formula_count']==24
+          assert len(s['holdout']['seeds'])==24 and len(set(s['holdout']['seeds']))==24
+          assert s['collision_construction']['selector_variable']==1
+          assert s['actual_R5_requirements']['hash_cons_cache_hits_minimum_per_formula']==1
+          assert s['gate']['strict_measured_hash_cons_benefit_required_for_PASS'] is True
+          print('PASS frozen R5A spec')
+          PY
+      - name: Collision construction tests
+        run: pytest -q tests/test_trump_slime_r5a_collision_hash_cons.py
+      - name: Execute frozen R5A holdout
+        run: |
+          python trump/run_trump_slime_r5a_collision_hash_cons_benchmark.py \
+            --output trump-slime-r5a-collision-hash-cons-result.json \
+            --require-pass
+      - name: Upload frozen R5A result even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trump-slime-r5a-collision-hash-cons-frozen-result
+          path: trump-slime-r5a-collision-hash-cons-result.json
+          if-no-files-found: warn
+          retention-days: 30
