@@ -1,0 +1,112 @@
+{
+  "schema": "janus.trump.slime_r5b2_graph_tautology_unsat.frozen_benchmark.v1",
+  "benchmark_id": "JANUS_TRUMP_SLIME_R5B2_GRAPH_TAUTOLOGY_UNSAT_FROZEN_C1K0_BENCH_V1",
+  "date": "2026-08-31",
+  "status": "FROZEN_BEFORE_R5B2_IMPLEMENTATION",
+  "winner_preregistered": false,
+  "purpose": "Confirm out-of-sample under fresh variable renamings that the already-merged exact R5 OR-lift/restriction DAG can convert canonical C025 OPEN states to replay-clean UNSAT on structurally unsatisfiable Graph Tautology formulas.",
+  "discovery_boundary": {
+    "development_probe_pr": 60,
+    "development_run": 33429765469,
+    "burned_exact_instances": ["GT6_CANONICAL_NUMBERING", "GT7_CANONICAL_NUMBERING", "GT8_CANONICAL_NUMBERING"],
+    "development_observation": "GT6 and GT7 canonical OPEN -> R5 replay-clean UNSAT; GT8 canonical OPEN -> R5 OPEN due node/depth budgets.",
+    "confirmatory_scope": "Fresh seeded variable bijections of GT6 and GT7 only. This is representational out-of-sample confirmation within already-selected structural families, not discovery-independent family generalization."
+  },
+  "runtime_under_test": {
+    "repository": "Hawkar-usls/Janus-Demiurge",
+    "main_commit_before_R5B2": "481125d9606ca18d83d1a4e4c54ee5129a88916b",
+    "R5_runtime_merge_commit": "7c5579d83d91bbf81e5f62f81e6d9ae4073fac1b",
+    "path": "trump/trump_slime_preelim_compression_r5.py",
+    "git_blob_sha": "bb9471e3e3c7129ec394ad02f727d9ca6691439b",
+    "R5_runtime_modification_allowed": false
+  },
+  "profile": {
+    "cap_exponent": 1,
+    "extension_exponent": 0,
+    "bounded_resolution_width": 3
+  },
+  "graph_tautology_truth_certificate": {
+    "runtime_authority": false,
+    "construction": [
+      "one Boolean variable encodes the orientation of every unordered vertex pair",
+      "for each vertex v, a non-minimality clause requires some other vertex u with u<v",
+      "for every ordered triple (a,b,c), a width-3 clause forbids the directed 3-cycle a<b, b<c, c<a"
+    ],
+    "structural_UNSAT_argument": [
+      "an orientation of every unordered pair is a tournament",
+      "a tournament with no directed 3-cycle is transitive",
+      "a finite transitive tournament has a minimum vertex",
+      "the non-minimality clause for that minimum requires a predecessor, contradiction"
+    ],
+    "independent_generator_certificate": "Benchmark code must reconstruct the expected logical Graph Tautology clause set before numeric renaming, apply the frozen bijection, and require exact canonical equality with the emitted CNF. Tiny GT3/GT4 brute-force regression is required, but truth certification for GT6/GT7 is structural rather than solver-derived.",
+    "truth_may_not_select_pivots_budgets_or_results": true
+  },
+  "holdout": {
+    "GT6": {
+      "order": 6,
+      "logical_variables": 15,
+      "expected_canonical_clause_count": 46,
+      "seeds": [9101,9102,9103,9104,9105,9106,9107,9108,9109,9110,9111,9112]
+    },
+    "GT7": {
+      "order": 7,
+      "logical_variables": 21,
+      "expected_canonical_clause_count": 77,
+      "seeds": [9201,9202,9203,9204,9205,9206,9207,9208,9209,9210,9211,9212]
+    },
+    "formula_count": 24,
+    "all_seeded_numeric_bijections_frozen_before_execution": true,
+    "exact_development_numberings_reused": false,
+    "training": false,
+    "posthoc_formula_replacement_forbidden": true,
+    "policy_selection_on_holdout": false
+  },
+  "outer_ecology": {
+    "canonical_baseline_runs_first": true,
+    "canonical_SAT_on_structurally_UNSAT_formula": "hard soundness failure",
+    "canonical_UNSAT": "preserve replay-confirmed canonical result; R5 not invoked",
+    "canonical_OPEN": "invoke unchanged merged R5 from the original CNF",
+    "R5_SAT_on_structurally_UNSAT_formula": "hard soundness failure",
+    "R5_UNSAT": "credit only if the unchanged R5 decisive DAG replay returns UNSAT",
+    "R5_OPEN": "remain OPEN; no negative inference outside this frozen representation scope"
+  },
+  "gate": {
+    "all_24_generator_and_structural_truth_certificates_must_pass": true,
+    "canonical_SAT_failures": 0,
+    "R5_SAT_failures": 0,
+    "canonical_decisive_results_must_be_preserved": true,
+    "contradictory_exact_decisive_replays": 0,
+    "minimum_canonical_OPEN_eligible_formulas": 12,
+    "minimum_total_OPEN_to_R5_UNSAT_rescues": 12,
+    "minimum_GT6_rescues": 4,
+    "minimum_GT7_rescues": 4,
+    "minimum_rescue_fraction_among_canonical_OPEN": 0.5,
+    "R5_ecology_UNSAT_count_must_be_at_least_canonical_UNSAT_count": true,
+    "runtime_semantics_must_equal_merged_R5": true,
+    "speedup_claim_allowed": false
+  },
+  "work_reporting_required": [
+    "canonical exact paid work",
+    "canonical decisive replay work",
+    "R5 fallback work",
+    "R5 full replay work",
+    "unique residual nodes",
+    "hash-cons cache hits",
+    "verified splits",
+    "maximum child state units",
+    "node/depth budget exhaustions",
+    "per-family canonical OPEN and R5 UNSAT rescue counts"
+  ],
+  "pass_claim": "R5_EXACT_OR_LIFT_UNSAT_OPEN_RESCUE_CONFIRMED_ON_FRESH_GRAPH_TAUTOLOGY_RENAMINGS_WITHIN_FROZEN_C1K0_SCOPE",
+  "fail_claim": "R5_UNSAT_OPEN_RESCUE_NOT_CONFIRMED_TO_PREREGISTERED_THRESHOLD_ON_FRESH_GRAPH_TAUTOLOGY_RENAMINGS",
+  "scientific_boundary": {
+    "P_VS_NP": "OPEN",
+    "P_equals_NP_proved": false,
+    "representational_renaming_confirmation_is_family_generalization": false,
+    "finite_GT6_GT7_holdout_implies_completeness": false,
+    "UNSAT_rescue_implies_polynomial_time": false,
+    "UNSAT_rescue_implies_speedup": false,
+    "GT8_budget_failure_is_overwritten": false,
+    "structural_truth_certificate_has_runtime_authority": false
+  }
+}
