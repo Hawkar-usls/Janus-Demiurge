@@ -1,0 +1,84 @@
+{
+  "schema": "janus.trump.slime_r5a_collision_rich_hash_cons.frozen_benchmark.v1",
+  "benchmark_id": "JANUS_TRUMP_SLIME_R5A_COLLISION_RICH_HASH_CONS_FROZEN_C1K0_BENCH_V1",
+  "date": "2026-08-31",
+  "status": "FROZEN_BEFORE_R5A_IMPLEMENTATION",
+  "winner_preregistered": false,
+  "purpose": "Empirically isolate whether the already-present R5 hash-cons memoization saves exact repeated child work on collision-rich formulas where two independently verified OR-lift branches reach the same canonical residual fingerprint.",
+  "runtime_under_test": {
+    "repository": "Hawkar-usls/Janus-Demiurge",
+    "main_commit_before_R5A": "dbdde1d06e638d3a139b46f1156956fee69ccfe4",
+    "R5_runtime_merge_commit": "7c5579d83d91bbf81e5f62f81e6d9ae4073fac1b",
+    "path": "trump/trump_slime_preelim_compression_r5.py",
+    "git_blob_sha": "bb9471e3e3c7129ec394ad02f727d9ca6691439b",
+    "R5_runtime_modification_allowed": false
+  },
+  "profile": {
+    "cap_exponent": 1,
+    "extension_exponent": 0,
+    "bounded_resolution_width": 3
+  },
+  "collision_construction": {
+    "selector_variable": 1,
+    "other_variables": [2,3,4,5,6,7,8,9,10,11,12,13],
+    "per_formula": "seed partitions variables 2..13 into four triples. For every triple, form the complete eight-clause width-3 blocker containing all sign patterns. Lift every base clause C into both (selector OR C) and (-selector OR C).",
+    "root_clause_count": 64,
+    "base_child_clause_count": 32,
+    "exact_identity": "restrict(root, selector, 0) == restrict(root, selector, 1) == base_child",
+    "base_child_UNSAT_reason": "each complete eight-clause blocker excludes all 2^3 assignments to its triple; conjunction is therefore UNSAT",
+    "expected_hash_cons_collision": "after first exact child is decided UNSAT, the second selector branch has the identical canonical fingerprint and must reuse the memoized result rather than execute a second C025 child call"
+  },
+  "holdout": {
+    "seeds": [8101,8102,8103,8104,8105,8106,8107,8108,8109,8110,8111,8112,8113,8114,8115,8116,8117,8118,8119,8120,8121,8122,8123,8124],
+    "formula_count": 24,
+    "all_seeds_new_relative_to_R1_R2_R3_R4_R5_R5B": true,
+    "training": false,
+    "posthoc_formula_replacement_forbidden": true
+  },
+  "benchmark_preconditions": {
+    "independent_truth_oracle": "brute-force all 2^13 assignments on root; require UNSAT",
+    "exact_collision": "unchanged C025 restrict(root,1,0) and restrict(root,1,1) must be exactly equal and have identical fingerprint",
+    "selector_policy": "unchanged R5 branch_pressure must select selector variable 1 at root",
+    "canonical_root": "unchanged C025 must return OPEN; if not, formula remains in frozen holdout and benchmark precondition fails rather than replacing the formula",
+    "child_leaf": "unchanged C025 on the shared child must return replay-confirmed UNSAT",
+    "truth_or_solver_results_may_not_change_formula_selection": true
+  },
+  "counterfactual_no_sharing": {
+    "method": "run unchanged C025 on the identical shared child twice as two independent calls under the same C1/K0/width3 profile",
+    "required": [
+      "both independent child calls return byte-identical replay-confirmed UNSAT",
+      "no-sharing exact child work equals the sum of both independent calls",
+      "actual R5 child exact work is compared against that no-sharing total"
+    ],
+    "no_shadow_solver_heuristic": true
+  },
+  "actual_R5_requirements": {
+    "root_final_status": "UNSAT",
+    "verified_root_split": true,
+    "hash_cons_cache_hits_minimum_per_formula": 1,
+    "canonical_child_calls_expected_per_formula": 1,
+    "second_identical_child_must_not_execute_C025_again": true,
+    "decisive_receipt_replay": "UNSAT"
+  },
+  "gate": {
+    "all_24_preconditions_must_pass": true,
+    "all_24_R5_results_must_be_replay_clean_UNSAT": true,
+    "all_24_must_record_at_least_one_hash_cons_hit": true,
+    "total_actual_C025_child_calls_must_be_strictly_less_than_no_sharing_calls": true,
+    "total_actual_child_exact_work_must_be_strictly_less_than_no_sharing_child_exact_work": true,
+    "strict_measured_hash_cons_benefit_required_for_PASS": true,
+    "runtime_semantics_must_equal_merged_R5": true,
+    "coverage_gain_claim_allowed": false,
+    "speedup_scope": "only repeated-child exact work saved inside this frozen collision-rich construction; no general solver speedup claim"
+  },
+  "pass_claim": "R5_HASH_CONS_REPEATED_RESIDUAL_WORK_SAVING_ESTABLISHED_WITHIN_FROZEN_COLLISION_RICH_C1K0_HOLDOUT",
+  "fail_claim": "NO_SCOPED_R5_HASH_CONS_WORK_SAVING_ESTABLISHED_WITHIN_FROZEN_COLLISION_RICH_C1K0_HOLDOUT",
+  "scientific_boundary": {
+    "P_VS_NP": "OPEN",
+    "P_equals_NP_proved": false,
+    "hash_cons_benefit_implies_general_speedup": false,
+    "collision_rich_holdout_implies_natural_workload_frequency": false,
+    "memoization_changes_proof_authority": false,
+    "counterfactual_truth_oracle_has_runtime_authority": false
+  }
+}
