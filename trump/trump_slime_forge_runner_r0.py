@@ -28,7 +28,7 @@ from trump_candidate import (
     primary_source,
     seal_receipt,
 )
-from trump_slime_forge_r0 import SlimeForgeMemory, source_identity
+from trump_slime_forge_r0 import SlimeForgeMemory, digest
 
 
 def _real_boundary(result: dict[str, Any]) -> bool:
@@ -47,6 +47,19 @@ def _real_boundary(result: dict[str, Any]) -> bool:
 def _validate_result(result: dict[str, Any]) -> None:
     if not isinstance(result, dict) or not _real_boundary(result):
         raise TrumpCandidateError("TRUMP_SLIME_FORGE_RESULT_BOUNDARY_VIOLATION")
+
+
+def normalized_source_identity(source: dict[str, Any]) -> str:
+    """Match the normalized source object emitted by base_receipt()."""
+    normalized = {
+        "repository": source.get("repository"),
+        "commit": source.get("pinned_commit"),
+        "path": source.get("path"),
+        "git_blob_sha": source.get("git_blob_sha"),
+    }
+    if any(not normalized[k] for k in normalized):
+        raise TrumpCandidateError("TRUMP_SLIME_FORGE_SOURCE_IDENTITY_FIELDS_REQUIRED")
+    return digest(normalized)
 
 
 def execute_order(
@@ -103,7 +116,7 @@ def run_forge(
     mem = memory or SlimeForgeMemory()
 
     # Snapshot-before-run law: advice is computed from already-finalized history.
-    sid = source_identity(source)
+    sid = normalized_source_identity(source)
     advice = mem.rank_profiles(profiles, source_identity=sid)
     ordered = advice["ordered_profiles"]
     attempts, final_status, decisive_stop = execute_order(
