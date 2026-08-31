@@ -1,0 +1,91 @@
+{
+  "schema": "janus.trump.reverse_narrative.r1_origin_prime.prereg.v0.1",
+  "experiment_id": "TRUMP_REVERSE_NARRATIVE_R1_ORIGIN_PRIME",
+  "frozen_before_candidate_run": true,
+  "purpose": "Test whether traversal direction changes finite certified search outcome under a strict one-profile budget, then compute an ORIGIN_PRIME receipt from replayed directional invariants and deltas.",
+  "pinned_candidate": {
+    "repository": "Hawkar-usls/Janus-Fundamentum",
+    "commit": "377668585178995217b681d5ddb1b34b0f8dc386",
+    "path": "experiments/direct/janus_unified_proof_carrying_akinator_jec.py",
+    "git_blob_sha": "230ca949bb51f6eeb5e7dbeea364a0752f9d0636"
+  },
+  "profile_universe": [
+    {"cap_exponent": 1, "extension_exponent": 0},
+    {"cap_exponent": 2, "extension_exponent": 0},
+    {"cap_exponent": 2, "extension_exponent": 1}
+  ],
+  "modes": ["FORWARD", "REVERSE", "BIDIRECTIONAL"],
+  "profile_attempt_budget": 1,
+  "witnesses": [
+    {
+      "id": "C025_HARDISH_BASE",
+      "construction": "literal copy of the frozen hardish CNF in pinned C025 selftest",
+      "clauses": [[1,2,3,4],[-1,-2,3,4],[1,-2,-3,4],[-1,2,-3,4],[1,2,-3,-4],[-1,-2,-3,-4],[1,-2,3,-4],[-1,2,3,-4]]
+    },
+    {
+      "id": "C025_HARDISH_DOUBLE_DISJOINT",
+      "construction": "two variable-disjoint copies of C025_HARDISH_BASE; second copy offset by +4",
+      "base_offsets": [0,4]
+    },
+    {
+      "id": "PHP_4_INTO_3",
+      "construction": "canonical pigeonhole CNF: each of 4 pigeons occupies at least one of 3 holes; no pair of pigeons shares a hole",
+      "pigeons": 4,
+      "holes": 3
+    },
+    {
+      "id": "FULL_CUBE_5_UNSAT",
+      "construction": "all 2^5 length-5 clauses, one clause excluding each Boolean assignment on variables 1..5",
+      "variables": 5
+    },
+    {
+      "id": "DETERMINISTIC_RANDOM_3CNF_12V_48C",
+      "construction": "LCG-generated 3-CNF; seed and generator frozen below; clauses canonicalized without solver feedback",
+      "variables": 12,
+      "clauses": 48,
+      "seed": 20260831,
+      "generator": "state=(1664525*state+1013904223) mod 2^32; each clause draws distinct vars by repeated state%12+1 and sign from next state bit0"
+    }
+  ],
+  "frozen_contract": {
+    "same_witness_bytes_across_modes": true,
+    "same_profile_universe_across_modes": true,
+    "same_underlying_candidate": true,
+    "same_verifier": true,
+    "same_replay_requirement": true,
+    "formula_semantics_mutable": false,
+    "theorem_face_mutable": false,
+    "schedule_is_only_mutation_surface": true,
+    "candidate_outcomes_were_not_used_to_select_witnesses": true
+  },
+  "substantive_comparator": [
+    "maximize decisive_witnesses",
+    "minimize all_open_witnesses",
+    "minimize replay_failures",
+    "minimize total_paid_work"
+  ],
+  "tie_rule": "If two or more modes are equal on all substantive comparator fields, certified_search_champion MUST be NO_UNIQUE_CHAMPION. Mode name is forbidden as a scientific tie-break.",
+  "origin_prime": {
+    "definition": "ORIGIN_PRIME = ORIGIN + exact invariants + replayed directional delta + provenance",
+    "ascend_condition": "At least one directional delta in certified outcome or paid work exists and every compared receipt replays exactly.",
+    "no_ascend_condition": "If substantive directional delta is empty, ORIGIN_PRIME status is RETURN_NO_NEW_CERTIFIED_INFORMATION.",
+    "interpretive_semantics_authority": false,
+    "proof_authority": false
+  },
+  "laws": [
+    "WINNER_WITHOUT_RECEIPT = NO_WINNER",
+    "SCORE != TRUTH",
+    "SCHEDULE != PROOF",
+    "REVERSE_READING != SEMANTIC_MUTATION",
+    "HINDSIGHT != CAUSAL_EVIDENCE",
+    "RETURN != RESET",
+    "ORIGIN_PRIME_ASCENT_REQUIRES_NEW_CERTIFIED_INFORMATION",
+    "FINITE_SEARCH_WIN != POLYNOMIAL_THEOREM"
+  ],
+  "scientific_boundary": {
+    "P_VS_NP": "OPEN",
+    "P_equals_NP_proved": false,
+    "polynomial_time_SAT_proved": false,
+    "universal_boundary_elimination_lemma": "OPEN"
+  }
+}
