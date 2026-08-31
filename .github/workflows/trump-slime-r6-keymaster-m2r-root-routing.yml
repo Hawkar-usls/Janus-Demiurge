@@ -1,0 +1,75 @@
+name: TRUMP Slime R6 Keymaster M2R Root Routing Frozen Gate
+
+on:
+  pull_request:
+    paths:
+      - 'trump/TRUMP_SLIME_R6_KEYMASTER_M2R_ROOT_ROUTING_FROZEN_BENCH_V1.json'
+      - 'trump/trump_slime_r6_keymaster_m2r.py'
+      - 'trump/run_trump_slime_r6_keymaster_m2r_benchmark.py'
+      - 'tests/test_trump_slime_r6_keymaster_m2r.py'
+      - '.github/workflows/trump-slime-r6-keymaster-m2r-root-routing.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-r6-keymaster-m2r:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pytest
+        run: python -m pip install --disable-pip-version-check pytest
+      - name: Verify unchanged merged R5 runtime blob
+        run: test "$(git hash-object trump/trump_slime_preelim_compression_r5.py)" = "bb9471e3e3c7129ec394ad02f727d9ca6691439b"
+      - name: Compile R6
+        run: |
+          python -m py_compile trump/trump_slime_r6_keymaster_m2r.py
+          python -m py_compile trump/run_trump_slime_r6_keymaster_m2r_benchmark.py
+          python -m py_compile tests/test_trump_slime_r6_keymaster_m2r.py
+      - name: Validate corrected preimplementation R6 freeze
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          s=json.loads(Path('trump/TRUMP_SLIME_R6_KEYMASTER_M2R_ROOT_ROUTING_FROZEN_BENCH_V1.json').read_text())
+          assert s['status']=='FROZEN_BEFORE_R6_IMPLEMENTATION__COST_LEAK_CORRECTED_PREIMPLEMENTATION'
+          assert s['freeze_lineage']['initial_preimplementation_freeze_commit']=='56443225c2208ca8ef938f7c24b46402566558f0'
+          assert s['freeze_lineage']['results_observed_before_correction'] is False
+          assert s['winner_preregistered'] is False
+          assert s['runtime_under_test']['R5_runtime_git_blob_sha']=='bb9471e3e3c7129ec394ad02f727d9ca6691439b'
+          assert s['runtime_under_test']['R5_runtime_modification_allowed'] is False
+          assert s['profile']=={'cap_exponent':1,'extension_exponent':0,'bounded_resolution_width':3}
+          assert s['candidate_views']['view_order']==['LOW_PAIR_RISK','CONFLICT_CANCELLATION','STRUCTURAL_DIVERSITY']
+          assert s['candidate_views']['max_unique_materialized_root_pivots']==3
+          assert s['fresh_holdout']['formula_count']==24
+          assert s['gate']['minimum_canonical_OPEN_eligible_formulas']==12
+          assert s['gate']['minimum_nonbaseline_root_routes_executed']==4
+          assert s['gate']['speedup_claim_allowed'] is False
+          assert s['gate']['calibration_amortization_claim_allowed'] is False
+          print('PASS corrected frozen R6 spec')
+          PY
+      - name: R6 adversarial tests
+        run: pytest -q tests/test_trump_slime_r6_keymaster_m2r.py
+      - name: Live pinned R6 selftest
+        run: python trump/trump_slime_r6_keymaster_m2r.py
+      - name: Execute frozen R6 calibration and holdout
+        run: |
+          python trump/run_trump_slime_r6_keymaster_m2r_benchmark.py \
+            --output trump-slime-r6-keymaster-m2r-result.json \
+            --memory-output trump-slime-r6-keymaster-m2r-memory-summary.json \
+            --require-pass
+      - name: Upload frozen R6 result even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trump-slime-r6-keymaster-m2r-frozen-result
+          path: |
+            trump-slime-r6-keymaster-m2r-result.json
+            trump-slime-r6-keymaster-m2r-memory-summary.json
+          if-no-files-found: warn
+          retention-days: 30
