@@ -1,0 +1,96 @@
+{
+  "schema": "janus.trump.slime_r5b_unsat_heavy_or_lift.frozen_benchmark.v1",
+  "benchmark_id": "JANUS_TRUMP_SLIME_R5B_UNSAT_HEAVY_OR_LIFT_FROZEN_C1K0_BENCH_V1",
+  "date": "2026-08-31",
+  "status": "FROZEN_BEFORE_R5B_IMPLEMENTATION",
+  "winner_preregistered": false,
+  "purpose": "Test whether the already-merged exact R5 OR-lift/restriction residual DAG can rescue canonical C025 OPEN formulas to replay-clean UNSAT on fresh, construction-certified UNSAT families without changing R5 runtime semantics.",
+  "runtime_under_test": {
+    "repository": "Hawkar-usls/Janus-Demiurge",
+    "main_commit_before_R5B": "dbdde1d06e638d3a139b46f1156956fee69ccfe4",
+    "R5_runtime_merge_commit": "7c5579d83d91bbf81e5f62f81e6d9ae4073fac1b",
+    "path": "trump/trump_slime_preelim_compression_r5.py",
+    "R5_runtime_modification_allowed": false
+  },
+  "profile": {
+    "cap_exponent": 1,
+    "extension_exponent": 0,
+    "bounded_resolution_width": 3
+  },
+  "benchmark_truth_boundary": {
+    "truth_labels_are_benchmark_only": true,
+    "truth_labels_are_never_passed_to_C025_or_R5": true,
+    "truth_labels_may_not_select_pivots_or_budgets": true,
+    "all_24_formulas_must_be_independently_certified_UNSAT_before_solver_execution": true,
+    "independent_certificate_method": "enumerate the small combinatorial object assignment space (3^4 = 81 assignments) for the frozen unsatisfiable construction; do not call C025, R5, a SAT library, or any solver routing primitive during benchmark truth certification"
+  },
+  "formula_families": {
+    "PHP_4_INTO_3": {
+      "count": 12,
+      "seeds": [7101,7102,7103,7104,7105,7106,7107,7108,7109,7110,7111,7112],
+      "variables": 12,
+      "logical_structure": "4 pigeons must each occupy at least one of 3 holes; no two pigeons may occupy the same hole",
+      "CNF": "four width-3 at-least-one clauses plus eighteen binary pairwise collision clauses",
+      "UNSAT_certificate": "enumerate all 3^4 pigeon-to-hole functions and verify every assignment has a collision",
+      "variant_rule": "seeded bijection from the 12 logical occupancy atoms to numeric variable IDs 1..12; clause semantics unchanged"
+    },
+    "K4_THREE_COLOR": {
+      "count": 12,
+      "seeds": [7201,7202,7203,7204,7205,7206,7207,7208,7209,7210,7211,7212],
+      "variables": 12,
+      "logical_structure": "proper 3-coloring of complete graph K4",
+      "CNF": "four width-3 at-least-one-color clauses, twelve per-vertex at-most-one-color binary clauses, eighteen edge same-color exclusion binary clauses",
+      "UNSAT_certificate": "enumerate all 3^4 vertex colorings and verify every coloring gives equal colors to at least one K4 edge",
+      "variant_rule": "seeded bijection from the 12 logical vertex-color atoms to numeric variable IDs 1..12; clause semantics unchanged"
+    }
+  },
+  "holdout": {
+    "formula_count": 24,
+    "all_formulas_construction_certified_UNSAT": true,
+    "all_seeds_new_relative_to_R1_R2_R3_R4_R5": true,
+    "training": false,
+    "policy_selection_on_holdout": false,
+    "posthoc_formula_replacement_forbidden": true
+  },
+  "outer_ecology": {
+    "canonical_baseline_runs_first": true,
+    "canonical_UNSAT": "preserve replay-confirmed canonical result; R5 not invoked",
+    "canonical_SAT_on_certified_UNSAT_formula": "hard benchmark integrity failure",
+    "canonical_OPEN": "invoke unchanged merged R5 from original CNF",
+    "R5_SAT_on_certified_UNSAT_formula": "hard soundness failure",
+    "R5_UNSAT": "credit only after unchanged R5 decisive receipt replay reports UNSAT",
+    "R5_OPEN": "remain OPEN; no negative inference beyond this frozen scope"
+  },
+  "gate": {
+    "all_24_benchmark_truth_certificates_must_pass": true,
+    "canonical_must_never_return_SAT": true,
+    "R5_must_never_return_SAT": true,
+    "canonical_decisive_UNSAT_results_must_be_preserved": true,
+    "contradictory_exact_decisive_replays": 0,
+    "strict_UNSAT_rescue_required_for_PASS": "at least one formula with canonical status OPEN must become replay-clean R5 UNSAT",
+    "R5_ecology_UNSAT_count_must_be_at_least_canonical_UNSAT_count": true,
+    "runtime_semantics_must_equal_merged_R5": true,
+    "speedup_claim_allowed": false
+  },
+  "work_reporting_required": [
+    "canonical exact paid work",
+    "canonical decisive replay work",
+    "R5 fallback work",
+    "R5 full replay work",
+    "unique residual nodes",
+    "hash-cons cache hits",
+    "verified splits",
+    "maximum child state units",
+    "node/depth budget exhaustions"
+  ],
+  "pass_claim": "R5_EXACT_OR_LIFT_UNSAT_OPEN_RESCUE_ESTABLISHED_WITHIN_FROZEN_UNSAT_HEAVY_C1K0_HOLDOUT",
+  "fail_claim": "NO_SCOPED_R5_UNSAT_OPEN_RESCUE_ESTABLISHED_WITHIN_FROZEN_UNSAT_HEAVY_C1K0_HOLDOUT",
+  "scientific_boundary": {
+    "P_VS_NP": "OPEN",
+    "P_equals_NP_proved": false,
+    "finite_UNSAT_holdout_implies_completeness": false,
+    "UNSAT_rescue_implies_polynomial_time": false,
+    "UNSAT_rescue_implies_speedup": false,
+    "benchmark_truth_certificate_has_runtime_authority": false
+  }
+}
