@@ -1,0 +1,62 @@
+name: TRUMP Slime OPEN-only Swarm R3 Frozen Gate
+
+on:
+  pull_request:
+    paths:
+      - 'trump/TRUMP_SLIME_OPEN_ONLY_SWARM_R3_FROZEN_BENCH_V1.json'
+      - 'trump/trump_slime_open_only_swarm_r3.py'
+      - 'trump/run_trump_slime_open_only_swarm_r3_benchmark.py'
+      - 'tests/test_trump_slime_open_only_swarm_r3.py'
+      - '.github/workflows/trump-slime-open-only-swarm-r3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-open-only-swarm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pytest
+        run: python -m pip install --disable-pip-version-check pytest
+      - name: Compile R3
+        run: |
+          python -m py_compile trump/trump_slime_open_only_swarm_r3.py
+          python -m py_compile trump/run_trump_slime_open_only_swarm_r3_benchmark.py
+      - name: Validate frozen R3 spec
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          s = json.loads(Path('trump/TRUMP_SLIME_OPEN_ONLY_SWARM_R3_FROZEN_BENCH_V1.json').read_text())
+          assert s['status'] == 'FROZEN_BEFORE_R3_IMPLEMENTATION'
+          assert s['winner_preregistered'] is False
+          assert s['ecology_policy']['canonical_baseline_always_runs_first'] is True
+          assert s['ecology_policy']['holdout_selection_or_weight_fitting'] is False
+          assert s['donor']['candidate_count'] == 16
+          assert len(s['holdout']['seeds']) == 16
+          assert len(set(s['holdout']['seeds'])) == 16
+          print('PASS frozen R3 spec')
+          PY
+      - name: Adversarial ecology tests
+        run: pytest -q tests/test_trump_slime_open_only_swarm_r3.py
+      - name: Live pinned R3 selftest
+        run: python trump/trump_slime_open_only_swarm_r3.py
+      - name: Execute frozen R3 holdout
+        run: |
+          python trump/run_trump_slime_open_only_swarm_r3_benchmark.py \
+            --output trump-slime-open-only-swarm-r3-result.json \
+            --require-pass
+      - name: Upload frozen R3 result even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trump-slime-open-only-swarm-r3-frozen-result
+          path: trump-slime-open-only-swarm-r3-result.json
+          if-no-files-found: warn
+          retention-days: 30
