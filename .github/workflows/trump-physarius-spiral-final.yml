@@ -1,0 +1,40 @@
+name: TRUMP Physarius Spiral Final
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'trump/packets/PHYSARIUS_5D_SPIRAL_DISCOVERY_v1.json'
+      - '.github/workflows/trump-physarius-spiral-final.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  admit-spiral-origin-prime:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pass spiral ORIGIN_PRIME through TRUMP last
+        run: |
+          python trump/physarius_final_gate.py \
+            --packet trump/packets/PHYSARIUS_5D_SPIRAL_DISCOVERY_v1.json \
+            --out out/trump-spiral-receipt.json
+      - name: Assert search-only ceiling
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('out/trump-spiral-receipt.json',encoding='utf-8'))
+          assert d['verdict']=='SEARCH_ONLY_ACCEPTED_NO_PROMOTION'
+          assert d['admitted'] is True
+          assert d['candidate_only'] is True
+          assert d['scientific_claim_promoted'] is False
+          assert d['proof_promoted'] is False
+          print(json.dumps(d,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trump-physarius-spiral-${{ github.run_id }}
+          path: out/trump-spiral-receipt.json
+          retention-days: 14
