@@ -1,0 +1,49 @@
+{
+  "schema": "JANUS/TRUMP/OSIRIS-DOUBLE-SPIRAL-MEET-R0/v1.0",
+  "experiment_id": "TRUMP_OSIRIS_DOUBLE_SPIRAL_MEET_R0",
+  "status": "FROZEN_BEFORE_HOLDOUT_EXECUTION",
+  "meta_prereg_commit": "7a74da731c948e6ef663877c9b4f940201ede3ea",
+  "meta_prereg_path": "data/JANUS-TRUMP-OSIRIS-DOUBLE-SPIRAL-MEET-R0-PREREG-2026-09-01-v1.0.json",
+  "base_main": "7087ed66c80e83ddf1c3ba82f0d036400248df4f",
+  "mechanism": {
+    "name": "DOUBLE_SPIRAL_BOUNDARY_RELATION_MEET",
+    "max_separator_size": 2,
+    "separator_score": ["max_side_size", "separator_size", "side_imbalance", "lexicographic_separator"],
+    "left_variable_order": "ascending",
+    "right_variable_order": "descending",
+    "boundary_assignment_order": "false_before_true_lexicographic",
+    "fallback": "deterministic exact baseline after charging separator discovery",
+    "meet_authority": "none; independent root replay required"
+  },
+  "holdout": {
+    "structured_sat_seeds": [7101,7102,7103,7104,7105,7106],
+    "structured_unsat_seeds": [7201,7202,7203,7204,7205,7206],
+    "dense_control_seeds": [7301,7302,7303,7304,7305,7306],
+    "structured": {"left_vars":5,"right_vars":5,"separator_vars":2,"noise_clauses_per_side":10},
+    "dense": {"vars":10,"clauses":34,"width":3},
+    "calibration_seeds_excluded": [101,102,103,201,202,203,204]
+  },
+  "primary_gate": {
+    "terminal_match_required": 18,
+    "sat_root_replay_failures_allowed": 0,
+    "truth_contradictions_allowed": 0,
+    "structured_meet_exposure_required": 12,
+    "same_holdout_learning": false
+  },
+  "secondary_work_gate": {
+    "metric": "charged_abstract_ops",
+    "baseline": "exact DFS partial-clause-pruning nodes",
+    "candidate": "separator structural ops + boundary assignment attempts + exact wing nodes, or separator structural ops + exact fallback nodes",
+    "requirement": "candidate_total < baseline_total",
+    "claim_ceiling": "finite scoped work reduction under this frozen abstract metric only"
+  },
+  "scientific_firewall": {
+    "P_VS_NP": "OPEN",
+    "P_equals_NP_proved": false,
+    "polynomial_time_SAT_proved": false,
+    "general_solver_speedup": false,
+    "R5_or_C025_proof_authority_changed": false,
+    "R6_router_changed": false,
+    "canonical_runtime_merge_authorized": false
+  }
+}
