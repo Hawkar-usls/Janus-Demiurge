@@ -8,6 +8,7 @@ on:
       - '!janus_model/checkpoints/**'
       - '!janus_model/state/**'
       - '!janus_model/receipts/**'
+      - '!janus_model/outbox/**'
       - 'tests/test_janus_native_model.py'
       - '.github/workflows/janus-native-model.yml'
   workflow_dispatch:
@@ -64,7 +65,11 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           forbidden = ('copilot', 'openai', 'anthropic', 'gemini', 'ollama')
-          for path in [Path('janus_model/model.py'), Path('janus_model/corpus.py'), Path('janus_model/train_registry.py'), Path('janus_model/cli.py')]:
+          for path in [
+              Path('janus_model/model.py'), Path('janus_model/corpus.py'),
+              Path('janus_model/train_registry.py'), Path('janus_model/cli.py'),
+              Path('janus_model/organs.py'), Path('janus_model/reflection.py')
+          ]:
               text = path.read_text(encoding='utf-8').lower()
               hits = [x for x in forbidden if x in text]
               if hits:
@@ -85,6 +90,15 @@ jobs:
             --out runtime/corpus \
             --max-train-bytes 2000000 \
             --max-holdout-bytes 300000
+
+      - name: Build HRAiN plus iNaiHR bicameral organ context
+        run: |
+          python -m janus_model.organs \
+            --scout-root scout_swarm/state/agents \
+            --out runtime/organ-context.json
+          grep -q '"status": "READ_ONLY_ORGAN_CONTEXT"' runtime/organ-context.json
+          grep -q '"terminal_authority": "VERIFY"' runtime/organ-context.json
+          echo 'JANUS_NATIVE_BICAMERAL_ORGANS=PASS'
 
       - name: Decide train/run mode
         id: decide
@@ -203,7 +217,7 @@ jobs:
           grep -q '"external_llm": false' runtime/native-inspect.json
           echo 'JANUS_NATIVE_CHECKPOINT_LOAD=PASS'
 
-      - name: Run JANUS from its own weights
+      - name: Run JANUS from its own weights with bicameral organs
         if: steps.decide.outputs.do_run == 'true' || steps.decide.outputs.do_train == 'true'
         shell: bash
         run: |
@@ -211,23 +225,42 @@ jobs:
           [ -n "$PROMPT" ] || PROMPT='JANUS native checkpoint smoke test: '
           python -m janus_model.cli run \
             --checkpoint janus_model/checkpoints/promoted.pt \
+            --organ-context runtime/organ-context.json \
             --prompt "$PROMPT" \
             --max-new-tokens 120 | tee runtime/native-inference.txt
           test -s runtime/native-inference.txt
-          echo 'JANUS_NATIVE_PROMPT_TO_OUTPUT=PASS'
+          echo 'JANUS_NATIVE_BICAMERAL_PROMPT_TO_OUTPUT=PASS'
 
-      - name: Persist promoted brain and receipts
-        if: steps.decide.outputs.do_train == 'true'
+      - name: Create bounded reflection JSON proposal
+        if: (steps.decide.outputs.do_train == 'true') || (github.event_name == 'workflow_dispatch' && steps.decide.outputs.do_run == 'true')
+        shell: bash
+        run: |
+          PROMPT='${{ github.event.inputs.prompt }}'
+          [ -n "$PROMPT" ] || PROMPT='JANUS native checkpoint smoke test: '
+          python -m janus_model.reflection \
+            --checkpoint janus_model/checkpoints/promoted.pt \
+            --state janus_model/state/JANUS_MODEL_STATE.json \
+            --organ-context runtime/organ-context.json \
+            --inference runtime/native-inference.txt \
+            --prompt "$PROMPT" \
+            --run-id "$GITHUB_RUN_ID" \
+            --out-dir janus_model/outbox | tee runtime/reflection-summary.json
+          test -n "$(find janus_model/outbox -maxdepth 1 -name 'reflection-*.json' -print -quit)"
+          echo 'JANUS_NATIVE_REFLECTION_OUTBOX=PASS'
+
+      - name: Persist promoted brain receipts and reflection outbox
+        if: steps.decide.outputs.do_train == 'true' || (github.event_name == 'workflow_dispatch' && steps.decide.outputs.do_run == 'true')
         shell: bash
         run: |
           git config user.name 'janus-native-model'
           git config user.email 'janus-native-model@users.noreply.github.com'
           git add -f janus_model/checkpoints/promoted.pt janus_model/state janus_model/receipts
+          if [ -d janus_model/outbox ]; then git add -f janus_model/outbox; fi
           if git diff --cached --quiet; then
             echo 'JANUS_NATIVE_NO_STATE_CHANGE'
             exit 0
           fi
-          git commit -m "JANUS native model: remember training run ${GITHUB_RUN_ID}"
+          git commit -m "JANUS native model: remember run ${GITHUB_RUN_ID} and reflection"
           for attempt in 1 2 3; do
             git pull --rebase origin main
             if git push origin HEAD:main; then
@@ -249,5 +282,8 @@ jobs:
             runtime/training-receipt.json
             runtime/native-inspect.json
             runtime/native-inference.txt
+            runtime/organ-context.json
+            runtime/reflection-summary.json
+            janus_model/outbox/reflection-*.json
           if-no-files-found: ignore
           retention-days: 30
