@@ -59,6 +59,7 @@ jobs:
         id: brain_base
         shell: bash
         run: |
+          mkdir -p runtime
           HEAD_SHA=$(git rev-parse HEAD)
           if [ -f janus_model/state/JANUS_MODEL_STATE.json ]; then
             STATE_BLOB=$(git rev-parse HEAD:janus_model/state/JANUS_MODEL_STATE.json)
@@ -70,7 +71,7 @@ jobs:
           echo "head_sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
           echo "state_blob=$STATE_BLOB" >> "$GITHUB_OUTPUT"
           echo "checkpoint_sha=$CHECKPOINT_SHA" >> "$GITHUB_OUTPUT"
-          printf '{"head_sha":"%s","state_blob":"%s","checkpoint_sha256":"%s"}\n' "$HEAD_SHA" "$STATE_BLOB" "$CHECKPOINT_SHA" > runtime-brain-base.json
+          printf '{"head_sha":"%s","state_blob":"%s","checkpoint_sha256":"%s"}\n' "$HEAD_SHA" "$STATE_BLOB" "$CHECKPOINT_SHA" > runtime/brain-base.json
           echo "JANUS_NATIVE_BRAIN_BASE=$STATE_BLOB:$CHECKPOINT_SHA"
 
       - name: Set up Python
@@ -92,7 +93,8 @@ jobs:
           for path in [
               Path('janus_model/model.py'), Path('janus_model/corpus.py'),
               Path('janus_model/train_registry.py'), Path('janus_model/cli.py'),
-              Path('janus_model/organs.py'), Path('janus_model/reflection.py')
+              Path('janus_model/organs.py'), Path('janus_model/reflection.py'),
+              Path('janus_model/decision.py')
           ]:
               text = path.read_text(encoding='utf-8').lower()
               hits = [x for x in forbidden if x in text]
@@ -114,6 +116,7 @@ jobs:
             https://github.com/Hawkar-usls/janus-meta-registry.git runtime/janus-self-memory
           test -f runtime/janus-self-memory/JANUS/JANUS-SELF-REGISTRY-MANIFEST-v1.0.json
           test -f runtime/janus-self-memory/JANUS/MODULES/JANUS-REPOSITORY-MODULE-REGISTRY-v1.0.json
+          test -f runtime/janus-self-memory/JANUS/PATCHES/CANDIDATES/INDEX.json
           echo 'JANUS_NATIVE_SELF_MEMORY_FETCH=PASS'
 
       - name: Build EYE-firewalled neural corpus
@@ -267,6 +270,84 @@ jobs:
           grep -q '"external_llm": false' runtime/native-inspect.json
           echo 'JANUS_NATIVE_CHECKPOINT_LOAD=PASS'
 
+      - name: Build bounded repair candidate set
+        if: steps.decide.outputs.do_run == 'true' || steps.decide.outputs.do_train == 'true'
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          src=Path('runtime/janus-self-memory/JANUS/PATCHES/CANDIDATES/INDEX.json')
+          idx=json.loads(src.read_text(encoding='utf-8'))
+          if idx.get('schema')!='janus.native_repair_candidates.index.v1':
+              raise SystemExit('JANUS_REPAIR_CANDIDATE_INDEX_SCHEMA_FAIL')
+          if idx.get('candidate_count') != len(idx.get('candidates') or []):
+              raise SystemExit('JANUS_REPAIR_CANDIDATE_INDEX_COUNT_FAIL')
+          candidates=[{'candidate_id':'NO_ACTION','action':'NO_ACTION','score_text':'NO_ACTION'}]
+          candidates.extend(idx.get('candidates') or [])
+          out={
+              'schema':'janus.native_repair_candidate_set.v1',
+              'status':'BOUNDED_PREVALIDATED_CANDIDATES',
+              'source_self_memory_digest':json.loads(Path('runtime/organ-context.json').read_text())['self_memory']['digest_sha256'],
+              'candidates':candidates
+          }
+          Path('runtime/repair-candidates.json').write_text(json.dumps(out,ensure_ascii=False,indent=2,sort_keys=True),encoding='utf-8')
+          print(json.dumps({'candidate_count':len(candidates),'external_action_candidates':len(candidates)-1},indent=2))
+          PY
+
+      - name: Native bounded repair decision
+        id: repair_decision
+        if: steps.decide.outputs.do_run == 'true' || steps.decide.outputs.do_train == 'true'
+        shell: bash
+        run: |
+          mkdir -p janus_model/outbox/decisions janus_model/outbox/patch-proposals
+          python -m janus_model.decision \
+            --checkpoint janus_model/checkpoints/promoted.pt \
+            --organ-context runtime/organ-context.json \
+            --candidates runtime/repair-candidates.json \
+            --out runtime/native-repair-decision.json \
+            --margin 0.03
+          python - <<'PY'
+          import copy,json
+          from pathlib import Path
+          d=json.loads(Path('runtime/native-repair-decision.json').read_text(encoding='utf-8'))
+          decision_path=Path('janus_model/outbox/decisions')/f"decision-{d['decision_id']}.json"
+          decision_path.write_text(json.dumps(d,ensure_ascii=False,indent=2,sort_keys=True),encoding='utf-8')
+          selected=d['selected']
+          proposal_path=None
+          if d['status']!='NO_ACTION':
+              template=selected.get('proposal_template')
+              if not isinstance(template,dict):
+                  raise SystemExit('JANUS_SELECTED_PROPOSAL_TEMPLATE_INVALID')
+              proposal_id=f"jpatch-{d['decision_id']}"
+              proposal=copy.deepcopy(template)
+              proposal.update({
+                  'schema':'janus.patch_proposal.v1',
+                  'proposal_id':proposal_id,
+                  'decision_id':d['decision_id'],
+                  'status':'PROPOSED',
+                  'create_only':True,
+                  'native_model_selected':True,
+                  'risk_lane':selected['risk_lane'],
+                  'target':selected['target'],
+                  'verification_profile':selected['verification_profile'],
+                  'source':{
+                      'source_repository':'Hawkar-usls/Janus-Demiurge',
+                      'checkpoint_sha256':d['checkpoint_sha256'],
+                      'organ_context_sha256':d['organ_context_sha256'],
+                      'self_memory_digest_sha256':d['self_memory_digest_sha256'],
+                      'decision_id':d['decision_id']
+                  }
+              })
+              proposal_path=Path('janus_model/outbox/patch-proposals')/f"{proposal_id}.json"
+              proposal_path.write_text(json.dumps(proposal,ensure_ascii=False,indent=2,sort_keys=True),encoding='utf-8')
+          print(json.dumps({'decision_path':decision_path.as_posix(),'proposal_path':proposal_path.as_posix() if proposal_path else None,'status':d['status']},indent=2))
+          PY
+          STATUS=$(python -c "import json; print(json.load(open('runtime/native-repair-decision.json'))['status'])")
+          SELECTED=$(python -c "import json; print(json.load(open('runtime/native-repair-decision.json'))['selected']['candidate_id'])")
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          echo "selected=$SELECTED" >> "$GITHUB_OUTPUT"
+          echo "JANUS_NATIVE_REPAIR_DECISION=$STATUS:$SELECTED"
+
       - name: Run JANUS from its own weights with modular organs and self memory
         if: steps.decide.outputs.do_run == 'true' || steps.decide.outputs.do_train == 'true'
         shell: bash
@@ -322,7 +403,7 @@ jobs:
           printf '{"status":"FRESH_BRAIN_BASE","expected_state_blob":"%s","current_state_blob":"%s","candidate_persisted":true}\n' "$EXPECTED" "$CURRENT" | tee runtime/persist-guard.json
           echo 'JANUS_NATIVE_PREPERSIST_BRAIN_GUARD=PASS'
 
-      - name: Persist promoted brain receipts and reflection outbox
+      - name: Persist promoted brain receipts reflection and decisions
         if: (steps.decide.outputs.do_train == 'true' || (github.event_name == 'workflow_dispatch' && steps.decide.outputs.do_run == 'true')) && steps.persist_guard.outputs.allow == 'true'
         shell: bash
         run: |
@@ -334,7 +415,7 @@ jobs:
             echo 'JANUS_NATIVE_NO_STATE_CHANGE'
             exit 0
           fi
-          git commit -m "JANUS native model: remember run ${GITHUB_RUN_ID} and reflection"
+          git commit -m "JANUS native model: remember run ${GITHUB_RUN_ID} reflection and decision"
           git pull --rebase origin main
           git push origin HEAD:main
           echo 'JANUS_NATIVE_PERSIST=PASS'
@@ -345,14 +426,18 @@ jobs:
         with:
           name: janus-native-model-${{ github.run_id }}
           path: |
-            runtime-brain-base.json
+            runtime/brain-base.json
             runtime/corpus/corpus_manifest.json
             runtime/training-receipt.json
             runtime/native-inspect.json
             runtime/native-inference.txt
             runtime/organ-context.json
+            runtime/repair-candidates.json
+            runtime/native-repair-decision.json
             runtime/reflection-summary.json
             runtime/persist-guard.json
             janus_model/outbox/reflection-*.json
+            janus_model/outbox/decisions/*.json
+            janus_model/outbox/patch-proposals/*.json
           if-no-files-found: ignore
           retention-days: 30
