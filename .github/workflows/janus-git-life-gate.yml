@@ -72,6 +72,21 @@ jobs:
             --event-name '${{ github.event_name }}' \
             --out runtime/life/plan.json \
             --github-output "$GITHUB_OUTPUT"
+
+          SOURCE_TRIGGER='${{ github.event_name }}'
+          if [ "$SOURCE_TRIGGER" = 'workflow_run' ]; then
+            SOURCE_TRIGGER='${{ github.event.workflow_run.event }}'
+          fi
+          export SOURCE_TRIGGER
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          path = Path('runtime/life/plan.json')
+          plan = json.loads(path.read_text(encoding='utf-8'))
+          plan.setdefault('source', {})['upstream_trigger'] = os.environ['SOURCE_TRIGGER']
+          path.write_text(json.dumps(plan, ensure_ascii=False, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          print('JANUS_GIT_LIFE_UPSTREAM_TRIGGER=' + os.environ['SOURCE_TRIGGER'])
+          PY
           cat runtime/life/plan.json
 
       - name: No novel bounded evidence
