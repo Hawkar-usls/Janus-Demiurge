@@ -1,0 +1,88 @@
+name: JANUS Native Observability
+
+on:
+  workflow_run:
+    workflows: ["JANUS Native Model"]
+    types: [completed]
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/janus-native-observability.yml'
+      - 'tools/janus_weight_telemetry.py'
+  workflow_dispatch:
+
+concurrency:
+  group: janus-native-observability
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout authoritative brain
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Synchronize fresh main
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git switch -C main origin/main
+          echo "JANUS_OBSERVABILITY_HEAD=$(git rev-parse HEAD)"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install checkpoint reader
+        run: python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Export checkpoint-bound telemetry
+        run: |
+          set -euo pipefail
+          test -f janus_model/checkpoints/promoted.pt
+          test -f janus_model/state/JANUS_MODEL_STATE.json
+          python tools/janus_weight_telemetry.py \
+            --checkpoint janus_model/checkpoints/promoted.pt \
+            --state janus_model/state/JANUS_MODEL_STATE.json \
+            --decision-dir janus_model/outbox/decisions \
+            --telemetry-out janus_model/state/JANUS_WEIGHT_TELEMETRY.json \
+            --decision-out janus_model/state/JANUS_LATEST_DECISION.json
+          python -m json.tool janus_model/state/JANUS_WEIGHT_TELEMETRY.json >/dev/null
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          s=json.loads(Path('janus_model/state/JANUS_MODEL_STATE.json').read_text())
+          t=json.loads(Path('janus_model/state/JANUS_WEIGHT_TELEMETRY.json').read_text())
+          h=hashlib.sha256(Path('janus_model/checkpoints/promoted.pt').read_bytes()).hexdigest()
+          assert s['checkpoint_sha256']==h==t['checkpoint_sha256']
+          assert t['parameter_count'] > 0 and t['tensor_count'] > 0
+          assert t['authority']['checkpoint_sha256_is_weight_identity'] is True
+          assert t['authority']['telemetry_grants_mutation_authority'] is False
+          print('JANUS_NATIVE_WEIGHT_TELEMETRY_BINDING=PASS')
+          PY
+
+      - name: Persist telemetry only when changed
+        run: |
+          set -euo pipefail
+          git config user.name 'janus-native-observability'
+          git config user.email 'janus-native-observability@users.noreply.github.com'
+          git add janus_model/state/JANUS_WEIGHT_TELEMETRY.json
+          if [ -f janus_model/state/JANUS_LATEST_DECISION.json ]; then
+            git add janus_model/state/JANUS_LATEST_DECISION.json
+          fi
+          if git diff --cached --quiet; then
+            echo 'JANUS_NATIVE_OBSERVABILITY=NO_CHANGE'
+          else
+            git commit -m "JANUS native observability: publish checkpoint telemetry"
+            git push origin HEAD:main
+            echo 'JANUS_NATIVE_OBSERVABILITY=PASS'
+          fi
