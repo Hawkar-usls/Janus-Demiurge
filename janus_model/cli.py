@@ -5,6 +5,8 @@ import torch
 from janus_model.model import ByteTokenizer
 from janus_model.train_registry import load_checkpoint,sha256_file
 
+ALLOWED_ORGAN_CONTEXT_STATUSES={"READ_ONLY_ORGAN_CONTEXT","READ_ONLY_MODULAR_ORGAN_CONTEXT"}
+
 def _augment_prompt(prompt:str, organ_context_path:str|None)->str:
     if not organ_context_path:
         return prompt
@@ -12,11 +14,18 @@ def _augment_prompt(prompt:str, organ_context_path:str|None)->str:
     if not path.exists():
         raise SystemExit('JANUS_ORGAN_CONTEXT_MISSING')
     obj=json.loads(path.read_text(encoding='utf-8'))
-    if obj.get('status')!='READ_ONLY_ORGAN_CONTEXT':
+    if obj.get('status') not in ALLOWED_ORGAN_CONTEXT_STATUSES:
         raise SystemExit('JANUS_ORGAN_CONTEXT_NOT_READ_ONLY')
     firewalls=obj.get('firewalls') or {}
     if firewalls.get('read_only') is not True or firewalls.get('terminal_authority')!='VERIFY':
         raise SystemExit('JANUS_ORGAN_CONTEXT_FIREWALL_FAIL')
+    if obj.get('status')=='READ_ONLY_MODULAR_ORGAN_CONTEXT':
+        if int(obj.get('module_count') or 0) < 2:
+            raise SystemExit('JANUS_MODULAR_ORGAN_COUNT_INVALID')
+        if firewalls.get('module_observation_grants_mutation') is not False:
+            raise SystemExit('JANUS_MODULE_OBSERVATION_AUTHORITY_FAIL')
+        if firewalls.get('raw_self_reflection_is_training_source') is not False:
+            raise SystemExit('JANUS_SELF_MEMORY_TRAINING_FIREWALL_FAIL')
     suffix=obj.get('native_prompt_suffix')
     if not isinstance(suffix,str) or not suffix:
         raise SystemExit('JANUS_ORGAN_CONTEXT_SUFFIX_MISSING')
