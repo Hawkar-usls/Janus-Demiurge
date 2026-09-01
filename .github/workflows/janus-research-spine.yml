@@ -17,6 +17,7 @@ concurrency:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   research-spine:
@@ -133,8 +134,24 @@ jobs:
           git add -f janus_model/state/JANUS_RESEARCH_SPINE.json janus_model/extensions/RESEARCH_SPINE_WAKE.json
           if git diff --cached --quiet; then
             echo 'JANUS_RESEARCH_SPINE_NO_CHANGE'
-            exit 0
+          else
+            git commit -m "JANUS research spine: remember TOPA arXiv Demi_Head Fundamentum context"
+            git push origin HEAD:main
+            echo 'JANUS_RESEARCH_SPINE_PERSIST=PASS'
           fi
-          git commit -m "JANUS research spine: remember TOPA arXiv Demi_Head Fundamentum context"
-          git push origin HEAD:main
-          echo 'JANUS_RESEARCH_SPINE_PERSIST=PASS'
+
+      - name: Wake native brain on persisted research context
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          git fetch origin main
+          HEAD_NOW=$(git rev-parse origin/main)
+          STORED=$(git show "origin/main:janus_model/state/JANUS_RESEARCH_SPINE.json" | python -c 'import json,sys; print(json.load(sys.stdin)["context_sha256"])')
+          EXPECTED=$(python -c 'import json; print(json.load(open("runtime/JANUS_RESEARCH_SPINE.json"))["context_sha256"])')
+          if [ "$STORED" != "$EXPECTED" ]; then
+            echo "JANUS_RESEARCH_SPINE_WAKE_CONTEXT_MISMATCH:$STORED:$EXPECTED"
+            exit 24
+          fi
+          gh workflow run janus-native-model.yml --ref main
+          echo "JANUS_RESEARCH_SPINE_NATIVE_WAKE=DISPATCHED:$HEAD_NOW:$EXPECTED"
