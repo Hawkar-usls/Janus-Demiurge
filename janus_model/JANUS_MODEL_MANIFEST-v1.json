@@ -1,7 +1,7 @@
 {
   "schema": "janus.native_model.manifest.v1",
   "model_id": "JANUS-NATIVE-BYTE-TRANSFORMER-v1",
-  "status": "NATIVE_MODEL_BOOTSTRAP_AND_INCREMENTAL_SELF_DEVELOPMENT_PASS",
+  "status": "NATIVE_MODEL_INCREMENTAL_SELF_DEVELOPMENT_ACTIVE",
   "architecture": {
     "family": "causal_transformer",
     "tokenizer": "byte_level_258",
@@ -14,46 +14,41 @@
   "training_source": "Hawkar-usls/janus-meta-registry",
   "corpus_firewall": "EYE-META-REGISTRY-TRAINING-MANIFEST-v1.0 exclusions plus secretish-path/token scrubbing",
   "launcher": "GitHub Actions / JANUS Native Model",
-  "checkpoint": "janus_model/checkpoints/promoted.pt",
-  "checkpoint_sha256": "80e29211f62de74b82bc59ce70a36f46745c182f31f05ec278dae0e3c1bca42d",
-  "self_development": "detect full source-bearing meta-registry identity; continue promoted native weights when source digest changes; promote only through deterministic holdout gate",
+  "checkpoint_path": "janus_model/checkpoints/promoted.pt",
+  "authoritative_evolving_state": "janus_model/state/JANUS_MODEL_STATE.json",
+  "current_checkpoint_identity_rule": "READ checkpoint_sha256 FROM authoritative_evolving_state; static manifest does not freeze a mutable current brain hash",
+  "self_development": "detect full source-bearing meta-registry identity; continue promoted native weights when source digest changes; promote only through holdout gate",
   "external_model_provider_in_native_path": null,
-  "first_native_run": {
-    "workflow_run_id": 33554064389,
-    "persistence_commit": "3af61560edbc2a87772d310d83aa6fc8f9fb6f13",
-    "source_commit": "aae9c70fd201bcbb14194c11d23dae259086c7bc",
-    "training_mode": "BOOTSTRAP_FROM_SCRATCH",
-    "steps": 240,
-    "candidate_eval_loss": 2.9112451473871865,
-    "checkpoint_sha256": "1c3588a91ea8c63248b59637e3c436cb06dfc74373c33dd001c7bd0ab33d9ec7",
-    "training_status": "PROMOTED",
-    "native_prompt_to_output": "PASS",
-    "external_llm": false
-  },
-  "first_incremental_self_development_run": {
-    "workflow_run_id": 33554589865,
-    "persistence_commit": "45f10b2",
-    "source_commit": "abf7e18704ab34addbbde60da9904cf1121b354d",
-    "source_digest": "54a747b57ac500bc146173c04b140e075fce2d02d160f4c3c0a93bb62bb91748",
-    "source_digest_scope": "ALL_ELIGIBLE_SOURCE_BEARING_FILES_BEFORE_CORPUS_BYTE_CAPS",
-    "source_file_count": 3570,
-    "source_total_bytes": 36885052,
-    "selected_training_records": 325,
-    "train_bytes": 2000000,
-    "holdout_bytes": 300000,
-    "training_mode": "CONTINUE_PROMOTED_WEIGHTS",
-    "parent_checkpoint_sha256": "1c3588a91ea8c63248b59637e3c436cb06dfc74373c33dd001c7bd0ab33d9ec7",
-    "incumbent_eval_loss": 2.9182339161634445,
-    "candidate_eval_loss": 2.718029002348582,
-    "promoted_checkpoint_sha256": "80e29211f62de74b82bc59ce70a36f46745c182f31f05ec278dae0e3c1bca42d",
-    "training_status": "PROMOTED",
-    "checkpoint_load": "PASS",
-    "native_prompt_to_output": "PASS",
-    "external_llm": false
+  "empirical_witnesses": {
+    "bootstrap": {
+      "workflow_run_id": 33554064389,
+      "training_mode": "BOOTSTRAP_FROM_SCRATCH",
+      "eval_loss": 2.9112451473871865,
+      "checkpoint_sha256": "1c3588a91ea8c63248b59637e3c436cb06dfc74373c33dd001c7bd0ab33d9ec7",
+      "verdict": "PROMOTED"
+    },
+    "first_incremental": {
+      "workflow_run_id": 33554589865,
+      "training_mode": "CONTINUE_PROMOTED_WEIGHTS",
+      "parent_checkpoint_sha256": "1c3588a91ea8c63248b59637e3c436cb06dfc74373c33dd001c7bd0ab33d9ec7",
+      "incumbent_eval_loss": 2.9182339161634445,
+      "candidate_eval_loss": 2.718029002348582,
+      "checkpoint_sha256": "80e29211f62de74b82bc59ce70a36f46745c182f31f05ec278dae0e3c1bca42d",
+      "verdict": "PROMOTED"
+    },
+    "second_incremental": {
+      "workflow_run_id": 33554788347,
+      "training_mode": "CONTINUE_PROMOTED_WEIGHTS",
+      "incumbent_eval_loss": 2.742975503206253,
+      "candidate_eval_loss": 2.6139340500036874,
+      "checkpoint_sha256": "2ec266d2aeed64c7901a5a723c6a4bb606db8b79beeb30d0bb0ba7a1dab28b62",
+      "source_commit": "6b0d9bc1122754453d3841a0d1e285c42079389f",
+      "verdict": "PROMOTED"
+    }
   },
   "next_frontiers": [
+    "CONNECT_REPOSITORY_ORGANS_AS_TYPED_READ_ONLY_CONTEXT_FIRST",
     "IMPROVE_LANGUAGE_QUALITY_WITH_CURATED_REGISTRY_CURRICULUM",
-    "CONNECT_REPOSITORY_ORGANS_AS_TYPED_CONTEXT_AND_TOOL_INTERFACES",
     "ADD_SLIME_IMPORTANCE_MEMORY_TO_NATIVE_WEIGHT_TRAINING",
     "GATE_ARCHITECTURE_GENOME_MUTATION_AFTER_WEIGHT_LOOP_STABILITY",
     "KEEP_MODEL_OUTPUT_NON_AUTHORITATIVE_UNTIL_VERIFIED"
