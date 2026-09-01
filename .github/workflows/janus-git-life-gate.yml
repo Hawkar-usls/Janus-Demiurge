@@ -38,6 +38,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Synchronize authoritative main before decision
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git switch -C main origin/main
+          echo "JANUS_GIT_LIFE_DECISION_HEAD=$(git rev-parse HEAD)"
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -74,19 +82,28 @@ jobs:
             --github-output "$GITHUB_OUTPUT"
 
           SOURCE_TRIGGER='${{ github.event_name }}'
+          SOURCE_RUN_ATTEMPT='1'
           if [ "$SOURCE_TRIGGER" = 'workflow_run' ]; then
             SOURCE_TRIGGER='${{ github.event.workflow_run.event }}'
+            SOURCE_RUN_ATTEMPT='${{ github.event.workflow_run.run_attempt }}'
           fi
-          export SOURCE_TRIGGER
+          export SOURCE_TRIGGER SOURCE_RUN_ATTEMPT
           echo "upstream_trigger=$SOURCE_TRIGGER" >> "$GITHUB_OUTPUT"
+          echo "upstream_run_attempt=$SOURCE_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
           python - <<'PY'
           import json, os
           from pathlib import Path
           path = Path('runtime/life/plan.json')
           plan = json.loads(path.read_text(encoding='utf-8'))
-          plan.setdefault('source', {})['upstream_trigger'] = os.environ['SOURCE_TRIGGER']
+          source = plan.setdefault('source', {})
+          source['upstream_trigger'] = os.environ['SOURCE_TRIGGER']
+          try:
+              source['upstream_run_attempt'] = int(os.environ['SOURCE_RUN_ATTEMPT'])
+          except ValueError:
+              raise SystemExit('BAD_UPSTREAM_RUN_ATTEMPT')
           path.write_text(json.dumps(plan, ensure_ascii=False, indent=2, sort_keys=True) + '\n', encoding='utf-8')
           print('JANUS_GIT_LIFE_UPSTREAM_TRIGGER=' + os.environ['SOURCE_TRIGGER'])
+          print('JANUS_GIT_LIFE_UPSTREAM_RUN_ATTEMPT=' + os.environ['SOURCE_RUN_ATTEMPT'])
           PY
           cat runtime/life/plan.json
 
@@ -229,6 +246,59 @@ jobs:
           git switch main
           git pull --rebase origin main
 
+          RECEIPT="git_life/receipts/$CYCLE_ID.json"
+          export PLAN LIFE_STATE RECEIPT
+          set +e
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+
+          plan = json.loads(Path(os.environ['PLAN']).read_text(encoding='utf-8'))
+          state_path = Path(os.environ['LIFE_STATE'])
+          state = json.loads(state_path.read_text(encoding='utf-8'))
+          receipt_path = Path(os.environ['RECEIPT'])
+          cycle_id = str(plan.get('cycle_id') or '')
+          evidence_key = str(plan.get('choice', {}).get('evidence_key') or '')
+          history = state.get('cycle_history') if isinstance(state.get('cycle_history'), list) else []
+          cycle_seen = any(str(item.get('cycle_id') or '') == cycle_id for item in history if isinstance(item, dict))
+          evidence_seen = evidence_key in set(state.get('processed_evidence_keys') or [])
+          if cycle_seen or evidence_seen:
+              if not receipt_path.exists():
+                  raise SystemExit(43)
+              existing = json.loads(receipt_path.read_text(encoding='utf-8'))
+              if str(existing.get('cycle_id') or '') != cycle_id:
+                  raise SystemExit(44)
+              Path('runtime/life/exactly-once-replay.json').write_text(json.dumps({
+                  'schema': 'janus.demiurge.git_life.replay_rejection.v1',
+                  'status': 'REPLAY_REJECTED_ALREADY_REMEMBERED',
+                  'cycle_id': cycle_id,
+                  'evidence_key': evidence_key,
+                  'receipt_sha256': existing.get('receipt_sha256'),
+              }, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+              raise SystemExit(42)
+          if receipt_path.exists():
+              raise SystemExit(45)
+          raise SystemExit(0)
+          PY
+          CLAIM_RC=$?
+          set -e
+          if [ "$CLAIM_RC" -eq 42 ]; then
+            echo 'JANUS_GIT_LIFE_EXACTLY_ONCE=REPLAY_REJECTED_ALREADY_REMEMBERED'
+            exit 0
+          elif [ "$CLAIM_RC" -eq 43 ]; then
+            echo 'JANUS_GIT_LIFE_EXACTLY_ONCE=STATE_CLAIM_WITHOUT_RECEIPT'
+            exit 1
+          elif [ "$CLAIM_RC" -eq 44 ]; then
+            echo 'JANUS_GIT_LIFE_EXACTLY_ONCE=RECEIPT_CYCLE_CONFLICT'
+            exit 1
+          elif [ "$CLAIM_RC" -eq 45 ]; then
+            echo 'JANUS_GIT_LIFE_EXACTLY_ONCE=CREATE_ONLY_RECEIPT_ALREADY_EXISTS_WITHOUT_STATE_CLAIM'
+            exit 1
+          elif [ "$CLAIM_RC" -ne 0 ]; then
+            echo "JANUS_GIT_LIFE_EXACTLY_ONCE=UNKNOWN_GUARD_RC_$CLAIM_RC"
+            exit 1
+          fi
+
           python tools/janus_git_life.py remember \
             --plan "$PLAN" \
             --artifact runtime/life/final-artifact.json \
@@ -241,7 +311,6 @@ jobs:
             --attempts "$ATTEMPTS" \
             --errors-file "$ERRORS"
 
-          RECEIPT="git_life/receipts/$CYCLE_ID.json"
           if [ "$ATTEMPTS" -gt 1 ]; then
             export RECEIPT LIFE_STATE FIRST_HASH ADAPT_CANARY
             python - <<'PY'
@@ -286,6 +355,10 @@ jobs:
             printf '%s\n' "$UNSAFE"
             exit 1
           fi
+          if git diff --cached --quiet; then
+            echo 'JANUS_GIT_LIFE_MEMORY=NO_CHANGES_FAIL_CLOSED'
+            exit 1
+          fi
           git commit -m "JANUS life $CYCLE_ID: remember $FINAL_STATUS"
 
           PUSHED=false
@@ -312,10 +385,14 @@ jobs:
           fi
 
       - name: Seal schedule-born natural continuation
-        if: success() && github.event_name == 'workflow_run' && steps.plan.outputs.upstream_trigger == 'schedule'
+        if: success() && github.event_name == 'workflow_run' && steps.plan.outputs.upstream_trigger == 'schedule' && github.event.workflow_run.run_attempt == 1
         shell: bash
         run: |
           set -euo pipefail
+          if [ -f runtime/life/exactly-once-replay.json ]; then
+            echo 'SCHEDULE_WITNESS_REPLAY_MARKER=REJECT'
+            exit 1
+          fi
           git config user.name 'janus-git-life'
           git config user.email 'janus-git-life@users.noreply.github.com'
           git switch main
@@ -329,9 +406,12 @@ jobs:
           from pathlib import Path
 
           plan = json.loads(Path('runtime/life/plan.json').read_text(encoding='utf-8'))
-          if plan.get('source', {}).get('upstream_trigger') != 'schedule':
+          source = plan.get('source', {})
+          if source.get('upstream_trigger') != 'schedule':
               raise SystemExit('SCHEDULE_WITNESS_UPSTREAM_TRIGGER_MISMATCH')
-          scout_run_id = str(plan.get('source', {}).get('scout_run_id') or '')
+          if int(source.get('upstream_run_attempt') or 0) != 1:
+              raise SystemExit('SCHEDULE_WITNESS_NOT_FIRST_RUN_ATTEMPT')
+          scout_run_id = str(source.get('scout_run_id') or '')
           if not scout_run_id.isdigit():
               raise SystemExit('SCHEDULE_WITNESS_BAD_SCOUT_RUN_ID')
           witness_path = Path('git_life/evidence') / f'scheduled-natural-continuation-{scout_run_id}.json'
@@ -343,8 +423,11 @@ jobs:
               cycle_id = str(plan.get('cycle_id') or '')
               receipt_path = Path('git_life/receipts') / f'{cycle_id}.json'
               receipt = json.loads(receipt_path.read_text(encoding='utf-8'))
-              if receipt.get('source', {}).get('upstream_trigger') != 'schedule':
+              rsource = receipt.get('source', {})
+              if rsource.get('upstream_trigger') != 'schedule':
                   raise SystemExit('SCHEDULE_WITNESS_RECEIPT_TRIGGER_MISMATCH')
+              if int(rsource.get('upstream_run_attempt') or 0) != 1:
+                  raise SystemExit('SCHEDULE_WITNESS_RECEIPT_NOT_FIRST_RUN_ATTEMPT')
               outcome = 'DISTINCT_CYCLE_' + str(receipt.get('status') or 'UNKNOWN')
               eligible_for_launch_grade = receipt.get('status') == 'PASS'
               receipt_sha256 = receipt.get('receipt_sha256')
@@ -360,8 +443,9 @@ jobs:
               'upstream': {
                   'workflow': 'JANUS Demiurge Scout Swarm 17',
                   'trigger': 'schedule',
+                  'run_attempt': 1,
                   'scout_run_id': scout_run_id,
-                  'scout_control_sha': plan.get('source', {}).get('scout_control_sha'),
+                  'scout_control_sha': source.get('scout_control_sha'),
               },
               'downstream': {
                   'workflow': 'JANUS Git Life Gate',
@@ -376,16 +460,24 @@ jobs:
               },
               'laws': {
                   'manual_dispatch_counted_as_natural': False,
+                  'manual_rerun_counted_as_natural': False,
                   'life_fallback_schedule_counted_as_scout_schedule': False,
                   'no_novel_evidence_may_fail_closed_without_action': True,
+                  'exactly_once_replay_may_count_as_natural': False,
               },
               'launch_grade_eligible': eligible_for_launch_grade,
           }
           witness_path.parent.mkdir(parents=True, exist_ok=True)
-          witness_path.write_text(json.dumps(witness, ensure_ascii=False, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          if witness_path.exists():
+              existing = json.loads(witness_path.read_text(encoding='utf-8'))
+              if existing != witness:
+                  raise SystemExit('SCHEDULE_WITNESS_CREATE_ONLY_CONFLICT')
+          else:
+              witness_path.write_text(json.dumps(witness, ensure_ascii=False, indent=2, sort_keys=True) + '\n', encoding='utf-8')
 
           prior = state.get('scheduled_natural_continuation') if isinstance(state.get('scheduled_natural_continuation'), dict) else {}
-          count = int(prior.get('witness_count') or 0) + 1
+          already_counted = str(prior.get('last_scout_run_id') or '') == scout_run_id
+          count = int(prior.get('witness_count') or 0) + (0 if already_counted else 1)
           state['scheduled_natural_continuation'] = {
               'witness_count': count,
               'last_scout_run_id': scout_run_id,
@@ -393,6 +485,7 @@ jobs:
               'last_outcome': outcome,
               'last_witness_path': str(witness_path),
               'launch_grade_eligible': eligible_for_launch_grade,
+              'upstream_run_attempt': 1,
           }
           if eligible_for_launch_grade:
               state['status'] = 'ALIVE_GIT_LIFE_7_OF_7_SCHEDULE_WITNESSED'
