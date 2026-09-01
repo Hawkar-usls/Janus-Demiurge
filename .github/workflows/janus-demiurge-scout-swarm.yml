@@ -1,7 +1,8 @@
 name: JANUS Demiurge Scout Swarm 17
-# Strict Git Life witness mode: the temporary */5 cadence must produce a real event=schedule.
+# Strict Git Life witness mode: a real cron-born Scout must produce event=schedule.
 # This workflow file is intentionally excluded from push.paths while the witness is armed,
-# so the arming commit cannot masquerade as the scheduled Scout event.
+# so the arming/tuning commit cannot masquerade as the scheduled Scout event.
+# Test cadence is one run per hour at minute 33 to bound model/resource consumption.
 
 on:
   push:
@@ -24,7 +25,7 @@ on:
       - 'tests/test_scout_observation_health.py'
   workflow_dispatch:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '33 * * * *'
 
 concurrency:
   group: janus-demiurge-scout-swarm
