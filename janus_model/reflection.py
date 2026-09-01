@@ -5,6 +5,11 @@ import hashlib
 import json
 from pathlib import Path
 
+ALLOWED_ORGAN_CONTEXT_STATUSES = {
+    "READ_ONLY_ORGAN_CONTEXT",
+    "READ_ONLY_MODULAR_ORGAN_CONTEXT",
+}
+
 
 def sha256_file(path: Path) -> str:
     h = hashlib.sha256()
@@ -16,6 +21,32 @@ def sha256_file(path: Path) -> str:
 
 def canonical_bytes(obj: dict) -> bytes:
     return json.dumps(obj, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+def _validate_organ_context(organ_context: dict) -> None:
+    status = organ_context.get("status")
+    if status not in ALLOWED_ORGAN_CONTEXT_STATUSES:
+        raise RuntimeError("REFLECTION_ORGAN_CONTEXT_NOT_READ_ONLY")
+    firewalls = organ_context.get("firewalls") or {}
+    if firewalls.get("read_only") is not True:
+        raise RuntimeError("REFLECTION_ORGAN_CONTEXT_READ_ONLY_FIREWALL_FAIL")
+    if firewalls.get("terminal_authority") != "VERIFY":
+        raise RuntimeError("REFLECTION_ORGAN_CONTEXT_TERMINAL_AUTHORITY_FAIL")
+    if status == "READ_ONLY_MODULAR_ORGAN_CONTEXT":
+        module_count = organ_context.get("module_count")
+        if not isinstance(module_count, int) or module_count < 2:
+            raise RuntimeError("REFLECTION_MODULAR_MODULE_COUNT_INVALID")
+        if firewalls.get("module_observation_grants_mutation") is not False:
+            raise RuntimeError("REFLECTION_MODULE_OBSERVATION_AUTHORITY_FAIL")
+        if firewalls.get("raw_self_reflection_is_training_source") is not False:
+            raise RuntimeError("REFLECTION_SELF_TRAINING_FIREWALL_FAIL")
+        self_memory = organ_context.get("self_memory") or {}
+        if self_memory.get("status") != "BOUND_READ_ONLY_SELF_MEMORY":
+            raise RuntimeError("REFLECTION_SELF_MEMORY_NOT_BOUND")
+        if self_memory.get("raw_reflections_are_training_source") is not False:
+            raise RuntimeError("REFLECTION_SELF_MEMORY_SOURCE_FIREWALL_FAIL")
+        if not self_memory.get("digest_sha256"):
+            raise RuntimeError("REFLECTION_SELF_MEMORY_DIGEST_MISSING")
 
 
 def build_reflection(
@@ -33,17 +64,43 @@ def build_reflection(
     inference_sha = sha256_file(inference_path)
     if checkpoint_sha != state.get("checkpoint_sha256"):
         raise RuntimeError("REFLECTION_CHECKPOINT_STATE_MISMATCH")
-    if organ_context.get("status") != "READ_ONLY_ORGAN_CONTEXT":
-        raise RuntimeError("REFLECTION_ORGAN_CONTEXT_NOT_READ_ONLY")
+    _validate_organ_context(organ_context)
+
+    status = organ_context.get("status")
+    modular = status == "READ_ONLY_MODULAR_ORGAN_CONTEXT"
+    self_memory = organ_context.get("self_memory") or {}
     identity = {
         "checkpoint_sha256": checkpoint_sha,
         "source_digest": state.get("last_source_digest"),
         "organ_context_sha256": organ_context.get("context_sha256"),
+        "self_memory_digest": self_memory.get("digest_sha256") if modular else None,
+        "module_registry_sha256": organ_context.get("module_registry_sha256") if modular else None,
         "inference_sha256": inference_sha,
         "prompt": prompt,
         "run_id": str(run_id),
     }
     reflection_id = hashlib.sha256(canonical_bytes(identity)).hexdigest()[:24]
+
+    provenance = {
+        "source_repository": "Hawkar-usls/Janus-Demiurge",
+        "workflow_run_id": str(run_id),
+        "checkpoint_sha256": checkpoint_sha,
+        "meta_registry_source_commit": state.get("last_source_commit"),
+        "meta_registry_source_digest": state.get("last_source_digest"),
+        "organ_context_sha256": organ_context.get("context_sha256"),
+        "hrain_commit": organ_context["organs"]["HRAiN"]["target_commit"],
+        "inaihr_commit": organ_context["organs"]["iNaiHR"]["target_commit"],
+        "inference_sha256": inference_sha,
+    }
+    if modular:
+        provenance.update({
+            "organ_context_schema": organ_context.get("schema"),
+            "module_count": organ_context.get("module_count"),
+            "module_registry_sha256": organ_context.get("module_registry_sha256"),
+            "self_memory_digest_sha256": self_memory.get("digest_sha256"),
+            "self_memory_file_count": self_memory.get("file_count"),
+        })
+
     return {
         "schema": "janus.model.reflection_proposal.v1",
         "reflection_id": f"jnr-{reflection_id}",
@@ -57,16 +114,14 @@ def build_reflection(
             "eligible_for_truth_promotion": False,
             "independent_verifier_required": True,
         },
-        "provenance": {
-            "source_repository": "Hawkar-usls/Janus-Demiurge",
-            "workflow_run_id": str(run_id),
-            "checkpoint_sha256": checkpoint_sha,
-            "meta_registry_source_commit": state.get("last_source_commit"),
-            "meta_registry_source_digest": state.get("last_source_digest"),
-            "organ_context_sha256": organ_context.get("context_sha256"),
-            "hrain_commit": organ_context["organs"]["HRAiN"]["target_commit"],
-            "inaihr_commit": organ_context["organs"]["iNaiHR"]["target_commit"],
-            "inference_sha256": inference_sha,
+        "provenance": provenance,
+        "modular_context": {
+            "enabled": modular,
+            "module_count": organ_context.get("module_count") if modular else 2,
+            "self_memory_bound": modular,
+            "self_memory_digest_sha256": self_memory.get("digest_sha256") if modular else None,
+            "module_observation_grants_mutation": False,
+            "raw_self_reflection_is_training_source": False,
         },
         "bicameral_context": {
             "formula": organ_context.get("canonical_formula"),
