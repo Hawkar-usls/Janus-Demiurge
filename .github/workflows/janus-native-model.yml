@@ -77,11 +77,20 @@ jobs:
           print('JANUS_NATIVE_EXTERNAL_MODEL_FIREWALL=PASS')
           PY
 
-      - name: Fetch meta-registry memory
+      - name: Fetch world memory
         run: |
           rm -rf runtime/meta-registry
           mkdir -p runtime
           git clone --depth 1 https://github.com/Hawkar-usls/janus-meta-registry.git runtime/meta-registry
+
+      - name: Fetch JANUS self memory
+        run: |
+          rm -rf runtime/janus-self-memory
+          git clone --depth 1 --branch janus/native-self-memory-modular-organism-v1 \
+            https://github.com/Hawkar-usls/janus-meta-registry.git runtime/janus-self-memory
+          test -f runtime/janus-self-memory/JANUS/JANUS-SELF-REGISTRY-MANIFEST-v1.0.json
+          test -f runtime/janus-self-memory/JANUS/MODULES/JANUS-REPOSITORY-MODULE-REGISTRY-v1.0.json
+          echo 'JANUS_NATIVE_SELF_MEMORY_FETCH=PASS'
 
       - name: Build EYE-firewalled neural corpus
         run: |
@@ -91,14 +100,31 @@ jobs:
             --max-train-bytes 2000000 \
             --max-holdout-bytes 300000
 
-      - name: Build HRAiN plus iNaiHR bicameral organ context
+      - name: Build modular repository organ context
         run: |
           python -m janus_model.organs \
             --scout-root scout_swarm/state/agents \
+            --module-registry runtime/janus-self-memory/JANUS/MODULES/JANUS-REPOSITORY-MODULE-REGISTRY-v1.0.json \
+            --self-memory-root runtime/janus-self-memory/JANUS \
             --out runtime/organ-context.json
-          grep -q '"status": "READ_ONLY_ORGAN_CONTEXT"' runtime/organ-context.json
-          grep -q '"terminal_authority": "VERIFY"' runtime/organ-context.json
-          echo 'JANUS_NATIVE_BICAMERAL_ORGANS=PASS'
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          obj=json.loads(Path('runtime/organ-context.json').read_text())
+          if obj.get('status') != 'READ_ONLY_MODULAR_ORGAN_CONTEXT':
+              raise SystemExit('JANUS_MODULAR_CONTEXT_STATUS_FAIL')
+          if obj.get('module_count') != 17:
+              raise SystemExit(f"JANUS_MODULAR_CONTEXT_COUNT_FAIL:{obj.get('module_count')}")
+          if (obj.get('self_memory') or {}).get('status') != 'BOUND_READ_ONLY_SELF_MEMORY':
+              raise SystemExit('JANUS_SELF_MEMORY_NOT_BOUND')
+          fw=obj.get('firewalls') or {}
+          if fw.get('terminal_authority') != 'VERIFY' or fw.get('module_observation_grants_mutation') is not False:
+              raise SystemExit('JANUS_MODULAR_CONTEXT_FIREWALL_FAIL')
+          if fw.get('raw_self_reflection_is_training_source') is not False:
+              raise SystemExit('JANUS_SELF_MEMORY_TRAINING_FIREWALL_FAIL')
+          print(json.dumps({'modules':obj['module_count'],'self_memory_digest':obj['self_memory']['digest_sha256'],'status':obj['status']},indent=2))
+          PY
+          echo 'JANUS_NATIVE_MODULAR_ORGANS=PASS'
 
       - name: Decide train/run mode
         id: decide
@@ -217,7 +243,7 @@ jobs:
           grep -q '"external_llm": false' runtime/native-inspect.json
           echo 'JANUS_NATIVE_CHECKPOINT_LOAD=PASS'
 
-      - name: Run JANUS from its own weights with bicameral organs
+      - name: Run JANUS from its own weights with modular organs and self memory
         if: steps.decide.outputs.do_run == 'true' || steps.decide.outputs.do_train == 'true'
         shell: bash
         run: |
@@ -229,7 +255,7 @@ jobs:
             --prompt "$PROMPT" \
             --max-new-tokens 120 | tee runtime/native-inference.txt
           test -s runtime/native-inference.txt
-          echo 'JANUS_NATIVE_BICAMERAL_PROMPT_TO_OUTPUT=PASS'
+          echo 'JANUS_NATIVE_MODULAR_PROMPT_TO_OUTPUT=PASS'
 
       - name: Create bounded reflection JSON proposal
         if: (steps.decide.outputs.do_train == 'true') || (github.event_name == 'workflow_dispatch' && steps.decide.outputs.do_run == 'true')
