@@ -1,0 +1,63 @@
+{
+  "schema": "janus.demiurge.git_life.integrity_incident.v1",
+  "incident_id": "JANUS_GIT_LIFE_EXACTLY_ONCE_REPLAY_2026_09_01_v1",
+  "status": "CORRECTED_WITH_PROVENANCE_PRESERVED",
+  "detected_during": "STRICT_SCHEDULE_BORN_NATURAL_CONTINUATION_TEST",
+  "affected_cycle": {
+    "cycle_id": "life-33540863182-scout_hrain_02-794e608413",
+    "scout_run_id": "33540863182",
+    "canonical_memory_commit": "fbedb6ab0fdf14930143484255b3c4239a7dd5a5",
+    "canonical_receipt_sha256": "626872b79cd441634314ba6090741d52b5d35d42cae85224113f847a9443f9e6",
+    "canonical_source_event": "workflow_run",
+    "canonical_branch_head": "8e984443710d906819f44ec5c851530d5cf8a8b7"
+  },
+  "replay": {
+    "duplicate_memory_commit": "00dfb8847cf7e23167a05113750d78026406412e",
+    "duplicate_created_at_utc": "2026-09-01T18:03:56Z",
+    "duplicate_receipt_sha256": "75987855ed51a2ddc7ab1cd9319152db7198b7c0aa2668dea5dce96a26fac686",
+    "duplicate_source_event": "push",
+    "duplicate_branch_head": "4c6a3a6bce6fd343818ffb7da4a3f0fe653b724c",
+    "invalid_effect": {
+      "cycle_count_from": 2,
+      "cycle_count_to": 3,
+      "pass_count_from": 2,
+      "pass_count_to": 3,
+      "duplicate_cycle_history_entry": true,
+      "canonical_receipt_overwritten": true
+    }
+  },
+  "root_cause": {
+    "class": "STALE_EVENT_SHA_EXACTLY_ONCE_RACE",
+    "mechanism": "A queued Life push run checked out its triggering event SHA, planned against stale life state, then pulled current main only after ACT. The remember path did not revalidate that the cycle/evidence had already been claimed and overwrote the existing receipt while incrementing counters.",
+    "concurrency_group_alone_was_sufficient": false
+  },
+  "hardening": {
+    "workflow_commit": "db97fc83bf996d534f61cf39999a9dcc25b53ca5",
+    "laws": [
+      "SYNC_TO_LATEST_ORIGIN_MAIN_BEFORE_PERCEIVE_AND_CHOOSE",
+      "REVALIDATE_CYCLE_AND_EVIDENCE_AFTER_FINAL_MAIN_PULL_BEFORE_REMEMBER",
+      "RECEIPT_IS_CREATE_ONLY",
+      "STATE_CLAIM_WITHOUT_RECEIPT_IS_FAIL_CLOSED",
+      "RECEIPT_WITHOUT_STATE_CLAIM_IS_FAIL_CLOSED",
+      "REPLAY_ALREADY_REMEMBERED_IS_NOOP_AND_CANNOT_CREATE_SCHEDULE_WITNESS",
+      "SCHEDULE_NATURAL_WITNESS_REQUIRES_UPSTREAM_RUN_ATTEMPT_1",
+      "MANUAL_RERUN_DOES_NOT_COUNT_AS_NATURAL"
+    ]
+  },
+  "correction": {
+    "canonical_receipt_restore_commit": "ab3508835bcb4ba9564b22ffa2190b2101e2f793",
+    "state_correction_commit": "cd34603fc6b7be77e7aecf7980b343c1a1e0ac40",
+    "corrected_cycle_count": 2,
+    "corrected_pass_count": 2,
+    "corrected_blocked_count": 0,
+    "replay_history_entry_removed_from_authoritative_state": true,
+    "replay_commit_remains_in_git_history": true,
+    "corrected_at_utc": "2026-09-01T18:52:23Z"
+  },
+  "test_effect": {
+    "strict_schedule_test_pass_declared": false,
+    "strict_schedule_test_status": "OPEN_WAITING_FOR_NEW_SCOUT_EVENT_SCHEDULE_RUN_ATTEMPT_1",
+    "reason": "The integrity incident was corrected before allowing the highest-grade scheduled-natural witness to pass."
+  },
+  "claim_ceiling": "The incident proves an exactly-once replay defect existed and is now explicitly corrected in the workflow boundary. It is not evidence of a schedule-born natural continuation PASS."
+}
