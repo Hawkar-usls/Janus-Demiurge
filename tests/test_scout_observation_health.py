@@ -2,6 +2,8 @@ import sys
 import unittest
 from pathlib import Path
 
+# JANUS_GIT_LIFE_CONTROLLED_TRIGGER_2026_09_01: non-functional marker used to initiate one push-born Scout -> Life Gate integration run.
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 from scout_observation_health import classify_reports
