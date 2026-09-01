@@ -73,7 +73,7 @@ def run_topa_self_test(topa_root: Path) -> dict:
     if not router.is_file():
         return {"status": "BLOCKED", "router_path": str(TOPA_ROUTER), "reason": "TOPA_ROUTER_MISSING"}
     proc = subprocess.run(
-        [sys.executable, str(router)], cwd=str(topa_root), text=True, capture_output=True, timeout=30
+        [sys.executable, str(router.resolve())], cwd=str(topa_root), text=True, capture_output=True, timeout=30
     )
     markers = (
         "JANUS_TOPA_EPISTEMIC_ROUTER_V1_3_STRICT_SCIENCE_SELF_TEST=PASS",
