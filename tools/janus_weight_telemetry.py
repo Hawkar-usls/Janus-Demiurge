@@ -4,9 +4,12 @@ import argparse
 import hashlib
 import json
 import math
+from collections import defaultdict
 from pathlib import Path
 
 import torch
+
+from janus_model.model import JanusModelConfig, JanusTinyTransformer, parameter_count
 
 
 def sha256_file(path: Path) -> str:
@@ -45,6 +48,25 @@ def tensor_stats(name: str, tensor: torch.Tensor) -> dict:
     }
 
 
+def exact_alias_groups(model_state: dict[str, torch.Tensor]) -> list[dict]:
+    groups: dict[tuple, list[str]] = defaultdict(list)
+    for name, tensor in model_state.items():
+        storage = tensor.untyped_storage()
+        key = (
+            storage.data_ptr(),
+            int(tensor.storage_offset()),
+            tuple(tensor.shape),
+            tuple(tensor.stride()),
+            str(tensor.dtype),
+        )
+        groups[key].append(name)
+    return [
+        {"names": sorted(names), "alias_count": len(names)}
+        for names in groups.values()
+        if len(names) > 1
+    ]
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--checkpoint", required=True)
@@ -67,12 +89,25 @@ def main() -> None:
 
     obj = torch.load(checkpoint, map_location="cpu", weights_only=False)
     model_state = obj.get("model_state")
+    config_obj = obj.get("config") or state.get("config")
     if not isinstance(model_state, dict) or not model_state:
         raise SystemExit("CHECKPOINT_MODEL_STATE_MISSING")
+    if not isinstance(config_obj, dict):
+        raise SystemExit("CHECKPOINT_CONFIG_MISSING")
+
+    model = JanusTinyTransformer(JanusModelConfig.from_dict(config_obj))
+    model.load_state_dict(model_state)
+    independent_parameter_count = int(parameter_count(model))
+    independent_parameter_tensor_count = len(list(model.parameters()))
+    unique_global_l2 = math.sqrt(sum(float(torch.sum(p.detach().cpu().to(torch.float64) ** 2).item()) for p in model.parameters()))
 
     tensors = [tensor_stats(name, tensor) for name, tensor in sorted(model_state.items())]
-    parameter_count = sum(row["numel"] for row in tensors)
-    squared_l2 = sum(row["l2"] ** 2 for row in tensors)
+    state_dict_scalar_entries = sum(row["numel"] for row in tensors)
+    aliases = exact_alias_groups(model_state)
+    checkpoint_meta_count = (obj.get("meta") or {}).get("parameter_count")
+    if checkpoint_meta_count is not None and int(checkpoint_meta_count) != independent_parameter_count:
+        raise SystemExit("CHECKPOINT_META_PARAMETER_COUNT_MISMATCH")
+
     telemetry = {
         "schema": "janus.native_weight_telemetry.v1",
         "status": "CHECKPOINT_BOUND_TENSOR_TELEMETRY",
@@ -81,10 +116,16 @@ def main() -> None:
         "attempt_count": state.get("attempt_count"),
         "promotion_count": state.get("promotion_count"),
         "rejection_count": state.get("rejection_count"),
-        "parameter_count": parameter_count,
+        "parameter_count": independent_parameter_count,
+        "parameter_count_semantics": "UNIQUE_TRAINABLE_PARAMETERS__TIED_WEIGHTS_COUNT_ONCE",
+        "parameter_tensor_count": independent_parameter_tensor_count,
+        "state_dict_scalar_entries": state_dict_scalar_entries,
+        "state_dict_tensor_count": len(tensors),
         "tensor_count": len(tensors),
-        "global_l2": math.sqrt(squared_l2),
-        "config": obj.get("config") or state.get("config"),
+        "tied_alias_groups": aliases,
+        "global_l2": unique_global_l2,
+        "global_l2_semantics": "UNIQUE_TRAINABLE_PARAMETERS__TIED_WEIGHTS_COUNT_ONCE",
+        "config": config_obj,
         "checkpoint_meta": obj.get("meta") or {},
         "tensors": tensors,
         "authority": {
@@ -116,8 +157,10 @@ def main() -> None:
 
     print(json.dumps({
         "checkpoint_sha256": checkpoint_sha,
-        "parameter_count": parameter_count,
-        "tensor_count": len(tensors),
+        "parameter_count": independent_parameter_count,
+        "state_dict_scalar_entries": state_dict_scalar_entries,
+        "state_dict_tensor_count": len(tensors),
+        "tied_alias_groups": aliases,
         "decision_status": decision_status,
     }, indent=2, sort_keys=True))
 
