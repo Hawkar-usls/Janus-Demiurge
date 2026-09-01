@@ -76,6 +76,7 @@ def run_topa_self_test(topa_root: Path) -> dict:
         [sys.executable, str(router)], cwd=str(topa_root), text=True, capture_output=True, timeout=30
     )
     markers = (
+        "JANUS_TOPA_EPISTEMIC_ROUTER_V1_3_STRICT_SCIENCE_SELF_TEST=PASS",
         "JANUS_TOPA_EPISTEMIC_ROUTER_V1_3_SELF_TEST=PASS",
         "JANUS_TOPA_EPISTEMIC_ROUTER_V1_2_SELF_TEST=PASS",
     )
