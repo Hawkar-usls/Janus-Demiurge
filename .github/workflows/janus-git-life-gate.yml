@@ -1,0 +1,243 @@
+name: JANUS Git Life Gate
+
+on:
+  workflow_run:
+    workflows: ["JANUS Demiurge Scout Swarm 17"]
+    types: [completed]
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/janus-git-life-gate.yml'
+      - 'tools/janus_git_life.py'
+      - 'protocol/JANUS_GIT_LIFE_GATE-v1.0.json'
+
+concurrency:
+  group: janus-git-life-gate
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+
+env:
+  LIFE_STATE: git_life/state/JANUS_GIT_LIFE_STATE.json
+  SCOUT_STATUS: scout_swarm/state/SCOUT_SWARM_STATUS-v1.json
+  SCOUT_AGENTS: scout_swarm/state/agents
+
+jobs:
+  life:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout current Demiurge organism
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verify life kernel before autonomous authority
+        run: |
+          set -euo pipefail
+          python -m py_compile tools/janus_git_life.py
+          python tools/janus_git_life.py self-test
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          contract = json.loads(Path('protocol/JANUS_GIT_LIFE_GATE-v1.0.json').read_text())
+          assert contract['gate_id'] == 'JANUS_GIT_LIFE_GATE'
+          assert contract['authority']['target_repository_write_authorized'] is False
+          assert contract['authority']['autonomous_merge'] is False
+          assert contract['limits']['max_attempts_per_cycle'] == 2
+          print('JANUS_GIT_LIFE_CONTRACT=PASS')
+          PY
+
+      - name: PERCEIVE and CHOOSE one bounded task
+        id: plan
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/life
+          cp -R "$SCOUT_AGENTS" runtime/life/agents-snapshot
+          python tools/janus_git_life.py plan \
+            --status "$SCOUT_STATUS" \
+            --agents-dir runtime/life/agents-snapshot \
+            --state "$LIFE_STATE" \
+            --event-name '${{ github.event_name }}' \
+            --out runtime/life/plan.json \
+            --github-output "$GITHUB_OUTPUT"
+          cat runtime/life/plan.json
+
+      - name: No novel bounded evidence
+        if: steps.plan.outputs.actionable != 'true'
+        run: echo 'JANUS_GIT_LIFE_NO_ACTION=NO_NOVEL_BOUNDED_EVIDENCE'
+
+      - name: ACT VERIFY ADAPT REMEMBER
+        if: steps.plan.outputs.actionable == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          PLAN=runtime/life/plan.json
+          CYCLE_ID='${{ steps.plan.outputs.cycle_id }}'
+          BRANCH='${{ steps.plan.outputs.branch }}'
+          TASK_PATH='${{ steps.plan.outputs.task_path }}'
+          ISSUE_BODY=runtime/life/issue-body.md
+          ERRORS=runtime/life/verify-errors.json
+
+          case "$BRANCH" in janus-life/*) ;; *) echo "UNSAFE_BRANCH:$BRANCH"; exit 1 ;; esac
+          case "$TASK_PATH" in git_life/workbench/*.json) ;; *) echo "UNSAFE_TASK_PATH:$TASK_PATH"; exit 1 ;; esac
+
+          git config user.name 'janus-git-life'
+          git config user.email 'janus-git-life@users.noreply.github.com'
+          git fetch origin main
+
+          python tools/janus_git_life.py issue-body --plan "$PLAN" --out "$ISSUE_BODY"
+          ISSUE_TITLE="$(python - <<'PY'
+          import json
+          print(json.load(open('runtime/life/plan.json'))['issue']['title'])
+          PY
+          )"
+
+          EXISTING="$(gh issue list --state all --limit 100 --json number,url,body --jq ".[] | select(.body | contains(\"$CYCLE_ID\")) | [.number,.url] | @tsv" | head -n 1 || true)"
+          if [ -n "$EXISTING" ]; then
+            ISSUE_NUMBER="$(printf '%s' "$EXISTING" | cut -f1)"
+            ISSUE_URL="$(printf '%s' "$EXISTING" | cut -f2)"
+            echo "JANUS_GIT_LIFE_ISSUE_RESUME=$ISSUE_NUMBER"
+          else
+            ISSUE_URL="$(gh issue create --title "$ISSUE_TITLE" --body-file "$ISSUE_BODY")"
+            ISSUE_NUMBER="${ISSUE_URL##*/}"
+            echo "JANUS_GIT_LIFE_ISSUE_CREATE=$ISSUE_NUMBER"
+          fi
+
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            git fetch origin "$BRANCH"
+            git switch -C "$BRANCH" "origin/$BRANCH"
+            echo 'JANUS_GIT_LIFE_BRANCH=RESUMED'
+          else
+            git switch -c "$BRANCH" origin/main
+            echo 'JANUS_GIT_LIFE_BRANCH=CREATED'
+          fi
+
+          python tools/janus_git_life.py materialize --plan "$PLAN" --attempt 1 --out runtime/life/attempt-1.json
+          mkdir -p "$(dirname "$TASK_PATH")"
+          cp runtime/life/attempt-1.json "$TASK_PATH"
+          git add -- "$TASK_PATH"
+          if [ -n "$(git diff --cached --name-only | grep -v '^git_life/workbench/' || true)" ]; then
+            echo 'LIFE_TASK_PATH_FIREWALL=FAIL'
+            git diff --cached --name-only
+            exit 1
+          fi
+          if ! git diff --cached --quiet; then
+            git commit -m "JANUS life $CYCLE_ID: bounded action attempt 1"
+          fi
+          git push origin "HEAD:$BRANCH"
+          BRANCH_HEAD="$(git rev-parse HEAD)"
+
+          set +e
+          python tools/janus_git_life.py verify --plan "$PLAN" --artifact "$TASK_PATH" --errors-out "$ERRORS"
+          VERIFY_RC=$?
+          set -e
+          ATTEMPTS=1
+          FINAL_ARTIFACT=runtime/life/attempt-1.json
+
+          if [ "$VERIFY_RC" -ne 0 ]; then
+            FIRST_HASH="$(python - <<'PY'
+          import json
+          print(json.load(open('runtime/life/attempt-1.json'))['artifact_sha256'])
+          PY
+            )"
+            python tools/janus_git_life.py materialize \
+              --plan "$PLAN" \
+              --attempt 2 \
+              --adapted-from "$FIRST_HASH" \
+              --out runtime/life/attempt-2.json
+            cp runtime/life/attempt-2.json "$TASK_PATH"
+            git add -- "$TASK_PATH"
+            if [ -n "$(git diff --cached --name-only | grep -v '^git_life/workbench/' || true)" ]; then
+              echo 'LIFE_ADAPT_PATH_FIREWALL=FAIL'
+              exit 1
+            fi
+            git commit -m "JANUS life $CYCLE_ID: bounded adaptation attempt 2"
+            git push origin "HEAD:$BRANCH"
+            BRANCH_HEAD="$(git rev-parse HEAD)"
+            ATTEMPTS=2
+            FINAL_ARTIFACT=runtime/life/attempt-2.json
+            set +e
+            python tools/janus_git_life.py verify --plan "$PLAN" --artifact "$TASK_PATH" --errors-out "$ERRORS"
+            VERIFY_RC=$?
+            set -e
+          fi
+
+          if [ "$VERIFY_RC" -eq 0 ]; then
+            FINAL_STATUS=PASS
+          else
+            FINAL_STATUS=BLOCKED
+          fi
+
+          cp "$FINAL_ARTIFACT" runtime/life/final-artifact.json
+          git switch main
+          git pull --rebase origin main
+
+          python tools/janus_git_life.py remember \
+            --plan "$PLAN" \
+            --artifact runtime/life/final-artifact.json \
+            --agents-dir runtime/life/agents-snapshot \
+            --state "$LIFE_STATE" \
+            --status "$FINAL_STATUS" \
+            --issue-url "$ISSUE_URL" \
+            --issue-number "$ISSUE_NUMBER" \
+            --branch-head "$BRANCH_HEAD" \
+            --attempts "$ATTEMPTS" \
+            --errors-file "$ERRORS"
+
+          RECEIPT="git_life/receipts/$CYCLE_ID.json"
+          git add -- "$LIFE_STATE" "$RECEIPT"
+          UNSAFE="$(git diff --cached --name-only | grep -Ev '^(git_life/state/JANUS_GIT_LIFE_STATE.json|git_life/receipts/[^/]+\.json)$' || true)"
+          if [ -n "$UNSAFE" ]; then
+            echo 'LIFE_MEMORY_PATH_FIREWALL=FAIL'
+            printf '%s\n' "$UNSAFE"
+            exit 1
+          fi
+          git commit -m "JANUS life $CYCLE_ID: remember $FINAL_STATUS"
+
+          PUSHED=false
+          for n in 1 2 3; do
+            if git push origin HEAD:main; then
+              PUSHED=true
+              break
+            fi
+            echo "JANUS_GIT_LIFE_MEMORY_PUSH_RETRY=$n"
+            git pull --rebase origin main
+          done
+          if [ "$PUSHED" != true ]; then
+            echo 'JANUS_GIT_LIFE_MEMORY_PUSH=FAILED'
+            exit 1
+          fi
+
+          if [ "$FINAL_STATUS" = PASS ]; then
+            gh issue comment "$ISSUE_NUMBER" --body "JANUS_GIT_LIFE_GATE cycle \`$CYCLE_ID\`: PASS. Branch \`$BRANCH\` @ \`$BRANCH_HEAD\`; receipt \`$RECEIPT\`. CONTINUE is armed for the next novel Scout event."
+            gh issue close "$ISSUE_NUMBER" --reason completed
+            echo 'JANUS_GIT_LIFE_GATE=PASS'
+          else
+            gh issue comment "$ISSUE_NUMBER" --body "JANUS_GIT_LIFE_GATE cycle \`$CYCLE_ID\`: BLOCKED after $ATTEMPTS bounded attempt(s). Receipt: \`$RECEIPT\`. Issue remains open; no third attempt is authorized."
+            echo 'JANUS_GIT_LIFE_GATE=BLOCKED'
+          fi
+
+      - name: Upload life decision evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-git-life-${{ github.run_id }}
+          path: runtime/life
+          if-no-files-found: ignore
+          retention-days: 30
