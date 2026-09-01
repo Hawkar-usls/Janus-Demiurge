@@ -78,6 +78,7 @@ jobs:
             SOURCE_TRIGGER='${{ github.event.workflow_run.event }}'
           fi
           export SOURCE_TRIGGER
+          echo "upstream_trigger=$SOURCE_TRIGGER" >> "$GITHUB_OUTPUT"
           python - <<'PY'
           import json, os
           from pathlib import Path
@@ -309,6 +310,123 @@ jobs:
             gh issue comment "$ISSUE_NUMBER" --body "JANUS_GIT_LIFE_GATE cycle \`$CYCLE_ID\`: BLOCKED after $ATTEMPTS bounded attempt(s). Receipt: \`$RECEIPT\`. Issue remains open; no third attempt is authorized."
             echo 'JANUS_GIT_LIFE_GATE=BLOCKED'
           fi
+
+      - name: Seal schedule-born natural continuation
+        if: success() && github.event_name == 'workflow_run' && steps.plan.outputs.upstream_trigger == 'schedule'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'janus-git-life'
+          git config user.email 'janus-git-life@users.noreply.github.com'
+          git switch main
+          git pull --rebase origin main
+
+          export LIFE_STATE
+          export LIFE_RUN_ID='${{ github.run_id }}'
+          export ACTIONABLE='${{ steps.plan.outputs.actionable }}'
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+
+          plan = json.loads(Path('runtime/life/plan.json').read_text(encoding='utf-8'))
+          if plan.get('source', {}).get('upstream_trigger') != 'schedule':
+              raise SystemExit('SCHEDULE_WITNESS_UPSTREAM_TRIGGER_MISMATCH')
+          scout_run_id = str(plan.get('source', {}).get('scout_run_id') or '')
+          if not scout_run_id.isdigit():
+              raise SystemExit('SCHEDULE_WITNESS_BAD_SCOUT_RUN_ID')
+          witness_path = Path('git_life/evidence') / f'scheduled-natural-continuation-{scout_run_id}.json'
+          state_path = Path(os.environ['LIFE_STATE'])
+          state = json.loads(state_path.read_text(encoding='utf-8'))
+
+          actionable = os.environ.get('ACTIONABLE') == 'true'
+          if actionable:
+              cycle_id = str(plan.get('cycle_id') or '')
+              receipt_path = Path('git_life/receipts') / f'{cycle_id}.json'
+              receipt = json.loads(receipt_path.read_text(encoding='utf-8'))
+              if receipt.get('source', {}).get('upstream_trigger') != 'schedule':
+                  raise SystemExit('SCHEDULE_WITNESS_RECEIPT_TRIGGER_MISMATCH')
+              outcome = 'DISTINCT_CYCLE_' + str(receipt.get('status') or 'UNKNOWN')
+              eligible_for_launch_grade = receipt.get('status') == 'PASS'
+              receipt_sha256 = receipt.get('receipt_sha256')
+          else:
+              cycle_id = None
+              outcome = 'NO_NOVEL_BOUNDED_EVIDENCE'
+              eligible_for_launch_grade = True
+              receipt_sha256 = None
+
+          witness = {
+              'schema': 'janus.demiurge.git_life.scheduled_natural_continuation.v1',
+              'status': 'PASS' if eligible_for_launch_grade else 'BLOCKED',
+              'upstream': {
+                  'workflow': 'JANUS Demiurge Scout Swarm 17',
+                  'trigger': 'schedule',
+                  'scout_run_id': scout_run_id,
+                  'scout_control_sha': plan.get('source', {}).get('scout_control_sha'),
+              },
+              'downstream': {
+                  'workflow': 'JANUS Git Life Gate',
+                  'event': 'workflow_run',
+                  'life_run_id': os.environ['LIFE_RUN_ID'],
+              },
+              'decision': {
+                  'actionable': actionable,
+                  'outcome': outcome,
+                  'cycle_id': cycle_id,
+                  'receipt_sha256': receipt_sha256,
+              },
+              'laws': {
+                  'manual_dispatch_counted_as_natural': False,
+                  'life_fallback_schedule_counted_as_scout_schedule': False,
+                  'no_novel_evidence_may_fail_closed_without_action': True,
+              },
+              'launch_grade_eligible': eligible_for_launch_grade,
+          }
+          witness_path.parent.mkdir(parents=True, exist_ok=True)
+          witness_path.write_text(json.dumps(witness, ensure_ascii=False, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+
+          prior = state.get('scheduled_natural_continuation') if isinstance(state.get('scheduled_natural_continuation'), dict) else {}
+          count = int(prior.get('witness_count') or 0) + 1
+          state['scheduled_natural_continuation'] = {
+              'witness_count': count,
+              'last_scout_run_id': scout_run_id,
+              'last_life_run_id': os.environ['LIFE_RUN_ID'],
+              'last_outcome': outcome,
+              'last_witness_path': str(witness_path),
+              'launch_grade_eligible': eligible_for_launch_grade,
+          }
+          if eligible_for_launch_grade:
+              state['status'] = 'ALIVE_GIT_LIFE_7_OF_7_SCHEDULE_WITNESSED'
+          state_path.write_text(json.dumps(state, ensure_ascii=False, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          print('JANUS_GIT_LIFE_SCHEDULED_NATURAL_WITNESS=' + ('PASS' if eligible_for_launch_grade else 'BLOCKED'))
+          PY
+
+          SCOUT_RUN_ID="$(python - <<'PY'
+          import json
+          print(json.load(open('runtime/life/plan.json'))['source']['scout_run_id'])
+          PY
+          )"
+          WITNESS="git_life/evidence/scheduled-natural-continuation-$SCOUT_RUN_ID.json"
+          git add -- "$LIFE_STATE" "$WITNESS"
+          UNSAFE="$(git diff --cached --name-only | grep -Ev '^(git_life/state/JANUS_GIT_LIFE_STATE.json|git_life/evidence/scheduled-natural-continuation-[0-9]+\.json)$' || true)"
+          if [ -n "$UNSAFE" ]; then
+            echo 'LIFE_SCHEDULE_WITNESS_PATH_FIREWALL=FAIL'
+            printf '%s\n' "$UNSAFE"
+            exit 1
+          fi
+          if git diff --cached --quiet; then
+            echo 'JANUS_GIT_LIFE_SCHEDULED_NATURAL_WITNESS=ALREADY_PERSISTED'
+            exit 0
+          fi
+          git commit -m "JANUS life: seal schedule-born continuation $SCOUT_RUN_ID"
+          for n in 1 2 3; do
+            if git push origin HEAD:main; then
+              echo 'JANUS_GIT_LIFE_SCHEDULED_NATURAL_WITNESS=PERSISTED'
+              exit 0
+            fi
+            git pull --rebase origin main
+          done
+          echo 'JANUS_GIT_LIFE_SCHEDULED_NATURAL_WITNESS=PUSH_FAILED'
+          exit 1
 
       - name: Upload life decision evidence
         if: always()
