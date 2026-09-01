@@ -1,0 +1,217 @@
+name: JANUS Self Module Actuator
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '11 */6 * * *'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/janus-self-module-actuator.yml'
+      - '.janus/JANUS_MODULE.json'
+      - 'tools/test_janus_self_extension_surface.py'
+      - 'janus_model/extensions/INDEX.json'
+
+concurrency:
+  group: janus-self-module-actuator
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  actuate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout brain organ
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Synchronize authoritative main
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git switch -C main origin/main
+          echo "JANUS_SELF_ORGAN_HEAD=$(git rev-parse HEAD)"
+
+      - name: Verify immutable self-extension boundary
+        run: |
+          set -euo pipefail
+          python tools/test_janus_self_extension_surface.py
+
+      - name: Fetch JANUS self-memory proposals
+        run: |
+          rm -rf runtime/janus-self-memory
+          mkdir -p runtime
+          git clone --depth 1 --branch janus/native-self-memory-modular-organism-v1 \
+            https://github.com/Hawkar-usls/janus-meta-registry.git runtime/janus-self-memory
+
+      - name: Select one exact SELF_DEMIURGE proposal
+        id: select
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          repo=os.environ['GITHUB_REPOSITORY']
+          head=os.popen('git rev-parse HEAD').read().strip()
+          descriptor=json.loads(Path('.janus/JANUS_MODULE.json').read_text())
+          if descriptor.get('module_id')!='SELF_DEMIURGE' or descriptor.get('repository')!=repo:
+              raise SystemExit('SELF_DEMIURGE_DESCRIPTOR_REJECTED')
+          root=Path('runtime/janus-self-memory/JANUS/PATCHES/PROPOSALS')
+          matches=[]
+          if root.exists():
+              for path in sorted(root.glob('*.json')):
+                  obj=json.loads(path.read_text())
+                  target=obj.get('target') or {}
+                  if obj.get('schema')!='janus.patch_proposal.v1' or obj.get('status')!='PROPOSED':
+                      continue
+                  if target.get('repository')==repo and target.get('expected_target_commit')==head:
+                      matches.append((path,obj))
+          if len(matches)>1:
+              raise SystemExit('MULTIPLE_EXACT_SELF_PROPOSALS_FOR_SAME_BASE')
+          out=Path(os.environ['GITHUB_OUTPUT'])
+          if not matches:
+              out.open('a').write('has_proposal=false\n')
+              print('JANUS_SELF_NO_EXACT_PROPOSAL')
+          else:
+              _,obj=matches[0]
+              Path('runtime/selected-proposal.json').write_text(json.dumps(obj,ensure_ascii=False,indent=2,sort_keys=True))
+              out.open('a').write(f"has_proposal=true\nproposal_id={obj['proposal_id']}\n")
+              print(json.dumps({'proposal_id':obj['proposal_id'],'target_commit':head},indent=2))
+          PY
+
+      - name: Validate bounded self-authored module contract
+        if: steps.select.outputs.has_proposal == 'true'
+        run: |
+          python - <<'PY'
+          import json,posixpath
+          from pathlib import Path
+          d=json.loads(Path('.janus/JANUS_MODULE.json').read_text())
+          p=json.loads(Path('runtime/selected-proposal.json').read_text())
+          a=d['actuator']; files=p.get('files') or []
+          if p.get('create_only') is not True: raise SystemExit('PROPOSAL_NOT_CREATE_ONLY')
+          if p.get('risk_lane')!='LOW': raise SystemExit('RISK_LANE_REJECTED')
+          if p.get('verification_profile') not in d.get('verification_profiles',{}): raise SystemExit('VERIFICATION_PROFILE_REJECTED')
+          if not 1 <= len(files) <= int(a['max_files']): raise SystemExit('FILE_BUDGET_REJECTED')
+          deny=tuple(d.get('forbidden_paths') or [])
+          allow=tuple(d.get('ordinary_self_extension_paths') or [])
+          total=0
+          for row in files:
+              path=row.get('path'); content=row.get('content_utf8')
+              if not isinstance(path,str) or not path or path.startswith('/') or '..' in Path(path).parts: raise SystemExit('PATH_REJECTED')
+              norm=posixpath.normpath(path)
+              if any(norm==x.rstrip('/') or norm.startswith(x) for x in deny): raise SystemExit(f'FORBIDDEN_PATH:{norm}')
+              if not any(norm==x.rstrip('/') or norm.startswith(x) for x in allow): raise SystemExit(f'OUTSIDE_SELF_EXTENSION_SURFACE:{norm}')
+              if not isinstance(content,str): raise SystemExit('TEXT_CONTENT_REQUIRED')
+              total += len(content.encode('utf-8'))
+          if total > int(a['max_changed_bytes']): raise SystemExit('BYTE_BUDGET_REJECTED')
+          print(f'JANUS_SELF_MODULE_CONTRACT=PASS bytes={total} files={len(files)}')
+          PY
+
+      - name: Apply on isolated self branch or recognize verified replay
+        id: apply
+        if: steps.select.outputs.has_proposal == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROPOSAL_ID='${{ steps.select.outputs.proposal_id }}'
+          BRANCH="janus-self/${PROPOSAL_ID}"
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            git fetch origin "$BRANCH"
+            git switch -C "$BRANCH" FETCH_HEAD
+            RECEIPT=".janus/receipts/${PROPOSAL_ID}.json"
+            test -f "$RECEIPT"
+            python - <<'PY'
+          import json,os
+          from pathlib import Path
+          p=json.loads(Path('runtime/selected-proposal.json').read_text())
+          r=json.loads((Path('.janus/receipts')/f"{p['proposal_id']}.json").read_text())
+          assert r['schema']=='janus.module_actuator.receipt.v1'
+          assert r['proposal_id']==p['proposal_id']
+          assert r['target_repository']==os.environ['GITHUB_REPOSITORY']
+          assert r['base_commit']==p['target']['expected_target_commit']
+          assert r['status']=='VERIFY_PASS'
+          assert r['main_mutated'] is False and r['autonomous_merge'] is False
+          assert r.get('self_extension') is True
+          print('JANUS_SELF_MODULE_VERIFIED_REPLAY=PASS')
+          PY
+            echo 'replay=true' >> "$GITHUB_OUTPUT"
+            echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo 'replay=false' >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          git switch -c "$BRANCH"
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          p=json.loads(Path('runtime/selected-proposal.json').read_text())
+          for row in p['files']:
+              path=Path(row['path']); expected=row.get('expected_before_sha256')
+              if path.exists():
+                  actual=hashlib.sha256(path.read_bytes()).hexdigest()
+                  if not expected or actual!=expected: raise SystemExit(f'BEFORE_SHA_MISMATCH:{path}')
+              elif expected is not None:
+                  raise SystemExit(f'EXPECTED_EXISTING_FILE_MISSING:{path}')
+              path.parent.mkdir(parents=True,exist_ok=True)
+              path.write_text(row['content_utf8'],encoding='utf-8')
+          PY
+          git config user.name 'janus-self-module-actuator'
+          git config user.email 'janus-self-module-actuator@users.noreply.github.com'
+          git add -A
+          git commit -m "JANUS self-authored module ${PROPOSAL_ID}"
+          echo "PATCH_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo "JANUS_BRANCH=$BRANCH" >> "$GITHUB_ENV"
+
+      - name: Verify self-authored extension locally
+        id: verify
+        if: steps.select.outputs.has_proposal == 'true' && steps.apply.outputs.replay != 'true'
+        shell: bash
+        run: |
+          PROFILE=$(python -c "import json;print(json.load(open('runtime/selected-proposal.json'))['verification_profile'])")
+          case "$PROFILE" in
+            DEMIURGE_EXTENSION_STATIC_TEST)
+              python tools/test_janus_self_extension_surface.py
+              ;;
+            *)
+              echo "UNKNOWN_VERIFICATION_PROFILE=$PROFILE"
+              exit 2
+              ;;
+          esac
+          echo 'JANUS_SELF_EXTENSION_LOCAL_VERIFY=PASS'
+
+      - name: Seal self-extension receipt and push branch
+        if: steps.select.outputs.has_proposal == 'true' && steps.apply.outputs.replay != 'true' && steps.verify.outcome == 'success'
+        run: |
+          python - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          p_raw=Path('runtime/selected-proposal.json').read_bytes(); p=json.loads(p_raw)
+          receipt={
+            'schema':'janus.module_actuator.receipt.v1',
+            'proposal_id':p['proposal_id'],
+            'status':'VERIFY_PASS',
+            'target_repository':os.environ['GITHUB_REPOSITORY'],
+            'base_commit':p['target']['expected_target_commit'],
+            'patch_commit':os.environ['PATCH_COMMIT'],
+            'branch':os.environ['JANUS_BRANCH'],
+            'proposal_sha256':hashlib.sha256(p_raw).hexdigest(),
+            'verification_profile':p['verification_profile'],
+            'autonomous_merge':False,
+            'main_mutated':False,
+            'self_extension':True,
+            'terminal_authority':'TARGET_LOCAL_VERIFIER'
+          }
+          out=Path('.janus/receipts')/f"{p['proposal_id']}.json"; out.parent.mkdir(parents=True,exist_ok=True)
+          out.write_text(json.dumps(receipt,ensure_ascii=False,indent=2,sort_keys=True),encoding='utf-8')
+          PY
+          git add .janus/receipts
+          git commit -m "JANUS self-module receipt ${{ steps.select.outputs.proposal_id }}: VERIFY_PASS"
+          git push origin HEAD:"$JANUS_BRANCH"
+          echo 'JANUS_SELF_MODULE_BRANCH_AND_VERIFY=PASS'
+
+      - name: Accept verified replay without new mutation
+        if: steps.select.outputs.has_proposal == 'true' && steps.apply.outputs.replay == 'true'
+        run: echo 'JANUS_SELF_MODULE_EXACTLY_ONCE_REPLAY=PASS'
