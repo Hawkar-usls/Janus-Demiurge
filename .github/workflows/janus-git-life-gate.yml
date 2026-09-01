@@ -128,9 +128,29 @@ jobs:
             echo 'JANUS_GIT_LIFE_BRANCH=CREATED'
           fi
 
+          ADAPT_CANARY=false
+          if ! grep -R -q '"ADAPT": "USED"' git_life/receipts 2>/dev/null; then
+            ADAPT_CANARY=true
+            echo 'JANUS_GIT_LIFE_ADAPT_CANARY=ARMED_ONE_SHOT'
+          fi
+
           python tools/janus_git_life.py materialize --plan "$PLAN" --attempt 1 --out runtime/life/attempt-1.json
           mkdir -p "$(dirname "$TASK_PATH")"
           cp runtime/life/attempt-1.json "$TASK_PATH"
+
+          if [ "$ADAPT_CANARY" = true ]; then
+            python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          p = Path('${{ steps.plan.outputs.task_path }}')
+          data = json.loads(p.read_text(encoding='utf-8'))
+          seed = ('JANUS_ADAPT_CANARY:' + data['cycle_id']).encode('utf-8')
+          data['artifact_sha256'] = hashlib.sha256(seed).hexdigest()
+          p.write_text(json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          print('JANUS_GIT_LIFE_ADAPT_CANARY=INJECTED_HASH_MISMATCH')
+          PY
+          fi
+
           git add -- "$TASK_PATH"
           if [ -n "$(git diff --cached --name-only | grep -v '^git_life/workbench/' || true)" ]; then
             echo 'LIFE_TASK_PATH_FIREWALL=FAIL'
@@ -151,11 +171,15 @@ jobs:
           FINAL_ARTIFACT=runtime/life/attempt-1.json
 
           if [ "$VERIFY_RC" -ne 0 ]; then
+            cp "$ERRORS" runtime/life/verify-errors-attempt-1.json
             FIRST_HASH="$(python - <<'PY'
           import json
-          print(json.load(open('runtime/life/attempt-1.json'))['artifact_sha256'])
+          print(json.load(open('${{ steps.plan.outputs.task_path }}'))['artifact_sha256'])
           PY
             )"
+            if [ "$ADAPT_CANARY" = true ]; then
+              gh issue comment "$ISSUE_NUMBER" --body "JANUS autonomous ADAPT witness: attempt 1 was deliberately challenged by the one-shot life-gate canary and VERIFY rejected it. Failed artifact hash: \`$FIRST_HASH\`. Exactly one corrective attempt is now authorized."
+            fi
             python tools/janus_git_life.py materialize \
               --plan "$PLAN" \
               --attempt 2 \
@@ -225,7 +249,7 @@ jobs:
           fi
 
           if [ "$FINAL_STATUS" = PASS ]; then
-            gh issue comment "$ISSUE_NUMBER" --body "JANUS_GIT_LIFE_GATE cycle \`$CYCLE_ID\`: PASS. Branch \`$BRANCH\` @ \`$BRANCH_HEAD\`; receipt \`$RECEIPT\`. CONTINUE is armed for the next novel Scout event."
+            gh issue comment "$ISSUE_NUMBER" --body "JANUS_GIT_LIFE_GATE cycle \`$CYCLE_ID\`: PASS. Branch \`$BRANCH\` @ \`$BRANCH_HEAD\`; attempts=$ATTEMPTS; receipt \`$RECEIPT\`. CONTINUE is armed for the next novel Scout event."
             gh issue close "$ISSUE_NUMBER" --reason completed
             echo 'JANUS_GIT_LIFE_GATE=PASS'
           else
