@@ -1,0 +1,38 @@
+name: TRUMP Osiris Double Spiral Meet R1 Holdout
+
+on:
+  push:
+    branches:
+      - research/trump-osiris-double-spiral-meet-r1-advisory
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trump-osiris-double-spiral-meet-r1-holdout
+  cancel-in-progress: false
+
+jobs:
+  frozen-holdout:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile frozen R1
+        run: python -m py_compile trump/trump_osiris_double_spiral_meet_r0.py trump/trump_osiris_double_spiral_meet_r1_advisory.py trump/trump_osiris_double_spiral_meet_r1_runner.py tests/test_trump_osiris_double_spiral_meet_r1_advisory.py
+      - name: Calibration regression
+        run: python -m unittest tests.test_trump_osiris_double_spiral_meet_r1_advisory -v
+      - name: Execute fresh frozen R1 holdout
+        run: python trump/trump_osiris_double_spiral_meet_r1_runner.py --receipt trump/TRUMP_OSIRIS_DOUBLE_SPIRAL_MEET_R1_RECEIPT.json
+      - name: Print receipt
+        if: always()
+        run: cat trump/TRUMP_OSIRIS_DOUBLE_SPIRAL_MEET_R1_RECEIPT.json || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trump-osiris-double-spiral-meet-r1-receipt
+          path: trump/TRUMP_OSIRIS_DOUBLE_SPIRAL_MEET_R1_RECEIPT.json
+          if-no-files-found: error
