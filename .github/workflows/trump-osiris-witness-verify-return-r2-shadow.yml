@@ -1,0 +1,38 @@
+name: TRUMP Osiris Witness Verify Return R2 Shadow
+
+on:
+  push:
+    branches:
+      - research/trump-osiris-witness-verify-return-r2-shadow
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trump-osiris-witness-verify-return-r2-shadow
+  cancel-in-progress: false
+
+jobs:
+  frozen-shadow-holdout:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile R2 shadow
+        run: python -m py_compile trump/trump_osiris_double_spiral_meet_r0.py trump/trump_osiris_double_spiral_meet_r1_advisory.py trump/trump_osiris_witness_verify_return_r2_shadow.py trump/trump_osiris_witness_verify_return_r2_runner.py tests/test_trump_osiris_witness_verify_return_r2_shadow.py
+      - name: R2 unit and firewall tests
+        run: python -m unittest tests.test_trump_osiris_witness_verify_return_r2_shadow -v
+      - name: Execute frozen prospective R2 shadow holdout
+        run: python trump/trump_osiris_witness_verify_return_r2_runner.py --receipt trump/TRUMP_OSIRIS_WITNESS_VERIFY_RETURN_R2_RECEIPT.json
+      - name: Print receipt
+        if: always()
+        run: cat trump/TRUMP_OSIRIS_WITNESS_VERIFY_RETURN_R2_RECEIPT.json || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trump-osiris-witness-verify-return-r2-receipt
+          path: trump/TRUMP_OSIRIS_WITNESS_VERIFY_RETURN_R2_RECEIPT.json
+          if-no-files-found: error
