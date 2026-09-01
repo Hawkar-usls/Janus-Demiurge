@@ -7,9 +7,11 @@ from pathlib import Path
 import torch
 
 from janus_model.cli import _augment_prompt
+from janus_model.decision import decide
 from janus_model.model import ByteTokenizer, JanusModelConfig, JanusTinyTransformer, parameter_count
 from janus_model.organs import build_bicameral_context
 from janus_model.reflection import build_reflection
+from janus_model.train_registry import save_checkpoint
 
 
 class JanusNativeModelTests(unittest.TestCase):
@@ -108,6 +110,49 @@ class JanusNativeModelTests(unittest.TestCase):
             self.assertEqual(reflection["provenance"]["module_count"], 17)
             self.assertEqual(reflection["provenance"]["self_memory_digest_sha256"], "1" * 64)
             self.assertEqual(reflection["provenance"]["module_registry_sha256"], "f" * 64)
+
+    def test_closed_repair_decision_can_abstain_without_patch_authority(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            torch.manual_seed(9)
+            model = JanusTinyTransformer(JanusModelConfig())
+            checkpoint = root / "brain.pt"
+            save_checkpoint(checkpoint, model, {"test": True})
+            context = root / "context.json"
+            context.write_text(json.dumps({
+                "schema": "janus.model.modular_organ_context.v2",
+                "status": "READ_ONLY_MODULAR_ORGAN_CONTEXT",
+                "context_sha256": "2" * 64,
+                "module_count": 2,
+                "module_registry_sha256": "3" * 64,
+                "repository_modules": {
+                    "SCOUT_HRAIN_02": {"repository": "Hawkar-usls/Hrain", "target_commit": "a" * 40},
+                    "SCOUT_INAIHR_03": {"repository": "Hawkar-usls/iNaiHR", "target_commit": "b" * 40},
+                },
+                "organs": {
+                    "HRAiN": {"target_commit": "a" * 40},
+                    "iNaiHR": {"target_commit": "b" * 40},
+                },
+                "self_memory": {"digest_sha256": "4" * 64},
+                "firewalls": {
+                    "terminal_authority": "VERIFY",
+                    "module_observation_grants_mutation": False,
+                },
+            }), encoding="utf-8")
+            candidates = root / "candidates.json"
+            candidates.write_text(json.dumps({
+                "schema": "janus.native_repair_candidate_set.v1",
+                "status": "BOUNDED_PREVALIDATED_CANDIDATES",
+                "candidates": [
+                    {"candidate_id": "NO_ACTION", "action": "NO_ACTION", "score_text": "NO_ACTION"}
+                ],
+            }), encoding="utf-8")
+            decision = decide(checkpoint, context, candidates)
+            self.assertEqual(decision["status"], "NO_ACTION")
+            self.assertEqual(decision["selected"]["candidate_id"], "NO_ACTION")
+            self.assertTrue(decision["native_model_decision"])
+            self.assertFalse(decision["authority"]["direct_repository_mutation"])
+            self.assertFalse(decision["authority"]["autonomous_merge"])
 
 
 if __name__ == "__main__":
