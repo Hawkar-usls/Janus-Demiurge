@@ -1,0 +1,253 @@
+name: JANUS Native Model
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'janus_model/**'
+      - '!janus_model/checkpoints/**'
+      - '!janus_model/state/**'
+      - '!janus_model/receipts/**'
+      - 'tests/test_janus_native_model.py'
+      - '.github/workflows/janus-native-model.yml'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Native JANUS action
+        required: true
+        default: train_and_run
+        type: choice
+        options: [train_and_run, train, run, inspect]
+      prompt:
+        description: Prompt for native inference
+        required: false
+        default: 'JANUS, report from your own checkpoint.'
+        type: string
+      force_train:
+        description: Train even if the registry source digest is unchanged
+        required: false
+        default: false
+        type: boolean
+  schedule:
+    - cron: '17 */12 * * *'
+
+concurrency:
+  group: janus-native-model
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout JANUS brain
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install native runtime
+        run: |
+          python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Verify native kernel
+        run: |
+          python -m py_compile janus_model/*.py
+          python -m unittest -v tests/test_janus_native_model.py
+          python - <<'PY'
+          from pathlib import Path
+          forbidden = ('copilot', 'openai', 'anthropic', 'gemini', 'ollama')
+          for path in [Path('janus_model/model.py'), Path('janus_model/corpus.py'), Path('janus_model/train_registry.py'), Path('janus_model/cli.py')]:
+              text = path.read_text(encoding='utf-8').lower()
+              hits = [x for x in forbidden if x in text]
+              if hits:
+                  raise SystemExit(f'EXTERNAL_MODEL_REFERENCE_FORBIDDEN:{path}:{hits}')
+          print('JANUS_NATIVE_EXTERNAL_MODEL_FIREWALL=PASS')
+          PY
+
+      - name: Fetch meta-registry memory
+        run: |
+          rm -rf runtime/meta-registry
+          mkdir -p runtime
+          git clone --depth 1 https://github.com/Hawkar-usls/janus-meta-registry.git runtime/meta-registry
+
+      - name: Build EYE-firewalled neural corpus
+        run: |
+          python -m janus_model.corpus \
+            --registry runtime/meta-registry \
+            --out runtime/corpus \
+            --max-train-bytes 2000000 \
+            --max-holdout-bytes 300000
+
+      - name: Decide train/run mode
+        id: decide
+        shell: bash
+        run: |
+          MODE='${{ github.event.inputs.mode }}'
+          FORCE='${{ github.event.inputs.force_train }}'
+          [ -n "$MODE" ] || MODE='train_and_run'
+          DO_TRAIN=false
+          DO_RUN=false
+          DO_INSPECT=false
+          case "$MODE" in
+            train_and_run) DO_TRAIN=true; DO_RUN=true; DO_INSPECT=true ;;
+            train) DO_TRAIN=true; DO_INSPECT=true ;;
+            run) DO_RUN=true; DO_INSPECT=true ;;
+            inspect) DO_INSPECT=true ;;
+            *) echo "UNKNOWN_MODE=$MODE"; exit 2 ;;
+          esac
+          if [ "$DO_TRAIN" = true ] && [ "$FORCE" != true ] && [ -f janus_model/state/JANUS_MODEL_STATE.json ]; then
+            SAME=$(python - <<'PY'
+          import json
+          from pathlib import Path
+          state=json.loads(Path('janus_model/state/JANUS_MODEL_STATE.json').read_text())
+          corpus=json.loads(Path('runtime/corpus/corpus_manifest.json').read_text())
+          print('true' if state.get('last_source_digest') == corpus.get('source_digest') else 'false')
+          PY
+            )
+            if [ "$SAME" = true ]; then
+              echo 'JANUS_NATIVE_REGISTRY_UNCHANGED=TRUE'
+              DO_TRAIN=false
+            fi
+          fi
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "do_train=$DO_TRAIN" >> "$GITHUB_OUTPUT"
+          echo "do_run=$DO_RUN" >> "$GITHUB_OUTPUT"
+          echo "do_inspect=$DO_INSPECT" >> "$GITHUB_OUTPUT"
+
+      - name: Train native candidate
+        id: train
+        if: steps.decide.outputs.do_train == 'true'
+        shell: bash
+        run: |
+          INCUMBENT=()
+          if [ -f janus_model/checkpoints/promoted.pt ]; then
+            INCUMBENT=(--incumbent janus_model/checkpoints/promoted.pt)
+          fi
+          set +e
+          python -m janus_model.train_registry \
+            --train runtime/corpus/train.txt \
+            --holdout runtime/corpus/holdout.txt \
+            --corpus-manifest runtime/corpus/corpus_manifest.json \
+            "${INCUMBENT[@]}" \
+            --out runtime/candidate.pt \
+            --receipt runtime/training-receipt.json \
+            --steps 240 \
+            --batch-size 12 \
+            --lr 0.0003 \
+            --seed 1337
+          RC=$?
+          set -e
+          if [ "$RC" -ne 0 ] && [ "$RC" -ne 2 ]; then
+            exit "$RC"
+          fi
+          STATUS=$(python -c "import json; print(json.load(open('runtime/training-receipt.json'))['status'])")
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          echo "JANUS_NATIVE_TRAINING_STATUS=$STATUS"
+
+      - name: Promote or reject candidate and persist lineage state
+        if: steps.decide.outputs.do_train == 'true'
+        shell: bash
+        run: |
+          mkdir -p janus_model/checkpoints janus_model/receipts janus_model/state
+          STATUS='${{ steps.train.outputs.status }}'
+          if [ "$STATUS" = PROMOTED ]; then
+            mv runtime/candidate.pt janus_model/checkpoints/promoted.pt
+          fi
+          cp runtime/training-receipt.json "janus_model/receipts/training-${GITHUB_RUN_ID}.json"
+          cp runtime/corpus/corpus_manifest.json janus_model/state/LAST_CORPUS_MANIFEST.json
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          state_path=Path('janus_model/state/JANUS_MODEL_STATE.json')
+          old=json.loads(state_path.read_text()) if state_path.exists() else {
+              'schema':'janus.model.state.v1','attempt_count':0,'promotion_count':0,'rejection_count':0,'history':[]
+          }
+          receipt=json.loads(Path('runtime/training-receipt.json').read_text())
+          corpus=json.loads(Path('runtime/corpus/corpus_manifest.json').read_text())
+          checkpoint=Path('janus_model/checkpoints/promoted.pt')
+          sha=None
+          if checkpoint.exists(): sha=hashlib.sha256(checkpoint.read_bytes()).hexdigest()
+          status=receipt['status']
+          old['attempt_count']=int(old.get('attempt_count',0))+1
+          old['promotion_count']=int(old.get('promotion_count',0))+(1 if status=='PROMOTED' else 0)
+          old['rejection_count']=int(old.get('rejection_count',0))+(1 if status=='REJECTED' else 0)
+          old['status']='NATIVE_MODEL_PROMOTED' if sha else 'NO_PROMOTED_CHECKPOINT'
+          old['checkpoint_sha256']=sha
+          old['last_source_commit']=corpus['source_commit']
+          old['last_source_digest']=corpus['source_digest']
+          old['last_training_status']=status
+          old['last_training_receipt']=f"janus_model/receipts/training-{os.environ['GITHUB_RUN_ID']}.json"
+          old['config']=receipt['config'] if status=='PROMOTED' or 'config' not in old else old['config']
+          old['history']=[*old.get('history',[]),{
+              'run_id':os.environ['GITHUB_RUN_ID'],'event':os.environ['GITHUB_EVENT_NAME'],'source_commit':corpus['source_commit'],
+              'source_digest':corpus['source_digest'],'status':status,'candidate_eval_loss':receipt['candidate_eval_loss'],
+              'incumbent_eval_loss':receipt['incumbent_eval_loss'],'checkpoint_sha256':sha
+          }][-64:]
+          state_path.write_text(json.dumps(old,ensure_ascii=False,indent=2,sort_keys=True),encoding='utf-8')
+          print(json.dumps({'status':old['status'],'attempts':old['attempt_count'],'promotions':old['promotion_count'],'checkpoint_sha256':sha},indent=2))
+          PY
+
+      - name: Native checkpoint acceptance gate
+        if: steps.decide.outputs.do_inspect == 'true' || steps.decide.outputs.do_train == 'true'
+        run: |
+          test -f janus_model/checkpoints/promoted.pt
+          python -m janus_model.cli inspect --checkpoint janus_model/checkpoints/promoted.pt | tee runtime/native-inspect.json
+          grep -q '"external_llm": false' runtime/native-inspect.json
+          echo 'JANUS_NATIVE_CHECKPOINT_LOAD=PASS'
+
+      - name: Run JANUS from its own weights
+        if: steps.decide.outputs.do_run == 'true' || steps.decide.outputs.do_train == 'true'
+        shell: bash
+        run: |
+          PROMPT='${{ github.event.inputs.prompt }}'
+          [ -n "$PROMPT" ] || PROMPT='JANUS native checkpoint smoke test: '
+          python -m janus_model.cli run \
+            --checkpoint janus_model/checkpoints/promoted.pt \
+            --prompt "$PROMPT" \
+            --max-new-tokens 120 | tee runtime/native-inference.txt
+          test -s runtime/native-inference.txt
+          echo 'JANUS_NATIVE_PROMPT_TO_OUTPUT=PASS'
+
+      - name: Persist promoted brain and receipts
+        if: steps.decide.outputs.do_train == 'true'
+        shell: bash
+        run: |
+          git config user.name 'janus-native-model'
+          git config user.email 'janus-native-model@users.noreply.github.com'
+          git add -f janus_model/checkpoints/promoted.pt janus_model/state janus_model/receipts
+          if git diff --cached --quiet; then
+            echo 'JANUS_NATIVE_NO_STATE_CHANGE'
+            exit 0
+          fi
+          git commit -m "JANUS native model: remember training run ${GITHUB_RUN_ID}"
+          for attempt in 1 2 3; do
+            git pull --rebase origin main
+            if git push origin HEAD:main; then
+              echo 'JANUS_NATIVE_PERSIST=PASS'
+              exit 0
+            fi
+            sleep $((attempt * 2))
+          done
+          echo 'JANUS_NATIVE_PERSIST=FAIL'
+          exit 1
+
+      - name: Upload native run evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-native-model-${{ github.run_id }}
+          path: |
+            runtime/corpus/corpus_manifest.json
+            runtime/training-receipt.json
+            runtime/native-inspect.json
+            runtime/native-inference.txt
+          if-no-files-found: ignore
+          retention-days: 30
