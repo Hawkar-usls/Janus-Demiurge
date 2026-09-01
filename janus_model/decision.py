@@ -15,8 +15,11 @@ from janus_model.train_registry import load_checkpoint, sha256_file
 
 SCHEMA = "janus.native_repair_candidate_set.v1"
 DECISION_SCHEMA = "janus.native_repair_decision.v1"
+RESEARCH_SPINE_SCHEMA = "janus.research_spine.v1"
 NO_ACTION_ID = "NO_ACTION"
 ALLOWED_RISK = {"LOW"}
+ALLOWED_PRIORITY_CLASSES = {"NORMAL", "CRITICAL_INTEGRITY", "CRITICAL_SECURITY", "CRITICAL_SAFETY"}
+PRIMARY_TARGET = "Hawkar-usls/Janus-Fundamentum"
 
 
 def canonical_bytes(obj: Any) -> bytes:
@@ -57,6 +60,9 @@ def _validate_candidate_set(obj: dict, organ_context: dict) -> list[dict]:
         else:
             if row.get("risk_lane") not in ALLOWED_RISK:
                 raise RuntimeError(f"DECISION_RISK_REJECTED:{cid}")
+            priority_class = row.get("priority_class", "NORMAL")
+            if priority_class not in ALLOWED_PRIORITY_CLASSES:
+                raise RuntimeError(f"DECISION_PRIORITY_CLASS_REJECTED:{cid}")
             target = row.get("target") or {}
             repo = target.get("repository")
             module = module_by_repo.get(repo)
@@ -68,19 +74,79 @@ def _validate_candidate_set(obj: dict, organ_context: dict) -> list[dict]:
                 raise RuntimeError(f"DECISION_PROPOSAL_TEMPLATE_MISSING:{cid}")
             if row.get("verification_profile") is None:
                 raise RuntimeError(f"DECISION_VERIFIER_MISSING:{cid}")
-        out.append(row)
+        normalized = dict(row)
+        normalized["priority_class"] = row.get("priority_class", "NORMAL") if cid != NO_ACTION_ID else "NORMAL"
+        out.append(normalized)
     if not has_no_action:
         raise RuntimeError("DECISION_NO_ACTION_REQUIRED")
     return out
 
 
+def _load_research_spine(path: Path | None) -> dict | None:
+    if path is None:
+        return None
+    obj = json.loads(path.read_text(encoding="utf-8"))
+    if obj.get("schema") != RESEARCH_SPINE_SCHEMA:
+        raise RuntimeError("DECISION_RESEARCH_SPINE_SCHEMA_REJECTED")
+    if obj.get("status") not in {"READY", "READY_WITH_ARXIV_DEGRADED"}:
+        raise RuntimeError("DECISION_RESEARCH_SPINE_NOT_READY")
+    policy = obj.get("improvement_policy") or {}
+    if policy.get("policy_id") != "FUNDAMENTUM_FIRST_WITH_CRITICAL_OVERRIDE":
+        raise RuntimeError("DECISION_IMPROVEMENT_POLICY_REJECTED")
+    if policy.get("primary_target") != PRIMARY_TARGET:
+        raise RuntimeError("DECISION_PRIMARY_TARGET_REJECTED")
+    if policy.get("no_novel_bounded_evidence_means_no_action") is not True:
+        raise RuntimeError("DECISION_NO_EVIDENCE_FIREWALL_MISSING")
+    claims = obj.get("claim_ceiling") or {}
+    if claims.get("topa_output_is_world_truth") is not False:
+        raise RuntimeError("DECISION_TOPA_AUTHORITY_FIREWALL_FAIL")
+    if claims.get("arxiv_presence_is_truth") is not False:
+        raise RuntimeError("DECISION_ARXIV_AUTHORITY_FIREWALL_FAIL")
+    if claims.get("demi_head_property_is_independent_evidence") is not False:
+        raise RuntimeError("DECISION_DEMI_HEAD_AUTHORITY_FIREWALL_FAIL")
+    if claims.get("target_local_verify_required") is not True:
+        raise RuntimeError("DECISION_TARGET_VERIFY_FIREWALL_FAIL")
+    topa = ((obj.get("research_spine") or {}).get("topa") or {}).get("router_self_test") or {}
+    if topa.get("status") != "PASS":
+        raise RuntimeError("DECISION_TOPA_ROUTER_NOT_VERIFIED")
+    return obj
+
+
+def _apply_improvement_policy(candidates: list[dict], research: dict | None) -> tuple[list[dict], list[str], dict]:
+    if research is None:
+        return candidates, [], {"active": False, "reason": "LEGACY_NO_RESEARCH_SPINE"}
+    policy = research["improvement_policy"]
+    primary = policy["primary_target"]
+    overrides = set(policy.get("critical_override_classes") or [])
+    no_action = [r for r in candidates if r["candidate_id"] == NO_ACTION_ID]
+    critical = [r for r in candidates if r["candidate_id"] != NO_ACTION_ID and r.get("priority_class") in overrides]
+    primary_rows = [
+        r for r in candidates
+        if r["candidate_id"] != NO_ACTION_ID and (r.get("target") or {}).get("repository") == primary
+    ]
+    if critical:
+        admitted_ids = {r["candidate_id"] for r in no_action + critical + primary_rows}
+        mode = "PRIMARY_PLUS_CRITICAL_OVERRIDE"
+    elif primary_rows:
+        admitted_ids = {r["candidate_id"] for r in no_action + primary_rows}
+        mode = "FUNDAMENTUM_FIRST"
+    else:
+        admitted_ids = {NO_ACTION_ID}
+        mode = "NO_PRIMARY_OR_CRITICAL_CANDIDATE__ABSTAIN"
+    admitted = [r for r in candidates if r["candidate_id"] in admitted_ids]
+    deferred = [r["candidate_id"] for r in candidates if r["candidate_id"] not in admitted_ids]
+    return admitted, deferred, {
+        "active": True,
+        "policy_id": policy["policy_id"],
+        "primary_target": primary,
+        "mode": mode,
+        "critical_override_classes": sorted(overrides),
+    }
+
+
 @torch.no_grad()
 def continuation_avg_nll(model, prompt: str, continuation: str) -> float:
-    """Score continuation bytes autoregressively under JANUS's own checkpoint.
-
-    This intentionally scores a short closed label/description rather than trusting
-    free-form generation as a parser or repair authority.
-    """
+    """Score a short closed continuation under JANUS's own promoted checkpoint."""
     model.eval()
     prefix = ByteTokenizer.encode(prompt, bos=True)
     continuation_ids = ByteTokenizer.encode(continuation, eos=False)
@@ -101,6 +167,7 @@ def decide(
     organ_context_path: Path,
     candidate_set_path: Path,
     margin: float = 0.03,
+    research_spine_path: Path | None = None,
 ) -> dict:
     model, _ = load_checkpoint(checkpoint)
     context = json.loads(organ_context_path.read_text(encoding="utf-8"))
@@ -111,16 +178,23 @@ def decide(
         raise RuntimeError("DECISION_ORGAN_FIREWALL_FAIL")
     candidate_set = json.loads(candidate_set_path.read_text(encoding="utf-8"))
     candidates = _validate_candidate_set(candidate_set, context)
+    research = _load_research_spine(research_spine_path)
+    admitted, deferred, improvement_policy = _apply_improvement_policy(candidates, research)
 
     self_digest = (context.get("self_memory") or {}).get("digest_sha256") or "NONE"
+    research_digest = (research or {}).get("context_sha256") or "NONE"
+    topa_commit = (((research or {}).get("research_spine") or {}).get("topa") or {}).get("commit") or "NONE"
+    demi_commit = (((research or {}).get("research_spine") or {}).get("demi_head") or {}).get("commit") or "NONE"
+    fund_commit = (((research or {}).get("research_spine") or {}).get("fundamentum") or {}).get("commit") or "NONE"
     prompt = (
         f"JANUS DECIDE REPAIR|MODULES={context.get('module_count')}|"
         f"HRAIN={context['organs']['HRAiN']['target_commit'][:8]}|"
         f"INAIHR={context['organs']['iNaiHR']['target_commit'][:8]}|"
-        f"SELF={self_digest[:8]}|CHOICE="
+        f"SELF={self_digest[:8]}|RESEARCH={research_digest[:8]}|"
+        f"TOPA={topa_commit[:8]}|DEMIHEAD={demi_commit[:8]}|FUND={fund_commit[:8]}|CHOICE="
     )
     rows = []
-    for row in candidates:
+    for row in admitted:
         nll = continuation_avg_nll(model, prompt, row["score_text"])
         rows.append({
             "candidate_id": row["candidate_id"],
@@ -128,6 +202,8 @@ def decide(
             "score_text": row["score_text"],
             "avg_nll": nll,
             "prevalidated": True,
+            "policy_admitted": True,
+            "priority_class": row.get("priority_class", "NORMAL"),
             "target": row.get("target"),
             "risk_lane": row.get("risk_lane"),
             "verification_profile": row.get("verification_profile"),
@@ -151,13 +227,17 @@ def decide(
             gate_reason = "INSUFFICIENT_ACTION_OVER_NO_ACTION_MARGIN__ABSTAIN"
         else:
             gate_reason = "BOUNDED_ACTION_SELECTED_BY_NATIVE_CHECKPOINT"
+    elif improvement_policy.get("mode") == "NO_PRIMARY_OR_CRITICAL_CANDIDATE__ABSTAIN":
+        gate_reason = "FUNDAMENTUM_FIRST_POLICY__NO_PRIMARY_OR_CRITICAL_CANDIDATE__ABSTAIN"
 
     identity = {
         "checkpoint_sha256": sha256_file(checkpoint),
         "candidate_set_sha256": sha256_file(candidate_set_path),
         "organ_context_sha256": context.get("context_sha256"),
+        "research_context_sha256": research_digest,
         "selected_candidate_id": selected["candidate_id"],
         "scores": [(r["candidate_id"], round(r["avg_nll"], 12)) for r in rows],
+        "deferred": sorted(deferred),
     }
     decision_id = "jnd-" + sha256_bytes(canonical_bytes(identity))[:24]
     return {
@@ -165,12 +245,15 @@ def decide(
         "decision_id": decision_id,
         "status": "NO_ACTION" if selected["candidate_id"] == NO_ACTION_ID else "ACTION_SELECTED_AWAITING_TARGET_VERIFY",
         "native_model_decision": True,
-        "selection_method": "OWN_CHECKPOINT_CLOSED_CANDIDATE_AVG_NLL_WITH_ABSTENTION_GATE",
+        "selection_method": "FUNDAMENTUM_FIRST_POLICY_ENVELOPE_THEN_OWN_CHECKPOINT_CLOSED_CANDIDATE_AVG_NLL_WITH_ABSTENTION_GATE",
         "checkpoint_sha256": identity["checkpoint_sha256"],
         "candidate_set_sha256": identity["candidate_set_sha256"],
         "organ_context_sha256": identity["organ_context_sha256"],
+        "research_context_sha256": research_digest,
         "module_count": context.get("module_count"),
         "self_memory_digest_sha256": self_digest,
+        "improvement_policy": improvement_policy,
+        "policy_deferred_candidates": deferred,
         "margin_required": margin,
         "top_margin": top_margin if math.isfinite(top_margin) else None,
         "action_margin_over_no_action": action_margin_over_noop,
@@ -180,6 +263,9 @@ def decide(
         "authority": {
             "truth": False,
             "evidence": False,
+            "topa_is_world_truth": False,
+            "arxiv_presence_is_truth": False,
+            "demi_head_property_is_independent_evidence": False,
             "direct_repository_mutation": False,
             "autonomous_merge": False,
             "target_local_verifier_required": selected["candidate_id"] != NO_ACTION_ID,
@@ -187,6 +273,12 @@ def decide(
         "laws": [
             "FREE_FORM_MODEL_OUTPUT_IS_NOT_A_PATCH",
             "NO_ACTION_IS_ALWAYS_AVAILABLE",
+            "NO_NOVEL_BOUNDED_EVIDENCE => NO_ACTION",
+            "FUNDAMENTUM_FIRST != FUNDAMENTUM_ALWAYS",
+            "CRITICAL_INTEGRITY_SECURITY_SAFETY_MAY_OVERRIDE_PRIMARY_TARGET",
+            "TOPA_CONTEXT != EMPIRICAL_TRUTH",
+            "ARXIV_PAPER != INDEPENDENT_REPLICATION",
+            "DEMI_HEAD_PROPERTY != EVIDENCE",
             "INSUFFICIENT_MARGIN_MEANS_ABSTAIN",
             "MODEL_SELECTION != VERIFIED_FIX",
             "TARGET_LOCAL_VERIFY_REQUIRED_BEFORE_PASS",
@@ -199,10 +291,17 @@ def main() -> None:
     ap.add_argument("--checkpoint", required=True)
     ap.add_argument("--organ-context", required=True)
     ap.add_argument("--candidates", required=True)
+    ap.add_argument("--research-spine")
     ap.add_argument("--out", required=True)
     ap.add_argument("--margin", type=float, default=0.03)
     args = ap.parse_args()
-    decision = decide(Path(args.checkpoint), Path(args.organ_context), Path(args.candidates), args.margin)
+    decision = decide(
+        Path(args.checkpoint),
+        Path(args.organ_context),
+        Path(args.candidates),
+        args.margin,
+        Path(args.research_spine) if args.research_spine else None,
+    )
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(decision, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
@@ -211,6 +310,7 @@ def main() -> None:
         "status": decision["status"],
         "selected": decision["selected"]["candidate_id"],
         "gate_reason": decision["gate_reason"],
+        "improvement_policy": decision["improvement_policy"],
     }, indent=2))
 
 
