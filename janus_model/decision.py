@@ -20,6 +20,7 @@ NO_ACTION_ID = "NO_ACTION"
 ALLOWED_RISK = {"LOW"}
 ALLOWED_PRIORITY_CLASSES = {"NORMAL", "CRITICAL_INTEGRITY", "CRITICAL_SECURITY", "CRITICAL_SAFETY"}
 PRIMARY_TARGET = "Hawkar-usls/Janus-Fundamentum"
+DEFAULT_RESEARCH_SPINE_PATH = Path("janus_model/state/JANUS_RESEARCH_SPINE.json")
 
 
 def canonical_bytes(obj: Any) -> bytes:
@@ -83,6 +84,8 @@ def _validate_candidate_set(obj: dict, organ_context: dict) -> list[dict]:
 
 
 def _load_research_spine(path: Path | None) -> dict | None:
+    if path is None:
+        path = DEFAULT_RESEARCH_SPINE_PATH if DEFAULT_RESEARCH_SPINE_PATH.is_file() else None
     if path is None:
         return None
     obj = json.loads(path.read_text(encoding="utf-8"))
