@@ -169,6 +169,7 @@ jobs:
           set -e
           ATTEMPTS=1
           FINAL_ARTIFACT=runtime/life/attempt-1.json
+          FIRST_HASH=''
 
           if [ "$VERIFY_RC" -ne 0 ]; then
             cp "$ERRORS" runtime/life/verify-errors-attempt-1.json
@@ -225,6 +226,43 @@ jobs:
             --errors-file "$ERRORS"
 
           RECEIPT="git_life/receipts/$CYCLE_ID.json"
+          if [ "$ATTEMPTS" -gt 1 ]; then
+            export RECEIPT LIFE_STATE FIRST_HASH ADAPT_CANARY
+            python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+
+          receipt_path = Path(os.environ['RECEIPT'])
+          state_path = Path(os.environ['LIFE_STATE'])
+          receipt = json.loads(receipt_path.read_text(encoding='utf-8'))
+          state = json.loads(state_path.read_text(encoding='utf-8'))
+          first_errors_path = Path('runtime/life/verify-errors-attempt-1.json')
+          first_errors = json.loads(first_errors_path.read_text(encoding='utf-8')) if first_errors_path.exists() else []
+          final_artifact = json.loads(Path('runtime/life/final-artifact.json').read_text(encoding='utf-8'))
+          mode = 'CONTROLLED_ONE_SHOT_ADVERSARIAL_CANARY' if os.environ.get('ADAPT_CANARY') == 'true' else 'AUTONOMOUS_VERIFICATION_FAILURE'
+          receipt['adaptation_witness'] = {
+              'mode': mode,
+              'attempt_1_result': 'VERIFY_REJECTED',
+              'attempt_1_verification_errors': first_errors,
+              'failed_artifact_sha256': os.environ.get('FIRST_HASH') or None,
+              'attempt_2_result': 'VERIFY_PASS' if receipt.get('status') == 'PASS' else 'VERIFY_REJECTED',
+              'attempt_2_adapted_from_artifact_sha256': final_artifact.get('adapted_from_artifact_sha256'),
+              'no_third_attempt_authorized': True,
+              'human_repair_between_attempts': False,
+          }
+          body = {k: v for k, v in receipt.items() if k != 'receipt_sha256'}
+          raw = json.dumps(body, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
+          receipt['receipt_sha256'] = hashlib.sha256(raw.encode('utf-8')).hexdigest()
+          receipt_path.write_text(json.dumps(receipt, ensure_ascii=False, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          for item in reversed(state.get('cycle_history', [])):
+              if item.get('cycle_id') == receipt.get('cycle_id'):
+                  item['receipt_sha256'] = receipt['receipt_sha256']
+                  break
+          state_path.write_text(json.dumps(state, ensure_ascii=False, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          print('JANUS_GIT_LIFE_ADAPT_PROVENANCE=PERSISTED')
+          PY
+          fi
+
           git add -- "$LIFE_STATE" "$RECEIPT"
           UNSAFE="$(git diff --cached --name-only | grep -Ev '^(git_life/state/JANUS_GIT_LIFE_STATE.json|git_life/receipts/[^/]+\.json)$' || true)"
           if [ -n "$UNSAFE" ]; then
