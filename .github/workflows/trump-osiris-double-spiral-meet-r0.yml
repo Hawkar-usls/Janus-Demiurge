@@ -1,0 +1,52 @@
+name: TRUMP Osiris Double Spiral Meet R0
+
+on:
+  push:
+    branches:
+      - research/trump-osiris-double-spiral-meet-r0
+    paths-ignore:
+      - trump/TRUMP_OSIRIS_DOUBLE_SPIRAL_MEET_R0_RECEIPT.json
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: trump-osiris-double-spiral-meet-r0
+  cancel-in-progress: false
+
+jobs:
+  frozen-holdout:
+    if: github.actor != 'github-actions[bot]' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile frozen candidate
+        run: python -m py_compile trump/trump_osiris_double_spiral_meet_r0.py trump/trump_osiris_double_spiral_meet_r0_runner.py tests/test_trump_osiris_double_spiral_meet_r0.py
+      - name: Re-run calibration controls
+        run: python -m unittest tests.test_trump_osiris_double_spiral_meet_r0 -v
+      - name: Execute first frozen holdout
+        run: python trump/trump_osiris_double_spiral_meet_r0_runner.py --receipt trump/TRUMP_OSIRIS_DOUBLE_SPIRAL_MEET_R0_RECEIPT.json
+      - name: Print exact receipt
+        if: always()
+        run: cat trump/TRUMP_OSIRIS_DOUBLE_SPIRAL_MEET_R0_RECEIPT.json || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trump-osiris-double-spiral-meet-r0-receipt
+          path: trump/TRUMP_OSIRIS_DOUBLE_SPIRAL_MEET_R0_RECEIPT.json
+          if-no-files-found: error
+      - name: Persist frozen receipt on research branch
+        if: success()
+        run: |
+          git config user.name "janus-trump-double-spiral-r0"
+          git config user.email "janus-trump-double-spiral-r0@users.noreply.github.com"
+          git add trump/TRUMP_OSIRIS_DOUBLE_SPIRAL_MEET_R0_RECEIPT.json
+          if ! git diff --cached --quiet; then
+            git commit -m "TRUMP: persist frozen double-spiral meet R0 receipt"
+            git pull --rebase origin research/trump-osiris-double-spiral-meet-r0
+            git push origin HEAD:research/trump-osiris-double-spiral-meet-r0
+          fi
