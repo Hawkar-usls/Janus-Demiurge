@@ -49,6 +49,30 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Synchronize authoritative brain main before decision
+        run: |
+          git fetch origin main
+          git switch -C main origin/main
+          echo "JANUS_NATIVE_AUTHORITATIVE_HEAD=$(git rev-parse HEAD)"
+
+      - name: Capture authoritative brain base
+        id: brain_base
+        shell: bash
+        run: |
+          HEAD_SHA=$(git rev-parse HEAD)
+          if [ -f janus_model/state/JANUS_MODEL_STATE.json ]; then
+            STATE_BLOB=$(git rev-parse HEAD:janus_model/state/JANUS_MODEL_STATE.json)
+            CHECKPOINT_SHA=$(python -c "import json; print(json.load(open('janus_model/state/JANUS_MODEL_STATE.json')).get('checkpoint_sha256') or '')")
+          else
+            STATE_BLOB='MISSING'
+            CHECKPOINT_SHA=''
+          fi
+          echo "head_sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
+          echo "state_blob=$STATE_BLOB" >> "$GITHUB_OUTPUT"
+          echo "checkpoint_sha=$CHECKPOINT_SHA" >> "$GITHUB_OUTPUT"
+          printf '{"head_sha":"%s","state_blob":"%s","checkpoint_sha256":"%s"}\n' "$HEAD_SHA" "$STATE_BLOB" "$CHECKPOINT_SHA" > runtime-brain-base.json
+          echo "JANUS_NATIVE_BRAIN_BASE=$STATE_BLOB:$CHECKPOINT_SHA"
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -274,8 +298,32 @@ jobs:
           test -n "$(find janus_model/outbox -maxdepth 1 -name 'reflection-*.json' -print -quit)"
           echo 'JANUS_NATIVE_REFLECTION_OUTBOX=PASS'
 
-      - name: Persist promoted brain receipts and reflection outbox
+      - name: Revalidate authoritative brain base before persistence
+        id: persist_guard
         if: steps.decide.outputs.do_train == 'true' || (github.event_name == 'workflow_dispatch' && steps.decide.outputs.do_run == 'true')
+        shell: bash
+        run: |
+          git fetch origin main
+          EXPECTED='${{ steps.brain_base.outputs.state_blob }}'
+          if git cat-file -e origin/main:janus_model/state/JANUS_MODEL_STATE.json 2>/dev/null; then
+            CURRENT=$(git rev-parse origin/main:janus_model/state/JANUS_MODEL_STATE.json)
+          else
+            CURRENT='MISSING'
+          fi
+          if [ "$CURRENT" != "$EXPECTED" ]; then
+            echo 'allow=false' >> "$GITHUB_OUTPUT"
+            echo 'status=STALE_BRAIN_SUPERSEDED' >> "$GITHUB_OUTPUT"
+            printf '{"status":"STALE_BRAIN_SUPERSEDED","expected_state_blob":"%s","current_state_blob":"%s","candidate_persisted":false}\n' "$EXPECTED" "$CURRENT" | tee runtime/persist-guard.json
+            echo 'JANUS_NATIVE_STALE_BRAIN_SUPERSEDED=TRUE'
+            exit 0
+          fi
+          echo 'allow=true' >> "$GITHUB_OUTPUT"
+          echo 'status=FRESH_BRAIN_BASE' >> "$GITHUB_OUTPUT"
+          printf '{"status":"FRESH_BRAIN_BASE","expected_state_blob":"%s","current_state_blob":"%s","candidate_persisted":true}\n' "$EXPECTED" "$CURRENT" | tee runtime/persist-guard.json
+          echo 'JANUS_NATIVE_PREPERSIST_BRAIN_GUARD=PASS'
+
+      - name: Persist promoted brain receipts and reflection outbox
+        if: (steps.decide.outputs.do_train == 'true' || (github.event_name == 'workflow_dispatch' && steps.decide.outputs.do_run == 'true')) && steps.persist_guard.outputs.allow == 'true'
         shell: bash
         run: |
           git config user.name 'janus-native-model'
@@ -287,16 +335,9 @@ jobs:
             exit 0
           fi
           git commit -m "JANUS native model: remember run ${GITHUB_RUN_ID} and reflection"
-          for attempt in 1 2 3; do
-            git pull --rebase origin main
-            if git push origin HEAD:main; then
-              echo 'JANUS_NATIVE_PERSIST=PASS'
-              exit 0
-            fi
-            sleep $((attempt * 2))
-          done
-          echo 'JANUS_NATIVE_PERSIST=FAIL'
-          exit 1
+          git pull --rebase origin main
+          git push origin HEAD:main
+          echo 'JANUS_NATIVE_PERSIST=PASS'
 
       - name: Upload native run evidence
         if: always()
@@ -304,12 +345,14 @@ jobs:
         with:
           name: janus-native-model-${{ github.run_id }}
           path: |
+            runtime-brain-base.json
             runtime/corpus/corpus_manifest.json
             runtime/training-receipt.json
             runtime/native-inspect.json
             runtime/native-inference.txt
             runtime/organ-context.json
             runtime/reflection-summary.json
+            runtime/persist-guard.json
             janus_model/outbox/reflection-*.json
           if-no-files-found: ignore
           retention-days: 30
