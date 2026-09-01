@@ -1,3 +1,4 @@
+import hashlib
 import json
 import tempfile
 import unittest
@@ -8,6 +9,7 @@ import torch
 from janus_model.cli import _augment_prompt
 from janus_model.model import ByteTokenizer, JanusModelConfig, JanusTinyTransformer, parameter_count
 from janus_model.organs import build_bicameral_context
+from janus_model.reflection import build_reflection
 
 
 class JanusNativeModelTests(unittest.TestCase):
@@ -59,6 +61,53 @@ class JanusNativeModelTests(unittest.TestCase):
             self.assertIn("HRAiN@aaaaaaaa=STRUCTURE", augmented)
             self.assertIn("iNaiHR@bbbbbbbb=ASSOCIATION", augmented)
             self.assertIn("VERIFY=DECIDES", augmented)
+
+    def test_modular_reflection_accepts_self_memory_but_never_promotes_it(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            checkpoint = root / "brain.pt"
+            checkpoint.write_bytes(b"native-janus-checkpoint-test")
+            checkpoint_sha = hashlib.sha256(checkpoint.read_bytes()).hexdigest()
+            state = root / "state.json"
+            state.write_text(json.dumps({
+                "checkpoint_sha256": checkpoint_sha,
+                "last_source_commit": "c" * 40,
+                "last_source_digest": "d" * 64,
+            }), encoding="utf-8")
+            context = root / "context.json"
+            context.write_text(json.dumps({
+                "schema": "janus.model.modular_organ_context.v2",
+                "status": "READ_ONLY_MODULAR_ORGAN_CONTEXT",
+                "canonical_formula": "HRAIN_GROUNDS -> EYE_BRIDGES -> INAIHR_ASSOCIATES -> HRAIN_MEDIATES -> NATIVE_MODEL_DECIDES -> VERIFY_DECIDES",
+                "context_sha256": "e" * 64,
+                "module_count": 17,
+                "module_registry_sha256": "f" * 64,
+                "organs": {
+                    "HRAiN": {"target_commit": "a" * 40},
+                    "iNaiHR": {"target_commit": "b" * 40},
+                },
+                "self_memory": {
+                    "status": "BOUND_READ_ONLY_SELF_MEMORY",
+                    "digest_sha256": "1" * 64,
+                    "file_count": 12,
+                    "raw_reflections_are_training_source": False,
+                },
+                "firewalls": {
+                    "read_only": True,
+                    "module_observation_grants_mutation": False,
+                    "raw_self_reflection_is_training_source": False,
+                    "terminal_authority": "VERIFY",
+                },
+            }), encoding="utf-8")
+            inference = root / "inference.txt"
+            inference.write_text("JANUS native modular reflection", encoding="utf-8")
+            reflection = build_reflection(checkpoint, state, context, inference, "PROMPT", "42")
+            self.assertEqual(reflection["status"], "UNVERIFIED_MODEL_REFLECTION")
+            self.assertFalse(reflection["authority"]["eligible_for_training"])
+            self.assertFalse(reflection["authority"]["repository_mutation"])
+            self.assertEqual(reflection["provenance"]["module_count"], 17)
+            self.assertEqual(reflection["provenance"]["self_memory_digest_sha256"], "1" * 64)
+            self.assertEqual(reflection["provenance"]["module_registry_sha256"], "f" * 64)
 
 
 if __name__ == "__main__":
