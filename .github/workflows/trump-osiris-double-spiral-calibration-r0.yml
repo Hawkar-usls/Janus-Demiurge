@@ -1,0 +1,23 @@
+name: TRUMP Osiris Double Spiral Calibration R0
+
+on:
+  push:
+    branches:
+      - research/trump-osiris-double-spiral-meet-r0
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  calibration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile candidate
+        run: python -m py_compile trump/trump_osiris_double_spiral_meet_r0.py trump/trump_osiris_double_spiral_meet_r0_runner.py tests/test_trump_osiris_double_spiral_meet_r0.py
+      - name: Calibration-only unit tests
+        run: python -m unittest tests.test_trump_osiris_double_spiral_meet_r0 -v
