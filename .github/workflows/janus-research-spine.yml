@@ -1,0 +1,140 @@
+name: JANUS Research Spine
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'janus_model/extensions/research_spine.py'
+      - 'tests/test_janus_research_spine.py'
+      - '.github/workflows/janus-research-spine.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '31 */6 * * *'
+
+concurrency:
+  group: janus-research-spine
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  research-spine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout authoritative brain
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Capture source head
+        id: source
+        shell: bash
+        run: |
+          echo "head=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          mkdir -p runtime/research
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verify research-spine kernel
+        run: |
+          python -m py_compile janus_model/extensions/research_spine.py
+          python -m unittest -v tests/test_janus_research_spine.py
+          echo 'JANUS_RESEARCH_SPINE_KERNEL=PASS'
+
+      - name: Fetch read-only research organs
+        run: |
+          git clone --depth 1 https://github.com/Hawkar-usls/TOPA.git runtime/research/TOPA
+          git clone --depth 1 https://github.com/Hawkar-usls/Demi_Head.git runtime/research/Demi_Head
+          git clone --depth 1 https://github.com/Hawkar-usls/Janus-Fundamentum.git runtime/research/Janus-Fundamentum
+          echo 'JANUS_RESEARCH_ORGANS_FETCH=PASS'
+
+      - name: Build TOPA arXiv Demi_Head Fundamentum context
+        run: |
+          python -m janus_model.extensions.research_spine \
+            --topa-root runtime/research/TOPA \
+            --demi-head-root runtime/research/Demi_Head \
+            --fundamentum-root runtime/research/Janus-Fundamentum \
+            --out runtime/JANUS_RESEARCH_SPINE.json \
+            --max-results 4 \
+            --timeout 12
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          obj=json.loads(Path('runtime/JANUS_RESEARCH_SPINE.json').read_text(encoding='utf-8'))
+          if obj.get('status') not in {'READY','READY_WITH_ARXIV_DEGRADED'}:
+              raise SystemExit('JANUS_RESEARCH_SPINE_REQUIRED_ORGAN_BLOCKED')
+          if obj['improvement_policy']['primary_target'] != 'Hawkar-usls/Janus-Fundamentum':
+              raise SystemExit('JANUS_RESEARCH_SPINE_PRIMARY_TARGET_FAIL')
+          if obj['research_spine']['topa']['router_self_test']['status'] != 'PASS':
+              raise SystemExit('JANUS_TOPA_ROUTER_SELF_TEST_FAIL')
+          cc=obj['claim_ceiling']
+          if cc['topa_output_is_world_truth'] or cc['arxiv_presence_is_truth'] or cc['demi_head_property_is_independent_evidence']:
+              raise SystemExit('JANUS_RESEARCH_SPINE_AUTHORITY_CEILING_FAIL')
+          print(json.dumps({
+              'status':obj['status'],
+              'context_sha256':obj['context_sha256'],
+              'topa_commit':obj['research_spine']['topa']['commit'],
+              'demi_head_commit':obj['research_spine']['demi_head']['commit'],
+              'fundamentum_commit':obj['research_spine']['fundamentum']['commit'],
+              'arxiv_status':obj['research_spine']['arxiv']['status'],
+          }, indent=2))
+          PY
+
+      - name: Fresh-main persistence guard
+        shell: bash
+        run: |
+          git fetch origin main
+          SOURCE='${{ steps.source.outputs.head }}'
+          CURRENT=$(git rev-parse origin/main)
+          if [ "$SOURCE" != "$CURRENT" ]; then
+            echo "JANUS_RESEARCH_SPINE_STALE_BASE:$SOURCE:$CURRENT"
+            exit 23
+          fi
+          echo 'JANUS_RESEARCH_SPINE_FRESH_BASE=PASS'
+
+      - name: Persist research context and native wake token
+        shell: bash
+        run: |
+          mkdir -p janus_model/state janus_model/extensions
+          cp runtime/JANUS_RESEARCH_SPINE.json janus_model/state/JANUS_RESEARCH_SPINE.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          obj=json.loads(Path('runtime/JANUS_RESEARCH_SPINE.json').read_text(encoding='utf-8'))
+          spine=obj['research_spine']
+          wake={
+              'schema':'janus.research_spine.wake.v1',
+              'status':'RESEARCH_CONTEXT_CHANGED_OR_REFRESHED',
+              'context_sha256':obj['context_sha256'],
+              'primary_improvement_target':obj['improvement_policy']['primary_target'],
+              'source_commits':{
+                  'TOPA':spine['topa']['commit'],
+                  'Demi_Head':spine['demi_head']['commit'],
+                  'Janus-Fundamentum':spine['fundamentum']['commit'],
+              },
+              'arxiv_status':spine['arxiv']['status'],
+              'authority':{
+                  'evidence':False,
+                  'truth':False,
+                  'mutation_grant':False,
+              },
+          }
+          Path('janus_model/extensions/RESEARCH_SPINE_WAKE.json').write_text(
+              json.dumps(wake,ensure_ascii=False,indent=2,sort_keys=True),encoding='utf-8'
+          )
+          PY
+          git config user.name 'janus-research-spine'
+          git config user.email 'janus-research-spine@users.noreply.github.com'
+          git add -f janus_model/state/JANUS_RESEARCH_SPINE.json janus_model/extensions/RESEARCH_SPINE_WAKE.json
+          if git diff --cached --quiet; then
+            echo 'JANUS_RESEARCH_SPINE_NO_CHANGE'
+            exit 0
+          fi
+          git commit -m "JANUS research spine: remember TOPA arXiv Demi_Head Fundamentum context"
+          git push origin HEAD:main
+          echo 'JANUS_RESEARCH_SPINE_PERSIST=PASS'
