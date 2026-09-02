@@ -6,6 +6,7 @@ on:
       - main
       - feature/trump-r29-objective-shadow-accelerator-v1
       - fix/trump-research-state-drift-r30-objective-v1
+      - fix/trump-research-cas-persistence-v1
     paths:
       - 'trump/TRUMP_RESEARCH_OBJECTIVE-v1.json'
       - 'janus_model/extensions/trump_research_cycle.py'
@@ -144,7 +145,7 @@ jobs:
           print('JANUS_TRUMP_RESEARCH_STATE_ONLY_RECONCILE=PASS')
           PY
 
-      - name: Persist context and wake native brain
+      - name: Persist context with bounded compare-and-swap
         if: github.ref_name == 'main'
         shell: bash
         run: |
@@ -175,11 +176,54 @@ jobs:
           git add -f janus_model/state/JANUS_TRUMP_RESEARCH_CONTEXT.json janus_model/extensions/TRUMP_RESEARCH_WAKE.json
           if git diff --cached --quiet; then
             echo 'JANUS_TRUMP_RESEARCH_NO_CHANGE'
-          else
-            git commit -m 'JANUS TRUMP: remember objective-bound research context'
-            git push origin HEAD:main
-            echo 'JANUS_TRUMP_RESEARCH_PERSIST=PASS'
+            exit 0
           fi
+
+          git commit -m 'JANUS TRUMP: remember objective-bound research context'
+          PUSHED=false
+          for ATTEMPT in 1 2 3; do
+            echo "JANUS_TRUMP_RESEARCH_CAS_ATTEMPT=$ATTEMPT"
+            if git push origin HEAD:main; then
+              PUSHED=true
+              echo "JANUS_TRUMP_RESEARCH_CAS_PUSH=PASS:$ATTEMPT"
+              break
+            fi
+
+            git fetch origin main
+            LOCAL_PARENT=$(git rev-parse HEAD^)
+            CURRENT=$(git rev-parse origin/main)
+            if [ "$LOCAL_PARENT" = "$CURRENT" ]; then
+              echo 'JANUS_TRUMP_RESEARCH_PUSH_FAILED_WITHOUT_REMOTE_ADVANCE'
+              exit 24
+            fi
+
+            git diff --name-only "$LOCAL_PARENT" "$CURRENT" > runtime/trump-research/cas-drift-paths.txt
+            python - <<'PY'
+          from pathlib import Path
+          from janus_model.extensions.trump_research_cycle import validate_benign_persistence_drift
+          paths=Path('runtime/trump-research/cas-drift-paths.txt').read_text(encoding='utf-8').splitlines()
+          allowed=validate_benign_persistence_drift(paths)
+          print('JANUS_TRUMP_RESEARCH_CAS_BENIGN_DRIFT=' + ','.join(allowed))
+          PY
+
+            git rebase origin/main
+            python - <<'PY'
+          import json
+          from janus_model.extensions.trump_research_cycle import canonical_bytes,sha256_bytes,validate_objective
+          context=json.load(open('runtime/JANUS_TRUMP_RESEARCH_CONTEXT.json'))
+          objective=json.load(open('trump/TRUMP_RESEARCH_OBJECTIVE-v1.json'))
+          validate_objective(objective)
+          expected=sha256_bytes(canonical_bytes(objective))
+          assert context['objective']['objective_sha256']==expected, 'TRUMP_OBJECTIVE_CHANGED_DURING_CAS_RETRY'
+          assert context['P_VS_NP']=='OPEN'
+          print('JANUS_TRUMP_RESEARCH_CAS_REVALIDATION=PASS')
+          PY
+          done
+          if [ "$PUSHED" != true ]; then
+            echo 'JANUS_TRUMP_RESEARCH_CAS_RETRY_EXHAUSTED'
+            exit 25
+          fi
+          echo 'JANUS_TRUMP_RESEARCH_PERSIST=PASS'
 
       - name: Explicitly wake native model after persisted context
         if: github.ref_name == 'main'
