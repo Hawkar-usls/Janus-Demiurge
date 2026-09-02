@@ -1,0 +1,52 @@
+name: JANUS 17-Organ Accumulative Access Gate
+
+on:
+  push:
+    branches:
+      - main
+      - feature/janus-17-organ-accumulative-access-v1
+    paths:
+      - 'scout_swarm/SCOUT_SWARM_MANIFEST-v1.json'
+      - 'scout_swarm/JANUS_ACCUMULATIVE_ORGAN_ACCESS-v1.json'
+      - 'tests/test_janus_accumulative_organ_access.py'
+      - '.github/workflows/janus-17-organ-accumulative-access.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scout_swarm/SCOUT_SWARM_MANIFEST-v1.json'
+      - 'scout_swarm/JANUS_ACCUMULATIVE_ORGAN_ACCESS-v1.json'
+      - 'tests/test_janus_accumulative_organ_access.py'
+      - '.github/workflows/janus-17-organ-accumulative-access.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run 17-organ accumulative access adversarial tests
+        run: python -m unittest -v tests.test_janus_accumulative_organ_access
+      - name: Seal authority and memory ceiling
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('scout_swarm/JANUS_ACCUMULATIVE_ORGAN_ACCESS-v1.json').read_text())
+          assert d['module_count'] == 17
+          assert len(d['organs']) == 17
+          assert 'DELETE_TARGET_CONTENT' in d['universal_denials']
+          assert 'DELETE_DURABLE_JANUS_MEMORY' in d['universal_denials']
+          assert 'REWRITE_RAW_PROVENANCE' in d['universal_denials']
+          assert all(not row.get('delete_allowed', False) for row in d['organs'])
+          genesis=next(r for r in d['organs'] if r['repository']=='Hawkar-usls/Janus_Genesis')
+          assert genesis['access_lane']=='SANDBOX_VERIFY_ACCUMULATE'
+          assert genesis['target_ref']=='janus/habitat'
+          assert genesis['main_mutation_allowed'] is False
+          print('JANUS_17_ORGAN_ACCUMULATIVE_ACCESS=PASS')
+          PY
