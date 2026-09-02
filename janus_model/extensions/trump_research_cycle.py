@@ -12,6 +12,7 @@ from janus_model.extensions import wikipedia_trunk
 
 SCHEMA = "janus.trump.research_cycle.v1"
 OBJECTIVE_SCHEMA = "janus.trump.research_objective.v1"
+LADDER_SCHEMA = "janus.trump.algorithmic_proof_ladder.v1"
 MAX_ARXIV_QUERIES = 6
 MAX_WIKIPEDIA_TOPICS = 6
 MAX_WIKIPEDIA_PAGES_PER_TOPIC = 2
@@ -20,6 +21,12 @@ BENIGN_PERSISTENCE_DRIFT_PREFIXES = (
     "janus_model/receipts/",
     "janus_model/outbox/",
     "janus_model/checkpoints/",
+)
+LADDER_ORDER = (
+    "L1_LOCAL_FINITE_INSTANCE_EXACTNESS",
+    "L2_UNIVERSAL_3CNF_COVERAGE",
+    "L3_ONE_UNIFORM_TOTAL_TRUMP_RESOLVER",
+    "L4_WORST_CASE_POLYNOMIAL_UNIFORM_TRUMP_RESOLVER",
 )
 
 
@@ -43,6 +50,47 @@ def validate_benign_persistence_drift(paths: list[str]) -> list[str]:
     return normalized
 
 
+def validate_proof_ladder(ladder: dict) -> None:
+    if ladder.get("schema") != LADDER_SCHEMA:
+        raise RuntimeError("TRUMP_PROOF_LADDER_SCHEMA_REJECTED")
+    levels = ladder.get("levels") or {}
+    verified: list[bool] = []
+    for level_id in LADDER_ORDER:
+        level = levels.get(level_id)
+        if not isinstance(level, dict) or not isinstance(level.get("verified"), bool):
+            raise RuntimeError(f"TRUMP_PROOF_LADDER_LEVEL_MISSING:{level_id}")
+        verified.append(level["verified"])
+    for idx in range(1, len(verified)):
+        if verified[idx] and not verified[idx - 1]:
+            raise RuntimeError(f"TRUMP_PROOF_LADDER_NONMONOTONIC:{LADDER_ORDER[idx]}")
+
+    expected_highest = "NONE"
+    for level_id, is_verified in zip(LADDER_ORDER, verified):
+        if is_verified:
+            expected_highest = level_id
+    declared = ladder.get("highest_verified_level")
+    allowed_declared = {"NONE", "L1_LOCAL_FINITE_INSTANCE_EXACTNESS_ONLY", *LADDER_ORDER}
+    if declared not in allowed_declared:
+        raise RuntimeError("TRUMP_PROOF_LADDER_HIGHEST_LEVEL_UNKNOWN")
+    normalized_declared = "L1_LOCAL_FINITE_INSTANCE_EXACTNESS" if declared == "L1_LOCAL_FINITE_INSTANCE_EXACTNESS_ONLY" else declared
+    if normalized_declared != expected_highest:
+        raise RuntimeError("TRUMP_PROOF_LADDER_HIGHEST_LEVEL_MISMATCH")
+
+    for key in (
+        "empirical_success_may_advance_level",
+        "benchmark_speedup_may_advance_level",
+        "no_counterexample_found_may_advance_level",
+    ):
+        if ladder.get(key) is not False:
+            raise RuntimeError(f"TRUMP_PROOF_LADDER_EMPIRICAL_PROMOTION_REJECTED:{key}")
+
+    release = ladder.get("release_gate") or {}
+    if not release or not all(isinstance(v, bool) for v in release.values()):
+        raise RuntimeError("TRUMP_PROOF_LADDER_RELEASE_GATE_INVALID")
+    if verified[-1] and not all(release.values()):
+        raise RuntimeError("TRUMP_PROOF_LADDER_L4_WITH_OPEN_RELEASE_OBLIGATIONS")
+
+
 def validate_objective(obj: dict) -> None:
     if obj.get("schema") != OBJECTIVE_SCHEMA:
         raise RuntimeError("TRUMP_OBJECTIVE_SCHEMA_REJECTED")
@@ -54,12 +102,14 @@ def validate_objective(obj: dict) -> None:
     for key in ("TRUMP_finished", "SAT_in_P_proved", "P_equals_NP_proved", "P_not_equals_NP_proved"):
         if boundary.get(key) is not False:
             raise RuntimeError(f"TRUMP_OBJECTIVE_BOUNDARY_REJECTED:{key}")
+
     lineage = obj.get("active_lineage") or {}
     for key in ("tracking_ref", "active_contract_path", "active_contract_commit", "next_gate"):
         if not isinstance(lineage.get(key), str) or not lineage[key].strip():
             raise RuntimeError(f"TRUMP_OBJECTIVE_LINEAGE_FIELD_MISSING:{key}")
-    if lineage.get("R31_design_allowed_before_R30_seal") not in (None, False):
-        raise RuntimeError("TRUMP_OBJECTIVE_R31_PREMATURE_DESIGN_REJECTED")
+
+    validate_proof_ladder(obj.get("algorithmic_proof_ladder") or {})
+
     policy = obj.get("janus_self_compute_policy") or {}
     required_true = (
         "runtime_promotion_requires_exact_output_equivalence",
@@ -73,8 +123,14 @@ def validate_objective(obj: dict) -> None:
         raise RuntimeError("TRUMP_OBJECTIVE_ACCELERATOR_GATE_WEAKENED")
     if policy.get("candidate_output_may_replace_baseline_without_equivalence_receipt") is not False:
         raise RuntimeError("TRUMP_OBJECTIVE_BASELINE_BYPASS_REJECTED")
-    if policy.get("speedup_may_imply_polynomial_bound") is not False or policy.get("speedup_may_imply_P_equals_NP") is not False:
-        raise RuntimeError("TRUMP_OBJECTIVE_SPEEDUP_CLAIM_CEILING_REJECTED")
+    for key in (
+        "speedup_may_imply_universal_coverage",
+        "speedup_may_imply_uniform_resolver",
+        "speedup_may_imply_polynomial_bound",
+        "speedup_may_imply_P_equals_NP",
+    ):
+        if policy.get(key) is not False:
+            raise RuntimeError(f"TRUMP_OBJECTIVE_SPEEDUP_CLAIM_CEILING_REJECTED:{key}")
     if policy.get("authority_delta") != 0:
         raise RuntimeError("TRUMP_OBJECTIVE_AUTHORITY_DELTA_REJECTED")
 
@@ -119,11 +175,19 @@ def build_cycle(
     lineage = objective["active_lineage"]
     expected_ref = lineage["tracking_ref"]
     fund_head = git_head(fundamentum_root)
+    if fund_head != lineage["active_contract_commit"]:
+        raise RuntimeError(
+            "TRUMP_ACTIVE_LINEAGE_HEAD_DRIFT:"
+            + lineage["active_contract_commit"]
+            + ":"
+            + fund_head
+        )
+
     active_contract_rel = lineage["active_contract_path"]
     records = [file_record(fundamentum_root, active_contract_rel)]
     for rel in (
-        lineage.get("R29_sealed_result_path"),
-        lineage.get("frozen_R29_contract_path"),
+        lineage.get("last_parent_contract_path"),
+        lineage.get("last_sealed_result_path"),
     ):
         if isinstance(rel, str) and rel and rel != active_contract_rel:
             records.append(file_record(fundamentum_root, rel))
@@ -162,10 +226,12 @@ def build_cycle(
             "optimization_goal": objective["optimization_goal"],
             "P_VS_NP": "OPEN",
         },
+        "algorithmic_proof_ladder": objective["algorithmic_proof_ladder"],
         "fundamentum": {
             "repository": "Hawkar-usls/Janus-Fundamentum",
             "tracking_ref": expected_ref,
             "observed_commit": fund_head,
+            "active_contract_head_match": True,
             "active_stage": lineage.get("active_stage"),
             "active_stage_status": lineage.get("active_stage_status"),
             "active_contract_path": active_contract_rel,
@@ -188,6 +254,7 @@ def build_cycle(
         "janus_self_compute_policy": objective["janus_self_compute_policy"],
         "authority": {
             "research_context_is_truth": False,
+            "proof_ladder_state_is_theorem": False,
             "paper_or_article_presence_is_proof": False,
             "external_text_is_instruction": False,
             "may_grant_runtime_promotion": False,
@@ -197,8 +264,12 @@ def build_cycle(
         "firewalls": [
             "TRUMP_OBJECTIVE != PROOF",
             "ARXIV_OR_WIKIPEDIA_CONTEXT != VERIFIED_FACT",
+            "ONE_WITNESS != UNIVERSAL_COVERAGE",
+            "UNIVERSAL_COVERAGE != UNIFORM_RESOLVER",
+            "UNIFORM_RESOLVER != POLYNOMIAL_UNIFORM_RESOLVER",
+            "POLYNOMIAL_TERMINATION != DECISION_COMPLETENESS",
             "FINITE_EXACTNESS != TOTALITY",
-            "BENCHMARK_SPEEDUP != POLYNOMIAL_BOUND",
+            "BENCHMARK_SPEEDUP != WORST_CASE_POLYNOMIAL_BOUND",
             "BENCHMARK_SPEEDUP != P_EQUALS_NP",
             "COUNTEREXAMPLE_IS_VALID_PROGRESS",
             "P_VS_NP = OPEN",
@@ -237,6 +308,7 @@ def main() -> None:
         "fundamentum_commit": obj["fundamentum"]["observed_commit"],
         "active_contract": obj["fundamentum"]["active_contract_path"],
         "next_gate": obj["fundamentum"]["next_gate"],
+        "highest_verified_level": obj["algorithmic_proof_ladder"]["highest_verified_level"],
         "arxiv_pass_count": obj["external_context"]["arxiv"]["pass_count"],
         "wikipedia_pass_count": obj["external_context"]["wikipedia"]["pass_count"],
         "P_VS_NP": obj["P_VS_NP"],
