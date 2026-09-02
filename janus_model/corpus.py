@@ -4,10 +4,12 @@ from pathlib import Path
 from typing import Iterable
 
 from janus_model.eval_contract import contract_identity
+from janus_model.keymaster import collect as collect_keymaster
 
 SEMANTIC_EXTENSIONS={'.json','.md','.markdown','.txt','.py','.yml','.yaml','.toml','.ini','.cfg','.csv','.tsv','.html','.htm','.js','.ts','.tsx','.jsx','.css','.scss','.sh','.ps1','.xml','.jsonl','.ndjson'}
 SECRETISH=re.compile(r'(?:^|[._-])(env|secret|token|credential|password|private[_-]?key)(?:$|[._-])',re.I)
 TOKEN_PATTERNS=[re.compile(r'ghp_[A-Za-z0-9]{20,}'),re.compile(r'github_pat_[A-Za-z0-9_]{20,}'),re.compile(r'sk-[A-Za-z0-9_-]{20,}'),re.compile(r'AIza[A-Za-z0-9_-]{20,}')]
+DEFAULT_KEYMASTER_CONFIG=Path(__file__).resolve().parent/'keymaster'/'PRIMARY_REPOSITORY_CONTRIBUTORS-v1.json'
 
 def sha256_bytes(raw): return hashlib.sha256(raw).hexdigest()
 
@@ -41,9 +43,9 @@ def _load_keymaster(training_path:Path,manifest_path:Path):
     if manifest.get('status')!='READY_5_OF_5' or manifest.get('contributor_count')!=5:
         raise RuntimeError('KEYMASTER_5_OF_5_REQUIRED')
     contributors=manifest.get('contributors')
-    if not isinstance(contributors,list) or len(contributors)!=5:
+    if not isinstance(contributors,list) or len(contributors)!=5 or any(not isinstance(row,dict) for row in contributors):
         raise RuntimeError('KEYMASTER_CONTRIBUTORS_REJECTED')
-    if any(int(row.get('contributed_bytes',0))<=0 for row in contributors if isinstance(row,dict)):
+    if any(int(row.get('contributed_bytes',0))<=0 for row in contributors):
         raise RuntimeError('KEYMASTER_ZERO_BYTE_CONTRIBUTOR_REJECTED')
     if manifest.get('training_only') is not True:
         raise RuntimeError('KEYMASTER_TRAIN_ONLY_REQUIRED')
@@ -70,7 +72,7 @@ def _learning_cycle_digest(registry_digest:str,keymaster_digest:str,evaluation_c
     ).encode('utf-8')
     return hashlib.sha256(raw).hexdigest()
 
-def build_corpus(registry:Path,out_dir:Path,max_train_bytes=2_000_000,max_holdout_bytes=300_000,keymaster_training_path:Path|None=None,keymaster_manifest_path:Path|None=None):
+def build_corpus(registry:Path,out_dir:Path,max_train_bytes=2_000_000,max_holdout_bytes=300_000,keymaster_training_path:Path|None=None,keymaster_manifest_path:Path|None=None,keymaster_config_path:Path|None=None):
     out_dir.mkdir(parents=True,exist_ok=True)
     train=[]; holdout=[]; records=[]; tb=hb=0
     registry_digest_hasher=hashlib.sha256(); source_file_count=0; source_total_bytes=0
@@ -96,7 +98,10 @@ def build_corpus(registry:Path,out_dir:Path,max_train_bytes=2_000_000,max_holdou
     if (keymaster_training_path is None)!=(keymaster_manifest_path is None):
         raise RuntimeError('KEYMASTER_TRAINING_AND_MANIFEST_MUST_BE_PAIRED')
     if keymaster_training_path is None:
-        raise RuntimeError('KEYMASTER_PRIMARY_CONTRIBUTION_REQUIRED')
+        keymaster_dir=out_dir.parent/'keymaster'
+        collect_keymaster(keymaster_config_path or DEFAULT_KEYMASTER_CONFIG,keymaster_dir)
+        keymaster_training_path=keymaster_dir/'training.txt'
+        keymaster_manifest_path=keymaster_dir/'manifest.json'
     keymaster_text,keymaster_manifest=_load_keymaster(keymaster_training_path,keymaster_manifest_path)
     keymaster_bytes=len(keymaster_text.encode('utf-8'))
     train.append(keymaster_text)
@@ -110,11 +115,7 @@ def build_corpus(registry:Path,out_dir:Path,max_train_bytes=2_000_000,max_holdou
     registry_source_digest=registry_digest_hasher.hexdigest()
     evaluation_contract=contract_identity()
     keymaster_digest=keymaster_manifest['contribution_sha256']
-    learning_cycle_digest=_learning_cycle_digest(
-        registry_source_digest,
-        keymaster_digest,
-        evaluation_contract['contract_sha256'],
-    )
+    learning_cycle_digest=_learning_cycle_digest(registry_source_digest,keymaster_digest,evaluation_contract['contract_sha256'])
     contributor_summary=[{
         'id':row['id'],'repository':row['repository'],'ref':row['ref'],'head_sha':row['head_sha'],
         'provenance':row['provenance'],'contributed_bytes':row['contributed_bytes'],
@@ -157,8 +158,8 @@ def build_corpus(registry:Path,out_dir:Path,max_train_bytes=2_000_000,max_holdou
     return manifest
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument('--registry',required=True); ap.add_argument('--out',required=True); ap.add_argument('--max-train-bytes',type=int,default=2_000_000); ap.add_argument('--max-holdout-bytes',type=int,default=300_000); ap.add_argument('--keymaster-training',required=True); ap.add_argument('--keymaster-manifest',required=True)
-    a=ap.parse_args(); m=build_corpus(Path(a.registry),Path(a.out),a.max_train_bytes,a.max_holdout_bytes,Path(a.keymaster_training),Path(a.keymaster_manifest))
+    ap=argparse.ArgumentParser(); ap.add_argument('--registry',required=True); ap.add_argument('--out',required=True); ap.add_argument('--max-train-bytes',type=int,default=2_000_000); ap.add_argument('--max-holdout-bytes',type=int,default=300_000); ap.add_argument('--keymaster-training'); ap.add_argument('--keymaster-manifest'); ap.add_argument('--keymaster-config')
+    a=ap.parse_args(); m=build_corpus(Path(a.registry),Path(a.out),a.max_train_bytes,a.max_holdout_bytes,Path(a.keymaster_training) if a.keymaster_training else None,Path(a.keymaster_manifest) if a.keymaster_manifest else None,Path(a.keymaster_config) if a.keymaster_config else None)
     keys=('source_commit','source_digest','registry_source_digest','keymaster_contribution_sha256','keymaster_contributor_count','keymaster_training_bytes','evaluation_contract_sha256','source_file_count','source_total_bytes','selected_record_count','train_bytes','holdout_bytes')
     print(json.dumps({k:m[k] for k in keys},indent=2))
 
