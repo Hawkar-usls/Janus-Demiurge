@@ -1,0 +1,111 @@
+name: JANUS TRUMP Shadow Compute
+
+on:
+  push:
+    branches: [main, feature/trump-r29-objective-shadow-accelerator-v1]
+    paths:
+      - 'trump/TRUMP_RESEARCH_OBJECTIVE-v1.json'
+      - 'janus_model/extensions/trump_shadow_compute.py'
+      - 'tests/test_janus_trump_shadow_compute.py'
+      - '.github/workflows/janus-trump-shadow-compute.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '7 */12 * * *'
+
+concurrency:
+  group: janus-trump-shadow-compute
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  shadow-compute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verify shadow adapter kernel
+        run: |
+          python -m py_compile janus_model/extensions/trump_shadow_compute.py
+          python -m unittest -v tests/test_janus_trump_shadow_compute.py
+          echo 'JANUS_TRUMP_SHADOW_KERNEL=PASS'
+
+      - name: Fetch byte-pinned C025 runtime candidate
+        run: |
+          mkdir -p runtime
+          git init -q runtime/fundamentum-c025
+          git -C runtime/fundamentum-c025 remote add origin https://github.com/Hawkar-usls/Janus-Fundamentum.git
+          git -C runtime/fundamentum-c025 fetch -q --depth 1 origin 377668585178995217b681d5ddb1b34b0f8dc386
+          git -C runtime/fundamentum-c025 checkout -q --detach FETCH_HEAD
+          test "$(git -C runtime/fundamentum-c025 rev-parse HEAD)" = "377668585178995217b681d5ddb1b34b0f8dc386"
+          test "$(git -C runtime/fundamentum-c025 hash-object experiments/direct/janus_unified_proof_carrying_akinator_jec.py)" = "230ca949bb51f6eeb5e7dbeea364a0752f9d0636"
+          echo 'JANUS_TRUMP_C025_PIN=PASS'
+
+      - name: Run repeated exact shadow benchmark
+        run: |
+          python -m janus_model.extensions.trump_shadow_compute \
+            --candidate runtime/fundamentum-c025/experiments/direct/janus_unified_proof_carrying_akinator_jec.py \
+            --out runtime/JANUS_TRUMP_SHADOW_COMPUTE.json \
+            --repeats 5
+
+      - name: Shadow scientific and self-use gate
+        run: |
+          python - <<'PY'
+          import json
+          x=json.load(open('runtime/JANUS_TRUMP_SHADOW_COMPUTE.json'))
+          assert x['P_VS_NP']=='OPEN'
+          assert x['summary']['general_acceleration_proved'] is False
+          assert x['summary']['polynomial_bound_proved'] is False
+          assert x['summary']['P_equals_NP_proved'] is False
+          assert x['self_use_gate']['candidate_SAT_may_short_circuit_baseline_only_after_witness_verification'] is True
+          assert x['self_use_gate']['candidate_UNSAT_may_short_circuit_baseline'] is False
+          assert x['self_use_gate']['candidate_OPEN_may_short_circuit_baseline'] is False
+          assert x['self_use_gate']['fallback_to_baseline_required'] is True
+          assert x['self_use_gate']['authority_delta']==0
+          assert x['summary']['exact_terminal_equivalence_count'] >= 2
+          for row in x['workloads']:
+              if row['candidate_status']=='SAT' and row['exact_terminal_equivalence']:
+                  assert row['candidate_witness_verified'] is True
+          print(json.dumps({
+            'status':x['status'],
+            'exact':x['summary']['exact_terminal_equivalence_count'],
+            'wins':x['summary']['repeated_resource_win_count'],
+            'sat_fast_paths':x['summary']['verified_sat_fast_path_workloads'],
+            'receipt_sha256':x['receipt_sha256'],
+            'P_VS_NP':x['P_VS_NP'],
+          },indent=2))
+          PY
+
+      - name: Upload shadow evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-shadow-compute
+          path: runtime/JANUS_TRUMP_SHADOW_COMPUTE.json
+          if-no-files-found: error
+
+      - name: Persist latest shadow receipt on main only
+        if: github.ref_name == 'main'
+        run: |
+          cp runtime/JANUS_TRUMP_SHADOW_COMPUTE.json janus_model/state/JANUS_TRUMP_SHADOW_COMPUTE.json
+          git config user.name 'janus-trump-shadow-compute'
+          git config user.email 'janus-trump-shadow-compute@users.noreply.github.com'
+          git add -f janus_model/state/JANUS_TRUMP_SHADOW_COMPUTE.json
+          if git diff --cached --quiet; then
+            echo 'JANUS_TRUMP_SHADOW_NO_CHANGE'
+          else
+            git commit -m 'JANUS TRUMP: persist exact shadow compute receipt'
+            git push origin HEAD:main
+            echo 'JANUS_TRUMP_SHADOW_PERSIST=PASS'
+          fi
+
+      - name: Branch proof has zero persistence authority
+        if: github.ref_name != 'main'
+        run: echo 'JANUS_TRUMP_SHADOW_BRANCH_PROOF_READ_ONLY=PASS'
