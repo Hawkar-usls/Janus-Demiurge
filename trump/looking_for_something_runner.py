@@ -5,6 +5,11 @@ This is an outer, bounded portfolio experiment. It never changes CNF semantics,
 never treats a ranking score as proof, and preserves the TRUMP scientific
 boundary. The underlying exact candidate is still loaded from its pinned
 Fundamentum commit/blob through trump_candidate.py.
+
+The optional Pyramidal Genesis-Return face treats fixed-profile runs as released
+candidate children. Returned observations can shape a next advisory seed only
+when their result boundary is valid and an exact replay matches. This remains a
+search/regeneration mechanism, never theorem promotion.
 """
 
 from __future__ import annotations
@@ -19,6 +24,10 @@ from looking_for_something_policy import (
     DEFAULT_PROFILES,
     evaluate_portfolio,
     selftest as policy_selftest,
+)
+from pyramidal_genesis_return import (
+    apply as pyramidal_regenerate,
+    selftest as pyramidal_selftest,
 )
 from trump_candidate import (
     TrumpCandidateError,
@@ -41,6 +50,31 @@ def _validate_candidate_result(result: dict) -> None:
         or sb.get("claims_p_neq_np") is not False
     ):
         raise TrumpCandidateError("LOOKING_POLICY_SCIENTIFIC_BOUNDARY_VIOLATION")
+
+
+def _pyramidal_children(candidates: list[dict]) -> list[dict]:
+    """Translate exact portfolio receipts into bounded child observations."""
+    children = []
+    for candidate in candidates:
+        profile = candidate["profile"]
+        result = candidate["result"]
+        c = int(profile["cap_exponent"])
+        k = int(profile["extension_exponent"])
+        children.append(
+            {
+                "child_id": f"C{c}_K{k}",
+                "observation": {
+                    "profile": {"cap_exponent": c, "extension_exponent": k},
+                    "result_digest": hashlib.sha256(canonical_bytes(result)).hexdigest(),
+                    "status": result.get("status"),
+                    "reason": result.get("reason"),
+                    "residual_units": result.get("residual_units"),
+                },
+                "verified": True,
+                "replay_match": candidate.get("replay_match") is True,
+            }
+        )
+    return children
 
 
 def run_portfolio(
@@ -90,6 +124,16 @@ def run_portfolio(
         )
 
     policy_report = evaluate_portfolio(candidates)
+    input_digest = hashlib.sha256(canonical_bytes(clauses)).hexdigest()
+    pyramid_report = pyramidal_regenerate(
+        {
+            "operation": "LOOKING_FOR_SOMETHING_BOUNDED_CANDIDATE_PORTFOLIO",
+            "input_digest": input_digest,
+            "P_VS_NP": "OPEN",
+        },
+        _pyramidal_children(candidates),
+    )
+
     receipt = base_receipt(manifest, source)
     receipt.update(
         {
@@ -98,8 +142,9 @@ def run_portfolio(
             "source_loaded": True,
             "execution_performed": True,
             "candidate_result_promoted": False,
-            "input_digest": hashlib.sha256(canonical_bytes(clauses)).hexdigest(),
+            "input_digest": input_digest,
             "policy_report": policy_report,
+            "pyramidal_genesis_return_report": pyramid_report,
             "scientific_claim": "NONE",
         }
     )
@@ -108,6 +153,7 @@ def run_portfolio(
 
 def selftest() -> None:
     policy_selftest()
+    pyramidal_selftest()
 
 
 def _read_json_input(path: str | None) -> Any:
@@ -127,7 +173,7 @@ def main() -> int:
     run.add_argument(
         "--replay",
         action="store_true",
-        help="repeat each fixed profile and require observable replay agreement",
+        help="repeat each fixed profile; only replay-matching child deltas may enter pyramidal regeneration",
     )
     args = parser.parse_args()
 
@@ -135,6 +181,7 @@ def main() -> int:
         selftest()
         out = {
             "terminal": "TRUMP_LOOKING_FOR_SOMETHING_POLICY_SELFTEST_PASS",
+            "pyramidal_genesis_return": "PASS",
             "proof_authority": False,
             "P_VS_NP": "OPEN",
         }
