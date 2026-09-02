@@ -16,12 +16,17 @@ from janus_model.train_registry import load_checkpoint, sha256_file
 SCHEMA = "janus.native_repair_candidate_set.v1"
 DECISION_SCHEMA = "janus.native_repair_decision.v1"
 RESEARCH_SPINE_SCHEMA = "janus.research_spine.v1"
+OUTCOME_MEMORY_SCHEMA = "janus.verified_outcome_memory.v1"
 NO_ACTION_ID = "NO_ACTION"
 ALLOWED_RISK = {"LOW"}
 ALLOWED_PRIORITY_CLASSES = {"NORMAL", "CRITICAL_INTEGRITY", "CRITICAL_SECURITY", "CRITICAL_SAFETY"}
 PRIMARY_TARGET = "Hawkar-usls/Janus-Fundamentum"
 DEFAULT_RESEARCH_SPINE_PATH = Path("janus_model/state/JANUS_RESEARCH_SPINE.json")
+DEFAULT_OUTCOME_MEMORY_PATH = Path("janus_model/state/JANUS_VERIFIED_OUTCOME_MEMORY.json")
 LATEST_DECISION_PATH = Path("janus_model/state/JANUS_LATEST_DECISION.json")
+MAX_OUTCOME_RECORDS = 64
+MAX_OUTCOME_PRIOR_CAP_NLL = 0.01
+OUTCOME_PRIOR_PER_VERIFY_PASS_NLL = 0.002
 
 
 def canonical_bytes(obj: Any) -> bytes:
@@ -115,6 +120,68 @@ def _load_research_spine(path: Path | None) -> dict | None:
     return obj
 
 
+def _load_outcome_memory(path: Path | None) -> dict | None:
+    if path is None and DEFAULT_OUTCOME_MEMORY_PATH.is_file():
+        path = DEFAULT_OUTCOME_MEMORY_PATH
+    if path is None:
+        return None
+    obj = json.loads(path.read_text(encoding="utf-8"))
+    if obj.get("schema") != OUTCOME_MEMORY_SCHEMA or obj.get("status") != "VERIFIED_OUTCOME_MEMORY_READY":
+        raise RuntimeError("DECISION_OUTCOME_MEMORY_SCHEMA_REJECTED")
+    policy = obj.get("policy") or {}
+    if policy.get("silence_is_negative_evidence") is not False:
+        raise RuntimeError("DECISION_OUTCOME_SILENCE_FIREWALL_FAIL")
+    if policy.get("only_target_local_verify_pass_is_positive_feedback") is not True:
+        raise RuntimeError("DECISION_OUTCOME_VERIFIER_FIREWALL_FAIL")
+    if policy.get("native_model_selected_required_for_training_prior") is not True:
+        raise RuntimeError("DECISION_OUTCOME_NATIVE_SELECTION_FIREWALL_FAIL")
+    if policy.get("feedback_grants_mutation_authority") is not False:
+        raise RuntimeError("DECISION_OUTCOME_AUTHORITY_FIREWALL_FAIL")
+    if policy.get("historical_verify_pass_is_world_truth") is not False:
+        raise RuntimeError("DECISION_OUTCOME_TRUTH_FIREWALL_FAIL")
+    if policy.get("target_local_reverification_still_required") is not True:
+        raise RuntimeError("DECISION_OUTCOME_REVERIFY_FIREWALL_FAIL")
+    cap = float(policy.get("decision_prior_cap_nll", -1.0))
+    if not 0.0 <= cap <= MAX_OUTCOME_PRIOR_CAP_NLL:
+        raise RuntimeError("DECISION_OUTCOME_PRIOR_CAP_REJECTED")
+    records = obj.get("records")
+    if not isinstance(records, list) or len(records) > MAX_OUTCOME_RECORDS:
+        raise RuntimeError("DECISION_OUTCOME_RECORDS_REJECTED")
+    if obj.get("record_count") != len(records):
+        raise RuntimeError("DECISION_OUTCOME_RECORD_COUNT_REJECTED")
+    training_count = 0
+    seen: set[str] = set()
+    for record in records:
+        if not isinstance(record, dict):
+            raise RuntimeError("DECISION_OUTCOME_RECORD_OBJECT_REQUIRED")
+        proposal_id = record.get("proposal_id")
+        if not isinstance(proposal_id, str) or not proposal_id or proposal_id in seen:
+            raise RuntimeError("DECISION_OUTCOME_PROPOSAL_ID_REJECTED")
+        seen.add(proposal_id)
+        body = dict(record)
+        record_sha = body.pop("record_sha256", None)
+        if record_sha != sha256_bytes(canonical_bytes(body)):
+            raise RuntimeError(f"DECISION_OUTCOME_RECORD_HASH_REJECTED:{proposal_id}")
+        if record.get("status") != "VERIFY_PASS" or record.get("terminal_authority") != "TARGET_LOCAL_VERIFIER":
+            raise RuntimeError(f"DECISION_OUTCOME_VERIFIER_REJECTED:{proposal_id}")
+        if record.get("autonomous_merge") is not False or record.get("main_mutated") is not False:
+            raise RuntimeError(f"DECISION_OUTCOME_MUTATION_FIREWALL_REJECTED:{proposal_id}")
+        if record.get("truth_claim") is not False or record.get("mutation_authority_granted") is not False:
+            raise RuntimeError(f"DECISION_OUTCOME_AUTHORITY_RECORD_REJECTED:{proposal_id}")
+        eligible = record.get("training_eligible") is True
+        if record.get("positive_feedback") is not eligible:
+            raise RuntimeError(f"DECISION_OUTCOME_POSITIVE_FEEDBACK_REJECTED:{proposal_id}")
+        if eligible:
+            if record.get("native_model_selected") is not True:
+                raise RuntimeError(f"DECISION_OUTCOME_TRAINING_SOURCE_REJECTED:{proposal_id}")
+            if not isinstance(record.get("target_repository"), str) or not isinstance(record.get("verification_profile"), str):
+                raise RuntimeError(f"DECISION_OUTCOME_TRAINING_KEY_REJECTED:{proposal_id}")
+            training_count += 1
+    if obj.get("training_eligible_count") != training_count:
+        raise RuntimeError("DECISION_OUTCOME_TRAINING_COUNT_REJECTED")
+    return obj
+
+
 def _apply_improvement_policy(candidates: list[dict], research: dict | None) -> tuple[list[dict], list[str], dict]:
     if research is None:
         return candidates, [], {"active": False, "reason": "LEGACY_NO_RESEARCH_SPINE"}
@@ -144,6 +211,22 @@ def _apply_improvement_policy(candidates: list[dict], research: dict | None) -> 
     }
 
 
+def _verified_outcome_prior(candidate: dict, outcome_memory: dict | None) -> tuple[int, float]:
+    if outcome_memory is None or candidate.get("candidate_id") == NO_ACTION_ID:
+        return 0, 0.0
+    target_repository = (candidate.get("target") or {}).get("repository")
+    verification_profile = candidate.get("verification_profile")
+    matches = [
+        record for record in outcome_memory["records"]
+        if record.get("training_eligible") is True
+        and record.get("target_repository") == target_repository
+        and record.get("verification_profile") == verification_profile
+    ]
+    cap = float(outcome_memory["policy"]["decision_prior_cap_nll"])
+    bonus = min(cap, len(matches) * OUTCOME_PRIOR_PER_VERIFY_PASS_NLL)
+    return len(matches), bonus
+
+
 @torch.no_grad()
 def continuation_avg_nll(model, prompt: str, continuation: str) -> float:
     model.eval()
@@ -161,7 +244,14 @@ def continuation_avg_nll(model, prompt: str, continuation: str) -> float:
     return sum(losses) / len(losses)
 
 
-def decide(checkpoint: Path, organ_context_path: Path, candidate_set_path: Path, margin: float = 0.03, research_spine_path: Path | None = None) -> dict:
+def decide(
+    checkpoint: Path,
+    organ_context_path: Path,
+    candidate_set_path: Path,
+    margin: float = 0.03,
+    research_spine_path: Path | None = None,
+    outcome_memory_path: Path | None = None,
+) -> dict:
     model, _ = load_checkpoint(checkpoint)
     context = json.loads(organ_context_path.read_text(encoding="utf-8"))
     if context.get("status") != "READ_ONLY_MODULAR_ORGAN_CONTEXT":
@@ -171,6 +261,7 @@ def decide(checkpoint: Path, organ_context_path: Path, candidate_set_path: Path,
         raise RuntimeError("DECISION_ORGAN_FIREWALL_FAIL")
     candidates = _validate_candidate_set(json.loads(candidate_set_path.read_text(encoding="utf-8")), context)
     research = _load_research_spine(research_spine_path)
+    outcome_memory = _load_outcome_memory(outcome_memory_path)
     admitted, deferred, improvement_policy = _apply_improvement_policy(candidates, research)
 
     self_digest = (context.get("self_memory") or {}).get("digest_sha256") or "NONE"
@@ -179,6 +270,9 @@ def decide(checkpoint: Path, organ_context_path: Path, candidate_set_path: Path,
     topa_commit = (spine.get("topa") or {}).get("commit") or "NONE"
     demi_commit = (spine.get("demi_head") or {}).get("commit") or "NONE"
     fund_commit = (spine.get("fundamentum") or {}).get("commit") or "NONE"
+    outcome_memory_digest = sha256_bytes(canonical_bytes(outcome_memory)) if outcome_memory else "NONE"
+    training_records = [r for r in (outcome_memory or {}).get("records", []) if r.get("training_eligible") is True]
+    outcome_training_digest = sha256_bytes(canonical_bytes(training_records)) if training_records else "NONE"
     prompt = (
         f"JANUS DECIDE REPAIR|MODULES={context.get('module_count')}|"
         f"HRAIN={context['organs']['HRAiN']['target_commit'][:8]}|"
@@ -187,10 +281,14 @@ def decide(checkpoint: Path, organ_context_path: Path, candidate_set_path: Path,
     )
     rows = []
     for row in admitted:
+        raw_nll = continuation_avg_nll(model, prompt, row["score_text"])
+        verified_pass_count, outcome_bonus = _verified_outcome_prior(row, outcome_memory)
+        adjusted_nll = raw_nll - outcome_bonus
         rows.append({
             "candidate_id": row["candidate_id"], "action": row.get("action"), "score_text": row["score_text"],
-            "avg_nll": continuation_avg_nll(model, prompt, row["score_text"]), "prevalidated": True,
-            "policy_admitted": True, "priority_class": row.get("priority_class", "NORMAL"),
+            "avg_nll": adjusted_nll, "avg_nll_raw": raw_nll,
+            "verified_outcome_bonus_nll": outcome_bonus, "verified_pass_count": verified_pass_count,
+            "prevalidated": True, "policy_admitted": True, "priority_class": row.get("priority_class", "NORMAL"),
             "target": row.get("target"), "risk_lane": row.get("risk_lane"),
             "verification_profile": row.get("verification_profile"), "proposal_template": row.get("proposal_template"),
         })
@@ -218,28 +316,45 @@ def decide(checkpoint: Path, organ_context_path: Path, candidate_set_path: Path,
         "selected_candidate_id": selected["candidate_id"],
         "scores": [(r["candidate_id"], round(r["avg_nll"], 12)) for r in rows], "deferred": sorted(deferred),
     }
+    if outcome_training_digest != "NONE":
+        identity["verified_outcome_training_sha256"] = outcome_training_digest
     decision_id = "jnd-" + sha256_bytes(canonical_bytes(identity))[:24]
     return {
         "schema": DECISION_SCHEMA, "decision_id": decision_id,
         "status": "NO_ACTION" if selected["candidate_id"] == NO_ACTION_ID else "ACTION_SELECTED_AWAITING_TARGET_VERIFY",
         "native_model_decision": True,
-        "selection_method": "FUNDAMENTUM_FIRST_POLICY_ENVELOPE_THEN_OWN_CHECKPOINT_CLOSED_CANDIDATE_AVG_NLL_WITH_ABSTENTION_GATE",
+        "selection_method": "FUNDAMENTUM_FIRST_POLICY_ENVELOPE_THEN_OWN_CHECKPOINT_AVG_NLL_PLUS_BOUNDED_TARGET_VERIFIED_OUTCOME_PRIOR_WITH_ABSTENTION_GATE",
         "checkpoint_sha256": identity["checkpoint_sha256"], "candidate_set_sha256": identity["candidate_set_sha256"],
         "organ_context_sha256": identity["organ_context_sha256"], "research_context_sha256": research_digest,
         "research_source_commits": {"TOPA": topa_commit, "Demi_Head": demi_commit, "Janus-Fundamentum": fund_commit},
         "module_count": context.get("module_count"), "self_memory_digest_sha256": self_digest,
         "improvement_policy": improvement_policy, "policy_deferred_candidates": deferred,
+        "outcome_learning": {
+            "active": bool(training_records),
+            "memory_context_sha256": outcome_memory_digest,
+            "training_context_sha256": outcome_training_digest,
+            "verified_record_count": int((outcome_memory or {}).get("record_count", 0)),
+            "training_eligible_count": len(training_records),
+            "prior_per_verify_pass_nll": OUTCOME_PRIOR_PER_VERIFY_PASS_NLL,
+            "prior_cap_nll": float((outcome_memory or {}).get("policy", {}).get("decision_prior_cap_nll", 0.0)),
+            "silence_is_negative_evidence": False,
+            "historical_verify_pass_is_world_truth": False,
+            "target_local_reverification_still_required": True,
+        },
         "margin_required": margin, "top_margin": top_margin if math.isfinite(top_margin) else None,
         "action_margin_over_no_action": action_margin, "gate_reason": gate_reason, "selected": selected, "scores": rows,
         "authority": {
             "truth": False, "evidence": False, "topa_is_world_truth": False, "arxiv_presence_is_truth": False,
-            "demi_head_property_is_independent_evidence": False, "direct_repository_mutation": False,
+            "demi_head_property_is_independent_evidence": False, "historical_verify_pass_is_world_truth": False,
+            "outcome_memory_grants_authority": False, "direct_repository_mutation": False,
             "autonomous_merge": False, "target_local_verifier_required": selected["candidate_id"] != NO_ACTION_ID,
         },
         "laws": [
             "FREE_FORM_MODEL_OUTPUT_IS_NOT_A_PATCH", "NO_ACTION_IS_ALWAYS_AVAILABLE", "NO_NOVEL_BOUNDED_EVIDENCE => NO_ACTION",
             "FUNDAMENTUM_FIRST != FUNDAMENTUM_ALWAYS", "CRITICAL_INTEGRITY_SECURITY_SAFETY_MAY_OVERRIDE_PRIMARY_TARGET",
             "TOPA_CONTEXT != EMPIRICAL_TRUTH", "ARXIV_PAPER != INDEPENDENT_REPLICATION", "DEMI_HEAD_PROPERTY != EVIDENCE",
+            "SILENCE != NEGATIVE_EVIDENCE", "HISTORICAL_VERIFY_PASS != WORLD_TRUTH",
+            "VERIFIED_OUTCOME_PRIOR != TARGET_VERIFICATION", "OUTCOME_MEMORY != MUTATION_AUTHORITY",
             "INSUFFICIENT_MARGIN_MEANS_ABSTAIN", "MODEL_SELECTION != VERIFIED_FIX", "TARGET_LOCAL_VERIFY_REQUIRED_BEFORE_PASS",
         ],
     }
@@ -256,12 +371,14 @@ def main() -> None:
     ap.add_argument("--organ-context", required=True)
     ap.add_argument("--candidates", required=True)
     ap.add_argument("--research-spine")
+    ap.add_argument("--outcome-memory")
     ap.add_argument("--out", required=True)
     ap.add_argument("--margin", type=float, default=0.03)
     args = ap.parse_args()
     decision = decide(
         Path(args.checkpoint), Path(args.organ_context), Path(args.candidates), args.margin,
         Path(args.research_spine) if args.research_spine else None,
+        Path(args.outcome_memory) if args.outcome_memory else None,
     )
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -271,6 +388,7 @@ def main() -> None:
         "decision_id": decision["decision_id"], "status": decision["status"],
         "selected": decision["selected"]["candidate_id"], "gate_reason": decision["gate_reason"],
         "research_context_sha256": decision["research_context_sha256"], "improvement_policy": decision["improvement_policy"],
+        "outcome_learning": decision["outcome_learning"],
     }, indent=2))
 
 
