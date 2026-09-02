@@ -17,7 +17,7 @@ jobs:
   attribution-r2:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 55
     steps:
       - name: Checkout authoritative brain
         uses: actions/checkout@v4
@@ -70,87 +70,49 @@ jobs:
             echo 'JANUS_ATTRIBUTION_R2_NEW_CHECKPOINT=TRUE'
           fi
 
-      - name: Fetch world memory
+      - name: Freeze one R2 source snapshot
         if: steps.decide.outputs.run == 'true'
         run: |
-          rm -rf runtime/meta-registry runtime/r2
+          rm -rf runtime/meta-registry runtime/r2 runtime/corpus runtime/keymaster
           mkdir -p runtime/r2
           git clone --depth 1 https://github.com/Hawkar-usls/janus-meta-registry.git runtime/meta-registry
-
-      - name: Build exact 8-of-8 corpus and packs
-        if: steps.decide.outputs.run == 'true'
-        run: |
           python -m janus_model.corpus \
             --registry runtime/meta-registry \
             --out runtime/corpus \
             --max-train-bytes 2000000 \
             --max-holdout-bytes 300000
-
-      - name: Check matching authoritative seed-7331 ledger
-        id: seed_source
-        if: steps.decide.outputs.run == 'true'
-        shell: bash
-        run: |
-          set +e
           python - <<'PY'
           import json
           from pathlib import Path
-          out=Path('runtime/r2/seed-source-status.txt')
-          latest=Path('janus_model/state/KEYMASTER_ATTRIBUTION_LATEST.json')
-          reason='MATCH'
-          ready=True
-          try:
-              if not latest.is_file():
-                  raise ValueError('LEDGER_MISSING')
-              x=json.loads(latest.read_text(encoding='utf-8'))
-              corpus=json.load(open('runtime/corpus/corpus_manifest.json'))
-              state=json.load(open('janus_model/state/JANUS_MODEL_STATE.json'))
-              checks={
-                  'schema':x.get('schema')=='janus.keymaster.attribution_ablation_ledger.v1',
-                  'status':x.get('status')=='COMPLETE_SINGLE_SEED_DIAGNOSTIC',
-                  'seed':x.get('seed')==7331,
-                  'steps':x.get('steps_per_variant')==80,
-                  'variants':x.get('variant_count')==17,
-                  'checkpoint':x.get('checkpoint_sha256')==state.get('checkpoint_sha256'),
-                  'source':x.get('source_digest')==corpus.get('source_digest'),
-              }
-              failed=[k for k,v in checks.items() if not v]
-              if failed:
-                  ready=False
-                  reason='MISMATCH:'+','.join(failed)
-          except Exception as exc:
-              ready=False
-              reason=f'{type(exc).__name__}:{exc}'
-          out.write_text(('true' if ready else 'false')+'\n'+reason+'\n',encoding='utf-8')
-          print('JANUS_R2_SEED_7331_READY='+str(ready).lower())
-          print('JANUS_R2_SEED_7331_REASON='+reason)
+          m=json.load(open('runtime/corpus/corpus_manifest.json'))
+          frozen={
+              'schema':'janus.keymaster.attribution_r2_cycle_snapshot.v1',
+              'checkpoint_sha256':json.load(open('janus_model/state/JANUS_MODEL_STATE.json'))['checkpoint_sha256'],
+              'source_commit':m['source_commit'],
+              'source_digest':m['source_digest'],
+              'registry_source_digest':m['registry_source_digest'],
+              'keymaster_contribution_sha256':m['keymaster_contribution_sha256'],
+              'keymaster_training_pack_sha256':m['keymaster_training_pack_sha256'],
+              'keymaster_heads':{x['id']:x['head_sha'] for x in m['keymaster_contributors']},
+              'train_bytes':m['train_bytes'],
+              'holdout_bytes':m['holdout_bytes'],
+              'authority_delta':0,
+              'source_execution':False,
+              'law':'ALL R2 SEED REPLICAS IN THIS CYCLE MUST USE THESE EXACT MATERIALIZED BYTES; SNAPSHOT IDENTITY IS DIAGNOSTIC CONTEXT, NOT AUTHORITY.'
+          }
+          Path('runtime/r2/cycle-snapshot.json').write_text(json.dumps(frozen,ensure_ascii=False,indent=2,sort_keys=True),encoding='utf-8')
+          print(json.dumps(frozen,indent=2))
           PY
-          READY=$(sed -n '1p' runtime/r2/seed-source-status.txt)
-          REASON=$(sed -n '2p' runtime/r2/seed-source-status.txt)
-          echo "ready=$READY" >> "$GITHUB_OUTPUT"
-          echo "reason=$REASON" >> "$GITHUB_OUTPUT"
-          if [ "$READY" != true ]; then
-            echo "JANUS_R2_WAITING_MATCHING_SEED_LEDGER=$REASON"
-            echo 'JANUS_R2_MISSING_MATCHING_LEDGER_IS_NOT_NEGATIVE_EVIDENCE=PASS'
-          fi
-          exit 0
+          echo 'JANUS_R2_CYCLE_SOURCE_FROZEN=PASS'
 
-      - name: Reuse authoritative seed-7331 ledger
-        if: steps.decide.outputs.run == 'true' && steps.seed_source.outputs.ready == 'true'
-        run: |
-          cp janus_model/state/KEYMASTER_ATTRIBUTION_LATEST.json runtime/r2/seed-7331.json
-          python - <<'PY'
-          import json
-          x=json.load(open('runtime/r2/seed-7331.json'))
-          assert x['seed']==7331 and x['steps_per_variant']==80 and x['variant_count']==17
-          print('JANUS_R2_SEED_7331_REUSE=PASS')
-          PY
-
-      - name: Run independent seed replicas
-        if: steps.decide.outputs.run == 'true' && steps.seed_source.outputs.ready == 'true'
+      - name: Run three independent seed replicas on identical bytes
+        if: steps.decide.outputs.run == 'true'
         shell: bash
         run: |
-          for SEED in 9157 12011; do
+          BEFORE_REGISTRY=$(sha256sum runtime/corpus/registry_train.txt | awk '{print $1}')
+          BEFORE_HOLDOUT=$(sha256sum runtime/corpus/holdout.txt | awk '{print $1}')
+          BEFORE_KEYMASTER=$(sha256sum runtime/keymaster/training.txt | awk '{print $1}')
+          for SEED in 7331 9157 12011; do
             python -m janus_model.attribution \
               --registry-train runtime/corpus/registry_train.txt \
               --holdout runtime/corpus/holdout.txt \
@@ -162,11 +124,29 @@ jobs:
               --batch-size 12 \
               --lr 0.0003 \
               --seed "$SEED"
+            test "$BEFORE_REGISTRY" = "$(sha256sum runtime/corpus/registry_train.txt | awk '{print $1}')"
+            test "$BEFORE_HOLDOUT" = "$(sha256sum runtime/corpus/holdout.txt | awk '{print $1}')"
+            test "$BEFORE_KEYMASTER" = "$(sha256sum runtime/keymaster/training.txt | awk '{print $1}')"
           done
-          echo 'JANUS_R2_THREE_SEEDS_AVAILABLE=PASS'
+          echo 'JANUS_R2_THREE_SEEDS_IDENTICAL_BYTES=PASS'
+
+      - name: Verify replica identity before aggregation
+        if: steps.decide.outputs.run == 'true'
+        run: |
+          python - <<'PY'
+          import json
+          ledgers=[json.load(open(f'runtime/r2/seed-{s}.json')) for s in (7331,9157,12011)]
+          fields=('checkpoint_sha256','source_digest','keymaster_contribution_sha256','keymaster_training_pack_sha256','steps_per_variant','batch_size','learning_rate')
+          identity={tuple(x[f] for f in fields) for x in ledgers}
+          assert len(identity)==1, identity
+          assert [x['seed'] for x in ledgers]==[7331,9157,12011]
+          assert all(x['variant_count']==17 for x in ledgers)
+          assert all(x['claim_ceiling']['single_seed_establishes_causality'] is False for x in ledgers)
+          print('JANUS_R2_REPLICA_IDENTITY=PASS')
+          PY
 
       - name: Aggregate seed consensus and successive checkpoint evidence
-        if: steps.decide.outputs.run == 'true' && steps.seed_source.outputs.ready == 'true'
+        if: steps.decide.outputs.run == 'true'
         run: |
           python -m janus_model.attribution_r2 \
             --ledger runtime/r2/seed-7331.json \
@@ -202,7 +182,7 @@ jobs:
 
       - name: Revalidate checkpoint before persistence
         id: fresh
-        if: steps.decide.outputs.run == 'true' && steps.seed_source.outputs.ready == 'true'
+        if: steps.decide.outputs.run == 'true'
         shell: bash
         run: |
           git fetch origin main
@@ -217,7 +197,7 @@ jobs:
           fi
 
       - name: Persist R2 checkpoint and cumulative summary
-        if: steps.decide.outputs.run == 'true' && steps.seed_source.outputs.ready == 'true' && steps.fresh.outputs.allow == 'true'
+        if: steps.decide.outputs.run == 'true' && steps.fresh.outputs.allow == 'true'
         shell: bash
         run: |
           mkdir -p janus_model/state janus_model/receipts
@@ -245,7 +225,7 @@ jobs:
           path: |
             runtime/corpus/corpus_manifest.json
             runtime/keymaster/manifest.json
-            runtime/r2/seed-source-status.txt
+            runtime/r2/cycle-snapshot.json
             runtime/r2/seed-7331.json
             runtime/r2/seed-9157.json
             runtime/r2/seed-12011.json
