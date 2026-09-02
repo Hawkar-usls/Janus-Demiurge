@@ -1,0 +1,150 @@
+name: JANUS TRUMP Research Cycle
+
+on:
+  push:
+    branches: [main, feature/trump-r29-objective-shadow-accelerator-v1]
+    paths:
+      - 'trump/TRUMP_RESEARCH_OBJECTIVE-v1.json'
+      - 'janus_model/extensions/trump_research_cycle.py'
+      - 'tests/test_janus_trump_research_cycle.py'
+      - '.github/workflows/janus-trump-research-cycle.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '49 */6 * * *'
+
+concurrency:
+  group: janus-trump-research-cycle
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  trump-research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - name: Checkout authoritative brain
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Capture source head
+        id: source
+        run: |
+          echo "head=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          mkdir -p runtime/trump-research
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verify objective and research kernel
+        run: |
+          python -m py_compile janus_model/extensions/trump_research_cycle.py
+          python -m unittest -v tests/test_janus_trump_research_cycle.py
+          python - <<'PY'
+          import json
+          from janus_model.extensions.trump_research_cycle import validate_objective
+          x=json.load(open('trump/TRUMP_RESEARCH_OBJECTIVE-v1.json'))
+          validate_objective(x)
+          assert x['current_scientific_boundary']['P_VS_NP']=='OPEN'
+          assert x['janus_self_compute_policy']['authority_delta']==0
+          print('JANUS_TRUMP_OBJECTIVE_KERNEL=PASS')
+          PY
+
+      - name: Fetch active TRUMP research lineage read-only
+        run: |
+          git clone --depth 1 \
+            --branch research/janus-trump-r29-bucket-message-complexity-forensics-2026-09-02 \
+            https://github.com/Hawkar-usls/Janus-Fundamentum.git \
+            runtime/trump-research/Janus-Fundamentum
+          echo 'JANUS_TRUMP_FUNDAMENTUM_FETCH=PASS'
+
+      - name: Build objective-bound Wikipedia arXiv and lineage context
+        shell: bash
+        run: |
+          python -m janus_model.extensions.trump_research_cycle \
+            --objective trump/TRUMP_RESEARCH_OBJECTIVE-v1.json \
+            --fundamentum-root runtime/trump-research/Janus-Fundamentum \
+            --out runtime/JANUS_TRUMP_RESEARCH_CONTEXT.json \
+            --max-results 3 \
+            --timeout 10
+          python - <<'PY'
+          import json
+          x=json.load(open('runtime/JANUS_TRUMP_RESEARCH_CONTEXT.json'))
+          assert x['status'] in {'READY','READY_DEGRADED','EXTERNAL_CONTEXT_UNAVAILABLE'}
+          assert x['P_VS_NP']=='OPEN'
+          assert x['authority']['research_context_is_truth'] is False
+          assert x['authority']['external_text_is_instruction'] is False
+          assert x['authority']['may_grant_runtime_promotion'] is False
+          assert x['janus_self_compute_policy']['runtime_promotion_requires_exact_output_equivalence'] is True
+          assert x['janus_self_compute_policy']['runtime_promotion_requires_repeated_resource_win'] is True
+          print(json.dumps({
+            'status':x['status'],
+            'context_sha256':x['context_sha256'],
+            'fundamentum_commit':x['fundamentum']['observed_commit'],
+            'arxiv_pass':x['external_context']['arxiv']['pass_count'],
+            'wikipedia_pass':x['external_context']['wikipedia']['pass_count'],
+            'P_VS_NP':x['P_VS_NP'],
+          },indent=2))
+          PY
+
+      - name: Fresh-main persistence guard
+        if: github.ref_name == 'main'
+        shell: bash
+        run: |
+          git fetch origin main
+          SOURCE='${{ steps.source.outputs.head }}'
+          CURRENT=$(git rev-parse origin/main)
+          if [ "$SOURCE" != "$CURRENT" ]; then
+            echo "JANUS_TRUMP_RESEARCH_STALE_BASE:$SOURCE:$CURRENT"
+            exit 23
+          fi
+          echo 'JANUS_TRUMP_RESEARCH_FRESH_BASE=PASS'
+
+      - name: Persist context and wake native brain
+        if: github.ref_name == 'main'
+        shell: bash
+        run: |
+          cp runtime/JANUS_TRUMP_RESEARCH_CONTEXT.json janus_model/state/JANUS_TRUMP_RESEARCH_CONTEXT.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.load(open('runtime/JANUS_TRUMP_RESEARCH_CONTEXT.json'))
+          wake={
+            'schema':'janus.trump.research_wake.v1',
+            'status':'TRUMP_RESEARCH_CONTEXT_REFRESHED',
+            'context_sha256':x['context_sha256'],
+            'objective_sha256':x['objective']['objective_sha256'],
+            'fundamentum_commit':x['fundamentum']['observed_commit'],
+            'P_VS_NP':'OPEN',
+            'authority':{'truth':False,'theorem':False,'runtime_promotion':False,'authority_delta':0},
+          }
+          Path('janus_model/extensions/TRUMP_RESEARCH_WAKE.json').write_text(
+            json.dumps(wake,indent=2,sort_keys=True)+'\n',encoding='utf-8'
+          )
+          PY
+          git config user.name 'janus-trump-research-cycle'
+          git config user.email 'janus-trump-research-cycle@users.noreply.github.com'
+          git add -f janus_model/state/JANUS_TRUMP_RESEARCH_CONTEXT.json janus_model/extensions/TRUMP_RESEARCH_WAKE.json
+          if git diff --cached --quiet; then
+            echo 'JANUS_TRUMP_RESEARCH_NO_CHANGE'
+          else
+            git commit -m 'JANUS TRUMP: remember objective-bound research context'
+            git push origin HEAD:main
+            echo 'JANUS_TRUMP_RESEARCH_PERSIST=PASS'
+          fi
+
+      - name: Explicitly wake native model after persisted context
+        if: github.ref_name == 'main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run janus-native-model.yml --ref main
+          echo 'JANUS_TRUMP_NATIVE_WAKE=DISPATCHED'
+
+      - name: Branch proof has zero persistence authority
+        if: github.ref_name != 'main'
+        run: echo 'JANUS_TRUMP_BRANCH_PROOF_READ_ONLY=PASS'
