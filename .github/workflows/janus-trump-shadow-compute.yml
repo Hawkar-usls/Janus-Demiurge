@@ -62,22 +62,31 @@ jobs:
           import json
           x=json.load(open('runtime/JANUS_TRUMP_SHADOW_COMPUTE.json'))
           assert x['P_VS_NP']=='OPEN'
+          assert x['performance_reference']['solver']=='DETERMINISTIC_EXACT_DPLL'
+          assert x['performance_reference']['truth_oracle']=='EXHAUSTIVE_ENUMERATION_NOT_TIMED_AS_PERFORMANCE_BASELINE'
           assert x['summary']['general_acceleration_proved'] is False
           assert x['summary']['polynomial_bound_proved'] is False
           assert x['summary']['P_equals_NP_proved'] is False
           assert x['self_use_gate']['candidate_SAT_may_short_circuit_baseline_only_after_witness_verification'] is True
+          assert x['self_use_gate']['candidate_SAT_may_short_circuit_only_for_persisted_speedup_eligible_workload'] is True
           assert x['self_use_gate']['candidate_UNSAT_may_short_circuit_baseline'] is False
           assert x['self_use_gate']['candidate_OPEN_may_short_circuit_baseline'] is False
-          assert x['self_use_gate']['fallback_to_baseline_required'] is True
+          assert x['self_use_gate']['unlisted_workload_may_assume_speedup'] is False
+          assert x['self_use_gate']['fallback_to_reference_dpll_required'] is True
           assert x['self_use_gate']['authority_delta']==0
           assert x['summary']['exact_terminal_equivalence_count'] >= 2
           for row in x['workloads']:
+              assert row['reference_status']==row['oracle_status']
               if row['candidate_status']=='SAT' and row['exact_terminal_equivalence']:
+                  assert row['candidate_witness_verified'] is True
+              if row['id'] in x['summary']['verified_sat_fast_path_workloads']:
+                  assert row['repeated_resource_win'] is True
+                  assert row['candidate_status']=='SAT'
                   assert row['candidate_witness_verified'] is True
           print(json.dumps({
             'status':x['status'],
             'exact':x['summary']['exact_terminal_equivalence_count'],
-            'wins':x['summary']['repeated_resource_win_count'],
+            'wins_vs_dpll':x['summary']['repeated_resource_win_count'],
             'sat_fast_paths':x['summary']['verified_sat_fast_path_workloads'],
             'receipt_sha256':x['receipt_sha256'],
             'P_VS_NP':x['P_VS_NP'],
@@ -101,7 +110,7 @@ jobs:
           if git diff --cached --quiet; then
             echo 'JANUS_TRUMP_SHADOW_NO_CHANGE'
           else
-            git commit -m 'JANUS TRUMP: persist exact shadow compute receipt'
+            git commit -m 'JANUS TRUMP: persist exact DPLL-referenced shadow receipt'
             git push origin HEAD:main
             echo 'JANUS_TRUMP_SHADOW_PERSIST=PASS'
           fi
