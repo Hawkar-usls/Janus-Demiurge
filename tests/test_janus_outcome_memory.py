@@ -5,6 +5,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from janus_model.outcome_memory import _record_sha, _validate_previous, sealed_proposal_bytes, validate_pair
 
@@ -47,15 +48,32 @@ class JanusOutcomeMemoryTests(unittest.TestCase):
         receipt_path.write_text(json.dumps(receipt, sort_keys=True) + "\n", encoding="utf-8")
         return proposal_path, receipt_path
 
-    def test_only_native_selected_verify_pass_is_training_eligible(self) -> None:
+    def test_only_native_selected_clean_lineage_verify_pass_is_training_eligible(self) -> None:
+        clean_lineage = {
+            "patch_diff_exact": True,
+            "patch_parent_exact": True,
+            "receipt_parent_exact": True,
+            "receipt_diff_exact": True,
+            "gitlink_count": 0,
+            "proposal_file_count": 1,
+        }
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             proposal_path, receipt_path = self._pair(root, native_model_selected=False)
-            canary = validate_pair(proposal_path, receipt_path, "c" * 40, "run-1")
+            with patch("janus_model.outcome_memory._validate_checkout_lineage", return_value=clean_lineage):
+                canary = validate_pair(proposal_path, receipt_path, "c" * 40, "run-1", checkout=root)
             self.assertFalse(canary["training_eligible"])
+            self.assertTrue(canary["lineage_verified"])
+
             proposal_path, receipt_path = self._pair(root, native_model_selected=True)
-            native = validate_pair(proposal_path, receipt_path, "c" * 40, "run-1")
+            without_lineage = validate_pair(proposal_path, receipt_path, "c" * 40, "run-1")
+            self.assertFalse(without_lineage["training_eligible"])
+            self.assertFalse(without_lineage["lineage_verified"])
+
+            with patch("janus_model.outcome_memory._validate_checkout_lineage", return_value=clean_lineage):
+                native = validate_pair(proposal_path, receipt_path, "c" * 40, "run-1", checkout=root)
             self.assertTrue(native["training_eligible"])
+            self.assertTrue(native["lineage_verified"])
             self.assertFalse(native["truth_claim"])
             self.assertFalse(native["mutation_authority_granted"])
 
