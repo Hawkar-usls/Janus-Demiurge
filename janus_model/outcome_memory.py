@@ -23,6 +23,10 @@ def canonical_bytes(obj: Any) -> bytes:
     return json.dumps(obj, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
+def sealed_proposal_bytes(obj: dict) -> bytes:
+    return json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8")
+
+
 def sha256_bytes(raw: bytes) -> str:
     return hashlib.sha256(raw).hexdigest()
 
@@ -78,9 +82,8 @@ def _load_json(path: Path) -> dict:
 
 
 def validate_pair(proposal_path: Path, receipt_path: Path, branch_head: str, run_id: str) -> dict:
-    proposal_raw = proposal_path.read_bytes()
+    proposal = json.loads(proposal_path.read_text(encoding="utf-8"))
     receipt_raw = receipt_path.read_bytes()
-    proposal = json.loads(proposal_raw)
     receipt = json.loads(receipt_raw)
     if proposal.get("schema") != PROPOSAL_SCHEMA or proposal.get("status") != "PROPOSED":
         raise RuntimeError("JANUS_OUTCOME_PROPOSAL_SCHEMA_REJECTED")
@@ -112,7 +115,8 @@ def validate_pair(proposal_path: Path, receipt_path: Path, branch_head: str, run
         raise RuntimeError(f"JANUS_OUTCOME_RECEIPT_BRANCH_REJECTED:{proposal_id}")
     if receipt.get("verification_profile") != verification_profile:
         raise RuntimeError(f"JANUS_OUTCOME_RECEIPT_PROFILE_REJECTED:{proposal_id}")
-    if receipt.get("proposal_sha256") != sha256_bytes(proposal_raw):
+    proposal_seal_sha = sha256_bytes(sealed_proposal_bytes(proposal))
+    if receipt.get("proposal_sha256") != proposal_seal_sha:
         raise RuntimeError(f"JANUS_OUTCOME_RECEIPT_PROPOSAL_HASH_REJECTED:{proposal_id}")
     if receipt.get("terminal_authority") != "TARGET_LOCAL_VERIFIER":
         raise RuntimeError(f"JANUS_OUTCOME_TERMINAL_AUTHORITY_REJECTED:{proposal_id}")
@@ -128,7 +132,7 @@ def validate_pair(proposal_path: Path, receipt_path: Path, branch_head: str, run
     training_eligible = native_selected and proposal.get("proposal_class") != "BOOTSTRAP_ACTUATOR_CANARY"
     record = {
         "outcome_id": "jout-" + sha256_bytes(canonical_bytes({
-            "proposal_sha256": sha256_bytes(proposal_raw),
+            "proposal_sha256": proposal_seal_sha,
             "receipt_sha256": sha256_bytes(receipt_raw),
             "branch_head": branch_head,
         }))[:24],
@@ -141,7 +145,7 @@ def validate_pair(proposal_path: Path, receipt_path: Path, branch_head: str, run
         "branch": expected_branch,
         "branch_head": branch_head,
         "verification_profile": verification_profile,
-        "proposal_sha256": sha256_bytes(proposal_raw),
+        "proposal_sha256": proposal_seal_sha,
         "receipt_sha256": sha256_bytes(receipt_raw),
         "terminal_authority": "TARGET_LOCAL_VERIFIER",
         "autonomous_merge": False,
