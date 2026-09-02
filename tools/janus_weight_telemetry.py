@@ -72,6 +72,31 @@ def exact_alias_groups(model_state: dict[str, torch.Tensor]) -> list[dict]:
     ]
 
 
+def _safe_checkpoint_bound_decision(path: Path, checkpoint_sha: str) -> dict | None:
+    if not path.is_file():
+        return None
+    try:
+        decision = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise SystemExit(f"LATEST_NATIVE_DECISION_JSON_REJECTED:{exc}") from exc
+    if decision.get("checkpoint_sha256") != checkpoint_sha:
+        return None
+    if decision.get("schema") != "janus.native_repair_decision.v1":
+        raise SystemExit("LATEST_NATIVE_DECISION_SCHEMA_REJECTED")
+    if decision.get("native_model_decision") is not True:
+        raise SystemExit("LATEST_NATIVE_DECISION_NATIVE_FLAG_REJECTED")
+    if decision.get("status") not in {"NO_ACTION", "ACTION_SELECTED_AWAITING_TARGET_VERIFY"}:
+        raise SystemExit("LATEST_NATIVE_DECISION_STATUS_REJECTED")
+    authority = decision.get("authority") or {}
+    for key in ("truth", "evidence", "direct_repository_mutation", "autonomous_merge"):
+        if authority.get(key) is not False:
+            raise SystemExit(f"LATEST_NATIVE_DECISION_AUTHORITY_REJECTED:{key}")
+    selected = decision.get("selected") or {}
+    if selected.get("candidate_id") != "NO_ACTION" and authority.get("target_local_verifier_required") is not True:
+        raise SystemExit("LATEST_NATIVE_DECISION_TARGET_VERIFY_FIREWALL_REJECTED")
+    return decision
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--checkpoint", required=True)
@@ -142,6 +167,13 @@ def main() -> None:
     telemetry_out.parent.mkdir(parents=True, exist_ok=True)
     telemetry_out.write_text(json.dumps(telemetry, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
 
+    # A successful workflow_run artifact is persisted by Observability directly into
+    # JANUS_LATEST_DECISION.json. A later push/manual Observability pass must never
+    # replace that current checkpoint-bound decision with an older outbox lineage
+    # member merely because the older member is the only one committed in outbox.
+    latest_path = state_path.parent / "JANUS_LATEST_DECISION.json"
+    current_latest = _safe_checkpoint_bound_decision(latest_path, checkpoint_sha)
+
     matches = []
     if decision_dir.exists():
         for path in sorted(decision_dir.glob("decision-*.json")):
@@ -153,12 +185,21 @@ def main() -> None:
                 matches.append((path, decision))
     if len(matches) > 1:
         raise SystemExit("MULTIPLE_NATIVE_DECISIONS_FOR_CURRENT_CHECKPOINT")
-    if matches:
+
+    decision_source = "NO_MATCHING_DECISION"
+    decision_status = "NO_MATCHING_DECISION"
+    selected_decision = None
+    if current_latest is not None:
+        selected_decision = current_latest
+        decision_source = "CURRENT_CHECKPOINT_BOUND_LATEST"
+    elif matches:
+        selected_decision = matches[0][1]
+        decision_source = "PERSISTED_CHECKPOINT_LINEAGE_BOOTSTRAP"
+
+    if selected_decision is not None:
         decision_out.parent.mkdir(parents=True, exist_ok=True)
-        decision_out.write_text(json.dumps(matches[0][1], ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
-        decision_status = matches[0][1].get("status")
-    else:
-        decision_status = "NO_MATCHING_DECISION"
+        decision_out.write_text(json.dumps(selected_decision, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
+        decision_status = selected_decision.get("status")
 
     print(json.dumps({
         "checkpoint_sha256": checkpoint_sha,
@@ -167,6 +208,7 @@ def main() -> None:
         "state_dict_tensor_count": len(tensors),
         "tied_alias_groups": aliases,
         "decision_status": decision_status,
+        "decision_source": decision_source,
     }, indent=2, sort_keys=True))
 
 
