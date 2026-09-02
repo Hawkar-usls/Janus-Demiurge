@@ -46,7 +46,7 @@ jobs:
       - name: Install checkpoint reader
         run: python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
 
-      - name: Recover current native decision from successful run evidence
+      - name: Recover current native decision and proposal from successful run evidence
         if: github.event_name == 'workflow_run'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -54,6 +54,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          rm -rf runtime/native-run
           mkdir -p runtime/native-run
           gh run download "$NATIVE_RUN_ID" \
             --repo "$GITHUB_REPOSITORY" \
@@ -103,6 +104,48 @@ jobs:
           out=Path('runtime/accepted-native-decision.json')
           out.write_text(json.dumps(decision,ensure_ascii=False,indent=2,sort_keys=True),encoding='utf-8')
           print(f'JANUS_NATIVE_DECISION_HANDOFF=ACCEPTED:{decision_id}:{candidate_id}')
+
+          if decision['status']=='NO_ACTION':
+              return_code='NO_ACTION'
+              print(f'JANUS_NATIVE_PROPOSAL_HANDOFF={return_code}')
+              raise SystemExit(0)
+
+          proposal_name=f"jpatch-{decision_id}.json"
+          matches=list(Path('runtime/native-run').rglob(proposal_name))
+          if len(matches) != 1:
+              raise SystemExit(f'JANUS_PROPOSAL_HANDOFF_EXACTLY_ONE_REQUIRED:{len(matches)}')
+          proposal=json.loads(matches[0].read_text(encoding='utf-8'))
+          if proposal.get('schema')!='janus.patch_proposal.v1' or proposal.get('status')!='PROPOSED':
+              raise SystemExit('JANUS_PROPOSAL_HANDOFF_SCHEMA_REJECTED')
+          if proposal.get('proposal_id') != f'jpatch-{decision_id}' or proposal.get('decision_id') != decision_id:
+              raise SystemExit('JANUS_PROPOSAL_HANDOFF_IDENTITY_REJECTED')
+          if proposal.get('create_only') is not True or proposal.get('native_model_selected') is not True:
+              raise SystemExit('JANUS_PROPOSAL_HANDOFF_ORIGIN_REJECTED')
+          if proposal.get('risk_lane') != 'LOW':
+              raise SystemExit('JANUS_PROPOSAL_HANDOFF_RISK_REJECTED')
+          target=proposal.get('target') or {}
+          selected_target=selected.get('target') or {}
+          if target != selected_target:
+              raise SystemExit('JANUS_PROPOSAL_HANDOFF_TARGET_REJECTED')
+          repo=target.get('repository'); base=target.get('expected_target_commit')
+          if not isinstance(repo,str) or not repo.startswith('Hawkar-usls/'):
+              raise SystemExit('JANUS_PROPOSAL_HANDOFF_REPOSITORY_REJECTED')
+          if not isinstance(base,str) or len(base)!=40 or any(c not in '0123456789abcdef' for c in base):
+              raise SystemExit('JANUS_PROPOSAL_HANDOFF_BASE_REJECTED')
+          if proposal.get('verification_profile') != selected.get('verification_profile'):
+              raise SystemExit('JANUS_PROPOSAL_HANDOFF_VERIFIER_REJECTED')
+          source=proposal.get('source') or {}
+          if source.get('source_repository')!='Hawkar-usls/Janus-Demiurge':
+              raise SystemExit('JANUS_PROPOSAL_HANDOFF_SOURCE_REJECTED')
+          if source.get('decision_id')!=decision_id or source.get('checkpoint_sha256')!=checkpoint_sha:
+              raise SystemExit('JANUS_PROPOSAL_HANDOFF_CHECKPOINT_REJECTED')
+          files=proposal.get('files') or []
+          if not isinstance(files,list) or not files:
+              raise SystemExit('JANUS_PROPOSAL_HANDOFF_FILES_REJECTED')
+
+          dest=Path('runtime/accepted-native-proposal.json')
+          dest.write_text(json.dumps(proposal,ensure_ascii=False,indent=2,sort_keys=True),encoding='utf-8')
+          print(f"JANUS_NATIVE_PROPOSAL_HANDOFF=ACCEPTED:{proposal['proposal_id']}:{repo}:{base}")
           PY
 
       - name: Export checkpoint-bound telemetry
@@ -130,7 +173,7 @@ jobs:
           print('JANUS_NATIVE_WEIGHT_TELEMETRY_BINDING=PASS')
           PY
 
-      - name: Select freshest checkpoint-bound decision without self-authority
+      - name: Select freshest checkpoint-bound decision and publish proposal outbox without target authority
         shell: bash
         run: |
           set -euo pipefail
@@ -157,8 +200,14 @@ jobs:
           print('JANUS_LATEST_DECISION_CHECKPOINT_BINDING=PASS')
           PY
           fi
+          if [ -f runtime/accepted-native-proposal.json ]; then
+            PROPOSAL_ID=$(python -c "import json;print(json.load(open('runtime/accepted-native-proposal.json'))['proposal_id'])")
+            mkdir -p janus_model/outbox/patch-proposals
+            cp runtime/accepted-native-proposal.json "janus_model/outbox/patch-proposals/${PROPOSAL_ID}.json"
+            echo "JANUS_NATIVE_PUBLIC_PROPOSAL_OUTBOX=READY:${PROPOSAL_ID}"
+          fi
 
-      - name: Persist telemetry only when changed
+      - name: Persist telemetry decision and credentialless proposal outbox only when changed
         run: |
           set -euo pipefail
           git config user.name 'janus-native-observability'
@@ -167,10 +216,13 @@ jobs:
           if [ -f janus_model/state/JANUS_LATEST_DECISION.json ]; then
             git add -f janus_model/state/JANUS_LATEST_DECISION.json
           fi
+          if [ -d janus_model/outbox/patch-proposals ]; then
+            git add -f janus_model/outbox/patch-proposals
+          fi
           if git diff --cached --quiet; then
             echo 'JANUS_NATIVE_OBSERVABILITY=NO_CHANGE'
           else
-            git commit -m "JANUS native observability: publish checkpoint telemetry and current decision"
+            git commit -m "JANUS native observability: persist current decision and credentialless proposal outbox"
             git pull --rebase origin main
             git push origin HEAD:main
             echo 'JANUS_NATIVE_OBSERVABILITY=PASS'
