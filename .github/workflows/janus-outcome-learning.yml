@@ -1,0 +1,189 @@
+name: JANUS Verified Outcome Learning
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '41 */6 * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'janus_model/outcome_memory.py'
+      - 'tests/test_janus_outcome_memory.py'
+      - '.github/workflows/janus-outcome-learning.yml'
+
+concurrency:
+  group: janus-verified-outcome-learning
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  learn:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout authoritative brain
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Synchronize main and capture outcome-memory base
+        id: base
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git switch -C main origin/main
+          if git cat-file -e HEAD:janus_model/state/JANUS_VERIFIED_OUTCOME_MEMORY.json 2>/dev/null; then
+            BLOB=$(git rev-parse HEAD:janus_model/state/JANUS_VERIFIED_OUTCOME_MEMORY.json)
+          else
+            BLOB=MISSING
+          fi
+          echo "state_blob=$BLOB" >> "$GITHUB_OUTPUT"
+          echo "JANUS_OUTCOME_MEMORY_BASE=$BLOB"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verify outcome-learning kernel
+        run: |
+          set -euo pipefail
+          python -m py_compile janus_model/outcome_memory.py
+          python -m unittest -v tests/test_janus_outcome_memory.py
+          echo 'JANUS_OUTCOME_KERNEL=PASS'
+
+      - name: Fetch proposal memory read-only
+        run: |
+          set -euo pipefail
+          rm -rf runtime/janus-self-memory
+          mkdir -p runtime
+          git clone --quiet --depth 1 --branch janus/native-self-memory-modular-organism-v1 \
+            https://github.com/Hawkar-usls/janus-meta-registry.git runtime/janus-self-memory
+          test -d runtime/janus-self-memory/JANUS/PATCHES/PROPOSALS
+          echo 'JANUS_OUTCOME_PROPOSAL_MEMORY=READ_ONLY_PASS'
+
+      - name: Collect target-local verified outcomes
+        id: collect
+        shell: bash
+        run: |
+          set -euo pipefail
+          PREVIOUS=()
+          if [ -f janus_model/state/JANUS_VERIFIED_OUTCOME_MEMORY.json ]; then
+            PREVIOUS=(--previous janus_model/state/JANUS_VERIFIED_OUTCOME_MEMORY.json)
+          fi
+          python -m janus_model.outcome_memory \
+            --self-memory-root runtime/janus-self-memory \
+            "${PREVIOUS[@]}" \
+            --out runtime/JANUS_VERIFIED_OUTCOME_MEMORY.json \
+            --scan-summary runtime/JANUS_VERIFIED_OUTCOME_SCAN.json \
+            --run-id "$GITHUB_RUN_ID" \
+            --max-records 64
+          NEW=$(python -c "import json; print(json.load(open('runtime/JANUS_VERIFIED_OUTCOME_SCAN.json'))['new_training_eligible'])")
+          TOTAL=$(python -c "import json; print(json.load(open('runtime/JANUS_VERIFIED_OUTCOME_MEMORY.json'))['training_eligible_count'])")
+          echo "new_training_eligible=$NEW" >> "$GITHUB_OUTPUT"
+          echo "training_eligible_count=$TOTAL" >> "$GITHUB_OUTPUT"
+
+      - name: Enforce learning firewalls
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          m=json.loads(Path('runtime/JANUS_VERIFIED_OUTCOME_MEMORY.json').read_text())
+          s=json.loads(Path('runtime/JANUS_VERIFIED_OUTCOME_SCAN.json').read_text())
+          assert m['schema']=='janus.verified_outcome_memory.v1'
+          assert m['status']=='VERIFIED_OUTCOME_MEMORY_READY'
+          assert len(m['records']) <= 64
+          assert m['record_count']==len(m['records'])
+          assert m['training_eligible_count']==sum(1 for r in m['records'] if r['training_eligible'] is True)
+          p=m['policy']
+          assert p['silence_is_negative_evidence'] is False
+          assert p['only_target_local_verify_pass_is_positive_feedback'] is True
+          assert p['native_model_selected_required_for_training_prior'] is True
+          assert p['feedback_grants_mutation_authority'] is False
+          assert p['historical_verify_pass_is_world_truth'] is False
+          assert p['target_local_reverification_still_required'] is True
+          assert 0.0 <= float(p['decision_prior_cap_nll']) <= 0.01
+          for r in m['records']:
+              assert r['status']=='VERIFY_PASS'
+              assert r['terminal_authority']=='TARGET_LOCAL_VERIFIER'
+              assert r['autonomous_merge'] is False and r['main_mutated'] is False
+              assert r['truth_claim'] is False and r['mutation_authority_granted'] is False
+              if r['training_eligible']:
+                  assert r['native_model_selected'] is True
+          assert s['silence_is_negative_evidence'] is False
+          print('JANUS_VERIFIED_OUTCOME_FIREWALL=PASS')
+          PY
+
+      - name: Revalidate outcome-memory base before persistence
+        id: guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          EXPECTED='${{ steps.base.outputs.state_blob }}'
+          if git cat-file -e origin/main:janus_model/state/JANUS_VERIFIED_OUTCOME_MEMORY.json 2>/dev/null; then
+            CURRENT=$(git rev-parse origin/main:janus_model/state/JANUS_VERIFIED_OUTCOME_MEMORY.json)
+          else
+            CURRENT=MISSING
+          fi
+          if [ "$CURRENT" != "$EXPECTED" ]; then
+            echo 'allow=false' >> "$GITHUB_OUTPUT"
+            echo "JANUS_OUTCOME_STALE_BASE=TRUE expected=$EXPECTED current=$CURRENT"
+            exit 0
+          fi
+          echo 'allow=true' >> "$GITHUB_OUTPUT"
+          echo 'JANUS_OUTCOME_PREPERSIST_GUARD=PASS'
+
+      - name: Persist bounded verified outcome memory
+        id: persist
+        if: steps.guard.outputs.allow == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p janus_model/state
+          cp runtime/JANUS_VERIFIED_OUTCOME_MEMORY.json janus_model/state/JANUS_VERIFIED_OUTCOME_MEMORY.json
+          git config user.name 'janus-outcome-learning'
+          git config user.email 'janus-outcome-learning@users.noreply.github.com'
+          git add -f janus_model/state/JANUS_VERIFIED_OUTCOME_MEMORY.json
+          if git diff --cached --quiet; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+            echo 'JANUS_OUTCOME_MEMORY=NO_CHANGE'
+            exit 0
+          fi
+          git commit -m "JANUS outcome learning: remember target-verified receipts from run ${GITHUB_RUN_ID}"
+          git pull --rebase origin main
+          git push origin HEAD:main
+          echo 'changed=true' >> "$GITHUB_OUTPUT"
+          echo 'JANUS_OUTCOME_MEMORY=PERSISTED'
+
+      - name: Wake native model only for new training-eligible evidence
+        if: steps.persist.outputs.changed == 'true' && steps.collect.outputs.new_training_eligible != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow run janus-native-model.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref main \
+            -f mode=train_and_run \
+            -f force_train=false \
+            -f prompt='JANUS, incorporate newly target-verified bounded outcomes. Historical VERIFY_PASS is a prior, not truth; reverify every selected action.'
+          echo 'JANUS_OUTCOME_NATIVE_WAKE=DISPATCHED'
+
+      - name: Upload outcome-learning evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-verified-outcome-learning-${{ github.run_id }}
+          path: |
+            runtime/JANUS_VERIFIED_OUTCOME_MEMORY.json
+            runtime/JANUS_VERIFIED_OUTCOME_SCAN.json
+          if-no-files-found: ignore
+          retention-days: 30
