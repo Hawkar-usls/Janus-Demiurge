@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import math
 import random
@@ -9,27 +8,24 @@ from pathlib import Path
 
 import torch
 
+from janus_model.eval_contract import (
+    ADAPTIVE_REGRESSION_TOLERANCE,
+    ADAPTIVE_SEED_OFFSET,
+    ANCHOR_REGRESSION_TOLERANCE,
+    ANCHOR_SEED_OFFSET,
+    BOOTSTRAP_FINITE_LOSS_CEILING,
+    DEFAULT_ANCHOR,
+    EVAL_BATCHES,
+    EVAL_BATCH_SIZE,
+    contract_identity,
+    sha256_file,
+)
 from janus_model.model import (
     ByteTokenizer,
     JanusModelConfig,
     JanusTinyTransformer,
     parameter_count,
 )
-
-EVAL_BATCHES = 24
-EVAL_BATCH_SIZE = 8
-ADAPTIVE_REGRESSION_TOLERANCE = 0.002
-ANCHOR_REGRESSION_TOLERANCE = 0.01
-BOOTSTRAP_FINITE_LOSS_CEILING = 8.0
-DEFAULT_ANCHOR = Path(__file__).resolve().parent / "eval" / "JANUS_ANCHOR_EVAL-v1.txt"
-
-
-def sha256_file(path):
-    h = hashlib.sha256()
-    with Path(path).open("rb") as f:
-        for chunk in iter(lambda: f.read(1024 * 1024), b""):
-            h.update(chunk)
-    return h.hexdigest()
 
 
 def seed_everything(seed):
@@ -192,26 +188,25 @@ def main():
     ap.add_argument("--batch-size", type=int, default=12)
     ap.add_argument("--lr", type=float, default=3e-4)
     ap.add_argument("--seed", type=int, default=1337)
-    ap.add_argument(
-        "--anchor-regression-tolerance",
-        type=float,
-        default=ANCHOR_REGRESSION_TOLERANCE,
-    )
     a = ap.parse_args()
-
-    if not 0.0 <= a.anchor_regression_tolerance <= 0.10:
-        raise RuntimeError("ANCHOR_REGRESSION_TOLERANCE_OUT_OF_BOUNDS")
-
-    anchor_path = Path(a.anchor)
-    if not anchor_path.exists():
-        raise RuntimeError(f"FROZEN_ANCHOR_MISSING:{anchor_path}")
 
     seed_everything(a.seed)
     train_stream = tokens(a.train)
     holdout_stream = tokens(a.holdout)
+    anchor_path = Path(a.anchor)
     anchor_stream = tokens(anchor_path)
     corpus = json.loads(Path(a.corpus_manifest).read_text())
-    anchor_sha256 = sha256_file(anchor_path)
+
+    local_contract = contract_identity(anchor_path, seed=a.seed)
+    manifest_contract_sha = corpus.get("evaluation_contract_sha256")
+    if manifest_contract_sha != local_contract["contract_sha256"]:
+        raise RuntimeError(
+            "EVALUATION_CONTRACT_MISMATCH:"
+            f"manifest={manifest_contract_sha}:local={local_contract['contract_sha256']}"
+        )
+    if corpus.get("anchor_is_training_source") is not False:
+        raise RuntimeError("ANCHOR_TRAINING_FIREWALL_NOT_SEALED")
+    anchor_sha256 = local_contract["anchor"]["sha256"]
 
     incumbent_path = Path(a.incumbent) if a.incumbent else None
     incumbent_loss = None
@@ -225,14 +220,14 @@ def main():
             holdout_stream,
             EVAL_BATCHES,
             EVAL_BATCH_SIZE,
-            a.seed + 11,
+            a.seed + ADAPTIVE_SEED_OFFSET,
         )
         incumbent_anchor_loss = eval_loss(
             incumbent_model,
             anchor_stream,
             EVAL_BATCHES,
             EVAL_BATCH_SIZE,
-            a.seed + 29,
+            a.seed + ANCHOR_SEED_OFFSET,
         )
         candidate = JanusTinyTransformer(incumbent_model.config)
         candidate.load_state_dict(incumbent_model.state_dict())
@@ -265,14 +260,14 @@ def main():
         holdout_stream,
         EVAL_BATCHES,
         EVAL_BATCH_SIZE,
-        a.seed + 11,
+        a.seed + ADAPTIVE_SEED_OFFSET,
     )
     candidate_anchor_loss = eval_loss(
         candidate,
         anchor_stream,
         EVAL_BATCHES,
         EVAL_BATCH_SIZE,
-        a.seed + 29,
+        a.seed + ANCHOR_SEED_OFFSET,
     )
 
     gate = promotion_gate(
@@ -280,40 +275,29 @@ def main():
         incumbent_loss=incumbent_loss,
         candidate_anchor_loss=candidate_anchor_loss,
         incumbent_anchor_loss=incumbent_anchor_loss,
-        anchor_regression_tolerance=a.anchor_regression_tolerance,
     )
     promote = gate["promote"]
     reason = gate["reason"]
 
     evaluation_contract = {
-        "schema": "janus.model.dual_evaluation.v1",
+        **local_contract,
         "adaptive": {
-            "kind": "CURRENT_REGISTRY_HASH_SPLIT_HOLDOUT",
+            **local_contract["adaptive"],
             "source_digest": corpus["source_digest"],
-            "batches": EVAL_BATCHES,
-            "batch_size": EVAL_BATCH_SIZE,
-            "seed": a.seed + 11,
+            "registry_source_digest": corpus.get("registry_source_digest"),
             "incumbent_loss": incumbent_loss,
             "candidate_loss": candidate_loss,
-            "regression_tolerance_fraction": ADAPTIVE_REGRESSION_TOLERANCE,
             "gate_pass": gate["adaptive_ok"],
         },
         "anchor": {
-            "kind": "FROZEN_VERSIONED_TEXT_HOLDOUT",
-            "path": anchor_path.as_posix(),
-            "sha256": anchor_sha256,
-            "batches": EVAL_BATCHES,
-            "batch_size": EVAL_BATCH_SIZE,
-            "seed": a.seed + 29,
+            **local_contract["anchor"],
             "incumbent_loss": incumbent_anchor_loss,
             "candidate_loss": candidate_anchor_loss,
-            "regression_tolerance_fraction": a.anchor_regression_tolerance,
             "gate_pass": gate["anchor_ok"],
         },
-        "promotion_rule": "ADAPTIVE_GATE_AND_FROZEN_ANCHOR_GATE",
         "historical_comparability": (
             "ANCHOR_BASELINE_ESTABLISHED"
-            if incumbent_loss is None
+            if incumbent_anchor_loss is None
             else "FROZEN_ANCHOR_V1_COMPARABLE"
         ),
         "legacy_records_without_anchor": "NON_COMPARABLE_LEGACY",
@@ -326,6 +310,8 @@ def main():
             "source_repository": corpus["source_repository"],
             "source_commit": corpus["source_commit"],
             "source_digest": corpus["source_digest"],
+            "registry_source_digest": corpus.get("registry_source_digest"),
+            "evaluation_contract_sha256": local_contract["contract_sha256"],
             "parent_checkpoint_sha256": parent_sha,
             "training_mode": mode,
             "seed": a.seed,
@@ -362,6 +348,8 @@ def main():
         "training_mode": mode,
         "source_commit": corpus["source_commit"],
         "source_digest": corpus["source_digest"],
+        "registry_source_digest": corpus.get("registry_source_digest"),
+        "evaluation_contract_sha256": local_contract["contract_sha256"],
         "parent_checkpoint_sha256": parent_sha,
         "candidate_checkpoint_sha256": checkpoint_sha,
         "incumbent_eval_loss": incumbent_loss,
@@ -397,6 +385,9 @@ def main():
             {
                 "status": receipt["status"],
                 "training_mode": receipt["training_mode"],
+                "source_digest": corpus["source_digest"],
+                "registry_source_digest": corpus.get("registry_source_digest"),
+                "evaluation_contract_sha256": local_contract["contract_sha256"],
                 "incumbent_eval_loss": incumbent_loss,
                 "candidate_eval_loss": candidate_loss,
                 "incumbent_anchor_eval_loss": incumbent_anchor_loss,
