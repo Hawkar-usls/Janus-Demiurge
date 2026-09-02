@@ -2,7 +2,10 @@ name: JANUS TRUMP Research Cycle
 
 on:
   push:
-    branches: [main, feature/trump-r29-objective-shadow-accelerator-v1]
+    branches:
+      - main
+      - feature/trump-r29-objective-shadow-accelerator-v1
+      - fix/trump-research-state-drift-r30-objective-v1
     paths:
       - 'trump/TRUMP_RESEARCH_OBJECTIVE-v1.json'
       - 'janus_model/extensions/trump_research_cycle.py'
@@ -30,10 +33,22 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Capture source head
+      - name: Capture source head and objective ref
         id: source
+        shell: bash
         run: |
+          set -euo pipefail
           echo "head=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          REF=$(python - <<'PY'
+          import json,re
+          x=json.load(open('trump/TRUMP_RESEARCH_OBJECTIVE-v1.json'))
+          ref=x['active_lineage']['tracking_ref']
+          if not re.fullmatch(r'[A-Za-z0-9._/-]+', ref) or '..' in ref or '@{' in ref or ref.startswith('-') or ref.endswith('.lock'):
+              raise SystemExit('TRUMP_OBJECTIVE_TRACKING_REF_REJECTED')
+          print(ref)
+          PY
+          )
+          echo "tracking_ref=$REF" >> "$GITHUB_OUTPUT"
           mkdir -p runtime/trump-research
 
       - uses: actions/setup-python@v5
@@ -54,10 +69,12 @@ jobs:
           print('JANUS_TRUMP_OBJECTIVE_KERNEL=PASS')
           PY
 
-      - name: Fetch active TRUMP research lineage read-only
+      - name: Fetch objective-selected TRUMP research lineage read-only
+        shell: bash
         run: |
-          git clone --depth 1 \
-            --branch research/janus-trump-r29-bucket-message-complexity-forensics-2026-09-02 \
+          set -euo pipefail
+          git clone --depth 1 --single-branch \
+            --branch '${{ steps.source.outputs.tracking_ref }}' \
             https://github.com/Hawkar-usls/Janus-Fundamentum.git \
             runtime/trump-research/Janus-Fundamentum
           echo 'JANUS_TRUMP_FUNDAMENTUM_FETCH=PASS'
@@ -85,29 +102,53 @@ jobs:
             'status':x['status'],
             'context_sha256':x['context_sha256'],
             'fundamentum_commit':x['fundamentum']['observed_commit'],
+            'active_stage':x['fundamentum']['active_stage'],
+            'active_contract':x['fundamentum']['active_contract_path'],
+            'next_gate':x['fundamentum']['next_gate'],
             'arxiv_pass':x['external_context']['arxiv']['pass_count'],
             'wikipedia_pass':x['external_context']['wikipedia']['pass_count'],
             'P_VS_NP':x['P_VS_NP'],
           },indent=2))
           PY
 
-      - name: Fresh-main persistence guard
+      - name: Reconcile benign state-only main drift or fail closed
         if: github.ref_name == 'main'
         shell: bash
         run: |
+          set -euo pipefail
           git fetch origin main
           SOURCE='${{ steps.source.outputs.head }}'
           CURRENT=$(git rev-parse origin/main)
-          if [ "$SOURCE" != "$CURRENT" ]; then
-            echo "JANUS_TRUMP_RESEARCH_STALE_BASE:$SOURCE:$CURRENT"
-            exit 23
+          if [ "$SOURCE" = "$CURRENT" ]; then
+            echo 'JANUS_TRUMP_RESEARCH_FRESH_BASE=PASS'
+            exit 0
           fi
-          echo 'JANUS_TRUMP_RESEARCH_FRESH_BASE=PASS'
+          git diff --name-only "$SOURCE" "$CURRENT" > runtime/trump-research/main-drift-paths.txt
+          python - <<'PY'
+          from pathlib import Path
+          from janus_model.extensions.trump_research_cycle import validate_benign_persistence_drift
+          paths=Path('runtime/trump-research/main-drift-paths.txt').read_text(encoding='utf-8').splitlines()
+          allowed=validate_benign_persistence_drift(paths)
+          print('JANUS_TRUMP_RESEARCH_BENIGN_STATE_DRIFT=' + ','.join(allowed))
+          PY
+          git rebase origin/main
+          python - <<'PY'
+          import json
+          from janus_model.extensions.trump_research_cycle import canonical_bytes,sha256_bytes,validate_objective
+          context=json.load(open('runtime/JANUS_TRUMP_RESEARCH_CONTEXT.json'))
+          objective=json.load(open('trump/TRUMP_RESEARCH_OBJECTIVE-v1.json'))
+          validate_objective(objective)
+          expected=sha256_bytes(canonical_bytes(objective))
+          assert context['objective']['objective_sha256']==expected, 'TRUMP_OBJECTIVE_CHANGED_DURING_BENIGN_RECONCILE'
+          assert context['P_VS_NP']=='OPEN'
+          print('JANUS_TRUMP_RESEARCH_STATE_ONLY_RECONCILE=PASS')
+          PY
 
       - name: Persist context and wake native brain
         if: github.ref_name == 'main'
         shell: bash
         run: |
+          set -euo pipefail
           cp runtime/JANUS_TRUMP_RESEARCH_CONTEXT.json janus_model/state/JANUS_TRUMP_RESEARCH_CONTEXT.json
           python - <<'PY'
           import json
@@ -119,6 +160,9 @@ jobs:
             'context_sha256':x['context_sha256'],
             'objective_sha256':x['objective']['objective_sha256'],
             'fundamentum_commit':x['fundamentum']['observed_commit'],
+            'active_stage':x['fundamentum']['active_stage'],
+            'active_contract_path':x['fundamentum']['active_contract_path'],
+            'next_gate':x['fundamentum']['next_gate'],
             'P_VS_NP':'OPEN',
             'authority':{'truth':False,'theorem':False,'runtime_promotion':False,'authority_delta':0},
           }
