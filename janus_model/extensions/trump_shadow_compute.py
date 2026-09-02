@@ -69,7 +69,6 @@ def brute_force_oracle(clauses) -> dict:
     return {"status": "UNSAT", "witness": None, "variables": len(variables), "assignments_tested": tested}
 
 
-# Backward-compatible name used by existing tests/consumers. Semantics are oracle-only.
 brute_force_baseline = brute_force_oracle
 
 
@@ -234,6 +233,11 @@ def run_shadow(candidate_path: Path, repeats: int = DEFAULT_REPEATS) -> dict:
             "candidate_status": cstatus,
             "candidate_witness_verified": candidate_sem["witness_verified"],
             "exact_terminal_equivalence": exact_terminal,
+            "proof_scope": "L1_LOCAL_FINITE_INSTANCE_ONLY" if exact_terminal else "NO_LADDER_ADVANCE",
+            "local_instance_exactness_verified": exact_terminal,
+            "universal_coverage_proved": False,
+            "uniform_resolver_proved": False,
+            "worst_case_polynomial_bound_proved": False,
             "reference_median_ns": rmed,
             "candidate_median_ns": cmed,
             "median_speedup_ratio_vs_reference_dpll": speedup,
@@ -268,9 +272,13 @@ def run_shadow(candidate_path: Path, repeats: int = DEFAULT_REPEATS) -> dict:
         "workloads": rows,
         "summary": {
             "workload_count": len(rows),
+            "local_finite_exactness_count": len(terminal_rows),
             "exact_terminal_equivalence_count": len(terminal_rows),
             "repeated_resource_win_count": len(win_rows),
             "verified_sat_fast_path_workloads": sat_fast_paths,
+            "highest_proof_scope": "L1_LOCAL_FINITE_INSTANCE_ONLY" if terminal_rows else "NONE",
+            "universal_coverage_proved": False,
+            "uniform_total_resolver_proved": False,
             "general_acceleration_proved": False,
             "polynomial_bound_proved": False,
             "P_equals_NP_proved": False,
@@ -282,13 +290,19 @@ def run_shadow(candidate_path: Path, repeats: int = DEFAULT_REPEATS) -> dict:
             "candidate_UNSAT_may_short_circuit_baseline": False,
             "candidate_OPEN_may_short_circuit_baseline": False,
             "unlisted_workload_may_assume_speedup": False,
+            "local_fast_path_is_universal_solver_claim": False,
+            "local_fast_path_is_polynomial_bound_claim": False,
             "fallback_to_reference_dpll_required": True,
             "authority_delta": 0,
         },
         "firewalls": [
+            "A_WITNESS_PROVES_A_CASE",
+            "FINITE_SHADOW_EXACTNESS != UNIVERSAL_COVERAGE",
+            "UNIVERSAL_COVERAGE != UNIFORM_RESOLVER",
+            "UNIFORM_RESOLVER != POLYNOMIAL_UNIFORM_RESOLVER",
             "EXHAUSTIVE_ORACLE_SPEEDUP != ACCELERATOR_EVIDENCE",
             "DPLL_SHADOW_SPEEDUP != GENERAL_SPEEDUP",
-            "SHADOW_SPEEDUP != POLYNOMIAL_BOUND",
+            "SHADOW_SPEEDUP != WORST_CASE_POLYNOMIAL_BOUND",
             "SHADOW_SPEEDUP != P_EQUALS_NP",
             "SAT_WITNESS_VERIFIED + SPEEDUP_ELIGIBLE_WORKLOAD => BOUNDED_POSITIVE_FAST_PATH_ONLY",
             "CANDIDATE_UNSAT_REQUIRES_INDEPENDENT_RELEASE_GRADE_CERTIFICATE_OR_REFERENCE_SOLVER",
@@ -303,7 +317,7 @@ def run_shadow(candidate_path: Path, repeats: int = DEFAULT_REPEATS) -> dict:
 
 
 def solve_with_verified_sat_fast_path(mod, clauses, shadow_receipt: dict, workload_id: str | None = None) -> dict:
-    """Use TRUMP early only for receipt-listed speedup-eligible SAT classes; otherwise DPLL."""
+    """Use TRUMP early only for receipt-listed local SAT fast paths; otherwise DPLL."""
     eligible = set((shadow_receipt.get("summary") or {}).get("verified_sat_fast_path_workloads") or [])
     if workload_id in eligible:
         candidate = mod.solve_fail_closed(clauses)
@@ -312,6 +326,10 @@ def solve_with_verified_sat_fast_path(mod, clauses, shadow_receipt: dict, worklo
             return {
                 "status": "SAT",
                 "source": "TRUMP_VERIFIED_SPEEDUP_ELIGIBLE_SAT_FAST_PATH",
+                "proof_scope": "L1_LOCAL_FINITE_INSTANCE_ONLY",
+                "universal_coverage_proved": False,
+                "uniform_resolver_proved": False,
+                "polynomial_bound_proved": False,
                 "witness": candidate.get("witness"),
                 "workload_id": workload_id,
             }
@@ -322,6 +340,7 @@ def solve_with_verified_sat_fast_path(mod, clauses, shadow_receipt: dict, worklo
     return {
         "status": reference["status"],
         "source": "REFERENCE_DPLL_FALLBACK",
+        "proof_scope": "BASELINE_RESULT_NOT_TRUMP_LADDER_EVIDENCE",
         "witness": reference.get("witness"),
         "candidate_status": candidate_status,
         "workload_id": workload_id,
@@ -342,6 +361,7 @@ def main() -> None:
         "status": obj["status"],
         "exact": obj["summary"]["exact_terminal_equivalence_count"],
         "wins": obj["summary"]["repeated_resource_win_count"],
+        "highest_proof_scope": obj["summary"]["highest_proof_scope"],
         "sat_fast_paths": obj["summary"]["verified_sat_fast_path_workloads"],
         "P_VS_NP": obj["P_VS_NP"],
     }, indent=2))

@@ -43,14 +43,19 @@ class TrumpShadowComputeTests(unittest.TestCase):
         out = tsc.solve_with_verified_sat_fast_path(FakeCandidate, ((1,),), receipt, workload_id="OTHER_CLASS")
         self.assertEqual(out["status"], "SAT")
         self.assertEqual(out["source"], "REFERENCE_DPLL_FALLBACK")
+        self.assertEqual(out["proof_scope"], "BASELINE_RESULT_NOT_TRUMP_LADDER_EVIDENCE")
         self.assertEqual(out["candidate_status"], "NOT_RUN_UNLISTED_WORKLOAD")
         self.assertEqual(FakeCandidate.calls, 0)
 
-    def test_speedup_eligible_verified_sat_may_fast_path(self):
+    def test_speedup_eligible_verified_sat_is_local_fast_path_only(self):
         receipt = {"summary": {"verified_sat_fast_path_workloads": ["PROVEN_CLASS"]}}
         out = tsc.solve_with_verified_sat_fast_path(FakeCandidate, ((1,),), receipt, workload_id="PROVEN_CLASS")
         self.assertEqual(out["status"], "SAT")
         self.assertEqual(out["source"], "TRUMP_VERIFIED_SPEEDUP_ELIGIBLE_SAT_FAST_PATH")
+        self.assertEqual(out["proof_scope"], "L1_LOCAL_FINITE_INSTANCE_ONLY")
+        self.assertFalse(out["universal_coverage_proved"])
+        self.assertFalse(out["uniform_resolver_proved"])
+        self.assertFalse(out["polynomial_bound_proved"])
         self.assertEqual(FakeCandidate.calls, 1)
 
     def test_open_on_eligible_workload_falls_back_to_reference_dpll(self):
@@ -70,6 +75,35 @@ class TrumpShadowComputeTests(unittest.TestCase):
         out = tsc.solve_with_verified_sat_fast_path(UnsafeUnsat, ((1,),), receipt, workload_id="PROVEN_CLASS")
         self.assertEqual(out["status"], "SAT")
         self.assertEqual(out["source"], "REFERENCE_DPLL_FALLBACK")
+
+    def test_run_shadow_can_only_emit_local_finite_evidence(self):
+        source = textwrap.dedent(
+            """
+            def canon_cnf(clauses):
+                return tuple(tuple(c) for c in clauses)
+            def verify_total_assignment(clauses, assignment):
+                return all(any(assignment.get(abs(int(l))) == int(int(l)>0) for l in c) for c in clauses)
+            def solve_fail_closed(clauses):
+                assignment={v:1 for v in range(1,17)}
+                if verify_total_assignment(clauses, assignment):
+                    return {'status':'SAT','reason':'TEST','witness':assignment}
+                return {'status':'OPEN','reason':'TEST_OPEN'}
+            """
+        )
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "candidate.py"
+            path.write_text(source, encoding="utf-8")
+            out = tsc.run_shadow(path, repeats=3)
+        self.assertGreaterEqual(out["summary"]["local_finite_exactness_count"], 1)
+        self.assertEqual(out["summary"]["highest_proof_scope"], "L1_LOCAL_FINITE_INSTANCE_ONLY")
+        self.assertFalse(out["summary"]["universal_coverage_proved"])
+        self.assertFalse(out["summary"]["uniform_total_resolver_proved"])
+        self.assertFalse(out["summary"]["polynomial_bound_proved"])
+        self.assertFalse(out["summary"]["P_equals_NP_proved"])
+        for row in out["workloads"]:
+            self.assertFalse(row["universal_coverage_proved"])
+            self.assertFalse(row["uniform_resolver_proved"])
+            self.assertFalse(row["worst_case_polynomial_bound_proved"])
 
     def test_dynamic_loader_supports_dataclass_candidate(self):
         source = textwrap.dedent(

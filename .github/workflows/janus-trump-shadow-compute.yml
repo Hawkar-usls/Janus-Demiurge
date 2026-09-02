@@ -2,7 +2,7 @@ name: JANUS TRUMP Shadow Compute
 
 on:
   push:
-    branches: [main, feature/trump-r29-objective-shadow-accelerator-v1]
+    branches: [main, feature/trump-r29-objective-shadow-accelerator-v1, feature/trump-captain-proof-ladder-v1]
     paths:
       - 'trump/TRUMP_RESEARCH_OBJECTIVE-v1.json'
       - 'janus_model/extensions/trump_shadow_compute.py'
@@ -32,11 +32,11 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Verify shadow adapter kernel
+      - name: Verify shadow adapter and Captain claim ceiling
         run: |
           python -m py_compile janus_model/extensions/trump_shadow_compute.py
           python -m unittest -v tests/test_janus_trump_shadow_compute.py
-          echo 'JANUS_TRUMP_SHADOW_KERNEL=PASS'
+          echo 'JANUS_TRUMP_SHADOW_CAPTAIN_KERNEL=PASS'
 
       - name: Fetch byte-pinned C025 runtime candidate
         run: |
@@ -56,7 +56,7 @@ jobs:
             --out runtime/JANUS_TRUMP_SHADOW_COMPUTE.json \
             --repeats 5
 
-      - name: Shadow scientific and self-use gate
+      - name: Shadow scientific self-use and proof-scope gate
         run: |
           python - <<'PY'
           import json
@@ -64,6 +64,9 @@ jobs:
           assert x['P_VS_NP']=='OPEN'
           assert x['performance_reference']['solver']=='DETERMINISTIC_EXACT_DPLL'
           assert x['performance_reference']['truth_oracle']=='EXHAUSTIVE_ENUMERATION_NOT_TIMED_AS_PERFORMANCE_BASELINE'
+          assert x['summary']['highest_proof_scope'] in {'NONE','L1_LOCAL_FINITE_INSTANCE_ONLY'}
+          assert x['summary']['universal_coverage_proved'] is False
+          assert x['summary']['uniform_total_resolver_proved'] is False
           assert x['summary']['general_acceleration_proved'] is False
           assert x['summary']['polynomial_bound_proved'] is False
           assert x['summary']['P_equals_NP_proved'] is False
@@ -72,13 +75,19 @@ jobs:
           assert x['self_use_gate']['candidate_UNSAT_may_short_circuit_baseline'] is False
           assert x['self_use_gate']['candidate_OPEN_may_short_circuit_baseline'] is False
           assert x['self_use_gate']['unlisted_workload_may_assume_speedup'] is False
+          assert x['self_use_gate']['local_fast_path_is_universal_solver_claim'] is False
+          assert x['self_use_gate']['local_fast_path_is_polynomial_bound_claim'] is False
           assert x['self_use_gate']['fallback_to_reference_dpll_required'] is True
           assert x['self_use_gate']['authority_delta']==0
           assert x['summary']['exact_terminal_equivalence_count'] >= 2
           for row in x['workloads']:
               assert row['reference_status']==row['oracle_status']
+              assert row['universal_coverage_proved'] is False
+              assert row['uniform_resolver_proved'] is False
+              assert row['worst_case_polynomial_bound_proved'] is False
               if row['candidate_status']=='SAT' and row['exact_terminal_equivalence']:
                   assert row['candidate_witness_verified'] is True
+                  assert row['proof_scope']=='L1_LOCAL_FINITE_INSTANCE_ONLY'
               if row['id'] in x['summary']['verified_sat_fast_path_workloads']:
                   assert row['repeated_resource_win'] is True
                   assert row['candidate_status']=='SAT'
@@ -87,6 +96,7 @@ jobs:
             'status':x['status'],
             'exact':x['summary']['exact_terminal_equivalence_count'],
             'wins_vs_dpll':x['summary']['repeated_resource_win_count'],
+            'highest_proof_scope':x['summary']['highest_proof_scope'],
             'sat_fast_paths':x['summary']['verified_sat_fast_path_workloads'],
             'receipt_sha256':x['receipt_sha256'],
             'P_VS_NP':x['P_VS_NP'],
