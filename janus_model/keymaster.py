@@ -191,6 +191,8 @@ def collect(config_path: Path, out_dir: Path) -> dict:
             records.append(record)
             packs.append(pack)
 
+    training_text = "".join(packs)
+    training_sha = sha256_bytes(training_text.encode("utf-8"))
     identity = {
         "schema": "janus.keymaster.learning_contribution_manifest.v1",
         "status": "READY_5_OF_5",
@@ -204,12 +206,10 @@ def collect(config_path: Path, out_dir: Path) -> dict:
         "source_execution": False,
         "cross_repository_write": False,
         "authority_delta": 0,
+        "training_pack_sha256": training_sha,
+        "training_bytes": len(training_text.encode("utf-8")),
     }
     identity["contribution_sha256"] = sha256_bytes(canonical_bytes(identity))
-    training_text = "".join(packs)
-    training_sha = sha256_bytes(training_text.encode("utf-8"))
-    identity["training_pack_sha256"] = training_sha
-    identity["training_bytes"] = len(training_text.encode("utf-8"))
     if identity["contributor_count"] != 5 or identity["training_bytes"] <= 0:
         raise RuntimeError("KEYMASTER_5_OF_5_NOT_READY")
 
