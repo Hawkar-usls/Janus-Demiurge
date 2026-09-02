@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - feature/trump-r29-objective-shadow-accelerator-v1
+      - feature/trump-captain-proof-ladder-v1
       - fix/trump-research-state-drift-r30-objective-v1
       - fix/trump-research-cas-persistence-v1
     paths:
@@ -56,7 +57,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Verify objective and research kernel
+      - name: Verify objective research kernel and Captain ladder
         run: |
           python -m py_compile janus_model/extensions/trump_research_cycle.py
           python -m unittest -v tests/test_janus_trump_research_cycle.py
@@ -66,8 +67,14 @@ jobs:
           x=json.load(open('trump/TRUMP_RESEARCH_OBJECTIVE-v1.json'))
           validate_objective(x)
           assert x['current_scientific_boundary']['P_VS_NP']=='OPEN'
+          ladder=x['algorithmic_proof_ladder']
+          assert ladder['highest_verified_level']=='L1_LOCAL_FINITE_INSTANCE_EXACTNESS_ONLY'
+          assert ladder['levels']['L1_LOCAL_FINITE_INSTANCE_EXACTNESS']['verified'] is True
+          assert ladder['levels']['L2_UNIVERSAL_3CNF_COVERAGE']['verified'] is False
+          assert ladder['levels']['L3_ONE_UNIFORM_TOTAL_TRUMP_RESOLVER']['verified'] is False
+          assert ladder['levels']['L4_WORST_CASE_POLYNOMIAL_UNIFORM_TRUMP_RESOLVER']['verified'] is False
           assert x['janus_self_compute_policy']['authority_delta']==0
-          print('JANUS_TRUMP_OBJECTIVE_KERNEL=PASS')
+          print('JANUS_TRUMP_CAPTAIN_LADDER_KERNEL=PASS')
           PY
 
       - name: Fetch objective-selected TRUMP research lineage read-only
@@ -80,7 +87,7 @@ jobs:
             runtime/trump-research/Janus-Fundamentum
           echo 'JANUS_TRUMP_FUNDAMENTUM_FETCH=PASS'
 
-      - name: Build objective-bound Wikipedia arXiv and lineage context
+      - name: Build objective-bound Wikipedia arXiv lineage and proof-ladder context
         shell: bash
         run: |
           python -m janus_model.extensions.trump_research_cycle \
@@ -95,8 +102,11 @@ jobs:
           assert x['status'] in {'READY','READY_DEGRADED','EXTERNAL_CONTEXT_UNAVAILABLE'}
           assert x['P_VS_NP']=='OPEN'
           assert x['authority']['research_context_is_truth'] is False
+          assert x['authority']['proof_ladder_state_is_theorem'] is False
           assert x['authority']['external_text_is_instruction'] is False
           assert x['authority']['may_grant_runtime_promotion'] is False
+          assert x['fundamentum']['active_contract_head_match'] is True
+          assert x['algorithmic_proof_ladder']['highest_verified_level']=='L1_LOCAL_FINITE_INSTANCE_EXACTNESS_ONLY'
           assert x['janus_self_compute_policy']['runtime_promotion_requires_exact_output_equivalence'] is True
           assert x['janus_self_compute_policy']['runtime_promotion_requires_repeated_resource_win'] is True
           print(json.dumps({
@@ -106,6 +116,7 @@ jobs:
             'active_stage':x['fundamentum']['active_stage'],
             'active_contract':x['fundamentum']['active_contract_path'],
             'next_gate':x['fundamentum']['next_gate'],
+            'highest_verified_level':x['algorithmic_proof_ladder']['highest_verified_level'],
             'arxiv_pass':x['external_context']['arxiv']['pass_count'],
             'wikipedia_pass':x['external_context']['wikipedia']['pass_count'],
             'P_VS_NP':x['P_VS_NP'],
@@ -164,6 +175,7 @@ jobs:
             'active_stage':x['fundamentum']['active_stage'],
             'active_contract_path':x['fundamentum']['active_contract_path'],
             'next_gate':x['fundamentum']['next_gate'],
+            'highest_verified_level':x['algorithmic_proof_ladder']['highest_verified_level'],
             'P_VS_NP':'OPEN',
             'authority':{'truth':False,'theorem':False,'runtime_promotion':False,'authority_delta':0},
           }
