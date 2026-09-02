@@ -5,6 +5,7 @@ import hashlib
 import importlib.util
 import json
 import statistics
+import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -23,11 +24,21 @@ def sha256_bytes(raw: bytes) -> str:
 
 
 def load_candidate(path: Path):
-    spec = importlib.util.spec_from_file_location("janus_trump_pinned_c025", path)
+    name = "janus_trump_pinned_c025"
+    spec = importlib.util.spec_from_file_location(name, path)
     if spec is None or spec.loader is None:
         raise RuntimeError("TRUMP_C025_IMPORT_SPEC_FAILED")
     mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
+    previous = sys.modules.get(name)
+    sys.modules[name] = mod
+    try:
+        spec.loader.exec_module(mod)
+    except Exception:
+        if previous is None:
+            sys.modules.pop(name, None)
+        else:
+            sys.modules[name] = previous
+        raise
     if not callable(getattr(mod, "solve_fail_closed", None)):
         raise RuntimeError("TRUMP_C025_SOLVE_ENTRYPOINT_MISSING")
     if not callable(getattr(mod, "verify_total_assignment", None)):
@@ -193,8 +204,6 @@ def run_shadow(candidate_path: Path, repeats: int = DEFAULT_REPEATS) -> dict:
 def solve_with_verified_sat_fast_path(mod, clauses, shadow_receipt: dict) -> dict:
     """Actual bounded self-compute adapter: verified SAT may return early; all else falls back."""
     eligible = set((shadow_receipt.get("summary") or {}).get("verified_sat_fast_path_workloads") or [])
-    # Generic calls are never assumed to match a benchmark ID; the candidate may still
-    # propose a witness, but we verify it before accepting. UNSAT/OPEN always falls back.
     candidate = mod.solve_fail_closed(clauses)
     sem = _candidate_semantics(mod, clauses, candidate)
     if candidate.get("status") == "SAT" and sem.get("witness_verified") is True:
