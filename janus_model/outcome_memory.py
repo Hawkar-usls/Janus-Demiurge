@@ -17,7 +17,6 @@ MAX_RECORDS = 64
 PRIOR_CAP_NLL = 0.01
 REPO_RE = re.compile(r"^Hawkar-usls/[A-Za-z0-9_.-]+$")
 HEX40_RE = re.compile(r"^[0-9a-f]{40}$")
-HEX64_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 def canonical_bytes(obj: Any) -> bytes:
@@ -216,8 +215,11 @@ def collect(self_memory_root: Path, previous: Path | None, run_id: str, max_reco
                 records_by_id[proposal_id] = record
                 new_records += 1
                 new_training_eligible += 1 if record["training_eligible"] else 0
-            elif existing["record_sha256"] != record["record_sha256"]:
-                raise RuntimeError(f"JANUS_OUTCOME_IMMUTABLE_RECEIPT_DRIFT:{proposal_id}")
+            else:
+                record["first_seen_run_id"] = existing["first_seen_run_id"]
+                record["record_sha256"] = _record_sha(record)
+                if existing["record_sha256"] != record["record_sha256"]:
+                    raise RuntimeError(f"JANUS_OUTCOME_IMMUTABLE_RECEIPT_DRIFT:{proposal_id}")
 
     ordered = list(records_by_id.values())[-max_records:]
     training_records = [r for r in ordered if r.get("training_eligible") is True]
