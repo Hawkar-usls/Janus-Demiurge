@@ -2,7 +2,7 @@ name: JANUS TRUMP Shadow Compute
 
 on:
   push:
-    branches: [main, feature/trump-r29-objective-shadow-accelerator-v1, feature/trump-captain-proof-ladder-v1]
+    branches: [main, feature/trump-r29-objective-shadow-accelerator-v1, feature/trump-captain-proof-ladder-v1, fix/trump-shadow-cas-persistence-v1]
     paths:
       - 'trump/TRUMP_RESEARCH_OBJECTIVE-v1.json'
       - 'janus_model/extensions/trump_shadow_compute.py'
@@ -28,14 +28,48 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Capture source head
+        id: source
+        shell: bash
+        run: echo "head=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Verify shadow adapter and Captain claim ceiling
+      - name: Verify shadow adapter Captain claim ceiling and CAS drift policy
         run: |
           python -m py_compile janus_model/extensions/trump_shadow_compute.py
           python -m unittest -v tests/test_janus_trump_shadow_compute.py
+          python - <<'PY'
+          def validate(paths):
+              prefixes=(
+                  'janus_model/state/',
+                  'janus_model/receipts/',
+                  'janus_model/outbox/',
+                  'janus_model/checkpoints/',
+              )
+              exact={'janus_model/extensions/TRUMP_RESEARCH_WAKE.json'}
+              bad=[p for p in paths if p and p not in exact and not p.startswith(prefixes)]
+              if bad:
+                  raise RuntimeError('TRUMP_SHADOW_NONBENIGN_MAIN_DRIFT:'+','.join(sorted(bad)))
+              return paths
+          validate(['janus_model/state/JANUS_TRUMP_RESEARCH_CONTEXT.json'])
+          validate(['janus_model/extensions/TRUMP_RESEARCH_WAKE.json'])
+          try:
+              validate(['trump/TRUMP_RESEARCH_OBJECTIVE-v1.json'])
+          except RuntimeError:
+              pass
+          else:
+              raise SystemExit('TRUMP_SHADOW_CAS_POLICY_FAILED_TO_REJECT_OBJECTIVE_DRIFT')
+          try:
+              validate(['janus_model/extensions/trump_shadow_compute.py'])
+          except RuntimeError:
+              pass
+          else:
+              raise SystemExit('TRUMP_SHADOW_CAS_POLICY_FAILED_TO_REJECT_CODE_DRIFT')
+          print('JANUS_TRUMP_SHADOW_CAS_POLICY=PASS')
+          PY
           echo 'JANUS_TRUMP_SHADOW_CAPTAIN_KERNEL=PASS'
 
       - name: Fetch byte-pinned C025 runtime candidate
@@ -110,20 +144,115 @@ jobs:
           path: runtime/JANUS_TRUMP_SHADOW_COMPUTE.json
           if-no-files-found: error
 
-      - name: Persist latest shadow receipt on main only
+      - name: Persist latest shadow receipt with bounded compare-and-swap
         if: github.ref_name == 'main'
+        shell: bash
         run: |
-          cp runtime/JANUS_TRUMP_SHADOW_COMPUTE.json janus_model/state/JANUS_TRUMP_SHADOW_COMPUTE.json
+          set -euo pipefail
           git config user.name 'janus-trump-shadow-compute'
           git config user.email 'janus-trump-shadow-compute@users.noreply.github.com'
-          git add -f janus_model/state/JANUS_TRUMP_SHADOW_COMPUTE.json
-          if git diff --cached --quiet; then
-            echo 'JANUS_TRUMP_SHADOW_NO_CHANGE'
-          else
+          SOURCE='${{ steps.source.outputs.head }}'
+
+          validate_drift_file() {
+            python - "$1" <<'PY'
+          import sys
+          from pathlib import Path
+          paths=Path(sys.argv[1]).read_text(encoding='utf-8').splitlines()
+          prefixes=(
+              'janus_model/state/',
+              'janus_model/receipts/',
+              'janus_model/outbox/',
+              'janus_model/checkpoints/',
+          )
+          exact={'janus_model/extensions/TRUMP_RESEARCH_WAKE.json'}
+          bad=[p for p in paths if p and p not in exact and not p.startswith(prefixes)]
+          if bad:
+              raise SystemExit('TRUMP_SHADOW_NONBENIGN_MAIN_DRIFT:'+','.join(sorted(bad)))
+          print('JANUS_TRUMP_SHADOW_BENIGN_DRIFT=' + ','.join(paths))
+          PY
+          }
+
+          revalidate_receipt() {
+            python - <<'PY'
+          import json
+          x=json.load(open('runtime/JANUS_TRUMP_SHADOW_COMPUTE.json'))
+          assert x['P_VS_NP']=='OPEN'
+          assert x['summary']['highest_proof_scope'] in {'NONE','L1_LOCAL_FINITE_INSTANCE_ONLY'}
+          assert x['summary']['universal_coverage_proved'] is False
+          assert x['summary']['uniform_total_resolver_proved'] is False
+          assert x['summary']['polynomial_bound_proved'] is False
+          assert x['summary']['P_equals_NP_proved'] is False
+          assert x['self_use_gate']['authority_delta']==0
+          print('JANUS_TRUMP_SHADOW_RECEIPT_REVALIDATION=PASS')
+          PY
+          }
+
+          rebuild_commit_on_current_main() {
+            git reset --hard origin/main
+            revalidate_receipt
+            cp runtime/JANUS_TRUMP_SHADOW_COMPUTE.json janus_model/state/JANUS_TRUMP_SHADOW_COMPUTE.json
+            git add -f janus_model/state/JANUS_TRUMP_SHADOW_COMPUTE.json
+            if git diff --cached --quiet; then
+              echo 'JANUS_TRUMP_SHADOW_NO_CHANGE'
+              return 2
+            fi
             git commit -m 'JANUS TRUMP: persist exact DPLL-referenced shadow receipt'
-            git push origin HEAD:main
-            echo 'JANUS_TRUMP_SHADOW_PERSIST=PASS'
+            return 0
+          }
+
+          git fetch origin main
+          CURRENT=$(git rev-parse origin/main)
+          if [ "$SOURCE" != "$CURRENT" ]; then
+            git diff --name-only "$SOURCE" "$CURRENT" > runtime/trump-shadow-preflight-drift.txt
+            validate_drift_file runtime/trump-shadow-preflight-drift.txt
           fi
+
+          set +e
+          rebuild_commit_on_current_main
+          BUILD_RC=$?
+          set -e
+          if [ "$BUILD_RC" -eq 2 ]; then
+            exit 0
+          elif [ "$BUILD_RC" -ne 0 ]; then
+            exit "$BUILD_RC"
+          fi
+
+          PUSHED=false
+          for ATTEMPT in 1 2 3; do
+            echo "JANUS_TRUMP_SHADOW_CAS_ATTEMPT=$ATTEMPT"
+            if git push origin HEAD:main; then
+              PUSHED=true
+              echo "JANUS_TRUMP_SHADOW_CAS_PUSH=PASS:$ATTEMPT"
+              break
+            fi
+
+            git fetch origin main
+            LOCAL_PARENT=$(git rev-parse HEAD^)
+            CURRENT=$(git rev-parse origin/main)
+            if [ "$LOCAL_PARENT" = "$CURRENT" ]; then
+              echo 'JANUS_TRUMP_SHADOW_PUSH_FAILED_WITHOUT_REMOTE_ADVANCE'
+              exit 24
+            fi
+            git diff --name-only "$LOCAL_PARENT" "$CURRENT" > runtime/trump-shadow-cas-drift.txt
+            validate_drift_file runtime/trump-shadow-cas-drift.txt
+
+            set +e
+            rebuild_commit_on_current_main
+            BUILD_RC=$?
+            set -e
+            if [ "$BUILD_RC" -eq 2 ]; then
+              echo 'JANUS_TRUMP_SHADOW_REMOTE_ALREADY_EQUIVALENT=PASS'
+              PUSHED=true
+              break
+            elif [ "$BUILD_RC" -ne 0 ]; then
+              exit "$BUILD_RC"
+            fi
+          done
+          if [ "$PUSHED" != true ]; then
+            echo 'JANUS_TRUMP_SHADOW_CAS_RETRY_EXHAUSTED'
+            exit 25
+          fi
+          echo 'JANUS_TRUMP_SHADOW_PERSIST=PASS'
 
       - name: Branch proof has zero persistence authority
         if: github.ref_name != 'main'
