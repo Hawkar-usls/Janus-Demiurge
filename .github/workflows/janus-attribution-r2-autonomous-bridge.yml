@@ -1,0 +1,188 @@
+name: JANUS Attribution R2 Autonomous Bridge
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/janus-attribution-r2-autonomous-bridge.yml'
+      - '.github/workflows/janus-keymaster-attribution.yml'
+      - '.github/workflows/janus-keymaster-attribution-r2.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '53 */6 * * *'
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: janus-attribution-r2-autonomous-bridge
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout authoritative brain
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Synchronize main
+        run: |
+          git fetch origin main
+          git switch -C main origin/main
+
+      - name: Verify bridge authority ceiling
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('.github/workflows/janus-attribution-r2-autonomous-bridge.yml').read_text(encoding='utf-8')
+          required=[
+              'contents: read',
+              'actions: write',
+              'BRIDGE_DOES_NOT_GENERATE_EVIDENCE',
+              'MISSING_EVIDENCE_IS_NOT_NEGATIVE_EVIDENCE',
+          ]
+          for token in required:
+              if token not in p:
+                  raise SystemExit(f'JANUS_BRIDGE_FIREWALL_MISSING:{token}')
+          forbidden=['contents: write','pull-requests: write','issues: write','packages: write']
+          for token in forbidden:
+              if token in p:
+                  raise SystemExit(f'JANUS_BRIDGE_EXCESS_AUTHORITY:{token}')
+          print('JANUS_ATTRIBUTION_R2_BRIDGE_AUTHORITY_CEILING=PASS')
+          PY
+          echo 'BRIDGE_DOES_NOT_GENERATE_EVIDENCE'
+          echo 'BRIDGE_ONLY_DISPATCHES_EXISTING_VERIFIERS'
+          echo 'MISSING_EVIDENCE_IS_NOT_NEGATIVE_EVIDENCE'
+
+      - name: Reconcile current checkpoint through Attribution and R2
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          current_checkpoint() {
+            git fetch -q origin main
+            git show origin/main:janus_model/state/JANUS_MODEL_STATE.json | \
+              python -c "import json,sys; print(json.load(sys.stdin)['checkpoint_sha256'])"
+          }
+
+          latest_attribution_checkpoint() {
+            if git cat-file -e origin/main:janus_model/state/KEYMASTER_ATTRIBUTION_LATEST.json 2>/dev/null; then
+              git show origin/main:janus_model/state/KEYMASTER_ATTRIBUTION_LATEST.json | \
+                python -c "import json,sys; print(json.load(sys.stdin).get('checkpoint_sha256') or '')"
+            else
+              printf '\n'
+            fi
+          }
+
+          has_r2_receipt() {
+            local cp="$1"
+            git cat-file -e "origin/main:janus_model/receipts/keymaster-attribution-r2-checkpoint-${cp}.json" 2>/dev/null
+          }
+
+          latest_r2_checkpoint() {
+            if git cat-file -e origin/main:janus_model/state/KEYMASTER_ATTRIBUTION_R2_LATEST.json 2>/dev/null; then
+              git show origin/main:janus_model/state/KEYMASTER_ATTRIBUTION_R2_LATEST.json | \
+                python -c "import json,sys; print(json.load(sys.stdin).get('latest_checkpoint_sha256') or '')"
+            else
+              printf '\n'
+            fi
+          }
+
+          dispatch_and_wait() {
+            local workflow="$1"
+            local label="$2"
+            local before
+            before=$(gh run list --workflow "$workflow" --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // 0' 2>/dev/null || echo 0)
+            gh workflow run "$workflow" --ref main
+            local run_id=''
+            for _ in $(seq 1 30); do
+              sleep 2
+              run_id=$(gh run list --workflow "$workflow" --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // 0' 2>/dev/null || echo 0)
+              if [ -n "$run_id" ] && [ "$run_id" != 0 ] && [ "$run_id" != "$before" ]; then
+                break
+              fi
+            done
+            if [ -z "$run_id" ] || [ "$run_id" = 0 ] || [ "$run_id" = "$before" ]; then
+              echo "JANUS_BRIDGE_${label}_DISPATCH_NOT_OBSERVED"
+              return 21
+            fi
+            echo "JANUS_BRIDGE_${label}_RUN_ID=$run_id"
+            if ! gh run watch "$run_id" --exit-status; then
+              echo "JANUS_BRIDGE_${label}_RUN_FAILED=$run_id"
+              return 22
+            fi
+            echo "JANUS_BRIDGE_${label}_RUN_SUCCESS=$run_id"
+          }
+
+          for ROUND in 1 2 3; do
+            git fetch -q origin main
+            CP=$(current_checkpoint)
+            ATTR=$(latest_attribution_checkpoint)
+            echo "JANUS_BRIDGE_ROUND=$ROUND:CHECKPOINT=$CP:ATTRIBUTION=$ATTR"
+
+            if [ "$ATTR" != "$CP" ]; then
+              echo 'JANUS_BRIDGE_ATTRIBUTION_RECONCILE=REQUIRED'
+              dispatch_and_wait janus-keymaster-attribution.yml ATTRIBUTION
+              git fetch -q origin main
+              AFTER_CP=$(current_checkpoint)
+              AFTER_ATTR=$(latest_attribution_checkpoint)
+              if [ "$AFTER_CP" != "$CP" ]; then
+                echo "JANUS_BRIDGE_CHECKPOINT_ADVANCED_DURING_ATTRIBUTION=$CP:$AFTER_CP"
+                continue
+              fi
+              if [ "$AFTER_ATTR" != "$CP" ]; then
+                echo "JANUS_BRIDGE_WAITING_MATCHING_ATTRIBUTION=$CP:$AFTER_ATTR"
+                echo 'MISSING_EVIDENCE_IS_NOT_NEGATIVE_EVIDENCE'
+                continue
+              fi
+            fi
+
+            git fetch -q origin main
+            CP=$(current_checkpoint)
+            ATTR=$(latest_attribution_checkpoint)
+            if [ "$ATTR" != "$CP" ]; then
+              echo "JANUS_BRIDGE_ATTRIBUTION_DRIFT=$CP:$ATTR"
+              continue
+            fi
+
+            if has_r2_receipt "$CP"; then
+              R2=$(latest_r2_checkpoint)
+              if [ "$R2" = "$CP" ]; then
+                echo "JANUS_BRIDGE_R2_ALREADY_MATCHING=$CP"
+                echo 'JANUS_ATTRIBUTION_R2_RECONCILED=PASS'
+                exit 0
+              fi
+            fi
+
+            echo 'JANUS_BRIDGE_R2_RECONCILE=REQUIRED'
+            dispatch_and_wait janus-keymaster-attribution-r2.yml R2
+            git fetch -q origin main
+            AFTER_CP=$(current_checkpoint)
+            if [ "$AFTER_CP" != "$CP" ]; then
+              echo "JANUS_BRIDGE_CHECKPOINT_ADVANCED_DURING_R2=$CP:$AFTER_CP"
+              continue
+            fi
+            if has_r2_receipt "$CP"; then
+              R2=$(latest_r2_checkpoint)
+              if [ "$R2" = "$CP" ]; then
+                echo "JANUS_BRIDGE_R2_MATCHING=$CP"
+                echo 'JANUS_ATTRIBUTION_R2_RECONCILED=PASS'
+                exit 0
+              fi
+            fi
+
+            echo "JANUS_BRIDGE_WAITING_MATCHING_R2=$CP"
+            echo 'MISSING_EVIDENCE_IS_NOT_NEGATIVE_EVIDENCE'
+            exit 0
+          done
+
+          echo 'JANUS_BRIDGE_RETRY_BOUND_REACHED_WITHOUT_MATCH'
+          echo 'MISSING_EVIDENCE_IS_NOT_NEGATIVE_EVIDENCE'
+          exit 0
