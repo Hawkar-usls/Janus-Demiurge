@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from janus_model.outcome_memory import _record_sha, _validate_previous, validate_pair
+from janus_model.outcome_memory import _record_sha, _validate_previous, sealed_proposal_bytes, validate_pair
 
 
 class JanusOutcomeMemoryTests(unittest.TestCase):
@@ -28,7 +28,7 @@ class JanusOutcomeMemoryTests(unittest.TestCase):
         }
         proposal_path = root / "proposal.json"
         proposal_path.write_text(json.dumps(proposal, sort_keys=True) + "\n", encoding="utf-8")
-        proposal_sha = hashlib.sha256(proposal_path.read_bytes()).hexdigest()
+        proposal_sha = hashlib.sha256(sealed_proposal_bytes(proposal)).hexdigest()
         receipt = {
             "schema": "janus.module_actuator.receipt.v1",
             "proposal_id": proposal["proposal_id"],
