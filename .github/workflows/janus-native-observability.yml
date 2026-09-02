@@ -17,6 +17,7 @@ concurrency:
 
 permissions:
   contents: write
+  actions: read
 
 jobs:
   publish:
@@ -45,6 +46,65 @@ jobs:
       - name: Install checkpoint reader
         run: python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
 
+      - name: Recover current native decision from successful run evidence
+        if: github.event_name == 'workflow_run'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NATIVE_RUN_ID: ${{ github.event.workflow_run.id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/native-run
+          gh run download "$NATIVE_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "janus-native-model-$NATIVE_RUN_ID" \
+            --dir runtime/native-run
+          ARTIFACT_DECISION=$(find runtime/native-run -type f -name 'native-repair-decision.json' -print -quit)
+          if [ -z "$ARTIFACT_DECISION" ]; then
+            echo 'JANUS_NATIVE_DECISION_ARTIFACT=ABSENT_FOR_THIS_MODE'
+            exit 0
+          fi
+          export ARTIFACT_DECISION
+          python - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+
+          decision_path=Path(os.environ['ARTIFACT_DECISION'])
+          decision=json.loads(decision_path.read_text(encoding='utf-8'))
+          state=json.loads(Path('janus_model/state/JANUS_MODEL_STATE.json').read_text(encoding='utf-8'))
+          checkpoint=Path('janus_model/checkpoints/promoted.pt')
+          checkpoint_sha=hashlib.sha256(checkpoint.read_bytes()).hexdigest()
+
+          if state.get('checkpoint_sha256') != checkpoint_sha:
+              raise SystemExit('JANUS_DECISION_HANDOFF_STATE_CHECKPOINT_MISMATCH')
+          if decision.get('schema') != 'janus.native_repair_decision.v1':
+              raise SystemExit('JANUS_DECISION_HANDOFF_SCHEMA_REJECTED')
+          if decision.get('native_model_decision') is not True:
+              raise SystemExit('JANUS_DECISION_HANDOFF_NATIVE_FLAG_REJECTED')
+          if decision.get('checkpoint_sha256') != checkpoint_sha:
+              print('JANUS_NATIVE_DECISION_HANDOFF=STALE_CHECKPOINT_IGNORED')
+              raise SystemExit(0)
+          if decision.get('status') not in {'NO_ACTION','ACTION_SELECTED_AWAITING_TARGET_VERIFY'}:
+              raise SystemExit('JANUS_DECISION_HANDOFF_STATUS_REJECTED')
+          decision_id=decision.get('decision_id')
+          if not isinstance(decision_id,str) or not decision_id.startswith('jnd-'):
+              raise SystemExit('JANUS_DECISION_HANDOFF_ID_REJECTED')
+          selected=decision.get('selected') or {}
+          candidate_id=selected.get('candidate_id')
+          if not isinstance(candidate_id,str) or not candidate_id:
+              raise SystemExit('JANUS_DECISION_HANDOFF_SELECTED_REJECTED')
+          authority=decision.get('authority') or {}
+          for key in ('truth','evidence','direct_repository_mutation','autonomous_merge'):
+              if authority.get(key) is not False:
+                  raise SystemExit(f'JANUS_DECISION_HANDOFF_AUTHORITY_REJECTED:{key}')
+          if candidate_id != 'NO_ACTION' and authority.get('target_local_verifier_required') is not True:
+              raise SystemExit('JANUS_DECISION_HANDOFF_TARGET_VERIFY_REQUIRED')
+
+          out=Path('runtime/accepted-native-decision.json')
+          out.write_text(json.dumps(decision,ensure_ascii=False,indent=2,sort_keys=True),encoding='utf-8')
+          print(f'JANUS_NATIVE_DECISION_HANDOFF=ACCEPTED:{decision_id}:{candidate_id}')
+          PY
+
       - name: Export checkpoint-bound telemetry
         run: |
           set -euo pipefail
@@ -55,7 +115,7 @@ jobs:
             --state janus_model/state/JANUS_MODEL_STATE.json \
             --decision-dir janus_model/outbox/decisions \
             --telemetry-out janus_model/state/JANUS_WEIGHT_TELEMETRY.json \
-            --decision-out janus_model/state/JANUS_LATEST_DECISION.json
+            --decision-out runtime/JANUS_LATEST_DECISION_FROM_LINEAGE.json
           python -m json.tool janus_model/state/JANUS_WEIGHT_TELEMETRY.json >/dev/null
           python - <<'PY'
           import hashlib,json
@@ -70,6 +130,34 @@ jobs:
           print('JANUS_NATIVE_WEIGHT_TELEMETRY_BINDING=PASS')
           PY
 
+      - name: Select freshest checkpoint-bound decision without self-authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f runtime/accepted-native-decision.json ]; then
+            cp runtime/accepted-native-decision.json janus_model/state/JANUS_LATEST_DECISION.json
+            echo 'JANUS_LATEST_DECISION_SOURCE=CURRENT_SUCCESSFUL_NATIVE_RUN_ARTIFACT'
+          elif [ -f runtime/JANUS_LATEST_DECISION_FROM_LINEAGE.json ]; then
+            cp runtime/JANUS_LATEST_DECISION_FROM_LINEAGE.json janus_model/state/JANUS_LATEST_DECISION.json
+            echo 'JANUS_LATEST_DECISION_SOURCE=PERSISTED_CHECKPOINT_LINEAGE'
+          else
+            echo 'JANUS_LATEST_DECISION_SOURCE=NO_MATCHING_DECISION'
+          fi
+          if [ -f janus_model/state/JANUS_LATEST_DECISION.json ]; then
+            python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          d=json.loads(Path('janus_model/state/JANUS_LATEST_DECISION.json').read_text(encoding='utf-8'))
+          h=hashlib.sha256(Path('janus_model/checkpoints/promoted.pt').read_bytes()).hexdigest()
+          if d.get('checkpoint_sha256') != h:
+              raise SystemExit('JANUS_LATEST_DECISION_CHECKPOINT_BINDING_FAIL')
+          a=d.get('authority') or {}
+          if any(a.get(k) is not False for k in ('truth','evidence','direct_repository_mutation','autonomous_merge')):
+              raise SystemExit('JANUS_LATEST_DECISION_AUTHORITY_FIREWALL_FAIL')
+          print('JANUS_LATEST_DECISION_CHECKPOINT_BINDING=PASS')
+          PY
+          fi
+
       - name: Persist telemetry only when changed
         run: |
           set -euo pipefail
@@ -82,7 +170,8 @@ jobs:
           if git diff --cached --quiet; then
             echo 'JANUS_NATIVE_OBSERVABILITY=NO_CHANGE'
           else
-            git commit -m "JANUS native observability: publish checkpoint telemetry"
+            git commit -m "JANUS native observability: publish checkpoint telemetry and current decision"
+            git pull --rebase origin main
             git push origin HEAD:main
             echo 'JANUS_NATIVE_OBSERVABILITY=PASS'
           fi
