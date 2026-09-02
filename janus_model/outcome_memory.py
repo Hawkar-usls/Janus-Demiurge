@@ -37,6 +37,29 @@ def _record_sha(record: dict) -> str:
     return sha256_bytes(canonical_bytes(body))
 
 
+def _git(checkout: Path, *args: str, check: bool = True) -> str:
+    proc = subprocess.run(
+        ["git", "-C", str(checkout), *args],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    if check and proc.returncode != 0:
+        raise RuntimeError(f"JANUS_OUTCOME_GIT_REJECTED:{args[0] if args else 'UNKNOWN'}")
+    return proc.stdout.strip()
+
+
+def _git_bytes(checkout: Path, spec: str) -> bytes | None:
+    proc = subprocess.run(
+        ["git", "-C", str(checkout), "show", spec],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+    )
+    if proc.returncode != 0:
+        return None
+    return proc.stdout
+
+
 def _validate_previous(path: Path | None) -> list[dict]:
     if path is None or not path.is_file():
         return []
@@ -81,7 +104,101 @@ def _load_json(path: Path) -> dict:
     return obj
 
 
-def validate_pair(proposal_path: Path, receipt_path: Path, branch_head: str, run_id: str) -> dict:
+def _validate_checkout_lineage(checkout: Path, proposal: dict, receipt: dict, branch_head: str) -> dict:
+    proposal_id = proposal["proposal_id"]
+    base_commit = (proposal.get("target") or {}).get("expected_target_commit")
+    patch_commit = receipt.get("patch_commit")
+    if not isinstance(base_commit, str) or not HEX40_RE.fullmatch(base_commit):
+        raise RuntimeError(f"JANUS_OUTCOME_LINEAGE_BASE_REJECTED:{proposal_id}")
+    if not isinstance(patch_commit, str) or not HEX40_RE.fullmatch(patch_commit):
+        raise RuntimeError(f"JANUS_OUTCOME_LINEAGE_PATCH_REJECTED:{proposal_id}")
+    if not HEX40_RE.fullmatch(branch_head):
+        raise RuntimeError(f"JANUS_OUTCOME_LINEAGE_HEAD_REJECTED:{proposal_id}")
+
+    patch_parents = _git(checkout, "show", "-s", "--format=%P", patch_commit).split()
+    if patch_parents != [base_commit]:
+        raise RuntimeError(f"JANUS_OUTCOME_PATCH_PARENT_REJECTED:{proposal_id}")
+    head_parents = _git(checkout, "show", "-s", "--format=%P", branch_head).split()
+    if head_parents != [patch_commit]:
+        raise RuntimeError(f"JANUS_OUTCOME_RECEIPT_PARENT_REJECTED:{proposal_id}")
+
+    proposal_files = proposal.get("files")
+    if not isinstance(proposal_files, list) or not proposal_files:
+        raise RuntimeError(f"JANUS_OUTCOME_PROPOSAL_FILES_REJECTED:{proposal_id}")
+    expected_paths: list[str] = []
+    for row in proposal_files:
+        if not isinstance(row, dict):
+            raise RuntimeError(f"JANUS_OUTCOME_PROPOSAL_FILE_OBJECT_REJECTED:{proposal_id}")
+        path = row.get("path")
+        content = row.get("content_utf8")
+        if not isinstance(path, str) or not path or path.startswith("/") or ".." in Path(path).parts:
+            raise RuntimeError(f"JANUS_OUTCOME_PROPOSAL_PATH_REJECTED:{proposal_id}")
+        if not isinstance(content, str):
+            raise RuntimeError(f"JANUS_OUTCOME_PROPOSAL_CONTENT_REJECTED:{proposal_id}:{path}")
+        expected_paths.append(path)
+        patched = _git_bytes(checkout, f"{patch_commit}:{path}")
+        if patched is None or patched != content.encode("utf-8"):
+            raise RuntimeError(f"JANUS_OUTCOME_PATCH_CONTENT_REJECTED:{proposal_id}:{path}")
+        expected_before = row.get("expected_before_sha256")
+        before = _git_bytes(checkout, f"{base_commit}:{path}")
+        if expected_before is None:
+            if before is not None:
+                raise RuntimeError(f"JANUS_OUTCOME_UNEXPECTED_PREEXISTING_PATH:{proposal_id}:{path}")
+        else:
+            if not isinstance(expected_before, str) or len(expected_before) != 64:
+                raise RuntimeError(f"JANUS_OUTCOME_BEFORE_HASH_SHAPE_REJECTED:{proposal_id}:{path}")
+            if before is None or sha256_bytes(before) != expected_before:
+                raise RuntimeError(f"JANUS_OUTCOME_BEFORE_HASH_REJECTED:{proposal_id}:{path}")
+
+    if len(set(expected_paths)) != len(expected_paths):
+        raise RuntimeError(f"JANUS_OUTCOME_DUPLICATE_PROPOSAL_PATH_REJECTED:{proposal_id}")
+    changed_paths = [
+        x for x in _git(checkout, "diff-tree", "--no-commit-id", "--name-only", "-r", patch_commit).splitlines() if x
+    ]
+    if sorted(changed_paths) != sorted(expected_paths):
+        raise RuntimeError(f"JANUS_OUTCOME_PATCH_DIFF_SCOPE_REJECTED:{proposal_id}")
+
+    raw = _git(checkout, "diff-tree", "--no-commit-id", "--raw", "-r", patch_commit)
+    for line in raw.splitlines():
+        if not line:
+            continue
+        meta = line.split("\t", 1)[0].split()
+        if len(meta) >= 2 and (meta[0].lstrip(":") == "160000" or meta[1] == "160000"):
+            raise RuntimeError(f"JANUS_OUTCOME_GITLINK_REJECTED:{proposal_id}")
+
+    receipt_path = f".janus/receipts/{proposal_id}.json"
+    receipt_changed = [
+        x for x in _git(checkout, "diff-tree", "--no-commit-id", "--name-only", "-r", branch_head).splitlines() if x
+    ]
+    if receipt_changed != [receipt_path]:
+        raise RuntimeError(f"JANUS_OUTCOME_RECEIPT_DIFF_SCOPE_REJECTED:{proposal_id}")
+    head_receipt = _git_bytes(checkout, f"{branch_head}:{receipt_path}")
+    if head_receipt is None:
+        raise RuntimeError(f"JANUS_OUTCOME_RECEIPT_TREE_MISSING:{proposal_id}")
+    try:
+        head_receipt_obj = json.loads(head_receipt)
+    except Exception as exc:
+        raise RuntimeError(f"JANUS_OUTCOME_RECEIPT_TREE_JSON_REJECTED:{proposal_id}") from exc
+    if canonical_bytes(head_receipt_obj) != canonical_bytes(receipt):
+        raise RuntimeError(f"JANUS_OUTCOME_RECEIPT_TREE_CONTENT_REJECTED:{proposal_id}")
+
+    return {
+        "patch_diff_exact": True,
+        "patch_parent_exact": True,
+        "receipt_parent_exact": True,
+        "receipt_diff_exact": True,
+        "gitlink_count": 0,
+        "proposal_file_count": len(expected_paths),
+    }
+
+
+def validate_pair(
+    proposal_path: Path,
+    receipt_path: Path,
+    branch_head: str,
+    run_id: str,
+    checkout: Path | None = None,
+) -> dict:
     proposal = json.loads(proposal_path.read_text(encoding="utf-8"))
     receipt_raw = receipt_path.read_bytes()
     receipt = json.loads(receipt_raw)
@@ -128,8 +245,12 @@ def validate_pair(proposal_path: Path, receipt_path: Path, branch_head: str, run
     if not HEX40_RE.fullmatch(branch_head):
         raise RuntimeError(f"JANUS_OUTCOME_BRANCH_HEAD_REJECTED:{proposal_id}")
 
+    lineage = None
+    if checkout is not None:
+        lineage = _validate_checkout_lineage(checkout, proposal, receipt, branch_head)
+
     native_selected = proposal.get("native_model_selected") is True
-    training_eligible = native_selected and proposal.get("proposal_class") != "BOOTSTRAP_ACTUATOR_CANARY"
+    training_eligible = native_selected and proposal.get("proposal_class") != "BOOTSTRAP_ACTUATOR_CANARY" and lineage is not None
     record = {
         "outcome_id": "jout-" + sha256_bytes(canonical_bytes({
             "proposal_sha256": proposal_seal_sha,
@@ -152,6 +273,8 @@ def validate_pair(proposal_path: Path, receipt_path: Path, branch_head: str, run
         "main_mutated": False,
         "native_model_selected": native_selected,
         "proposal_class": proposal.get("proposal_class"),
+        "lineage_verified": lineage is not None,
+        "lineage": lineage,
         "training_eligible": training_eligible,
         "positive_feedback": training_eligible,
         "first_seen_run_id": run_id,
@@ -166,14 +289,19 @@ def _clone_exact_branch(repository: str, branch: str, destination: Path) -> tupl
     if destination.exists():
         shutil.rmtree(destination)
     cmd = [
-        "git", "clone", "--quiet", "--depth", "1", "--single-branch", "--branch", branch,
+        "git", "clone", "--quiet", "--depth", "4", "--single-branch", "--branch", branch,
         f"https://github.com/{repository}.git", str(destination),
     ]
     proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     if proc.returncode != 0:
         return False, None
-    head = subprocess.check_output(["git", "-C", str(destination), "rev-parse", "HEAD"], text=True).strip()
+    head = _git(destination, "rev-parse", "HEAD")
     return True, head
+
+
+def _reason_code(exc: Exception) -> str:
+    text = str(exc).split(":", 1)[0]
+    return text if text.startswith("JANUS_OUTCOME_") else "JANUS_OUTCOME_PROVENANCE_REJECTED"
 
 
 def collect(self_memory_root: Path, previous: Path | None, run_id: str, max_records: int = MAX_RECORDS) -> tuple[dict, dict]:
@@ -186,6 +314,7 @@ def collect(self_memory_root: Path, previous: Path | None, run_id: str, max_reco
     records_by_id = {r["proposal_id"]: r for r in old_records}
     observed = 0
     unavailable = 0
+    rejected_provenance: list[dict] = []
     new_records = 0
     new_training_eligible = 0
 
@@ -212,7 +341,12 @@ def collect(self_memory_root: Path, previous: Path | None, run_id: str, max_reco
             if not receipt_path.is_file():
                 unavailable += 1
                 continue
-            record = validate_pair(proposal_path, receipt_path, head, run_id)
+            try:
+                record = validate_pair(proposal_path, receipt_path, head, run_id, checkout=checkout)
+            except RuntimeError as exc:
+                records_by_id.pop(proposal_id, None)
+                rejected_provenance.append({"proposal_id": proposal_id, "reason": _reason_code(exc)})
+                continue
             observed += 1
             existing = records_by_id.get(proposal_id)
             if existing is None:
@@ -232,8 +366,12 @@ def collect(self_memory_root: Path, previous: Path | None, run_id: str, max_reco
         "status": "VERIFIED_OUTCOME_MEMORY_READY",
         "policy": {
             "silence_is_negative_evidence": False,
+            "rejected_provenance_is_negative_evidence": False,
             "only_target_local_verify_pass_is_positive_feedback": True,
             "native_model_selected_required_for_training_prior": True,
+            "clean_patch_lineage_required_for_training_prior": True,
+            "patch_diff_must_equal_proposal_files": True,
+            "receipt_commit_must_descend_exactly_from_patch": True,
             "feedback_grants_mutation_authority": False,
             "historical_verify_pass_is_world_truth": False,
             "target_local_reverification_still_required": True,
@@ -250,6 +388,9 @@ def collect(self_memory_root: Path, previous: Path | None, run_id: str, max_reco
         "run_id": run_id,
         "verified_receipts_observed": observed,
         "unavailable_or_not_yet_verified": unavailable,
+        "rejected_provenance_count": len(rejected_provenance),
+        "rejected_provenance": rejected_provenance[:64],
+        "rejected_provenance_is_negative_evidence": False,
         "new_records": new_records,
         "new_training_eligible": new_training_eligible,
         "total_records": len(ordered),
