@@ -31,6 +31,10 @@ EXCLUDED_PARTS = {
 PRIORITY_NAMES = {
     "README.md", "PROJECT_STATUS.json", "AGENTS.md", "CONTRACT.md", "PROTOCOL.md",
 }
+SUPPORTED_CONFIGS = {
+    "janus.keymaster.primary_learning_contributors.v1": 5,
+    "janus.keymaster.primary_learning_contributors.v2": 8,
+}
 
 
 def canonical_bytes(obj: Any) -> bytes:
@@ -68,7 +72,8 @@ def _score_path(rel: str) -> tuple[int, str]:
     for word in (
         "readme", "status", "manifest", "protocol", "contract", "architecture",
         "keymaster", "topa", "spider", "lapis", "observer", "io", "cat", "train",
-        "learn", "verify", "test", "model", "engine",
+        "learn", "verify", "test", "model", "engine", "fundamentum", "proof",
+        "demi", "arbiter", "aura", "oracle", "hypothesis", "evidence",
     ):
         if word in low:
             score += 10
@@ -118,6 +123,7 @@ def collect_repository(contributor: dict, max_bytes: int, work_root: Path) -> tu
             f"repository={json.dumps(repository)} head={json.dumps(head)} "
             f"path={json.dumps(rel)} sha256={json.dumps(file_sha)} "
             f"provenance={json.dumps(contributor['provenance'])} "
+            f"cohort={json.dumps(contributor.get('cohort', 'LEGACY_5'))} "
             f"authority=\"TRAINING_MATERIAL_REQUIRES_VERIFICATION\">\n"
             f"{text}\n</JANUS_KEYMASTER_RECORD>\n"
         ).encode("utf-8")
@@ -141,31 +147,53 @@ def collect_repository(contributor: dict, max_bytes: int, work_root: Path) -> tu
     if used <= 0 or not selected:
         raise RuntimeError(f"KEYMASTER_ZERO_BYTE_CONTRIBUTOR:{repository}")
 
+    pack = "".join(chunks)
     identity = {
         "id": contributor["id"],
         "repository": repository,
         "ref": ref,
         "head_sha": head,
         "provenance": contributor["provenance"],
+        "cohort": contributor.get("cohort", "LEGACY_5"),
         "selected_files": selected,
         "selected_file_count": len(selected),
         "contributed_bytes": used,
+        "training_pack_sha256": sha256_bytes(pack.encode("utf-8")),
     }
     identity["contribution_sha256"] = sha256_bytes(canonical_bytes(identity))
-    return identity, "".join(chunks)
+    return identity, pack
 
 
-def collect(config_path: Path, out_dir: Path) -> dict:
-    config = json.loads(config_path.read_text(encoding="utf-8"))
-    if config.get("schema") != "janus.keymaster.primary_learning_contributors.v1":
+def _validate_config(config: dict) -> tuple[list[dict], int]:
+    schema = config.get("schema")
+    required_count = SUPPORTED_CONFIGS.get(schema)
+    if required_count is None:
         raise RuntimeError("KEYMASTER_CONFIG_SCHEMA_REJECTED")
     contributors = config.get("contributors")
     expected_count = int(config.get("contributor_count", -1))
-    if not isinstance(contributors, list) or len(contributors) != expected_count or expected_count != 5:
-        raise RuntimeError("KEYMASTER_REQUIRED_5_OF_5_CONFIG_REJECTED")
-    repositories = [row.get("repository") for row in contributors if isinstance(row, dict)]
-    if len(set(repositories)) != 5 or any(not isinstance(x, str) or not x for x in repositories):
-        raise RuntimeError("KEYMASTER_CONTRIBUTOR_REPOSITORIES_REJECTED")
+    if not isinstance(contributors, list) or len(contributors) != expected_count or expected_count != required_count:
+        raise RuntimeError(f"KEYMASTER_REQUIRED_{required_count}_OF_{required_count}_CONFIG_REJECTED")
+    if any(not isinstance(row, dict) for row in contributors):
+        raise RuntimeError("KEYMASTER_CONTRIBUTOR_ROW_REJECTED")
+    repositories = [row.get("repository") for row in contributors]
+    ids = [row.get("id") for row in contributors]
+    if len(set(repositories)) != required_count or len(set(ids)) != required_count:
+        raise RuntimeError("KEYMASTER_CONTRIBUTOR_IDENTITY_DUPLICATE")
+    if any(not isinstance(x, str) or not x for x in repositories + ids):
+        raise RuntimeError("KEYMASTER_CONTRIBUTOR_IDENTITIES_REJECTED")
+
+    if schema.endswith(".v2"):
+        cohorts = [row.get("cohort") for row in contributors]
+        if cohorts.count("CORE_5") != 5 or cohorts.count("EXTENDED_3") != 3:
+            raise RuntimeError("KEYMASTER_V2_COHORT_PARTITION_REJECTED")
+        attribution = config.get("attribution") or {}
+        if attribution.get("enabled") is not True:
+            raise RuntimeError("KEYMASTER_ATTRIBUTION_MUST_BE_ENABLED")
+        if attribution.get("single_run_establishes_causality") is not False:
+            raise RuntimeError("KEYMASTER_ATTRIBUTION_CAUSALITY_FIREWALL_REJECTED")
+        if attribution.get("automatic_contributor_removal") is not False:
+            raise RuntimeError("KEYMASTER_ATTRIBUTION_REMOVAL_FIREWALL_REJECTED")
+
     learning = config.get("learning") or {}
     firewalls = config.get("firewalls") or {}
     if learning.get("lane") != "TRAIN_ONLY" or learning.get("adaptive_holdout_inclusion") is not False:
@@ -176,8 +204,16 @@ def collect(config_path: Path, out_dir: Path) -> dict:
         raise RuntimeError("KEYMASTER_AUTHORITY_FIREWALL_REJECTED")
     if firewalls.get("source_execution") is not False:
         raise RuntimeError("KEYMASTER_SOURCE_EXECUTION_FIREWALL_REJECTED")
+    return contributors, required_count
+
+
+def collect(config_path: Path, out_dir: Path) -> dict:
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    contributors, required_count = _validate_config(config)
 
     out_dir.mkdir(parents=True, exist_ok=True)
+    packs_dir = out_dir / "packs"
+    packs_dir.mkdir(parents=True, exist_ok=True)
     max_bytes = int(config.get("max_bytes_per_contributor", 120000))
     if not 1000 <= max_bytes <= 250000:
         raise RuntimeError("KEYMASTER_MAX_BYTES_REJECTED")
@@ -190,12 +226,16 @@ def collect(config_path: Path, out_dir: Path) -> dict:
             record, pack = collect_repository(contributor, max_bytes, root)
             records.append(record)
             packs.append(pack)
+            (packs_dir / f"{contributor['id']}.txt").write_text(pack, encoding="utf-8")
 
     training_text = "".join(packs)
     training_sha = sha256_bytes(training_text.encode("utf-8"))
+    version = "v2" if required_count == 8 else "v1"
     identity = {
-        "schema": "janus.keymaster.learning_contribution_manifest.v1",
-        "status": "READY_5_OF_5",
+        "schema": f"janus.keymaster.learning_contribution_manifest.{version}",
+        "config_schema": config["schema"],
+        "status": f"READY_{required_count}_OF_{required_count}",
+        "required_contributor_count": required_count,
         "contributor_count": len(records),
         "contributors": records,
         "training_only": True,
@@ -208,10 +248,12 @@ def collect(config_path: Path, out_dir: Path) -> dict:
         "authority_delta": 0,
         "training_pack_sha256": training_sha,
         "training_bytes": len(training_text.encode("utf-8")),
+        "individual_pack_files_emitted": True,
+        "attribution_enabled": bool((config.get("attribution") or {}).get("enabled", False)),
     }
     identity["contribution_sha256"] = sha256_bytes(canonical_bytes(identity))
-    if identity["contributor_count"] != 5 or identity["training_bytes"] <= 0:
-        raise RuntimeError("KEYMASTER_5_OF_5_NOT_READY")
+    if identity["contributor_count"] != required_count or identity["training_bytes"] <= 0:
+        raise RuntimeError(f"KEYMASTER_{required_count}_OF_{required_count}_NOT_READY")
 
     (out_dir / "training.txt").write_text(training_text, encoding="utf-8")
     (out_dir / "manifest.json").write_text(
@@ -240,6 +282,7 @@ def main() -> None:
                 "head_sha": row["head_sha"],
                 "contributed_bytes": row["contributed_bytes"],
                 "provenance": row["provenance"],
+                "cohort": row["cohort"],
             }
             for row in result["contributors"]
         ],
