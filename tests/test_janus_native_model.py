@@ -7,7 +7,7 @@ from pathlib import Path
 import torch
 
 from janus_model.cli import _augment_prompt
-from janus_model.decision import decide
+from janus_model.decision import _verified_outcome_prior, decide
 from janus_model.model import ByteTokenizer, JanusModelConfig, JanusTinyTransformer, parameter_count
 from janus_model.organs import build_bicameral_context
 from janus_model.reflection import build_reflection
@@ -153,6 +153,45 @@ class JanusNativeModelTests(unittest.TestCase):
             self.assertTrue(decision["native_model_decision"])
             self.assertFalse(decision["authority"]["direct_repository_mutation"])
             self.assertFalse(decision["authority"]["autonomous_merge"])
+
+    def test_verified_outcome_prior_is_training_eligible_only_and_hard_capped(self):
+        candidate = {
+            "candidate_id": "HRAIN_PROTECT_MODULE_AUTHORITY_CONTRACT",
+            "target": {"repository": "Hawkar-usls/Hrain"},
+            "verification_profile": "INTERHEMISPHERE_BRIDGE_TEST",
+        }
+        records = []
+        for i in range(9):
+            records.append({
+                "proposal_id": f"verified-{i}",
+                "training_eligible": True,
+                "target_repository": "Hawkar-usls/Hrain",
+                "verification_profile": "INTERHEMISPHERE_BRIDGE_TEST",
+            })
+        records.extend([
+            {
+                "proposal_id": "canary-not-training",
+                "training_eligible": False,
+                "target_repository": "Hawkar-usls/Hrain",
+                "verification_profile": "INTERHEMISPHERE_BRIDGE_TEST",
+            },
+            {
+                "proposal_id": "other-verifier",
+                "training_eligible": True,
+                "target_repository": "Hawkar-usls/Hrain",
+                "verification_profile": "OTHER_PROFILE",
+            },
+        ])
+        memory = {
+            "policy": {"decision_prior_cap_nll": 0.01},
+            "records": records,
+        }
+        count, bonus = _verified_outcome_prior(candidate, memory)
+        self.assertEqual(count, 9)
+        self.assertEqual(bonus, 0.01)
+        no_action_count, no_action_bonus = _verified_outcome_prior({"candidate_id": "NO_ACTION"}, memory)
+        self.assertEqual(no_action_count, 0)
+        self.assertEqual(no_action_bonus, 0.0)
 
 
 if __name__ == "__main__":
