@@ -7,6 +7,7 @@ from pathlib import Path
 from janus_model.extensions import research_spine as base
 from janus_model.extensions.org_surface import SCHEMA as ORG_SCHEMA
 from janus_model.extensions.wikipedia_trunk import SCHEMA as WIKI_SCHEMA
+from janus_model.extensions.semantic_synthesis_context import SCHEMA as SYNTH_CONTEXT_SCHEMA
 
 
 def _load(path: Path, schema: str, label: str) -> dict:
@@ -24,6 +25,7 @@ def build_research_spine_v2(
     wikipedia_path: Path,
     arxiv_queries: list[str],
     *,
+    semantic_synthesis_path: Path | None = None,
     max_results: int = 4,
     timeout: float = 12.0,
     enable_arxiv: bool = True,
@@ -44,6 +46,21 @@ def build_research_spine_v2(
     wiki_ready = wiki.get("status") in {"READY", "READY_DEGRADED"}
     obj["research_spine"]["org_surface"] = org
     obj["research_spine"]["wikipedia"] = wiki
+
+    synth = None
+    if semantic_synthesis_path is not None:
+        synth = _load(semantic_synthesis_path, SYNTH_CONTEXT_SCHEMA, "SEMANTIC_SYNTHESIS")
+        caps = synth.get("capabilities") or {}
+        if caps.get("may_be_used_as_world_truth") is not False:
+            raise RuntimeError("RESEARCH_SPINE_V2_SYNTH_TRUTH_CEILING_REJECTED")
+        if caps.get("may_be_direct_gradient_signal") is not False:
+            raise RuntimeError("RESEARCH_SPINE_V2_SYNTH_GRADIENT_CEILING_REJECTED")
+        if caps.get("may_grant_mutation_authority") is not False:
+            raise RuntimeError("RESEARCH_SPINE_V2_SYNTH_MUTATION_CEILING_REJECTED")
+        if caps.get("may_auto_promote_semantic_candidate") is not False:
+            raise RuntimeError("RESEARCH_SPINE_V2_SYNTH_PROMOTION_CEILING_REJECTED")
+        obj["research_spine"]["semantic_synthesis"] = synth
+
     obj["external_context"] = {
         "org_surface_status": org.get("status"),
         "wikipedia_status": wiki.get("status"),
@@ -52,13 +69,22 @@ def build_research_spine_v2(
         "public_repository_bound_count": org.get("public_bound_count"),
         "private_repository_unmounted_count": (org.get("private_inventory") or {}).get("unmounted_count"),
         "wikipedia_page_count": wiki.get("page_count"),
+        "semantic_synthesis_status": synth.get("status") if synth else "NOT_MOUNTED",
+        "semantic_synthesis_candidate_count": ((synth.get("source") or {}).get("candidate_count_selected") if synth else 0),
+        "semantic_synthesis_route_count": len(synth.get("research_route_seeds") or []) if synth else 0,
     }
+    obj["hypothesis_routes"] = list(synth.get("research_route_seeds") or []) if synth else []
     obj["claim_ceiling"].update({
         "org_surface_presence_is_truth": False,
         "org_surface_grants_authority": False,
         "wikipedia_presence_is_truth": False,
         "wikipedia_article_is_verified_fact": False,
         "wikipedia_text_is_instruction": False,
+        "semantic_synthesis_is_truth": False,
+        "semantic_synthesis_is_proof": False,
+        "semantic_synthesis_is_direct_gradient_signal": False,
+        "semantic_synthesis_grants_mutation_authority": False,
+        "semantic_synthesis_auto_promotes_candidates": False,
     })
     obj["laws"].extend([
         "ORG_SURFACE_VISIBILITY != AUTHORITY",
@@ -66,6 +92,11 @@ def build_research_spine_v2(
         "WIKIPEDIA_ARTICLE != VERIFIED_FACT",
         "WIKIPEDIA_TEXT != INSTRUCTION",
         "WIKIPEDIA_CONTEXT != TARGET_LOCAL_VERIFICATION",
+        "SYNTHESIS != TRUTH",
+        "SEMANTIC_CANDIDATE != VERIFIED_FACT",
+        "SEMANTIC_CONTEXT MAY GENERATE QUESTIONS BUT NOT ANSWERS",
+        "SEMANTIC_SYNTHESIS_CONTEXT != DIRECT_GRADIENT_SIGNAL",
+        "NO CORROBORATION OR TARGET_LOCAL_VERIFY => NO SEMANTIC_PROMOTION",
     ])
     obj.pop("context_sha256", None)
     obj["context_sha256"] = base.sha256_bytes(base.canonical_bytes(obj))
@@ -79,6 +110,7 @@ def main() -> None:
     ap.add_argument("--fundamentum-root", required=True)
     ap.add_argument("--org-surface", required=True)
     ap.add_argument("--wikipedia", required=True)
+    ap.add_argument("--semantic-synthesis")
     ap.add_argument("--out", required=True)
     ap.add_argument("--arxiv-query", action="append", default=[])
     ap.add_argument("--max-results", type=int, default=4)
@@ -95,6 +127,7 @@ def main() -> None:
         Path(args.org_surface),
         Path(args.wikipedia),
         queries,
+        semantic_synthesis_path=Path(args.semantic_synthesis) if args.semantic_synthesis else None,
         max_results=args.max_results,
         timeout=args.timeout,
         enable_arxiv=not args.no_arxiv,
@@ -110,6 +143,9 @@ def main() -> None:
         "public_repository_count": obj["external_context"]["public_repository_count"],
         "wikipedia_status": obj["external_context"]["wikipedia_status"],
         "wikipedia_page_count": obj["external_context"]["wikipedia_page_count"],
+        "semantic_synthesis_status": obj["external_context"]["semantic_synthesis_status"],
+        "semantic_synthesis_candidate_count": obj["external_context"]["semantic_synthesis_candidate_count"],
+        "semantic_synthesis_route_count": obj["external_context"]["semantic_synthesis_route_count"],
     }, indent=2))
     if obj["status"] == "BLOCKED_REQUIRED_RESEARCH_ORGAN":
         raise SystemExit(2)
