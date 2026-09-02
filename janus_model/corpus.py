@@ -3,7 +3,7 @@ import argparse, hashlib, json, re, subprocess
 from pathlib import Path
 from typing import Iterable
 
-from janus_model.eval_contract import combine_learning_cycle_digest, contract_identity
+from janus_model.eval_contract import contract_identity
 
 SEMANTIC_EXTENSIONS={'.json','.md','.markdown','.txt','.py','.yml','.yaml','.toml','.ini','.cfg','.csv','.tsv','.html','.htm','.js','.ts','.tsx','.jsx','.css','.scss','.sh','.ps1','.xml','.jsonl','.ndjson'}
 SECRETISH=re.compile(r'(?:^|[._-])(env|secret|token|credential|password|private[_-]?key)(?:$|[._-])',re.I)
@@ -33,21 +33,53 @@ def iter_source_files(registry:Path)->Iterable[Path]:
 
 def _git_head(repo): return subprocess.check_output(['git','rev-parse','HEAD'],cwd=repo,text=True).strip()
 
-def build_corpus(registry:Path,out_dir:Path,max_train_bytes=2_000_000,max_holdout_bytes=300_000):
+def _load_keymaster(training_path:Path,manifest_path:Path):
+    pack=training_path.read_bytes()
+    manifest=json.loads(manifest_path.read_text(encoding='utf-8'))
+    if manifest.get('schema')!='janus.keymaster.learning_contribution_manifest.v1':
+        raise RuntimeError('KEYMASTER_MANIFEST_SCHEMA_REJECTED')
+    if manifest.get('status')!='READY_5_OF_5' or manifest.get('contributor_count')!=5:
+        raise RuntimeError('KEYMASTER_5_OF_5_REQUIRED')
+    contributors=manifest.get('contributors')
+    if not isinstance(contributors,list) or len(contributors)!=5:
+        raise RuntimeError('KEYMASTER_CONTRIBUTORS_REJECTED')
+    if any(int(row.get('contributed_bytes',0))<=0 for row in contributors if isinstance(row,dict)):
+        raise RuntimeError('KEYMASTER_ZERO_BYTE_CONTRIBUTOR_REJECTED')
+    if manifest.get('training_only') is not True:
+        raise RuntimeError('KEYMASTER_TRAIN_ONLY_REQUIRED')
+    if manifest.get('adaptive_holdout_inclusion') is not False or manifest.get('frozen_anchor_inclusion') is not False:
+        raise RuntimeError('KEYMASTER_EVALUATION_LEAKAGE_REJECTED')
+    if manifest.get('training_material_is_truth') is not False or manifest.get('contribution_grants_authority') is not False:
+        raise RuntimeError('KEYMASTER_EPISTEMIC_FIREWALL_REJECTED')
+    if manifest.get('source_execution') is not False or manifest.get('cross_repository_write') is not False:
+        raise RuntimeError('KEYMASTER_EXECUTION_AUTHORITY_REJECTED')
+    if manifest.get('authority_delta')!=0:
+        raise RuntimeError('KEYMASTER_AUTHORITY_DELTA_REJECTED')
+    if manifest.get('training_pack_sha256')!=sha256_bytes(pack):
+        raise RuntimeError('KEYMASTER_TRAINING_PACK_HASH_MISMATCH')
+    if manifest.get('training_bytes')!=len(pack) or len(pack)<=0:
+        raise RuntimeError('KEYMASTER_TRAINING_BYTES_MISMATCH')
+    return pack.decode('utf-8',errors='replace'),manifest
+
+def _learning_cycle_digest(registry_digest:str,keymaster_digest:str,evaluation_contract_sha256:str)->str:
+    raw=(
+        'JANUS_LEARNING_CYCLE_V2\n'
+        f'registry={registry_digest}\n'
+        f'keymaster={keymaster_digest}\n'
+        f'evaluation_contract={evaluation_contract_sha256}\n'
+    ).encode('utf-8')
+    return hashlib.sha256(raw).hexdigest()
+
+def build_corpus(registry:Path,out_dir:Path,max_train_bytes=2_000_000,max_holdout_bytes=300_000,keymaster_training_path:Path|None=None,keymaster_manifest_path:Path|None=None):
     out_dir.mkdir(parents=True,exist_ok=True)
     train=[]; holdout=[]; records=[]; tb=hb=0
     registry_digest_hasher=hashlib.sha256(); source_file_count=0; source_total_bytes=0
 
     for path in iter_source_files(registry):
         rel=path.relative_to(registry).as_posix(); raw=path.read_bytes(); file_sha=sha256_bytes(raw)
-
-        # Full-memory identity is independent of the bounded neural text window.
-        # Every eligible source-bearing file participates in the registry digest,
-        # even when the train/holdout byte caps are already full.
         registry_digest_hasher.update(f'{rel}\0{file_sha}\0{len(raw)}\n'.encode())
         source_file_count += 1
         source_total_bytes += len(raw)
-
         text=scrub(raw.decode('utf-8',errors='replace'))
         envelope=f'\n<JANUS_REGISTRY_RECORD path={json.dumps(rel)} sha256={file_sha} authority="REGISTRY_SOURCE_REQUIRES_VERIFICATION">\n{text}\n</JANUS_REGISTRY_RECORD>\n'
         split='holdout' if int(file_sha[:8],16)%10==0 else 'train'; enc=envelope.encode('utf-8')
@@ -61,6 +93,14 @@ def build_corpus(registry:Path,out_dir:Path,max_train_bytes=2_000_000,max_holdou
             enc=enc[:remain]; train.append(enc.decode('utf-8',errors='ignore')); tb+=len(enc)
         records.append({'path':rel,'sha256':file_sha,'bytes':len(raw),'split':split})
 
+    if (keymaster_training_path is None)!=(keymaster_manifest_path is None):
+        raise RuntimeError('KEYMASTER_TRAINING_AND_MANIFEST_MUST_BE_PAIRED')
+    if keymaster_training_path is None:
+        raise RuntimeError('KEYMASTER_PRIMARY_CONTRIBUTION_REQUIRED')
+    keymaster_text,keymaster_manifest=_load_keymaster(keymaster_training_path,keymaster_manifest_path)
+    keymaster_bytes=len(keymaster_text.encode('utf-8'))
+    train.append(keymaster_text)
+
     train_text=''.join(train); holdout_text=''.join(holdout)
     if len(train_text.encode())<50_000: raise RuntimeError('TRAIN_CORPUS_TOO_SMALL')
     if len(holdout_text.encode())<10_000: raise RuntimeError('HOLDOUT_CORPUS_TOO_SMALL')
@@ -69,21 +109,35 @@ def build_corpus(registry:Path,out_dir:Path,max_train_bytes=2_000_000,max_holdou
 
     registry_source_digest=registry_digest_hasher.hexdigest()
     evaluation_contract=contract_identity()
-    learning_cycle_digest=combine_learning_cycle_digest(
+    keymaster_digest=keymaster_manifest['contribution_sha256']
+    learning_cycle_digest=_learning_cycle_digest(
         registry_source_digest,
+        keymaster_digest,
         evaluation_contract['contract_sha256'],
     )
+    contributor_summary=[{
+        'id':row['id'],'repository':row['repository'],'ref':row['ref'],'head_sha':row['head_sha'],
+        'provenance':row['provenance'],'contributed_bytes':row['contributed_bytes'],
+        'contribution_sha256':row['contribution_sha256'],
+    } for row in keymaster_manifest['contributors']]
 
     manifest={
-        'schema':'janus.model.registry_corpus.v2',
+        'schema':'janus.model.registry_corpus.v3.keymaster',
         'source_repository':'Hawkar-usls/janus-meta-registry',
         'source_commit':_git_head(registry),
-        # Backward-compatible wake key: it now binds both memory identity and
-        # evaluation identity. The pure registry digest is preserved separately.
         'source_digest':learning_cycle_digest,
-        'source_digest_scope':'REGISTRY_MEMORY_IDENTITY_PLUS_EVALUATION_CONTRACT_V1',
+        'source_digest_scope':'REGISTRY_MEMORY_PLUS_KEYMASTER_5_REPOS_PLUS_EVALUATION_CONTRACT_V2',
         'registry_source_digest':registry_source_digest,
         'registry_source_digest_scope':'ALL_ELIGIBLE_SOURCE_BEARING_FILES_BEFORE_CORPUS_BYTE_CAPS',
+        'keymaster_contribution_sha256':keymaster_digest,
+        'keymaster_training_pack_sha256':keymaster_manifest['training_pack_sha256'],
+        'keymaster_contributor_count':5,
+        'keymaster_contributors':contributor_summary,
+        'keymaster_training_bytes':keymaster_bytes,
+        'keymaster_training_only':True,
+        'keymaster_adaptive_holdout_inclusion':False,
+        'keymaster_frozen_anchor_inclusion':False,
+        'keymaster_contribution_grants_authority':False,
         'evaluation_contract':evaluation_contract,
         'evaluation_contract_sha256':evaluation_contract['contract_sha256'],
         'anchor_is_training_source':False,
@@ -91,9 +145,10 @@ def build_corpus(registry:Path,out_dir:Path,max_train_bytes=2_000_000,max_holdou
         'source_total_bytes':source_total_bytes,
         'record_count':len(records),
         'selected_record_count':len(records),
+        'registry_train_bytes':tb,
         'train_bytes':len(train_text.encode()),
         'holdout_bytes':len(holdout_text.encode()),
-        'split':'FILE_SHA256_MOD_10_BUCKET_0_HOLDOUT',
+        'split':'REGISTRY_HASH_HOLDOUT_PLUS_KEYMASTER_TRAIN_ONLY',
         'authority':'TRAINING_TEXT_IS_MEMORY_MATERIAL_NOT_AUTOMATIC_TRUTH',
         'eye_exclusions_enforced':True,
         'records':records
@@ -102,8 +157,9 @@ def build_corpus(registry:Path,out_dir:Path,max_train_bytes=2_000_000,max_holdou
     return manifest
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument('--registry',required=True); ap.add_argument('--out',required=True); ap.add_argument('--max-train-bytes',type=int,default=2_000_000); ap.add_argument('--max-holdout-bytes',type=int,default=300_000)
-    a=ap.parse_args(); m=build_corpus(Path(a.registry),Path(a.out),a.max_train_bytes,a.max_holdout_bytes)
-    print(json.dumps({k:m[k] for k in ('source_commit','source_digest','registry_source_digest','evaluation_contract_sha256','source_file_count','source_total_bytes','selected_record_count','train_bytes','holdout_bytes')},indent=2))
+    ap=argparse.ArgumentParser(); ap.add_argument('--registry',required=True); ap.add_argument('--out',required=True); ap.add_argument('--max-train-bytes',type=int,default=2_000_000); ap.add_argument('--max-holdout-bytes',type=int,default=300_000); ap.add_argument('--keymaster-training',required=True); ap.add_argument('--keymaster-manifest',required=True)
+    a=ap.parse_args(); m=build_corpus(Path(a.registry),Path(a.out),a.max_train_bytes,a.max_holdout_bytes,Path(a.keymaster_training),Path(a.keymaster_manifest))
+    keys=('source_commit','source_digest','registry_source_digest','keymaster_contribution_sha256','keymaster_contributor_count','keymaster_training_bytes','evaluation_contract_sha256','source_file_count','source_total_bytes','selected_record_count','train_bytes','holdout_bytes')
+    print(json.dumps({k:m[k] for k in keys},indent=2))
 
 if __name__=='__main__': main()
