@@ -8,9 +8,11 @@ on:
       - 'janus_model/extensions/research_spine_v2.py'
       - 'janus_model/extensions/org_surface.py'
       - 'janus_model/extensions/wikipedia_trunk.py'
+      - 'janus_model/extensions/semantic_synthesis_context.py'
       - 'tests/test_janus_research_spine.py'
       - 'tests/test_janus_org_surface.py'
       - 'tests/test_janus_wikipedia_trunk.py'
+      - 'tests/test_janus_semantic_synthesis_context.py'
       - '.github/workflows/janus-research-spine.yml'
   workflow_dispatch:
   schedule:
@@ -52,11 +54,13 @@ jobs:
             janus_model/extensions/research_spine.py \
             janus_model/extensions/research_spine_v2.py \
             janus_model/extensions/org_surface.py \
-            janus_model/extensions/wikipedia_trunk.py
+            janus_model/extensions/wikipedia_trunk.py \
+            janus_model/extensions/semantic_synthesis_context.py
           python -m unittest -v \
             tests/test_janus_research_spine.py \
             tests/test_janus_org_surface.py \
-            tests/test_janus_wikipedia_trunk.py
+            tests/test_janus_wikipedia_trunk.py \
+            tests/test_janus_semantic_synthesis_context.py
           echo 'JANUS_RESEARCH_SPINE_KERNELS=PASS'
 
       - name: Bind complete public Hawkar-usls repository surface
@@ -81,6 +85,29 @@ jobs:
           assert x['capabilities']['execute_repository_source'] is False
           assert x['private_inventory']['names_persisted_publicly'] is False
           print(f"JANUS_ORG_SURFACE_BOUND={x['public_bound_count']}/{x['public_discovered_count']}")
+          PY
+
+      - name: Pull autonomous iNaiHR semantic evolution state
+        run: |
+          curl --fail --location --retry 3 --max-time 30 \
+            'https://raw.githubusercontent.com/Hawkar-usls/iNaiHR/main/janus-synth/state/JANUS_SYNTH_LATEST.json' \
+            -o runtime/JANUS_INAIHR_SYNTH_SOURCE.json
+          python -m janus_model.extensions.semantic_synthesis_context \
+            --source runtime/JANUS_INAIHR_SYNTH_SOURCE.json \
+            --out runtime/JANUS_SEMANTIC_SYNTHESIS_CONTEXT.json \
+            --max-candidates 12 \
+            --max-routes 8
+          python - <<'PY'
+          import json
+          x=json.load(open('runtime/JANUS_SEMANTIC_SYNTHESIS_CONTEXT.json'))
+          assert x['status'] in {'READY_CANDIDATE_HYPOTHESIS_CONTEXT','READY_NO_CANDIDATES'}
+          caps=x['capabilities']
+          assert caps['may_be_used_as_world_truth'] is False
+          assert caps['may_be_used_as_proof'] is False
+          assert caps['may_be_direct_gradient_signal'] is False
+          assert caps['may_grant_mutation_authority'] is False
+          assert caps['may_auto_promote_semantic_candidate'] is False
+          print(f"JANUS_SEMANTIC_SYNTHESIS_CONTEXT={x['status']}:candidates={x['source']['candidate_count_selected']}:routes={len(x['research_route_seeds'])}:sha={x['context_sha256']}")
           PY
 
       - name: Pull autonomous Wikipedia background context
@@ -115,7 +142,7 @@ jobs:
           git clone --depth 1 https://github.com/Hawkar-usls/Janus-Fundamentum.git runtime/research/Janus-Fundamentum
           echo 'JANUS_RESEARCH_ORGANS_FETCH=PASS'
 
-      - name: Build TOPA arXiv org Wikipedia Demi_Head Fundamentum context
+      - name: Build TOPA arXiv org Wikipedia semantic Demi_Head Fundamentum context
         run: |
           python -m janus_model.extensions.research_spine_v2 \
             --topa-root runtime/research/TOPA \
@@ -123,6 +150,7 @@ jobs:
             --fundamentum-root runtime/research/Janus-Fundamentum \
             --org-surface runtime/JANUS_ORG_SURFACE.json \
             --wikipedia runtime/JANUS_WIKIPEDIA_TRUNK.json \
+            --semantic-synthesis runtime/JANUS_SEMANTIC_SYNTHESIS_CONTEXT.json \
             --out runtime/JANUS_RESEARCH_SPINE.json \
             --max-results 4 \
             --timeout 12
@@ -137,14 +165,19 @@ jobs:
               raise SystemExit('JANUS_TOPA_ROUTER_SELF_TEST_FAIL')
           org=obj['research_spine']['org_surface']
           wiki=obj['research_spine']['wikipedia']
+          synth=obj['research_spine']['semantic_synthesis']
           assert org['all_public_repositories_bound'] is True
           assert org['public_bound_count']==org['public_discovered_count']
           assert wiki['firewalls']['external_text_is_instruction'] is False
+          assert synth['capabilities']['may_be_direct_gradient_signal'] is False
+          assert synth['capabilities']['may_grant_mutation_authority'] is False
           cc=obj['claim_ceiling']
           if cc['topa_output_is_world_truth'] or cc['arxiv_presence_is_truth'] or cc['demi_head_property_is_independent_evidence']:
               raise SystemExit('JANUS_RESEARCH_SPINE_AUTHORITY_CEILING_FAIL')
           if cc['org_surface_grants_authority'] or cc['wikipedia_presence_is_truth'] or cc['wikipedia_article_is_verified_fact']:
               raise SystemExit('JANUS_EXTERNAL_CONTEXT_AUTHORITY_CEILING_FAIL')
+          if cc['semantic_synthesis_is_truth'] or cc['semantic_synthesis_is_proof'] or cc['semantic_synthesis_is_direct_gradient_signal'] or cc['semantic_synthesis_grants_mutation_authority'] or cc['semantic_synthesis_auto_promotes_candidates']:
+              raise SystemExit('JANUS_SEMANTIC_SYNTHESIS_AUTHORITY_CEILING_FAIL')
           print(json.dumps({
               'status':obj['status'],
               'context_sha256':obj['context_sha256'],
@@ -157,6 +190,10 @@ jobs:
               'wikipedia_status':wiki['status'],
               'wikipedia_pages':wiki['page_count'],
               'wikipedia_context_sha256':wiki['context_sha256'],
+              'semantic_synthesis_status':synth['status'],
+              'semantic_synthesis_context_sha256':synth['context_sha256'],
+              'semantic_synthesis_candidates':synth['source']['candidate_count_selected'],
+              'semantic_hypothesis_routes':obj['hypothesis_routes'],
           }, indent=2))
           PY
 
@@ -179,6 +216,7 @@ jobs:
           cp runtime/JANUS_RESEARCH_SPINE.json janus_model/state/JANUS_RESEARCH_SPINE.json
           cp runtime/JANUS_ORG_SURFACE.json janus_model/state/JANUS_ORG_SURFACE.json
           cp runtime/JANUS_WIKIPEDIA_TRUNK.json janus_model/state/JANUS_WIKIPEDIA_TRUNK.json
+          cp runtime/JANUS_SEMANTIC_SYNTHESIS_CONTEXT.json janus_model/state/JANUS_SEMANTIC_SYNTHESIS_CONTEXT.json
           python - <<'PY'
           import json
           from pathlib import Path
@@ -186,8 +224,9 @@ jobs:
           spine=obj['research_spine']
           org=spine['org_surface']
           wiki=spine['wikipedia']
+          synth=spine['semantic_synthesis']
           wake={
-              'schema':'janus.research_spine.wake.v2',
+              'schema':'janus.research_spine.wake.v3',
               'status':'RESEARCH_CONTEXT_CHANGED_OR_REFRESHED',
               'context_sha256':obj['context_sha256'],
               'primary_improvement_target':obj['improvement_policy']['primary_target'],
@@ -207,6 +246,13 @@ jobs:
                   'status':wiki['status'],
                   'page_count':wiki['page_count'],
               },
+              'semantic_synthesis':{
+                  'context_sha256':synth['context_sha256'],
+                  'source_state_sha256':synth['source']['state_sha256'],
+                  'candidate_count_selected':synth['source']['candidate_count_selected'],
+                  'research_route_seeds':synth['research_route_seeds'],
+                  'status':synth['status'],
+              },
               'arxiv_status':spine['arxiv']['status'],
               'authority':{
                   'evidence':False,
@@ -214,6 +260,9 @@ jobs:
                   'mutation_grant':False,
                   'repository_visibility_grants_authority':False,
                   'wikipedia_presence_is_truth':False,
+                  'semantic_synthesis_is_truth':False,
+                  'semantic_synthesis_is_gradient':False,
+                  'semantic_synthesis_is_mutation_grant':False,
               },
           }
           Path('janus_model/extensions/RESEARCH_SPINE_WAKE.json').write_text(
@@ -226,11 +275,12 @@ jobs:
             janus_model/state/JANUS_RESEARCH_SPINE.json \
             janus_model/state/JANUS_ORG_SURFACE.json \
             janus_model/state/JANUS_WIKIPEDIA_TRUNK.json \
+            janus_model/state/JANUS_SEMANTIC_SYNTHESIS_CONTEXT.json \
             janus_model/extensions/RESEARCH_SPINE_WAKE.json
           if git diff --cached --quiet; then
             echo 'JANUS_RESEARCH_SPINE_NO_CHANGE'
           else
-            git commit -m "JANUS research spine: remember org Wikipedia arXiv and organ context"
+            git commit -m "JANUS research spine: remember org Wikipedia semantic arXiv and organ context"
             git push origin HEAD:main
             echo 'JANUS_RESEARCH_SPINE_PERSIST=PASS'
           fi
