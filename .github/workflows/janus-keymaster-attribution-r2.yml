@@ -1,0 +1,215 @@
+name: JANUS Keymaster Attribution R2
+
+on:
+  workflow_run:
+    workflows: ["JANUS Keymaster Attribution"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: janus-keymaster-attribution-r2
+  cancel-in-progress: false
+
+jobs:
+  attribution-r2:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout authoritative brain
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Synchronize main and capture checkpoint
+        id: base
+        shell: bash
+        run: |
+          git fetch origin main
+          git switch -C main origin/main
+          test -f janus_model/checkpoints/promoted.pt
+          CHECKPOINT_SHA=$(python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          print(hashlib.sha256(Path('janus_model/checkpoints/promoted.pt').read_bytes()).hexdigest())
+          PY
+          )
+          STATE_SHA=$(python -c "import json; print(json.load(open('janus_model/state/JANUS_MODEL_STATE.json'))['checkpoint_sha256'])")
+          test "$CHECKPOINT_SHA" = "$STATE_SHA"
+          RECEIPT="janus_model/receipts/keymaster-attribution-r2-checkpoint-${CHECKPOINT_SHA}.json"
+          echo "checkpoint_sha=$CHECKPOINT_SHA" >> "$GITHUB_OUTPUT"
+          echo "receipt=$RECEIPT" >> "$GITHUB_OUTPUT"
+          echo "JANUS_R2_BASE_CHECKPOINT=$CHECKPOINT_SHA"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install native runtime
+        run: python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Verify Attribution R2 kernel
+        run: |
+          python -m py_compile janus_model/attribution.py janus_model/attribution_r2.py
+          python -m unittest -v tests/test_janus_attribution.py tests/test_janus_attribution_r2.py tests/test_janus_keymaster.py
+          echo 'JANUS_ATTRIBUTION_R2_KERNEL=PASS'
+
+      - name: Decide whether this checkpoint already has R2 evidence
+        id: decide
+        shell: bash
+        run: |
+          if [ -f '${{ steps.base.outputs.receipt }}' ]; then
+            echo 'run=false' >> "$GITHUB_OUTPUT"
+            echo 'JANUS_ATTRIBUTION_R2_CHECKPOINT_ALREADY_RECORDED'
+          else
+            echo 'run=true' >> "$GITHUB_OUTPUT"
+            echo 'JANUS_ATTRIBUTION_R2_NEW_CHECKPOINT=TRUE'
+          fi
+
+      - name: Fetch world memory
+        if: steps.decide.outputs.run == 'true'
+        run: |
+          rm -rf runtime/meta-registry runtime/r2
+          mkdir -p runtime/r2
+          git clone --depth 1 https://github.com/Hawkar-usls/janus-meta-registry.git runtime/meta-registry
+
+      - name: Build exact 8-of-8 corpus and packs
+        if: steps.decide.outputs.run == 'true'
+        run: |
+          python -m janus_model.corpus \
+            --registry runtime/meta-registry \
+            --out runtime/corpus \
+            --max-train-bytes 2000000 \
+            --max-holdout-bytes 300000
+
+      - name: Reuse authoritative seed-7331 ledger
+        if: steps.decide.outputs.run == 'true'
+        run: |
+          python - <<'PY'
+          import json, shutil
+          from pathlib import Path
+          latest=Path('janus_model/state/KEYMASTER_ATTRIBUTION_LATEST.json')
+          if not latest.is_file():
+              raise SystemExit('JANUS_R2_SEED_7331_LEDGER_MISSING')
+          x=json.loads(latest.read_text(encoding='utf-8'))
+          corpus=json.load(open('runtime/corpus/corpus_manifest.json'))
+          state=json.load(open('janus_model/state/JANUS_MODEL_STATE.json'))
+          assert x['schema']=='janus.keymaster.attribution_ablation_ledger.v1'
+          assert x['status']=='COMPLETE_SINGLE_SEED_DIAGNOSTIC'
+          assert x['seed']==7331 and x['steps_per_variant']==80 and x['variant_count']==17
+          assert x['checkpoint_sha256']==state['checkpoint_sha256']
+          assert x['source_digest']==corpus['source_digest']
+          shutil.copyfile(latest, 'runtime/r2/seed-7331.json')
+          print('JANUS_R2_SEED_7331_REUSE=PASS')
+          PY
+
+      - name: Run independent seed replicas
+        if: steps.decide.outputs.run == 'true'
+        shell: bash
+        run: |
+          for SEED in 9157 12011; do
+            python -m janus_model.attribution \
+              --registry-train runtime/corpus/registry_train.txt \
+              --holdout runtime/corpus/holdout.txt \
+              --keymaster-dir runtime/keymaster \
+              --corpus-manifest runtime/corpus/corpus_manifest.json \
+              --incumbent janus_model/checkpoints/promoted.pt \
+              --out "runtime/r2/seed-${SEED}.json" \
+              --steps 80 \
+              --batch-size 12 \
+              --lr 0.0003 \
+              --seed "$SEED"
+          done
+          echo 'JANUS_R2_THREE_SEEDS_AVAILABLE=PASS'
+
+      - name: Aggregate seed consensus and successive checkpoint evidence
+        if: steps.decide.outputs.run == 'true'
+        run: |
+          python -m janus_model.attribution_r2 \
+            --ledger runtime/r2/seed-7331.json \
+            --ledger runtime/r2/seed-9157.json \
+            --ledger runtime/r2/seed-12011.json \
+            --history-dir janus_model/receipts \
+            --sequence-run-id "$GITHUB_RUN_ID" \
+            --out-checkpoint runtime/r2-checkpoint.json \
+            --out-summary runtime/r2-summary.json \
+            --min-seeds 3 \
+            --min-checkpoints 3
+          python - <<'PY'
+          import json
+          cp=json.load(open('runtime/r2-checkpoint.json'))
+          s=json.load(open('runtime/r2-summary.json'))
+          assert cp['schema']=='janus.keymaster.attribution_r2_checkpoint.v1'
+          assert cp['status']=='SEED_REPLICATION_COMPLETE'
+          assert cp['seed_count']==3 and cp['seeds']==[7331,9157,12011]
+          assert len(cp['contributors'])==8
+          assert s['schema']=='janus.keymaster.attribution_r2_summary.v1'
+          assert len(s['attribution'])==8
+          allowed={'STABLE_SUPPORTIVE','CONTEXT_DEPENDENT','STABLE_ADVERSE','UNRESOLVED'}
+          assert all(x['class'] in allowed for x in s['attribution'])
+          if s['checkpoint_replication']['observed_checkpoint_count'] < 3:
+              assert all(x['class']=='UNRESOLVED' for x in s['attribution'])
+          cc=s['claim_ceiling']
+          assert cc['r2_class_is_world_causality'] is False
+          assert cc['automatic_weighting_change'] is False
+          assert cc['automatic_contributor_removal'] is False
+          assert cc['failed_or_missing_run_is_negative_evidence'] is False
+          print('JANUS_ATTRIBUTION_R2_REPLICATION_POLICY=PASS')
+          PY
+
+      - name: Revalidate checkpoint before persistence
+        id: fresh
+        if: steps.decide.outputs.run == 'true'
+        shell: bash
+        run: |
+          git fetch origin main
+          CURRENT=$(git show origin/main:janus_model/state/JANUS_MODEL_STATE.json | python -c "import json,sys; print(json.load(sys.stdin)['checkpoint_sha256'])")
+          EXPECTED='${{ steps.base.outputs.checkpoint_sha }}'
+          if [ "$CURRENT" != "$EXPECTED" ]; then
+            echo 'allow=false' >> "$GITHUB_OUTPUT"
+            echo "JANUS_ATTRIBUTION_R2_STALE_CHECKPOINT=$EXPECTED:$CURRENT"
+          else
+            echo 'allow=true' >> "$GITHUB_OUTPUT"
+            echo 'JANUS_ATTRIBUTION_R2_CHECKPOINT_FRESH=PASS'
+          fi
+
+      - name: Persist R2 checkpoint and cumulative summary
+        if: steps.decide.outputs.run == 'true' && steps.fresh.outputs.allow == 'true'
+        shell: bash
+        run: |
+          mkdir -p janus_model/state janus_model/receipts
+          cp runtime/r2-checkpoint.json '${{ steps.base.outputs.receipt }}'
+          cp runtime/r2-summary.json janus_model/state/KEYMASTER_ATTRIBUTION_R2_LATEST.json
+          git config user.name 'janus-keymaster-attribution-r2'
+          git config user.email 'janus-keymaster-attribution-r2@users.noreply.github.com'
+          git add -f '${{ steps.base.outputs.receipt }}' janus_model/state/KEYMASTER_ATTRIBUTION_R2_LATEST.json
+          git commit -m "JANUS Keymaster attribution R2: replicate checkpoint ${GITHUB_RUN_ID}"
+          git pull --rebase origin main
+          CURRENT=$(python -c "import json; print(json.load(open('janus_model/state/JANUS_MODEL_STATE.json'))['checkpoint_sha256'])")
+          EXPECTED='${{ steps.base.outputs.checkpoint_sha }}'
+          if [ "$CURRENT" != "$EXPECTED" ]; then
+            echo 'JANUS_ATTRIBUTION_R2_REBASE_SUPERSEDED_CHECKPOINT'
+            exit 0
+          fi
+          git push origin HEAD:main
+          echo 'JANUS_KEYMASTER_ATTRIBUTION_R2_PERSIST=PASS'
+
+      - name: Upload R2 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-keymaster-attribution-r2-${{ github.run_id }}
+          path: |
+            runtime/corpus/corpus_manifest.json
+            runtime/keymaster/manifest.json
+            runtime/r2/seed-7331.json
+            runtime/r2/seed-9157.json
+            runtime/r2/seed-12011.json
+            runtime/r2-checkpoint.json
+            runtime/r2-summary.json
+          if-no-files-found: ignore
+          retention-days: 30
