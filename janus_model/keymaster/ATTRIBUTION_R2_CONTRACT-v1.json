@@ -1,0 +1,50 @@
+{
+  "schema": "janus.keymaster.attribution_r2_contract.v1",
+  "status": "ACTIVE_CANDIDATE_PENDING_PRODUCTION_PROOF",
+  "single_checkpoint_protocol": {
+    "variant_contract": "janus.keymaster.attribution_ablation_ledger.v1",
+    "variant_count": 17,
+    "steps_per_variant": 80,
+    "batch_size": 12,
+    "learning_rate": 0.0003,
+    "required_seeds": [7331, 9157, 12011],
+    "minimum_distinct_seeds": 3,
+    "same_incumbent_checkpoint_required": true,
+    "same_source_digest_required": true,
+    "same_keymaster_pack_required": true,
+    "same_holdout_required": true,
+    "same_frozen_anchor_required": true
+  },
+  "successive_checkpoint_protocol": {
+    "minimum_distinct_promoted_checkpoints": 3,
+    "failed_or_missing_checkpoint_run_is_negative_evidence": false,
+    "duplicate_checkpoint_receipts_count_once": true,
+    "history_window_max": 8
+  },
+  "classes": {
+    "STABLE_SUPPORTIVE": "The intervention direction is reproducibly supportive across the required contexts for every checkpoint in the replication window.",
+    "CONTEXT_DEPENDENT": "For a CORE_5 contributor, FULL_8 and CORE_5 intervention directions reproducibly disagree across every checkpoint in the replication window.",
+    "STABLE_ADVERSE": "The intervention direction is reproducibly adverse across the required contexts for every checkpoint in the replication window.",
+    "UNRESOLVED": "Fewer than three checkpoints, seed disagreement, mixed or indeterminate direction, or checkpoint-to-checkpoint instability."
+  },
+  "claim_ceiling": {
+    "replicated_intervention_signal_is_world_causality": false,
+    "replicated_intervention_signal_is_world_truth": false,
+    "class_grants_authority": false,
+    "automatic_weighting_change": false,
+    "automatic_contributor_removal": false,
+    "automatic_training_membership_change": false,
+    "authority_delta": 0
+  },
+  "firewalls": [
+    "SINGLE_SEED_SIGNAL != CAUSAL_PROOF",
+    "SEED_CONSENSUS != UNIVERSAL_CAUSALITY",
+    "REPLICATED_INTERVENTION_SIGNAL != WORLD_TRUTH",
+    "MISSING_OR_FAILED_RUN != NEGATIVE_EVIDENCE",
+    "R2_CLASS != AUTHORITY",
+    "STABLE_ADVERSE != AUTO_REMOVE",
+    "STABLE_SUPPORTIVE != AUTO_WEIGHT_INCREASE",
+    "CONTEXT_DEPENDENT != DEFECT"
+  ],
+  "law": "JANUS MAY LEARN A REPRODUCIBLE INTERVENTION PROFILE OF ITS ORGANS ONLY AFTER MULTI-SEED AND MULTI-CHECKPOINT REPLICATION; THE RESULT REMAINS DIAGNOSTIC EVIDENCE AND NEVER SELF-GRANTS AUTHORITY OR MEMBERSHIP CHANGES."
+}

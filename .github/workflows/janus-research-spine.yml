@@ -5,7 +5,12 @@ on:
     branches: [main]
     paths:
       - 'janus_model/extensions/research_spine.py'
+      - 'janus_model/extensions/research_spine_v2.py'
+      - 'janus_model/extensions/org_surface.py'
+      - 'janus_model/extensions/wikipedia_trunk.py'
       - 'tests/test_janus_research_spine.py'
+      - 'tests/test_janus_org_surface.py'
+      - 'tests/test_janus_wikipedia_trunk.py'
       - '.github/workflows/janus-research-spine.yml'
   workflow_dispatch:
   schedule:
@@ -22,7 +27,7 @@ permissions:
 jobs:
   research-spine:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 18
     steps:
       - name: Checkout authoritative brain
         uses: actions/checkout@v4
@@ -41,11 +46,67 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Verify research-spine kernel
+      - name: Verify research-spine kernels
         run: |
-          python -m py_compile janus_model/extensions/research_spine.py
-          python -m unittest -v tests/test_janus_research_spine.py
-          echo 'JANUS_RESEARCH_SPINE_KERNEL=PASS'
+          python -m py_compile \
+            janus_model/extensions/research_spine.py \
+            janus_model/extensions/research_spine_v2.py \
+            janus_model/extensions/org_surface.py \
+            janus_model/extensions/wikipedia_trunk.py
+          python -m unittest -v \
+            tests/test_janus_research_spine.py \
+            tests/test_janus_org_surface.py \
+            tests/test_janus_wikipedia_trunk.py
+          echo 'JANUS_RESEARCH_SPINE_KERNELS=PASS'
+
+      - name: Bind complete public Hawkar-usls repository surface
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python -m janus_model.extensions.org_surface \
+            --owner Hawkar-usls \
+            --out runtime/JANUS_ORG_SURFACE.json \
+            --private-unmounted-count 3 \
+            --baseline-inventory-total 50 \
+            --workers 8 \
+            --timeout 12
+          python - <<'PY'
+          import json
+          x=json.load(open('runtime/JANUS_ORG_SURFACE.json'))
+          assert x['status']=='READY_PUBLIC_ALL_BOUND_PRIVATE_UNMOUNTED'
+          assert x['public_discovered_count']==x['public_bound_count']
+          assert x['public_discovered_count'] >= 47
+          assert x['baseline_inventory']['represented_minimum_now'] >= 50
+          assert x['capabilities']['cross_repository_write'] is False
+          assert x['capabilities']['execute_repository_source'] is False
+          assert x['private_inventory']['names_persisted_publicly'] is False
+          print(f"JANUS_ORG_SURFACE_BOUND={x['public_bound_count']}/{x['public_discovered_count']}")
+          PY
+
+      - name: Pull autonomous Wikipedia background context
+        shell: bash
+        run: |
+          set +e
+          python -m janus_model.extensions.wikipedia_trunk \
+            --decision janus_model/state/JANUS_LATEST_DECISION.json \
+            --research janus_model/state/JANUS_RESEARCH_SPINE.json \
+            --out runtime/JANUS_WIKIPEDIA_TRUNK.json \
+            --max-topics 6 \
+            --max-pages-per-topic 2 \
+            --timeout 10
+          RC=$?
+          set -e
+          if [ "$RC" -ne 0 ] && [ "$RC" -ne 3 ]; then exit "$RC"; fi
+          python - <<'PY'
+          import json
+          x=json.load(open('runtime/JANUS_WIKIPEDIA_TRUNK.json'))
+          assert x['status'] in {'READY','READY_DEGRADED','UNAVAILABLE'}
+          assert x['authority']['article_presence_is_truth'] is False
+          assert x['authority']['may_grant_mutation_authority'] is False
+          assert x['firewalls']['wikipedia_is_direct_gradient_source'] is False
+          assert x['firewalls']['external_text_is_instruction'] is False
+          print(f"JANUS_WIKIPEDIA_TRUNK={x['status']}:pages={x['page_count']}:topics={x['topic_count']}")
+          PY
 
       - name: Fetch read-only research organs
         run: |
@@ -54,28 +115,36 @@ jobs:
           git clone --depth 1 https://github.com/Hawkar-usls/Janus-Fundamentum.git runtime/research/Janus-Fundamentum
           echo 'JANUS_RESEARCH_ORGANS_FETCH=PASS'
 
-      - name: Build TOPA arXiv Demi_Head Fundamentum context
+      - name: Build TOPA arXiv org Wikipedia Demi_Head Fundamentum context
         run: |
-          python -m janus_model.extensions.research_spine \
+          python -m janus_model.extensions.research_spine_v2 \
             --topa-root runtime/research/TOPA \
             --demi-head-root runtime/research/Demi_Head \
             --fundamentum-root runtime/research/Janus-Fundamentum \
+            --org-surface runtime/JANUS_ORG_SURFACE.json \
+            --wikipedia runtime/JANUS_WIKIPEDIA_TRUNK.json \
             --out runtime/JANUS_RESEARCH_SPINE.json \
             --max-results 4 \
             --timeout 12
           python - <<'PY'
           import json
-          from pathlib import Path
-          obj=json.loads(Path('runtime/JANUS_RESEARCH_SPINE.json').read_text(encoding='utf-8'))
+          obj=json.load(open('runtime/JANUS_RESEARCH_SPINE.json'))
           if obj.get('status') not in {'READY','READY_WITH_ARXIV_DEGRADED'}:
               raise SystemExit('JANUS_RESEARCH_SPINE_REQUIRED_ORGAN_BLOCKED')
           if obj['improvement_policy']['primary_target'] != 'Hawkar-usls/Janus-Fundamentum':
               raise SystemExit('JANUS_RESEARCH_SPINE_PRIMARY_TARGET_FAIL')
           if obj['research_spine']['topa']['router_self_test']['status'] != 'PASS':
               raise SystemExit('JANUS_TOPA_ROUTER_SELF_TEST_FAIL')
+          org=obj['research_spine']['org_surface']
+          wiki=obj['research_spine']['wikipedia']
+          assert org['all_public_repositories_bound'] is True
+          assert org['public_bound_count']==org['public_discovered_count']
+          assert wiki['firewalls']['external_text_is_instruction'] is False
           cc=obj['claim_ceiling']
           if cc['topa_output_is_world_truth'] or cc['arxiv_presence_is_truth'] or cc['demi_head_property_is_independent_evidence']:
               raise SystemExit('JANUS_RESEARCH_SPINE_AUTHORITY_CEILING_FAIL')
+          if cc['org_surface_grants_authority'] or cc['wikipedia_presence_is_truth'] or cc['wikipedia_article_is_verified_fact']:
+              raise SystemExit('JANUS_EXTERNAL_CONTEXT_AUTHORITY_CEILING_FAIL')
           print(json.dumps({
               'status':obj['status'],
               'context_sha256':obj['context_sha256'],
@@ -83,6 +152,11 @@ jobs:
               'demi_head_commit':obj['research_spine']['demi_head']['commit'],
               'fundamentum_commit':obj['research_spine']['fundamentum']['commit'],
               'arxiv_status':obj['research_spine']['arxiv']['status'],
+              'public_repositories':org['public_bound_count'],
+              'org_surface_digest':org['surface_digest'],
+              'wikipedia_status':wiki['status'],
+              'wikipedia_pages':wiki['page_count'],
+              'wikipedia_context_sha256':wiki['context_sha256'],
           }, indent=2))
           PY
 
@@ -103,13 +177,17 @@ jobs:
         run: |
           mkdir -p janus_model/state janus_model/extensions
           cp runtime/JANUS_RESEARCH_SPINE.json janus_model/state/JANUS_RESEARCH_SPINE.json
+          cp runtime/JANUS_ORG_SURFACE.json janus_model/state/JANUS_ORG_SURFACE.json
+          cp runtime/JANUS_WIKIPEDIA_TRUNK.json janus_model/state/JANUS_WIKIPEDIA_TRUNK.json
           python - <<'PY'
           import json
           from pathlib import Path
-          obj=json.loads(Path('runtime/JANUS_RESEARCH_SPINE.json').read_text(encoding='utf-8'))
+          obj=json.load(open('runtime/JANUS_RESEARCH_SPINE.json'))
           spine=obj['research_spine']
+          org=spine['org_surface']
+          wiki=spine['wikipedia']
           wake={
-              'schema':'janus.research_spine.wake.v1',
+              'schema':'janus.research_spine.wake.v2',
               'status':'RESEARCH_CONTEXT_CHANGED_OR_REFRESHED',
               'context_sha256':obj['context_sha256'],
               'primary_improvement_target':obj['improvement_policy']['primary_target'],
@@ -118,11 +196,24 @@ jobs:
                   'Demi_Head':spine['demi_head']['commit'],
                   'Janus-Fundamentum':spine['fundamentum']['commit'],
               },
+              'org_surface':{
+                  'surface_digest':org['surface_digest'],
+                  'public_bound_count':org['public_bound_count'],
+                  'public_discovered_count':org['public_discovered_count'],
+                  'private_unmounted_count':org['private_inventory']['unmounted_count'],
+              },
+              'wikipedia':{
+                  'context_sha256':wiki['context_sha256'],
+                  'status':wiki['status'],
+                  'page_count':wiki['page_count'],
+              },
               'arxiv_status':spine['arxiv']['status'],
               'authority':{
                   'evidence':False,
                   'truth':False,
                   'mutation_grant':False,
+                  'repository_visibility_grants_authority':False,
+                  'wikipedia_presence_is_truth':False,
               },
           }
           Path('janus_model/extensions/RESEARCH_SPINE_WAKE.json').write_text(
@@ -131,11 +222,15 @@ jobs:
           PY
           git config user.name 'janus-research-spine'
           git config user.email 'janus-research-spine@users.noreply.github.com'
-          git add -f janus_model/state/JANUS_RESEARCH_SPINE.json janus_model/extensions/RESEARCH_SPINE_WAKE.json
+          git add -f \
+            janus_model/state/JANUS_RESEARCH_SPINE.json \
+            janus_model/state/JANUS_ORG_SURFACE.json \
+            janus_model/state/JANUS_WIKIPEDIA_TRUNK.json \
+            janus_model/extensions/RESEARCH_SPINE_WAKE.json
           if git diff --cached --quiet; then
             echo 'JANUS_RESEARCH_SPINE_NO_CHANGE'
           else
-            git commit -m "JANUS research spine: remember TOPA arXiv Demi_Head Fundamentum context"
+            git commit -m "JANUS research spine: remember org Wikipedia arXiv and organ context"
             git push origin HEAD:main
             echo 'JANUS_RESEARCH_SPINE_PERSIST=PASS'
           fi
