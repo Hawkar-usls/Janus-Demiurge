@@ -40,19 +40,22 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           p=Path('.github/workflows/janus-attribution-r2-autonomous-bridge.yml').read_text(encoding='utf-8')
-          required=[
-              'contents: read',
-              'actions: write',
-              'BRIDGE_DOES_NOT_GENERATE_EVIDENCE',
-              'MISSING_EVIDENCE_IS_NOT_NEGATIVE_EVIDENCE',
-          ]
-          for token in required:
+          if '\npermissions:\n' not in p or '\n\nconcurrency:' not in p:
+              raise SystemExit('JANUS_BRIDGE_PERMISSIONS_BLOCK_MISSING')
+          block=p.split('\npermissions:\n',1)[1].split('\n\nconcurrency:',1)[0]
+          perms={}
+          for raw in block.splitlines():
+              line=raw.strip()
+              if not line or ':' not in line:
+                  continue
+              k,v=line.split(':',1)
+              perms[k.strip()]=v.strip()
+          expected={'contents':'read','actions':'write'}
+          if perms != expected:
+              raise SystemExit(f'JANUS_BRIDGE_AUTHORITY_CEILING_MISMATCH:{perms}')
+          for token in ('BRIDGE_DOES_NOT_GENERATE_EVIDENCE','MISSING_EVIDENCE_IS_NOT_NEGATIVE_EVIDENCE'):
               if token not in p:
                   raise SystemExit(f'JANUS_BRIDGE_FIREWALL_MISSING:{token}')
-          forbidden=['contents: write','pull-requests: write','issues: write','packages: write']
-          for token in forbidden:
-              if token in p:
-                  raise SystemExit(f'JANUS_BRIDGE_EXCESS_AUTHORITY:{token}')
           print('JANUS_ATTRIBUTION_R2_BRIDGE_AUTHORITY_CEILING=PASS')
           PY
           echo 'BRIDGE_DOES_NOT_GENERATE_EVIDENCE'
