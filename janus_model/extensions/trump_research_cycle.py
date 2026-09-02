@@ -15,6 +15,12 @@ OBJECTIVE_SCHEMA = "janus.trump.research_objective.v1"
 MAX_ARXIV_QUERIES = 6
 MAX_WIKIPEDIA_TOPICS = 6
 MAX_WIKIPEDIA_PAGES_PER_TOPIC = 2
+BENIGN_PERSISTENCE_DRIFT_PREFIXES = (
+    "janus_model/state/",
+    "janus_model/receipts/",
+    "janus_model/outbox/",
+    "janus_model/checkpoints/",
+)
 
 
 def canonical_bytes(obj: Any) -> bytes:
@@ -29,6 +35,14 @@ def _load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def validate_benign_persistence_drift(paths: list[str]) -> list[str]:
+    normalized = [str(p).strip() for p in paths if str(p).strip()]
+    bad = [p for p in normalized if not p.startswith(BENIGN_PERSISTENCE_DRIFT_PREFIXES)]
+    if bad:
+        raise RuntimeError("TRUMP_RESEARCH_NONBENIGN_MAIN_DRIFT:" + ",".join(sorted(bad)))
+    return normalized
+
+
 def validate_objective(obj: dict) -> None:
     if obj.get("schema") != OBJECTIVE_SCHEMA:
         raise RuntimeError("TRUMP_OBJECTIVE_SCHEMA_REJECTED")
@@ -40,6 +54,12 @@ def validate_objective(obj: dict) -> None:
     for key in ("TRUMP_finished", "SAT_in_P_proved", "P_equals_NP_proved", "P_not_equals_NP_proved"):
         if boundary.get(key) is not False:
             raise RuntimeError(f"TRUMP_OBJECTIVE_BOUNDARY_REJECTED:{key}")
+    lineage = obj.get("active_lineage") or {}
+    for key in ("tracking_ref", "active_contract_path", "active_contract_commit", "next_gate"):
+        if not isinstance(lineage.get(key), str) or not lineage[key].strip():
+            raise RuntimeError(f"TRUMP_OBJECTIVE_LINEAGE_FIELD_MISSING:{key}")
+    if lineage.get("R31_design_allowed_before_R30_seal") not in (None, False):
+        raise RuntimeError("TRUMP_OBJECTIVE_R31_PREMATURE_DESIGN_REJECTED")
     policy = obj.get("janus_self_compute_policy") or {}
     required_true = (
         "runtime_promotion_requires_exact_output_equivalence",
@@ -99,13 +119,16 @@ def build_cycle(
     lineage = objective["active_lineage"]
     expected_ref = lineage["tracking_ref"]
     fund_head = git_head(fundamentum_root)
-    prereg_rel = lineage["frozen_R29_contract_path"]
-    records = [
-        file_record(fundamentum_root, prereg_rel),
-        file_record(fundamentum_root, "research/JANUS_TRUMP_R29_BUCKET_MESSAGE_COMPLEXITY_FORENSICS_RESULT_2026-09-02.json"),
-    ]
+    active_contract_rel = lineage["active_contract_path"]
+    records = [file_record(fundamentum_root, active_contract_rel)]
+    for rel in (
+        lineage.get("R29_sealed_result_path"),
+        lineage.get("frozen_R29_contract_path"),
+    ):
+        if isinstance(rel, str) and rel and rel != active_contract_rel:
+            records.append(file_record(fundamentum_root, rel))
     if records[0]["status"] != "PRESENT":
-        raise RuntimeError("TRUMP_R29_FROZEN_CONTRACT_MISSING")
+        raise RuntimeError("TRUMP_ACTIVE_FROZEN_CONTRACT_MISSING")
 
     queries_cfg = objective.get("research_queries") or {}
     arxiv_queries = _bounded_strings(list(queries_cfg.get("arxiv") or []), MAX_ARXIV_QUERIES)
@@ -143,9 +166,11 @@ def build_cycle(
             "repository": "Hawkar-usls/Janus-Fundamentum",
             "tracking_ref": expected_ref,
             "observed_commit": fund_head,
-            "frozen_contract_commit": lineage["frozen_R29_contract_commit"],
+            "active_stage": lineage.get("active_stage"),
+            "active_stage_status": lineage.get("active_stage_status"),
+            "active_contract_path": active_contract_rel,
+            "active_contract_commit": lineage["active_contract_commit"],
             "next_gate": lineage["next_gate"],
-            "R30_design_allowed_before_R29_seal": lineage["R30_design_allowed_before_R29_seal"],
             "records": records,
         },
         "external_context": {
@@ -210,6 +235,8 @@ def main() -> None:
         "status": obj["status"],
         "context_sha256": obj["context_sha256"],
         "fundamentum_commit": obj["fundamentum"]["observed_commit"],
+        "active_contract": obj["fundamentum"]["active_contract_path"],
+        "next_gate": obj["fundamentum"]["next_gate"],
         "arxiv_pass_count": obj["external_context"]["arxiv"]["pass_count"],
         "wikipedia_pass_count": obj["external_context"]["wikipedia"]["pass_count"],
         "P_VS_NP": obj["P_VS_NP"],
