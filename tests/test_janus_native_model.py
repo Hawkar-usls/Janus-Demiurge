@@ -11,7 +11,7 @@ from janus_model.decision import _verified_outcome_prior, decide
 from janus_model.model import ByteTokenizer, JanusModelConfig, JanusTinyTransformer, parameter_count
 from janus_model.organs import build_bicameral_context
 from janus_model.reflection import build_reflection
-from janus_model.train_registry import save_checkpoint
+from janus_model.train_registry import promotion_gate, save_checkpoint
 
 
 class JanusNativeModelTests(unittest.TestCase):
@@ -192,6 +192,63 @@ class JanusNativeModelTests(unittest.TestCase):
         no_action_count, no_action_bonus = _verified_outcome_prior({"candidate_id": "NO_ACTION"}, memory)
         self.assertEqual(no_action_count, 0)
         self.assertEqual(no_action_bonus, 0.0)
+
+    def test_dual_evaluation_requires_both_gates_and_anchor_is_veto_only(self):
+        passed = promotion_gate(
+            candidate_loss=1.99,
+            incumbent_loss=2.00,
+            candidate_anchor_loss=1.80,
+            incumbent_anchor_loss=1.81,
+        )
+        self.assertTrue(passed["promote"])
+        self.assertTrue(passed["adaptive_ok"])
+        self.assertTrue(passed["anchor_ok"])
+
+        adaptive_failed = promotion_gate(
+            candidate_loss=2.02,
+            incumbent_loss=2.00,
+            candidate_anchor_loss=1.70,
+            incumbent_anchor_loss=1.81,
+        )
+        self.assertFalse(adaptive_failed["promote"])
+        self.assertFalse(adaptive_failed["adaptive_ok"])
+        self.assertTrue(adaptive_failed["anchor_ok"])
+        self.assertEqual(
+            adaptive_failed["reason"],
+            "CANDIDATE_REJECTED_BY_ADAPTIVE_HOLDOUT_GATE",
+        )
+
+        anchor_failed = promotion_gate(
+            candidate_loss=1.95,
+            incumbent_loss=2.00,
+            candidate_anchor_loss=1.84,
+            incumbent_anchor_loss=1.80,
+        )
+        self.assertFalse(anchor_failed["promote"])
+        self.assertTrue(anchor_failed["adaptive_ok"])
+        self.assertFalse(anchor_failed["anchor_ok"])
+        self.assertEqual(
+            anchor_failed["reason"],
+            "CANDIDATE_REJECTED_BY_FROZEN_ANCHOR_GATE",
+        )
+
+    def test_dual_evaluation_bootstrap_requires_finite_anchor(self):
+        accepted = promotion_gate(
+            candidate_loss=5.0,
+            incumbent_loss=None,
+            candidate_anchor_loss=5.1,
+            incumbent_anchor_loss=None,
+        )
+        self.assertTrue(accepted["promote"])
+
+        rejected = promotion_gate(
+            candidate_loss=5.0,
+            incumbent_loss=None,
+            candidate_anchor_loss=float("inf"),
+            incumbent_anchor_loss=None,
+        )
+        self.assertFalse(rejected["promote"])
+        self.assertEqual(rejected["reason"], "BOOTSTRAP_ANCHOR_GATE_REJECTED")
 
 
 if __name__ == "__main__":
