@@ -1,8 +1,12 @@
 name: JANUS Native Intensive Wake
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/janus-native-intensive-wake.yml'
   schedule:
-    - cron: '47 * * * *'
+    - cron: '2,32 * * * *'
   workflow_dispatch:
 
 concurrency:
@@ -27,6 +31,6 @@ jobs:
             --repo "$GH_REPO" \
             --ref main \
             -f mode=train_and_run \
-            -f force_train=false \
-            -f prompt='JANUS intensive wake: inspect new memory and learn when source changed.'
-          echo 'JANUS_NATIVE_INTENSIVE_WAKE=DISPATCHED'
+            -f force_train=true \
+            -f prompt='JANUS 30-minute exploratory wake: train a fresh trajectory, evaluate against frozen gates, preserve only verified improvement.'
+          echo 'JANUS_NATIVE_30M_EXPLORATORY_WAKE=DISPATCHED'
