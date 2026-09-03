@@ -1,8 +1,10 @@
 import hashlib
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import torch
 
@@ -11,7 +13,7 @@ from janus_model.decision import _validate_candidate_set, _verified_outcome_prio
 from janus_model.model import ByteTokenizer, JanusModelConfig, JanusTinyTransformer, parameter_count
 from janus_model.organs import build_bicameral_context
 from janus_model.reflection import build_reflection
-from janus_model.train_registry import promotion_gate, save_checkpoint
+from janus_model.train_registry import promotion_gate, resolve_training_seed, save_checkpoint
 
 
 class JanusNativeModelTests(unittest.TestCase):
@@ -31,6 +33,32 @@ class JanusNativeModelTests(unittest.TestCase):
         self.assertEqual(tuple(logits.shape), (2, 32, ByteTokenizer.vocab_size))
         self.assertTrue(torch.isfinite(loss))
         self.assertGreater(parameter_count(model), 100_000)
+
+    def test_training_seed_is_local_deterministic_and_actions_exploratory(self):
+        with patch.dict(os.environ, {}, clear=True):
+            local_seed, local_source = resolve_training_seed(1337)
+        self.assertEqual(local_seed, 1337)
+        self.assertEqual(local_source, "CLI_EXPLICIT_OR_LOCAL_DEFAULT")
+
+        actions_env = {
+            "GITHUB_RUN_ID": "123456789",
+            "GITHUB_RUN_ATTEMPT": "1",
+            "GITHUB_SHA": "a" * 40,
+        }
+        with patch.dict(os.environ, actions_env, clear=True):
+            first_seed, first_source = resolve_training_seed(1337)
+            replay_seed, replay_source = resolve_training_seed(1337)
+            explicit_seed, explicit_source = resolve_training_seed(2026)
+        self.assertNotEqual(first_seed, 1337)
+        self.assertGreater(first_seed, 0)
+        self.assertEqual(first_source, "GITHUB_RUN_ID_DERIVED")
+        self.assertEqual((replay_seed, replay_source), (first_seed, first_source))
+        self.assertEqual((explicit_seed, explicit_source), (2026, "CLI_EXPLICIT_OR_LOCAL_DEFAULT"))
+
+        with patch.dict(os.environ, {**actions_env, "GITHUB_RUN_ID": "123456790"}, clear=True):
+            next_seed, next_source = resolve_training_seed(1337)
+        self.assertEqual(next_source, "GITHUB_RUN_ID_DERIVED")
+        self.assertNotEqual(next_seed, first_seed)
 
     def test_bicameral_organ_context_and_prompt(self):
         with tempfile.TemporaryDirectory() as td:
