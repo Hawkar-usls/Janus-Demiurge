@@ -1,0 +1,32 @@
+name: JANUS Native Intensive Wake
+
+on:
+  schedule:
+    - cron: '47 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: janus-native-intensive-wake
+  cancel-in-progress: true
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  wake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Dispatch JANUS Native Model
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh workflow run janus-native-model.yml \
+            --repo "$GH_REPO" \
+            --ref main \
+            -f mode=train_and_run \
+            -f force_train=false \
+            -f prompt='JANUS intensive wake: inspect new memory and learn when source changed.'
+          echo 'JANUS_NATIVE_INTENSIVE_WAKE=DISPATCHED'
