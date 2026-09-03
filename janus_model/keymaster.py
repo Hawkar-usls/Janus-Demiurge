@@ -30,11 +30,19 @@ EXCLUDED_PARTS = {
 }
 PRIORITY_NAMES = {
     "README.md", "PROJECT_STATUS.json", "AGENTS.md", "CONTRACT.md", "PROTOCOL.md",
+    "experiment_manifest.json",
 }
 SUPPORTED_CONFIGS = {
     "janus.keymaster.primary_learning_contributors.v1": 5,
     "janus.keymaster.primary_learning_contributors.v2": 8,
 }
+TRUMP_REF_STRATEGY = "TRUMP_LATEST_RESEARCH_FRONTIER"
+TRUMP_REPOSITORY = "Hawkar-usls/Janus-Fundamentum"
+TRUMP_BRANCH_RE = re.compile(
+    r"^research/janus-trump-r(?P<round>\d+)(?P<suffix>[a-z]?)(?P<variant>\d*)-",
+    re.I,
+)
+TRUMP_DATE_RE = re.compile(r"20\d{2}-\d{2}-\d{2}")
 
 
 def canonical_bytes(obj: Any) -> bytes:
@@ -65,7 +73,81 @@ def run(cmd: list[str], *, cwd: Path | None = None, timeout: int = 180) -> str:
     return proc.stdout
 
 
-def _score_path(rel: str) -> tuple[int, str]:
+def _trump_branch_sort_key(ref: str) -> tuple[int, int, int, str, str] | None:
+    match = TRUMP_BRANCH_RE.match(ref)
+    if match is None:
+        return None
+    suffix = (match.group("suffix") or "").lower()
+    suffix_rank = (ord(suffix) - ord("a") + 1) if suffix else 0
+    variant = int(match.group("variant") or "0")
+    dates = TRUMP_DATE_RE.findall(ref)
+    date = dates[-1] if dates else ""
+    return (int(match.group("round")), suffix_rank, variant, date, ref.lower())
+
+
+def resolve_contributor_ref(contributor: dict) -> tuple[str, dict]:
+    configured_ref = contributor.get("ref") or "main"
+    strategy = contributor.get("ref_strategy")
+    if not strategy:
+        return configured_ref, {
+            "configured_ref": configured_ref,
+            "resolved_ref": configured_ref,
+            "ref_strategy": "FIXED",
+            "resolver_failure_policy": "NOT_APPLICABLE",
+        }
+    if strategy != TRUMP_REF_STRATEGY:
+        raise RuntimeError(f"KEYMASTER_REF_STRATEGY_REJECTED:{strategy}")
+    if contributor.get("repository") != TRUMP_REPOSITORY:
+        raise RuntimeError("KEYMASTER_TRUMP_STRATEGY_REPOSITORY_REJECTED")
+    if contributor.get("resolver_failure_policy") != "FAIL_CLOSED":
+        raise RuntimeError("KEYMASTER_TRUMP_RESOLVER_MUST_FAIL_CLOSED")
+
+    branch_prefix = contributor.get("branch_prefix") or "research/janus-trump-r"
+    if not isinstance(branch_prefix, str) or not re.fullmatch(r"[A-Za-z0-9._/-]+", branch_prefix):
+        raise RuntimeError("KEYMASTER_TRUMP_BRANCH_PREFIX_REJECTED")
+
+    clone_url = f"https://github.com/{contributor['repository']}.git"
+    refs = run([
+        "git", "ls-remote", "--heads", clone_url, f"refs/heads/{branch_prefix}*",
+    ])
+    candidates: list[tuple[tuple[int, int, int, str, str], str, str]] = []
+    for line in refs.splitlines():
+        parts = line.strip().split()
+        if len(parts) != 2:
+            continue
+        head_sha, full_ref = parts
+        if not re.fullmatch(r"[0-9a-f]{40}", head_sha):
+            continue
+        prefix = "refs/heads/"
+        if not full_ref.startswith(prefix):
+            continue
+        ref = full_ref[len(prefix):]
+        if not ref.startswith(branch_prefix):
+            continue
+        key = _trump_branch_sort_key(ref)
+        if key is not None:
+            candidates.append((key, ref, head_sha))
+
+    if not candidates:
+        raise RuntimeError("KEYMASTER_TRUMP_FRONTIER_NOT_FOUND_FAIL_CLOSED")
+
+    key, resolved_ref, selected_head = max(candidates, key=lambda row: row[0])
+    return resolved_ref, {
+        "configured_ref": configured_ref,
+        "resolved_ref": resolved_ref,
+        "ref_strategy": strategy,
+        "resolver_failure_policy": "FAIL_CLOSED",
+        "selected_head_at_resolution": selected_head,
+        "natural_version": {
+            "round": key[0],
+            "suffix_rank": key[1],
+            "variant": key[2],
+            "date": key[3],
+        },
+    }
+
+
+def _score_path(rel: str, extra_priority_terms: tuple[str, ...] = ()) -> tuple[int, str]:
     path = Path(rel)
     score = 100 if path.name in PRIORITY_NAMES else 0
     low = rel.lower()
@@ -77,10 +159,14 @@ def _score_path(rel: str) -> tuple[int, str]:
     ):
         if word in low:
             score += 10
+    for word in extra_priority_terms:
+        word = word.strip().lower()
+        if word and word in low:
+            score += 40
     return (-score, rel)
 
 
-def eligible_tracked_files(repo: Path) -> list[str]:
+def eligible_tracked_files(repo: Path, extra_priority_terms: tuple[str, ...] = ()) -> list[str]:
     rows = []
     for rel in run(["git", "ls-files"], cwd=repo).splitlines():
         rel = rel.strip()
@@ -96,12 +182,12 @@ def eligible_tracked_files(repo: Path) -> list[str]:
         full = repo / rel
         if full.is_file():
             rows.append(rel)
-    return sorted(rows, key=_score_path)
+    return sorted(rows, key=lambda rel: _score_path(rel, extra_priority_terms))
 
 
 def collect_repository(contributor: dict, max_bytes: int, work_root: Path) -> tuple[dict, str]:
     repository = contributor["repository"]
-    ref = contributor.get("ref") or "main"
+    ref, ref_resolution = resolve_contributor_ref(contributor)
     repo = work_root / contributor["id"].lower()
     clone_url = f"https://github.com/{repository}.git"
     run(["git", "clone", "--depth", "1", "--branch", ref, clone_url, str(repo)])
@@ -109,10 +195,20 @@ def collect_repository(contributor: dict, max_bytes: int, work_root: Path) -> tu
     if not re.fullmatch(r"[0-9a-f]{40}", head):
         raise RuntimeError(f"KEYMASTER_HEAD_INVALID:{repository}:{head}")
 
+    extra_priority_terms = tuple(contributor.get("priority_terms") or ())
+    frontier_match = TRUMP_BRANCH_RE.match(ref) if ref_resolution["ref_strategy"] == TRUMP_REF_STRATEGY else None
+    if frontier_match is not None:
+        frontier_token = (
+            f"r{frontier_match.group('round')}"
+            f"{(frontier_match.group('suffix') or '').lower()}"
+            f"{frontier_match.group('variant') or ''}"
+        )
+        extra_priority_terms = extra_priority_terms + (frontier_token,)
+
     selected = []
     chunks = []
     used = 0
-    for rel in eligible_tracked_files(repo):
+    for rel in eligible_tracked_files(repo, extra_priority_terms):
         raw = (repo / rel).read_bytes()
         if not raw:
             continue
@@ -120,7 +216,9 @@ def collect_repository(contributor: dict, max_bytes: int, work_root: Path) -> tu
         text = scrub(raw.decode("utf-8", errors="replace"))
         envelope = (
             f"\n<JANUS_KEYMASTER_RECORD contributor={json.dumps(contributor['id'])} "
-            f"repository={json.dumps(repository)} head={json.dumps(head)} "
+            f"repository={json.dumps(repository)} ref={json.dumps(ref)} "
+            f"ref_strategy={json.dumps(ref_resolution['ref_strategy'])} "
+            f"head={json.dumps(head)} "
             f"path={json.dumps(rel)} sha256={json.dumps(file_sha)} "
             f"provenance={json.dumps(contributor['provenance'])} "
             f"cohort={json.dumps(contributor.get('cohort', 'LEGACY_5'))} "
@@ -151,7 +249,10 @@ def collect_repository(contributor: dict, max_bytes: int, work_root: Path) -> tu
     identity = {
         "id": contributor["id"],
         "repository": repository,
+        "configured_ref": ref_resolution["configured_ref"],
         "ref": ref,
+        "ref_strategy": ref_resolution["ref_strategy"],
+        "ref_resolution": ref_resolution,
         "head_sha": head,
         "provenance": contributor["provenance"],
         "cohort": contributor.get("cohort", "LEGACY_5"),
@@ -181,6 +282,20 @@ def _validate_config(config: dict) -> tuple[list[dict], int]:
         raise RuntimeError("KEYMASTER_CONTRIBUTOR_IDENTITY_DUPLICATE")
     if any(not isinstance(x, str) or not x for x in repositories + ids):
         raise RuntimeError("KEYMASTER_CONTRIBUTOR_IDENTITIES_REJECTED")
+
+    for row in contributors:
+        strategy = row.get("ref_strategy")
+        if strategy is None:
+            continue
+        if strategy != TRUMP_REF_STRATEGY:
+            raise RuntimeError(f"KEYMASTER_REF_STRATEGY_REJECTED:{strategy}")
+        if row.get("repository") != TRUMP_REPOSITORY:
+            raise RuntimeError("KEYMASTER_TRUMP_STRATEGY_REPOSITORY_REJECTED")
+        if row.get("resolver_failure_policy") != "FAIL_CLOSED":
+            raise RuntimeError("KEYMASTER_TRUMP_RESOLVER_MUST_FAIL_CLOSED")
+        priority_terms = row.get("priority_terms") or []
+        if not isinstance(priority_terms, list) or any(not isinstance(term, str) or not term for term in priority_terms):
+            raise RuntimeError("KEYMASTER_PRIORITY_TERMS_REJECTED")
 
     if schema.endswith(".v2"):
         cohorts = [row.get("cohort") for row in contributors]
@@ -279,6 +394,9 @@ def main() -> None:
             {
                 "id": row["id"],
                 "repository": row["repository"],
+                "configured_ref": row["configured_ref"],
+                "ref": row["ref"],
+                "ref_strategy": row["ref_strategy"],
                 "head_sha": row["head_sha"],
                 "contributed_bytes": row["contributed_bytes"],
                 "provenance": row["provenance"],
