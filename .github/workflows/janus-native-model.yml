@@ -270,6 +270,48 @@ jobs:
           grep -q '"external_llm": false' runtime/native-inspect.json
           echo 'JANUS_NATIVE_CHECKPOINT_LOAD=PASS'
 
+      - name: Persist training lineage before downstream cognition
+        id: training_persist
+        if: steps.decide.outputs.do_train == 'true'
+        shell: bash
+        run: |
+          git config user.name 'janus-native-model'
+          git config user.email 'janus-native-model@users.noreply.github.com'
+          git fetch origin main
+          EXPECTED='${{ steps.brain_base.outputs.state_blob }}'
+          if git cat-file -e origin/main:janus_model/state/JANUS_MODEL_STATE.json 2>/dev/null; then
+            CURRENT=$(git rev-parse origin/main:janus_model/state/JANUS_MODEL_STATE.json)
+          else
+            CURRENT='MISSING'
+          fi
+          if [ "$CURRENT" != "$EXPECTED" ]; then
+            echo 'allow=false' >> "$GITHUB_OUTPUT"
+            echo 'status=STALE_BRAIN_SUPERSEDED' >> "$GITHUB_OUTPUT"
+            printf '{"status":"STALE_BRAIN_SUPERSEDED","expected_state_blob":"%s","current_state_blob":"%s","training_lineage_persisted":false}\n' "$EXPECTED" "$CURRENT" | tee runtime/training-persist-guard.json
+            echo 'JANUS_NATIVE_TRAINING_STATE_SUPERSEDED=TRUE'
+            exit 0
+          fi
+          git add -f \
+            janus_model/checkpoints/promoted.pt \
+            janus_model/state/JANUS_MODEL_STATE.json \
+            janus_model/state/LAST_CORPUS_MANIFEST.json \
+            "janus_model/receipts/training-${GITHUB_RUN_ID}.json"
+          if ! git diff --cached --quiet; then
+            git commit -m "JANUS native model: persist training lineage ${GITHUB_RUN_ID}"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          else
+            echo 'JANUS_NATIVE_TRAINING_STATE_NO_CHANGE'
+          fi
+          POST_STATE_BLOB=$(git rev-parse HEAD:janus_model/state/JANUS_MODEL_STATE.json)
+          POST_HEAD=$(git rev-parse HEAD)
+          echo 'allow=true' >> "$GITHUB_OUTPUT"
+          echo 'status=TRAINING_LINEAGE_PERSISTED' >> "$GITHUB_OUTPUT"
+          echo "state_blob=$POST_STATE_BLOB" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$POST_HEAD" >> "$GITHUB_OUTPUT"
+          printf '{"status":"TRAINING_LINEAGE_PERSISTED","expected_state_blob":"%s","persisted_state_blob":"%s","persisted_head":"%s","training_lineage_persisted":true}\n' "$EXPECTED" "$POST_STATE_BLOB" "$POST_HEAD" | tee runtime/training-persist-guard.json
+          echo "JANUS_NATIVE_TRAINING_PERSIST=PASS:$POST_STATE_BLOB"
+
       - name: Build bounded repair candidate set
         if: steps.decide.outputs.do_run == 'true' || steps.decide.outputs.do_train == 'true'
         run: |
@@ -385,7 +427,18 @@ jobs:
         shell: bash
         run: |
           git fetch origin main
-          EXPECTED='${{ steps.brain_base.outputs.state_blob }}'
+          if [ '${{ steps.decide.outputs.do_train }}' = 'true' ]; then
+            if [ '${{ steps.training_persist.outputs.allow }}' != 'true' ]; then
+              echo 'allow=false' >> "$GITHUB_OUTPUT"
+              echo 'status=TRAINING_LINEAGE_NOT_PERSISTED' >> "$GITHUB_OUTPUT"
+              printf '{"status":"TRAINING_LINEAGE_NOT_PERSISTED","downstream_persisted":false}\n' | tee runtime/persist-guard.json
+              echo 'JANUS_NATIVE_DOWNSTREAM_BLOCKED_BY_TRAINING_PERSIST=TRUE'
+              exit 0
+            fi
+            EXPECTED='${{ steps.training_persist.outputs.state_blob }}'
+          else
+            EXPECTED='${{ steps.brain_base.outputs.state_blob }}'
+          fi
           if git cat-file -e origin/main:janus_model/state/JANUS_MODEL_STATE.json 2>/dev/null; then
             CURRENT=$(git rev-parse origin/main:janus_model/state/JANUS_MODEL_STATE.json)
           else
@@ -394,31 +447,31 @@ jobs:
           if [ "$CURRENT" != "$EXPECTED" ]; then
             echo 'allow=false' >> "$GITHUB_OUTPUT"
             echo 'status=STALE_BRAIN_SUPERSEDED' >> "$GITHUB_OUTPUT"
-            printf '{"status":"STALE_BRAIN_SUPERSEDED","expected_state_blob":"%s","current_state_blob":"%s","candidate_persisted":false}\n' "$EXPECTED" "$CURRENT" | tee runtime/persist-guard.json
+            printf '{"status":"STALE_BRAIN_SUPERSEDED","expected_state_blob":"%s","current_state_blob":"%s","downstream_persisted":false}\n' "$EXPECTED" "$CURRENT" | tee runtime/persist-guard.json
             echo 'JANUS_NATIVE_STALE_BRAIN_SUPERSEDED=TRUE'
             exit 0
           fi
           echo 'allow=true' >> "$GITHUB_OUTPUT"
           echo 'status=FRESH_BRAIN_BASE' >> "$GITHUB_OUTPUT"
-          printf '{"status":"FRESH_BRAIN_BASE","expected_state_blob":"%s","current_state_blob":"%s","candidate_persisted":true}\n' "$EXPECTED" "$CURRENT" | tee runtime/persist-guard.json
+          printf '{"status":"FRESH_BRAIN_BASE","expected_state_blob":"%s","current_state_blob":"%s","downstream_persisted":true}\n' "$EXPECTED" "$CURRENT" | tee runtime/persist-guard.json
           echo 'JANUS_NATIVE_PREPERSIST_BRAIN_GUARD=PASS'
 
-      - name: Persist promoted brain receipts reflection and decisions
+      - name: Persist model-owned downstream reflection and decisions
         if: (steps.decide.outputs.do_train == 'true' || (github.event_name == 'workflow_dispatch' && steps.decide.outputs.do_run == 'true')) && steps.persist_guard.outputs.allow == 'true'
         shell: bash
         run: |
           git config user.name 'janus-native-model'
           git config user.email 'janus-native-model@users.noreply.github.com'
-          git add -f janus_model/checkpoints/promoted.pt janus_model/state janus_model/receipts
+          git add -f janus_model/state
           if [ -d janus_model/outbox ]; then git add -f janus_model/outbox; fi
           if git diff --cached --quiet; then
-            echo 'JANUS_NATIVE_NO_STATE_CHANGE'
+            echo 'JANUS_NATIVE_NO_DOWNSTREAM_STATE_CHANGE'
             exit 0
           fi
           git commit -m "JANUS native model: remember run ${GITHUB_RUN_ID} reflection and decision"
           git pull --rebase origin main
           git push origin HEAD:main
-          echo 'JANUS_NATIVE_PERSIST=PASS'
+          echo 'JANUS_NATIVE_DOWNSTREAM_PERSIST=PASS'
 
       - name: Upload native run evidence
         if: always()
@@ -429,6 +482,7 @@ jobs:
             runtime/brain-base.json
             runtime/corpus/corpus_manifest.json
             runtime/training-receipt.json
+            runtime/training-persist-guard.json
             runtime/native-inspect.json
             runtime/native-inference.txt
             runtime/organ-context.json
