@@ -10,9 +10,7 @@ import torch
 
 from janus_model.eval_contract import (
     ADAPTIVE_REGRESSION_TOLERANCE,
-    ADAPTIVE_SEED_OFFSET,
     ANCHOR_REGRESSION_TOLERANCE,
-    ANCHOR_SEED_OFFSET,
     BOOTSTRAP_FINITE_LOSS_CEILING,
     DEFAULT_ANCHOR,
     EVAL_BATCHES,
@@ -197,7 +195,11 @@ def main():
     anchor_stream = tokens(anchor_path)
     corpus = json.loads(Path(a.corpus_manifest).read_text())
 
-    local_contract = contract_identity(anchor_path, seed=a.seed)
+    # The training seed is exploratory. Evaluation seeds stay frozen inside the
+    # evaluation contract so candidates from different attempts remain comparable.
+    local_contract = contract_identity(anchor_path)
+    adaptive_eval_seed = int(local_contract["adaptive"]["seed"])
+    anchor_eval_seed = int(local_contract["anchor"]["seed"])
     manifest_contract_sha = corpus.get("evaluation_contract_sha256")
     if manifest_contract_sha != local_contract["contract_sha256"]:
         raise RuntimeError(
@@ -220,14 +222,14 @@ def main():
             holdout_stream,
             EVAL_BATCHES,
             EVAL_BATCH_SIZE,
-            a.seed + ADAPTIVE_SEED_OFFSET,
+            adaptive_eval_seed,
         )
         incumbent_anchor_loss = eval_loss(
             incumbent_model,
             anchor_stream,
             EVAL_BATCHES,
             EVAL_BATCH_SIZE,
-            a.seed + ANCHOR_SEED_OFFSET,
+            anchor_eval_seed,
         )
         candidate = JanusTinyTransformer(incumbent_model.config)
         candidate.load_state_dict(incumbent_model.state_dict())
@@ -260,14 +262,14 @@ def main():
         holdout_stream,
         EVAL_BATCHES,
         EVAL_BATCH_SIZE,
-        a.seed + ADAPTIVE_SEED_OFFSET,
+        adaptive_eval_seed,
     )
     candidate_anchor_loss = eval_loss(
         candidate,
         anchor_stream,
         EVAL_BATCHES,
         EVAL_BATCH_SIZE,
-        a.seed + ANCHOR_SEED_OFFSET,
+        anchor_eval_seed,
     )
 
     gate = promotion_gate(
@@ -315,6 +317,11 @@ def main():
             "parent_checkpoint_sha256": parent_sha,
             "training_mode": mode,
             "seed": a.seed,
+            "training_seed": a.seed,
+            "evaluation_seeds": {
+                "adaptive": adaptive_eval_seed,
+                "anchor": anchor_eval_seed,
+            },
             "steps": a.steps,
             "candidate_eval_loss": candidate_loss,
             "incumbent_eval_loss": incumbent_loss,
@@ -364,6 +371,11 @@ def main():
         "config": candidate.config.to_dict(),
         "steps": a.steps,
         "seed": a.seed,
+        "training_seed": a.seed,
+        "evaluation_seeds": {
+            "adaptive": adaptive_eval_seed,
+            "anchor": anchor_eval_seed,
+        },
         "sample": sample[-500:],
         "claim_ceiling": {
             "own_weights_trained": True,
@@ -371,6 +383,8 @@ def main():
             "registry_text_is_automatic_truth": False,
             "anchor_is_training_source": False,
             "anchor_gate_can_override_failed_adaptive_gate": False,
+            "training_seed_is_exploratory_only": True,
+            "evaluation_seeds_frozen": True,
             "general_intelligence_proven": False,
             "self_development": "BOUNDED_WEIGHT_UPDATE_WITH_DUAL_EVALUATION_PROMOTION_GATE",
         },
@@ -388,6 +402,11 @@ def main():
                 "source_digest": corpus["source_digest"],
                 "registry_source_digest": corpus.get("registry_source_digest"),
                 "evaluation_contract_sha256": local_contract["contract_sha256"],
+                "training_seed": a.seed,
+                "evaluation_seeds": {
+                    "adaptive": adaptive_eval_seed,
+                    "anchor": anchor_eval_seed,
+                },
                 "incumbent_eval_loss": incumbent_loss,
                 "candidate_eval_loss": candidate_loss,
                 "incumbent_anchor_eval_loss": incumbent_anchor_loss,
