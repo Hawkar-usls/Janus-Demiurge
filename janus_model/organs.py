@@ -43,8 +43,12 @@ def _load_agent(root: Path, agent_id: str, expected_repository: str | None = Non
     obj = json.loads(raw.decode("utf-8"))
     if obj.get("agent_id") != agent_id:
         raise RuntimeError(f"ORGAN_AGENT_ID_MISMATCH:{agent_id}")
-    if obj.get("status") != "OBSERVED_REPOSITORY_STATE":
+
+    scout_status = obj.get("status")
+    observation_degraded = isinstance(scout_status, str) and scout_status.startswith("DEGRADED_")
+    if scout_status != "OBSERVED_REPOSITORY_STATE" and not observation_degraded:
         raise RuntimeError(f"ORGAN_STATE_NOT_OBSERVED:{agent_id}")
+
     target = obj.get("target") or {}
     snapshot = obj.get("repository_snapshot") or {}
     repository = target.get("repository")
@@ -60,6 +64,8 @@ def _load_agent(root: Path, agent_id: str, expected_repository: str | None = Non
     return {
         "agent_id": agent_id,
         "scout_role": obj.get("role"),
+        "scout_status": scout_status,
+        "observation_degraded": observation_degraded,
         "observed_at_utc": obj.get("created_at_utc"),
         "repository": repository,
         "ref": target.get("ref"),
@@ -136,11 +142,16 @@ def build_modular_context(
     hrain = modules[HRAIN_AGENT]
     inaihr = modules[INAIHR_AGENT]
     self_memory = _self_memory_identity(self_memory_root)
+    degraded_module_ids = sorted(
+        agent_id for agent_id, module in modules.items() if module.get("observation_degraded") is True
+    )
     core = {
         "schema": "janus.model.modular_organ_context.v2",
         "status": "READ_ONLY_MODULAR_ORGAN_CONTEXT",
         "canonical_formula": "HRAIN_GROUNDS -> EYE_BRIDGES -> INAIHR_ASSOCIATES -> HRAIN_MEDIATES -> NATIVE_MODEL_DECIDES -> VERIFY_DECIDES",
         "module_count": len(modules),
+        "degraded_module_count": len(degraded_module_ids),
+        "degraded_module_ids": degraded_module_ids,
         "module_registry_sha256": registry_sha,
         "repository_modules": modules,
         "organs": {"HRAiN": hrain, "iNaiHR": inaihr},
@@ -148,6 +159,8 @@ def build_modular_context(
         "firewalls": {
             "read_only": True,
             "module_observation_grants_mutation": False,
+            "degraded_observation_is_health": False,
+            "degraded_observation_blocks_valid_snapshot_context": False,
             "direct_cross_hemisphere_mutation": False,
             "direct_eye_to_inaihr_bypass": False,
             "bicameral_agreement_is_truth": False,
@@ -159,7 +172,7 @@ def build_modular_context(
     digest = sha256_bytes(canonical_bytes(core))
     core["context_sha256"] = digest
     core["native_prompt_suffix"] = (
-        f"CTX MODULES={len(modules)}; HRAiN@{hrain['target_commit'][:8]}=STRUCTURE; "
+        f"CTX MODULES={len(modules)}; DEGRADED={len(degraded_module_ids)}; HRAiN@{hrain['target_commit'][:8]}=STRUCTURE; "
         f"iNaiHR@{inaihr['target_commit'][:8]}=ASSOCIATION; "
         f"SELF@{(self_memory.get('digest_sha256') or 'NONE')[:8]}; "
         "VERIFY=DECIDES; AGREEMENT!=TRUTH; PATCH!=PASS"
@@ -191,6 +204,8 @@ def main() -> None:
         "status": context["status"],
         "context_sha256": context["context_sha256"],
         "module_count": context["module_count"],
+        "degraded_module_count": context["degraded_module_count"],
+        "degraded_module_ids": context["degraded_module_ids"],
         "self_memory_digest": context["self_memory"]["digest_sha256"],
         "hrain_commit": context["organs"]["HRAiN"]["target_commit"],
         "inaihr_commit": context["organs"]["iNaiHR"]["target_commit"],
