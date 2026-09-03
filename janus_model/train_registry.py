@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
+import os
 import random
 from pathlib import Path
 
@@ -29,6 +31,27 @@ from janus_model.model import (
 def seed_everything(seed):
     random.seed(seed)
     torch.manual_seed(seed)
+
+
+def resolve_training_seed(requested_seed):
+    """Keep local runs reproducible while making GitHub Actions exploration unique.
+
+    The historical 1337 value remains the local/default sentinel. Inside Actions,
+    that sentinel is deterministically expanded from the immutable run identity,
+    so every distinct run gets a distinct, replayable training trajectory.
+    """
+    run_id = os.environ.get("GITHUB_RUN_ID")
+    if requested_seed != 1337 or not run_id:
+        return requested_seed, "CLI_EXPLICIT_OR_LOCAL_DEFAULT"
+    material = ":".join(
+        [
+            run_id,
+            os.environ.get("GITHUB_RUN_ATTEMPT", "1"),
+            os.environ.get("GITHUB_SHA", ""),
+        ]
+    ).encode("utf-8")
+    derived = int.from_bytes(hashlib.sha256(material).digest()[:4], "big") & 0x7FFFFFFF
+    return (derived or 1), "GITHUB_RUN_ID_DERIVED"
 
 
 def tokens(path):
@@ -188,7 +211,8 @@ def main():
     ap.add_argument("--seed", type=int, default=1337)
     a = ap.parse_args()
 
-    seed_everything(a.seed)
+    training_seed, training_seed_source = resolve_training_seed(a.seed)
+    seed_everything(training_seed)
     train_stream = tokens(a.train)
     holdout_stream = tokens(a.holdout)
     anchor_path = Path(a.anchor)
@@ -241,7 +265,7 @@ def main():
 
     candidate.train()
     opt = torch.optim.AdamW(candidate.parameters(), lr=a.lr, weight_decay=0.01)
-    g = torch.Generator().manual_seed(a.seed + 1)
+    g = torch.Generator().manual_seed(training_seed + 1)
     losses = []
     for _ in range(a.steps):
         x, y = batch_from(
@@ -316,8 +340,10 @@ def main():
             "evaluation_contract_sha256": local_contract["contract_sha256"],
             "parent_checkpoint_sha256": parent_sha,
             "training_mode": mode,
-            "seed": a.seed,
-            "training_seed": a.seed,
+            "seed": training_seed,
+            "training_seed": training_seed,
+            "training_seed_source": training_seed_source,
+            "requested_seed": a.seed,
             "evaluation_seeds": {
                 "adaptive": adaptive_eval_seed,
                 "anchor": anchor_eval_seed,
@@ -339,7 +365,7 @@ def main():
         [ByteTokenizer.encode(prompt, bos=True)],
         dtype=torch.long,
     )
-    torch.manual_seed(a.seed + 99)
+    torch.manual_seed(training_seed + 99)
     sample_ids = candidate.generate(
         context,
         max_new_tokens=96,
@@ -370,8 +396,10 @@ def main():
         "parameter_count": parameter_count(candidate),
         "config": candidate.config.to_dict(),
         "steps": a.steps,
-        "seed": a.seed,
-        "training_seed": a.seed,
+        "seed": training_seed,
+        "training_seed": training_seed,
+        "training_seed_source": training_seed_source,
+        "requested_seed": a.seed,
         "evaluation_seeds": {
             "adaptive": adaptive_eval_seed,
             "anchor": anchor_eval_seed,
@@ -402,7 +430,9 @@ def main():
                 "source_digest": corpus["source_digest"],
                 "registry_source_digest": corpus.get("registry_source_digest"),
                 "evaluation_contract_sha256": local_contract["contract_sha256"],
-                "training_seed": a.seed,
+                "training_seed": training_seed,
+                "training_seed_source": training_seed_source,
+                "requested_seed": a.seed,
                 "evaluation_seeds": {
                     "adaptive": adaptive_eval_seed,
                     "anchor": anchor_eval_seed,
