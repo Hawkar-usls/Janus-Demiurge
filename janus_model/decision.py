@@ -76,12 +76,17 @@ def _validate_candidate_set(obj: dict, organ_context: dict) -> list[dict]:
             module = module_by_repo.get(target.get("repository"))
             if module is None:
                 raise RuntimeError(f"DECISION_TARGET_NOT_OBSERVED_MODULE:{cid}")
-            if target.get("expected_target_commit") != module.get("target_commit"):
-                raise RuntimeError(f"DECISION_TARGET_COMMIT_NOT_SCOUT_BOUND:{cid}")
             if row.get("proposal_template") is None:
                 raise RuntimeError(f"DECISION_PROPOSAL_TEMPLATE_MISSING:{cid}")
             if row.get("verification_profile") is None:
                 raise RuntimeError(f"DECISION_VERIFIER_MISSING:{cid}")
+            if target.get("expected_target_commit") != module.get("target_commit"):
+                # A candidate bound to an older observed HEAD is not evidence of
+                # failure and must not abort a newer learning cycle. Neutralize
+                # only this exact stale-base condition after every other strict
+                # shape/risk/verifier check has passed. Unknown targets and
+                # malformed candidates still fail closed above.
+                continue
         out.append(row)
     if not has_no_action:
         raise RuntimeError("DECISION_NO_ACTION_REQUIRED")
