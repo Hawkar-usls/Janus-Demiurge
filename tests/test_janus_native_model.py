@@ -7,7 +7,7 @@ from pathlib import Path
 import torch
 
 from janus_model.cli import _augment_prompt
-from janus_model.decision import _verified_outcome_prior, decide
+from janus_model.decision import _validate_candidate_set, _verified_outcome_prior, decide
 from janus_model.model import ByteTokenizer, JanusModelConfig, JanusTinyTransformer, parameter_count
 from janus_model.organs import build_bicameral_context
 from janus_model.reflection import build_reflection
@@ -153,6 +153,67 @@ class JanusNativeModelTests(unittest.TestCase):
             self.assertTrue(decision["native_model_decision"])
             self.assertFalse(decision["authority"]["direct_repository_mutation"])
             self.assertFalse(decision["authority"]["autonomous_merge"])
+
+    def test_stale_observed_candidate_is_neutralized_and_no_action_survives(self):
+        context = {
+            "repository_modules": {
+                "SCOUT_HRAIN_02": {
+                    "repository": "Hawkar-usls/Hrain",
+                    "target_commit": "b" * 40,
+                }
+            }
+        }
+        candidate_set = {
+            "schema": "janus.native_repair_candidate_set.v1",
+            "status": "BOUNDED_PREVALIDATED_CANDIDATES",
+            "candidates": [
+                {"candidate_id": "NO_ACTION", "action": "NO_ACTION", "score_text": "NO_ACTION"},
+                {
+                    "candidate_id": "STALE_HRAIN_FIX",
+                    "action": "PATCH_MODULE",
+                    "score_text": "STALE_HRAIN_FIX",
+                    "risk_lane": "LOW",
+                    "target": {
+                        "repository": "Hawkar-usls/Hrain",
+                        "expected_target_commit": "a" * 40,
+                    },
+                    "proposal_template": {},
+                    "verification_profile": "INTERHEMISPHERE_BRIDGE_TEST",
+                },
+            ],
+        }
+        validated = _validate_candidate_set(candidate_set, context)
+        self.assertEqual([row["candidate_id"] for row in validated], ["NO_ACTION"])
+
+    def test_stale_candidate_is_not_allowed_to_hide_malformed_payload(self):
+        context = {
+            "repository_modules": {
+                "SCOUT_HRAIN_02": {
+                    "repository": "Hawkar-usls/Hrain",
+                    "target_commit": "b" * 40,
+                }
+            }
+        }
+        candidate_set = {
+            "schema": "janus.native_repair_candidate_set.v1",
+            "status": "BOUNDED_PREVALIDATED_CANDIDATES",
+            "candidates": [
+                {"candidate_id": "NO_ACTION", "action": "NO_ACTION", "score_text": "NO_ACTION"},
+                {
+                    "candidate_id": "MALFORMED_STALE_HRAIN_FIX",
+                    "action": "PATCH_MODULE",
+                    "score_text": "MALFORMED_STALE_HRAIN_FIX",
+                    "risk_lane": "LOW",
+                    "target": {
+                        "repository": "Hawkar-usls/Hrain",
+                        "expected_target_commit": "a" * 40,
+                    },
+                    "verification_profile": "INTERHEMISPHERE_BRIDGE_TEST",
+                },
+            ],
+        }
+        with self.assertRaisesRegex(RuntimeError, "DECISION_PROPOSAL_TEMPLATE_MISSING:MALFORMED_STALE_HRAIN_FIX"):
+            _validate_candidate_set(candidate_set, context)
 
     def test_verified_outcome_prior_is_training_eligible_only_and_hard_capped(self):
         candidate = {
