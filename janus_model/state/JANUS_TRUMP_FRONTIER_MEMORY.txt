@@ -1,0 +1,2051 @@
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-osiris-r3b-proof-carrying-recovery.yml" git_blob_sha="a936bf2a7341665523cf2ca3623f30a2e8a11241" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: JANUS TRUMP Osiris R3B Proof-Carrying Recovery
+
+on:
+  push:
+    branches:
+      - research/janus-trump-osiris-r3b-proof-carrying-recovery-2026-09-01
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-trump-osiris-r3b-proof-carrying-recovery
+  cancel-in-progress: false
+
+jobs:
+  frozen-recovery:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify R3B freeze and immutable R3A
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('research/JANUS_TRUMP_OSIRIS_R3B_PROOF_CARRYING_RECOVERY_PREREGISTRATION_2026-09-01.json'))
+          f=json.load(open('research/JANUS_TRUMP_OSIRIS_R3B_PRE_HOLDOUT_FREEZE_2026-09-01.json'))
+          a=json.load(open('research/JANUS_TRUMP_OSIRIS_R3A_NATURAL_RESIDUALS_RESULT_SUMMARY_2026-09-01.json'))
+          assert p['status']=='FROZEN_BEFORE_R3B_EXECUTION'
+          assert f['status']=='SEALED_BEFORE_R3B_EXECUTION'
+          assert f['holdout_seen'] is False
+          assert p['changes_allowed']['R2_route_rule']=='UNCHANGED'
+          assert a['status']=='NATURAL_RESIDUAL_GATE_FAIL__SHADOW_ONLY__P_VS_NP_OPEN'
+          print('R3B_FREEZE_OK__R3A_IMMUTABLE')
+          PY
+      - name: Compile R3B
+        run: |
+          python -m py_compile \
+            experiments/janus_trump_p_vs_np_direct_challenge_r0.py \
+            experiments/janus_trump_osiris_r3_natural_residuals.py \
+            experiments/janus_trump_osiris_r3b_proof_carrying_recovery.py \
+            experiments/janus_trump_osiris_r3b_proof_carrying_recovery_runner.py \
+            tests/test_janus_trump_osiris_r3b_proof_carrying_recovery.py
+      - name: Unit and proof-carrying firewall tests
+        run: python -m unittest tests.test_janus_trump_osiris_r3b_proof_carrying_recovery -v
+      - name: Execute frozen R3B recovery validation
+        run: |
+          mkdir -p artifacts
+          python experiments/janus_trump_osiris_r3b_proof_carrying_recovery_runner.py \
+            --output artifacts/JANUS_TRUMP_OSIRIS_R3B_PROOF_CARRYING_RECOVERY_RESULT_2026-09-01.json
+      - name: Receipt integrity
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('artifacts/JANUS_TRUMP_OSIRIS_R3B_PROOF_CARRYING_RECOVERY_RESULT_2026-09-01.json'))
+          assert d['P_VS_NP']=='OPEN'
+          assert d['scientific_boundary']['R3A_remains_failed'] is True
+          assert d['primary_gates']['proof_carrying']['sat_replay_failures']==0
+          print(d['status'])
+          print(json.dumps(d['primary_gates'],indent=2))
+          print(json.dumps(d['observations'],indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: janus-trump-osiris-r3b-proof-carrying-recovery
+          path: artifacts/JANUS_TRUMP_OSIRIS_R3B_PROOF_CARRYING_RECOVERY_RESULT_2026-09-01.json
+          if-no-files-found: error
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r7d-dense-3sat-polynomial-proof-attack-fastpath.yml" git_blob_sha="becd5408184e3b4c150b8f04b20e2b0621b4d1a6" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: JANUS TRUMP R7D Dense 3SAT Polynomial Proof Attack Fastpath
+
+on:
+  push:
+    branches:
+      - research/janus-trump-r7d-dense-3sat-polynomial-proof-attack-2026-09-01
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  r7d-dense-3sat-fastpath:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify frozen R7D preregistration
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('research/JANUS_TRUMP_R7D_DENSE_3SAT_POLYNOMIAL_PROOF_ATTACK_PREREGISTRATION_2026-09-01.json'))
+          assert p['status']=='FROZEN_BEFORE_R7D_EXECUTION'
+          assert p['P_VS_NP_before_R7D']=='OPEN'
+          assert p['scope']['expected_target_count']==10
+          assert p['frozen_width']['k']==4
+          print('R7D_FREEZE_OK')
+          PY
+      - name: Compile R7D fastpath
+        run: |
+          PYTHONPATH=experiments:. python -m py_compile experiments/janus_trump_r7d_dense_3sat_polynomial_proof_attack.py experiments/janus_trump_r7d_dense_3sat_polynomial_proof_attack_fastpath.py tests/test_janus_trump_r7d_dense_3sat_polynomial_proof_attack.py
+      - name: R7D firewall tests
+        run: |
+          PYTHONPATH=experiments:. python - <<'PY'
+          import importlib.util
+          spec=importlib.util.spec_from_file_location('r7dtests','tests/test_janus_trump_r7d_dense_3sat_polynomial_proof_attack.py')
+          m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+          tests=[getattr(m,n) for n in dir(m) if n.startswith('test_') and callable(getattr(m,n))]
+          for t in tests: t()
+          print('R7D_FIREWALL_TESTS_PASS', len(tests))
+          PY
+      - name: Run frozen R7D fastpath
+        run: |
+          mkdir -p artifacts
+          PYTHONPATH=experiments:. python experiments/janus_trump_r7d_dense_3sat_polynomial_proof_attack_fastpath.py --output artifacts/JANUS_TRUMP_R7D_DENSE_3SAT_POLYNOMIAL_PROOF_ATTACK_FASTPATH_RESULT_2026-09-01.json
+      - name: Scientific gate
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('artifacts/JANUS_TRUMP_R7D_DENSE_3SAT_POLYNOMIAL_PROOF_ATTACK_FASTPATH_RESULT_2026-09-01.json'))
+          print(d['verdict'])
+          print(d['summary'])
+          assert d['P_VS_NP']=='OPEN'
+          assert d['scope']=='EXPOSED_R7C_REMAINDER_DISCOVERY_ONLY'
+          assert d['frozen_width']==4
+          assert d['summary']['targets']==10
+          assert d['summary']['target_families']==['RANDOM_3SAT_NEAR_DENSE']
+          assert d['summary']['false_terminals']==0
+          assert d['summary']['sat_replay_failures']==0
+          assert d['candidate_source_firewall']['pass'] is True
+          assert all(d['gates'].values())
+          PY
+      - name: Upload immutable R7D fastpath evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-r7d-dense-3sat-polynomial-proof-attack-fastpath
+          path: artifacts/JANUS_TRUMP_R7D_DENSE_3SAT_POLYNOMIAL_PROOF_ATTACK_FASTPATH_RESULT_2026-09-01.json
+          if-no-files-found: error
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r7d-dense-3sat-polynomial-proof-attack.yml" git_blob_sha="0ed4e6e0ce37f50a2586afac95b6d202bd81242e" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: JANUS TRUMP R7D Dense 3SAT Polynomial Proof Attack
+
+on:
+  push:
+    branches:
+      - research/janus-trump-r7d-dense-3sat-polynomial-proof-attack-2026-09-01
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  r7d-dense-3sat-polynomial-proof-attack:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify frozen R7D preregistration
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('research/JANUS_TRUMP_R7D_DENSE_3SAT_POLYNOMIAL_PROOF_ATTACK_PREREGISTRATION_2026-09-01.json'))
+          assert p['status']=='FROZEN_BEFORE_R7D_EXECUTION'
+          assert p['P_VS_NP_before_R7D']=='OPEN'
+          assert p['scope']['expected_target_count']==10
+          assert p['scope']['custom_R7D_generator_allowed'] is False
+          assert p['scope']['holdout_claim_allowed'] is False
+          assert p['frozen_width']['k']==4
+          print('R7D_FREEZE_OK')
+          PY
+
+      - name: Compile R7D
+        run: |
+          PYTHONPATH=experiments:. python -m py_compile experiments/janus_trump_r7d_dense_3sat_polynomial_proof_attack.py tests/test_janus_trump_r7d_dense_3sat_polynomial_proof_attack.py
+
+      - name: R7D firewall tests
+        run: |
+          PYTHONPATH=experiments:. python - <<'PY'
+          import importlib.util
+          spec=importlib.util.spec_from_file_location('r7dtests','tests/test_janus_trump_r7d_dense_3sat_polynomial_proof_attack.py')
+          m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+          tests=[getattr(m,n) for n in dir(m) if n.startswith('test_') and callable(getattr(m,n))]
+          for t in tests: t()
+          print('R7D_FIREWALL_TESTS_PASS', len(tests))
+          PY
+
+      - name: Run frozen R7D dense-3SAT attack
+        run: |
+          mkdir -p artifacts
+          PYTHONPATH=experiments:. python experiments/janus_trump_r7d_dense_3sat_polynomial_proof_attack.py --output artifacts/JANUS_TRUMP_R7D_DENSE_3SAT_POLYNOMIAL_PROOF_ATTACK_RESULT_2026-09-01.json
+
+      - name: Scientific gate
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('artifacts/JANUS_TRUMP_R7D_DENSE_3SAT_POLYNOMIAL_PROOF_ATTACK_RESULT_2026-09-01.json'))
+          print(d['verdict'])
+          print(d['summary'])
+          assert d['P_VS_NP']=='OPEN'
+          assert d['scope']=='EXPOSED_R7C_REMAINDER_DISCOVERY_ONLY'
+          assert d['frozen_width']==4
+          assert d['summary']['targets']==10
+          assert d['summary']['target_families']==['RANDOM_3SAT_NEAR_DENSE']
+          assert d['summary']['false_terminals']==0
+          assert d['summary']['sat_replay_failures']==0
+          assert d['candidate_source_firewall']['pass'] is True
+          assert all(d['gates'].values())
+          PY
+
+      - name: Upload immutable R7D evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-r7d-dense-3sat-polynomial-proof-attack
+          path: artifacts/JANUS_TRUMP_R7D_DENSE_3SAT_POLYNOMIAL_PROOF_ATTACK_RESULT_2026-09-01.json
+          if-no-files-found: error
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-osiris-r4-roi-gate.yml" git_blob_sha="c3ccfdb4b5d5c364547afc40a5a2eb516349d0b2" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: JANUS TRUMP Osiris R4 ROI Gate
+on:
+  push:
+    branches:
+      - research/janus-trump-osiris-r4-roi-gate-2026-09-01
+  workflow_dispatch:
+jobs:
+  frozen-r4-holdout:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify frozen R4 spec
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('research/JANUS_TRUMP_OSIRIS_R4_ROI_PREDICTOR_PREREGISTRATION_2026-09-01.json'))
+          s=json.load(open('research/JANUS_TRUMP_OSIRIS_R4_ROI_GATE_FROZEN_SPEC_2026-09-01.json'))
+          assert p['status']=='FROZEN_BEFORE_R4_HOLDOUT_BRANCH'
+          assert s['status']=='FROZEN_BEFORE_EXECUTION'
+          assert s['training']['rows']==108
+          assert s['training']['profitable']==0
+          assert s['P_VS_NP']=='OPEN'
+          print('R4_FREEZE_OK')
+          PY
+      - name: Compile R4
+        run: |
+          python -m py_compile experiments/janus_trump_osiris_r4_roi_gate.py experiments/janus_trump_osiris_r4_roi_gate_runner.py tests/test_janus_trump_osiris_r4_roi_gate.py
+      - name: R4 unit and firewall tests
+        run: |
+          python - <<'PY'
+          import importlib.util
+          spec=importlib.util.spec_from_file_location('r4tests','tests/test_janus_trump_osiris_r4_roi_gate.py')
+          m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+          tests=[getattr(m,n) for n in dir(m) if n.startswith('test_') and callable(getattr(m,n))]
+          for t in tests: t()
+          print('R4_FIREWALL_TESTS_PASS', len(tests))
+          PY
+      - name: Execute frozen unexposed workload holdout
+        run: |
+          mkdir -p artifacts
+          PYTHONPATH=experiments python experiments/janus_trump_osiris_r4_roi_gate_runner.py --output artifacts/JANUS_TRUMP_OSIRIS_R4_ROI_GATE_RESULT_2026-09-01.json
+      - name: Scientific gate
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('artifacts/JANUS_TRUMP_OSIRIS_R4_ROI_GATE_RESULT_2026-09-01.json'))
+          print(d['verdict'], d['summary'])
+          assert d['P_VS_NP']=='OPEN'
+          assert all(d['gates'].values())
+          assert d['summary']['shadow_profitable_cases_skipped']==0
+          assert d['summary']['ops_avoided_by_frozen_abstention'] >= 0
+          PY
+      - name: Upload immutable R4 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-osiris-r4-roi-gate
+          path: artifacts/JANUS_TRUMP_OSIRIS_R4_ROI_GATE_RESULT_2026-09-01.json
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-osiris-r3-natural-residuals-evidence-recovery.yml" git_blob_sha="5b4ed57f11a0c12e141b1a4466746d2cd933f5e9" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: JANUS TRUMP Osiris R3 Evidence Recovery
+
+on:
+  push:
+    branches:
+      - research/janus-trump-osiris-r3-natural-residuals-2026-09-01
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-trump-osiris-r3-evidence-recovery
+  cancel-in-progress: false
+
+jobs:
+  recover-receipt:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify frozen specification unchanged
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('research/JANUS_TRUMP_OSIRIS_R3_NATURAL_RESIDUALS_PREREGISTRATION_2026-09-01.json'))
+          f=json.load(open('research/JANUS_TRUMP_OSIRIS_R3_NATURAL_RESIDUALS_PRE_HOLDOUT_FREEZE_2026-09-01.json'))
+          assert p['status']=='FROZEN_BEFORE_EXECUTION'
+          assert f['status']=='SEALED_BEFORE_HOLDOUT'
+          assert p['residual_acquisition_freeze']['selection_may_use_truth'] is False
+          print('FROZEN_SPEC_UNCHANGED')
+          PY
+      - name: Compile implementation
+        run: |
+          python -m py_compile experiments/janus_trump_p_vs_np_direct_challenge_r0.py experiments/janus_trump_osiris_r3_natural_residuals.py experiments/janus_trump_osiris_r3_natural_residuals_runner.py
+      - name: Run unit tests for diagnostics
+        continue-on-error: true
+        run: python -m unittest tests.test_janus_trump_osiris_r3_natural_residuals -v
+      - name: Execute frozen runner regardless of hypothesis gate
+        if: always()
+        run: |
+          mkdir -p artifacts
+          python experiments/janus_trump_osiris_r3_natural_residuals_runner.py --output artifacts/JANUS_TRUMP_OSIRIS_R3_NATURAL_RESIDUALS_RESULT_2026-09-01.json
+      - name: Print receipt summary
+        if: always()
+        run: |
+          python - <<'PY'
+          import json, pathlib
+          p=pathlib.Path('artifacts/JANUS_TRUMP_OSIRIS_R3_NATURAL_RESIDUALS_RESULT_2026-09-01.json')
+          if not p.exists():
+              raise SystemExit('receipt missing')
+          d=json.load(open(p))
+          print(json.dumps({'status':d['status'],'gates':d['gates']},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: janus-trump-osiris-r3-natural-residuals-recovered
+          path: artifacts/JANUS_TRUMP_OSIRIS_R3_NATURAL_RESIDUALS_RESULT_2026-09-01.json
+          if-no-files-found: error
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-osiris-r3-natural-residuals.yml" git_blob_sha="3991616878ff0e808d923ffab0e463bbb909ed26" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: JANUS TRUMP Osiris R3 Natural Residuals
+
+on:
+  push:
+    branches:
+      - research/janus-trump-osiris-r3-natural-residuals-2026-09-01
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-trump-osiris-r3-natural-residuals
+  cancel-in-progress: false
+
+jobs:
+  frozen-natural-residual-holdout:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify preregistration and pre-holdout seal
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('research/JANUS_TRUMP_OSIRIS_R3_NATURAL_RESIDUALS_PREREGISTRATION_2026-09-01.json'))
+          f=json.load(open('research/JANUS_TRUMP_OSIRIS_R3_NATURAL_RESIDUALS_PRE_HOLDOUT_FREEZE_2026-09-01.json'))
+          assert p['status']=='FROZEN_BEFORE_EXECUTION'
+          assert p['residual_acquisition_freeze']['custom_R3_formula_generator'] is False
+          assert p['residual_acquisition_freeze']['selection_may_use_truth'] is False
+          assert p['scientific_boundary']['P_VS_NP']=='OPEN'
+          assert f['status']=='SEALED_BEFORE_HOLDOUT'
+          assert f['holdout_seen'] is False
+          assert f['parameters_mutable_after_this_record'] is False
+          print('R3_PRE_HOLDOUT_FREEZE_OK')
+          PY
+      - name: Compile R3 natural residual lane
+        run: |
+          python -m py_compile \
+            experiments/janus_trump_p_vs_np_direct_challenge_r0.py \
+            experiments/janus_trump_osiris_r3_natural_residuals.py \
+            experiments/janus_trump_osiris_r3_natural_residuals_runner.py \
+            tests/test_janus_trump_osiris_r3_natural_residuals.py
+      - name: Run R3 unit and epistemic firewall tests
+        run: python -m unittest tests.test_janus_trump_osiris_r3_natural_residuals -v
+      - name: Execute frozen natural residual killer-test
+        run: |
+          mkdir -p artifacts
+          python experiments/janus_trump_osiris_r3_natural_residuals_runner.py \
+            --output artifacts/JANUS_TRUMP_OSIRIS_R3_NATURAL_RESIDUALS_RESULT_2026-09-01.json
+      - name: Receipt integrity
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('artifacts/JANUS_TRUMP_OSIRIS_R3_NATURAL_RESIDUALS_RESULT_2026-09-01.json'))
+          assert d['P_VS_NP']=='OPEN'
+          assert d['provenance']['custom_R3_formula_generator_used'] is False
+          assert d['provenance']['residual_probe_uses_truth'] is False
+          assert len(d['rows']) > 0
+          print(d['status'])
+          for name,g in d['gates'].items():
+              print(name, g['pass'])
+          PY
+      - name: Print compact result
+        if: always()
+        run: |
+          python - <<'PY'
+          import json, pathlib
+          p=pathlib.Path('artifacts/JANUS_TRUMP_OSIRIS_R3_NATURAL_RESIDUALS_RESULT_2026-09-01.json')
+          if p.exists():
+              d=json.load(open(p))
+              print(json.dumps({'status':d['status'],'gates':d['gates']},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: janus-trump-osiris-r3-natural-residuals
+          path: artifacts/JANUS_TRUMP_OSIRIS_R3_NATURAL_RESIDUALS_RESULT_2026-09-01.json
+          if-no-files-found: error
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-osiris-r4b-counterfactual-replay-recovery.yml" git_blob_sha="9c7aa36fa72f2f480ec9ee6ca56b36e0983d4de3" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: JANUS TRUMP Osiris R4B Counterfactual Replay Recovery
+on:
+  push:
+    branches:
+      - research/janus-trump-osiris-r4b-counterfactual-replay-recovery-2026-09-01
+  workflow_dispatch:
+jobs:
+  frozen-r4b-recovery:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify immutable R4 and frozen R4B recovery spec
+        run: |
+          python - <<'PY'
+          import json
+          s=json.load(open('research/JANUS_TRUMP_OSIRIS_R4B_COUNTERFACTUAL_REPLAY_RECOVERY_FROZEN_SPEC_2026-09-01.json'))
+          assert s['status']=='FROZEN_BEFORE_R4B_EXECUTION'
+          assert s['parent_R4_run']==33457525940
+          assert s['parent_R4_verdict']=='R4_ROI_GATE_FAIL__KEEP_SHADOW_ONLY__P_VS_NP_OPEN'
+          assert s['frozen_predictor_unchanged']['decision']=='ABSTAIN_TO_EXACT'
+          assert s['P_VS_NP']=='OPEN'
+          print('R4B_FREEZE_OK')
+          PY
+      - name: Compile R4B
+        run: |
+          python -m py_compile experiments/janus_trump_osiris_r4_roi_gate.py experiments/janus_trump_osiris_r4_roi_gate_runner.py
+      - name: Execute frozen R4B recovery
+        run: |
+          mkdir -p artifacts
+          PYTHONPATH=experiments python experiments/janus_trump_osiris_r4_roi_gate_runner.py --output artifacts/JANUS_TRUMP_OSIRIS_R4B_COUNTERFACTUAL_REPLAY_RECOVERY_RESULT_2026-09-01.json
+      - name: Invariant and scientific gates
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('artifacts/JANUS_TRUMP_OSIRIS_R4B_COUNTERFACTUAL_REPLAY_RECOVERY_RESULT_2026-09-01.json'))
+          s=d['summary']
+          print(d['verdict'], s)
+          assert d['P_VS_NP']=='OPEN'
+          assert all(d['gates'].values())
+          assert s['residuals']==20
+          assert s['holdout_roots']==11
+          assert s['holdout_families']==3
+          assert s['pretruth_decisions']==20
+          assert s['guarded_terminal_matches']==20
+          assert s['guarded_sat_replay_failures']==0
+          assert s['shadow_terminal_matches']==20
+          assert s['shadow_profitable_cases_skipped']==0
+          assert s['guarded_total_ops']==1742
+          assert s['unconditional_shadow_spiral_ops']==3001
+          assert s['ops_avoided_by_frozen_abstention']==1259
+          PY
+      - name: Upload immutable R4B evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-osiris-r4b-counterfactual-replay-recovery
+          path: artifacts/JANUS_TRUMP_OSIRIS_R4B_COUNTERFACTUAL_REPLAY_RECOVERY_RESULT_2026-09-01.json
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-osiris-r5-fehlerbild-positive-roi-discovery.yml" git_blob_sha="03166076cd0c6667de35b4fb5ba822a4f5287286" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: JANUS TRUMP Osiris R5 Fehlerbild Positive ROI Discovery
+on:
+  push:
+    branches:
+      - research/janus-trump-osiris-r5-fehlerbild-positive-roi-discovery-2026-09-01
+  workflow_dispatch:
+jobs:
+  frozen-r5-discovery:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify frozen R5 preregistration
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('research/JANUS_TRUMP_OSIRIS_R5_FEHLERBILD_POSITIVE_ROI_DISCOVERY_PREREGISTRATION_2026-09-01.json'))
+          assert p['status']=='FROZEN_BEFORE_R5_DISCOVERY_EXECUTION'
+          assert p['frozen_arena']['max_variables_for_exact_discovery']==14
+          assert p['discovery_not_validation']['promotion_allowed'] is False
+          assert p['P_VS_NP']=='OPEN'
+          print('R5_FREEZE_OK')
+          PY
+      - name: Compile R5
+        run: |
+          PYTHONPATH=experiments python -m py_compile experiments/janus_trump_osiris_r5_fehlerbild_positive_roi_discovery.py experiments/janus_trump_osiris_r5_fehlerbild_positive_roi_discovery_runner.py tests/test_janus_trump_osiris_r5_fehlerbild_positive_roi_discovery.py
+      - name: R5 unit and firewall tests
+        run: |
+          PYTHONPATH=experiments python - <<'PY'
+          import importlib.util
+          spec=importlib.util.spec_from_file_location('r5tests','tests/test_janus_trump_osiris_r5_fehlerbild_positive_roi_discovery.py')
+          m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+          tests=[getattr(m,n) for n in dir(m) if n.startswith('test_') and callable(getattr(m,n))]
+          for t in tests: t()
+          print('R5_FIREWALL_TESTS_PASS', len(tests))
+          PY
+      - name: Execute frozen R5 discovery arena
+        run: |
+          mkdir -p artifacts
+          PYTHONPATH=experiments python experiments/janus_trump_osiris_r5_fehlerbild_positive_roi_discovery_runner.py --output artifacts/JANUS_TRUMP_OSIRIS_R5_FEHLERBILD_POSITIVE_ROI_DISCOVERY_RESULT_2026-09-01.json
+      - name: Scientific gate
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('artifacts/JANUS_TRUMP_OSIRIS_R5_FEHLERBILD_POSITIVE_ROI_DISCOVERY_RESULT_2026-09-01.json'))
+          print(d['verdict'])
+          print(d['summary'])
+          assert d['P_VS_NP']=='OPEN'
+          assert d['discovery_only'] is True
+          assert d['routing_authority_changed'] is False
+          assert all(d['gates'].values())
+          PY
+      - name: Upload immutable R5 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-osiris-r5-fehlerbild-positive-roi-discovery
+          path: artifacts/JANUS_TRUMP_OSIRIS_R5_FEHLERBILD_POSITIVE_ROI_DISCOVERY_RESULT_2026-09-01.json
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-p-vs-np-direct-challenge-r0.yml" git_blob_sha="75229d5426f84b1f0d03339b43eda67e14449fd7" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: JANUS TRUMP P-vs-NP Direct Challenge R0
+on:
+  push:
+    branches:
+      - research/janus-trump-p-vs-np-direct-challenge-r0-2026-08-30
+  workflow_dispatch:
+jobs:
+  direct_challenge:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify prereg freeze
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('research/JANUS_TRUMP_P_VS_NP_DIRECT_CHALLENGE_R0_PREREGISTRATION_2026-08-30.json'))
+          assert p['status']=='FROZEN_BEFORE_EXECUTION'
+          assert p['scientific_boundary']['P_VS_NP']=='OPEN'
+          assert p['darpa_comparison_freeze']['baseline'].startswith('JUXTAPOSE DARPA v5.1')
+          print('P_VS_NP_R0_PREREG_OK')
+          PY
+      - name: Execute frozen direct challenge
+        run: |
+          mkdir -p artifacts
+          python experiments/janus_trump_p_vs_np_direct_challenge_r0.py \
+            --output artifacts/JANUS_TRUMP_P_VS_NP_DIRECT_CHALLENGE_R0_RESULT_2026-08-30.json \
+            --journal artifacts/JANUS_TRUMP_P_VS_NP_DIRECT_CHALLENGE_R0_JOURNAL_2026-08-30.jsonl
+      - name: Scientific gate
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('artifacts/JANUS_TRUMP_P_VS_NP_DIRECT_CHALLENGE_R0_RESULT_2026-08-30.json'))
+          print(d['verdict'],d['summary'])
+          assert d['P_VS_NP']=='OPEN'
+          assert d['summary']['cases']==24
+          assert d['summary']['families']==5
+          assert d['summary']['all_finite_exact'] is True
+          assert d['summary']['theorem_gate_passed'] is False
+          assert all(d['gates'].values())
+          assert d['verdict']=='BARRIER_LOCALIZED__P_VS_NP_OPEN'
+          PY
+      - name: Upload immutable evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-p-vs-np-direct-challenge-r0
+          path: |
+            artifacts/JANUS_TRUMP_P_VS_NP_DIRECT_CHALLENGE_R0_RESULT_2026-08-30.json
+            artifacts/JANUS_TRUMP_P_VS_NP_DIRECT_CHALLENGE_R0_JOURNAL_2026-08-30.jsonl
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r10-exact-semantic-bridge-interface.yml" git_blob_sha="fcaebbf1440247bb02933eaa76f84010239936c0" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: JANUS TRUMP R10 Exact Semantic Bridge Interface
+
+on:
+  push:
+    branches:
+      - research/janus-trump-r10-exact-semantic-bridge-interface-2026-09-01
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  r10-killer-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify frozen R10 preregistration
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('research/JANUS_TRUMP_R10_EXACT_SEMANTIC_BRIDGE_INTERFACE_PREREGISTRATION_2026-09-01.json'))
+          assert p['status']=='FROZEN_BEFORE_R10_EXECUTION'
+          assert p['parent_R9_result_summary_commit']=='2876047887eec0573040cb16aff954b762d85b70'
+          assert p['candidate_language']['width_cap']==4
+          assert [x['global_index'] for x in p['frozen_worlds']]==[3,7]
+          assert p['admission_gate']=='NO_HIDDEN_SEARCH'
+          assert p['P_VS_NP']=='OPEN'
+          print('R10_FREEZE_OK')
+          PY
+      - name: Compile R10
+        run: |
+          PYTHONPATH=experiments:. python -m py_compile experiments/janus_trump_r10_exact_semantic_bridge_interface.py tests/test_janus_trump_r10_exact_semantic_bridge_interface.py
+      - name: R10 firewall tests
+        run: |
+          PYTHONPATH=experiments:. python - <<'PY'
+          import importlib.util
+          spec=importlib.util.spec_from_file_location('r10tests','tests/test_janus_trump_r10_exact_semantic_bridge_interface.py')
+          m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+          tests=[getattr(m,n) for n in dir(m) if n.startswith('test_r10')]
+          for t in tests: t()
+          print('R10_FIREWALL_TESTS_PASS',len(tests))
+          PY
+      - name: Run frozen R10 killer test
+        run: |
+          mkdir -p artifacts
+          PYTHONPATH=experiments:. python experiments/janus_trump_r10_exact_semantic_bridge_interface.py --output artifacts/JANUS_TRUMP_R10_EXACT_SEMANTIC_BRIDGE_INTERFACE_RESULT_2026-09-01.json
+      - name: R10 scientific integrity gate
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('artifacts/JANUS_TRUMP_R10_EXACT_SEMANTIC_BRIDGE_INTERFACE_RESULT_2026-09-01.json'))
+          assert d['P_VS_NP']=='OPEN'
+          assert all(d['gates'].values()), d['gates']
+          assert d['summary']['worlds']==2
+          print(d['verdict'])
+          print(d['summary'])
+          PY
+      - name: Upload immutable R10 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-r10-exact-semantic-bridge-interface
+          path: artifacts/JANUS_TRUMP_R10_EXACT_SEMANTIC_BRIDGE_INTERFACE_RESULT_2026-09-01.json
+          if-no-files-found: error
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r11-exact-interface-structure-microscope.yml" git_blob_sha="917fde6667ca4bca6d55910848c4dc0e218e811f" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: JANUS TRUMP R11 Exact Interface Structure Microscope
+
+on:
+  push:
+    branches:
+      - research/janus-trump-r11-exact-interface-structure-microscope-2026-09-01
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  r11-microscope:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify frozen R11 preregistration
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('research/JANUS_TRUMP_R11_EXACT_INTERFACE_STRUCTURE_MICROSCOPE_PREREGISTRATION_2026-09-01.json'))
+          assert p['status']=='FROZEN_BEFORE_R11_EXECUTION'
+          assert p['parent_R10_result_summary_commit']=='963760916d1c8baa56237273cd313a7f6053b7eb'
+          assert p['representation_contract_commit']=='d993b9bfc972b85af90b814de1eaa02bde0c3717'
+          assert [x['global_index'] for x in p['frozen_worlds']]==[3,7]
+          assert p['P_VS_NP']=='OPEN'
+          print('R11_FREEZE_OK')
+          PY
+      - name: Compile R11
+        run: PYTHONPATH=experiments:. python -m py_compile experiments/janus_trump_r11_exact_interface_structure_microscope.py tests/test_janus_trump_r11_exact_interface_structure_microscope.py
+      - name: R11 representation-contract controls
+        run: |
+          PYTHONPATH=experiments:. python - <<'PY'
+          import importlib.util
+          spec=importlib.util.spec_from_file_location('r11tests','tests/test_janus_trump_r11_exact_interface_structure_microscope.py')
+          m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+          tests=[getattr(m,n) for n in dir(m) if n.startswith('test_r11')]
+          for t in tests: t()
+          print('R11_TESTS_PASS',len(tests))
+          PY
+      - name: Run frozen R11 microscope
+        run: |
+          mkdir -p artifacts
+          PYTHONPATH=experiments:. python experiments/janus_trump_r11_exact_interface_structure_microscope.py --output artifacts/JANUS_TRUMP_R11_EXACT_INTERFACE_STRUCTURE_MICROSCOPE_RESULT_2026-09-01.json
+      - name: R11 scientific integrity gate
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('artifacts/JANUS_TRUMP_R11_EXACT_INTERFACE_STRUCTURE_MICROSCOPE_RESULT_2026-09-01.json'))
+          assert d['P_VS_NP']=='OPEN'
+          assert all(d['gates'].values()), d['gates']
+          assert len(d['worlds'])==2
+          for row in d['worlds']:
+              assert row['microscope']['same_variable_cnf']['bounded_width_hulls'][-1]['false_positives']==0
+          print(d['verdict'])
+          PY
+      - name: Upload immutable R11 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-r11-exact-interface-structure-microscope
+          path: artifacts/JANUS_TRUMP_R11_EXACT_INTERFACE_STRUCTURE_MICROSCOPE_RESULT_2026-09-01.json
+          if-no-files-found: error
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r12-direct-width4-interface-compiler.yml" git_blob_sha="070eae80d1014ffd08fe3da0fef6a3df3f8c13f0" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: JANUS TRUMP R12 Direct Width4 Interface Compiler
+
+on:
+  push:
+    branches:
+      - research/janus-trump-r12-direct-width4-interface-compiler-2026-09-01
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  r12-compiler:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify frozen R12 preregistration
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('research/JANUS_TRUMP_R12_DIRECT_WIDTH4_INTERFACE_COMPILER_PREREGISTRATION_2026-09-01.json'))
+          assert p['status']=='FROZEN_BEFORE_R12_EXECUTION'
+          assert p['parent_R11_result_summary_commit']=='26e8dba689b2bbe13289087a153b7423b6eb1106'
+          assert p['representation_contract_commit']=='d993b9bfc972b85af90b814de1eaa02bde0c3717'
+          assert p['quotient_hypothesis_commit']=='69dff72747c545645d4eb17af56461ce7a8f7033'
+          assert p['candidate']['width_cap']==4
+          assert [x['global_index'] for x in p['frozen_worlds']]==[3,7]
+          assert p['P_VS_NP']=='OPEN'
+          print('R12_FREEZE_OK')
+          PY
+
+      - name: Compile R12
+        run: PYTHONPATH=experiments:. python -m py_compile experiments/janus_trump_r12_direct_width4_interface_compiler.py tests/test_janus_trump_r12_direct_width4_interface_compiler.py
+
+      - name: R12 quotient and firewall tests
+        run: |
+          PYTHONPATH=experiments:. python - <<'PY'
+          import importlib.util
+          spec=importlib.util.spec_from_file_location('r12tests','tests/test_janus_trump_r12_direct_width4_interface_compiler.py')
+          m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+          tests=[getattr(m,n) for n in dir(m) if n.startswith('test_r12')]
+          for t in tests: t()
+          print('R12_TESTS_PASS',len(tests))
+          PY
+
+      - name: Run frozen R12 compiler killer test
+        run: |
+          mkdir -p artifacts
+          PYTHONPATH=experiments:. python experiments/janus_trump_r12_direct_width4_interface_compiler.py --output artifacts/JANUS_TRUMP_R12_DIRECT_WIDTH4_INTERFACE_COMPILER_RESULT_2026-09-01.json
+
+      - name: R12 scientific integrity gate
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('artifacts/JANUS_TRUMP_R12_DIRECT_WIDTH4_INTERFACE_COMPILER_RESULT_2026-09-01.json'))
+          assert d['P_VS_NP']=='OPEN'
+          assert all(d['gates'].values()), d['gates']
+          assert len(d['worlds'])==2
+          for row in d['worlds']:
+              assert row['comparison']['false_negative_count']==0
+              assert row['proof_replay'] is True
+          print(d['verdict'])
+          print([{'index':r['global_index'],'comparison':r['comparison']['verdict'],'candidate_allowed':r['comparison']['candidate_allowed_count'],'exact_allowed':r['comparison']['exact_allowed_count'],'duplicates':r['candidate_stats']['duplicate_resolvents_collapsed'],'unique':r['candidate_stats']['unique_canonical_clauses']} for r in d['worlds']])
+          PY
+
+      - name: Upload immutable R12 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-r12-direct-width4-interface-compiler
+          path: artifacts/JANUS_TRUMP_R12_DIRECT_WIDTH4_INTERFACE_COMPILER_RESULT_2026-09-01.json
+          if-no-files-found: error
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r12b-forbidden-pattern-quotient-compiler.yml" git_blob_sha="3005db8ca57b2bc9b138141d5c88a3d3c34f3faa" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: JANUS TRUMP R12B Forbidden Pattern Quotient Compiler
+
+on:
+  push:
+    branches:
+      - research/janus-trump-r12b-forbidden-pattern-quotient-compiler-2026-09-01
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  r12b-compiler:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify frozen R12B preregistration and resource envelope
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('research/JANUS_TRUMP_R12B_FORBIDDEN_PATTERN_QUOTIENT_COMPILER_PREREGISTRATION_2026-09-01.json'))
+          e=json.load(open('research/JANUS_TRUMP_R12B_EXECUTION_RESOURCE_ENVELOPE_FREEZE_2026-09-01.json'))
+          assert p['status']=='FROZEN_BEFORE_R12B_EXECUTION'
+          assert p['parent_R12_resource_limit_summary_commit']=='596c9117545aa8776de61f443e3bd9d2a78d1bbd'
+          assert p['candidate']['width_cap']==4
+          assert [x['global_index'] for x in p['frozen_worlds']]==[3,7]
+          assert e['status']=='FROZEN_BEFORE_IMPLEMENTATION_AND_EXECUTION'
+          assert e['candidate_wall_seconds_per_world']==600
+          assert e['workflow_timeout_minutes']==25
+          assert p['P_VS_NP']=='OPEN'
+          print('R12B_FREEZE_OK')
+          PY
+
+      - name: Compile R12B
+        run: |
+          PYTHONPATH=experiments:. python -m py_compile \
+            experiments/janus_trump_r12b_forbidden_pattern_quotient_compiler.py \
+            tests/test_janus_trump_r12b_forbidden_pattern_quotient_compiler.py
+
+      - name: R12B quotient and firewall tests
+        run: |
+          PYTHONPATH=experiments:. python - <<'PY'
+          import importlib.util
+          spec=importlib.util.spec_from_file_location('r12btests','tests/test_janus_trump_r12b_forbidden_pattern_quotient_compiler.py')
+          m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+          tests=[getattr(m,n) for n in dir(m) if n.startswith('test_r12b')]
+          for t in tests: t()
+          print('R12B_TESTS_PASS',len(tests))
+          PY
+
+      - name: Run frozen R12B killer test
+        run: |
+          mkdir -p artifacts
+          PYTHONPATH=experiments:. python experiments/janus_trump_r12b_forbidden_pattern_quotient_compiler.py \
+            --output artifacts/JANUS_TRUMP_R12B_FORBIDDEN_PATTERN_QUOTIENT_COMPILER_RESULT_2026-09-01.json
+
+      - name: R12B scientific integrity gate
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('artifacts/JANUS_TRUMP_R12B_FORBIDDEN_PATTERN_QUOTIENT_COMPILER_RESULT_2026-09-01.json'))
+          assert d['P_VS_NP']=='OPEN'
+          assert all(d['gates'].values()), d['gates']
+          assert d['verdict']!='R12B_FAIL_INTEGRITY__P_VS_NP_OPEN'
+          for row in d['worlds']:
+              if row['candidate_status']=='FIXED_POINT':
+                  assert row['proof_replay'] is True
+                  assert row['comparison']['witness_ran'] is True
+                  assert row['comparison']['false_negative_count']==0
+              else:
+                  assert row['candidate_status']=='OPEN_RESOURCE'
+                  assert row['comparison']['witness_ran'] is False
+          print(d['verdict'])
+          PY
+
+      - name: Upload immutable R12B evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-r12b-forbidden-pattern-quotient-compiler
+          path: artifacts/JANUS_TRUMP_R12B_FORBIDDEN_PATTERN_QUOTIENT_COMPILER_RESULT_2026-09-01.json
+          if-no-files-found: error
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r13-unseen-interface-generalization.yml" git_blob_sha="35615c0c7859a5bf6c408760d751c88b15477cda" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: JANUS TRUMP R13 Unseen Interface Generalization
+
+on:
+  push:
+    branches:
+      - research/janus-trump-r13-unseen-interface-generalization-2026-09-02
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unseen-world:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        world: [R13-W01, R13-W02, R13-W03, R13-W04, R13-W05, R13-W06]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify byte-frozen R12B compiler and R13 world freeze
+        run: |
+          set -euo pipefail
+          F=experiments/janus_trump_r12b_forbidden_pattern_quotient_compiler.py
+          OLD=$(git rev-parse 36eb47a967d78b8e54142554ebe8ca0b420d02cd:$F)
+          NOW=$(git rev-parse HEAD:$F)
+          echo "R12B_FROZEN_BLOB=$NOW"
+          test "$OLD" = "$NOW"
+          python - <<'PY'
+          import json, hashlib
+          p='research/JANUS_TRUMP_R13_UNSEEN_INTERFACE_WORLD_SET_FREEZE_2026-09-02.json'
+          d=json.load(open(p))
+          assert d['status']=='FROZEN_BEFORE_CANDIDATE_EXECUTION'
+          assert d['compiler_freeze']['logic_changes_allowed'] is False
+          assert d['compiler_freeze']['width_cap']==4
+          assert len(d['worlds'])==6
+          assert d['P_VS_NP']=='OPEN'
+          for w in d['worlds']:
+              expect=int.from_bytes(hashlib.sha256(w['derivation_string'].encode()).digest()[:8],'big')%(2**31)
+              assert expect==w['seed'], (w['id'],expect,w['seed'])
+          print('R13_WORLD_FREEZE_OK')
+          PY
+
+      - name: Compile harness and frozen compiler
+        run: |
+          PYTHONPATH=experiments:. python -m py_compile \
+            experiments/janus_trump_r12b_forbidden_pattern_quotient_compiler.py \
+            experiments/janus_trump_r13_unseen_interface_generalization.py
+
+      - name: Run unseen world without in-place tuning
+        env:
+          WORLD: ${{ matrix.world }}
+        run: |
+          set -uo pipefail
+          mkdir -p artifacts
+          OUT="artifacts/JANUS_TRUMP_R13_${WORLD}_RESULT_2026-09-02.json"
+          set +e
+          timeout 1400s env PYTHONPATH=experiments:. python experiments/janus_trump_r13_unseen_interface_generalization.py \
+            --world "$WORLD" --output "$OUT"
+          RC=$?
+          set -e
+          if [ "$RC" -eq 124 ]; then
+            python - "$WORLD" "$OUT" <<'PY'
+          import json,sys
+          world,out=sys.argv[1:]
+          json.dump({
+            'schema':'JANUS/TRUMP/R13/UNSEEN_INTERFACE_GENERALIZATION/WORLD_RESULT/v1.0',
+            'created_date':'2026-09-02','world_id':world,
+            'verdict':'BLOCKED_RESOURCE_LIMIT','candidate_ran':True,
+            'witness_ran':False,'reason':'OUTER_WORLD_EXECUTION_TIMEOUT_BEFORE_COMPLETE_SCIENTIFIC_GATE',
+            'P_VS_NP':'OPEN'
+          },open(out,'w'),indent=2,sort_keys=True)
+          PY
+          elif [ "$RC" -ne 0 ]; then
+            python - "$WORLD" "$OUT" "$RC" <<'PY'
+          import json,sys
+          world,out,rc=sys.argv[1],sys.argv[2],int(sys.argv[3])
+          json.dump({
+            'schema':'JANUS/TRUMP/R13/UNSEEN_INTERFACE_GENERALIZATION/WORLD_RESULT/v1.0',
+            'created_date':'2026-09-02','world_id':world,
+            'verdict':'BLOCKED_EXECUTION_ERROR','candidate_ran':None,
+            'witness_ran':False,'reason':f'HARNESS_EXIT_{rc}',
+            'P_VS_NP':'OPEN'
+          },open(out,'w'),indent=2,sort_keys=True)
+          PY
+          fi
+          test -s "$OUT"
+
+      - name: Upload immutable per-world evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-r13-${{ matrix.world }}
+          path: artifacts/JANUS_TRUMP_R13_${{ matrix.world }}_RESULT_2026-09-02.json
+          if-no-files-found: error
+
+  aggregate:
+    if: always()
+    needs: unseen-world
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: janus-trump-r13-R13-W*
+          path: downloaded
+          merge-multiple: true
+
+      - name: Aggregate exactness and scaling without theorem inflation
+        run: |
+          mkdir -p artifacts
+          python - <<'PY'
+          import glob,json,math,os
+          expected=[f'R13-W{i:02d}' for i in range(1,7)]
+          rows=[]
+          for p in sorted(glob.glob('downloaded/*.json')):
+              try:
+                  rows.append(json.load(open(p)))
+              except Exception as e:
+                  rows.append({'world_id':os.path.basename(p),'verdict':'BLOCKED_BAD_RECEIPT','reason':repr(e),'P_VS_NP':'OPEN'})
+          got={r.get('world_id') for r in rows}
+          for w in expected:
+              if w not in got:
+                  rows.append({'world_id':w,'verdict':'BLOCKED_MISSING_RECEIPT','reason':'NO_PER_WORLD_ARTIFACT_AVAILABLE','P_VS_NP':'OPEN'})
+
+          verdicts=[r.get('verdict') for r in rows]
+          if any(v=='FAIL_UNSOUND' for v in verdicts):
+              overall='FAIL_UNSOUND'
+          elif any(v=='OPEN_WIDTH_WITNESS' for v in verdicts):
+              overall='OPEN_WIDTH_WITNESS'
+          elif any(v=='OPEN_INTERFACE_STRUCTURE_MISMATCH' for v in verdicts):
+              overall='OPEN_INTERFACE_STRUCTURE_MISMATCH'
+          elif any(v and v.startswith('BLOCKED') for v in verdicts):
+              overall='BLOCKED_RESOURCE_OR_EXECUTION_LIMIT'
+          elif len(rows)==6 and all(v=='PASS_EXACT_SCOPED' for v in verdicts):
+              overall='PASS_EXACT_SCOPED'
+          else:
+              overall='OPEN_MIXED_RESULT'
+
+          scaling=[]
+          for r in sorted(rows,key=lambda x:x.get('world_id','')):
+              src=r.get('source',{})
+              st=r.get('candidate',{}).get('stats',{})
+              n=src.get('n_requested')
+              pairs=st.get('pair_pivots_attempted')
+              seen=st.get('seen_content_states')
+              elapsed=st.get('elapsed_seconds')
+              scaling.append({
+                  'world_id':r.get('world_id'),'suite':src.get('suite'),'n':n,
+                  'seen_content_states':seen,'active_basis_size':st.get('active_basis_size'),
+                  'pair_pivots_attempted':pairs,'elapsed_seconds':elapsed,
+                  'pairs_over_n4': (pairs/(n**4)) if isinstance(pairs,(int,float)) and n else None,
+                  'seen_over_n4': (seen/(n**4)) if isinstance(seen,(int,float)) and n else None,
+                  'verdict':r.get('verdict')
+              })
+
+          exact_rows=[r for r in rows if r.get('witness_ran')]
+          aggregate={
+              'schema':'JANUS/TRUMP/R13/UNSEEN_INTERFACE_GENERALIZATION/AGGREGATE_RESULT/v1.0',
+              'created_date':'2026-09-02',
+              'status':'EXECUTED_AGGREGATE',
+              'overall_verdict':overall,
+              'world_count_expected':6,
+              'world_count_received':len([r for r in rows if r.get('world_id') in expected]),
+              'verdict_counts':{v:verdicts.count(v) for v in sorted(set(verdicts),key=str)},
+              'exact_worlds_scored':len(exact_rows),
+              'all_scored_worlds_fp0_fn0':all(r.get('witness',{}).get('false_positive_count')==0 and r.get('witness',{}).get('false_negative_count')==0 for r in exact_rows),
+              'all_scored_worlds_prime_exact':all(r.get('witness',{}).get('prime_interface_exact') is True for r in exact_rows),
+              'scaling':scaling,
+              'scaling_assessment':'EXPLORATORY_THREE_SIZE_LADDER__INSUFFICIENT_FOR_COMPLEXITY_CLASS_CLAIM',
+              'compiler_logic_frozen':True,
+              'width_cap':4,
+              'claim_ceiling':'UNSEEN_GENERALIZATION_EVIDENCE_ONLY; O(n^4) STATE UNIVERSE IS NOT A PROVED END-TO-END POLYNOMIAL RUNTIME BOUND',
+              'P_VS_NP':'OPEN',
+              'worlds':rows,
+              'seal':'THE COMPILER WAS FROZEN BEFORE THE NEW WORLDS. EXACTNESS GETS SCORED FIRST; SCALING REMAINS A SEPARATE QUESTION; ANY COUNTEREXAMPLE IS PRESERVED.'
+          }
+          json.dump(aggregate,open('artifacts/JANUS_TRUMP_R13_UNSEEN_INTERFACE_GENERALIZATION_AGGREGATE_RESULT_2026-09-02.json','w'),indent=2,sort_keys=True)
+          print(json.dumps({k:aggregate[k] for k in ['overall_verdict','verdict_counts','exact_worlds_scored','all_scored_worlds_fp0_fn0','all_scored_worlds_prime_exact','scaling_assessment','P_VS_NP']},indent=2,sort_keys=True))
+          PY
+
+      - name: Scientific aggregate gate
+        run: |
+          python - <<'PY'
+          import json
+          p='artifacts/JANUS_TRUMP_R13_UNSEEN_INTERFACE_GENERALIZATION_AGGREGATE_RESULT_2026-09-02.json'
+          d=json.load(open(p))
+          assert d['P_VS_NP']=='OPEN'
+          assert d['compiler_logic_frozen'] is True
+          assert d['width_cap']==4
+          assert d['scaling_assessment'].startswith('EXPLORATORY')
+          assert len(d['worlds'])==6
+          print('R13_AGGREGATE_GATE_PASS',d['overall_verdict'])
+          PY
+
+      - name: Upload immutable R13 aggregate evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-r13-unseen-interface-generalization
+          path: artifacts/JANUS_TRUMP_R13_UNSEEN_INTERFACE_GENERALIZATION_AGGREGATE_RESULT_2026-09-02.json
+          if-no-files-found: error
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r14-width-witness-forensics.yml" git_blob_sha="27d9e8a637f3e62b3b9a44a12822b98666fe384f" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: JANUS TRUMP R14 Width Witness Forensics
+
+on:
+  push:
+    branches:
+      - research/janus-trump-r14-width-witness-forensics-2026-09-02
+    paths:
+      - 'research/JANUS_TRUMP_R14_WIDTH_WITNESS_FORENSICS_PREREGISTRATION_2026-09-02.json'
+      - 'experiments/janus_trump_r14_width_witness_forensics.py'
+      - 'tests/test_janus_trump_r14_width_witness_forensics.py'
+      - '.github/workflows/janus-trump-r14-width-witness-forensics.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  r14-forensics:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify frozen R14 preregistration
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('research/JANUS_TRUMP_R14_WIDTH_WITNESS_FORENSICS_PREREGISTRATION_2026-09-02.json'))
+          assert p['status']=='FROZEN_BEFORE_R14_IMPLEMENTATION_AND_EXECUTION'
+          assert p['parent_R13_result_commit']=='5a7cac2b7108a5a006d53c097f61906633851867'
+          assert p['target_world']['id']=='R13-W05'
+          assert p['target_world']['frame_sha256']=='84fa0fbdd127b1c73f3c8ef6820a0d0cdf154093750ed9c600289fce4b6aae88'
+          assert p['target_world']['truth_table_sha256']=='acf8828272994c0ad05a44590aa4335e1828d5b7d3e3d4f438b0d497cfcad92f'
+          assert p['P_VS_NP']=='OPEN'
+          print('R14_FREEZE_OK')
+          PY
+
+      - name: Compile R14
+        run: |
+          PYTHONPATH=experiments:. python -m py_compile \
+            experiments/janus_trump_r14_width_witness_forensics.py \
+            tests/test_janus_trump_r14_width_witness_forensics.py
+
+      - name: R14 forensic unit tests
+        run: |
+          PYTHONPATH=experiments:. python - <<'PY'
+          import importlib.util
+          spec=importlib.util.spec_from_file_location('r14tests','tests/test_janus_trump_r14_width_witness_forensics.py')
+          m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+          tests=[getattr(m,n) for n in dir(m) if n.startswith('test_r14')]
+          for t in tests: t()
+          print('R14_TESTS_PASS',len(tests))
+          PY
+
+      - name: Run frozen R14 forensics
+        run: |
+          mkdir -p artifacts
+          PYTHONPATH=experiments:. python experiments/janus_trump_r14_width_witness_forensics.py \
+            --output artifacts/JANUS_TRUMP_R14_WIDTH_WITNESS_FORENSICS_RESULT_2026-09-02.json
+
+      - name: R14 scientific integrity gate
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('artifacts/JANUS_TRUMP_R14_WIDTH_WITNESS_FORENSICS_RESULT_2026-09-02.json'))
+          assert d['P_VS_NP']=='OPEN'
+          assert all(d['gates'].values()), d['gates']
+          assert d['verdict']!='FORENSIC_INTEGRITY_FAIL'
+          assert d['reconstructed_frozen_k4_endpoint']['false_positive_masks']==[32050,32546,32562,65328,65332]
+          assert d['exact_interface_geometry']['missing_beyond_k4_count']==14
+          print(d['verdict'])
+          PY
+
+      - name: Upload immutable R14 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-r14-width-witness-forensics
+          path: artifacts/JANUS_TRUMP_R14_WIDTH_WITNESS_FORENSICS_RESULT_2026-09-02.json
+          if-no-files-found: error
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r15a-auxiliary-representation-escape-control.yml" git_blob_sha="1531a6d9f9155f6cd79608aeb996062f88514d76" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: JANUS TRUMP R15A Auxiliary Representation Escape Control
+
+on:
+  push:
+    branches:
+      - research/janus-trump-r15a-auxiliary-representation-escape-control-2026-09-02
+    paths:
+      - 'research/JANUS_TRUMP_R15A_AUXILIARY_REPRESENTATION_ESCAPE_CONTROL_PREREGISTRATION_2026-09-02.json'
+      - 'experiments/janus_trump_r15a_auxiliary_representation_escape_control.py'
+      - 'tests/test_janus_trump_r15a_auxiliary_representation_escape_control.py'
+      - '.github/workflows/janus-trump-r15a-auxiliary-representation-escape-control.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  r15a-control:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify frozen R15A preregistration
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('research/JANUS_TRUMP_R15A_AUXILIARY_REPRESENTATION_ESCAPE_CONTROL_PREREGISTRATION_2026-09-02.json'))
+          assert p['status']=='FROZEN_BEFORE_R15A_IMPLEMENTATION_AND_EXECUTION'
+          assert p['parent_R14_result_summary_commit']=='5689b9239fcf7aa044d2713f2452b743940fd93b'
+          assert p['method']['width_gate']==3
+          assert p['P_VS_NP']=='OPEN'
+          print('R15A_FREEZE_OK')
+          PY
+
+      - name: Compile R15A
+        run: |
+          PYTHONPATH=experiments:. python -m py_compile \
+            experiments/janus_trump_r15a_auxiliary_representation_escape_control.py \
+            tests/test_janus_trump_r15a_auxiliary_representation_escape_control.py
+
+      - name: R15A unit controls
+        run: |
+          PYTHONPATH=experiments:. python - <<'PY'
+          import importlib.util
+          spec=importlib.util.spec_from_file_location('r15atests','tests/test_janus_trump_r15a_auxiliary_representation_escape_control.py')
+          m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+          tests=[getattr(m,n) for n in dir(m) if n.startswith('test_r15a')]
+          for t in tests: t()
+          print('R15A_TESTS_PASS',len(tests))
+          PY
+
+      - name: Run frozen R15A control
+        run: |
+          mkdir -p artifacts
+          PYTHONPATH=experiments:. python experiments/janus_trump_r15a_auxiliary_representation_escape_control.py \
+            --output artifacts/JANUS_TRUMP_R15A_AUXILIARY_REPRESENTATION_ESCAPE_CONTROL_RESULT_2026-09-02.json
+
+      - name: R15A scientific integrity gate
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('artifacts/JANUS_TRUMP_R15A_AUXILIARY_REPRESENTATION_ESCAPE_CONTROL_RESULT_2026-09-02.json'))
+          assert d['P_VS_NP']=='OPEN'
+          assert all(d['gates'].values()), d['gates']
+          assert d['verdict']=='AUXILIARY_WIDTH3_REPRESENTATION_ESCAPE_CONFIRMED'
+          assert d['extended_representation']['maximum_clause_width'] <= 3
+          assert d['extended_representation']['false_positive_count']==0
+          assert d['extended_representation']['false_negative_count']==0
+          print(d['verdict'])
+          PY
+
+      - name: Upload immutable R15A evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-r15a-auxiliary-representation-escape-control
+          path: artifacts/JANUS_TRUMP_R15A_AUXILIARY_REPRESENTATION_ESCAPE_CONTROL_RESULT_2026-09-02.json
+          if-no-files-found: error
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r15b-factored-dp-extension-compiler-calibration.yml" git_blob_sha="29fc37615bb0bc27bc1b7467e8f07ce6ae4f0d4c" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: JANUS TRUMP R15B Factored DP Extension Compiler Calibration
+
+on:
+  push:
+    branches:
+      - research/janus-trump-r15b-factored-dp-extension-compiler-calibration-2026-09-02
+    paths:
+      - 'research/JANUS_TRUMP_R15B_FACTORED_DP_EXTENSION_COMPILER_CALIBRATION_PREREGISTRATION_2026-09-02.json'
+      - 'experiments/janus_trump_r15b_factored_dp_extension_compiler_calibration.py'
+      - 'tests/test_janus_trump_r15b_factored_dp_extension_compiler_calibration.py'
+      - '.github/workflows/janus-trump-r15b-factored-dp-extension-compiler-calibration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  r15b-calibration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify frozen R15B preregistration
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('research/JANUS_TRUMP_R15B_FACTORED_DP_EXTENSION_COMPILER_CALIBRATION_PREREGISTRATION_2026-09-02.json'))
+          assert p['status']=='FROZEN_BEFORE_R15B_IMPLEMENTATION_AND_EXECUTION'
+          assert p['parent_R15A_result_summary_commit']=='c25440cd546046a22be098676fd8d70d83447676'
+          assert p['resource_envelope']['wall_seconds']==600
+          assert p['P_VS_NP']=='OPEN'
+          print('R15B_FREEZE_OK')
+          PY
+      - name: Compile R15B
+        run: |
+          PYTHONPATH=experiments:. python -m py_compile \
+            experiments/janus_trump_r15b_factored_dp_extension_compiler_calibration.py \
+            tests/test_janus_trump_r15b_factored_dp_extension_compiler_calibration.py
+      - name: R15B unit controls
+        run: |
+          PYTHONPATH=experiments:. python - <<'PY'
+          import importlib.util
+          spec=importlib.util.spec_from_file_location('r15btests','tests/test_janus_trump_r15b_factored_dp_extension_compiler_calibration.py')
+          m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+          tests=[getattr(m,n) for n in dir(m) if n.startswith('test_r15b')]
+          for t in tests: t()
+          print('R15B_TESTS_PASS',len(tests))
+          PY
+      - name: Run frozen R15B calibration
+        run: |
+          mkdir -p artifacts
+          PYTHONPATH=experiments:. python experiments/janus_trump_r15b_factored_dp_extension_compiler_calibration.py \
+            --output artifacts/JANUS_TRUMP_R15B_FACTORED_DP_EXTENSION_COMPILER_CALIBRATION_RESULT_2026-09-02.json
+      - name: R15B scientific integrity gate
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('artifacts/JANUS_TRUMP_R15B_FACTORED_DP_EXTENSION_COMPILER_CALIBRATION_RESULT_2026-09-02.json'))
+          assert d['P_VS_NP']=='OPEN'
+          assert all(d['gates'].values()), d['gates']
+          assert d['verdict']!='FAIL_INTEGRITY'
+          if d['candidate']['status'].startswith('COMPLETE'):
+              assert d['post_candidate_control']['mismatch_count']==0
+          else:
+              assert d['candidate']['status']=='OPEN_RESOURCE_LIMIT'
+              assert d['post_candidate_control']['not_run'] is True
+          print(d['verdict'])
+          PY
+      - name: Upload immutable R15B evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-r15b-factored-dp-extension-compiler-calibration
+          path: artifacts/JANUS_TRUMP_R15B_FACTORED_DP_EXTENSION_COMPILER_CALIBRATION_RESULT_2026-09-02.json
+          if-no-files-found: error
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r15c-shared-extension-quotient-calibration.yml" git_blob_sha="40aeb2002a103981b78626dfbd6c8242fa1c2725" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: JANUS TRUMP R15C Shared Extension Quotient Calibration
+
+on:
+  push:
+    branches:
+      - research/janus-trump-r15c-shared-extension-quotient-calibration-2026-09-02
+    paths:
+      - 'research/JANUS_TRUMP_R15C_SHARED_EXTENSION_QUOTIENT_CALIBRATION_PREREGISTRATION_2026-09-02.json'
+      - 'experiments/janus_trump_r15c_shared_extension_quotient_calibration.py'
+      - 'tests/test_janus_trump_r15c_shared_extension_quotient_calibration.py'
+      - '.github/workflows/janus-trump-r15c-shared-extension-quotient-calibration.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  r15c-calibration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify frozen R15C preregistration
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('research/JANUS_TRUMP_R15C_SHARED_EXTENSION_QUOTIENT_CALIBRATION_PREREGISTRATION_2026-09-02.json'))
+          assert p['status']=='FROZEN_BEFORE_R15C_IMPLEMENTATION_AND_EXECUTION'
+          assert p['parent_R15B_result_summary_commit']=='62050132fb791c01ad42bd5418d429f0c790ca86'
+          assert p['resource_envelope']['max_active_clauses']==150000
+          assert p['P_VS_NP']=='OPEN'
+          print('R15C_FREEZE_OK')
+          PY
+      - name: Compile R15C
+        run: |
+          PYTHONPATH=experiments:. python -m py_compile experiments/janus_trump_r15c_shared_extension_quotient_calibration.py tests/test_janus_trump_r15c_shared_extension_quotient_calibration.py
+      - name: R15C unit controls
+        run: |
+          PYTHONPATH=experiments:. python - <<'PY'
+          import importlib.util
+          spec=importlib.util.spec_from_file_location('r15ctests','tests/test_janus_trump_r15c_shared_extension_quotient_calibration.py')
+          m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+          tests=[getattr(m,n) for n in dir(m) if n.startswith('test_r15c')]
+          for t in tests: t()
+          print('R15C_TESTS_PASS',len(tests))
+          PY
+      - name: Run frozen R15C calibration
+        run: |
+          mkdir -p artifacts
+          PYTHONPATH=experiments:. python experiments/janus_trump_r15c_shared_extension_quotient_calibration.py --output artifacts/JANUS_TRUMP_R15C_SHARED_EXTENSION_QUOTIENT_CALIBRATION_RESULT_2026-09-02.json
+      - name: R15C scientific integrity gate
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('artifacts/JANUS_TRUMP_R15C_SHARED_EXTENSION_QUOTIENT_CALIBRATION_RESULT_2026-09-02.json'))
+          assert d['P_VS_NP']=='OPEN'
+          assert all(d['gates'].values()), d['gates']
+          assert d['verdict']!='FAIL_INTEGRITY'
+          if d['candidate']['status'].startswith('COMPLETE'):
+              assert d['post_candidate_control']['mismatch_count']==0
+          else:
+              assert d['candidate']['status']=='OPEN_RESOURCE_LIMIT'
+              assert d['post_candidate_control']['not_run'] is True
+          print(d['verdict'])
+          PY
+      - name: Upload immutable R15C evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-r15c-shared-extension-quotient-calibration
+          path: artifacts/JANUS_TRUMP_R15C_SHARED_EXTENSION_QUOTIENT_CALIBRATION_RESULT_2026-09-02.json
+          if-no-files-found: error
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r15d-bounded-observer-equivalent-refactor.yml" git_blob_sha="a60eeda8f047640f2c251326d76aa7cbde154554" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: JANUS TRUMP R15D Bounded Observer Equivalent Refactor
+
+on:
+  push:
+    branches:
+      - research/janus-trump-r15d-bounded-observer-equivalent-refactor-2026-09-02
+    paths:
+      - 'research/JANUS_TRUMP_R15D_BOUNDED_OBSERVER_EQUIVALENT_REFACTOR_PREREGISTRATION_2026-09-02.json'
+      - 'experiments/janus_trump_r15d_bounded_observer_equivalent_refactor.py'
+      - 'tests/test_janus_trump_r15d_bounded_observer_equivalent_refactor.py'
+      - '.github/workflows/janus-trump-r15d-bounded-observer-equivalent-refactor.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  r15d-observer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify frozen R15D preregistration
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('research/JANUS_TRUMP_R15D_BOUNDED_OBSERVER_EQUIVALENT_REFACTOR_PREREGISTRATION_2026-09-02.json'))
+          assert p['status']=='FROZEN_BEFORE_R15D_IMPLEMENTATION_AND_EXECUTION'
+          assert p['parent_R15C_resource_witness_commit']=='6f973f66057a4daa24f47733f88976f384c63fc2'
+          assert p['diagnostic_envelope']['candidate_wall_seconds']==120
+          assert p['P_VS_NP']=='OPEN'
+          print('R15D_FREEZE_OK')
+          PY
+      - name: Compile R15D
+        run: |
+          PYTHONPATH=experiments:. python -m py_compile experiments/janus_trump_r15d_bounded_observer_equivalent_refactor.py tests/test_janus_trump_r15d_bounded_observer_equivalent_refactor.py
+      - name: R15D equivalence controls
+        run: |
+          PYTHONPATH=experiments:. python - <<'PY'
+          import importlib.util
+          spec=importlib.util.spec_from_file_location('r15dtests','tests/test_janus_trump_r15d_bounded_observer_equivalent_refactor.py')
+          m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+          tests=[getattr(m,n) for n in dir(m) if n.startswith('test_r15d')]
+          for t in tests: t()
+          print('R15D_TESTS_PASS',len(tests))
+          PY
+      - name: Run frozen R15D observer
+        run: |
+          mkdir -p artifacts
+          PYTHONPATH=experiments:. python experiments/janus_trump_r15d_bounded_observer_equivalent_refactor.py --output artifacts/JANUS_TRUMP_R15D_BOUNDED_OBSERVER_EQUIVALENT_REFACTOR_RESULT_2026-09-02.json
+      - name: R15D integrity gate
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('artifacts/JANUS_TRUMP_R15D_BOUNDED_OBSERVER_EQUIVALENT_REFACTOR_RESULT_2026-09-02.json'))
+          assert d['P_VS_NP']=='OPEN'
+          assert all(d['gates'].values()), d['gates']
+          assert not d['verdict'].startswith('FAIL'), d['verdict']
+          print(d['verdict'])
+          PY
+      - name: Upload immutable R15D observer
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-r15d-bounded-observer-equivalent-refactor
+          path: artifacts/JANUS_TRUMP_R15D_BOUNDED_OBSERVER_EQUIVALENT_REFACTOR_RESULT_2026-09-02.json
+          if-no-files-found: error
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r15e-post-candidate-semantic-control.yml" git_blob_sha="8bd9bc0b123ec26ad5927ae73bbed42bf6cc00a9" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: JANUS TRUMP R15E Post Candidate Semantic Control
+
+on:
+  push:
+    branches:
+      - research/janus-trump-r15e-post-candidate-semantic-control-2026-09-02
+    paths:
+      - 'research/JANUS_TRUMP_R15E_POST_CANDIDATE_SEMANTIC_CONTROL_PREREGISTRATION_2026-09-02.json'
+      - 'experiments/janus_trump_r15e_post_candidate_semantic_control.py'
+      - '.github/workflows/janus-trump-r15e-post-candidate-semantic-control.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  r15e-control:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify frozen candidate identity and preregistration
+        run: |
+          python - <<'PY'
+          import json,subprocess
+          p=json.load(open('research/JANUS_TRUMP_R15E_POST_CANDIDATE_SEMANTIC_CONTROL_PREREGISTRATION_2026-09-02.json'))
+          assert p['status']=='FROZEN_BEFORE_R15E_EXECUTION'
+          want=p['frozen_candidate']['blob_sha']
+          got=subprocess.check_output(['git','hash-object',p['frozen_candidate']['path']],text=True).strip()
+          assert got==want,(got,want)
+          assert p['P_VS_NP']=='OPEN'
+          print('R15E_FREEZE_OK',got)
+          PY
+      - name: Compile R15E wrapper
+        run: |
+          PYTHONPATH=experiments:. python -m py_compile experiments/janus_trump_r15e_post_candidate_semantic_control.py
+      - name: Run R15E candidate then independent control
+        run: |
+          mkdir -p artifacts
+          PYTHONPATH=experiments:. python experiments/janus_trump_r15e_post_candidate_semantic_control.py --output artifacts/JANUS_TRUMP_R15E_POST_CANDIDATE_SEMANTIC_CONTROL_RESULT_2026-09-02.json
+      - name: R15E scientific gate
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('artifacts/JANUS_TRUMP_R15E_POST_CANDIDATE_SEMANTIC_CONTROL_RESULT_2026-09-02.json'))
+          assert d['P_VS_NP']=='OPEN'
+          assert all(d['gates'].values()),d['gates']
+          assert d['verdict'] in ('R15E_SEMANTIC_CONTROL_MATCH','R15E_SEMANTIC_CONTROL_MISMATCH')
+          print(d['verdict'])
+          PY
+      - name: Upload immutable R15E evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-r15e-post-candidate-semantic-control
+          path: artifacts/JANUS_TRUMP_R15E_POST_CANDIDATE_SEMANTIC_CONTROL_RESULT_2026-09-02.json
+          if-no-files-found: error
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r15f-incremental-independent-semantic-control.yml" git_blob_sha="ff9c5ed810d52a4850ea410afdc2e330c8edd1f3" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: JANUS TRUMP R15F Incremental Independent Semantic Control
+
+on:
+  push:
+    branches:
+      - research/janus-trump-r15f-incremental-independent-semantic-control-2026-09-02
+    paths:
+      - 'research/JANUS_TRUMP_R15F_INCREMENTAL_INDEPENDENT_SEMANTIC_CONTROL_PREREGISTRATION_2026-09-02.json'
+      - 'experiments/janus_trump_r15f_incremental_independent_semantic_control.py'
+      - 'tests/test_janus_trump_r15f_incremental_independent_semantic_control.py'
+      - '.github/workflows/janus-trump-r15f-incremental-independent-semantic-control.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  r15f-full-domain-control:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify frozen preregistration and candidate identity
+        run: |
+          python - <<'PY'
+          import json, subprocess
+          p=json.load(open('research/JANUS_TRUMP_R15F_INCREMENTAL_INDEPENDENT_SEMANTIC_CONTROL_PREREGISTRATION_2026-09-02.json'))
+          assert p['status']=='FROZEN_BEFORE_R15F_IMPLEMENTATION_AND_EXECUTION'
+          assert p['verifier']['version']=='1.9.dev15'
+          assert p['verifier']['domain']=='ALL_2^16_BRIDGE_ASSIGNMENTS'
+          assert p['P_VS_NP']=='OPEN'
+          got=subprocess.check_output(['git','hash-object',p['frozen_candidate']['path']],text=True).strip()
+          assert got==p['frozen_candidate']['blob_sha'],(got,p['frozen_candidate']['blob_sha'])
+          print('R15F_FREEZE_OK',got)
+          PY
+
+      - name: Install frozen independent verifier
+        run: |
+          python -m pip install --disable-pip-version-check 'python-sat==1.9.dev15'
+          python - <<'PY'
+          import importlib.metadata
+          got=importlib.metadata.version('python-sat')
+          assert got=='1.9.dev15',got
+          print('R15F_PYSAT_OK',got)
+          PY
+
+      - name: Compile R15F
+        run: |
+          PYTHONPATH=experiments:. python -m py_compile \
+            experiments/janus_trump_r15f_incremental_independent_semantic_control.py \
+            tests/test_janus_trump_r15f_incremental_independent_semantic_control.py
+
+      - name: R15F verifier controls
+        run: |
+          PYTHONPATH=experiments:. python - <<'PY'
+          import importlib.util
+          p='tests/test_janus_trump_r15f_incremental_independent_semantic_control.py'
+          spec=importlib.util.spec_from_file_location('r15f_tests',p)
+          m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+          tests=[getattr(m,n) for n in dir(m) if n.startswith('test_r15f')]
+          for t in tests: t()
+          print('R15F_TESTS_PASS',len(tests))
+          PY
+
+      - name: Run frozen R15F candidate then full-domain witnesses
+        id: execute
+        continue-on-error: true
+        run: |
+          mkdir -p artifacts
+          PYTHONPATH=experiments:. python experiments/janus_trump_r15f_incremental_independent_semantic_control.py \
+            --output artifacts/JANUS_TRUMP_R15F_INCREMENTAL_INDEPENDENT_SEMANTIC_CONTROL_RESULT_2026-09-02.json
+
+      - name: R15F scientific integrity gate
+        run: |
+          python - <<'PY'
+          import json,sys
+          path='artifacts/JANUS_TRUMP_R15F_INCREMENTAL_INDEPENDENT_SEMANTIC_CONTROL_RESULT_2026-09-02.json'
+          d=json.load(open(path))
+          assert d['P_VS_NP']=='OPEN'
+          allowed={
+            'R15F_FULL_DOMAIN_SEMANTIC_MATCH',
+            'R15F_FULL_DOMAIN_SEMANTIC_MISMATCH',
+            'R15F_OPEN_VERIFIER_RESOURCE_LIMIT',
+            'R15F_CANDIDATE_NONTERMINAL',
+            'R15F_INTEGRITY_FAIL',
+          }
+          assert d['verdict'] in allowed,d['verdict']
+          if d['verdict']=='R15F_FULL_DOMAIN_SEMANTIC_MATCH':
+              assert all(d['gates'].values()),d['gates']
+              assert d['comparison']['full_domain'] is True
+              assert d['comparison']['allowed_set_equal'] is True
+              assert d['original_frame_verifier']['allowed_count']==287
+              assert d['candidate_interface_verifier']['allowed_count']==287
+              assert d['comparison']['original_truth_table_sha256']=='acf8828272994c0ad05a44590aa4335e1828d5b7d3e3d4f438b0d497cfcad92f'
+              assert d['comparison']['candidate_truth_table_sha256']==d['comparison']['original_truth_table_sha256']
+          elif d['verdict']=='R15F_FULL_DOMAIN_SEMANTIC_MISMATCH':
+              assert d['comparison']['full_domain'] is True
+              assert not d['comparison']['allowed_set_equal']
+          elif d['verdict']=='R15F_OPEN_VERIFIER_RESOURCE_LIMIT':
+              assert d['candidate']['status']=='COMPLETE_EXTENDED_INTERFACE'
+          elif d['verdict']=='R15F_INTEGRITY_FAIL':
+              print('R15F_INTEGRITY_FAIL')
+              sys.exit(2)
+          print(d['verdict'])
+          PY
+
+      - name: Upload immutable R15F evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-r15f-incremental-independent-semantic-control
+          path: artifacts/JANUS_TRUMP_R15F_INCREMENTAL_INDEPENDENT_SEMANTIC_CONTROL_RESULT_2026-09-02.json
+          if-no-files-found: error
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r16-prospective-unseen-factored-bridge-holdout.yml" git_blob_sha="7e7493a48a1cab252731d9affdf05811c0f3e235" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: JANUS TRUMP R16 Prospective Unseen Factored Bridge Holdout
+
+on:
+  push:
+    branches:
+      - research/janus-trump-r16-prospective-unseen-factored-bridge-holdout-2026-09-02
+    paths:
+      - 'research/JANUS_TRUMP_R16_PROSPECTIVE_UNSEEN_WORLD_SET_FREEZE_2026-09-02.json'
+      - 'research/JANUS_TRUMP_R16_EXECUTION_RESOURCE_ENVELOPE_FREEZE_2026-09-02.json'
+      - 'experiments/janus_trump_r16_prospective_unseen_factored_bridge_holdout.py'
+      - 'experiments/janus_trump_r16_aggregate_results.py'
+      - 'tests/test_janus_trump_r16_prospective_unseen_factored_bridge_holdout.py'
+      - '.github/workflows/janus-trump-r16-prospective-unseen-factored-bridge-holdout.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify exact world freeze and byte-frozen candidate
+        run: |
+          python - <<'PY'
+          import json,subprocess
+          f=json.load(open('research/JANUS_TRUMP_R16_PROSPECTIVE_UNSEEN_WORLD_SET_FREEZE_2026-09-02.json'))
+          r=json.load(open('research/JANUS_TRUMP_R16_EXECUTION_RESOURCE_ENVELOPE_FREEZE_2026-09-02.json'))
+          assert f['status']=='FROZEN_BEFORE_R16_CANDIDATE_EXECUTION'
+          assert r['status']=='FROZEN_BEFORE_R16_HARNESS_IMPLEMENTATION_AND_EXECUTION'
+          assert len(f['worlds'])==8
+          assert f['primary_endpoint']=='FULL_BRIDGE_ALLOWED_SET_EXACTNESS'
+          got=subprocess.check_output(['git','hash-object',f['frozen_candidate']['path']],text=True).strip()
+          assert got==f['frozen_candidate']['blob_sha']==r['candidate']['blob_sha'],(got,f['frozen_candidate']['blob_sha'])
+          assert got=='e6def9fef656c8f1af1b9f245bc855081f13a586'
+          assert f['P_VS_NP']==r['P_VS_NP']=='OPEN'
+          print('R16_PREFLIGHT_FREEZE_OK',got)
+          PY
+      - name: Install frozen semantic verifier
+        run: python -m pip install --disable-pip-version-check 'python-sat==1.9.dev15'
+      - name: Compile R16
+        run: |
+          PYTHONPATH=experiments:. python -m py_compile \
+            experiments/janus_trump_r16_prospective_unseen_factored_bridge_holdout.py \
+            experiments/janus_trump_r16_aggregate_results.py \
+            tests/test_janus_trump_r16_prospective_unseen_factored_bridge_holdout.py
+      - name: R16 regeneration and firewall controls
+        run: |
+          PYTHONPATH=experiments:. python - <<'PY'
+          import importlib.util
+          p='tests/test_janus_trump_r16_prospective_unseen_factored_bridge_holdout.py'
+          spec=importlib.util.spec_from_file_location('r16_tests',p)
+          m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+          tests=[getattr(m,n) for n in dir(m) if n.startswith('test_r16')]
+          for t in tests: t()
+          print('R16_TESTS_PASS',len(tests))
+          PY
+
+  worlds:
+    needs: preflight
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        world: [R16-W01, R16-W02, R16-W03, R16-W04, R16-W05, R16-W06, R16-W07, R16-W08]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Recheck frozen candidate identity
+        run: |
+          test "$(git hash-object experiments/janus_trump_r15d_bounded_observer_equivalent_refactor.py)" = "e6def9fef656c8f1af1b9f245bc855081f13a586"
+      - name: Install frozen semantic verifier
+        run: python -m pip install --disable-pip-version-check 'python-sat==1.9.dev15'
+      - name: Run frozen candidate then independent full-domain witness
+        id: execute
+        continue-on-error: true
+        run: |
+          mkdir -p artifacts
+          PYTHONPATH=experiments:. python experiments/janus_trump_r16_prospective_unseen_factored_bridge_holdout.py \
+            --world '${{ matrix.world }}' \
+            --output 'artifacts/JANUS_TRUMP_R16_WORLD_${{ matrix.world }}_RESULT_2026-09-02.json'
+      - name: Per-world scientific integrity gate
+        run: |
+          WORLD='${{ matrix.world }}' python - <<'PY'
+          import json,os,sys
+          w=os.environ['WORLD']
+          p=f'artifacts/JANUS_TRUMP_R16_WORLD_{w}_RESULT_2026-09-02.json'
+          d=json.load(open(p))
+          assert d['world_id']==w
+          assert d['P_VS_NP']=='OPEN'
+          allowed={'PASS_EXACT_UNSEEN','MISMATCH_UNSEEN','OPEN_CANDIDATE_RESOURCE_LIMIT','OPEN_VERIFIER_RESOURCE_LIMIT','FAIL_INTEGRITY'}
+          assert d['verdict'] in allowed,d['verdict']
+          if d['verdict']=='PASS_EXACT_UNSEEN':
+              assert d['comparison']['full_domain'] is True
+              assert d['comparison']['allowed_set_equal'] is True
+              assert d['comparison']['false_positive_count']==0
+              assert d['comparison']['false_negative_count']==0
+              assert d['scientific_firewall']['all_pass'] is True
+          elif d['verdict']=='MISMATCH_UNSEEN':
+              assert d['comparison']['full_domain'] is True
+              assert not d['comparison']['allowed_set_equal']
+          elif d['verdict']=='OPEN_CANDIDATE_RESOURCE_LIMIT':
+              assert d['verifier_ran'] is False
+          elif d['verdict']=='OPEN_VERIFIER_RESOURCE_LIMIT':
+              assert d['candidate']['status'] in ('COMPLETE_EXTENDED_INTERFACE','COMPLETE_UNSAT_INTERFACE')
+          else:
+              print('R16_FAIL_INTEGRITY',w)
+              sys.exit(2)
+          print(w,d['verdict'])
+          PY
+      - name: Upload immutable per-world evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-r16-world-${{ matrix.world }}
+          path: artifacts/JANUS_TRUMP_R16_WORLD_${{ matrix.world }}_RESULT_2026-09-02.json
+          if-no-files-found: error
+
+  aggregate:
+    needs: [preflight, worlds]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download all frozen world evidence
+        uses: actions/download-artifact@v4
+        with:
+          pattern: janus-trump-r16-world-*
+          path: artifacts/worlds
+          merge-multiple: true
+      - name: Aggregate complete holdout
+        run: |
+          mkdir -p artifacts/aggregate
+          PYTHONPATH=experiments:. python experiments/janus_trump_r16_aggregate_results.py \
+            --input-dir artifacts/worlds \
+            --output artifacts/aggregate/JANUS_TRUMP_R16_PROSPECTIVE_UNSEEN_FACTORED_BRIDGE_HOLDOUT_RESULT_2026-09-02.json
+      - name: Aggregate scientific gate
+        run: |
+          python - <<'PY'
+          import json,sys
+          p='artifacts/aggregate/JANUS_TRUMP_R16_PROSPECTIVE_UNSEEN_FACTORED_BRIDGE_HOLDOUT_RESULT_2026-09-02.json'
+          d=json.load(open(p))
+          allowed={'R16_PASS_EXACT_UNSEEN_8_OF_8','R16_UNSEEN_SEMANTIC_MISMATCH','R16_OPEN_CANDIDATE_RESOURCE_LIMIT','R16_OPEN_VERIFIER_RESOURCE_LIMIT','FAIL_INTEGRITY'}
+          assert d['overall_verdict'] in allowed,d['overall_verdict']
+          assert d['P_VS_NP']=='OPEN'
+          assert d.get('world_count')==8 or d['overall_verdict']=='FAIL_INTEGRITY'
+          if d['overall_verdict']=='FAIL_INTEGRITY':
+              sys.exit(2)
+          print(d['overall_verdict'],d['verdict_counts'])
+          PY
+      - name: Upload immutable aggregate evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-r16-prospective-unseen-factored-bridge-holdout
+          path: artifacts/aggregate/JANUS_TRUMP_R16_PROSPECTIVE_UNSEEN_FACTORED_BRIDGE_HOLDOUT_RESULT_2026-09-02.json
+          if-no-files-found: error
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r16-truth-blind-world-selector.yml" git_blob_sha="efe1cabaffbdc8d4ae27608ac7fec8555c5c1e1e" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: JANUS TRUMP R16 Truth Blind World Selector
+
+on:
+  push:
+    branches:
+      - research/janus-trump-r16-prospective-unseen-factored-bridge-holdout-2026-09-02
+    paths:
+      - 'research/JANUS_TRUMP_R16_WORLD_SELECTOR_PREREGISTRATION_2026-09-02.json'
+      - 'experiments/janus_trump_r16_truth_blind_world_selector.py'
+      - '.github/workflows/janus-trump-r16-truth-blind-world-selector.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  r16-selector:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify selector preregistration and candidate freeze
+        run: |
+          python - <<'PY'
+          import json,subprocess
+          p=json.load(open('research/JANUS_TRUMP_R16_WORLD_SELECTOR_PREREGISTRATION_2026-09-02.json'))
+          assert p['status']=='FROZEN_BEFORE_R16_WORLD_SELECTION'
+          assert p['truth_firewall']=='WORLD_SELECTION_BEFORE_TRUTH__WORLD_SELECTION_BEFORE_CANDIDATE__NO_CHERRY_PICKING_BY_OUTCOME'
+          got=subprocess.check_output(['git','hash-object',p['frozen_candidate']['path']],text=True).strip()
+          assert got==p['frozen_candidate']['blob_sha'],(got,p['frozen_candidate']['blob_sha'])
+          assert p['P_VS_NP']=='OPEN'
+          print('R16_SELECTOR_FREEZE_OK',got)
+          PY
+
+      - name: Compile selector
+        run: PYTHONPATH=experiments:. python -m py_compile experiments/janus_trump_r16_truth_blind_world_selector.py
+
+      - name: Select worlds without truth or candidate access
+        run: |
+          mkdir -p artifacts
+          PYTHONPATH=experiments:. python experiments/janus_trump_r16_truth_blind_world_selector.py \
+            --output artifacts/JANUS_TRUMP_R16_TRUTH_BLIND_WORLD_SELECTION_RESULT_2026-09-02.json
+
+      - name: Selector integrity gate
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('artifacts/JANUS_TRUMP_R16_TRUTH_BLIND_WORLD_SELECTION_RESULT_2026-09-02.json'))
+          assert d['status']=='SELECTOR_PASS',d
+          assert d['selected_world_count']==8
+          assert d['selector_firewall']['pass'] is True
+          assert d['truth_accessed'] is False
+          assert d['candidate_accessed'] is False
+          assert len({w['frame_sha256'] for w in d['selected_worlds']})==8
+          assert all(w['frame_type']=='GENERAL_CNF' for w in d['selected_worlds'])
+          assert all(6 <= w['bridge_variable_count'] <= 16 for w in d['selected_worlds'])
+          assert d['P_VS_NP']=='OPEN'
+          print('R16_SELECTOR_PASS')
+          PY
+
+      - name: Upload immutable selector evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-r16-truth-blind-world-selection
+          path: artifacts/JANUS_TRUMP_R16_TRUTH_BLIND_WORLD_SELECTION_RESULT_2026-09-02.json
+          if-no-files-found: error
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r17-resource-growth-forensics.yml" git_blob_sha="f39ea6057b612d0047716787962dcce65fa91b17" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: JANUS TRUMP R17 Resource Growth Forensics
+
+on:
+  push:
+    branches:
+      - research/janus-trump-r17-resource-growth-forensics-2026-09-02
+    paths:
+      - 'research/JANUS_TRUMP_R17_RESOURCE_GROWTH_FORENSICS_PREREGISTRATION_2026-09-02.json'
+      - 'experiments/janus_trump_r17_resource_growth_forensics.py'
+      - '.github/workflows/janus-trump-r17-resource-growth-forensics.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  r17-forensics:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify frozen forensic contract and candidate identity
+        run: |
+          python - <<'PY'
+          import json,subprocess
+          p=json.load(open('research/JANUS_TRUMP_R17_RESOURCE_GROWTH_FORENSICS_PREREGISTRATION_2026-09-02.json'))
+          assert p['status']=='FROZEN_BEFORE_R17_IMPLEMENTATION_AND_EXECUTION'
+          assert p['frozen_candidate']['resource_caps_unchanged'] is True
+          assert p['frozen_candidate']['active_clause_cap']==150000
+          got=subprocess.check_output(['git','hash-object',p['frozen_candidate']['path']],text=True).strip()
+          assert got==p['frozen_candidate']['blob_sha']=='e6def9fef656c8f1af1b9f245bc855081f13a586'
+          assert p['P_VS_NP']=='OPEN'
+          print('R17_FREEZE_OK',got)
+          PY
+      - name: Install import-only frozen dependency
+        run: |
+          python -m pip install --disable-pip-version-check 'python-sat==1.9.dev15'
+          echo 'R17_NOTE: PySAT is installed only because the frozen R16 module imports the frozen R15F verifier module; R17 forensic code never calls a SAT verifier.'
+      - name: Compile R17
+        run: PYTHONPATH=experiments:. python -m py_compile experiments/janus_trump_r17_resource_growth_forensics.py
+      - name: Run frozen diagnostic replay
+        run: |
+          mkdir -p artifacts
+          PYTHONPATH=experiments:. python experiments/janus_trump_r17_resource_growth_forensics.py \
+            --output artifacts/JANUS_TRUMP_R17_RESOURCE_GROWTH_FORENSICS_RESULT_2026-09-02.json
+      - name: R17 scientific integrity gate
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('artifacts/JANUS_TRUMP_R17_RESOURCE_GROWTH_FORENSICS_RESULT_2026-09-02.json'))
+          assert d['verdict']=='R17_PHYSICAL_CLAUSE_MATERIALIZATION_WALL_REPRODUCED',d['verdict']
+          assert all(d['gates'].values()),d['gates']
+          assert d['summary']['worlds']==8
+          assert d['summary']['active_clause_cap_worlds']==5
+          assert 'R16-W04' in d['summary']['terminal_representation_over_cap_worlds']
+          assert d['P_VS_NP']=='OPEN'
+          print(d['verdict'])
+          PY
+      - name: Upload immutable R17 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-r17-resource-growth-forensics
+          path: artifacts/JANUS_TRUMP_R17_RESOURCE_GROWTH_FORENSICS_RESULT_2026-09-02.json
+          if-no-files-found: error
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
