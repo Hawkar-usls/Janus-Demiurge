@@ -1,0 +1,112 @@
+name: JANUS Demiurge Beetle Director
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '55 */6 * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'beetle/DEMIURGE_BEETLE_DIRECTIVES.json'
+      - 'tools/demiurge_beetle_director.py'
+      - '.github/workflows/janus-beetle-director.yml'
+      - 'scout_swarm/state/SCOUT_SWARM_STATUS-v1.json'
+
+concurrency:
+  group: janus-demiurge-beetle-director
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  copilot-requests: write
+
+jobs:
+  direct:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build deterministic baseline priorities
+        run: |
+          python tools/demiurge_beetle_director.py \
+            --directives beetle/DEMIURGE_BEETLE_DIRECTIVES.json \
+            --status scout_swarm/state/SCOUT_SWARM_STATUS-v1.json \
+            --out beetle/LIVE_PRIORITIES.json
+
+      - name: Prepare bounded Janus choice prompt
+        run: |
+          python - <<'PY'
+          import json, pathlib
+          d=json.load(open('beetle/DEMIURGE_BEETLE_DIRECTIVES.json'))
+          s=json.load(open('scout_swarm/state/SCOUT_SWARM_STATUS-v1.json'))
+          prompt={
+            'role':'JANUS_DEMIURGE_BEETLE_DIRECTOR',
+            'task':'Choose discovery attention only. Return JSON only.',
+            'allowed_direction_ids':sorted(d['base_priorities']),
+            'allowed_target_repositories':d['allowed_target_repositories'],
+            'scout_status':{'run_id':s.get('run_id'),'updated_at_utc':s.get('updated_at_utc'),'agent_ascent_status':s.get('agent_ascent_status',{})},
+            'output_schema':{
+              'focus':[{'direction_id':'allowed id','priority_delta':'number -25..25','reason':'short'}],
+              'ad_hoc':[{'id':'slug','title':'short','keywords':['up to 12'],'target_repositories':['allowed only'],'priority':'0..100'}]
+            },
+            'limits':['max 5 focus','max 2 ad_hoc','no grazer/download requests','no truth claims','counterevidence and controls matter as much as confirming results']
+          }
+          pathlib.Path('beetle/janus-director-prompt.json').write_text(json.dumps(prompt,ensure_ascii=False,indent=2)+'\n')
+          PY
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Try bounded Janus model synthesis
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          COPILOT_AUTO_UPDATE: 'false'
+        shell: bash
+        run: |
+          npm install -g @github/copilot
+          set +e
+          copilot -p "$(cat beetle/janus-director-prompt.json)" \
+            --model auto \
+            --output-format=json \
+            --no-ask-user \
+            --no-color \
+            --no-custom-instructions \
+            --no-remote \
+            --no-remote-export \
+            --disable-builtin-mcps \
+            --deny-tool=read \
+            --deny-tool=write \
+            --deny-tool=shell \
+            --deny-tool=url \
+            --deny-tool=memory \
+            > beetle/janus-model-choice.out 2>&1
+          exit 0
+
+      - name: Validate and merge Janus choice if usable
+        run: |
+          python tools/demiurge_beetle_director.py \
+            --directives beetle/DEMIURGE_BEETLE_DIRECTIVES.json \
+            --status scout_swarm/state/SCOUT_SWARM_STATUS-v1.json \
+            --model-output beetle/janus-model-choice.out \
+            --out beetle/LIVE_PRIORITIES.json
+
+      - name: Persist only bounded live priorities
+        shell: bash
+        run: |
+          git config user.name 'janus-demiurge-beetle-director'
+          git config user.email 'janus-demiurge-beetle-director@users.noreply.github.com'
+          git add beetle/LIVE_PRIORITIES.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Demiurge: refresh Beetle discovery priorities"
+          git pull --rebase origin main
+          git push origin HEAD:main
