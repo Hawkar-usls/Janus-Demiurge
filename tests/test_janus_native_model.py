@@ -282,7 +282,7 @@ class JanusNativeModelTests(unittest.TestCase):
         self.assertEqual(no_action_count, 0)
         self.assertEqual(no_action_bonus, 0.0)
 
-    def test_dual_evaluation_requires_both_gates_and_anchor_is_veto_only(self):
+    def test_dual_evaluation_requires_both_hard_gates_and_meaningful_gain(self):
         passed = promotion_gate(
             candidate_loss=1.99,
             incumbent_loss=2.00,
@@ -292,6 +292,8 @@ class JanusNativeModelTests(unittest.TestCase):
         self.assertTrue(passed["promote"])
         self.assertTrue(passed["adaptive_ok"])
         self.assertTrue(passed["anchor_ok"])
+        self.assertTrue(passed["verified_improvement_gate"])
+        self.assertTrue(passed["meaningful_improvement"])
 
         adaptive_failed = promotion_gate(
             candidate_loss=2.02,
@@ -320,6 +322,40 @@ class JanusNativeModelTests(unittest.TestCase):
             anchor_failed["reason"],
             "CANDIDATE_REJECTED_BY_FROZEN_ANCHOR_GATE",
         )
+
+    def test_tolerated_dual_regression_cannot_silently_promote(self):
+        # This challenger is inside the historical hard tolerances (0.2% adaptive,
+        # 1% anchor), but both protected metrics are worse. v1 could promote it;
+        # v2 must reject it to prevent cumulative random-walk degradation.
+        result = promotion_gate(
+            candidate_loss=2.003,
+            incumbent_loss=2.000,
+            candidate_anchor_loss=1.808,
+            incumbent_anchor_loss=1.800,
+        )
+        self.assertTrue(result["adaptive_ok"])
+        self.assertTrue(result["anchor_ok"])
+        self.assertFalse(result["promote"])
+        self.assertFalse(result["verified_improvement_gate"])
+        self.assertEqual(
+            result["reason"],
+            "CANDIDATE_REJECTED_BY_VERIFIED_NONREGRESSION_GATE",
+        )
+
+    def test_noise_only_change_is_neutral_not_promotion(self):
+        result = promotion_gate(
+            candidate_loss=1.9998,
+            incumbent_loss=2.0000,
+            candidate_anchor_loss=1.8002,
+            incumbent_anchor_loss=1.8000,
+        )
+        self.assertTrue(result["adaptive_ok"])
+        self.assertTrue(result["anchor_ok"])
+        self.assertTrue(result["adaptive_nonregression"])
+        self.assertTrue(result["anchor_nonregression"])
+        self.assertFalse(result["meaningful_improvement"])
+        self.assertFalse(result["promote"])
+        self.assertEqual(result["reason"], "CANDIDATE_NO_MEANINGFUL_VERIFIED_GAIN")
 
     def test_dual_evaluation_bootstrap_requires_finite_anchor(self):
         accepted = promotion_gate(
