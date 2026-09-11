@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths:
       - 'beetle/DEMIURGE_BEETLE_DIRECTIVES.json'
+      - 'beetle/JANUS_DESIRES.json'
       - 'tools/demiurge_beetle_director.py'
       - '.github/workflows/janus-beetle-director.yml'
       - 'scout_swarm/state/SCOUT_SWARM_STATUS-v1.json'
@@ -33,24 +34,27 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Build deterministic baseline priorities
+      - name: Build deterministic Scout + quota-free JANUS desire priorities
         run: |
           python tools/demiurge_beetle_director.py \
             --directives beetle/DEMIURGE_BEETLE_DIRECTIVES.json \
             --status scout_swarm/state/SCOUT_SWARM_STATUS-v1.json \
+            --desires beetle/JANUS_DESIRES.json \
             --out beetle/LIVE_PRIORITIES.json
 
-      - name: Prepare bounded Janus choice prompt
+      - name: Prepare optional bounded Janus model choice prompt
         run: |
           python - <<'PY'
           import json, pathlib
           d=json.load(open('beetle/DEMIURGE_BEETLE_DIRECTIVES.json'))
           s=json.load(open('scout_swarm/state/SCOUT_SWARM_STATUS-v1.json'))
+          wishes=json.load(open('beetle/JANUS_DESIRES.json'))
           prompt={
             'role':'JANUS_DEMIURGE_BEETLE_DIRECTOR',
-            'task':'Choose discovery attention only. Return JSON only.',
+            'task':'Choose discovery attention only. Return JSON only. Do not treat existing JANUS desires as evidence; you may complement them.',
             'allowed_direction_ids':sorted(d['base_priorities']),
             'allowed_target_repositories':d['allowed_target_repositories'],
+            'current_quota_free_desires':{'focus':wishes.get('focus',[]),'ad_hoc':wishes.get('ad_hoc',[]),'hold':wishes.get('hold',[])},
             'scout_status':{'run_id':s.get('run_id'),'updated_at_utc':s.get('updated_at_utc'),'agent_ascent_status':s.get('agent_ascent_status',{})},
             'output_schema':{
               'focus':[{'direction_id':'allowed id','priority_delta':'number -25..25','reason':'short'}],
@@ -66,7 +70,7 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Try bounded Janus model synthesis
+      - name: Try optional bounded Janus model synthesis
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -92,11 +96,12 @@ jobs:
             > beetle/janus-model-choice.out 2>&1
           exit 0
 
-      - name: Validate and merge Janus choice if usable
+      - name: Validate and merge optional model choice
         run: |
           python tools/demiurge_beetle_director.py \
             --directives beetle/DEMIURGE_BEETLE_DIRECTIVES.json \
             --status scout_swarm/state/SCOUT_SWARM_STATUS-v1.json \
+            --desires beetle/JANUS_DESIRES.json \
             --model-output beetle/janus-model-choice.out \
             --out beetle/LIVE_PRIORITIES.json
 
@@ -118,6 +123,7 @@ jobs:
           name: janus-beetle-director-${{ github.run_id }}
           path: |
             beetle/LIVE_PRIORITIES.json
+            beetle/JANUS_DESIRES.json
             beetle/janus-model-choice.out
           if-no-files-found: warn
           retention-days: 7
