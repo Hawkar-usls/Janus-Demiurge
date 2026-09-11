@@ -5,6 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from janus_model import corpus
 from janus_model.extensions import trump_frontier_memory as tfm
 
 
@@ -59,16 +60,19 @@ class TrumpFrontierMemoryTests(unittest.TestCase):
         intake["intake_sha256"] = hashlib.sha256(tfm.canonical_bytes(intake)).hexdigest()
         return repo, intake
 
+    def build_fixture_memory(self, root: Path):
+        repo, intake = self.make_repo(root)
+        intake_path = root / "intake.json"
+        intake_path.write_text(json.dumps(intake), encoding="utf-8")
+        out_text = root / "memory.txt"
+        out_manifest = root / "manifest.json"
+        manifest = tfm.build_memory(repo, intake_path, out_text, out_manifest)
+        return out_text, out_manifest, manifest
+
     def test_build_memory_is_read_only_training_only_and_secret_filtered(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
-            repo, intake = self.make_repo(root)
-            intake_path = root / "intake.json"
-            intake_path.write_text(json.dumps(intake), encoding="utf-8")
-            out_text = root / "memory.txt"
-            out_manifest = root / "manifest.json"
-            manifest = tfm.build_memory(repo, intake_path, out_text, out_manifest)
-
+            out_text, _out_manifest, manifest = self.build_fixture_memory(root)
             text = out_text.read_text(encoding="utf-8")
             self.assertIn("proof/contract.json", text)
             self.assertIn("useful exact proof context", text)
@@ -89,6 +93,20 @@ class TrumpFrontierMemoryTests(unittest.TestCase):
                 {"path": "secrets.json", "reason": "SECRETISH_PATH"},
                 manifest["skipped_files"],
             )
+
+    def test_corpus_loader_accepts_only_train_only_memory(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            out_text, out_manifest, manifest = self.build_fixture_memory(root)
+            text, loaded = corpus._load_frontier_memory(out_text, out_manifest)
+            self.assertIn("useful exact proof context", text)
+            self.assertEqual(loaded["training_pack_sha256"], manifest["training_pack_sha256"])
+
+            broken = json.loads(out_manifest.read_text(encoding="utf-8"))
+            broken["adaptive_holdout_inclusion"] = True
+            out_manifest.write_text(json.dumps(broken), encoding="utf-8")
+            with self.assertRaisesRegex(RuntimeError, "EVALUATION_LEAKAGE"):
+                corpus._load_frontier_memory(out_text, out_manifest)
 
     def test_authority_leak_is_rejected(self):
         with tempfile.TemporaryDirectory() as td:
