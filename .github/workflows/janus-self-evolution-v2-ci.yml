@@ -5,6 +5,7 @@ on:
     paths:
       - 'janus_model/**'
       - 'tests/test_janus_native_model.py'
+      - 'tests/test_janus_native_prompt_budget.py'
       - 'tests/test_janus_trump_research_cycle.py'
       - 'tests/test_janus_trump_frontier_attention.py'
       - '.github/workflows/janus-native-model.yml'
@@ -34,6 +35,7 @@ jobs:
       - name: Compile changed kernels
         run: |
           python -m py_compile \
+            janus_model/cli.py \
             janus_model/eval_contract.py \
             janus_model/train_registry.py \
             janus_model/organs.py \
@@ -42,6 +44,9 @@ jobs:
 
       - name: Verify native promotion and organ policy
         run: python -m unittest -v tests/test_janus_native_model.py
+
+      - name: Verify native context-budget prompt packing
+        run: python -m unittest -v tests/test_janus_native_prompt_budget.py
 
       - name: Verify independent TRUMP frontier contract
         run: python -m unittest -v tests/test_janus_trump_research_cycle.py
