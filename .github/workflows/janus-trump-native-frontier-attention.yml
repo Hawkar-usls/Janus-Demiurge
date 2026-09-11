@@ -1,0 +1,297 @@
+name: JANUS TRUMP Native Frontier Attention
+
+on:
+  pull_request:
+    paths:
+      - 'janus_model/extensions/trump_frontier_attention.py'
+      - 'tests/test_janus_trump_frontier_attention.py'
+      - '.github/workflows/janus-trump-native-frontier-attention.yml'
+  workflow_dispatch:
+  schedule:
+    # Deliberately offset from native (:17) and broad TRUMP research (:23).
+    - cron: '43 * * * *'
+
+concurrency:
+  group: janus-trump-native-frontier-attention
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  attention:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - name: Checkout JANUS brain
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Capture brain base
+        id: base
+        shell: bash
+        run: echo "head=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install native selector runtime
+        run: python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Verify frontier attention kernel
+        run: |
+          python -m py_compile janus_model/extensions/trump_frontier_attention.py
+          python -m unittest -v tests/test_janus_trump_frontier_attention.py
+
+      - name: Observe TRUMP branch heads without checkout or writeback
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/trump-attention
+          git ls-remote --heads https://github.com/Hawkar-usls/Janus-Fundamentum.git \
+            > runtime/trump-attention/remote-heads.txt
+          python - <<'PY'
+          import hashlib,json,re
+          from pathlib import Path
+          rows=[]
+          for raw in Path('runtime/trump-attention/remote-heads.txt').read_text(encoding='utf-8').splitlines():
+              if not raw.strip():
+                  continue
+              sha,ref=raw.split('\t',1)
+              name=ref.removeprefix('refs/heads/')
+              if not re.search(r'(trump|p[-_]?vs[-_]?np|pnp)', name, flags=re.I):
+                  continue
+              dates=re.findall(r'20\d{2}-\d{2}-\d{2}', name)
+              rows.append({
+                  'ref':ref,
+                  'commit':sha,
+                  'date_hint':max(dates) if dates else None,
+              })
+          rows.sort(key=lambda r:(r['date_hint'] or '0000-00-00',r['ref']),reverse=True)
+          rows=rows[:32]
+          obj={
+              'schema':'janus.trump.frontier_observation.v1',
+              'status':'READ_ONLY_ADVISORY_FRONTIER',
+              'repository':'Hawkar-usls/Janus-Fundamentum',
+              'candidate_count':len(rows),
+              'candidates':rows,
+              'selection_hint':'NATIVE_CHECKPOINT_DECIDES_WHICH_REF_DESERVES_BOUNDED_READ_ONLY_INTAKE',
+              'authority':{
+                  'read_only_observation':True,
+                  'changes_active_lineage':False,
+                  'changes_proof_ladder':False,
+                  'grants_theorem_authority':False,
+                  'grants_runtime_promotion':False,
+                  'mutates_observed_repository':False,
+              },
+          }
+          canonical=json.dumps(obj,sort_keys=True,separators=(',',':')).encode()
+          obj['observation_sha256']=hashlib.sha256(canonical).hexdigest()
+          Path('runtime/trump-attention/frontier.json').write_text(
+              json.dumps(obj,indent=2,sort_keys=True)+'\n',encoding='utf-8'
+          )
+          print(json.dumps({'candidate_count':len(rows),'observation_sha256':obj['observation_sha256']},indent=2))
+          PY
+
+      - name: Native checkpoint selects bounded read-only intake target
+        shell: bash
+        run: |
+          test -f janus_model/checkpoints/promoted.pt
+          python -m janus_model.extensions.trump_frontier_attention \
+            --checkpoint janus_model/checkpoints/promoted.pt \
+            --frontier runtime/trump-attention/frontier.json \
+            --out runtime/trump-attention/attention.json \
+            --margin 0.01
+
+      - name: Inspect selected exact commit read-only
+        shell: bash
+        run: |
+          set -euo pipefail
+          COMMIT=$(python -c "import json; print(json.load(open('runtime/trump-attention/attention.json'))['selected']['commit'] or '')")
+          REF=$(python -c "import json; print(json.load(open('runtime/trump-attention/attention.json'))['selected']['ref'] or '')")
+          if [ -z "$COMMIT" ]; then
+            python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          a=json.load(open('runtime/trump-attention/attention.json'))
+          obj={
+              'schema':'janus.trump.frontier_intake.v1',
+              'status':'ABSTAIN',
+              'attention_id':a['attention_id'],
+              'selected_ref':None,
+              'selected_commit':None,
+              'P_VS_NP':'OPEN',
+              'authority':{
+                  'read_only':True,'source_repository_mutated':False,
+                  'active_lineage_changed':False,'proof_ladder_changed':False,
+                  'theorem_promoted':False,'runtime_promoted':False,'authority_delta':0,
+              },
+          }
+          canonical=json.dumps(obj,sort_keys=True,separators=(',',':')).encode()
+          obj['intake_sha256']=hashlib.sha256(canonical).hexdigest()
+          Path('runtime/trump-attention/intake.json').write_text(json.dumps(obj,indent=2,sort_keys=True)+'\n')
+          PY
+            echo 'JANUS_TRUMP_FRONTIER_INTAKE=ABSTAIN'
+            exit 0
+          fi
+
+          rm -rf runtime/trump-attention/selected
+          git init -q runtime/trump-attention/selected
+          git -C runtime/trump-attention/selected remote add origin https://github.com/Hawkar-usls/Janus-Fundamentum.git
+          git -C runtime/trump-attention/selected fetch -q --depth 1 origin "$COMMIT"
+          git -C runtime/trump-attention/selected checkout -q --detach FETCH_HEAD
+          test "$(git -C runtime/trump-attention/selected rev-parse HEAD)" = "$COMMIT"
+
+          python - "$REF" "$COMMIT" <<'PY'
+          import hashlib,json,re,subprocess,sys
+          from pathlib import Path
+          ref,commit=sys.argv[1],sys.argv[2]
+          root=Path('runtime/trump-attention/selected')
+          def git(*args):
+              return subprocess.check_output(['git','-C',str(root),*args],text=True).strip()
+          tree=git('rev-parse','HEAD^{tree}')
+          subject=git('show','-s','--format=%s','HEAD')[:300]
+          author_date=git('show','-s','--format=%aI','HEAD')
+          rows=[]
+          raw=git('ls-tree','-rl','HEAD')
+          for line in raw.splitlines():
+              meta,path=line.split('\t',1)
+              parts=meta.split()
+              if len(parts)<4 or parts[1]!='blob':
+                  continue
+              mode,kind,blob,size=parts[:4]
+              if not re.search(r'(^|/)(research|proof|trump|experiments|docs)(/|$)|TRUMP|P[_-]?VS[_-]?NP',path,re.I):
+                  continue
+              rows.append({'path':path,'git_blob_sha':blob,'size_bytes':int(size) if size.isdigit() else None})
+              if len(rows)>=64:
+                  break
+          obj={
+              'schema':'janus.trump.frontier_intake.v1',
+              'status':'READ_ONLY_EXACT_COMMIT_INTAKE',
+              'attention_id':json.load(open('runtime/trump-attention/attention.json'))['attention_id'],
+              'repository':'Hawkar-usls/Janus-Fundamentum',
+              'selected_ref':ref,
+              'selected_commit':commit,
+              'tree_sha':tree,
+              'commit_subject':subject,
+              'author_date':author_date,
+              'relevant_file_count_capped':len(rows),
+              'relevant_files':rows,
+              'P_VS_NP':'OPEN',
+              'authority':{
+                  'read_only':True,'source_repository_mutated':False,
+                  'active_lineage_changed':False,'proof_ladder_changed':False,
+                  'theorem_promoted':False,'runtime_promoted':False,'authority_delta':0,
+              },
+              'laws':[
+                  'FETCH_EXACT_COMMIT != ACTIVE_LINEAGE_CHANGE',
+                  'FILE_PRESENCE != PROOF',
+                  'COMMIT_SUBJECT != VERIFIED_RESULT',
+                  'INTAKE != EXECUTION',
+                  'INTAKE != THEOREM',
+                  'P_VS_NP = OPEN',
+              ],
+          }
+          canonical=json.dumps(obj,sort_keys=True,separators=(',',':')).encode()
+          obj['intake_sha256']=hashlib.sha256(canonical).hexdigest()
+          Path('runtime/trump-attention/intake.json').write_text(
+              json.dumps(obj,indent=2,sort_keys=True)+'\n',encoding='utf-8'
+          )
+          print(json.dumps({
+              'status':obj['status'],'selected_ref':ref,'selected_commit':commit,
+              'tree_sha':tree,'relevant_file_count_capped':len(rows),
+              'intake_sha256':obj['intake_sha256'],'P_VS_NP':'OPEN'
+          },indent=2))
+          PY
+          echo 'JANUS_TRUMP_FRONTIER_SOURCE_WRITEBACK=FALSE'
+
+      - name: Upload bounded attention evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-frontier-attention-${{ github.run_id }}
+          path: |
+            runtime/trump-attention/frontier.json
+            runtime/trump-attention/attention.json
+            runtime/trump-attention/intake.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Persist attention and intake only into JANUS brain state
+        if: github.ref_name == 'main'
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE='${{ steps.base.outputs.head }}'
+          git config user.name 'janus-trump-native-frontier-attention'
+          git config user.email 'janus-trump-native-frontier-attention@users.noreply.github.com'
+
+          validate_drift() {
+            python - "$1" <<'PY'
+          import sys
+          from pathlib import Path
+          paths=Path(sys.argv[1]).read_text(encoding='utf-8').splitlines()
+          allowed=('janus_model/state/','janus_model/receipts/','janus_model/outbox/','janus_model/checkpoints/')
+          bad=[p for p in paths if p and not p.startswith(allowed)]
+          if bad:
+              raise SystemExit('JANUS_TRUMP_ATTENTION_NONBENIGN_DRIFT:'+','.join(sorted(bad)))
+          print('JANUS_TRUMP_ATTENTION_BENIGN_DRIFT=' + ','.join(paths))
+          PY
+          }
+
+          git fetch origin main
+          CURRENT=$(git rev-parse origin/main)
+          if [ "$SOURCE" != "$CURRENT" ]; then
+            git diff --name-only "$SOURCE" "$CURRENT" > runtime/trump-attention/preflight-drift.txt
+            if ! validate_drift runtime/trump-attention/preflight-drift.txt; then
+              echo 'JANUS_TRUMP_ATTENTION_STALE_CODE_BASE__NO_PERSIST'
+              exit 0
+            fi
+            git rebase origin/main
+          fi
+
+          mkdir -p janus_model/state
+          cp runtime/trump-attention/frontier.json janus_model/state/JANUS_TRUMP_FRONTIER_OBSERVATION.json
+          cp runtime/trump-attention/attention.json janus_model/state/JANUS_TRUMP_FRONTIER_ATTENTION.json
+          cp runtime/trump-attention/intake.json janus_model/state/JANUS_TRUMP_FRONTIER_INTAKE.json
+          git add -f \
+            janus_model/state/JANUS_TRUMP_FRONTIER_OBSERVATION.json \
+            janus_model/state/JANUS_TRUMP_FRONTIER_ATTENTION.json \
+            janus_model/state/JANUS_TRUMP_FRONTIER_INTAKE.json
+          if git diff --cached --quiet; then
+            echo 'JANUS_TRUMP_ATTENTION_NO_CHANGE'
+            exit 0
+          fi
+          git commit -m 'JANUS TRUMP: remember native read-only frontier attention'
+
+          PUSHED=false
+          for ATTEMPT in 1 2 3; do
+            if git push origin HEAD:main; then
+              PUSHED=true
+              break
+            fi
+            git fetch origin main
+            LOCAL_PARENT=$(git rev-parse HEAD^)
+            CURRENT=$(git rev-parse origin/main)
+            git diff --name-only "$LOCAL_PARENT" "$CURRENT" > runtime/trump-attention/push-drift.txt
+            validate_drift runtime/trump-attention/push-drift.txt
+            git rebase origin/main
+          done
+          if [ "$PUSHED" != true ]; then
+            echo 'JANUS_TRUMP_ATTENTION_PUSH_RETRY_EXHAUSTED'
+            exit 25
+          fi
+          echo 'JANUS_TRUMP_ATTENTION_PERSIST=PASS'
+
+      - name: Wake native cognition after new bounded intake
+        if: github.ref_name == 'main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run janus-native-model.yml --ref main
+          echo 'JANUS_NATIVE_WAKE_AFTER_FRONTIER_ATTENTION=DISPATCHED'
+
+      - name: Source repository mutation firewall
+        run: echo 'JANUS_FUNDAMENTUM_WRITEBACK=FORBIDDEN_AND_NOT_PERFORMED'

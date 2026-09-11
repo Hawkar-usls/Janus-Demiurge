@@ -1,0 +1,62 @@
+name: JANUS Self-Evolution v2 CI
+
+on:
+  pull_request:
+    paths:
+      - 'janus_model/**'
+      - 'tests/test_janus_native_model.py'
+      - 'tests/test_janus_trump_research_cycle.py'
+      - 'tests/test_janus_trump_frontier_attention.py'
+      - '.github/workflows/janus-native-model.yml'
+      - '.github/workflows/janus-trump-research-cycle.yml'
+      - '.github/workflows/janus-trump-native-frontier-attention.yml'
+      - '.github/workflows/janus-self-evolution-v2-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install native test runtime
+        run: |
+          python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Compile changed kernels
+        run: |
+          python -m py_compile \
+            janus_model/eval_contract.py \
+            janus_model/train_registry.py \
+            janus_model/organs.py \
+            janus_model/extensions/trump_research_cycle.py \
+            janus_model/extensions/trump_frontier_attention.py
+
+      - name: Verify native promotion and organ policy
+        run: python -m unittest -v tests/test_janus_native_model.py
+
+      - name: Verify independent TRUMP frontier contract
+        run: python -m unittest -v tests/test_janus_trump_research_cycle.py
+
+      - name: Verify native frontier attention and abstention
+        run: python -m unittest -v tests/test_janus_trump_frontier_attention.py
+
+      - name: Claim ceiling remains fail-closed
+        run: |
+          python - <<'PY'
+          from janus_model.eval_contract import contract_identity
+          c=contract_identity()
+          assert c['schema']=='janus.model.evaluation_contract.v2'
+          assert c['verified_improvement']['neutral_noise_zone_is_promotion'] is False
+          assert c['verified_improvement']['at_least_one_metric_must_improve'] is True
+          assert c['anchor_is_training_source'] is False
+          print('JANUS_SELF_EVOLUTION_V2_CLAIM_CEILING=PASS')
+          PY

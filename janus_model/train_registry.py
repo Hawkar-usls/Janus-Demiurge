@@ -17,6 +17,8 @@ from janus_model.eval_contract import (
     DEFAULT_ANCHOR,
     EVAL_BATCHES,
     EVAL_BATCH_SIZE,
+    MIN_MEANINGFUL_IMPROVEMENT_FRACTION,
+    VERIFIED_NONREGRESSION_NOISE_FRACTION,
     contract_identity,
     sha256_file,
 )
@@ -119,13 +121,16 @@ def promotion_gate(
     incumbent_anchor_loss,
     adaptive_regression_tolerance=ADAPTIVE_REGRESSION_TOLERANCE,
     anchor_regression_tolerance=ANCHOR_REGRESSION_TOLERANCE,
+    nonregression_noise_fraction=VERIFIED_NONREGRESSION_NOISE_FRACTION,
+    min_meaningful_improvement_fraction=MIN_MEANINGFUL_IMPROVEMENT_FRACTION,
 ):
-    """Return a bounded dual-evaluation promotion decision.
+    """Return a bounded verified-improvement promotion decision.
 
-    The adaptive holdout measures current-corpus adaptation. The frozen anchor
-    makes evaluations comparable across changing registry snapshots. The anchor
-    is a veto gate only; it never makes a candidate eligible when the adaptive
-    gate failed.
+    The adaptive and frozen-anchor tolerances remain hard outer safety gates.
+    Promotion is stricter than merely staying inside those tolerances: both
+    protected metrics must be non-regressing inside a small noise band and at
+    least one must improve by a minimum meaningful fraction. This prevents a
+    long sequence of individually tolerated but cumulatively worse checkpoints.
     """
 
     candidate_finite = math.isfinite(candidate_loss)
@@ -151,6 +156,12 @@ def promotion_gate(
             "anchor_ok": anchor_ok,
             "adaptive_limit": BOOTSTRAP_FINITE_LOSS_CEILING,
             "anchor_limit": BOOTSTRAP_FINITE_LOSS_CEILING,
+            "adaptive_nonregression": adaptive_ok,
+            "anchor_nonregression": anchor_ok,
+            "adaptive_meaningful_improvement": None,
+            "anchor_meaningful_improvement": None,
+            "meaningful_improvement": None,
+            "verified_improvement_gate": promote,
         }
 
     incumbent_finite = math.isfinite(incumbent_loss)
@@ -177,14 +188,68 @@ def promotion_gate(
         and incumbent_anchor_finite
         and candidate_anchor_loss <= anchor_limit
     )
-    promote = adaptive_ok and anchor_ok
 
-    if promote:
-        reason = "CANDIDATE_PASSED_ADAPTIVE_AND_FROZEN_ANCHOR_GATES"
-    elif not adaptive_ok:
+    adaptive_nonregression_limit = (
+        incumbent_loss * (1.0 + nonregression_noise_fraction)
+        if incumbent_finite
+        else None
+    )
+    anchor_nonregression_limit = (
+        incumbent_anchor_loss * (1.0 + nonregression_noise_fraction)
+        if incumbent_anchor_finite
+        else None
+    )
+    adaptive_nonregression = (
+        candidate_finite
+        and incumbent_finite
+        and candidate_loss <= adaptive_nonregression_limit
+    )
+    anchor_nonregression = (
+        candidate_anchor_finite
+        and incumbent_anchor_finite
+        and candidate_anchor_loss <= anchor_nonregression_limit
+    )
+
+    adaptive_meaningful_limit = (
+        incumbent_loss * (1.0 - min_meaningful_improvement_fraction)
+        if incumbent_finite
+        else None
+    )
+    anchor_meaningful_limit = (
+        incumbent_anchor_loss * (1.0 - min_meaningful_improvement_fraction)
+        if incumbent_anchor_finite
+        else None
+    )
+    adaptive_meaningful_improvement = (
+        candidate_finite
+        and incumbent_finite
+        and candidate_loss <= adaptive_meaningful_limit
+    )
+    anchor_meaningful_improvement = (
+        candidate_anchor_finite
+        and incumbent_anchor_finite
+        and candidate_anchor_loss <= anchor_meaningful_limit
+    )
+    meaningful_improvement = adaptive_meaningful_improvement or anchor_meaningful_improvement
+    verified_improvement_gate = (
+        adaptive_ok
+        and anchor_ok
+        and adaptive_nonregression
+        and anchor_nonregression
+        and meaningful_improvement
+    )
+    promote = verified_improvement_gate
+
+    if not adaptive_ok:
         reason = "CANDIDATE_REJECTED_BY_ADAPTIVE_HOLDOUT_GATE"
-    else:
+    elif not anchor_ok:
         reason = "CANDIDATE_REJECTED_BY_FROZEN_ANCHOR_GATE"
+    elif not adaptive_nonregression or not anchor_nonregression:
+        reason = "CANDIDATE_REJECTED_BY_VERIFIED_NONREGRESSION_GATE"
+    elif not meaningful_improvement:
+        reason = "CANDIDATE_NO_MEANINGFUL_VERIFIED_GAIN"
+    else:
+        reason = "CANDIDATE_PASSED_VERIFIED_IMPROVEMENT_AND_DUAL_GATES"
 
     return {
         "promote": promote,
@@ -193,6 +258,18 @@ def promotion_gate(
         "anchor_ok": anchor_ok,
         "adaptive_limit": adaptive_limit,
         "anchor_limit": anchor_limit,
+        "adaptive_nonregression_limit": adaptive_nonregression_limit,
+        "anchor_nonregression_limit": anchor_nonregression_limit,
+        "adaptive_meaningful_limit": adaptive_meaningful_limit,
+        "anchor_meaningful_limit": anchor_meaningful_limit,
+        "adaptive_nonregression": adaptive_nonregression,
+        "anchor_nonregression": anchor_nonregression,
+        "adaptive_meaningful_improvement": adaptive_meaningful_improvement,
+        "anchor_meaningful_improvement": anchor_meaningful_improvement,
+        "meaningful_improvement": meaningful_improvement,
+        "verified_improvement_gate": verified_improvement_gate,
+        "nonregression_noise_fraction": nonregression_noise_fraction,
+        "minimum_meaningful_improvement_fraction": min_meaningful_improvement_fraction,
     }
 
 
@@ -321,6 +398,16 @@ def main():
             "candidate_loss": candidate_anchor_loss,
             "gate_pass": gate["anchor_ok"],
         },
+        "verified_improvement": {
+            **local_contract["verified_improvement"],
+            "adaptive_nonregression": gate["adaptive_nonregression"],
+            "anchor_nonregression": gate["anchor_nonregression"],
+            "adaptive_meaningful_improvement": gate["adaptive_meaningful_improvement"],
+            "anchor_meaningful_improvement": gate["anchor_meaningful_improvement"],
+            "meaningful_improvement": gate["meaningful_improvement"],
+            "gate_pass": gate["verified_improvement_gate"],
+            "reason": reason,
+        },
         "historical_comparability": (
             "ANCHOR_BASELINE_ESTABLISHED"
             if incumbent_anchor_loss is None
@@ -355,6 +442,7 @@ def main():
             "incumbent_anchor_eval_loss": incumbent_anchor_loss,
             "anchor_sha256": anchor_sha256,
             "evaluation_contract": evaluation_contract,
+            "promotion_gate": gate,
             "parameter_count": parameter_count(candidate),
         }
         save_checkpoint(out, candidate, meta)
@@ -375,9 +463,10 @@ def main():
     sample = ByteTokenizer.decode(sample_ids)
 
     receipt = {
-        "schema": "janus.model.training_receipt.v1",
+        "schema": "janus.model.training_receipt.v2",
         "status": "PROMOTED" if promote else "REJECTED",
         "promotion_reason": reason,
+        "promotion_gate": gate,
         "training_mode": mode,
         "source_commit": corpus["source_commit"],
         "source_digest": corpus["source_digest"],
@@ -413,8 +502,10 @@ def main():
             "anchor_gate_can_override_failed_adaptive_gate": False,
             "training_seed_is_exploratory_only": True,
             "evaluation_seeds_frozen": True,
+            "neutral_noise_zone_can_promote": False,
+            "promotion_requires_meaningful_verified_gain": True,
             "general_intelligence_proven": False,
-            "self_development": "BOUNDED_WEIGHT_UPDATE_WITH_DUAL_EVALUATION_PROMOTION_GATE",
+            "self_development": "BOUNDED_WEIGHT_UPDATE_WITH_VERIFIED_IMPROVEMENT_PROMOTION_GATE",
         },
     }
     Path(a.receipt).parent.mkdir(parents=True, exist_ok=True)
@@ -427,6 +518,7 @@ def main():
             {
                 "status": receipt["status"],
                 "training_mode": receipt["training_mode"],
+                "promotion_reason": reason,
                 "source_digest": corpus["source_digest"],
                 "registry_source_digest": corpus.get("registry_source_digest"),
                 "evaluation_contract_sha256": local_contract["contract_sha256"],
@@ -441,6 +533,8 @@ def main():
                 "candidate_eval_loss": candidate_loss,
                 "incumbent_anchor_eval_loss": incumbent_anchor_loss,
                 "candidate_anchor_eval_loss": candidate_anchor_loss,
+                "meaningful_improvement": gate["meaningful_improvement"],
+                "verified_improvement_gate": gate["verified_improvement_gate"],
                 "anchor_sha256": anchor_sha256,
                 "candidate_checkpoint_sha256": checkpoint_sha,
             },

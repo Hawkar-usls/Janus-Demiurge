@@ -8,6 +8,8 @@ from typing import Any
 
 HRAIN_AGENT = "SCOUT_HRAIN_02"
 INAIHR_AGENT = "SCOUT_INAIHR_03"
+DEFAULT_TRUMP_RESEARCH_CONTEXT = Path("janus_model/state/JANUS_TRUMP_RESEARCH_CONTEXT.json")
+DEFAULT_TRUMP_FRONTIER_INTAKE = Path("janus_model/state/JANUS_TRUMP_FRONTIER_INTAKE.json")
 CORE_EXPECTED = {
     HRAIN_AGENT: ("Hawkar-usls/Hrain", "LEFT_HRAIN", "STRUCTURAL_CONTEXT_GROUNDING_MEDIATOR"),
     INAIHR_AGENT: ("Hawkar-usls/iNaiHR", "RIGHT_INAIHR", "ASSOCIATIVE_CONTEXT"),
@@ -101,10 +103,119 @@ def _self_memory_identity(self_memory_root: Path | None) -> dict:
     }
 
 
+def _trump_frontier_intake_identity(path: Path | None) -> dict:
+    if path is None:
+        path = DEFAULT_TRUMP_FRONTIER_INTAKE
+    if not path.is_file():
+        return {
+            "status": "TRUMP_FRONTIER_INTAKE_NOT_BOUND",
+            "digest_sha256": None,
+            "selected_ref": None,
+            "selected_commit": None,
+            "relevant_file_count_capped": 0,
+            "P_VS_NP": "OPEN",
+            "read_only": True,
+            "grants_mutation_authority": False,
+            "intake_is_proof": False,
+        }
+    obj = _load_json(path)
+    if obj.get("schema") != "janus.trump.frontier_intake.v1":
+        raise RuntimeError("ORGAN_TRUMP_INTAKE_SCHEMA_REJECTED")
+    if obj.get("status") not in {"ABSTAIN", "READ_ONLY_EXACT_COMMIT_INTAKE"}:
+        raise RuntimeError("ORGAN_TRUMP_INTAKE_STATUS_REJECTED")
+    if obj.get("P_VS_NP") != "OPEN":
+        raise RuntimeError("ORGAN_TRUMP_INTAKE_P_VS_NP_REJECTED")
+    authority = obj.get("authority") or {}
+    if authority.get("read_only") is not True:
+        raise RuntimeError("ORGAN_TRUMP_INTAKE_READ_ONLY_REQUIRED")
+    for key in (
+        "source_repository_mutated",
+        "active_lineage_changed",
+        "proof_ladder_changed",
+        "theorem_promoted",
+        "runtime_promoted",
+    ):
+        if authority.get(key) is not False:
+            raise RuntimeError(f"ORGAN_TRUMP_INTAKE_AUTHORITY_REJECTED:{key}")
+    if authority.get("authority_delta") != 0:
+        raise RuntimeError("ORGAN_TRUMP_INTAKE_AUTHORITY_DELTA_REJECTED")
+    files = obj.get("relevant_files") or []
+    if not isinstance(files, list) or len(files) > 64:
+        raise RuntimeError("ORGAN_TRUMP_INTAKE_FILES_REJECTED")
+    return {
+        "status": "BOUND_" + obj["status"],
+        "digest_sha256": sha256_file(path),
+        "intake_sha256": obj.get("intake_sha256"),
+        "selected_ref": obj.get("selected_ref"),
+        "selected_commit": obj.get("selected_commit"),
+        "tree_sha": obj.get("tree_sha"),
+        "commit_subject": obj.get("commit_subject"),
+        "author_date": obj.get("author_date"),
+        "relevant_file_count_capped": len(files),
+        "P_VS_NP": "OPEN",
+        "read_only": True,
+        "grants_mutation_authority": False,
+        "intake_is_proof": False,
+    }
+
+
+def _trump_research_identity(path: Path | None, intake_path: Path | None = None) -> dict:
+    intake = _trump_frontier_intake_identity(intake_path)
+    if path is None:
+        path = DEFAULT_TRUMP_RESEARCH_CONTEXT
+    if not path.is_file():
+        return {
+            "status": "TRUMP_RESEARCH_CONTEXT_NOT_BOUND",
+            "digest_sha256": None,
+            "P_VS_NP": "OPEN",
+            "frontier_candidate_count": 0,
+            "frontier_top_ref": None,
+            "frontier_top_commit": None,
+            "native_frontier_intake": intake,
+            "grants_mutation_authority": False,
+            "frontier_is_proof": False,
+        }
+    obj = _load_json(path)
+    if obj.get("P_VS_NP") != "OPEN":
+        raise RuntimeError("ORGAN_TRUMP_P_VS_NP_MUST_REMAIN_OPEN")
+    authority = obj.get("authority") or {}
+    if authority.get("may_grant_runtime_promotion") is not False:
+        raise RuntimeError("ORGAN_TRUMP_RUNTIME_AUTHORITY_REJECTED")
+    if authority.get("proof_ladder_state_is_theorem") is not False:
+        raise RuntimeError("ORGAN_TRUMP_THEOREM_AUTHORITY_REJECTED")
+    if authority.get("frontier_observation_changes_active_lineage") not in {None, False}:
+        raise RuntimeError("ORGAN_TRUMP_FRONTIER_LINEAGE_AUTHORITY_REJECTED")
+    if authority.get("frontier_observation_is_proof") not in {None, False}:
+        raise RuntimeError("ORGAN_TRUMP_FRONTIER_PROOF_AUTHORITY_REJECTED")
+    fundamentum = obj.get("fundamentum") or {}
+    frontier = fundamentum.get("independent_frontier_observation") or {}
+    candidates = frontier.get("candidates") or []
+    if not isinstance(candidates, list):
+        raise RuntimeError("ORGAN_TRUMP_FRONTIER_CANDIDATES_REJECTED")
+    top = candidates[0] if candidates and isinstance(candidates[0], dict) else {}
+    return {
+        "status": "BOUND_READ_ONLY_TRUMP_RESEARCH_CONTEXT",
+        "digest_sha256": sha256_file(path),
+        "context_sha256": obj.get("context_sha256"),
+        "P_VS_NP": "OPEN",
+        "active_stage": fundamentum.get("active_stage"),
+        "active_commit": fundamentum.get("observed_commit"),
+        "next_gate": fundamentum.get("next_gate"),
+        "frontier_candidate_count": len(candidates),
+        "frontier_top_ref": top.get("ref"),
+        "frontier_top_commit": top.get("commit"),
+        "native_frontier_intake": intake,
+        "grants_mutation_authority": False,
+        "frontier_is_proof": False,
+    }
+
+
 def build_modular_context(
     scout_root: Path,
     module_registry_path: Path | None = None,
     self_memory_root: Path | None = None,
+    trump_research_context_path: Path | None = None,
+    trump_frontier_intake_path: Path | None = None,
 ) -> dict:
     if module_registry_path is not None:
         registry = _load_json(module_registry_path)
@@ -142,13 +253,14 @@ def build_modular_context(
     hrain = modules[HRAIN_AGENT]
     inaihr = modules[INAIHR_AGENT]
     self_memory = _self_memory_identity(self_memory_root)
+    trump_research = _trump_research_identity(trump_research_context_path, trump_frontier_intake_path)
     degraded_module_ids = sorted(
         agent_id for agent_id, module in modules.items() if module.get("observation_degraded") is True
     )
     core = {
-        "schema": "janus.model.modular_organ_context.v2",
+        "schema": "janus.model.modular_organ_context.v3",
         "status": "READ_ONLY_MODULAR_ORGAN_CONTEXT",
-        "canonical_formula": "HRAIN_GROUNDS -> EYE_BRIDGES -> INAIHR_ASSOCIATES -> HRAIN_MEDIATES -> NATIVE_MODEL_DECIDES -> VERIFY_DECIDES",
+        "canonical_formula": "HRAIN_GROUNDS -> EYE_BRIDGES -> INAIHR_ASSOCIATES -> HRAIN_MEDIATES -> TRUMP_RESEARCH_INFORMS -> NATIVE_MODEL_DECIDES -> VERIFY_DECIDES",
         "module_count": len(modules),
         "degraded_module_count": len(degraded_module_ids),
         "degraded_module_ids": degraded_module_ids,
@@ -156,6 +268,7 @@ def build_modular_context(
         "repository_modules": modules,
         "organs": {"HRAiN": hrain, "iNaiHR": inaihr},
         "self_memory": self_memory,
+        "trump_research": trump_research,
         "firewalls": {
             "read_only": True,
             "module_observation_grants_mutation": False,
@@ -166,16 +279,24 @@ def build_modular_context(
             "bicameral_agreement_is_truth": False,
             "inaihr_association_is_evidence": False,
             "raw_self_reflection_is_training_source": False,
+            "trump_context_grants_mutation": False,
+            "trump_frontier_is_proof": False,
+            "trump_frontier_intake_is_proof": False,
             "terminal_authority": "VERIFY",
         },
     }
     digest = sha256_bytes(canonical_bytes(core))
     core["context_sha256"] = digest
+    trump_digest = (trump_research.get("digest_sha256") or "NONE")[:8]
+    frontier_commit = (trump_research.get("frontier_top_commit") or "NONE")[:8]
+    intake = trump_research["native_frontier_intake"]
+    intake_commit = (intake.get("selected_commit") or "NONE")[:8]
     core["native_prompt_suffix"] = (
         f"CTX MODULES={len(modules)}; DEGRADED={len(degraded_module_ids)}; HRAiN@{hrain['target_commit'][:8]}=STRUCTURE; "
         f"iNaiHR@{inaihr['target_commit'][:8]}=ASSOCIATION; "
         f"SELF@{(self_memory.get('digest_sha256') or 'NONE')[:8]}; "
-        "VERIFY=DECIDES; AGREEMENT!=TRUTH; PATCH!=PASS"
+        f"TRUMP@{trump_digest}=OPEN; FRONTIER@{frontier_commit}; INTAKE@{intake_commit}=READ_ONLY; "
+        "VERIFY=DECIDES; AGREEMENT!=TRUTH; FRONTIER!=PROOF; INTAKE!=PROOF; PATCH!=PASS"
     )
     return core
 
@@ -190,16 +311,21 @@ def main() -> None:
     ap.add_argument("--scout-root", default="scout_swarm/state/agents")
     ap.add_argument("--module-registry")
     ap.add_argument("--self-memory-root")
+    ap.add_argument("--trump-research-context")
+    ap.add_argument("--trump-frontier-intake")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
     context = build_modular_context(
         Path(args.scout_root),
         Path(args.module_registry) if args.module_registry else None,
         Path(args.self_memory_root) if args.self_memory_root else None,
+        Path(args.trump_research_context) if args.trump_research_context else None,
+        Path(args.trump_frontier_intake) if args.trump_frontier_intake else None,
     )
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(context, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
+    intake = context["trump_research"]["native_frontier_intake"]
     print(json.dumps({
         "status": context["status"],
         "context_sha256": context["context_sha256"],
@@ -207,6 +333,11 @@ def main() -> None:
         "degraded_module_count": context["degraded_module_count"],
         "degraded_module_ids": context["degraded_module_ids"],
         "self_memory_digest": context["self_memory"]["digest_sha256"],
+        "trump_research_status": context["trump_research"]["status"],
+        "trump_research_digest": context["trump_research"]["digest_sha256"],
+        "trump_frontier_top_commit": context["trump_research"]["frontier_top_commit"],
+        "trump_intake_status": intake["status"],
+        "trump_intake_commit": intake["selected_commit"],
         "hrain_commit": context["organs"]["HRAiN"]["target_commit"],
         "inaihr_commit": context["organs"]["iNaiHR"]["target_commit"],
     }, indent=2))
