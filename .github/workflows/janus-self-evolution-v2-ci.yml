@@ -8,9 +8,11 @@ on:
       - 'tests/test_janus_native_prompt_budget.py'
       - 'tests/test_janus_trump_research_cycle.py'
       - 'tests/test_janus_trump_frontier_attention.py'
+      - 'tests/test_janus_trump_frontier_memory.py'
       - '.github/workflows/janus-native-model.yml'
       - '.github/workflows/janus-trump-research-cycle.yml'
       - '.github/workflows/janus-trump-native-frontier-attention.yml'
+      - '.github/workflows/janus-trump-frontier-memory.yml'
       - '.github/workflows/janus-self-evolution-v2-ci.yml'
   workflow_dispatch:
 
@@ -36,11 +38,13 @@ jobs:
         run: |
           python -m py_compile \
             janus_model/cli.py \
+            janus_model/corpus.py \
             janus_model/eval_contract.py \
             janus_model/train_registry.py \
             janus_model/organs.py \
             janus_model/extensions/trump_research_cycle.py \
-            janus_model/extensions/trump_frontier_attention.py
+            janus_model/extensions/trump_frontier_attention.py \
+            janus_model/extensions/trump_frontier_memory.py
 
       - name: Verify native promotion and organ policy
         run: python -m unittest -v tests/test_janus_native_model.py
@@ -53,6 +57,9 @@ jobs:
 
       - name: Verify native frontier attention and abstention
         run: python -m unittest -v tests/test_janus_trump_frontier_attention.py
+
+      - name: Verify bounded frontier-memory assimilation
+        run: python -m unittest -v tests/test_janus_trump_frontier_memory.py
 
       - name: Claim ceiling remains fail-closed
         run: |
