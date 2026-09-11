@@ -71,6 +71,33 @@ class TrumpResearchCycleTests(unittest.TestCase):
             },
         }
 
+    def frontier(self):
+        return {
+            "schema": "janus.trump.frontier_observation.v1",
+            "status": "READ_ONLY_ADVISORY_FRONTIER",
+            "repository": "Hawkar-usls/Janus-Fundamentum",
+            "candidates": [
+                {
+                    "ref": "refs/heads/proof/trump-new-2026-09-11",
+                    "commit": "d" * 40,
+                    "date_hint": "2026-09-11",
+                },
+                {
+                    "ref": "refs/heads/research/janus-trump-r38-2026-09-02",
+                    "commit": "e" * 40,
+                    "date_hint": "2026-09-02",
+                },
+            ],
+            "authority": {
+                "read_only_observation": True,
+                "changes_active_lineage": False,
+                "changes_proof_ladder": False,
+                "grants_theorem_authority": False,
+                "grants_runtime_promotion": False,
+                "mutates_observed_repository": False,
+            },
+        }
+
     def test_objective_requires_open_boundary_and_strict_acceleration_gate(self):
         obj = self.objective()
         trc.validate_objective(obj)
@@ -118,11 +145,39 @@ class TrumpResearchCycleTests(unittest.TestCase):
         self.assertEqual(out["P_VS_NP"], "OPEN")
         self.assertEqual(out["fundamentum"]["active_contract_path"], "research/R38_RESULT.json")
         self.assertTrue(out["fundamentum"]["active_contract_head_match"])
+        self.assertIsNone(out["fundamentum"]["independent_frontier_observation"])
         self.assertEqual(out["algorithmic_proof_ladder"]["highest_verified_level"], "L1_LOCAL_FINITE_INSTANCE_EXACTNESS_ONLY")
         self.assertFalse(out["authority"]["proof_ladder_state_is_theorem"])
         self.assertFalse(out["authority"]["may_grant_runtime_promotion"])
         self.assertIn("POLYNOMIAL_TERMINATION != DECISION_COMPLETENESS", out["firewalls"])
         self.assertEqual(len(out["context_sha256"]), 64)
+
+    def test_cycle_can_observe_newer_frontier_without_changing_active_lineage(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "research").mkdir()
+            (root / "research/R38_RESULT.json").write_text("{}", encoding="utf-8")
+            (root / "research/R38_PREREG.json").write_text("{}", encoding="utf-8")
+            with mock.patch.object(trc, "git_head", return_value="c" * 40):
+                out = trc.build_cycle(
+                    self.objective(),
+                    root,
+                    enable_network=False,
+                    frontier_observation=self.frontier(),
+                )
+        observed = out["fundamentum"]["independent_frontier_observation"]
+        self.assertEqual(observed["candidates"][0]["ref"], "refs/heads/proof/trump-new-2026-09-11")
+        self.assertEqual(out["fundamentum"]["tracking_ref"], "research/r38-test")
+        self.assertEqual(out["fundamentum"]["observed_commit"], "c" * 40)
+        self.assertFalse(out["authority"]["frontier_observation_changes_active_lineage"])
+        self.assertFalse(out["authority"]["frontier_observation_is_proof"])
+        self.assertEqual(out["P_VS_NP"], "OPEN")
+
+    def test_frontier_observation_cannot_grant_authority(self):
+        bad = self.frontier()
+        bad["authority"]["changes_active_lineage"] = True
+        with self.assertRaisesRegex(RuntimeError, "FRONTIER_AUTHORITY_LEAK"):
+            trc.validate_frontier_observation(bad)
 
     def test_active_head_drift_fails_closed(self):
         with tempfile.TemporaryDirectory() as td:
