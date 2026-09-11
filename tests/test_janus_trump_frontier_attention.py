@@ -46,6 +46,17 @@ class TrumpFrontierAttentionTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "AUTHORITY_REJECTED"):
             tfa.validate_frontier(obj)
 
+    def test_explicit_self_test_do_not_use_ref_is_ineligible_for_native_attention(self):
+        obj = self.frontier()
+        obj["candidates"].insert(0, {
+            "ref": "refs/heads/research/trump-adversarial-self-test-do-not-use-2026-09-11",
+            "commit": "d" * 40,
+            "date_hint": "2026-09-11",
+        })
+        eligible = tfa.validate_frontier(obj)
+        self.assertEqual(len(eligible), 2)
+        self.assertNotIn("d" * 40, {row["commit"] for row in eligible})
+
     def test_native_checkpoint_can_select_one_branch_but_gains_no_authority(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
@@ -72,6 +83,43 @@ class TrumpFrontierAttentionTests(unittest.TestCase):
         self.assertFalse(out["authority"]["may_change_active_lineage"])
         self.assertFalse(out["authority"]["may_promote_theorem"])
         self.assertFalse(out["authority"]["may_merge"])
+
+    def test_ineligible_ref_is_never_scored_even_if_it_would_have_best_score(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            checkpoint = root / "brain.pt"
+            checkpoint.write_bytes(b"checkpoint")
+            obj = self.frontier()
+            obj["candidates"].insert(0, {
+                "ref": "refs/heads/research/trump-self-test-do-not-use-2026-09-11",
+                "commit": "d" * 40,
+                "date_hint": "2026-09-11",
+            })
+            frontier = root / "frontier.json"
+            frontier.write_text(json.dumps(obj), encoding="utf-8")
+
+            scored_continuations = []
+
+            def score(_model, _prompt, continuation):
+                scored_continuations.append(continuation)
+                if "do-not-use" in continuation:
+                    return 0.01
+                if "trump-alpha" in continuation:
+                    return 1.0
+                if "trump-beta" in continuation:
+                    return 1.4
+                return 1.8
+
+            with mock.patch.object(tfa, "load_checkpoint", return_value=(object(), {})), \
+                 mock.patch.object(tfa, "sha256_file", return_value="c" * 64), \
+                 mock.patch.object(tfa, "continuation_avg_nll", side_effect=score):
+                out = tfa.choose_frontier(checkpoint, frontier, margin=0.01)
+
+        self.assertEqual(out["raw_candidate_count"], 3)
+        self.assertEqual(out["candidate_count"], 2)
+        self.assertEqual(out["ineligible_candidate_count"], 1)
+        self.assertTrue(all("do-not-use" not in value for value in scored_continuations))
+        self.assertNotEqual(out["selected"]["commit"], "d" * 40)
 
     def test_insufficient_margin_forces_abstention(self):
         with tempfile.TemporaryDirectory() as td:
