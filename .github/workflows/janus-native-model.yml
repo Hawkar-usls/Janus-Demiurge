@@ -30,7 +30,9 @@ on:
         default: false
         type: boolean
   schedule:
-    - cron: '17 */3 * * *'
+    # Hourly independent cognition. Training remains evidence-driven and can be
+    # skipped; a wake is not equivalent to a gradient update.
+    - cron: '17 * * * *'
 
 concurrency:
   group: janus-native-model
@@ -163,6 +165,11 @@ jobs:
           DO_TRAIN=false
           DO_RUN=false
           DO_INSPECT=false
+          SOURCE_ATTEMPT_ORDINAL=1
+          SAME_SOURCE=false
+          LAST_STATUS=NONE
+          SOURCE_ATTEMPTS=0
+          MAX_SOURCE_ATTEMPTS=3
           case "$MODE" in
             train_and_run) DO_TRAIN=true; DO_RUN=true; DO_INSPECT=true ;;
             train) DO_TRAIN=true; DO_INSPECT=true ;;
@@ -171,23 +178,38 @@ jobs:
             *) echo "UNKNOWN_MODE=$MODE"; exit 2 ;;
           esac
           if [ "$DO_TRAIN" = true ] && [ "$FORCE" != true ] && [ -f janus_model/state/JANUS_MODEL_STATE.json ]; then
-            SAME=$(python - <<'PY'
+            INFO=$(python - <<'PY'
           import json
           from pathlib import Path
           state=json.loads(Path('janus_model/state/JANUS_MODEL_STATE.json').read_text())
           corpus=json.loads(Path('runtime/corpus/corpus_manifest.json').read_text())
-          print('true' if state.get('last_source_digest') == corpus.get('source_digest') else 'false')
+          same=state.get('last_source_digest') == corpus.get('source_digest')
+          attempts=int(state.get('source_attempt_count',0)) if same else 0
+          status=str(state.get('last_training_status') or 'NONE') if same else 'NONE'
+          print(('true' if same else 'false') + '|' + status + '|' + str(attempts))
           PY
             )
-            if [ "$SAME" = true ]; then
-              echo 'JANUS_NATIVE_REGISTRY_UNCHANGED=TRUE'
+            IFS='|' read -r SAME_SOURCE LAST_STATUS SOURCE_ATTEMPTS <<< "$INFO"
+            SOURCE_ATTEMPT_ORDINAL=$((SOURCE_ATTEMPTS + 1))
+            if [ "$SAME_SOURCE" = true ] && [ "$LAST_STATUS" = PROMOTED ]; then
+              echo 'JANUS_NATIVE_SOURCE_ALREADY_PROMOTED=TRUE'
               DO_TRAIN=false
+            elif [ "$SAME_SOURCE" = true ] && [ "$LAST_STATUS" = REJECTED ] && [ "$SOURCE_ATTEMPTS" -ge "$MAX_SOURCE_ATTEMPTS" ]; then
+              echo "JANUS_NATIVE_SOURCE_RETRY_BUDGET_EXHAUSTED=$SOURCE_ATTEMPTS"
+              DO_TRAIN=false
+            elif [ "$SAME_SOURCE" = true ] && [ "$LAST_STATUS" = REJECTED ]; then
+              echo "JANUS_NATIVE_RETRY_REJECTED_SOURCE=$SOURCE_ATTEMPT_ORDINAL/$MAX_SOURCE_ATTEMPTS"
             fi
           fi
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"
           echo "do_train=$DO_TRAIN" >> "$GITHUB_OUTPUT"
           echo "do_run=$DO_RUN" >> "$GITHUB_OUTPUT"
           echo "do_inspect=$DO_INSPECT" >> "$GITHUB_OUTPUT"
+          echo "same_source=$SAME_SOURCE" >> "$GITHUB_OUTPUT"
+          echo "last_status=$LAST_STATUS" >> "$GITHUB_OUTPUT"
+          echo "source_attempts=$SOURCE_ATTEMPTS" >> "$GITHUB_OUTPUT"
+          echo "source_attempt_ordinal=$SOURCE_ATTEMPT_ORDINAL" >> "$GITHUB_OUTPUT"
+          echo "max_source_attempts=$MAX_SOURCE_ATTEMPTS" >> "$GITHUB_OUTPUT"
 
       - name: Train native candidate
         id: train
@@ -198,6 +220,13 @@ jobs:
           if [ -f janus_model/checkpoints/promoted.pt ]; then
             INCUMBENT=(--incumbent janus_model/checkpoints/promoted.pt)
           fi
+          ORD='${{ steps.decide.outputs.source_attempt_ordinal }}'
+          case "$ORD" in
+            1) STEPS=240; LR=0.0003 ;;
+            2) STEPS=320; LR=0.0002 ;;
+            *) STEPS=180; LR=0.0004 ;;
+          esac
+          echo "JANUS_NATIVE_BOUNDED_TRAINING_PROFILE=ORDINAL_${ORD}:STEPS_${STEPS}:LR_${LR}"
           set +e
           python -m janus_model.train_registry \
             --train runtime/corpus/train.txt \
@@ -206,9 +235,9 @@ jobs:
             "${INCUMBENT[@]}" \
             --out runtime/candidate.pt \
             --receipt runtime/training-receipt.json \
-            --steps 240 \
+            --steps "$STEPS" \
             --batch-size 12 \
-            --lr 0.0003 \
+            --lr "$LR" \
             --seed 1337
           RC=$?
           set -e
@@ -217,6 +246,8 @@ jobs:
           fi
           STATUS=$(python -c "import json; print(json.load(open('runtime/training-receipt.json'))['status'])")
           echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          echo "training_steps=$STEPS" >> "$GITHUB_OUTPUT"
+          echo "training_lr=$LR" >> "$GITHUB_OUTPUT"
           echo "JANUS_NATIVE_TRAINING_STATUS=$STATUS"
 
       - name: Promote or reject candidate and persist lineage state
@@ -243,6 +274,8 @@ jobs:
           sha=None
           if checkpoint.exists(): sha=hashlib.sha256(checkpoint.read_bytes()).hexdigest()
           status=receipt['status']
+          same_source=old.get('last_source_digest') == corpus['source_digest']
+          source_attempt_count=(int(old.get('source_attempt_count',0))+1) if same_source else 1
           old['attempt_count']=int(old.get('attempt_count',0))+1
           old['promotion_count']=int(old.get('promotion_count',0))+(1 if status=='PROMOTED' else 0)
           old['rejection_count']=int(old.get('rejection_count',0))+(1 if status=='REJECTED' else 0)
@@ -250,16 +283,28 @@ jobs:
           old['checkpoint_sha256']=sha
           old['last_source_commit']=corpus['source_commit']
           old['last_source_digest']=corpus['source_digest']
+          old['source_attempt_count']=source_attempt_count
+          old['source_attempt_budget']=3
           old['last_training_status']=status
           old['last_training_receipt']=f"janus_model/receipts/training-{os.environ['GITHUB_RUN_ID']}.json"
+          old['last_promotion_reason']=receipt.get('promotion_reason')
           old['config']=receipt['config'] if status=='PROMOTED' or 'config' not in old else old['config']
           old['history']=[*old.get('history',[]),{
               'run_id':os.environ['GITHUB_RUN_ID'],'event':os.environ['GITHUB_EVENT_NAME'],'source_commit':corpus['source_commit'],
-              'source_digest':corpus['source_digest'],'status':status,'candidate_eval_loss':receipt['candidate_eval_loss'],
-              'incumbent_eval_loss':receipt['incumbent_eval_loss'],'checkpoint_sha256':sha
+              'source_digest':corpus['source_digest'],'source_attempt_ordinal':source_attempt_count,
+              'status':status,'promotion_reason':receipt.get('promotion_reason'),
+              'candidate_eval_loss':receipt['candidate_eval_loss'],'incumbent_eval_loss':receipt['incumbent_eval_loss'],
+              'candidate_anchor_eval_loss':receipt.get('candidate_anchor_eval_loss'),
+              'incumbent_anchor_eval_loss':receipt.get('incumbent_anchor_eval_loss'),
+              'checkpoint_sha256':sha
           }][-64:]
           state_path.write_text(json.dumps(old,ensure_ascii=False,indent=2,sort_keys=True),encoding='utf-8')
-          print(json.dumps({'status':old['status'],'attempts':old['attempt_count'],'promotions':old['promotion_count'],'checkpoint_sha256':sha},indent=2))
+          print(json.dumps({
+              'status':old['status'],'attempts':old['attempt_count'],'promotions':old['promotion_count'],
+              'source_attempt_count':source_attempt_count,'source_attempt_budget':old['source_attempt_budget'],
+              'last_training_status':status,'last_promotion_reason':old['last_promotion_reason'],
+              'checkpoint_sha256':sha
+          },indent=2))
           PY
 
       - name: Native checkpoint acceptance gate
