@@ -4,11 +4,17 @@ import hashlib
 import json
 from pathlib import Path
 
-SCHEMA = "janus.model.evaluation_contract.v1"
+SCHEMA = "janus.model.evaluation_contract.v2"
 EVAL_BATCHES = 24
 EVAL_BATCH_SIZE = 8
 ADAPTIVE_REGRESSION_TOLERANCE = 0.002
 ANCHOR_REGRESSION_TOLERANCE = 0.01
+# Hard regression tolerances above remain useful as fail-closed outer guards.
+# Promotion itself is stricter: tiny changes inside this band are treated as
+# measurement noise, and a challenger must demonstrate a real gain without
+# materially worsening the protected metric.
+VERIFIED_NONREGRESSION_NOISE_FRACTION = 0.0005
+MIN_MEANINGFUL_IMPROVEMENT_FRACTION = 0.0005
 BOOTSTRAP_FINITE_LOSS_CEILING = 8.0
 ADAPTIVE_SEED_OFFSET = 11
 ANCHOR_SEED_OFFSET = 29
@@ -46,7 +52,15 @@ def contract_identity(anchor: Path | None = None, *, seed: int = 1337) -> dict:
             "seed": seed + ANCHOR_SEED_OFFSET,
             "regression_tolerance_fraction": ANCHOR_REGRESSION_TOLERANCE,
         },
-        "promotion_rule": "ADAPTIVE_GATE_AND_FROZEN_ANCHOR_GATE",
+        "verified_improvement": {
+            "kind": "MEANINGFUL_GAIN_WITH_PROTECTED_NONREGRESSION",
+            "minimum_improvement_fraction": MIN_MEANINGFUL_IMPROVEMENT_FRACTION,
+            "nonregression_noise_fraction": VERIFIED_NONREGRESSION_NOISE_FRACTION,
+            "at_least_one_metric_must_improve": True,
+            "both_metrics_must_be_nonregressing_within_noise": True,
+            "neutral_noise_zone_is_promotion": False,
+        },
+        "promotion_rule": "ADAPTIVE_HARD_GATE_AND_FROZEN_ANCHOR_HARD_GATE_AND_VERIFIED_IMPROVEMENT_GATE",
         "anchor_is_training_source": False,
         "anchor_gate_can_override_failed_adaptive_gate": False,
     }
@@ -57,7 +71,7 @@ def contract_identity(anchor: Path | None = None, *, seed: int = 1337) -> dict:
 
 def combine_learning_cycle_digest(registry_digest: str, evaluation_contract_sha256: str) -> str:
     raw = (
-        "JANUS_LEARNING_CYCLE_V1\n"
+        "JANUS_LEARNING_CYCLE_V2\n"
         f"registry={registry_digest}\n"
         f"evaluation_contract={evaluation_contract_sha256}\n"
     ).encode("utf-8")
