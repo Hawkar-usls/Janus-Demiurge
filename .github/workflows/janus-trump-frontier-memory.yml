@@ -1,0 +1,241 @@
+name: JANUS TRUMP Frontier Memory
+
+on:
+  workflow_run:
+    workflows: ["JANUS TRUMP Native Frontier Attention"]
+    types: [completed]
+  workflow_dispatch:
+  schedule:
+    # Fallback pulse in case a workflow_run delivery is missed. The primary path
+    # is event-driven from native frontier attention, so this does not wait for
+    # human development activity.
+    - cron: '49 * * * *'
+
+concurrency:
+  group: janus-trump-frontier-memory
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  memory:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout authoritative JANUS brain
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verify frontier-memory kernel
+        run: |
+          python -m py_compile janus_model/extensions/trump_frontier_memory.py janus_model/corpus.py
+          python -m unittest -v tests/test_janus_trump_frontier_memory.py
+          echo 'JANUS_TRUMP_FRONTIER_MEMORY_KERNEL=PASS'
+
+      - name: Resolve exact read-only frontier intake
+        id: intake
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/trump-frontier-memory
+          PATH_INTAKE='janus_model/state/JANUS_TRUMP_FRONTIER_INTAKE.json'
+          if [ ! -f "$PATH_INTAKE" ]; then
+            echo 'has_memory=false' >> "$GITHUB_OUTPUT"
+            echo 'JANUS_TRUMP_FRONTIER_MEMORY=NO_INTAKE_STATE'
+            exit 0
+          fi
+          STATUS=$(python -c "import json; print(json.load(open('$PATH_INTAKE')).get('status',''))")
+          if [ "$STATUS" != READ_ONLY_EXACT_COMMIT_INTAKE ]; then
+            echo 'has_memory=false' >> "$GITHUB_OUTPUT"
+            echo "JANUS_TRUMP_FRONTIER_MEMORY=NO_EXACT_INTAKE:$STATUS"
+            exit 0
+          fi
+          python - <<'PY'
+          import json
+          from janus_model.extensions.trump_frontier_memory import validate_intake
+          p='janus_model/state/JANUS_TRUMP_FRONTIER_INTAKE.json'
+          x=json.load(open(p))
+          validate_intake(x)
+          print('JANUS_TRUMP_FRONTIER_MEMORY_INTAKE_VALID=PASS')
+          PY
+          COMMIT=$(python -c "import json; print(json.load(open('$PATH_INTAKE'))['selected_commit'])")
+          REF=$(python -c "import json; print(json.load(open('$PATH_INTAKE'))['selected_ref'])")
+          INTAKE_BLOB=$(git rev-parse "HEAD:$PATH_INTAKE")
+          cp "$PATH_INTAKE" runtime/trump-frontier-memory/intake.json
+          echo "has_memory=true" >> "$GITHUB_OUTPUT"
+          echo "commit=$COMMIT" >> "$GITHUB_OUTPUT"
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+          echo "intake_blob=$INTAKE_BLOB" >> "$GITHUB_OUTPUT"
+          echo "JANUS_TRUMP_FRONTIER_MEMORY_PIN=$REF@$COMMIT"
+
+      - name: Fetch selected exact commit without source writeback
+        if: steps.intake.outputs.has_memory == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          COMMIT='${{ steps.intake.outputs.commit }}'
+          rm -rf runtime/trump-frontier-memory/source
+          git init -q runtime/trump-frontier-memory/source
+          git -C runtime/trump-frontier-memory/source remote add origin https://github.com/Hawkar-usls/Janus-Fundamentum.git
+          git -C runtime/trump-frontier-memory/source fetch -q --depth 1 origin "$COMMIT"
+          git -C runtime/trump-frontier-memory/source checkout -q --detach FETCH_HEAD
+          test "$(git -C runtime/trump-frontier-memory/source rev-parse HEAD)" = "$COMMIT"
+          echo 'JANUS_TRUMP_FRONTIER_MEMORY_EXACT_FETCH=PASS'
+
+      - name: Build bounded content-bearing train-only memory
+        if: steps.intake.outputs.has_memory == 'true'
+        shell: bash
+        run: |
+          python -m janus_model.extensions.trump_frontier_memory \
+            --source-root runtime/trump-frontier-memory/source \
+            --intake runtime/trump-frontier-memory/intake.json \
+            --out-text runtime/trump-frontier-memory/JANUS_TRUMP_FRONTIER_MEMORY.txt \
+            --out-manifest runtime/trump-frontier-memory/JANUS_TRUMP_FRONTIER_MEMORY_MANIFEST.json \
+            --max-bytes 240000 \
+            --max-files 24 \
+            --max-bytes-per-file 48000
+          python - <<'PY'
+          import json
+          x=json.load(open('runtime/trump-frontier-memory/JANUS_TRUMP_FRONTIER_MEMORY_MANIFEST.json'))
+          assert x['training_only'] is True
+          assert x['adaptive_holdout_inclusion'] is False
+          assert x['frozen_anchor_inclusion'] is False
+          assert x['training_material_is_truth'] is False
+          assert x['contribution_grants_authority'] is False
+          assert x['source_execution'] is False
+          assert x['cross_repository_write'] is False
+          assert x['P_VS_NP']=='OPEN'
+          assert x['authority']['authority_delta']==0
+          print('JANUS_TRUMP_FRONTIER_MEMORY_CLAIM_CEILING=PASS')
+          PY
+
+      - name: Upload frontier-memory evidence
+        if: steps.intake.outputs.has_memory == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-frontier-memory-${{ github.run_id }}
+          path: |
+            runtime/trump-frontier-memory/intake.json
+            runtime/trump-frontier-memory/JANUS_TRUMP_FRONTIER_MEMORY.txt
+            runtime/trump-frontier-memory/JANUS_TRUMP_FRONTIER_MEMORY_MANIFEST.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Persist only into JANUS brain memory with bounded CAS
+        id: persist
+        if: steps.intake.outputs.has_memory == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE_INTAKE_BLOB='${{ steps.intake.outputs.intake_blob }}'
+          INTAKE_PATH='janus_model/state/JANUS_TRUMP_FRONTIER_INTAKE.json'
+          OUT_TEXT='janus_model/state/JANUS_TRUMP_FRONTIER_MEMORY.txt'
+          OUT_MANIFEST='janus_model/state/JANUS_TRUMP_FRONTIER_MEMORY_MANIFEST.json'
+          git config user.name 'janus-trump-frontier-memory'
+          git config user.email 'janus-trump-frontier-memory@users.noreply.github.com'
+
+          validate_remote_drift() {
+            python - "$1" <<'PY'
+          import sys
+          from pathlib import Path
+          paths=Path(sys.argv[1]).read_text(encoding='utf-8').splitlines()
+          allowed=('janus_model/state/','janus_model/receipts/','janus_model/outbox/','janus_model/checkpoints/')
+          bad=[p for p in paths if p and not p.startswith(allowed)]
+          if bad:
+              raise SystemExit('JANUS_FRONTIER_MEMORY_NONBENIGN_DRIFT:'+','.join(sorted(bad)))
+          print('JANUS_FRONTIER_MEMORY_BENIGN_DRIFT=' + ','.join(paths))
+          PY
+          }
+
+          rebuild_on_current_main() {
+            git reset --hard origin/main
+            CURRENT_INTAKE_BLOB=$(git rev-parse "origin/main:$INTAKE_PATH" 2>/dev/null || true)
+            if [ "$CURRENT_INTAKE_BLOB" != "$SOURCE_INTAKE_BLOB" ]; then
+              echo 'JANUS_FRONTIER_MEMORY_INTAKE_MOVED__STALE_BUILD_NO_PERSIST'
+              return 3
+            fi
+            cp runtime/trump-frontier-memory/JANUS_TRUMP_FRONTIER_MEMORY.txt "$OUT_TEXT"
+            cp runtime/trump-frontier-memory/JANUS_TRUMP_FRONTIER_MEMORY_MANIFEST.json "$OUT_MANIFEST"
+            git add -f "$OUT_TEXT" "$OUT_MANIFEST"
+            if git diff --cached --quiet; then
+              echo 'JANUS_FRONTIER_MEMORY_ALREADY_CURRENT'
+              return 2
+            fi
+            git commit -m 'JANUS TRUMP: remember selected frontier as train-only memory'
+            return 0
+          }
+
+          git fetch origin main
+          CURRENT=$(git rev-parse origin/main)
+          START=$(git rev-parse HEAD)
+          if [ "$START" != "$CURRENT" ]; then
+            git diff --name-only "$START" "$CURRENT" > runtime/trump-frontier-memory/preflight-drift.txt
+            validate_remote_drift runtime/trump-frontier-memory/preflight-drift.txt
+          fi
+
+          set +e
+          rebuild_on_current_main
+          BUILD_RC=$?
+          set -e
+          if [ "$BUILD_RC" -eq 2 ] || [ "$BUILD_RC" -eq 3 ]; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          elif [ "$BUILD_RC" -ne 0 ]; then
+            exit "$BUILD_RC"
+          fi
+
+          for ATTEMPT in 1 2 3; do
+            echo "JANUS_FRONTIER_MEMORY_CAS_ATTEMPT=$ATTEMPT"
+            if git push origin HEAD:main; then
+              echo 'changed=true' >> "$GITHUB_OUTPUT"
+              echo "JANUS_FRONTIER_MEMORY_PERSIST=PASS:$ATTEMPT"
+              exit 0
+            fi
+            git fetch origin main
+            LOCAL_PARENT=$(git rev-parse HEAD^)
+            CURRENT=$(git rev-parse origin/main)
+            if [ "$LOCAL_PARENT" = "$CURRENT" ]; then
+              echo 'JANUS_FRONTIER_MEMORY_PUSH_FAILED_WITHOUT_REMOTE_ADVANCE'
+              exit 24
+            fi
+            git diff --name-only "$LOCAL_PARENT" "$CURRENT" > runtime/trump-frontier-memory/cas-drift.txt
+            validate_remote_drift runtime/trump-frontier-memory/cas-drift.txt
+            set +e
+            rebuild_on_current_main
+            BUILD_RC=$?
+            set -e
+            if [ "$BUILD_RC" -eq 2 ] || [ "$BUILD_RC" -eq 3 ]; then
+              echo 'changed=false' >> "$GITHUB_OUTPUT"
+              exit 0
+            elif [ "$BUILD_RC" -ne 0 ]; then
+              exit "$BUILD_RC"
+            fi
+          done
+          echo 'JANUS_FRONTIER_MEMORY_CAS_RETRY_EXHAUSTED'
+          exit 25
+
+      - name: Wake native cognition only after genuinely new memory
+        if: steps.persist.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh workflow run janus-native-model.yml --ref main \
+            -f mode=train_and_run \
+            -f force_train=false \
+            -f prompt='JANUS, assimilate the newly selected read-only TRUMP frontier memory; keep verification authority external.'
+          echo 'JANUS_NATIVE_WAKE_AFTER_NEW_FRONTIER_MEMORY=DISPATCHED'
+
+      - name: Source repository mutation firewall
+        run: echo 'JANUS_FUNDAMENTUM_WRITEBACK=FORBIDDEN_AND_NOT_PERFORMED'
