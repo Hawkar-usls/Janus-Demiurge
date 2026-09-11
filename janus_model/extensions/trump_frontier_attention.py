@@ -18,6 +18,17 @@ ATTENTION_SCHEMA = "janus.trump.native_frontier_attention.v1"
 NO_INSPECTION = "NO_INSPECTION"
 MAX_CANDIDATES = 32
 MAX_REF_BYTES = 240
+# These markers are explicit repository-author signals that a branch is a
+# fixture/self-test and must not be considered an autonomous research intake
+# target. This is eligibility filtering only; it does not rank scientific value.
+INELIGIBLE_REF_MARKERS = (
+    "do-not-use",
+    "do_not_use",
+    "self-test",
+    "self_test",
+    "test-fixture",
+    "test_fixture",
+)
 
 
 def canonical_bytes(obj: Any) -> bytes:
@@ -26,6 +37,11 @@ def canonical_bytes(obj: Any) -> bytes:
 
 def sha256_bytes(raw: bytes) -> str:
     return hashlib.sha256(raw).hexdigest()
+
+
+def _frontier_ref_eligible(ref: str) -> bool:
+    lowered = ref.casefold()
+    return not any(marker in lowered for marker in INELIGIBLE_REF_MARKERS)
 
 
 def validate_frontier(obj: dict) -> list[dict]:
@@ -60,6 +76,8 @@ def validate_frontier(obj: dict) -> list[dict]:
         seen.add(ref)
         if not isinstance(commit, str) or len(commit) != 40 or any(ch not in "0123456789abcdef" for ch in commit):
             raise RuntimeError(f"TRUMP_ATTENTION_FRONTIER_COMMIT_REJECTED:{ref}")
+        if not _frontier_ref_eligible(ref):
+            continue
         out.append({
             "ref": ref,
             "commit": commit,
@@ -95,6 +113,7 @@ def choose_frontier(
         raise RuntimeError("TRUMP_ATTENTION_MARGIN_REJECTED")
     frontier_raw = frontier_path.read_bytes()
     frontier = json.loads(frontier_raw)
+    raw_candidates = frontier.get("candidates") if isinstance(frontier.get("candidates"), list) else []
     candidates = validate_frontier(frontier)
     model, _ = load_checkpoint(checkpoint)
 
@@ -160,7 +179,10 @@ def choose_frontier(
         "checkpoint_sha256": identity["checkpoint_sha256"],
         "frontier_sha256": identity["frontier_sha256"],
         "frontier_observation_sha256": frontier.get("observation_sha256"),
+        "raw_candidate_count": len(raw_candidates),
         "candidate_count": len(candidates),
+        "ineligible_candidate_count": len(raw_candidates) - len(candidates),
+        "ineligible_ref_markers": list(INELIGIBLE_REF_MARKERS),
         "margin_required": margin,
         "top_margin": None if not math.isfinite(top_margin) else top_margin,
         "action_margin_over_no_inspection": action_margin,
@@ -200,6 +222,7 @@ def choose_frontier(
             "ATTENTION != PROOF",
             "ATTENTION != ACTIVE_LINEAGE",
             "READ_ONLY_FETCH != WRITE_AUTHORITY",
+            "EXPLICIT_DO_NOT_USE_BRANCH != ELIGIBLE_AUTONOMOUS_INTAKE",
             "NEWER_BRANCH != BETTER_BRANCH",
             "NO_INSPECTION_IS_VALID",
             "P_VS_NP = OPEN",
@@ -225,7 +248,9 @@ def main() -> None:
         "reason": obj["reason"],
         "selected_ref": obj["selected"]["ref"],
         "selected_commit": obj["selected"]["commit"],
+        "raw_candidate_count": obj["raw_candidate_count"],
         "candidate_count": obj["candidate_count"],
+        "ineligible_candidate_count": obj["ineligible_candidate_count"],
         "P_VS_NP": obj["scientific_boundary"]["P_VS_NP"],
     }, indent=2))
 
