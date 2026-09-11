@@ -10,7 +10,10 @@ SEMANTIC_EXTENSIONS={'.json','.md','.markdown','.txt','.py','.yml','.yaml','.tom
 SECRETISH=re.compile(r'(?:^|[._-])(env|secret|token|credential|password|private[_-]?key)(?:$|[._-])',re.I)
 TOKEN_PATTERNS=[re.compile(r'ghp_[A-Za-z0-9]{20,}'),re.compile(r'github_pat_[A-Za-z0-9_]{20,}'),re.compile(r'sk-[A-Za-z0-9_-]{20,}'),re.compile(r'AIza[A-Za-z0-9_-]{20,}')]
 DEFAULT_KEYMASTER_CONFIG=Path(__file__).resolve().parent/'keymaster'/'PRIMARY_REPOSITORY_CONTRIBUTORS-v2.json'
+DEFAULT_FRONTIER_MEMORY_TRAINING=Path(__file__).resolve().parent/'state'/'JANUS_TRUMP_FRONTIER_MEMORY.txt'
+DEFAULT_FRONTIER_MEMORY_MANIFEST=Path(__file__).resolve().parent/'state'/'JANUS_TRUMP_FRONTIER_MEMORY_MANIFEST.json'
 REQUIRED_KEYMASTER_CONTRIBUTORS=8
+FRONTIER_MEMORY_SCHEMA='janus.trump.frontier_training_memory.v1'
 
 def sha256_bytes(raw): return hashlib.sha256(raw).hexdigest()
 
@@ -70,16 +73,48 @@ def _load_keymaster(training_path:Path,manifest_path:Path):
         raise RuntimeError('KEYMASTER_TRAINING_BYTES_MISMATCH')
     return pack.decode('utf-8',errors='replace'),manifest
 
-def _learning_cycle_digest(registry_digest:str,keymaster_digest:str,evaluation_contract_sha256:str)->str:
+def _load_frontier_memory(training_path:Path,manifest_path:Path):
+    pack=training_path.read_bytes()
+    manifest=json.loads(manifest_path.read_text(encoding='utf-8'))
+    if manifest.get('schema')!=FRONTIER_MEMORY_SCHEMA:
+        raise RuntimeError('FRONTIER_MEMORY_MANIFEST_SCHEMA_REJECTED')
+    if manifest.get('status')!='READY_READ_ONLY_TRAINING_MEMORY':
+        raise RuntimeError('FRONTIER_MEMORY_STATUS_REJECTED')
+    if manifest.get('source_repository')!='Hawkar-usls/Janus-Fundamentum':
+        raise RuntimeError('FRONTIER_MEMORY_SOURCE_REPOSITORY_REJECTED')
+    if manifest.get('P_VS_NP')!='OPEN':
+        raise RuntimeError('FRONTIER_MEMORY_P_VS_NP_MUST_REMAIN_OPEN')
+    if manifest.get('training_only') is not True:
+        raise RuntimeError('FRONTIER_MEMORY_TRAIN_ONLY_REQUIRED')
+    if manifest.get('adaptive_holdout_inclusion') is not False or manifest.get('frozen_anchor_inclusion') is not False:
+        raise RuntimeError('FRONTIER_MEMORY_EVALUATION_LEAKAGE_REJECTED')
+    if manifest.get('training_material_is_truth') is not False or manifest.get('contribution_grants_authority') is not False:
+        raise RuntimeError('FRONTIER_MEMORY_EPISTEMIC_FIREWALL_REJECTED')
+    if manifest.get('source_execution') is not False or manifest.get('cross_repository_write') is not False:
+        raise RuntimeError('FRONTIER_MEMORY_EXECUTION_AUTHORITY_REJECTED')
+    authority=manifest.get('authority') or {}
+    if authority.get('read_only_source') is not True or authority.get('authority_delta')!=0:
+        raise RuntimeError('FRONTIER_MEMORY_AUTHORITY_REJECTED')
+    for key in ('may_mutate_source_repository','may_change_active_lineage','may_change_proof_ladder','may_promote_theorem','may_promote_runtime'):
+        if authority.get(key) is not False:
+            raise RuntimeError(f'FRONTIER_MEMORY_AUTHORITY_REJECTED:{key}')
+    if manifest.get('training_pack_sha256')!=sha256_bytes(pack):
+        raise RuntimeError('FRONTIER_MEMORY_TRAINING_PACK_HASH_MISMATCH')
+    if manifest.get('training_bytes')!=len(pack) or len(pack)<=0:
+        raise RuntimeError('FRONTIER_MEMORY_TRAINING_BYTES_MISMATCH')
+    return pack.decode('utf-8',errors='replace'),manifest
+
+def _learning_cycle_digest(registry_digest:str,keymaster_digest:str,frontier_digest:str,evaluation_contract_sha256:str)->str:
     raw=(
-        'JANUS_LEARNING_CYCLE_V3_KEYMASTER8\n'
+        'JANUS_LEARNING_CYCLE_V4_FRONTIER_MEMORY\n'
         f'registry={registry_digest}\n'
         f'keymaster={keymaster_digest}\n'
+        f'frontier_memory={frontier_digest}\n'
         f'evaluation_contract={evaluation_contract_sha256}\n'
     ).encode('utf-8')
     return hashlib.sha256(raw).hexdigest()
 
-def build_corpus(registry:Path,out_dir:Path,max_train_bytes=2_000_000,max_holdout_bytes=300_000,keymaster_training_path:Path|None=None,keymaster_manifest_path:Path|None=None,keymaster_config_path:Path|None=None):
+def build_corpus(registry:Path,out_dir:Path,max_train_bytes=2_000_000,max_holdout_bytes=300_000,keymaster_training_path:Path|None=None,keymaster_manifest_path:Path|None=None,keymaster_config_path:Path|None=None,frontier_training_path:Path|None=None,frontier_manifest_path:Path|None=None):
     out_dir.mkdir(parents=True,exist_ok=True)
     train=[]; holdout=[]; records=[]; tb=hb=0
     registry_digest_hasher=hashlib.sha256(); source_file_count=0; source_total_bytes=0
@@ -116,6 +151,23 @@ def build_corpus(registry:Path,out_dir:Path,max_train_bytes=2_000_000,max_holdou
     keymaster_bytes=len(keymaster_text.encode('utf-8'))
     train.append(keymaster_text)
 
+    if (frontier_training_path is None)!=(frontier_manifest_path is None):
+        raise RuntimeError('FRONTIER_MEMORY_TRAINING_AND_MANIFEST_MUST_BE_PAIRED')
+    if frontier_training_path is None:
+        default_train_exists=DEFAULT_FRONTIER_MEMORY_TRAINING.is_file()
+        default_manifest_exists=DEFAULT_FRONTIER_MEMORY_MANIFEST.is_file()
+        if default_train_exists != default_manifest_exists:
+            raise RuntimeError('FRONTIER_MEMORY_DEFAULT_PAIR_INCOMPLETE')
+        if default_train_exists:
+            frontier_training_path=DEFAULT_FRONTIER_MEMORY_TRAINING
+            frontier_manifest_path=DEFAULT_FRONTIER_MEMORY_MANIFEST
+
+    frontier_text=''
+    frontier_manifest=None
+    if frontier_training_path is not None:
+        frontier_text,frontier_manifest=_load_frontier_memory(frontier_training_path,frontier_manifest_path)
+        train.append(frontier_text)
+
     train_text=''.join(train); holdout_text=''.join(holdout)
     if len(train_text.encode())<50_000: raise RuntimeError('TRAIN_CORPUS_TOO_SMALL')
     if len(holdout_text.encode())<10_000: raise RuntimeError('HOLDOUT_CORPUS_TOO_SMALL')
@@ -125,19 +177,36 @@ def build_corpus(registry:Path,out_dir:Path,max_train_bytes=2_000_000,max_holdou
     registry_source_digest=registry_digest_hasher.hexdigest()
     evaluation_contract=contract_identity()
     keymaster_digest=keymaster_manifest['contribution_sha256']
-    learning_cycle_digest=_learning_cycle_digest(registry_source_digest,keymaster_digest,evaluation_contract['contract_sha256'])
+    frontier_digest=frontier_manifest['training_pack_sha256'] if frontier_manifest is not None else 'NONE'
+    learning_cycle_digest=_learning_cycle_digest(registry_source_digest,keymaster_digest,frontier_digest,evaluation_contract['contract_sha256'])
     contributor_summary=[{
         'id':row['id'],'repository':row['repository'],'ref':row['ref'],'head_sha':row['head_sha'],
         'provenance':row['provenance'],'cohort':row['cohort'],'contributed_bytes':row['contributed_bytes'],
         'contribution_sha256':row['contribution_sha256'],'training_pack_sha256':row['training_pack_sha256'],
     } for row in keymaster_manifest['contributors']]
 
+    frontier_summary={
+        'enabled':frontier_manifest is not None,
+        'schema':frontier_manifest.get('schema') if frontier_manifest else None,
+        'source_repository':frontier_manifest.get('source_repository') if frontier_manifest else None,
+        'source_commit':frontier_manifest.get('source_commit') if frontier_manifest else None,
+        'selected_ref':frontier_manifest.get('selected_ref') if frontier_manifest else None,
+        'intake_sha256':frontier_manifest.get('intake_sha256') if frontier_manifest else None,
+        'training_pack_sha256':frontier_manifest.get('training_pack_sha256') if frontier_manifest else None,
+        'training_bytes':len(frontier_text.encode('utf-8')) if frontier_manifest else 0,
+        'included_file_count':frontier_manifest.get('included_file_count',0) if frontier_manifest else 0,
+        'training_only':True if frontier_manifest else None,
+        'adaptive_holdout_inclusion':False if frontier_manifest else None,
+        'frozen_anchor_inclusion':False if frontier_manifest else None,
+        'contribution_grants_authority':False if frontier_manifest else None,
+    }
+
     manifest={
-        'schema':'janus.model.registry_corpus.v4.keymaster8',
+        'schema':'janus.model.registry_corpus.v5.keymaster8_frontier_memory',
         'source_repository':'Hawkar-usls/janus-meta-registry',
         'source_commit':_git_head(registry),
         'source_digest':learning_cycle_digest,
-        'source_digest_scope':'REGISTRY_MEMORY_PLUS_KEYMASTER_8_REPOS_PLUS_EVALUATION_CONTRACT_V3',
+        'source_digest_scope':'REGISTRY_MEMORY_PLUS_KEYMASTER_8_REPOS_PLUS_OPTIONAL_READ_ONLY_FRONTIER_MEMORY_PLUS_EVALUATION_CONTRACT_V4',
         'registry_source_digest':registry_source_digest,
         'registry_source_digest_scope':'ALL_ELIGIBLE_SOURCE_BEARING_FILES_BEFORE_CORPUS_BYTE_CAPS',
         'keymaster_contribution_sha256':keymaster_digest,
@@ -150,6 +219,7 @@ def build_corpus(registry:Path,out_dir:Path,max_train_bytes=2_000_000,max_holdou
         'keymaster_frozen_anchor_inclusion':False,
         'keymaster_contribution_grants_authority':False,
         'keymaster_attribution_enabled':True,
+        'frontier_memory':frontier_summary,
         'evaluation_contract':evaluation_contract,
         'evaluation_contract_sha256':evaluation_contract['contract_sha256'],
         'anchor_is_training_source':False,
@@ -160,7 +230,7 @@ def build_corpus(registry:Path,out_dir:Path,max_train_bytes=2_000_000,max_holdou
         'registry_train_bytes':len(registry_train_text.encode()),
         'train_bytes':len(train_text.encode()),
         'holdout_bytes':len(holdout_text.encode()),
-        'split':'REGISTRY_HASH_HOLDOUT_PLUS_KEYMASTER8_TRAIN_ONLY',
+        'split':'REGISTRY_HASH_HOLDOUT_PLUS_KEYMASTER8_TRAIN_ONLY_PLUS_OPTIONAL_FRONTIER_TRAIN_ONLY',
         'authority':'TRAINING_TEXT_IS_MEMORY_MATERIAL_NOT_AUTOMATIC_TRUTH',
         'eye_exclusions_enforced':True,
         'records':records
@@ -169,9 +239,9 @@ def build_corpus(registry:Path,out_dir:Path,max_train_bytes=2_000_000,max_holdou
     return manifest
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument('--registry',required=True); ap.add_argument('--out',required=True); ap.add_argument('--max-train-bytes',type=int,default=2_000_000); ap.add_argument('--max-holdout-bytes',type=int,default=300_000); ap.add_argument('--keymaster-training'); ap.add_argument('--keymaster-manifest'); ap.add_argument('--keymaster-config')
-    a=ap.parse_args(); m=build_corpus(Path(a.registry),Path(a.out),a.max_train_bytes,a.max_holdout_bytes,Path(a.keymaster_training) if a.keymaster_training else None,Path(a.keymaster_manifest) if a.keymaster_manifest else None,Path(a.keymaster_config) if a.keymaster_config else None)
+    ap=argparse.ArgumentParser(); ap.add_argument('--registry',required=True); ap.add_argument('--out',required=True); ap.add_argument('--max-train-bytes',type=int,default=2_000_000); ap.add_argument('--max-holdout-bytes',type=int,default=300_000); ap.add_argument('--keymaster-training'); ap.add_argument('--keymaster-manifest'); ap.add_argument('--keymaster-config'); ap.add_argument('--frontier-training'); ap.add_argument('--frontier-manifest')
+    a=ap.parse_args(); m=build_corpus(Path(a.registry),Path(a.out),a.max_train_bytes,a.max_holdout_bytes,Path(a.keymaster_training) if a.keymaster_training else None,Path(a.keymaster_manifest) if a.keymaster_manifest else None,Path(a.keymaster_config) if a.keymaster_config else None,Path(a.frontier_training) if a.frontier_training else None,Path(a.frontier_manifest) if a.frontier_manifest else None)
     keys=('source_commit','source_digest','registry_source_digest','keymaster_contribution_sha256','keymaster_contributor_count','keymaster_training_bytes','evaluation_contract_sha256','source_file_count','source_total_bytes','selected_record_count','registry_train_bytes','train_bytes','holdout_bytes')
-    print(json.dumps({k:m[k] for k in keys},indent=2))
+    summary={k:m[k] for k in keys}; summary['frontier_memory']=m['frontier_memory']; print(json.dumps(summary,indent=2))
 
 if __name__=='__main__': main()
