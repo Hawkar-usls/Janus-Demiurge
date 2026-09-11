@@ -6,8 +6,10 @@ on:
       - 'janus_model/**'
       - 'tests/test_janus_native_model.py'
       - 'tests/test_janus_trump_research_cycle.py'
+      - 'tests/test_janus_trump_frontier_attention.py'
       - '.github/workflows/janus-native-model.yml'
       - '.github/workflows/janus-trump-research-cycle.yml'
+      - '.github/workflows/janus-trump-native-frontier-attention.yml'
       - '.github/workflows/janus-self-evolution-v2-ci.yml'
   workflow_dispatch:
 
@@ -34,13 +36,18 @@ jobs:
           python -m py_compile \
             janus_model/eval_contract.py \
             janus_model/train_registry.py \
-            janus_model/extensions/trump_research_cycle.py
+            janus_model/organs.py \
+            janus_model/extensions/trump_research_cycle.py \
+            janus_model/extensions/trump_frontier_attention.py
 
-      - name: Verify native promotion policy
+      - name: Verify native promotion and organ policy
         run: python -m unittest -v tests/test_janus_native_model.py
 
       - name: Verify independent TRUMP frontier contract
         run: python -m unittest -v tests/test_janus_trump_research_cycle.py
+
+      - name: Verify native frontier attention and abstention
+        run: python -m unittest -v tests/test_janus_trump_frontier_attention.py
 
       - name: Claim ceiling remains fail-closed
         run: |
