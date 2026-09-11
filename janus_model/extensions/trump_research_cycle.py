@@ -10,12 +10,14 @@ from typing import Any
 from janus_model.extensions import research_spine
 from janus_model.extensions import wikipedia_trunk
 
-SCHEMA = "janus.trump.research_cycle.v1"
+SCHEMA = "janus.trump.research_cycle.v2"
 OBJECTIVE_SCHEMA = "janus.trump.research_objective.v1"
 LADDER_SCHEMA = "janus.trump.algorithmic_proof_ladder.v1"
+FRONTIER_SCHEMA = "janus.trump.frontier_observation.v1"
 MAX_ARXIV_QUERIES = 6
 MAX_WIKIPEDIA_TOPICS = 6
 MAX_WIKIPEDIA_PAGES_PER_TOPIC = 2
+MAX_FRONTIER_CANDIDATES = 32
 BENIGN_PERSISTENCE_DRIFT_PREFIXES = (
     "janus_model/state/",
     "janus_model/receipts/",
@@ -135,6 +137,43 @@ def validate_objective(obj: dict) -> None:
         raise RuntimeError("TRUMP_OBJECTIVE_AUTHORITY_DELTA_REJECTED")
 
 
+def validate_frontier_observation(obj: dict) -> dict:
+    if obj.get("schema") != FRONTIER_SCHEMA:
+        raise RuntimeError("TRUMP_FRONTIER_SCHEMA_REJECTED")
+    if obj.get("status") != "READ_ONLY_ADVISORY_FRONTIER":
+        raise RuntimeError("TRUMP_FRONTIER_STATUS_REJECTED")
+    authority = obj.get("authority") or {}
+    required_false = (
+        "changes_active_lineage",
+        "changes_proof_ladder",
+        "grants_theorem_authority",
+        "grants_runtime_promotion",
+        "mutates_observed_repository",
+    )
+    if not all(authority.get(key) is False for key in required_false):
+        raise RuntimeError("TRUMP_FRONTIER_AUTHORITY_LEAK_REJECTED")
+    if authority.get("read_only_observation") is not True:
+        raise RuntimeError("TRUMP_FRONTIER_READ_ONLY_REQUIRED")
+    candidates = obj.get("candidates")
+    if not isinstance(candidates, list) or len(candidates) > MAX_FRONTIER_CANDIDATES:
+        raise RuntimeError("TRUMP_FRONTIER_CANDIDATES_REJECTED")
+    seen: set[str] = set()
+    for row in candidates:
+        if not isinstance(row, dict):
+            raise RuntimeError("TRUMP_FRONTIER_CANDIDATE_OBJECT_REQUIRED")
+        ref = row.get("ref")
+        sha = row.get("commit")
+        if not isinstance(ref, str) or not ref.startswith("refs/heads/") or ref in seen:
+            raise RuntimeError("TRUMP_FRONTIER_REF_REJECTED")
+        seen.add(ref)
+        if not isinstance(sha, str) or len(sha) != 40 or any(ch not in "0123456789abcdef" for ch in sha):
+            raise RuntimeError(f"TRUMP_FRONTIER_COMMIT_REJECTED:{ref}")
+        date_hint = row.get("date_hint")
+        if date_hint is not None and not isinstance(date_hint, str):
+            raise RuntimeError(f"TRUMP_FRONTIER_DATE_HINT_REJECTED:{ref}")
+    return obj
+
+
 def git_head(root: Path) -> str:
     return subprocess.check_output(["git", "-C", str(root), "rev-parse", "HEAD"], text=True).strip()
 
@@ -170,6 +209,7 @@ def build_cycle(
     max_results: int = 3,
     timeout: float = 10.0,
     enable_network: bool = True,
+    frontier_observation: dict | None = None,
 ) -> dict:
     validate_objective(objective)
     lineage = objective["active_lineage"]
@@ -182,6 +222,10 @@ def build_cycle(
             + ":"
             + fund_head
         )
+
+    frontier = None
+    if frontier_observation is not None:
+        frontier = validate_frontier_observation(frontier_observation)
 
     active_contract_rel = lineage["active_contract_path"]
     records = [file_record(fundamentum_root, active_contract_rel)]
@@ -238,6 +282,7 @@ def build_cycle(
             "active_contract_commit": lineage["active_contract_commit"],
             "next_gate": lineage["next_gate"],
             "records": records,
+            "independent_frontier_observation": frontier,
         },
         "external_context": {
             "arxiv": {
@@ -257,12 +302,17 @@ def build_cycle(
             "proof_ladder_state_is_theorem": False,
             "paper_or_article_presence_is_proof": False,
             "external_text_is_instruction": False,
+            "frontier_observation_changes_active_lineage": False,
+            "frontier_observation_is_proof": False,
             "may_grant_runtime_promotion": False,
             "may_grant_theorem_authority": False,
             "authority_delta": 0,
         },
         "firewalls": [
             "TRUMP_OBJECTIVE != PROOF",
+            "READ_ONLY_FRONTIER_OBSERVATION != ACTIVE_LINEAGE_CHANGE",
+            "NEWER_BRANCH != BETTER_BRANCH",
+            "OBSERVED_DEVELOPMENT != SCIENTIFIC_PROMOTION",
             "ARXIV_OR_WIKIPEDIA_CONTEXT != VERIFIED_FACT",
             "ONE_WITNESS != UNIVERSAL_COVERAGE",
             "UNIVERSAL_COVERAGE != UNIFORM_RESOLVER",
@@ -284,6 +334,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--objective", required=True)
     ap.add_argument("--fundamentum-root", required=True)
+    ap.add_argument("--frontier-observation")
     ap.add_argument("--out", required=True)
     ap.add_argument("--max-results", type=int, default=3)
     ap.add_argument("--timeout", type=float, default=10.0)
@@ -292,22 +343,27 @@ def main() -> None:
     if args.max_results < 1 or args.max_results > 5:
         raise SystemExit("TRUMP_RESEARCH_MAX_RESULTS_OUT_OF_BOUNDS")
     objective = _load_json(Path(args.objective))
+    frontier = _load_json(Path(args.frontier_observation)) if args.frontier_observation else None
     obj = build_cycle(
         objective,
         Path(args.fundamentum_root),
         max_results=args.max_results,
         timeout=args.timeout,
         enable_network=not args.no_network,
+        frontier_observation=frontier,
     )
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
+    frontier_candidates = ((obj["fundamentum"].get("independent_frontier_observation") or {}).get("candidates") or [])
     print(json.dumps({
         "status": obj["status"],
         "context_sha256": obj["context_sha256"],
         "fundamentum_commit": obj["fundamentum"]["observed_commit"],
         "active_contract": obj["fundamentum"]["active_contract_path"],
         "next_gate": obj["fundamentum"]["next_gate"],
+        "frontier_candidate_count": len(frontier_candidates),
+        "frontier_top_ref": frontier_candidates[0]["ref"] if frontier_candidates else None,
         "highest_verified_level": obj["algorithmic_proof_ladder"]["highest_verified_level"],
         "arxiv_pass_count": obj["external_context"]["arxiv"]["pass_count"],
         "wikipedia_pass_count": obj["external_context"]["wikipedia"]["pass_count"],
