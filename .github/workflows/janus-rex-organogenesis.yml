@@ -1,4 +1,4 @@
-name: JANUS Rex Organogenesis v1.2
+name: JANUS Rex Organogenesis v1.2.1
 
 on:
   workflow_dispatch:
@@ -27,6 +27,7 @@ concurrency:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   create-candidate:
@@ -175,7 +176,23 @@ jobs:
           git config user.name 'janus-rex-organogenesis'
           git config user.email 'janus-rex-organogenesis@users.noreply.github.com'
           git add -f rex/candidates rex/admissions rex/runs rex/lifecycle 2>/dev/null || true
-          git diff --cached --quiet && exit 0
-          git commit -m 'Rex: materialize audited organ, Nexus admission and lifecycle receipts'
-          git pull --rebase origin main
-          git push origin HEAD:main
+          if ! git diff --cached --quiet; then
+            git commit -m 'Rex: materialize audited organ, Nexus admission and lifecycle receipts'
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+      - name: Bootstrap newly admitted lifecycle organ
+        if: steps.spec.outputs.lifecycle == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          MODULE_ID: ${{ steps.spec.outputs.module_id }}
+        run: |
+          set -euo pipefail
+          gh workflow run janus-rex-lifecycle.yml \
+            --repo "$GH_REPO" \
+            --ref main \
+            -f trigger_mode=schedule \
+            -f module_id="$MODULE_ID"
+          echo "REX_LIFECYCLE_BOOTSTRAP_DISPATCHED=$MODULE_ID"
