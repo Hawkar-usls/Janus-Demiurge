@@ -1,0 +1,97 @@
+name: JANUS Rex Nexus Admission and Runner v1
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'admit or run'
+        type: choice
+        options: [admit, run]
+        required: true
+      module_id:
+        description: 'Rex candidate module id'
+        required: true
+        default: 'rex_heartbeat'
+      source_sha256:
+        description: 'Exact candidate source SHA-256 (required for admit)'
+        required: false
+      input_json:
+        description: 'JSON object passed to admitted module on run'
+        required: false
+        default: '{}'
+
+concurrency:
+  group: janus-rex-nexus-${{ inputs.module_id }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  nexus:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate module id and exact current candidate
+        shell: bash
+        env:
+          MODULE_ID: ${{ inputs.module_id }}
+        run: |
+          set -euo pipefail
+          [[ "$MODULE_ID" =~ ^[a-z][a-z0-9_]{1,63}$ ]] || exit 2
+          test -f "rex/candidates/$MODULE_ID/module.py"
+          test -f "rex/candidates/$MODULE_ID/candidate.json"
+          test -f "rex/candidates/$MODULE_ID/audit.json"
+          python tools/demiurge_rex.py audit --candidate-dir "rex/candidates/$MODULE_ID"
+      - name: Admit exact SHA through Nexus external gate
+        if: inputs.action == 'admit'
+        shell: bash
+        env:
+          MODULE_ID: ${{ inputs.module_id }}
+          EXPECTED_SHA: ${{ inputs.source_sha256 }}
+        run: |
+          set -euo pipefail
+          test -n "$EXPECTED_SHA"
+          python tools/demiurge_rex.py admit \
+            --candidate-dir "rex/candidates/$MODULE_ID" \
+            --admissions-dir rex/admissions \
+            --source-sha256 "$EXPECTED_SHA" \
+            --authority EXPLICIT_EXTERNAL_GATE
+          git config user.name 'janus-nexus-gate'
+          git config user.email 'janus-nexus-gate@users.noreply.github.com'
+          git add -f "rex/admissions/$MODULE_ID.json"
+          git diff --cached --quiet && exit 0
+          git commit -m "Nexus: admit Rex module $MODULE_ID at exact SHA"
+          git pull --rebase origin main
+          git push origin HEAD:main
+      - name: Prepare bounded JSON input
+        if: inputs.action == 'run'
+        shell: bash
+        env:
+          INPUT_JSON: ${{ inputs.input_json }}
+        run: |
+          python - <<'PY'
+          import json, os, pathlib
+          obj=json.loads(os.environ.get('INPUT_JSON','{}'))
+          if not isinstance(obj,dict): raise SystemExit('input must be JSON object')
+          raw=(json.dumps(obj,ensure_ascii=False,sort_keys=True)+'\n').encode()
+          if len(raw)>100000: raise SystemExit('input too large')
+          pathlib.Path('/tmp/rex_input.json').write_bytes(raw)
+          PY
+      - name: Run only exact-SHA admitted module
+        if: inputs.action == 'run'
+        shell: bash
+        env:
+          MODULE_ID: ${{ inputs.module_id }}
+        run: |
+          set -euo pipefail
+          python tools/demiurge_rex.py run \
+            --candidate-dir "rex/candidates/$MODULE_ID" \
+            --admissions-dir rex/admissions \
+            --input /tmp/rex_input.json
