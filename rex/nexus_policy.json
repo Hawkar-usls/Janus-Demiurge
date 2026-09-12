@@ -1,6 +1,6 @@
 {
   "schema": "janus.nexus.rex_low_risk_policy.v1",
-  "version": "1.0",
+  "version": "1.1",
   "enabled": true,
   "allowed_autorun_templates": ["heartbeat", "echo", "json_projection", "ledger_summary"],
   "requirements": {
@@ -14,11 +14,26 @@
     "max_input_bytes": 10000,
     "run_timeout_seconds": 8
   },
+  "lifecycle": {
+    "enabled": true,
+    "allowed_modes": ["ON_DEMAND", "SCHEDULED", "EVENT_DRIVEN"],
+    "scheduled_intervals_minutes": [15, 30, 60, 120, 360, 720, 1440],
+    "max_input_bytes": 10000,
+    "max_event_payload_bytes": 10000,
+    "run_timeout_seconds": 8,
+    "max_executions_per_run": 16,
+    "event_dispatch_type": "janus_rex_event",
+    "receipt_privacy": "INPUT_AND_RESULT_HASHED_NOT_PERSISTED",
+    "source_change_revokes_lifecycle": true
+  },
   "firewall": [
     "REX_CAN_CREATE_NE_REX_CAN_CROWN",
     "AUDIT_PASS_NE_ADMISSION",
     "AUTORUN_IS_NEXUS_POLICY_NOT_REX_AUTHORITY",
+    "LIFECYCLE_IS_NEXUS_POLICY_NOT_REX_AUTHORITY",
     "SOURCE_SHA_CHANGE_REVOKES_EXECUTABILITY",
+    "SOURCE_SHA_CHANGE_REVOKES_LIFECYCLE",
+    "EVENT_ID_DEDUPE_REQUIRED",
     "NO_NETWORK_NO_SECRETS_BY_DEFAULT",
     "AUTHORITY_DELTA_ZERO"
   ]
