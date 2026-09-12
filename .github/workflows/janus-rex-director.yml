@@ -1,7 +1,12 @@
-name: JANUS Rex Director v1.3
+name: JANUS Rex Director v1.3.1
 
 on:
   workflow_dispatch:
+    inputs:
+      target_sha:
+        description: 'Exact repository SHA to process; defaults to the triggering SHA'
+        required: false
+        type: string
   schedule:
     - cron: '11 */6 * * *'
   push:
@@ -33,6 +38,19 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ inputs.target_sha || github.sha }}
+      - name: Bind checkout to requested provenance
+        shell: bash
+        env:
+          REQUESTED_SHA: ${{ inputs.target_sha }}
+        run: |
+          set -euo pipefail
+          ACTUAL_SHA="$(git rev-parse HEAD)"
+          if [ -n "${REQUESTED_SHA:-}" ] && [ "$ACTUAL_SHA" != "$REQUESTED_SHA" ]; then
+            echo "DIRECTOR_SHA_MISMATCH requested=$REQUESTED_SHA actual=$ACTUAL_SHA" >&2
+            exit 2
+          fi
+          echo "REX_DIRECTOR_INPUT_SHA=$ACTUAL_SHA"
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -102,17 +120,24 @@ jobs:
           echo 'changed=true' >> "$GITHUB_OUTPUT"
           git commit -m 'Rex Director: materialize bounded ModuleSpecs from desires'
           git pull --rebase origin main
+          PUSHED_SHA="$(git rev-parse HEAD)"
           git push origin HEAD:main
+          echo "pushed_sha=$PUSHED_SHA" >> "$GITHUB_OUTPUT"
+          echo "REX_DIRECTOR_PUSHED_SHA=$PUSHED_SHA"
       - name: Dispatch organogenesis for each newly changed spec
         if: steps.persist.outputs.changed == 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          TARGET_SHA: ${{ steps.persist.outputs.pushed_sha }}
         run: |
           set -euo pipefail
+          test -n "$TARGET_SHA"
           while IFS= read -r SPEC; do
             case "$SPEC" in rex/specs/generated/*.json) ;; *) echo "REFUSE:$SPEC" >&2; exit 2;; esac
-            gh workflow run janus-rex-organogenesis.yml --repo "$GH_REPO" --ref main -f spec_path="$SPEC"
-            echo "REX_ORGANOGENESIS_DISPATCHED=$SPEC"
+            gh workflow run janus-rex-organogenesis.yml --repo "$GH_REPO" --ref main \
+              -f spec_path="$SPEC" \
+              -f target_sha="$TARGET_SHA"
+            echo "REX_ORGANOGENESIS_DISPATCHED=$SPEC@$TARGET_SHA"
           done < /tmp/rex_changed_specs.txt
