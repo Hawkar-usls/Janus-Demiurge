@@ -1,4 +1,4 @@
-name: JANUS Rex Organogenesis v1.2.1
+name: JANUS Rex Organogenesis v1.2.2
 
 on:
   workflow_dispatch:
@@ -7,6 +7,10 @@ on:
         description: 'Tracked Rex ModuleSpec path'
         required: true
         default: 'rex/specs/rex_heartbeat.json'
+      target_sha:
+        description: 'Exact repository SHA containing the requested ModuleSpec'
+        required: false
+        type: string
   push:
     branches: [main]
     paths:
@@ -37,6 +41,19 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ inputs.target_sha || github.sha }}
+      - name: Bind checkout to requested provenance
+        shell: bash
+        env:
+          REQUESTED_SHA: ${{ inputs.target_sha }}
+        run: |
+          set -euo pipefail
+          ACTUAL_SHA="$(git rev-parse HEAD)"
+          if [ -n "${REQUESTED_SHA:-}" ] && [ "$ACTUAL_SHA" != "$REQUESTED_SHA" ]; then
+            echo "ORGANOGENESIS_SHA_MISMATCH requested=$REQUESTED_SHA actual=$ACTUAL_SHA" >&2
+            exit 2
+          fi
+          echo "REX_ORGANOGENESIS_INPUT_SHA=$ACTUAL_SHA"
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -168,6 +185,7 @@ jobs:
             --admissions-dir rex/admissions \
             --registry-dir rex/lifecycle
       - name: Persist candidate, audit, admissions, lifecycle and run receipts
+        id: persist
         shell: bash
         run: |
           set -euo pipefail
@@ -176,23 +194,32 @@ jobs:
           git config user.name 'janus-rex-organogenesis'
           git config user.email 'janus-rex-organogenesis@users.noreply.github.com'
           git add -f rex/candidates rex/admissions rex/runs rex/lifecycle 2>/dev/null || true
-          if ! git diff --cached --quiet; then
-            git commit -m 'Rex: materialize audited organ, Nexus admission and lifecycle receipts'
-            git pull --rebase origin main
-            git push origin HEAD:main
+          if git diff --cached --quiet; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          echo 'changed=true' >> "$GITHUB_OUTPUT"
+          git commit -m 'Rex: materialize audited organ, Nexus admission and lifecycle receipts'
+          git pull --rebase origin main
+          PUSHED_SHA="$(git rev-parse HEAD)"
+          git push origin HEAD:main
+          echo "pushed_sha=$PUSHED_SHA" >> "$GITHUB_OUTPUT"
+          echo "REX_ORGANOGENESIS_PUSHED_SHA=$PUSHED_SHA"
       - name: Bootstrap newly admitted lifecycle organ
-        if: steps.spec.outputs.lifecycle == 'true'
+        if: steps.spec.outputs.lifecycle == 'true' && steps.persist.outputs.changed == 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           MODULE_ID: ${{ steps.spec.outputs.module_id }}
+          TARGET_SHA: ${{ steps.persist.outputs.pushed_sha }}
         run: |
           set -euo pipefail
+          test -n "$TARGET_SHA"
           gh workflow run janus-rex-lifecycle.yml \
             --repo "$GH_REPO" \
             --ref main \
             -f trigger_mode=schedule \
-            -f module_id="$MODULE_ID"
-          echo "REX_LIFECYCLE_BOOTSTRAP_DISPATCHED=$MODULE_ID"
+            -f module_id="$MODULE_ID" \
+            -f target_sha="$TARGET_SHA"
+          echo "REX_LIFECYCLE_BOOTSTRAP_DISPATCHED=$MODULE_ID@$TARGET_SHA"
