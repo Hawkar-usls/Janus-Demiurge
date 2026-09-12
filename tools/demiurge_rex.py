@@ -273,7 +273,7 @@ def cmd_run(a: argparse.Namespace) -> int:
     with tempfile.TemporaryDirectory() as td:
         runner = pathlib.Path(td) / "runner.py"
         runner.write_text(runner_source(), encoding="utf-8")
-        p = subprocess.run([sys.executable, "-I", "-S", str(runner), str(source.resolve()), str(payload.resolve())], cwd=td, env=env, text=True, capture_output=True, timeout=a.timeout)
+        p = subprocess.run([sys.executable, "-I", "-S", "-B", str(runner), str(source.resolve()), str(payload.resolve())], cwd=td, env=env, text=True, capture_output=True, timeout=a.timeout)
     if p.returncode:
         sys.stderr.write(p.stderr)
         return p.returncode

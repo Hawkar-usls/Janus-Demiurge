@@ -30,6 +30,8 @@ def test_end_to_end():
         result = json.loads(r.stdout)
         assert result["status"] == "ALIVE"
         assert result["authority_delta"] == 0
+        assert not list(cdir.rglob("__pycache__"))
+        assert not list(cdir.rglob("*.pyc"))
 
 
 def test_rex_cannot_self_authorize():
