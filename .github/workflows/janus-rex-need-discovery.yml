@@ -1,0 +1,87 @@
+name: JANUS Rex Need Discovery v1
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '41 */6 * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'rex/lifecycle_runs/**/*.json'
+      - 'rex/runs/**/*.json'
+      - 'rex/need_discovery_policy.json'
+      - 'rex/need_gate_policy.json'
+      - 'tools/demiurge_rex_need_discovery.py'
+      - 'tools/nexus_rex_need_gate.py'
+      - 'tests/test_rex_need_discovery_v1.py'
+      - '.github/workflows/janus-rex-need-discovery.yml'
+
+concurrency:
+  group: janus-rex-need-discovery
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  discover-and-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify need-discovery contract
+        run: |
+          python -m pip install pytest
+          pytest -q tests/test_rex_need_discovery_v1.py tests/test_rex_director_v1_1.py tests/test_rex_v1.py
+      - name: Rex observes bounded JANUS ledgers and proposes needs
+        run: |
+          python tools/demiurge_rex_need_discovery.py \
+            --policy rex/need_discovery_policy.json \
+            --repo-root . \
+            --out-dir rex/need_proposals/generated
+      - name: External Nexus need gate
+        run: |
+          python tools/nexus_rex_need_gate.py \
+            --policy rex/need_gate_policy.json \
+            --repo-root . \
+            --proposals-dir rex/need_proposals/generated \
+            --desires-dir rex/desires/approved \
+            --admissions-dir rex/need_admissions
+      - name: Persist proposals and Nexus desire-only approvals
+        id: persist
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p rex/need_proposals/generated rex/need_admissions rex/desires/approved
+          git config user.name 'janus-rex-need-discovery'
+          git config user.email 'janus-rex-need-discovery@users.noreply.github.com'
+          git add -f rex/need_proposals/generated rex/need_admissions rex/desires/approved
+          git diff --cached --name-only -- 'rex/desires/approved/*.json' > /tmp/rex_new_approved_desires.txt
+          if [ -s /tmp/rex_new_approved_desires.txt ]; then
+            echo 'approved_changed=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'approved_changed=false' >> "$GITHUB_OUTPUT"
+          fi
+          if git diff --cached --quiet; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo 'changed=true' >> "$GITHUB_OUTPUT"
+          git commit -m 'Rex Needs: persist observed need proposals and Nexus gate receipts'
+          git pull --rebase origin main
+          git push origin HEAD:main
+      - name: Dispatch Director for newly approved autonomous needs
+        if: steps.persist.outputs.approved_changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh workflow run janus-rex-director.yml --repo "$GH_REPO" --ref main
+          echo 'REX_DIRECTOR_DISPATCHED_FOR_NEXUS_APPROVED_NEED=true'
