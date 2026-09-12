@@ -1,0 +1,76 @@
+name: JANUS Rex Organogenesis v1
+
+on:
+  workflow_dispatch:
+    inputs:
+      spec_path:
+        description: 'Tracked Rex ModuleSpec path'
+        required: true
+        default: 'rex/specs/rex_heartbeat.json'
+  push:
+    branches: [main]
+    paths:
+      - 'rex/specs/*.json'
+      - 'rex/policy.json'
+      - 'tools/demiurge_rex.py'
+      - 'tests/test_rex_v1.py'
+      - '.github/workflows/janus-rex-organogenesis.yml'
+
+concurrency:
+  group: janus-rex-organogenesis
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  create-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run Rex contract tests
+        run: |
+          python -m pip install pytest
+          pytest -q tests/test_rex_v1.py
+      - name: Resolve bounded spec path
+        id: spec
+        shell: bash
+        env:
+          REQUESTED_SPEC: ${{ github.event.inputs.spec_path }}
+        run: |
+          set -euo pipefail
+          SPEC="${REQUESTED_SPEC:-rex/specs/rex_heartbeat.json}"
+          case "$SPEC" in rex/specs/*.json) ;; *) echo 'Refusing untracked/non-Rex spec path' >&2; exit 2;; esac
+          test -f "$SPEC"
+          echo "path=$SPEC" >> "$GITHUB_OUTPUT"
+      - name: Rex creates candidate
+        run: python tools/demiurge_rex.py build --policy rex/policy.json --spec '${{ steps.spec.outputs.path }}' --out-root rex/candidates
+      - name: Auditor gates candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          MODULE_ID="$(python -c "import json; print(json.load(open('${{ steps.spec.outputs.path }}'))['module_id'])")"
+          python tools/demiurge_rex.py audit --candidate-dir "rex/candidates/$MODULE_ID"
+          python - <<PY
+          import json
+          p='rex/candidates/$MODULE_ID/audit.json'
+          a=json.load(open(p))
+          assert a['status']=='PASS' and a['admission']=='NOT_GRANTED' and a['authority_delta']==0
+          PY
+      - name: Persist candidate and audit receipt only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'janus-rex-organogenesis'
+          git config user.email 'janus-rex-organogenesis@users.noreply.github.com'
+          git add -f rex/candidates
+          git diff --cached --quiet && exit 0
+          git commit -m 'Rex: create audited module candidate (not admitted)'
+          git pull --rebase origin main
+          git push origin HEAD:main
