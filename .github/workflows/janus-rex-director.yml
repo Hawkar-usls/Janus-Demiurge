@@ -1,0 +1,75 @@
+name: JANUS Rex Director v1.1
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '11 */6 * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'rex/JANUS_REX_DESIRES.json'
+      - 'rex/nexus_policy.json'
+      - 'tools/demiurge_rex_director.py'
+      - 'tests/test_rex_director_v1_1.py'
+      - '.github/workflows/janus-rex-director.yml'
+
+concurrency:
+  group: janus-rex-director
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  direct:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify Rex Director contract
+        run: |
+          python -m pip install pytest
+          pytest -q tests/test_rex_director_v1_1.py tests/test_rex_v1.py
+      - name: Convert bounded desires into ModuleSpecs
+        run: |
+          python tools/demiurge_rex_director.py \
+            --desires rex/JANUS_REX_DESIRES.json \
+            --policy rex/policy.json \
+            --nexus-policy rex/nexus_policy.json \
+            --out-dir rex/specs/generated
+      - name: Persist only generated ModuleSpecs
+        id: persist
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'janus-rex-director'
+          git config user.email 'janus-rex-director@users.noreply.github.com'
+          git add -f rex/specs/generated
+          git diff --cached --name-only -- 'rex/specs/generated/*.json' > /tmp/rex_changed_specs.txt
+          if [ ! -s /tmp/rex_changed_specs.txt ]; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo 'changed=true' >> "$GITHUB_OUTPUT"
+          git commit -m 'Rex Director: materialize bounded ModuleSpecs from desires'
+          git pull --rebase origin main
+          git push origin HEAD:main
+      - name: Dispatch organogenesis for each newly changed spec
+        if: steps.persist.outputs.changed == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          while IFS= read -r SPEC; do
+            case "$SPEC" in rex/specs/generated/*.json) ;; *) echo "REFUSE:$SPEC" >&2; exit 2;; esac
+            gh workflow run janus-rex-organogenesis.yml --repo "$GH_REPO" --ref main -f spec_path="$SPEC"
+            echo "REX_ORGANOGENESIS_DISPATCHED=$SPEC"
+          done < /tmp/rex_changed_specs.txt
