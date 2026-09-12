@@ -1,4 +1,4 @@
-name: JANUS Rex Need Discovery v1
+name: JANUS Rex Need Discovery v1.0.1
 
 on:
   workflow_dispatch:
@@ -75,13 +75,18 @@ jobs:
           echo 'changed=true' >> "$GITHUB_OUTPUT"
           git commit -m 'Rex Needs: persist observed need proposals and Nexus gate receipts'
           git pull --rebase origin main
+          PUSHED_SHA="$(git rev-parse HEAD)"
           git push origin HEAD:main
+          echo "pushed_sha=$PUSHED_SHA" >> "$GITHUB_OUTPUT"
+          echo "REX_NEED_PUSHED_SHA=$PUSHED_SHA"
       - name: Dispatch Director for newly approved autonomous needs
         if: steps.persist.outputs.approved_changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          TARGET_SHA: ${{ steps.persist.outputs.pushed_sha }}
         run: |
           set -euo pipefail
-          gh workflow run janus-rex-director.yml --repo "$GH_REPO" --ref main
-          echo 'REX_DIRECTOR_DISPATCHED_FOR_NEXUS_APPROVED_NEED=true'
+          test -n "$TARGET_SHA"
+          gh workflow run janus-rex-director.yml --repo "$GH_REPO" --ref main -f target_sha="$TARGET_SHA"
+          echo "REX_DIRECTOR_DISPATCHED_FOR_NEXUS_APPROVED_NEED=$TARGET_SHA"
