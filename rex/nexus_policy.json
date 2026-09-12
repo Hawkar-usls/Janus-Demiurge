@@ -1,0 +1,25 @@
+{
+  "schema": "janus.nexus.rex_low_risk_policy.v1",
+  "version": "1.0",
+  "enabled": true,
+  "allowed_autorun_templates": ["heartbeat", "echo", "json_projection", "ledger_summary"],
+  "requirements": {
+    "audit_status": "PASS",
+    "exact_source_sha256": true,
+    "external_gate_authority": "EXPLICIT_EXTERNAL_GATE",
+    "module_spec_must_request_autorun": true,
+    "authority_delta": 0
+  },
+  "limits": {
+    "max_input_bytes": 10000,
+    "run_timeout_seconds": 8
+  },
+  "firewall": [
+    "REX_CAN_CREATE_NE_REX_CAN_CROWN",
+    "AUDIT_PASS_NE_ADMISSION",
+    "AUTORUN_IS_NEXUS_POLICY_NOT_REX_AUTHORITY",
+    "SOURCE_SHA_CHANGE_REVOKES_EXECUTABILITY",
+    "NO_NETWORK_NO_SECRETS_BY_DEFAULT",
+    "AUTHORITY_DELTA_ZERO"
+  ]
+}
