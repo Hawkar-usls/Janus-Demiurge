@@ -98,6 +98,7 @@ def main() -> int:
     max_refs = int(obs.get("max_evidence_refs", 8))
     max_props = int(obs.get("max_proposals_per_run", 4))
     require_zero = obs.get("require_authority_delta_zero_when_present") is True
+    refuse_family_suffixes = tuple(str(x) for x in (obs.get("refuse_family_suffixes") or []) if str(x))
     suffix = str(prop.get("module_suffix") or "_ledger_summary")
     template = str(prop.get("template") or "")
     lifecycle_mode = str(prop.get("lifecycle_mode") or "SCHEDULED")
@@ -135,6 +136,13 @@ def main() -> int:
         for family_dir in families:
             if proposed >= max_props:
                 break
+            if any(family_dir.name.endswith(blocked) for blocked in refuse_family_suffixes):
+                skipped.append({
+                    "family": family_dir.relative_to(root).as_posix(),
+                    "reason": "recursive_summary_family_refused",
+                })
+                continue
+
             files = sorted(family_dir.glob("*.json"))
             safe: list[tuple[pathlib.Path, dict[str, Any]]] = []
             for path in files:

@@ -134,3 +134,47 @@ def test_need_discovery_does_not_repropose_existing_organ():
         summary = json.loads(r.stdout)
         assert summary["proposal_count"] == 0
         assert any(row.get("reason") == "summary_module_already_exists" for row in summary["skipped"])
+
+
+def test_need_discovery_refuses_summary_of_summary_family():
+    with tempfile.TemporaryDirectory() as td:
+        repo = pathlib.Path(td)
+        seed_receipts(repo, family="rex_probe_ledger_summary", count=3)
+        r = run(
+            "tools/demiurge_rex_need_discovery.py",
+            "--policy", ROOT / "rex/need_discovery_policy.json",
+            "--repo-root", repo,
+        )
+        assert r.returncode == 0, r.stderr
+        summary = json.loads(r.stdout)
+        assert summary["proposal_count"] == 0
+        assert any(row.get("reason") == "recursive_summary_family_refused" for row in summary["skipped"])
+        assert not (repo / "rex/need_proposals/generated").exists()
+
+
+def test_nexus_need_gate_independently_refuses_recursive_summary_proposal():
+    with tempfile.TemporaryDirectory() as td:
+        repo = pathlib.Path(td)
+        seed_receipts(repo, family="rex_probe_ledger_summary", count=3)
+
+        permissive = json.loads((ROOT / "rex/need_discovery_policy.json").read_text(encoding="utf-8"))
+        permissive["observation"]["refuse_family_suffixes"] = []
+        permissive_path = repo / "permissive-discovery-policy.json"
+        permissive_path.write_text(json.dumps(permissive) + "\n", encoding="utf-8")
+
+        discover = run(
+            "tools/demiurge_rex_need_discovery.py",
+            "--policy", permissive_path,
+            "--repo-root", repo,
+        )
+        assert discover.returncode == 0, discover.stderr
+        assert json.loads(discover.stdout)["proposal_count"] == 1
+
+        gate = run(
+            "tools/nexus_rex_need_gate.py",
+            "--policy", ROOT / "rex/need_gate_policy.json",
+            "--repo-root", repo,
+        )
+        assert gate.returncode != 0
+        assert "recursive summary family refused" in (gate.stdout + gate.stderr)
+        assert not (repo / "rex/desires/approved").exists()
