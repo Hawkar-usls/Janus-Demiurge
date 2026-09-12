@@ -11,7 +11,6 @@ from typing import Any
 POLICY_SCHEMA = "janus.nexus.rex_need_gate_policy.v1"
 PROPOSAL_SCHEMA = "janus.rex.desire_proposal.v1"
 MODULE_ID_RE = re.compile(r"^[a-z][a-z0-9_]{1,63}$")
-EVENT_KEY_RE = re.compile(r"^[a-z][a-z0-9_.-]{1,63}$")
 
 
 def load(path: pathlib.Path) -> dict[str, Any]:
@@ -83,8 +82,8 @@ def main() -> int:
     min_records = int(req.get("min_evidence_records", 3))
     max_approvals = int(req.get("max_auto_approvals_per_run", 1))
     required_state = str(req.get("proposal_state") or "")
-    required_lifecycle = str(req.get("lifecycle_mode") or "EVENT_DRIVEN")
-    event_prefix = str(req.get("event_key_prefix") or "rex.need.ledger")
+    required_lifecycle = str(req.get("lifecycle_mode") or "SCHEDULED")
+    required_interval = int(req.get("scheduled_interval_minutes", 360))
 
     proposals_dir = pathlib.Path(a.proposals_dir)
     if not proposals_dir.is_absolute():
@@ -101,10 +100,7 @@ def main() -> int:
     unchanged: list[str] = []
     skipped: list[dict[str, Any]] = []
 
-    if proposals_dir.exists():
-        proposal_paths = sorted(proposals_dir.glob("*.json"))
-    else:
-        proposal_paths = []
+    proposal_paths = sorted(proposals_dir.glob("*.json")) if proposals_dir.exists() else []
 
     for proposal_path in proposal_paths:
         proposal = load(proposal_path)
@@ -166,9 +162,14 @@ def main() -> int:
         lifecycle = desire.get("lifecycle") or {}
         if lifecycle.get("enabled") is not True or lifecycle.get("mode") != required_lifecycle:
             raise SystemExit(f"lifecycle mode refused: {proposal_id}")
-        event_key = str(lifecycle.get("event_key") or "")
-        if not EVENT_KEY_RE.fullmatch(event_key) or not event_key.startswith(event_prefix + "."):
-            raise SystemExit(f"event key refused: {proposal_id}")
+        if lifecycle.get("interval_minutes") != required_interval:
+            raise SystemExit(f"lifecycle interval refused: {proposal_id}")
+        life_input = lifecycle.get("input")
+        nexus_input = (desire.get("nexus") or {}).get("input")
+        if not isinstance(life_input, dict) or not isinstance(nexus_input, dict):
+            raise SystemExit(f"bounded inputs required: {proposal_id}")
+        if life_input != nexus_input:
+            raise SystemExit(f"birth/lifecycle snapshot mismatch: {proposal_id}")
 
         desire_path = desires_dir / f"{proposal_id}.json"
         receipt_path = admissions_dir / f"{proposal_id}.json"
