@@ -4,6 +4,7 @@ import argparse, json, pathlib, re
 from typing import Any
 
 MODULE_ID_RE = re.compile(r"^[a-z][a-z0-9_]{1,63}$")
+EVENT_KEY_RE = re.compile(r"^[a-z][a-z0-9_.-]{1,63}$")
 
 
 def load(path: pathlib.Path) -> dict[str, Any]:
@@ -18,6 +19,36 @@ def write_if_changed(path: pathlib.Path, obj: dict[str, Any]) -> bool:
     path.parent.mkdir(parents=True,exist_ok=True)
     path.write_text(raw,encoding="utf-8")
     return True
+
+
+def normalize_lifecycle(row: dict[str, Any], nexus: dict[str, Any]) -> dict[str, Any] | None:
+    req=row.get("lifecycle")
+    if req is None:
+        return None
+    if not isinstance(req,dict): raise SystemExit("lifecycle must be object")
+    if req.get("enabled") is not True: return None
+    pol=nexus.get("lifecycle")
+    if not isinstance(pol,dict) or pol.get("enabled") is not True:
+        raise SystemExit("Nexus lifecycle policy disabled")
+    mode=str(req.get("mode") or "")
+    if mode not in set(pol.get("allowed_modes") or []):
+        raise SystemExit(f"lifecycle mode not allowed: {mode}")
+    inp=req.get("input",{})
+    if not isinstance(inp,dict): raise SystemExit("lifecycle input must be object")
+    raw=(json.dumps(inp,ensure_ascii=False,sort_keys=True)+"\n").encode()
+    if len(raw)>int(pol.get("max_input_bytes",10000)): raise SystemExit("lifecycle input too large")
+    out={"enabled":True,"mode":mode,"input":inp}
+    if mode=="SCHEDULED":
+        interval=req.get("interval_minutes")
+        allowed={int(x) for x in pol.get("scheduled_intervals_minutes") or []}
+        if not isinstance(interval,int) or interval not in allowed:
+            raise SystemExit("lifecycle interval not allowed")
+        out["interval_minutes"]=interval
+    elif mode=="EVENT_DRIVEN":
+        key=str(req.get("event_key") or "")
+        if not EVENT_KEY_RE.fullmatch(key): raise SystemExit("invalid lifecycle event_key")
+        out["event_key"]=key
+    return out
 
 
 def main() -> int:
@@ -55,6 +86,18 @@ def main() -> int:
             raise SystemExit(f"Nexus autorun policy refuses desire {desire_id}")
         input_obj=nx.get("input",{})
         if not isinstance(input_obj,dict): raise SystemExit(f"Nexus input must be object for desire {desire_id}")
+        lifecycle=normalize_lifecycle(row,nexus)
+        provenance={
+            "desire_id":desire_id,
+            "desire_status":"REQUESTED",
+            "generated_by":"JANUS_DEMIURGE_REX_DIRECTOR_V1_1",
+            "desire_is_source_code":False,
+            "desire_grants_admission":False,
+            "authority_delta":0
+        }
+        if lifecycle is not None:
+            provenance["generated_by"]="JANUS_DEMIURGE_REX_DIRECTOR_V1_2"
+            provenance["desire_grants_lifecycle"]=False
         spec={
             "schema":"janus.rex.module_spec.v1",
             "module_id":mid,
@@ -63,18 +106,13 @@ def main() -> int:
             "template":template,
             "config":cfg,
             "nexus":{"request_autorun":autorun,"input":input_obj},
-            "provenance":{
-                "desire_id":desire_id,
-                "desire_status":"REQUESTED",
-                "generated_by":"JANUS_DEMIURGE_REX_DIRECTOR_V1_1",
-                "desire_is_source_code":False,
-                "desire_grants_admission":False,
-                "authority_delta":0
-            }
+            "provenance":provenance
         }
+        if lifecycle is not None:
+            spec["lifecycle"]=lifecycle
         out=pathlib.Path(a.out_dir)/f"{mid}.json"
         (made if write_if_changed(out,spec) else unchanged).append(out.as_posix())
-    result={"schema":"janus.rex.director_receipt.v1","status":"PASS","created_or_changed":made,"unchanged":unchanged,"skipped":skipped,"authority_delta":0,"law":"DESIRE_TO_SPEC_NE_ADMISSION"}
+    result={"schema":"janus.rex.director_receipt.v1","status":"PASS","created_or_changed":made,"unchanged":unchanged,"skipped":skipped,"authority_delta":0,"law":"DESIRE_TO_SPEC_NE_ADMISSION_NE_LIFECYCLE"}
     print(json.dumps(result,ensure_ascii=False,indent=2,sort_keys=True))
     return 0
 

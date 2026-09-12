@@ -1,0 +1,125 @@
+name: JANUS Rex Lifecycle v1.2
+
+on:
+  workflow_dispatch:
+    inputs:
+      module_id:
+        description: 'Lifecycle-admitted ON_DEMAND Rex module id'
+        required: true
+        type: string
+  schedule:
+    - cron: '7,22,37,52 * * * *'
+  repository_dispatch:
+    types: [janus_rex_event]
+  push:
+    branches: [main]
+    paths:
+      - 'rex/lifecycle/*.json'
+      - 'rex/nexus_policy.json'
+      - 'tools/demiurge_rex_lifecycle.py'
+      - 'tests/test_rex_lifecycle_v1_2.py'
+      - '.github/workflows/janus-rex-lifecycle.yml'
+
+concurrency:
+  group: janus-rex-lifecycle
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  lifecycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify lifecycle contract
+        run: |
+          python -m pip install pytest
+          pytest -q tests/test_rex_v1.py tests/test_rex_lifecycle_v1_2.py
+      - name: Wake scheduled organs
+        if: github.event_name == 'schedule' || github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          python tools/demiurge_rex_lifecycle.py execute \
+            --trigger schedule \
+            --now-epoch "$(date +%s)" \
+            --workflow-run-id "$GITHUB_RUN_ID" \
+            --nexus-policy rex/nexus_policy.json \
+            --candidate-root rex/candidates \
+            --admissions-dir rex/admissions \
+            --registry-dir rex/lifecycle \
+            --runs-dir rex/lifecycle_runs \
+            --runner tools/demiurge_rex.py
+      - name: Wake one on-demand organ
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          MODULE_ID: ${{ inputs.module_id }}
+        run: |
+          set -euo pipefail
+          python tools/demiurge_rex_lifecycle.py execute \
+            --trigger on_demand \
+            --module-id "$MODULE_ID" \
+            --workflow-run-id "$GITHUB_RUN_ID" \
+            --nexus-policy rex/nexus_policy.json \
+            --candidate-root rex/candidates \
+            --admissions-dir rex/admissions \
+            --registry-dir rex/lifecycle \
+            --runs-dir rex/lifecycle_runs \
+            --runner tools/demiurge_rex.py
+      - name: Prepare typed event payload
+        if: github.event_name == 'repository_dispatch'
+        env:
+          EVENT_PAYLOAD_JSON: ${{ toJSON(github.event.client_payload.payload) }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, pathlib
+          raw=os.environ.get('EVENT_PAYLOAD_JSON','null')
+          obj=json.loads(raw)
+          if obj is None: obj={}
+          if not isinstance(obj,dict): raise SystemExit('EVENT_PAYLOAD_MUST_BE_OBJECT')
+          pathlib.Path('/tmp/rex_event_payload.json').write_text(json.dumps(obj,ensure_ascii=False,sort_keys=True)+'\n',encoding='utf-8')
+          PY
+      - name: Wake event-driven organs
+        if: github.event_name == 'repository_dispatch'
+        env:
+          EVENT_KEY: ${{ github.event.client_payload.event_key }}
+          EVENT_ID: ${{ github.event.client_payload.event_id }}
+          MODULE_ID: ${{ github.event.client_payload.module_id }}
+        run: |
+          set -euo pipefail
+          ARGS=(
+            execute
+            --trigger event
+            --event-key "$EVENT_KEY"
+            --event-id "$EVENT_ID"
+            --event-payload /tmp/rex_event_payload.json
+            --workflow-run-id "$GITHUB_RUN_ID"
+            --nexus-policy rex/nexus_policy.json
+            --candidate-root rex/candidates
+            --admissions-dir rex/admissions
+            --registry-dir rex/lifecycle
+            --runs-dir rex/lifecycle_runs
+            --runner tools/demiurge_rex.py
+          )
+          if [ -n "${MODULE_ID:-}" ]; then ARGS+=(--module-id "$MODULE_ID"); fi
+          python tools/demiurge_rex_lifecycle.py "${ARGS[@]}"
+      - name: Persist privacy-safe lifecycle receipts
+        shell: bash
+        run: |
+          set -euo pipefail
+          find rex/candidates -type d -name __pycache__ -prune -exec rm -rf {} + 2>/dev/null || true
+          find rex/candidates -type f -name '*.pyc' -delete 2>/dev/null || true
+          git config user.name 'janus-rex-lifecycle'
+          git config user.email 'janus-rex-lifecycle@users.noreply.github.com'
+          git add -f rex/lifecycle_runs 2>/dev/null || true
+          git diff --cached --quiet && exit 0
+          git commit -m 'Rex Lifecycle: persist exact-SHA execution receipts'
+          git pull --rebase origin main
+          git push origin HEAD:main
