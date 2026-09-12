@@ -1,4 +1,4 @@
-name: JANUS Rex Director v1.2
+name: JANUS Rex Director v1.3
 
 on:
   workflow_dispatch:
@@ -8,9 +8,13 @@ on:
     branches: [main]
     paths:
       - 'rex/JANUS_REX_DESIRES.json'
+      - 'rex/desires/approved/*.json'
+      - 'rex/need_admissions/*.json'
+      - 'rex/need_proposals/generated/*.json'
       - 'rex/nexus_policy.json'
       - 'tools/demiurge_rex_director.py'
       - 'tests/test_rex_director_v1_1.py'
+      - 'tests/test_rex_need_discovery_v1.py'
       - '.github/workflows/janus-rex-director.yml'
 
 concurrency:
@@ -35,14 +39,53 @@ jobs:
       - name: Verify Rex Director contract
         run: |
           python -m pip install pytest
-          pytest -q tests/test_rex_director_v1_1.py tests/test_rex_v1.py
-      - name: Convert bounded desires into ModuleSpecs
+          pytest -q tests/test_rex_director_v1_1.py tests/test_rex_need_discovery_v1.py tests/test_rex_v1.py
+      - name: Verify Nexus-approved discovered desires
+        shell: bash
         run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, pathlib
+          for desire_path in sorted(pathlib.Path('rex/desires/approved').glob('*.json')) if pathlib.Path('rex/desires/approved').exists() else []:
+              proposal_id=desire_path.stem
+              proposal_path=pathlib.Path('rex/need_proposals/generated')/f'{proposal_id}.json'
+              receipt_path=pathlib.Path('rex/need_admissions')/f'{proposal_id}.json'
+              if not proposal_path.is_file() or not receipt_path.is_file():
+                  raise SystemExit(f'NEED_CHAIN_MISSING:{proposal_id}')
+              desire=json.load(open(desire_path,encoding='utf-8'))
+              proposal=json.load(open(proposal_path,encoding='utf-8'))
+              receipt=json.load(open(receipt_path,encoding='utf-8'))
+              proposal_sha=hashlib.sha256(proposal_path.read_bytes()).hexdigest()
+              if receipt.get('schema')!='janus.nexus.rex_need_admission.v1': raise SystemExit(f'NEED_RECEIPT_SCHEMA:{proposal_id}')
+              if receipt.get('state')!='NEXUS_NEED_APPROVED_FOR_DIRECTOR_ONLY': raise SystemExit(f'NEED_NOT_APPROVED:{proposal_id}')
+              if receipt.get('proposal_sha256')!=proposal_sha: raise SystemExit(f'NEED_PROPOSAL_SHA_DRIFT:{proposal_id}')
+              if receipt.get('grants_code_admission') is not False or receipt.get('grants_lifecycle') is not False: raise SystemExit(f'NEED_AUTHORITY_ESCALATION:{proposal_id}')
+              if receipt.get('authority_delta')!=0: raise SystemExit(f'NEED_AUTHORITY_DELTA:{proposal_id}')
+              rows=desire.get('requests') or []
+              if len(rows)!=1: raise SystemExit(f'NEED_DESIRE_CARDINALITY:{proposal_id}')
+              prov=rows[0].get('need_provenance') or {}
+              if prov.get('proposal_id')!=proposal_id or prov.get('proposal_sha256')!=proposal_sha: raise SystemExit(f'NEED_PROVENANCE_DRIFT:{proposal_id}')
+              if rows[0].get('module_id')!=receipt.get('module_id'): raise SystemExit(f'NEED_MODULE_DRIFT:{proposal_id}')
+              if proposal.get('proposal_id')!=proposal_id: raise SystemExit(f'NEED_PROPOSAL_ID_DRIFT:{proposal_id}')
+          print('NEXUS_APPROVED_NEED_CHAIN=PASS')
+          PY
+      - name: Convert bounded desires into ModuleSpecs
+        shell: bash
+        run: |
+          set -euo pipefail
           python tools/demiurge_rex_director.py \
             --desires rex/JANUS_REX_DESIRES.json \
             --policy rex/policy.json \
             --nexus-policy rex/nexus_policy.json \
             --out-dir rex/specs/generated
+          shopt -s nullglob
+          for DESIRES in rex/desires/approved/*.json; do
+            python tools/demiurge_rex_director.py \
+              --desires "$DESIRES" \
+              --policy rex/policy.json \
+              --nexus-policy rex/nexus_policy.json \
+              --out-dir rex/specs/generated
+          done
       - name: Persist only generated ModuleSpecs
         id: persist
         shell: bash
