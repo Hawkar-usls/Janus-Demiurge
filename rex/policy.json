@@ -1,0 +1,33 @@
+{
+  "schema": "janus.rex.policy.v1",
+  "version": "1.0",
+  "laws": [
+    "REX_CAN_CREATE_NE_REX_CAN_CROWN",
+    "GENERATOR_MUST_NOT_SELF_AUTHORIZE",
+    "CANDIDATE_NE_ADMITTED_MODULE",
+    "AUDIT_PASS_NE_ADMISSION",
+    "ADMISSION_BINDS_EXACT_SOURCE_SHA256",
+    "NO_CANONICAL_OVERWRITE_BY_REX",
+    "NO_NETWORK_NO_SECRETS_BY_DEFAULT",
+    "AUTHORITY_DELTA_ZERO"
+  ],
+  "allowed_templates": ["heartbeat", "echo", "json_projection", "ledger_summary"],
+  "limits": {
+    "max_module_id_length": 64,
+    "max_purpose_length": 500,
+    "max_message_length": 2000,
+    "max_projection_keys": 32,
+    "max_constants": 32,
+    "max_source_bytes": 20000,
+    "run_timeout_seconds": 8,
+    "max_input_bytes": 100000
+  },
+  "execution": {
+    "network": "DENY_BY_CONSTRUCTION",
+    "credentials": "ENV_SCRUBBED",
+    "filesystem_write": "DENY_BY_AST_POLICY",
+    "source_imports": "DENY",
+    "canonical_writeback": "DENY",
+    "admission_required": true
+  }
+}
