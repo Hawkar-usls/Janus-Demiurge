@@ -79,6 +79,7 @@ def main() -> int:
     allowed_kinds = set(policy.get("allowed_need_kinds") or [])
     allowed_templates = set(policy.get("allowed_templates") or [])
     allowed_roots = [str(x) for x in policy.get("allowed_observed_roots") or []]
+    refuse_observed_suffixes = tuple(str(x) for x in (req.get("refuse_observed_family_suffixes") or []) if str(x))
     min_records = int(req.get("min_evidence_records", 3))
     max_approvals = int(req.get("max_auto_approvals_per_run", 1))
     required_state = str(req.get("proposal_state") or "")
@@ -117,6 +118,9 @@ def main() -> int:
         observed = str(proposal.get("observed_path") or "")
         if not observed or not is_under(observed, allowed_roots):
             raise SystemExit(f"observed path refused: {proposal_id}")
+        observed_family = pathlib.PurePosixPath(observed).name
+        if any(observed_family.endswith(blocked) for blocked in refuse_observed_suffixes):
+            raise SystemExit(f"recursive summary family refused: {proposal_id}:{observed_family}")
         observed_path = (root / observed).resolve()
         try:
             observed_path.relative_to(root)
