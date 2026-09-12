@@ -87,6 +87,17 @@ def main() -> int:
         input_obj=nx.get("input",{})
         if not isinstance(input_obj,dict): raise SystemExit(f"Nexus input must be object for desire {desire_id}")
         lifecycle=normalize_lifecycle(row,nexus)
+        provenance={
+            "desire_id":desire_id,
+            "desire_status":"REQUESTED",
+            "generated_by":"JANUS_DEMIURGE_REX_DIRECTOR_V1_1",
+            "desire_is_source_code":False,
+            "desire_grants_admission":False,
+            "authority_delta":0
+        }
+        if lifecycle is not None:
+            provenance["generated_by"]="JANUS_DEMIURGE_REX_DIRECTOR_V1_2"
+            provenance["desire_grants_lifecycle"]=False
         spec={
             "schema":"janus.rex.module_spec.v1",
             "module_id":mid,
@@ -95,15 +106,7 @@ def main() -> int:
             "template":template,
             "config":cfg,
             "nexus":{"request_autorun":autorun,"input":input_obj},
-            "provenance":{
-                "desire_id":desire_id,
-                "desire_status":"REQUESTED",
-                "generated_by":"JANUS_DEMIURGE_REX_DIRECTOR_V1_2",
-                "desire_is_source_code":False,
-                "desire_grants_admission":False,
-                "desire_grants_lifecycle":False,
-                "authority_delta":0
-            }
+            "provenance":provenance
         }
         if lifecycle is not None:
             spec["lifecycle"]=lifecycle
