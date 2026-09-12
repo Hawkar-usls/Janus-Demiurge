@@ -1,4 +1,4 @@
-name: JANUS Rex Organogenesis v1
+name: JANUS Rex Organogenesis v1.1
 
 on:
   workflow_dispatch:
@@ -37,7 +37,7 @@ jobs:
       - name: Run Rex contract tests
         run: |
           python -m pip install pytest
-          pytest -q tests/test_rex_v1.py
+          pytest -q tests/test_rex_v1.py tests/test_rex_director_v1_1.py
       - name: Resolve bounded spec path
         id: spec
         shell: bash
@@ -48,14 +48,24 @@ jobs:
           SPEC="${REQUESTED_SPEC:-rex/specs/rex_heartbeat.json}"
           case "$SPEC" in rex/specs/*.json) ;; *) echo 'Refusing untracked/non-Rex spec path' >&2; exit 2;; esac
           test -f "$SPEC"
-          echo "path=$SPEC" >> "$GITHUB_OUTPUT"
+          SPEC="$SPEC" python - <<'PY'
+          import json, os
+          p=os.environ['SPEC']; obj=json.load(open(p))
+          mid=obj.get('module_id',''); nx=obj.get('nexus') or {}
+          if not isinstance(nx,dict): raise SystemExit('nexus field must be object')
+          with open(os.environ['GITHUB_OUTPUT'],'a',encoding='utf-8') as fh:
+              fh.write(f"path={p}\n")
+              fh.write(f"module_id={mid}\n")
+              fh.write("autorun=" + ('true' if nx.get('request_autorun') is True else 'false') + "\n")
+          PY
       - name: Rex creates candidate
         run: python tools/demiurge_rex.py build --policy rex/policy.json --spec '${{ steps.spec.outputs.path }}' --out-root rex/candidates
       - name: Auditor gates candidate
         shell: bash
+        env:
+          MODULE_ID: ${{ steps.spec.outputs.module_id }}
         run: |
           set -euo pipefail
-          MODULE_ID="$(python -c "import json; print(json.load(open('${{ steps.spec.outputs.path }}'))['module_id'])")"
           python tools/demiurge_rex.py audit --candidate-dir "rex/candidates/$MODULE_ID"
           python - <<PY
           import json
@@ -63,14 +73,68 @@ jobs:
           a=json.load(open(p))
           assert a['status']=='PASS' and a['admission']=='NOT_GRANTED' and a['authority_delta']==0
           PY
-      - name: Persist candidate and audit receipt only
+      - name: External Nexus low-risk admission and exact-SHA run
+        if: steps.spec.outputs.autorun == 'true'
+        shell: bash
+        env:
+          MODULE_ID: ${{ steps.spec.outputs.module_id }}
+          SPEC_PATH: ${{ steps.spec.outputs.path }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, pathlib
+          spec=json.load(open(os.environ['SPEC_PATH']))
+          pol=json.load(open('rex/nexus_policy.json'))
+          audit=json.load(open(f"rex/candidates/{os.environ['MODULE_ID']}/audit.json"))
+          if pol.get('schema')!='janus.nexus.rex_low_risk_policy.v1' or pol.get('enabled') is not True:
+              raise SystemExit('NEXUS_AUTO_POLICY_DISABLED')
+          if spec.get('template') not in set(pol.get('allowed_autorun_templates') or []):
+              raise SystemExit('NEXUS_TEMPLATE_NOT_AUTO_ALLOWED')
+          if audit.get('status')!='PASS' or audit.get('authority_delta')!=0:
+              raise SystemExit('NEXUS_AUDIT_GATE_FAIL')
+          nx=spec.get('nexus') or {}
+          if nx.get('request_autorun') is not True:
+              raise SystemExit('NEXUS_AUTORUN_NOT_REQUESTED')
+          obj=nx.get('input',{})
+          if not isinstance(obj,dict): raise SystemExit('NEXUS_INPUT_NOT_OBJECT')
+          raw=(json.dumps(obj,ensure_ascii=False,sort_keys=True)+'\n').encode()
+          if len(raw)>int(pol['limits']['max_input_bytes']): raise SystemExit('NEXUS_INPUT_TOO_LARGE')
+          pathlib.Path('/tmp/rex_input.json').write_bytes(raw)
+          print('NEXUS_LOW_RISK_POLICY=PASS')
+          PY
+          SOURCE_SHA="$(sha256sum "rex/candidates/$MODULE_ID/module.py" | awk '{print $1}')"
+          python tools/demiurge_rex.py admit \
+            --candidate-dir "rex/candidates/$MODULE_ID" \
+            --admissions-dir rex/admissions \
+            --source-sha256 "$SOURCE_SHA" \
+            --authority EXPLICIT_EXTERNAL_GATE
+          python tools/demiurge_rex.py run \
+            --candidate-dir "rex/candidates/$MODULE_ID" \
+            --admissions-dir rex/admissions \
+            --input /tmp/rex_input.json \
+            --timeout 8 \
+            --max-input-bytes 10000 > /tmp/rex_result.json
+          SOURCE_SHA="$SOURCE_SHA" python - <<'PY'
+          import json, os, pathlib
+          mid=os.environ['MODULE_ID']; result=json.load(open('/tmp/rex_result.json'))
+          if result.get('authority_delta') != 0: raise SystemExit('MODULE_AUTHORITY_DELTA_FAIL')
+          receipt={
+            'schema':'janus.rex.run_receipt.v1','workflow_run_id':os.environ['GITHUB_RUN_ID'],
+            'module_id':mid,'source_sha256':os.environ['SOURCE_SHA'],'admission':'NEXUS_LOW_RISK_EXACT_SHA',
+            'result':result,'authority_delta':0,'law':'REX_CAN_CREATE_NE_REX_CAN_CROWN'
+          }
+          p=pathlib.Path('rex/runs')/mid/f"{os.environ['GITHUB_RUN_ID']}.json"; p.parent.mkdir(parents=True,exist_ok=True)
+          p.write_text(json.dumps(receipt,ensure_ascii=False,indent=2,sort_keys=True)+'\n',encoding='utf-8')
+          print(json.dumps(receipt,ensure_ascii=False))
+          PY
+      - name: Persist candidate, audit, and any Nexus receipts
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'janus-rex-organogenesis'
           git config user.email 'janus-rex-organogenesis@users.noreply.github.com'
-          git add -f rex/candidates
+          git add -f rex/candidates rex/admissions rex/runs 2>/dev/null || true
           git diff --cached --quiet && exit 0
-          git commit -m 'Rex: create audited module candidate (not admitted)'
+          git commit -m 'Rex: materialize audited organ and Nexus execution receipts'
           git pull --rebase origin main
           git push origin HEAD:main
