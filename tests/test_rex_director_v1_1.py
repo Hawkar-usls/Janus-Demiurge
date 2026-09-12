@@ -19,13 +19,14 @@ def test_director_generates_bounded_spec():
         assert spec["template"]=="echo"
         assert spec["nexus"]["request_autorun"] is True
         assert spec["provenance"]["desire_grants_admission"] is False
-        assert spec["provenance"]["desire_grants_lifecycle"] is False
         assert spec["provenance"]["authority_delta"]==0
+        assert "lifecycle" not in spec
         living=json.loads((out/"rex_lifecycle_heartbeat.json").read_text())
         assert living["lifecycle"]["enabled"] is True
         assert living["lifecycle"]["mode"]=="SCHEDULED"
         assert living["lifecycle"]["interval_minutes"]==60
         assert living["provenance"]["desire_grants_lifecycle"] is False
+        assert living["provenance"]["authority_delta"]==0
 
 
 def test_director_refuses_autorun_for_non_allowed_template():
