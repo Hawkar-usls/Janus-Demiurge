@@ -52,14 +52,6 @@ def bounded_module_id(family: str, suffix: str) -> str:
     return candidate
 
 
-def bounded_event_key(prefix: str, family: str) -> str:
-    tail = slug(family).replace("_", ".")
-    value = f"{prefix}.{tail}"
-    if len(value) > 64:
-        value = f"{prefix}.{hashlib.sha256(value.encode()).hexdigest()[:12]}"
-    return value
-
-
 def module_exists(root: pathlib.Path, module_id: str) -> bool:
     direct = [
         root / "rex/specs" / f"{module_id}.json",
@@ -108,11 +100,14 @@ def main() -> int:
     require_zero = obs.get("require_authority_delta_zero_when_present") is True
     suffix = str(prop.get("module_suffix") or "_ledger_summary")
     template = str(prop.get("template") or "")
-    event_prefix = str(prop.get("event_key_prefix") or "rex.need.ledger")
+    lifecycle_mode = str(prop.get("lifecycle_mode") or "SCHEDULED")
+    interval_minutes = int(prop.get("interval_minutes", 360))
     max_birth_rows = int(prop.get("max_birth_rows", 8))
 
     if template != "ledger_summary":
         raise SystemExit("v1 need discovery only supports ledger_summary")
+    if lifecycle_mode != "SCHEDULED":
+        raise SystemExit("v1 need discovery only supports SCHEDULED lifecycle")
 
     out_dir = pathlib.Path(a.out_dir)
     if not out_dir.is_absolute():
@@ -179,8 +174,14 @@ def main() -> int:
             for _, obj in safe[:max_birth_rows]:
                 birth_rows.append(compact_row(obj))
 
-            event_key = bounded_event_key(event_prefix, family_dir.name)
             desire_id = proposal_id.replace("_", "-")
+            snapshot_input = {
+                "origin": "JANUS_REX_NEED_DISCOVERY_V1",
+                "purpose": "AUTO_DETECTED_LEDGER_SUMMARY_NEED",
+                "observed_path": observed_path,
+                "observed_record_count": len(safe),
+                "rows": birth_rows,
+            }
             proposal = {
                 "schema": PROPOSAL_SCHEMA,
                 "proposal_id": proposal_id,
@@ -196,25 +197,18 @@ def main() -> int:
                     "desire_id": desire_id,
                     "status": "REQUESTED",
                     "module_id": module_id,
-                    "purpose": f"Summarize bounded JSON rows for the repeatedly accumulating ledger family {family_dir.name}; Rex detected {len(safe)} persisted receipts under {observed_path}.",
+                    "purpose": f"Summarize a bounded snapshot of the repeatedly accumulating ledger family {family_dir.name}; Rex detected {len(safe)} persisted receipts under {observed_path}.",
                     "template": "ledger_summary",
                     "config": {},
                     "nexus": {
                         "request_autorun": prop.get("request_autorun") is True,
-                        "input": {
-                            "origin": "JANUS_REX_NEED_DISCOVERY_V1",
-                            "purpose": "AUTO_DETECTED_LEDGER_SUMMARY_NEED",
-                            "rows": birth_rows,
-                        },
+                        "input": snapshot_input,
                     },
                     "lifecycle": {
                         "enabled": True,
-                        "mode": str(prop.get("lifecycle_mode") or "EVENT_DRIVEN"),
-                        "event_key": event_key,
-                        "input": {
-                            "origin": "JANUS_REX_NEED_DISCOVERY_V1",
-                            "purpose": "EVENT_DRIVEN_LEDGER_SUMMARY",
-                        },
+                        "mode": lifecycle_mode,
+                        "interval_minutes": interval_minutes,
+                        "input": snapshot_input,
                     },
                 },
                 "authority": {
