@@ -1,11 +1,19 @@
-name: JANUS Rex Lifecycle v1.2
+name: JANUS Rex Lifecycle v1.2.1
 
 on:
   workflow_dispatch:
     inputs:
-      module_id:
-        description: 'Lifecycle-admitted ON_DEMAND Rex module id'
+      trigger_mode:
+        description: 'Lifecycle wake mode'
         required: true
+        default: 'on_demand'
+        type: choice
+        options:
+          - on_demand
+          - schedule
+      module_id:
+        description: 'Lifecycle-admitted Rex module id; optional for schedule reconciliation'
+        required: false
         type: string
   schedule:
     - cron: '7,22,37,52 * * * *'
@@ -43,25 +51,32 @@ jobs:
           python -m pip install pytest
           pytest -q tests/test_rex_v1.py tests/test_rex_lifecycle_v1_2.py
       - name: Wake scheduled organs
-        if: github.event_name == 'schedule' || github.event_name == 'push'
-        run: |
-          set -euo pipefail
-          python tools/demiurge_rex_lifecycle.py execute \
-            --trigger schedule \
-            --now-epoch "$(date +%s)" \
-            --workflow-run-id "$GITHUB_RUN_ID" \
-            --nexus-policy rex/nexus_policy.json \
-            --candidate-root rex/candidates \
-            --admissions-dir rex/admissions \
-            --registry-dir rex/lifecycle \
-            --runs-dir rex/lifecycle_runs \
-            --runner tools/demiurge_rex.py
-      - name: Wake one on-demand organ
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'schedule' || github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.trigger_mode == 'schedule')
         env:
           MODULE_ID: ${{ inputs.module_id }}
         run: |
           set -euo pipefail
+          ARGS=(
+            execute
+            --trigger schedule
+            --now-epoch "$(date +%s)"
+            --workflow-run-id "$GITHUB_RUN_ID"
+            --nexus-policy rex/nexus_policy.json
+            --candidate-root rex/candidates
+            --admissions-dir rex/admissions
+            --registry-dir rex/lifecycle
+            --runs-dir rex/lifecycle_runs
+            --runner tools/demiurge_rex.py
+          )
+          if [ -n "${MODULE_ID:-}" ]; then ARGS+=(--module-id "$MODULE_ID"); fi
+          python tools/demiurge_rex_lifecycle.py "${ARGS[@]}"
+      - name: Wake one on-demand organ
+        if: github.event_name == 'workflow_dispatch' && inputs.trigger_mode == 'on_demand'
+        env:
+          MODULE_ID: ${{ inputs.module_id }}
+        run: |
+          set -euo pipefail
+          test -n "$MODULE_ID"
           python tools/demiurge_rex_lifecycle.py execute \
             --trigger on_demand \
             --module-id "$MODULE_ID" \
