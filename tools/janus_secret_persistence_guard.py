@@ -47,6 +47,12 @@ TEXT_SUFFIXES = {
     ".conf", ".env", ".txt", ".md", ".sh", ".bash", ".zsh", ".ps1",
     ".js", ".ts", ".tsx", ".jsx", ".xml", ".csv", ".properties",
 }
+TEXT_NAMES = {".env", ".npmrc", ".pypirc"}
+
+
+def _is_text_candidate(name: str) -> bool:
+    path = Path(name)
+    return path.suffix.lower() in TEXT_SUFFIXES or path.name in TEXT_NAMES
 
 
 def _entropy(value: str) -> float:
@@ -90,22 +96,22 @@ def _git(*args: str) -> str:
 
 def staged_items() -> Iterable[tuple[str, str]]:
     for name in _git("diff", "--cached", "--name-only", "--diff-filter=ACMR").splitlines():
-        if not name:
+        if not name or not _is_text_candidate(name):
             continue
         try:
             yield name, _git("show", f":{name}")
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, UnicodeDecodeError):
             continue
 
 
 def range_items(commit_range: str) -> Iterable[tuple[str, str]]:
     head = commit_range.rsplit("..", 1)[-1]
     for name in _git("diff", "--name-only", "--diff-filter=ACMR", commit_range).splitlines():
-        if not name:
+        if not name or not _is_text_candidate(name):
             continue
         try:
             yield name, _git("show", f"{head}:{name}")
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, UnicodeDecodeError):
             path = Path(name)
             if path.is_file():
                 try:
@@ -119,7 +125,7 @@ def path_items(paths: Iterable[str]) -> Iterable[tuple[str, str]]:
         path = Path(raw)
         if not path.is_file():
             continue
-        if path.suffix.lower() not in TEXT_SUFFIXES and path.name not in {".env", ".npmrc", ".pypirc"}:
+        if not _is_text_candidate(str(path)):
             continue
         try:
             yield str(path), path.read_text(encoding="utf-8")
