@@ -1,4 +1,4 @@
-name: JANUS Demiurge Full Launcher v1
+name: JANUS Demiurge Full Launcher v1.1
 
 on:
   workflow_dispatch:
@@ -8,6 +8,10 @@ on:
         required: false
         default: false
         type: boolean
+  push:
+    branches: [main]
+    paths:
+      - 'demiurge/FULL_WAKE_REQUEST.json'
 
 concurrency:
   group: janus-demiurge-full-launcher
@@ -26,6 +30,25 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Validate proof-carrying wake request
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, re
+          p='demiurge/FULL_WAKE_REQUEST.json'
+          x=json.load(open(p,encoding='utf-8'))
+          assert x['schema']=='janus.demiurge.full_wake_request.v1'
+          assert x['armed'] is True
+          assert x['mode']=='FULL_DEMIURGE_WAKE'
+          assert isinstance(x['request_id'],str) and re.fullmatch(r'[A-Za-z0-9._:-]{8,128}',x['request_id'])
+          assert x['authority_delta']==0
+          assert x['grants_admission'] is False
+          assert x['grants_lifecycle'] is False
+          print(f"JANUS_DEMIURGE_WAKE_REQUEST=PASS:{x['request_id']}")
+          PY
 
       - name: Bind launcher source SHA
         id: source
@@ -53,7 +76,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           SOURCE_SHA: ${{ steps.source.outputs.sha }}
-          DRY_RUN: ${{ inputs.dry_run }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
         run: |
           set -euo pipefail
           mkdir -p runtime
