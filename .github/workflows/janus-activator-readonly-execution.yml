@@ -24,9 +24,14 @@ on:
   workflow_dispatch:
     inputs:
       grant_json:
-        description: 'Sealed janus.activator.execution_grant.v0.7 JSON'
-        required: true
+        description: 'Sealed janus.activator.execution_grant.v0.7 JSON; required unless launcher_probe=true'
+        required: false
         type: string
+      launcher_probe:
+        description: 'Run bounded executor contracts only; do not fabricate an execution grant'
+        required: false
+        default: false
+        type: boolean
   repository_dispatch:
     types: [janus-activator-execution-grant-v0.7]
 
@@ -74,9 +79,15 @@ jobs:
         env:
           PYTHONPATH: .
         run: python -m pytest -q tests/test_activator_readonly_execution.py tests/test_activator_execution_claim.py
+      - name: Record launcher probe boundary
+        if: github.event_name == 'workflow_dispatch' && inputs.launcher_probe == true
+        run: |
+          echo 'JANUS_ACTIVATOR_READONLY_EXECUTION_LAUNCHER_PROBE=PASS'
+          echo 'EXECUTION_GRANT_FABRICATED=FALSE'
+          echo 'EXTERNAL_WORLD_EFFECT=FALSE'
 
   execute:
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'repository_dispatch'
+    if: github.event_name == 'repository_dispatch' || (github.event_name == 'workflow_dispatch' && inputs.launcher_probe != true)
     needs: contract
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -102,6 +113,7 @@ jobs:
           set -euo pipefail
           mkdir -p runtime/activator-execution
           if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            test -n "$MANUAL_GRANT"
             printf '%s' "$MANUAL_GRANT" > runtime/activator-execution/grant.json
           else
             printf '%s' "$DISPATCH_GRANT" > runtime/activator-execution/grant.json
@@ -125,7 +137,7 @@ jobs:
           import json
           row=json.load(open('runtime/activator-execution/claim.json'))
           print('execution_permitted=' + ('true' if row.get('execution_permitted') is True else 'false'))
-          print('claim_terminal=' + str(row.get('terminal','UNKNOWN')))
+          print('claim_terminal=' + str(row.get('terminal','UNKNOWN'))
           PY
 
       - name: Execute only bounded repository-local orientation
