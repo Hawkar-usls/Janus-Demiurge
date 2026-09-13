@@ -18,9 +18,14 @@ on:
   workflow_dispatch:
     inputs:
       packet_json:
-        description: 'Sealed janus.activator.dispatch_packet.v0.3 JSON'
-        required: true
+        description: 'Sealed janus.activator.dispatch_packet.v0.3 JSON; required unless launcher_probe=true'
+        required: false
         type: string
+      launcher_probe:
+        description: 'Run contract surface only; do not fabricate or receive an Activator packet'
+        required: false
+        default: false
+        type: boolean
   repository_dispatch:
     types: [janus-activator-dispatch-v0.3]
 
@@ -43,9 +48,15 @@ jobs:
         env:
           PYTHONPATH: .
         run: python -m unittest discover -s tests -p 'test_activator_dispatch_receiver.py' -v
+      - name: Record launcher probe boundary
+        if: github.event_name == 'workflow_dispatch' && inputs.launcher_probe == true
+        run: |
+          echo 'JANUS_ACTIVATOR_RECEIVER_LAUNCHER_PROBE=PASS'
+          echo 'ACTIVATOR_PACKET_FABRICATED=FALSE'
+          echo 'ACTIVATOR_EXECUTION_GRANTED=FALSE'
 
   receive:
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'repository_dispatch'
+    if: github.event_name == 'repository_dispatch' || (github.event_name == 'workflow_dispatch' && inputs.launcher_probe != true)
     needs: contract
     runs-on: ubuntu-latest
     steps:
@@ -63,6 +74,7 @@ jobs:
           set -euo pipefail
           mkdir -p runtime/activator-dispatch
           if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            test -n "$MANUAL_PACKET"
             printf '%s' "$MANUAL_PACKET" > runtime/activator-dispatch/packet.json
           else
             printf '%s' "$REPOSITORY_PACKET" > runtime/activator-dispatch/packet.json
