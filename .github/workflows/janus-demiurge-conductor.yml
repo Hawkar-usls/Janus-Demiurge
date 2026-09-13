@@ -78,8 +78,9 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           CYCLE_SOURCE_SHA: ${{ steps.source.outputs.sha }}
         run: |
+          mkdir -p runtime demiurge/conductor/runs demiurge/conductor/state
           set +e
-          python tools/demiurge_conductor.py \
+          python -m tools.demiurge_conductor \
             --policy demiurge/JANUS_CONDUCTOR_POLICY.json \
             --launcher-policy demiurge/DEMIURGE_LAUNCHER_POLICY.json \
             --repo "$GITHUB_REPOSITORY" \
@@ -124,7 +125,7 @@ jobs:
           set -euo pipefail
           git config user.name 'janus-demiurge-conductor'
           git config user.email 'janus-demiurge-conductor@users.noreply.github.com'
-          git add -f demiurge/conductor/runs demiurge/conductor/state
+          git add -f demiurge/conductor/runs demiurge/conductor/state 2>/dev/null || true
           if git diff --cached --quiet; then
             echo 'JANUS_CONDUCTOR_NO_NEW_STATE=TRUE'
             exit 0
