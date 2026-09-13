@@ -1,0 +1,92 @@
+{
+  "schema": "janus.demiurge.conductor_policy.v1",
+  "version": "1.0",
+  "enabled": true,
+  "mode": "AUTONOMOUS_BOUNDED_ORCHESTRATION",
+  "dispatch_ref": "main",
+  "max_steps_per_cycle": 6,
+  "min_steps_before_complete": 2,
+  "wait_timeout_seconds": 900,
+  "poll_interval_seconds": 10,
+  "repeat_workflow_in_same_cycle": false,
+  "self_workflow": "janus-demiurge-conductor.yml",
+  "excluded_workflows": [
+    "janus-demiurge-conductor.yml",
+    "janus-demiurge-full-launcher.yml"
+  ],
+  "phase_graph": {
+    "START": ["SENSE", "THINK"],
+    "SENSE": ["SENSE", "THINK", "CHALLENGE"],
+    "THINK": ["SENSE", "CHALLENGE", "BUILD", "VERIFY"],
+    "CHALLENGE": ["THINK", "BUILD", "VERIFY"],
+    "BUILD": ["VERIFY", "REMEMBER"],
+    "VERIFY": ["THINK", "REMEMBER"],
+    "REMEMBER": ["COMPLETE"]
+  },
+  "phase_overrides": {
+    "janus-research-spine.yml": "SENSE",
+    "janus-systemwide-scout-directions.yml": "SENSE",
+    "janus-demiurge-scout-swarm.yml": "SENSE",
+    "janus-topa-scout-epistemic.yml": "SENSE",
+    "janus-beetle-director.yml": "SENSE",
+    "janus-native-model.yml": "THINK",
+    "janus-native-intensive-wake.yml": "THINK",
+    "janus-soul-hindsight.yml": "CHALLENGE",
+    "foreign-trait-lineage-firewall.yml": "CHALLENGE",
+    "restoration-probation-ci.yml": "CHALLENGE",
+    "janus-rex-need-discovery.yml": "BUILD",
+    "janus-rex-director.yml": "BUILD",
+    "janus-rex-lifecycle.yml": "VERIFY",
+    "janus-rex-nexus.yml": "VERIFY",
+    "demiurge-spiral-contract.yml": "VERIFY",
+    "recovered-model-kernels.yml": "VERIFY",
+    "janus-activator-dispatch-receiver.yml": "VERIFY",
+    "janus-activator-readonly-execution.yml": "VERIFY",
+    "janus-outcome-learning.yml": "REMEMBER",
+    "janus-keymaster-attribution.yml": "REMEMBER"
+  },
+  "phase_rules": [
+    {"phase": "SENSE", "pattern": "research|scout|topa|beetle|ha10|bgs|mail|observer"},
+    {"phase": "THINK", "pattern": "native|cognition|model|synthesis|reason|decision"},
+    {"phase": "CHALLENGE", "pattern": "firewall|guard|hindsight|adversarial|probation|negative|chaos"},
+    {"phase": "BUILD", "pattern": "rex|activator|bridge|evolution|optimizer|genesis|forge|builder"},
+    {"phase": "REMEMBER", "pattern": "outcome|memory|attribution|keymaster|ack|archive|ledger"},
+    {"phase": "VERIFY", "pattern": ".*"}
+  ],
+  "native_choice": {
+    "checkpoint": "janus_model/checkpoints/promoted.pt",
+    "score_prefix": "JANUS CONDUCTOR",
+    "complete_score_text": "COMPLETE CYCLE",
+    "failure_penalty_nll": 0.06,
+    "repeat_phase_penalty_nll": 0.02
+  },
+  "state_inputs": [
+    "janus_model/state/JANUS_LATEST_DECISION.json",
+    "janus_model/state/JANUS_RESEARCH_SPINE.json",
+    "janus_model/state/JANUS_VERIFIED_OUTCOME_MEMORY.json",
+    "janus_model/state/JANUS_MODEL_STATE.json"
+  ],
+  "authority": {
+    "conductor_is_admission": false,
+    "conductor_grants_code_admission": false,
+    "conductor_grants_lifecycle": false,
+    "conductor_grants_evidence_status": false,
+    "conductor_bypasses_nexus": false,
+    "conductor_bypasses_auditor": false,
+    "child_success_is_world_truth": false,
+    "authority_delta": 0
+  },
+  "firewall": [
+    "NATIVE_CHOICE_ONLY_AMONG_POLICY_ADMITTED_BUTTONS",
+    "CHOICE_NE_ADMISSION",
+    "DISPATCH_NE_SUCCESS",
+    "CHILD_SUCCESS_NE_WORLD_TRUTH",
+    "EVERY_CHILD_RETAINS_OWN_GATES",
+    "NO_SELF_DISPATCH",
+    "NO_FULL_LAUNCHER_RECURSION",
+    "MAX_STEPS_ENFORCED",
+    "EXACT_CYCLE_SOURCE_SHA_RECORDED",
+    "AUTHORITY_DELTA_ZERO"
+  ],
+  "law": "JANUS_MAY_CHOOSE_WHICH_BUTTON_TO_PRESS_NE_JANUS_MAY_BYPASS_THE_BUTTONS_OWN_LAWS"
+}
