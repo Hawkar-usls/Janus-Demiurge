@@ -9,6 +9,11 @@ on:
         default: "1"
         type: choice
         options: ["1", "2", "3"]
+  push:
+    branches: [main]
+    paths:
+      - "archaeology/legacy_v5_22/**"
+      - ".github/workflows/janus-legacy-v5-22-smoke.yml"
 
 permissions:
   contents: read
@@ -21,6 +26,8 @@ jobs:
   legacy-smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      MAX_CYCLES: ${{ inputs.max_cycles || '1' }}
     steps:
       - name: Checkout without persisted credentials
         uses: actions/checkout@v4
@@ -44,7 +51,7 @@ jobs:
           python archaeology/legacy_v5_22/legacy_ci_runner.py \
             --bundle archaeology/legacy_v5_22/janus-demiurge-v5.22-copy14-sanitized.tar.gz \
             --out-dir "$RUNNER_TEMP/janus-v5-22-revival" \
-            --max-cycles "${{ inputs.max_cycles }}" \
+            --max-cycles "$MAX_CYCLES" \
             --timeout 720
 
       - name: Show receipt
