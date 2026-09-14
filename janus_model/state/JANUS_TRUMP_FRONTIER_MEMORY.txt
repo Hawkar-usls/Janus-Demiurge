@@ -1,5 +1,5 @@
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-osiris-r3b-proof-carrying-recovery.yml" git_blob_sha="a936bf2a7341665523cf2ca3623f30a2e8a11241" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="2a4e7e847a324894ab96bcf904819a974d1cdb16" path=".github/workflows/janus-trump-osiris-r3b-proof-carrying-recovery.yml" git_blob_sha="a936bf2a7341665523cf2ca3623f30a2e8a11241" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: JANUS TRUMP Osiris R3B Proof-Carrying Recovery
 
 on:
@@ -73,165 +73,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r7d-dense-3sat-polynomial-proof-attack-fastpath.yml" git_blob_sha="becd5408184e3b4c150b8f04b20e2b0621b4d1a6" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
-name: JANUS TRUMP R7D Dense 3SAT Polynomial Proof Attack Fastpath
-
-on:
-  push:
-    branches:
-      - research/janus-trump-r7d-dense-3sat-polynomial-proof-attack-2026-09-01
-  workflow_dispatch:
-
-permissions:
-  contents: read
-
-jobs:
-  r7d-dense-3sat-fastpath:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Verify frozen R7D preregistration
-        run: |
-          python - <<'PY'
-          import json
-          p=json.load(open('research/JANUS_TRUMP_R7D_DENSE_3SAT_POLYNOMIAL_PROOF_ATTACK_PREREGISTRATION_2026-09-01.json'))
-          assert p['status']=='FROZEN_BEFORE_R7D_EXECUTION'
-          assert p['P_VS_NP_before_R7D']=='OPEN'
-          assert p['scope']['expected_target_count']==10
-          assert p['frozen_width']['k']==4
-          print('R7D_FREEZE_OK')
-          PY
-      - name: Compile R7D fastpath
-        run: |
-          PYTHONPATH=experiments:. python -m py_compile experiments/janus_trump_r7d_dense_3sat_polynomial_proof_attack.py experiments/janus_trump_r7d_dense_3sat_polynomial_proof_attack_fastpath.py tests/test_janus_trump_r7d_dense_3sat_polynomial_proof_attack.py
-      - name: R7D firewall tests
-        run: |
-          PYTHONPATH=experiments:. python - <<'PY'
-          import importlib.util
-          spec=importlib.util.spec_from_file_location('r7dtests','tests/test_janus_trump_r7d_dense_3sat_polynomial_proof_attack.py')
-          m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
-          tests=[getattr(m,n) for n in dir(m) if n.startswith('test_') and callable(getattr(m,n))]
-          for t in tests: t()
-          print('R7D_FIREWALL_TESTS_PASS', len(tests))
-          PY
-      - name: Run frozen R7D fastpath
-        run: |
-          mkdir -p artifacts
-          PYTHONPATH=experiments:. python experiments/janus_trump_r7d_dense_3sat_polynomial_proof_attack_fastpath.py --output artifacts/JANUS_TRUMP_R7D_DENSE_3SAT_POLYNOMIAL_PROOF_ATTACK_FASTPATH_RESULT_2026-09-01.json
-      - name: Scientific gate
-        run: |
-          python - <<'PY'
-          import json
-          d=json.load(open('artifacts/JANUS_TRUMP_R7D_DENSE_3SAT_POLYNOMIAL_PROOF_ATTACK_FASTPATH_RESULT_2026-09-01.json'))
-          print(d['verdict'])
-          print(d['summary'])
-          assert d['P_VS_NP']=='OPEN'
-          assert d['scope']=='EXPOSED_R7C_REMAINDER_DISCOVERY_ONLY'
-          assert d['frozen_width']==4
-          assert d['summary']['targets']==10
-          assert d['summary']['target_families']==['RANDOM_3SAT_NEAR_DENSE']
-          assert d['summary']['false_terminals']==0
-          assert d['summary']['sat_replay_failures']==0
-          assert d['candidate_source_firewall']['pass'] is True
-          assert all(d['gates'].values())
-          PY
-      - name: Upload immutable R7D fastpath evidence
-        uses: actions/upload-artifact@v4
-        with:
-          name: janus-trump-r7d-dense-3sat-polynomial-proof-attack-fastpath
-          path: artifacts/JANUS_TRUMP_R7D_DENSE_3SAT_POLYNOMIAL_PROOF_ATTACK_FASTPATH_RESULT_2026-09-01.json
-          if-no-files-found: error
-
-</JANUS_TRUMP_FRONTIER_MEMORY>
-
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r7d-dense-3sat-polynomial-proof-attack.yml" git_blob_sha="0ed4e6e0ce37f50a2586afac95b6d202bd81242e" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
-name: JANUS TRUMP R7D Dense 3SAT Polynomial Proof Attack
-
-on:
-  push:
-    branches:
-      - research/janus-trump-r7d-dense-3sat-polynomial-proof-attack-2026-09-01
-  workflow_dispatch:
-
-permissions:
-  contents: read
-
-jobs:
-  r7d-dense-3sat-polynomial-proof-attack:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Verify frozen R7D preregistration
-        run: |
-          python - <<'PY'
-          import json
-          p=json.load(open('research/JANUS_TRUMP_R7D_DENSE_3SAT_POLYNOMIAL_PROOF_ATTACK_PREREGISTRATION_2026-09-01.json'))
-          assert p['status']=='FROZEN_BEFORE_R7D_EXECUTION'
-          assert p['P_VS_NP_before_R7D']=='OPEN'
-          assert p['scope']['expected_target_count']==10
-          assert p['scope']['custom_R7D_generator_allowed'] is False
-          assert p['scope']['holdout_claim_allowed'] is False
-          assert p['frozen_width']['k']==4
-          print('R7D_FREEZE_OK')
-          PY
-
-      - name: Compile R7D
-        run: |
-          PYTHONPATH=experiments:. python -m py_compile experiments/janus_trump_r7d_dense_3sat_polynomial_proof_attack.py tests/test_janus_trump_r7d_dense_3sat_polynomial_proof_attack.py
-
-      - name: R7D firewall tests
-        run: |
-          PYTHONPATH=experiments:. python - <<'PY'
-          import importlib.util
-          spec=importlib.util.spec_from_file_location('r7dtests','tests/test_janus_trump_r7d_dense_3sat_polynomial_proof_attack.py')
-          m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
-          tests=[getattr(m,n) for n in dir(m) if n.startswith('test_') and callable(getattr(m,n))]
-          for t in tests: t()
-          print('R7D_FIREWALL_TESTS_PASS', len(tests))
-          PY
-
-      - name: Run frozen R7D dense-3SAT attack
-        run: |
-          mkdir -p artifacts
-          PYTHONPATH=experiments:. python experiments/janus_trump_r7d_dense_3sat_polynomial_proof_attack.py --output artifacts/JANUS_TRUMP_R7D_DENSE_3SAT_POLYNOMIAL_PROOF_ATTACK_RESULT_2026-09-01.json
-
-      - name: Scientific gate
-        run: |
-          python - <<'PY'
-          import json
-          d=json.load(open('artifacts/JANUS_TRUMP_R7D_DENSE_3SAT_POLYNOMIAL_PROOF_ATTACK_RESULT_2026-09-01.json'))
-          print(d['verdict'])
-          print(d['summary'])
-          assert d['P_VS_NP']=='OPEN'
-          assert d['scope']=='EXPOSED_R7C_REMAINDER_DISCOVERY_ONLY'
-          assert d['frozen_width']==4
-          assert d['summary']['targets']==10
-          assert d['summary']['target_families']==['RANDOM_3SAT_NEAR_DENSE']
-          assert d['summary']['false_terminals']==0
-          assert d['summary']['sat_replay_failures']==0
-          assert d['candidate_source_firewall']['pass'] is True
-          assert all(d['gates'].values())
-          PY
-
-      - name: Upload immutable R7D evidence
-        uses: actions/upload-artifact@v4
-        with:
-          name: janus-trump-r7d-dense-3sat-polynomial-proof-attack
-          path: artifacts/JANUS_TRUMP_R7D_DENSE_3SAT_POLYNOMIAL_PROOF_ATTACK_RESULT_2026-09-01.json
-          if-no-files-found: error
-
-</JANUS_TRUMP_FRONTIER_MEMORY>
-
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-osiris-r4-roi-gate.yml" git_blob_sha="c3ccfdb4b5d5c364547afc40a5a2eb516349d0b2" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="2a4e7e847a324894ab96bcf904819a974d1cdb16" path=".github/workflows/janus-trump-osiris-r4-roi-gate.yml" git_blob_sha="c3ccfdb4b5d5c364547afc40a5a2eb516349d0b2" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: JANUS TRUMP Osiris R4 ROI Gate
 on:
   push:
@@ -296,7 +138,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-osiris-r3-natural-residuals-evidence-recovery.yml" git_blob_sha="5b4ed57f11a0c12e141b1a4466746d2cd933f5e9" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="2a4e7e847a324894ab96bcf904819a974d1cdb16" path=".github/workflows/janus-trump-osiris-r3-natural-residuals-evidence-recovery.yml" git_blob_sha="5b4ed57f11a0c12e141b1a4466746d2cd933f5e9" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: JANUS TRUMP Osiris R3 Evidence Recovery
 
 on:
@@ -362,7 +204,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-osiris-r3-natural-residuals.yml" git_blob_sha="3991616878ff0e808d923ffab0e463bbb909ed26" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="2a4e7e847a324894ab96bcf904819a974d1cdb16" path=".github/workflows/janus-trump-osiris-r3-natural-residuals.yml" git_blob_sha="3991616878ff0e808d923ffab0e463bbb909ed26" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: JANUS TRUMP Osiris R3 Natural Residuals
 
 on:
@@ -447,7 +289,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-osiris-r4b-counterfactual-replay-recovery.yml" git_blob_sha="9c7aa36fa72f2f480ec9ee6ca56b36e0983d4de3" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="2a4e7e847a324894ab96bcf904819a974d1cdb16" path=".github/workflows/janus-trump-osiris-r4b-counterfactual-replay-recovery.yml" git_blob_sha="9c7aa36fa72f2f480ec9ee6ca56b36e0983d4de3" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: JANUS TRUMP Osiris R4B Counterfactual Replay Recovery
 on:
   push:
@@ -511,7 +353,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-osiris-r5-fehlerbild-positive-roi-discovery.yml" git_blob_sha="03166076cd0c6667de35b4fb5ba822a4f5287286" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="2a4e7e847a324894ab96bcf904819a974d1cdb16" path=".github/workflows/janus-trump-osiris-r5-fehlerbild-positive-roi-discovery.yml" git_blob_sha="03166076cd0c6667de35b4fb5ba822a4f5287286" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: JANUS TRUMP Osiris R5 Fehlerbild Positive ROI Discovery
 on:
   push:
@@ -575,7 +417,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-p-vs-np-direct-challenge-r0.yml" git_blob_sha="75229d5426f84b1f0d03339b43eda67e14449fd7" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="2a4e7e847a324894ab96bcf904819a974d1cdb16" path=".github/workflows/janus-trump-p-vs-np-direct-challenge-r0.yml" git_blob_sha="75229d5426f84b1f0d03339b43eda67e14449fd7" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: JANUS TRUMP P-vs-NP Direct Challenge R0
 on:
   push:
@@ -631,7 +473,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r10-exact-semantic-bridge-interface.yml" git_blob_sha="fcaebbf1440247bb02933eaa76f84010239936c0" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="2a4e7e847a324894ab96bcf904819a974d1cdb16" path=".github/workflows/janus-trump-r10-exact-semantic-bridge-interface.yml" git_blob_sha="fcaebbf1440247bb02933eaa76f84010239936c0" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: JANUS TRUMP R10 Exact Semantic Bridge Interface
 
 on:
@@ -702,7 +544,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r11-exact-interface-structure-microscope.yml" git_blob_sha="917fde6667ca4bca6d55910848c4dc0e218e811f" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="2a4e7e847a324894ab96bcf904819a974d1cdb16" path=".github/workflows/janus-trump-r11-exact-interface-structure-microscope.yml" git_blob_sha="917fde6667ca4bca6d55910848c4dc0e218e811f" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: JANUS TRUMP R11 Exact Interface Structure Microscope
 
 on:
@@ -772,7 +614,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r12-direct-width4-interface-compiler.yml" git_blob_sha="070eae80d1014ffd08fe3da0fef6a3df3f8c13f0" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="2a4e7e847a324894ab96bcf904819a974d1cdb16" path=".github/workflows/janus-trump-r12-direct-width4-interface-compiler.yml" git_blob_sha="070eae80d1014ffd08fe3da0fef6a3df3f8c13f0" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: JANUS TRUMP R12 Direct Width4 Interface Compiler
 
 on:
@@ -852,7 +694,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r12b-forbidden-pattern-quotient-compiler.yml" git_blob_sha="3005db8ca57b2bc9b138141d5c88a3d3c34f3faa" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="2a4e7e847a324894ab96bcf904819a974d1cdb16" path=".github/workflows/janus-trump-r12b-forbidden-pattern-quotient-compiler.yml" git_blob_sha="3005db8ca57b2bc9b138141d5c88a3d3c34f3faa" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: JANUS TRUMP R12B Forbidden Pattern Quotient Compiler
 
 on:
@@ -942,7 +784,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r13-unseen-interface-generalization.yml" git_blob_sha="35615c0c7859a5bf6c408760d751c88b15477cda" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="2a4e7e847a324894ab96bcf904819a974d1cdb16" path=".github/workflows/janus-trump-r13-unseen-interface-generalization.yml" git_blob_sha="35615c0c7859a5bf6c408760d751c88b15477cda" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: JANUS TRUMP R13 Unseen Interface Generalization
 
 on:
@@ -1153,7 +995,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r14-width-witness-forensics.yml" git_blob_sha="27d9e8a637f3e62b3b9a44a12822b98666fe384f" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="2a4e7e847a324894ab96bcf904819a974d1cdb16" path=".github/workflows/janus-trump-r14-width-witness-forensics.yml" git_blob_sha="27d9e8a637f3e62b3b9a44a12822b98666fe384f" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: JANUS TRUMP R14 Width Witness Forensics
 
 on:
@@ -1239,7 +1081,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r15a-auxiliary-representation-escape-control.yml" git_blob_sha="1531a6d9f9155f6cd79608aeb996062f88514d76" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="2a4e7e847a324894ab96bcf904819a974d1cdb16" path=".github/workflows/janus-trump-r15a-auxiliary-representation-escape-control.yml" git_blob_sha="1531a6d9f9155f6cd79608aeb996062f88514d76" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: JANUS TRUMP R15A Auxiliary Representation Escape Control
 
 on:
@@ -1324,7 +1166,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r15b-factored-dp-extension-compiler-calibration.yml" git_blob_sha="29fc37615bb0bc27bc1b7467e8f07ce6ae4f0d4c" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="2a4e7e847a324894ab96bcf904819a974d1cdb16" path=".github/workflows/janus-trump-r15b-factored-dp-extension-compiler-calibration.yml" git_blob_sha="29fc37615bb0bc27bc1b7467e8f07ce6ae4f0d4c" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: JANUS TRUMP R15B Factored DP Extension Compiler Calibration
 
 on:
@@ -1405,7 +1247,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r15c-shared-extension-quotient-calibration.yml" git_blob_sha="40aeb2002a103981b78626dfbd6c8242fa1c2725" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="2a4e7e847a324894ab96bcf904819a974d1cdb16" path=".github/workflows/janus-trump-r15c-shared-extension-quotient-calibration.yml" git_blob_sha="40aeb2002a103981b78626dfbd6c8242fa1c2725" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: JANUS TRUMP R15C Shared Extension Quotient Calibration
 
 on:
@@ -1481,7 +1323,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r15d-bounded-observer-equivalent-refactor.yml" git_blob_sha="a60eeda8f047640f2c251326d76aa7cbde154554" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="2a4e7e847a324894ab96bcf904819a974d1cdb16" path=".github/workflows/janus-trump-r15d-bounded-observer-equivalent-refactor.yml" git_blob_sha="a60eeda8f047640f2c251326d76aa7cbde154554" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: JANUS TRUMP R15D Bounded Observer Equivalent Refactor
 
 on:
@@ -1552,7 +1394,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r15e-post-candidate-semantic-control.yml" git_blob_sha="8bd9bc0b123ec26ad5927ae73bbed42bf6cc00a9" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="2a4e7e847a324894ab96bcf904819a974d1cdb16" path=".github/workflows/janus-trump-r15e-post-candidate-semantic-control.yml" git_blob_sha="8bd9bc0b123ec26ad5927ae73bbed42bf6cc00a9" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: JANUS TRUMP R15E Post Candidate Semantic Control
 
 on:
@@ -1613,7 +1455,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r15f-incremental-independent-semantic-control.yml" git_blob_sha="ff9c5ed810d52a4850ea410afdc2e330c8edd1f3" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="2a4e7e847a324894ab96bcf904819a974d1cdb16" path=".github/workflows/janus-trump-r15f-incremental-independent-semantic-control.yml" git_blob_sha="ff9c5ed810d52a4850ea410afdc2e330c8edd1f3" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: JANUS TRUMP R15F Incremental Independent Semantic Control
 
 on:
@@ -1735,7 +1577,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r16-prospective-unseen-factored-bridge-holdout.yml" git_blob_sha="7e7493a48a1cab252731d9affdf05811c0f3e235" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="2a4e7e847a324894ab96bcf904819a974d1cdb16" path=".github/workflows/janus-trump-r16-prospective-unseen-factored-bridge-holdout.yml" git_blob_sha="7e7493a48a1cab252731d9affdf05811c0f3e235" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: JANUS TRUMP R16 Prospective Unseen Factored Bridge Holdout
 
 on:
@@ -1905,7 +1747,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r16-truth-blind-world-selector.yml" git_blob_sha="efe1cabaffbdc8d4ae27608ac7fec8555c5c1e1e" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="2a4e7e847a324894ab96bcf904819a974d1cdb16" path=".github/workflows/janus-trump-r16-truth-blind-world-selector.yml" git_blob_sha="efe1cabaffbdc8d4ae27608ac7fec8555c5c1e1e" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: JANUS TRUMP R16 Truth Blind World Selector
 
 on:
@@ -1979,7 +1821,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="08f879bd2e20fbd98aae85f0da27314a877373d9" path=".github/workflows/janus-trump-r17-resource-growth-forensics.yml" git_blob_sha="f39ea6057b612d0047716787962dcce65fa91b17" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="2a4e7e847a324894ab96bcf904819a974d1cdb16" path=".github/workflows/janus-trump-r17-resource-growth-forensics.yml" git_blob_sha="f39ea6057b612d0047716787962dcce65fa91b17" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: JANUS TRUMP R17 Resource Growth Forensics
 
 on:
@@ -2046,6 +1888,206 @@ jobs:
         with:
           name: janus-trump-r17-resource-growth-forensics
           path: artifacts/JANUS_TRUMP_R17_RESOURCE_GROWTH_FORENSICS_RESULT_2026-09-02.json
+          if-no-files-found: error
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="2a4e7e847a324894ab96bcf904819a974d1cdb16" path=".github/workflows/janus-trump-r18-shannon-hashcons-interface-dag-discovery.yml" git_blob_sha="21f889126c80bf6ed9bfae78fcecee21608b854f" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: JANUS TRUMP R18 Shannon Hashcons Interface DAG Discovery
+
+on:
+  push:
+    branches:
+      - research/janus-trump-r18-shannon-hashcons-interface-dag-discovery-2026-09-02
+    paths:
+      - 'research/JANUS_TRUMP_R18_SHANNON_HASHCONS_INTERFACE_DAG_DISCOVERY_PREREGISTRATION_2026-09-02.json'
+      - 'experiments/janus_trump_r18_shannon_hashcons_interface_dag_discovery.py'
+      - 'tests/test_janus_trump_r18_shannon_hashcons_interface_dag_discovery.py'
+      - '.github/workflows/janus-trump-r18-shannon-hashcons-interface-dag-discovery.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  r18-discovery:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify frozen R18 contract
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('research/JANUS_TRUMP_R18_SHANNON_HASHCONS_INTERFACE_DAG_DISCOVERY_PREREGISTRATION_2026-09-02.json'))
+          assert p['status']=='FROZEN_BEFORE_R18_IMPLEMENTATION_AND_EXECUTION'
+          assert p['discovery_target']['world_id']=='R16-W04'
+          assert p['resource_envelope']['maximum_active_or_temporary_nodes']==1000000
+          assert p['resource_envelope']['maximum_restrict_calls']==20000000
+          assert p['P_VS_NP']=='OPEN'
+          print('R18_FREEZE_OK')
+          PY
+      - name: Install independent post-candidate verifier
+        run: python -m pip install --disable-pip-version-check 'python-sat==1.9.dev15'
+      - name: Compile R18
+        run: |
+          PYTHONPATH=experiments:. python -m py_compile \
+            experiments/janus_trump_r18_shannon_hashcons_interface_dag_discovery.py \
+            tests/test_janus_trump_r18_shannon_hashcons_interface_dag_discovery.py
+      - name: R18 local exactness and firewall controls
+        run: |
+          PYTHONPATH=experiments:. python - <<'PY'
+          import importlib.util
+          p='tests/test_janus_trump_r18_shannon_hashcons_interface_dag_discovery.py'
+          spec=importlib.util.spec_from_file_location('r18tests',p)
+          m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+          tests=[getattr(m,n) for n in dir(m) if n.startswith('test_r18')]
+          for t in tests: t()
+          print('R18_TESTS_PASS',len(tests))
+          PY
+      - name: Run exposed W04 semantic-DAG discovery
+        id: execute
+        continue-on-error: true
+        run: |
+          mkdir -p artifacts
+          PYTHONPATH=experiments:. python experiments/janus_trump_r18_shannon_hashcons_interface_dag_discovery.py \
+            --output artifacts/JANUS_TRUMP_R18_SHANNON_HASHCONS_INTERFACE_DAG_DISCOVERY_RESULT_2026-09-02.json
+      - name: R18 scientific gate
+        run: |
+          python - <<'PY'
+          import json,sys
+          d=json.load(open('artifacts/JANUS_TRUMP_R18_SHANNON_HASHCONS_INTERFACE_DAG_DISCOVERY_RESULT_2026-09-02.json'))
+          allowed={'R18_EXPOSED_W04_FULL_DOMAIN_SEMANTIC_MATCH','R18_EXPOSED_W04_SEMANTIC_MISMATCH','R18_OPEN_RESOURCE_LIMIT','R18_FAIL_INTEGRITY'}
+          assert d['verdict'] in allowed,d['verdict']
+          assert d['P_VS_NP']=='OPEN'
+          assert d['candidate_firewall']['pass'] is True
+          assert d['tiny_control'] is True
+          if d['verdict']=='R18_EXPOSED_W04_FULL_DOMAIN_SEMANTIC_MATCH':
+              assert d['comparison']['full_domain'] is True
+              assert d['comparison']['allowed_set_equal'] is True
+              assert d['comparison']['false_positive_count']==0
+              assert d['comparison']['false_negative_count']==0
+              assert d['comparison']['original_sat_model_replay_failures']==[]
+              assert d['candidate']['final_support']==d['world']['bridge_vars'] or set(d['candidate']['final_support']) <= set(d['world']['bridge_vars'])
+          elif d['verdict']=='R18_EXPOSED_W04_SEMANTIC_MISMATCH':
+              assert d['comparison']['full_domain'] is True
+              assert not d['comparison']['allowed_set_equal']
+          elif d['verdict']=='R18_OPEN_RESOURCE_LIMIT':
+              assert d['verifier']['not_run'] is True
+          else:
+              sys.exit(2)
+          print(d['verdict'])
+          PY
+      - name: Upload immutable R18 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-r18-shannon-hashcons-interface-dag-discovery
+          path: artifacts/JANUS_TRUMP_R18_SHANNON_HASHCONS_INTERFACE_DAG_DISCOVERY_RESULT_2026-09-02.json
+          if-no-files-found: error
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="2a4e7e847a324894ab96bcf904819a974d1cdb16" path=".github/workflows/janus-trump-r18b-post-discovery-semantic-controls-w05-w08.yml" git_blob_sha="d254723d04de095c0eddb7dcf83528f5e48a0fa7" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: JANUS TRUMP R18B Post-Discovery Semantic Controls W05-W08
+
+on:
+  push:
+    branches:
+      - research/janus-trump-r18b-post-discovery-semantic-controls-w05-w08-2026-09-02
+    paths:
+      - 'research/JANUS_TRUMP_R18B_POST_DISCOVERY_SEMANTIC_CONTROLS_W05_W08_PREREGISTRATION_2026-09-02.json'
+      - 'experiments/janus_trump_r18b_post_discovery_semantic_controls_w05_w08.py'
+      - '.github/workflows/janus-trump-r18b-post-discovery-semantic-controls-w05-w08.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  r18b-controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify R18 byte freeze and R18B preregistration
+        run: |
+          set -euo pipefail
+          test "$(git hash-object experiments/janus_trump_r18_shannon_hashcons_interface_dag_discovery.py)" = "afa95321ec6edbb33bef222d8ee7234fe631a599"
+          python - <<'PY'
+          import json
+          p=json.load(open('research/JANUS_TRUMP_R18B_POST_DISCOVERY_SEMANTIC_CONTROLS_W05_W08_PREREGISTRATION_2026-09-02.json'))
+          assert p['status']=='FROZEN_BEFORE_R18B_HARNESS_IMPLEMENTATION_AND_CONTROL_EXECUTION'
+          assert p['parent_R18_result_summary_commit']=='2062d30e34f751976fff576702c9bbb151a44a7a'
+          assert p['scientific_role']=='POST_DISCOVERY_SEMANTIC_CONTROLS__NOT_UNSEEN'
+          assert p['frozen_candidate']['git_blob_sha']=='afa95321ec6edbb33bef222d8ee7234fe631a599'
+          assert p['frozen_candidate']['logic_changes_allowed'] is False
+          assert [x['id'] for x in p['controls']]==['R16-W05','R16-W06','R16-W07','R16-W08']
+          assert p['execution_firewall']['candidate_must_run_before_truth_verifier'] is True
+          assert p['execution_firewall']['no_logic_tuning_during_R18B'] is True
+          assert p['P_VS_NP']=='OPEN'
+          print('R18B_FREEZE_OK')
+          PY
+
+      - name: Install independent verifier dependency
+        run: python -m pip install --disable-pip-version-check 'python-sat==1.9.dev15'
+
+      - name: Compile frozen candidate and control harness
+        run: |
+          PYTHONPATH=experiments:. python -m py_compile \
+            experiments/janus_trump_r18_shannon_hashcons_interface_dag_discovery.py \
+            experiments/janus_trump_r18b_post_discovery_semantic_controls_w05_w08.py
+
+      - name: Run R18B W05-W08 controls
+        run: |
+          mkdir -p artifacts
+          PYTHONPATH=experiments:. python experiments/janus_trump_r18b_post_discovery_semantic_controls_w05_w08.py \
+            --output artifacts/JANUS_TRUMP_R18B_POST_DISCOVERY_SEMANTIC_CONTROLS_W05_W08_RESULT_2026-09-02.json
+
+      - name: R18B scientific integrity gate
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('artifacts/JANUS_TRUMP_R18B_POST_DISCOVERY_SEMANTIC_CONTROLS_W05_W08_RESULT_2026-09-02.json'))
+          allowed={
+            'R18B_4_OF_4_POST_DISCOVERY_EXACT_CONTROLS__R19_UNSEEN_PERMITTED',
+            'R18B_SEMANTIC_COUNTEREXAMPLE__PRESERVE_AND_STOP',
+            'R18B_OPEN_RESOURCE_LIMIT__NO_UNSEEN_ADVANCEMENT',
+            'R18B_FAIL_INTEGRITY__NO_SCIENTIFIC_CLAIM',
+          }
+          assert d['verdict'] in allowed,d['verdict']
+          assert d['scientific_role']=='POST_DISCOVERY_SEMANTIC_CONTROLS__NOT_UNSEEN'
+          assert d['frozen_candidate_git_blob_sha']=='afa95321ec6edbb33bef222d8ee7234fe631a599'
+          assert d['control_count']==4
+          assert [x['world']['id'] for x in d['results']]==['R16-W05','R16-W06','R16-W07','R16-W08']
+          for r in d['results']:
+              assert r['scientific_role']=='POST_DISCOVERY_SEMANTIC_CONTROL__NOT_UNSEEN'
+              assert r['frozen_candidate']['git_blob_sha']=='afa95321ec6edbb33bef222d8ee7234fe631a599'
+              assert r['P_VS_NP']=='OPEN'
+              if r['verdict']=='R18B_OPEN_RESOURCE_LIMIT':
+                  assert r['verifier_ran'] is False
+                  assert r['scientific_firewall']['truth_not_accessed'] is True
+              if r['verdict'] in ('R18B_POST_DISCOVERY_EXACT_MATCH','R18B_POST_DISCOVERY_SEMANTIC_MISMATCH'):
+                  assert r['verifier_ran'] is True
+                  assert r['scientific_firewall']['candidate_terminal_before_truth'] is True
+                  assert r['comparison']['full_domain'] is True
+          assert d['P_VS_NP']=='OPEN'
+          print(d['verdict'])
+          PY
+
+      - name: Upload immutable R18B evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-trump-r18b-post-discovery-semantic-controls-w05-w08
+          path: artifacts/JANUS_TRUMP_R18B_POST_DISCOVERY_SEMANTIC_CONTROLS_W05_W08_RESULT_2026-09-02.json
           if-no-files-found: error
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
