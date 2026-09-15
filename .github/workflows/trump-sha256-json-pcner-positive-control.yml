@@ -1,0 +1,128 @@
+name: TRUMP SHA-256 JSON PCNER Positive Control
+
+on:
+  push:
+    branches:
+      - research/trump-sha256-json-pcner-positive-control-v1
+    paths:
+      - 'trump/reference/sha256_json_reference_machine.v1.json'
+      - 'trump/sha256_json_reference_machine.py'
+      - 'tests/test_sha256_json_reference_machine.py'
+      - '.github/workflows/trump-sha256-json-pcner-positive-control.yml'
+  pull_request:
+    paths:
+      - 'trump/reference/sha256_json_reference_machine.v1.json'
+      - 'trump/sha256_json_reference_machine.py'
+      - 'tests/test_sha256_json_reference_machine.py'
+      - '.github/workflows/trump-sha256-json-pcner-positive-control.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sha256-json-pcner-control:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install test dependency
+        run: python -m pip install --quiet pytest
+
+      - name: Validate frozen JSON machine and compile runtime
+        run: |
+          python -m json.tool trump/reference/sha256_json_reference_machine.v1.json >/dev/null
+          python -m py_compile trump/sha256_json_reference_machine.py trump/janus_soul_hindsight.py
+
+      - name: Run regression tests
+        run: python -m pytest -q tests/test_sha256_json_reference_machine.py
+
+      - name: Execute frozen SHA-256 JSON reference machine
+        run: |
+          mkdir -p artifacts
+          python trump/sha256_json_reference_machine.py --selftest > artifacts/sha256-json-selftest.json
+          python trump/sha256_json_reference_machine.py --text abc --round-receipts > artifacts/sha256-json-abc-route.json
+
+      - name: Bind route rank to current JANUS Soul NO_HOTEL_CALIFORNIA gate
+        run: |
+          python - <<'PY'
+          import importlib.util, json, sys
+          from pathlib import Path
+          p=Path('trump/janus_soul_hindsight.py')
+          spec=importlib.util.spec_from_file_location('janus_soul_hindsight_ci', p)
+          mod=importlib.util.module_from_spec(spec)
+          sys.modules[spec.name]=mod
+          spec.loader.exec_module(mod)
+          r=json.load(open('artifacts/sha256-json-abc-route.json', encoding='utf-8'))
+          cap=r['initial_rank']
+          checks=0
+          for rr in r['round_receipts']:
+              decision=mod.HindsightSoul.hotel_california_gate(
+                  before_rank=rr['mu_before'],
+                  after_rank=rr['mu_after'],
+                  polynomial_rank_cap=cap,
+              )
+              assert decision is mod.Decision.PASS_PROGRESS
+              checks += 1
+          assert checks == r['rounds_executed']
+          print('NO_HOTEL_CALIFORNIA_SHA256_ROUTE=PASS')
+          print('RANK_TRANSITIONS_VERIFIED=', checks)
+          PY
+
+      - name: Run finite scaling control without trace materialization
+        run: |
+          python - <<'PY' > artifacts/sha256-json-scaling.json
+          import importlib.util, json, sys
+          from pathlib import Path
+          p=Path('trump/sha256_json_reference_machine.py')
+          spec=importlib.util.spec_from_file_location('sha_control_ci', p)
+          mod=importlib.util.module_from_spec(spec)
+          sys.modules[spec.name]=mod
+          spec.loader.exec_module(mod)
+          rows=[]
+          for n in [0,1,55,56,63,64,65,127,128,1024,4096,16384]:
+              r=mod.execute(b'x'*n)
+              assert r['rounds_executed'] == 64*r['padded_blocks']
+              assert r['final_rank'] == 0
+              assert r['max_working_words_observed'] <= 72
+              rows.append({
+                  'message_bytes': n,
+                  'blocks': r['padded_blocks'],
+                  'rounds': r['rounds_executed'],
+                  'max_working_words': r['max_working_words_observed'],
+              })
+          print(json.dumps({
+              'terminal':'FINITE_SHA256_ROUTE_SCALING_CONTROL_PASS',
+              'rows':rows,
+              'scientific_boundary':'FINITE_SCALING_CONTROL_NOT_ASYMPTOTIC_SAT_PROOF__P_VS_NP_OPEN'
+          }, indent=2, sort_keys=True))
+          PY
+
+      - name: Enforce scientific boundary and exact control terminal
+        run: |
+          python - <<'PY'
+          import json
+          s=json.load(open('artifacts/sha256-json-selftest.json', encoding='utf-8'))
+          r=json.load(open('artifacts/sha256-json-abc-route.json', encoding='utf-8'))
+          assert s['terminal']=='SHA256_JSON_REFERENCE_MACHINE_SELFTEST_PASS'
+          assert s['vectors_passed']==3
+          assert r['terminal']=='SHA256_JSON_PCNER_POSITIVE_CONTROL_PASS'
+          assert r['exact_match'] is True
+          assert r['final_rank']==0
+          assert r['scientific_boundary']['P_VS_NP']=='OPEN'
+          assert r['scientific_boundary']['P_equals_NP_proved'] is False
+          print('TRUMP_SHA256_JSON_PCNER_POSITIVE_CONTROL=PASS')
+          print('THIS_IS_NOT_A_SAT_TRANSFER_PROOF')
+          PY
+
+      - name: Upload sealed control receipts
+        uses: actions/upload-artifact@v4
+        with:
+          name: trump-sha256-json-pcner-positive-control
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 30
