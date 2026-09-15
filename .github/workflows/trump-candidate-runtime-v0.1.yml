@@ -5,11 +5,13 @@ on:
     paths:
       - 'trump/**'
       - 'tests/test_trump_candidate_runtime_v0_1.py'
+      - 'tests/test_trump_reverse_narrative_transform_v0_1.py'
       - '.github/workflows/trump-candidate-runtime-v0.1.yml'
   pull_request:
     paths:
       - 'trump/**'
       - 'tests/test_trump_candidate_runtime_v0_1.py'
+      - 'tests/test_trump_reverse_narrative_transform_v0_1.py'
       - '.github/workflows/trump-candidate-runtime-v0.1.yml'
   workflow_dispatch:
 
@@ -25,11 +27,24 @@ jobs:
         with:
           python-version: '3.12'
       - name: Compile TRUMP candidate runtime
-        run: python -m py_compile trump/trump_candidate.py tests/test_trump_candidate_runtime_v0_1.py
+        run: |
+          python -m py_compile \
+            trump/trump_candidate.py \
+            trump/looking_for_something_policy.py \
+            trump/looking_for_something_runner.py \
+            trump/reverse_narrative_transform.py \
+            trump/reverse_narrative_runner.py \
+            tests/test_trump_candidate_runtime_v0_1.py \
+            tests/test_trump_reverse_narrative_transform_v0_1.py
       - name: Validate manifest JSON
         run: python -m json.tool trump/TRUMP_MANIFEST.json >/dev/null
       - name: Candidate runtime unit tests
-        run: python -m unittest -v tests.test_trump_candidate_runtime_v0_1
+        run: |
+          python -m unittest -v \
+            tests.test_trump_candidate_runtime_v0_1 \
+            tests.test_trump_reverse_narrative_transform_v0_1
+      - name: Reverse narrative local contract self-test
+        run: python trump/reverse_narrative_runner.py selftest
       - name: Candidate status remains OPEN and non-authoritative
         run: |
           python trump/trump_candidate.py status > /tmp/trump-status.json
@@ -56,3 +71,25 @@ jobs:
         run: python trump/trump_candidate.py verify-source
       - name: Wake candidate TRUMP and run its own self-test
         run: python trump/trump_candidate.py selftest
+      - name: Run frozen REVERSE NARRATIVE R0 tournament
+        run: python trump/reverse_narrative_runner.py frozen-r0 > reverse-narrative-r0.json
+      - name: Validate frozen R0 receipt firewall
+        run: |
+          python - <<'PY'
+          import json
+          r=json.load(open('reverse-narrative-r0.json'))
+          assert r['experiment_id']=='TRUMP_REVERSE_NARRATIVE_FROZEN_R0'
+          assert r['authority']['proof_authority'] is False
+          assert r['scientific_boundary']['P_equals_NP_proved'] is False
+          assert r['scientific_boundary']['P_VS_NP']=='OPEN'
+          assert r['frozen_contract']['same_witness_bytes'] is True
+          assert r['frozen_contract']['formula_semantics_mutable'] is False
+          assert all(x['replay_failures']==0 for x in r['results'])
+          print(json.dumps(r, ensure_ascii=False, sort_keys=True, indent=2))
+          PY
+      - name: Upload frozen R0 receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: trump-reverse-narrative-r0
+          path: reverse-narrative-r0.json
+          if-no-files-found: error
