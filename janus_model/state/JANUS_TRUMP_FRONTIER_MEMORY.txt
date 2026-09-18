@@ -1,5 +1,5 @@
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="09fd1a59c39f7d8b74ea5cf170246f4fbd95c926" path=".github/workflows/trump-exact-interface-quotient-basis-gate.yml" git_blob_sha="2c20a1803589e17e48108997b99912b85e30a732" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="c464e68ccd1a9d3203911360271b8c751756d4ba" path=".github/workflows/trump-exact-interface-quotient-basis-gate.yml" git_blob_sha="2c20a1803589e17e48108997b99912b85e30a732" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: TRUMP Exact Interface Quotient Basis Gate
 
 on:
@@ -68,7 +68,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="09fd1a59c39f7d8b74ea5cf170246f4fbd95c926" path=".github/workflows/trump-factorized-feedback-interface-portfolio-gate.yml" git_blob_sha="41e0265572c1fe11e50d4333555b3599a1f18be1" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="c464e68ccd1a9d3203911360271b8c751756d4ba" path=".github/workflows/trump-factorized-feedback-interface-portfolio-gate.yml" git_blob_sha="41e0265572c1fe11e50d4333555b3599a1f18be1" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: TRUMP Factorized Feedback Interface Portfolio Gate
 
 on:
@@ -137,861 +137,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="09fd1a59c39f7d8b74ea5cf170246f4fbd95c926" path=".github/workflows/trump-trinity-feedback-interface-gate.yml" git_blob_sha="9df21e767bd5b43b5ddcfa74430544317b33acfc" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
-name: TRUMP Trinity Feedback Interface Gate
-
-on:
-  push:
-    branches:
-      - research/trump-apma-feedback-interface-transfer-2026-09-15
-    paths:
-      - 'research/TRUMP_APMA_FEEDBACK_INTERFACE_TRANSFER_PREREGISTRATION_2026-09-15.json'
-      - 'research/tools/apma_trinity_feedback/**'
-      - '.github/workflows/trump-trinity-feedback-interface-gate.yml'
-  workflow_dispatch:
-
-permissions:
-  contents: read
-
-jobs:
-  exact-gate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Run canonical feedback-interface independent checker
-        run: |
-          set -euo pipefail
-          python -m research.tools.apma_trinity_feedback.independent_checker | tee /tmp/feedback-result.json
-
-      - name: Assert scoped verdict and firewalls
-        run: |
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          z=json.loads(Path('/tmp/feedback-result.json').read_text().strip().splitlines()[-1])
-          assert z['verdict']=='PASS_SCOPED_CANONICAL_LOG_FEEDBACK_INTERFACE_TRANSFER_GATE', z
-          sf=z['scientific_firewall']
-          assert sf['P_VS_NP']=='OPEN', sf
-          assert sf['GENERAL_SAT_IN_P']=='NOT_PROVED', sf
-          assert sf['WIDE_INTERFACE_COMPRESSION']=='NOT_CLAIMED', sf
-          assert sf['UNIVERSAL_DISCOVERY']=='NOT_CLAIMED', sf
-          assert all(z['checks'].values()), {k:v for k,v in z['checks'].items() if not v}
-          print(json.dumps({'verdict':z['verdict'],'positive':z['positive_controls'],'negative':z['negative_controls'],'firewall':sf},sort_keys=True))
-          PY
-
-      - name: Baseline Trinity regression
-        run: python -m research.tools.apma_trinity_sovereign.independent_checker
-
-      - name: Sealed unicyclic regression
-        run: python -m research.tools.apma_trinity_unicyclic.independent_checker
-
-      - name: Authority notice
-        run: |
-          echo 'PREREGISTERED_SCOPED_GATE_ONLY__NO_GLOBAL_PROMOTION'
-          echo 'FINITE_CONTROLS_NOT_THEOREM_EVIDENCE'
-          echo 'P_VS_NP=OPEN'
-
-</JANUS_TRUMP_FRONTIER_MEMORY>
-
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="09fd1a59c39f7d8b74ea5cf170246f4fbd95c926" path=".github/workflows/trump-trinity-unicyclic-gate.yml" git_blob_sha="7a4a169f9d59b2c5bca63e6d55f8c0f46bbe0f5f" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
-name: TRUMP Trinity Unicyclic Successor Gate
-
-on:
-  workflow_dispatch:
-  push:
-    branches:
-      - research/trump-apma-trinity-unicyclic-transfer-2026-09-15
-    paths:
-      - '.github/workflows/trump-trinity-unicyclic-gate.yml'
-      - 'research/tools/apma_trinity_unicyclic/**'
-      - 'research/TRUMP_APMA_TRINITY_UNICYCLIC_TRANSFER_PREREGISTRATION_2026-09-15.json'
-
-permissions:
-  contents: read
-
-jobs:
-  gate:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Run independent successor checker
-        shell: bash
-        run: |
-          set -euo pipefail
-          python research/tools/apma_trinity_unicyclic/independent_checker.py | tee /tmp/unicyclic-result.json
-      - name: Assert scoped firewall
-        shell: bash
-        run: |
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          z=json.loads(Path('/tmp/unicyclic-result.json').read_text().strip().splitlines()[-1])
-          assert z['verdict']=='PASS_SCOPED_BOUNDED_INTERFACE_UNICYCLIC_TRANSFER', z
-          sf=z['scientific_firewall']
-          assert sf['P_VS_NP']=='OPEN', sf
-          assert sf['SAT_IN_P']=='NOT_PROVED', sf
-          assert sf['UNIVERSAL_DISCOVERY']=='NOT_CLAIMED', sf
-          print(json.dumps({'verdict':z['verdict'],'cycle_product':z['cycle_product'],'negative_controls':z['negative_controls'],'complexity_checks':z['complexity_checks'],'firewall':sf},sort_keys=True))
-          PY
-      - name: Authority notice
-        run: |
-          echo 'SCOPED_SUCCESSOR_GATE_ONLY'
-          echo 'P_VS_NP=OPEN'
-
-</JANUS_TRUMP_FRONTIER_MEMORY>
-
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="09fd1a59c39f7d8b74ea5cf170246f4fbd95c926" path="docs/C010_PROOF_COMPRESSION.md" git_blob_sha="bd02d47a83eabd0417658423a7dd506ac19963df" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
-# C010 — Proof compression and audit hardening
-
-C010 continues the inherited JANUS cycle without manufacturing terminal results.
-
-## Cycle output
-
-- eight descendants: `H084-H091`;
-- forty attacks: `A217-A256`;
-- eight inherited hypotheses re-attacked: `H075-H079`, `H081-H083`;
-- no terminal result;
-- cumulative inversion matrix: `40 × 40 = 1600` logical cells;
-- inherited share: `32/40 = 80%`.
-
-## Why no graveyard entry
-
-No previous exact statement received a decisive theorem or counterexample.
-Several routes were weakened or narrowed, but pressure alone is not sufficient
-for `DESTROYED` or `REJECTED`.
-
-## Proof-compression branch
-
-### H084 — signed-coordinate monomial transport
-
-H084 extracts the exact algebraic core of H075. Coordinate permutations and
-complementations act by an invertible integer matrix on the squarefree
-degree-at-most-k monomial basis. Gram matrices move by congruence, preserving
-degree and positive semidefiniteness.
-
-Artifacts:
-
-```bash
-python experiments/theta/symmetry_transport.py --self-test
-```
-
-and:
-
-```text
-proof_attempts/H075/SYMMETRY_TRANSPORT.md
-```
-
-The proof artifact is not an independent review and does not promote H075 or
-H084 to `PROVED`.
-
-### H085 — bounded-depth functional pullback
-
-H085 isolates the compositional theorem needed by H077. For fixed fan-in and
-depth, substitution should transform an extension certificate into an original
-certificate with degree bounded by `2k*s^d`.
-
-The unresolved points are:
-
-- DAG sharing versus full polynomial expansion;
-- coefficient growth;
-- exact quotient-ring elimination of extension axioms;
-- conversion from certificate pullback to full theta-rank comparison.
-
-### H086 — projection-fiber necessity
-
-H086 classifies any surviving H076 collapse into explicit resources:
-
-1. nonfunctional fibers;
-2. unbounded dependency depth;
-3. superpolynomial coefficient growth;
-4. superpolynomial expanded size.
-
-It is conditional on H085 and remains open.
-
-## Canonical twin branch
-
-### H087 — level-one exact target
-
-H087 narrows H078 to:
-
-- level one;
-- one standard clause-literal conflict graph;
-- exact variable canonicalization;
-- rational moment witnesses;
-- a finite answer-independent field list.
-
-The profile tool now performs exhaustive variable relabeling for at most eight
-used variables. It refuses larger instances rather than labeling a heuristic
-hash as canonical.
-
-Exact alpha and SAT labels are removed from the profile. They live only in:
-
-```bash
-python experiments/theta/diagnostics.py formula.cnf
-```
-
-which is explicitly exponential and test-only.
-
-## Parser integrity
-
-`conflict_graph.py` now:
-
-- requires one valid `p cnf` header;
-- validates declared variable and clause counts;
-- validates literal ranges;
-- preserves empty clauses;
-- requires every clause to terminate with zero;
-- rejects data before the header and duplicate headers.
-
-Run:
-
-```bash
-python experiments/theta/conflict_graph.py --self-test
-```
-
-## Local gadget and mixed-family branch
-
-- `H088` asks for pseudoexpectation transport through fixed-radius gadgets.
-- `H090` asks for one explicit restriction-closed mixed XOR/non-affine
-  generator.
-- `H091` asks for a measure-preserving bridge into a fixed bounded-degree
-  parity proof fragment.
-
-These hypotheses connect H079 and H083 to the older H062-H064 proof-complexity
-branch.
-
-## Exact rational verification
-
-H089 introduces a certificate language based on exact rational Gram factors,
-zero residuals, and rational threshold margins.
-
-Run:
-
-```bash
-python experiments/theta/rational_gram_verifier.py --self-test
-```
-
-The verifier checks a supplied artifact. It does not solve an SDP and does not
-assert that a short factor exists.
-
-## Validator hardening
-
-C010 removes duplicated policy constants from validators.
-
-`registry/schema.json` now selects:
-
-- the current matrix file and dimensions;
-- the inherited fraction;
-- current-cycle hypothesis IDs;
-- attack-pressure thresholds;
-- the reverse-lineage start point and ledger.
-
-`validate_lineage.py` also checks append-only reverse edges for every C010
-child. Historical genealogy files are not rewritten.
-
-## Reproduction
-
-```bash
-python tools/validate_registry.py
-python tools/validate_lineage.py
-python tools/validate_inversion_matrix.py
-python tools/validate_cycle_pressure.py
-python experiments/theta/conflict_graph.py --self-test
-python experiments/theta/canonical_profile.py --self-test
-python experiments/theta/symmetry_transport.py --self-test
-python experiments/theta/rational_gram_verifier.py --self-test
-```
-
-## Claim boundary
-
-C010 does not prove:
-
-- `P = NP`;
-- `P != NP`;
-- a universal theta/SoS lower bound;
-- existence of theta twins;
-- efficient SDP certificate discovery;
-- novelty of the lemma candidates.
-
-Its progress is narrower: two broad ambiguities were split into explicit
-algebraic obligations, and the experimental interface now refuses several
-previously silent sources of false evidence.
-
-</JANUS_TRUMP_FRONTIER_MEMORY>
-
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="09fd1a59c39f7d8b74ea5cf170246f4fbd95c926" path="docs/C011_EXACT_THETA_CERTIFICATES.md" git_blob_sha="8e37746e9fe3a3426dde51b355243197f3c1ebdf" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
-# C011 — Exact theta certificates and finite collision seeds
-
-C011 continues the inherited theta branch by separating four questions that
-must not be conflated:
-
-1. can a rational PSD claim be checked exactly? (`H092`)
-2. can an exact theta optimum be checked from supplied primal/dual objects?
-   (`H093`)
-3. can a dual upper bound alone certify UNSAT? (`H094`)
-4. does a finite SAT/UNSAT theta collision seed exist? (`H096`)
-
-The first three now have executable certificate formats. The fourth remains an
-open search target; no positive fixture is registered.
-
-## Cycle output
-
-- six descendants: `H092-H097`;
-- thirty attacks: `A257-A286`;
-- six inherited routes re-attacked: `H070`, `H081`, `H084`, `H085`, `H087`,
-  and `H089`;
-- no terminal result;
-- cumulative inversion matrix: `46 × 46 = 2116` logical cells;
-- inherited matrix share: `40/46`.
-
-## H092 — rational LDL instead of rational square roots
-
-An ordinary rational Gram certificate `Q = B^T B` can be too restrictive:
-even when `Q` has rational entries, a factor `B` may require irrational square
-roots. H092 uses
-
-```text
-P Q P^T = L D L^T
-```
-
-with rational unit-lower `L`, nonnegative rational diagonal `D`, and a
-permutation `P`.
-
-The constructor and verifier use exact `fractions.Fraction` arithmetic:
-
-```bash
-python experiments/theta/rational_ldl.py --self-test
-```
-
-The universal algebraic induction is recorded in
-`proof_attempts/H092/RATIONAL_LDL.md`. The remaining weakness is a fully stated
-binary bit-growth proof.
-
-## H093 — exact Lovasz-theta optimum certificates
-
-C011 fixes one SDP convention:
-
-```text
-maximize <J,X>
-subject to Tr(X)=1
-           X_ij=0 for graph edges
-           X is PSD
-```
-
-The dual slack is
-
-```text
-S = t I + sum_e y_e A_e - J
-```
-
-where `A_e` has ones in the two symmetric edge positions.
-
-A certificate is accepted only when:
-
-- the primal trace and edge constraints hold exactly;
-- the primal and dual PSD matrices pass exact H092 LDL replay;
-- primal and dual objectives are exactly equal.
-
-```bash
-python experiments/theta/lovasz_theta_certificate.py --self-test
-```
-
-The self-test certifies `theta(K2)=1` and `theta(E2)=2`, then mutates a valid
-certificate and requires rejection.
-
-H093 does **not** claim every optimum is rational.
-
-## H094 — one-sided UNSAT certification
-
-For a CNF conflict graph with `m` clause cliques:
-
-```text
-alpha(G) <= theta(G) <= t < m
-```
-
-contradicts satisfiability, because SAT would require `alpha(G)=m`.
-
-Therefore a dual feasible rational upper bound below `m` is sufficient. No
-primal optimizer and no exact theta value are needed.
-
-The current generic verifier still needs graph-to-CNF hash binding before it is
-a complete submission artifact. It is deliberately one-sided: failure to find
-a gap never implies SAT.
-
-## H095 — finite seed to infinite family
-
-Disjoint variable ranges make the conflict graph of a conjunction a graph
-disjoint union. The code checks:
-
-- no cross-component conflict edges;
-- additive vertex and edge counts;
-- exact alpha additivity on small fixtures.
-
-```bash
-python experiments/theta/disjoint_union.py --self-test
-```
-
-The theta-additivity proof under the exact H093 normalization is kept as a
-separate written obligation in
-`proof_attempts/H095/DISJOINT_AMPLIFICATION.md`.
-
-## H096 — no fabricated positive collision
-
-The collision bundle requires:
-
-- equal positive clause targets;
-- opposite exact alpha labels;
-- exact H093 certificates for both graphs;
-- exactly equal theta values.
-
-```bash
-python experiments/theta/theta_collision_bundle.py --self-test
-```
-
-The self-test uses one SAT and one UNSAT graph whose theta values differ. The
-verifier must reject them. This tests the rejection path without pretending
-that JANUS has found the desired collision.
-
-Once a real seed is found, H095 would amplify it into an explicit family.
-
-## H097 — verification is not existence
-
-Exact replay does not prove that short rational certificates always exist.
-H097 isolates a conditioned reconstruction theorem:
-
-- primal and dual Slater margins at least inverse polynomial;
-- objective separation margin at least inverse polynomial;
-- rational approximation preserving feasibility and a constant fraction of
-  the gap;
-- polynomial total LDL encoding length.
-
-Weakly feasible or exponentially ill-conditioned SDPs remain outside the
-claim.
-
-## Reproduction
-
-```bash
-python tools/validate_registry.py
-python tools/validate_lineage.py
-python tools/validate_inversion_matrix.py
-python tools/validate_cycle_pressure.py
-python experiments/theta/conflict_graph.py --self-test
-python experiments/theta/canonical_profile.py --self-test
-python experiments/theta/symmetry_transport.py --self-test
-python experiments/theta/rational_gram_verifier.py --self-test
-python experiments/theta/rational_ldl.py --self-test
-python experiments/theta/lovasz_theta_certificate.py --self-test
-python experiments/theta/disjoint_union.py --self-test
-python experiments/theta/theta_collision_bundle.py --self-test
-```
-
-## Claim boundary
-
-C011 does not:
-
-- find a theta collision;
-- prove theta additivity under the chosen convention;
-- prove all well-conditioned certificates have polynomial bit length;
-- make first-level theta a complete SAT algorithm;
-- resolve `P` versus `NP`.
-
-Its concrete progress is a stricter exact-certificate chain and a finite witness
-format that cannot silently accept numerical tolerances or answer leakage.
-
-</JANUS_TRUMP_FRONTIER_MEMORY>
-
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="09fd1a59c39f7d8b74ea5cf170246f4fbd95c926" path="archive/trump_apma_v1_1_successor/PREREG_DRAFT_SEMANTIC_JOIN_TREE_REPRESENTATION_v0.3.json" git_blob_sha="bbf046833b2cd7aa3d4bb5c165be6ba8851d58b6" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
-{
-  "artifact": "TRUMP-APMA-SEMANTIC-JOIN-TREE-REPRESENTATION-AND-DISCOVERY-FALSIFIER-PREREG-DRAFT-v0.3",
-  "status": "DRAFT_UNSEALED__DO_NOT_RUN",
-  "parent_draft_sha256": "565ce258b54aca367f172965691bbad94e5e585256eacac2495dd864ce825748",
-  "parent_revision_reason": "HQ red-team found missing structural-vs-semantic GYO firewall, source-coverage obligations, zero-arity handling and claim-ceiling precision.",
-  "source_scientific_result": "FAIL_NO_TRANSFER_RULE",
-  "source_fail_seal": "17284f07a4d826cb80ade2e93c495a0bfe2db176",
-  "source_postmortem_seal": "6ec0ee28456601e3ebc89a99206b18b5322de987",
-  "gyo_control_sha256": "84abd84f9da28e6c31bc024fb53724f5201a7c8de52fd8c287591635c6de3f07",
-  "gyo_control_result": "12/12 revealed calibration correct using relaxed discovery + deterministic GYO join tree + frozen leaf_relation + frozen transfer_join",
-  "authority": "PRE_PREREGISTRATION_DESIGN_ONLY",
-  "scientific_firewall": {
-    "P_VS_NP": "OPEN",
-    "SAT_IN_P": "NOT_PROVED",
-    "NEW_LOCAL_INVARIANT_DISCOVERY": "NOT_CLAIMED",
-    "ORIGINAL_SUCCESSOR_GATE_UNLOCK": false,
-    "OLD_V1_1_BLIND_DATA": "MUST_REMAIN_UNREAD"
-  },
-  "source_and_semantics_contract": {
-    "normalization": "Freeze exact canonicalization code/hash and prove SAT-equivalence to the supplied source representation; duplicates/tautologies must be handled explicitly rather than silently changing claim scope.",
-    "clause_partition": "Every normalized clause occurrence is owned by exactly one discovered leaf; no clause may be dropped or duplicated by decomposition.",
-    "variable_ownership": "Every variable appearing in more than one leaf is included in the complete boundary scope of every such leaf; every non-boundary variable occurs in exactly one leaf.",
-    "zero_arity_leaf": "A boundary-empty leaf is solved independently. UNSAT terminates root UNSAT; SAT witness is retained for reconstruction and the zero-arity factor contributes TRUE without being discarded from provenance.",
-    "local_relation": "For each leaf boundary tuple, frozen lower primitives derive exact SAT/UNSAT with source-bound certificates. Missing admission is FAIL_LOCAL_RELATION, never guessed.",
-    "lower_primitive_authority": "Freeze exact primitive source hashes and inherited correctness/complexity scope before population generation."
-  },
-  "join_tree_contract": {
-    "hyperedges": "One distinct semantic relation identity per leaf boundary scope; duplicate or subset scopes remain distinct constraints.",
-    "gyo_role": "STRUCTURE_TEST_AND_TREE_CONSTRUCTION_ONLY",
-    "gyo_semantic_firewall": "Removing a subset/duplicate hyperedge during GYO reduction must never delete or weaken its relation constraint. All original relation identities reappear as nodes in the reconstructed join tree or are attached with an explicitly equivalent structural reconstruction.",
-    "running_intersection": "For every boundary variable x, all relation nodes containing x form one connected subtree.",
-    "tree_edges": "Edge separator is the exact set intersection of adjacent relation scopes.",
-    "messages": "Use complete relation tuples over edge separators; unary marginalization is forbidden unless exact factorization is separately proved.",
-    "transfer_backend": "Prefer unchanged frozen transfer_join semantics if the reconstructed graph contract matches its assumptions; any code change creates a separately hashed implementation and must be independently replayed."
-  },
-  "discovery_contract": {
-    "separator_width_cap": 3,
-    "minimum_three_clause_filter": "NOT_PRESENT_IN_NEW_CANDIDATE_GRAMMAR",
-    "separator_enumeration": "Enumerate only candidate variable subsets of width <= frozen rho.",
-    "separator_ranking": "One deterministic frozen ranking with deterministic tie-breaks.",
-    "backtracking": "FORBIDDEN unless a separately proved polynomial bounded search schedule is preregistered before data generation.",
-    "recursive_progress": "Each accepted split yields >=2 nonempty proper clause children; exact clause-count descent is checked at every recursion node.",
-    "private_island_regrouping": "FORBIDDEN",
-    "oracle_component_labels": "FORBIDDEN",
-    "holdout_aware_topology_choice": "FORBIDDEN"
-  },
-  "complexity_contract": {
-    "separator_search": "Fixed rho<=3 gives polynomial candidate enumeration plus explicit polynomial connectivity work.",
-    "decomposition_tree": "Prove a polynomial node bound from strict proper clause partition, charged in original encoded input size.",
-    "scope_hypergraph": "Construction and GYO/join-tree reconstruction are polynomial in explicit incidence size.",
-    "relation_tables": "Leaf boundary <=3 gives at most 8 tuples per leaf relation.",
-    "join_messages": "Only local tree messages over exact separator intersections; no enumeration of all global shared assignments.",
-    "reconstruction": "Charge witness choice, merge, source lift, root replay and certificate bytes.",
-    "total": "T_construct + T_discover + T_relation + T_join + T_reconstruct + T_verify <= one explicit polynomial in source bit length."
-  },
-  "population_and_controls": {
-    "positive_families": [
-      "SINGLE_SEPARATOR_MULTI_LEAF_STAR",
-      "WIDTH_2_SHARED_PAIR",
-      "FRAGMENTED_PORT_PATH",
-      "FRAGMENTED_PORT_TREE",
-      "MULTI_SEPARATOR_ALPHA_ACYCLIC_SCOPE_HYPERGRAPH",
-      "SAME_LOCAL_PARTS_DIFFERENT_GLUING_SAT_UNSAT_PAIRS"
-    ],
-    "killer_controls": [
-      "THREE_SCOPE_ALPHA_CYCLE",
-      "RANKING_TRAP_VALID_ONLY_UNDER_NONFROZEN_SEPARATOR_BACKTRACK",
-      "LEAF_BOUNDARY_WIDTH_4",
-      "ZERO_ARITY_UNSAT_LEAF",
-      "ZERO_ARITY_SAT_LEAF_WITH_REQUIRED_RECONSTRUCTION",
-      "DUPLICATE_SCOPE_DISTINCT_RELATIONS",
-      "SUBSET_SCOPE_RELATION_NOT_SEMANTICALLY_REDUNDANT",
-      "TAUTOLOGY_AND_DUPLICATE_CLAUSE_NORMALIZATION",
-      "LOCAL_RELATION_UNADMITTED",
-      "ROOT_REPLAY_TAMPER_CONTROL"
-    ],
-    "blindness": "New generator source, seeds, topology schedule, thresholds and implementation hashes are frozen before blind package generation. Old v1.1 blind packages remain unread and excluded."
-  },
-  "claim_ceiling": {
-    "finite_experiment_pass": "May establish only PASS_SCOPED_ALPHA_ACYCLIC_SEMANTIC_JOIN_TREE_TRANSFER on the frozen generated population.",
-    "typed_class_lemma": "Requires an independent formal coverage proof for the declared class in addition to experiment PASS.",
-    "universal_sat": "FORBIDDEN",
-    "p_equals_np": "FORBIDDEN",
-    "novel_join_tree_claim": "FORBIDDEN"
-  },
-  "acceptance_gates": {
-    "calibration_exactness": "100_PERCENT",
-    "blind_holdout_exactness": "100_PERCENT",
-    "positive_scope_admission": "100_PERCENT",
-    "killer_control_rejection": "100_PERCENT",
-    "running_intersection_violations": 0,
-    "source_partition_violations": 0,
-    "shared_variable_coverage_violations": 0,
-    "sat_root_replay_failures": 0,
-    "unsat_certificate_mismatches": 0,
-    "global_assignment_enumeration_usage": 0,
-    "private_island_partition_search_usage": 0,
-    "posthoc_separator_backtracking_usage": 0,
-    "polynomial_ledger": "SYMBOLIC_PROOF_REQUIRED__EMPIRICAL_TIMING_DIAGNOSTIC_ONLY"
-  },
-  "failure_verdicts": [
-    "FAIL_SOURCE_NORMALIZATION_OR_PARTITION",
-    "FAIL_SHARED_VARIABLE_COVERAGE",
-    "FAIL_NO_ALPHA_ACYCLIC_JOIN_TREE",
-    "FAIL_BOUNDARY_WIDTH",
-    "FAIL_LOCAL_RELATION",
-    "FAIL_JOIN_TREE_RECONSTRUCTION",
-    "FAIL_GLOBAL_EXACTNESS",
-    "FAIL_WITNESS_RECONSTRUCTION",
-    "FAIL_CONTROL_ADMISSION",
-    "FAIL_POLYNOMIAL_DISCOVERY",
-    "FAIL_POLYNOMIAL_JOIN",
-    "FAIL_GLOBAL_RESOURCE_LEDGER"
-  ],
-  "pass_verdict": "PASS_SCOPED_ALPHA_ACYCLIC_SEMANTIC_JOIN_TREE_TRANSFER",
-  "promotion_rule": "PASS repairs only the scoped composite-transfer lineage. Any frontier advance requires independent replay, proof review and a separate HQ decision.",
-  "successor_status": {
-    "NEXT_TARGET_FRONTIER": "APMA_UNSEEN_LOCAL_INVARIANT_INDUCTION_FALSIFIER_GATE",
-    "EXECUTION_STATUS": "LOCKED",
-    "AUTO_UNLOCK_FROM_THIS_DRAFT_OR_RUN": false
-  },
-  "next_action": "HQ_REVIEW_COMPLETE_ENOUGH_FOR_SECOND_PERSON_PREREG_FREEZE_PREPARATION__NO_RUN_YET"
-}
-
-</JANUS_TRUMP_FRONTIER_MEMORY>
-
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="09fd1a59c39f7d8b74ea5cf170246f4fbd95c926" path="START_HERE_TRUMP_CONTEXT.md" git_blob_sha="af7eec69f4fc3ab6ac2c8d173debb43379e0bb10" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
-# TRUMP / JANUS — mandatory context-recovery bootstrap
-
-Authority: `CONTEXT_RECOVERY_PROTOCOL__NON_SCIENTIFIC__MANDATORY_BEFORE_NEW_GATE`
-
-Purpose: prevent context-loss loops across chats, models, tools and long-lived development history. Project continuity must not depend on conversational memory.
-
-## Hard rule
-
-Before proposing, repairing, promoting, rerunning, or naming any TRUMP/APMA/JANUS gate, the active worker/HQ chat MUST reconstruct context from repository and source-bound continuity artifacts.
-
-No scientific action is admissible from conversational memory alone.
-
-## Current mandatory startup sequence
-
-0. Read `registry/TRUMP_CURRENT_STATE_2026-09-16_v3.22.json` **first**. It is the latest continuity anchor.
-1. Read `registry/TRUMP_APMA_UNSEEN_LOCAL_INVARIANT_STAGE_C_AUTHORITY_AUDIT_2026-09-16.json`.
-2. Read `research/TRUMP_APMA_UNSEEN_LOCAL_INVARIANT_STAGE_C_BLIND_EXECUTION_RESULT_2026-09-16.json` and `docs/TRUMP_DEVELOPMENT_JOURNAL_ENTRIES/2026-09-16_APMA_UNSEEN_LOCAL_INVARIANT_STAGE_C_BLIND_EXECUTION.md`.
-3. Then read `registry/TRUMP_CURRENT_STATE_2026-09-16_v3.21.json`, v3.20 and v3.19 before following older predecessor states as needed.
-4. Read base mechanism/history index `registry/TRUMP_CONTEXT_MANIFEST.json`.
-5. Immediately apply successor overlay `registry/TRUMP_CONTEXT_MANIFEST_2026-09-16_v3.22.json`. The overlay supersedes only current-pointer/current-frontier/new-mechanism fields; all historical mechanism aliases and bindings from the base manifest and earlier overlays remain in force.
-6. Read historical parent `registry/TRUMP_CURRENT_STATE.json`; never rewrite it.
-7. Search repository history/default-branch code before treating any mechanism as new.
-8. Recover indexed external sources when named.
-9. Build a `CONTEXT_RECOVERY_RECEIPT` with authority, global frontier result, sealed portfolio, scoped blockers and next allowed action.
-10. Only then may Captain/Akinator/JUXTAPOSE/TRUMP select or execute a new gate.
-
-## Current global-frontier result
-
-The historical global gate:
-
-`APMA_UNSEEN_LOCAL_INVARIANT_INDUCTION_FALSIFIER_GATE`
-
-has now been executed under its own frozen staged-blind protocol.
-
-Canonical HQ verdict:
-
-`PASS_GLOBAL_APMA_UNSEEN_LOCAL_INVARIANT_INDUCTION_FALSIFIER_GATE_V1`
-
-Scientific PR:
-
-`#483`
-
-Scientific merge:
-
-`3fc4dd10085530c013ad446f6a62c2d7ded5b169`
-
-The machine Stage C receipt remains preserved exactly as emitted:
-
-`PASS_GLOBAL_FRONTIER_MECHANISM_ON_FROZEN_BLIND_POSITIVE_WITH_PREREGISTERED_FAIL_CLOSED_NEGATIVE_CONTROL`
-
-Scope remains:
-
-`MECHANISM_CAPABILITY_ON_THIS_FROZEN_BLIND_PROTOCOL_ONLY`
-
-The HQ authority audit maps that receipt to the preregistered canonical PASS only because all frozen `P1..P12` obligations and staged freeze conditions are supported by source-bound receipts.
-
-## Frozen execution receipts
-
-Push Stage C:
-
-- run `35088383404`
-- job `104768554613`
-- `SUCCESS`
-
-PR-triggered unchanged-lineage replays:
-
-- Stage A: `35088850044 / 104770073161` — `SUCCESS`
-- Stage B: `35088850623 / 104770074878` — `SUCCESS`
-- Stage C: `35088849912 / 104770072814` — `SUCCESS`
-
-Blind positive machine facts:
-
-- semantic SHA-256: `754019dfae09c51640011d614ae5b215377afc6d3f8902f558c38e9a1c35e7b4`;
-- 15 variables, 120 explicit constraints;
-- discovered exact exchangeability/orbit cells of sizes `4`, `5`, `6`;
-- exact quotient `Q=210`;
-- only `7` count states enumerated;
-- status `ADMIT_ORBIT_COUNT_QUOTIENT_SAT`;
-- canonical Boolean reconstruction replayed all 120 original relations;
-- independent checker verified the admission and reconstruction without importing candidate.
-
-Blind negative machine facts:
-
-- semantic SHA-256: `1aed4c6c360060c0262b616dc6552b5b33b446724308a2ac793e9019c6202b8d`;
-- 8 variables, 9 constraints;
-- all orbit cells singleton;
-- status `OPEN_NO_NONTRIVIAL_EXCHANGEABILITY`;
-- `solver_authority=false`;
-- zero count states enumerated;
-- independent checker verified the fail-closed result.
-
-Stage A PR replay also reports `renaming_order_tuple_permutation_invariant_profile=true` on the frozen candidate.
-
-## Newly sealed exact admission carrier
-
-Mechanism:
-
-`EXACT_TRANSPOSITION_ORBIT_COUNT_QUOTIENT`
-
-Authority class:
-
-`EXACT_ADMISSION_CARRIER__FAIL_CLOSED_OUTSIDE_CERTIFIED_DOMAIN`
-
-Core admission contract:
-
-1. start from complete explicit raw Boolean relation semantics;
-2. verify exact variable-transposition automorphisms against the complete canonical semantic object;
-3. build generator-graph orbit cells;
-4. require at least one nontrivial cell;
-5. compute `Q = product_C (|C|+1)` with saturation before enumeration;
-6. require `Q <= L^2` and strict compression `Q < 2^n`;
-7. only then enumerate quotient count vectors;
-8. reconstruct/replay an exact SAT assignment or provide complete quotient UNSAT coverage;
-9. independent checker replays admission and certificate.
-
-Frozen symbolic envelope:
-
-- total candidate/checker time: `O(L^4 log L)`;
-- certificate/storage: `O(L^3)`.
-
-Resource firewalls remain zero for full-variable-cube enumeration, global residual Cartesian products, separator>=3 Boolean branching, size-4 branching, new unbounded recursion and budget raise.
-
-This is one new generic exact carrier. It is **not** a universal selector and does not admit objects lacking its exact certificate.
-
-## What the global PASS does not establish
-
-The following remain canonical:
-
-- `ARBITRARY_UNSEEN_INVARIANT_DISCOVERY = NOT_PROVED`
-- `CONNECTED_MIXED_CORE_SOLVED = NO`
-- `GENERAL_GT2_TRACTABILITY = NOT_PROVED`
-- `NONUNIQUE_COMMON_CORE_SOLVED = false`
-- `GENERAL_RESIDUAL_SEPARATOR_TRACTABILITY = NOT_PROVED`
-- `GENERAL_SAT_IN_P = NOT_PROVED`
-- `P_VS_NP = OPEN`
-- `SIZE4_BRANCHING_LICENSED = false`
-- `EXTRA_RECURSION_AUTHORIZED = false`
-
-A finite blind PASS is capability/falsifier evidence for the frozen mechanism under the frozen protocol. It is not an asymptotic theorem about arbitrary SAT.
-
-## Previous scoped acquisition line
-
-The v3.21 raw-predecessor nonunique-common-core acquisition line remains:
-
-`DORMANT_PENDING_NEW_SOURCE_BOUND_RAW_EVIDENCE`
-
-Its bounded conclusion is unchanged: the recovered preregistered source-bound predecessor corpus contained zero real READY objects with exact common support size greater than one.
-
-v3.22 does not reopen that line. It may be reopened only if new source-authorized raw predecessor provenance appears.
-
-## Current next allowed action
-
-Do **not** immediately design another solver/carrier.
-
-First run a source-bound obstruction census against the expanded sealed portfolio:
-
-`TRUMP_SOURCE_AUTHORIZED_CONNECTED_MIXED_RAW_POST_ORBIT_PORTFOLIO_OBSTRUCTION_CENSUS`
-
-Class:
-
-`DIAGNOSTIC_ONLY__PREREGISTER_BEFORE_EXECUTION`
-
-Status:
-
-`ELIGIBLE__NOT_RUN`
-
-Purpose: inventory existing source-authorized connected-mixed raw fixtures, replay the current sealed exact portfolio including `EXACT_TRANSPOSITION_ORBIT_COUNT_QUOTIENT`, and identify the first real object that remains unadmitted.
-
-Required outcomes are fail-closed:
-
-- if a real unadmitted object exists, freeze the first obstruction before mechanism design;
-- if none exists in the current frozen source corpus, report only `NO_CURRENT_SOURCE_AUTHORIZED_OBSTRUCTION_FOUND` for that corpus and acquire new evidence;
-- absence in a finite/recovered corpus is not general connected-mixed tractability.
-
-The census itself may not invent a new solver or carrier.
-
-## Anti-loop classification
-
-Every proposed mechanism or experiment must be classified before work begins as exactly one of:
-
-- `NEW_MECHANISM`
-- `REDISCOVERY_OF_EXISTING_MECHANISM`
-- `SUCCESSOR_REPAIR`
-- `DIAGNOSTIC_ONLY`
-- `SUPERSEDED_ROUTE`
-
-If classification cannot be made from recovered provenance, status is `CONTEXT_INCOMPLETE__DO_NOT_ADVANCE_GATE`.
-
-## Required role separation
-
-- `AKINATOR`: discriminating exact questions / candidate narrowing only.
-- `CAPTAIN_OBVIOUS`: nearest missing obligation, loop detection and reducer stability only.
-- `JUXTAPOSE`: search prioritization only; priority is never proof.
-- `HRAIN`: deterministic structural-context observation only; graph/semantic similarity is not mechanism or evidence.
-- `INAIHR / JANUS_SYNTH`: candidate-only explanation proposal with provenance; synthesis/ranking is not truth or proof.
-- `JANUS_DEMIURGE`: exact candidate/transition/certificate construction.
-- `TRUMP`: exact semantics, falsification, replay and total complexity accounting authority.
-- `JANUS_SOVEREIGN`: governance COMMIT/ROLLBACK/OPEN/HALT only after admissible evidence; no theorem-manufacturing authority.
-
-## Permanent scientific firewalls
-
-`proof-system lower bound != problem lower bound != general SAT lower bound`
-
-`representation change admissible iff semantics is preserved exactly`
-
-`T_construct + T_discover + T_solve + T_reconstruct + T_verify + certificate_bytes <= poly(|F|)`
-
-Finite controls are implementation/falsifier evidence, not asymptotic theorem evidence unless the frozen claim is itself finite.
-
-Parameterized/FPT does not automatically imply polynomial in original input; an explicit original-input envelope is required.
-
-## Current architectural rule
-
-The Inverted-Pyramid rule remains:
-
-`COMPLETE_EXACT_ADMISSION_CERTIFICATE -> AUTHORIZED_SEALED_CARRIER/PORTFOLIO -> EXACT_REPLAY -> OTHERWISE OPEN`.
-
-The sixteen previously sealed downward scoped mechanisms through the v3.18 exact two-factor / f-factor carrier remain unchanged. v3.19, v3.20 and v3.21 were diagnostic/continuity advances and added no carrier. v3.22 additionally seals the generic exact `EXACT_TRANSPOSITION_ORBIT_COUNT_QUOTIENT` carrier after the global staged-blind PASS.
-
-## Forbidden shortcuts at v3.22
-
-Do not:
-
-- promote this blind PASS to arbitrary unseen-invariant discovery;
-- promote this blind PASS to general connected-mixed or GT2 tractability;
-- call one exact carrier a universal selector;
-- invent another mechanism before localizing a real remaining source-authorized obstruction;
-- promote synthetic calibration to raw reachability authority;
-- declare nonunique common-core support solved;
-- enumerate `2^|C|` assignments outside actual explicit support;
-- introduce separator sets of size >=3 as Boolean branching;
-- license size-4 Boolean branching;
-- add unbounded recursion or a new 3+ join chain;
-- materialize a global residual Cartesian product;
-- raise the frozen resource budget;
-- infer general SAT in P, P=NP, P!=NP, or a general lower bound from this result.
-
-## Context sources
-
-Primary scientific authority: `Hawkar-usls/Janus-Fundamentum`.
-
-External bicameral proposal-layer sources: `Hawkar-usls/Hrain` and `Hawkar-usls/iNaiHR`; neither has proof authority inside TRUMP.
-
-Historical/semantic archive: `Hawkar-usls/janus-meta-registry` plus persistent Library artifacts indexed by the base context manifest.
-
-Conversation memory is advisory only; repository and source-bound artifacts outrank it.
-
-## Write-back rule
-
-After every material development, create/update the latest successor-state and continuity overlay while preserving all parent-state history. If a durable mechanism or alias is introduced, index it in continuity sources in the same development cycle.
-
-Status: `ACTIVE_MANDATORY_BOOTSTRAP`.
-
-</JANUS_TRUMP_FRONTIER_MEMORY>
-
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="09fd1a59c39f7d8b74ea5cf170246f4fbd95c926" path=".github/workflows/trump-apma-unseen-local-invariant-stage-a.yml" git_blob_sha="f9dcf2f55ecbacbb493d23308e122e0480ce7705" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="c464e68ccd1a9d3203911360271b8c751756d4ba" path=".github/workflows/trump-apma-unseen-local-invariant-stage-a.yml" git_blob_sha="f9dcf2f55ecbacbb493d23308e122e0480ce7705" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: TRUMP APMA Unseen Local Invariant Stage A
 
 on:
@@ -1191,7 +337,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="09fd1a59c39f7d8b74ea5cf170246f4fbd95c926" path=".github/workflows/trump-apma-unseen-local-invariant-stage-b-reference.yml" git_blob_sha="213237a08f16d1c6a4545020baebc721cc578b65" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="c464e68ccd1a9d3203911360271b8c751756d4ba" path=".github/workflows/trump-apma-unseen-local-invariant-stage-b-reference.yml" git_blob_sha="213237a08f16d1c6a4545020baebc721cc578b65" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: TRUMP APMA Unseen Local Invariant Stage B Reference
 
 on:
@@ -1329,7 +475,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="09fd1a59c39f7d8b74ea5cf170246f4fbd95c926" path=".github/workflows/trump-apma-unseen-local-invariant-stage-c-blind-execution.yml" git_blob_sha="8850cf060defec4b28e3255a83eca4b6399f97c0" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="c464e68ccd1a9d3203911360271b8c751756d4ba" path=".github/workflows/trump-apma-unseen-local-invariant-stage-c-blind-execution.yml" git_blob_sha="8850cf060defec4b28e3255a83eca4b6399f97c0" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: TRUMP APMA Unseen Local Invariant Stage C Blind Execution
 
 on:
@@ -1516,7 +662,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="09fd1a59c39f7d8b74ea5cf170246f4fbd95c926" path=".github/workflows/trump-bicameral-connected-core-explanation.yml" git_blob_sha="2c67a965a74322b5fc9eb26fe64e650002e73cd0" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="c464e68ccd1a9d3203911360271b8c751756d4ba" path=".github/workflows/trump-bicameral-connected-core-explanation.yml" git_blob_sha="2c67a965a74322b5fc9eb26fe64e650002e73cd0" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: TRUMP Bicameral Connected Core Explanation
 
 on:
@@ -1592,7 +738,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="09fd1a59c39f7d8b74ea5cf170246f4fbd95c926" path=".github/workflows/trump-bicameral-cut-support-carrier-v1-1.yml" git_blob_sha="789a7814da03afaa2dfcc7020e11b4a8284a93cf" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="c464e68ccd1a9d3203911360271b8c751756d4ba" path=".github/workflows/trump-bicameral-cut-support-carrier-v1-1.yml" git_blob_sha="789a7814da03afaa2dfcc7020e11b4a8284a93cf" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: TRUMP Bicameral Overwidth Cut Support Carrier v1.1
 
 on:
@@ -1665,7 +811,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="09fd1a59c39f7d8b74ea5cf170246f4fbd95c926" path=".github/workflows/trump-bicameral-cut-support-carrier.yml" git_blob_sha="5748354f7ce2528bd9b82d3175998c1c03e8772c" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="c464e68ccd1a9d3203911360271b8c751756d4ba" path=".github/workflows/trump-bicameral-cut-support-carrier.yml" git_blob_sha="5748354f7ce2528bd9b82d3175998c1c03e8772c" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: TRUMP Bicameral Overwidth Cut Support Carrier
 
 on:
@@ -1723,7 +869,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="09fd1a59c39f7d8b74ea5cf170246f4fbd95c926" path=".github/workflows/trump-bicameral-mincut-logwidth-v1-1.yml" git_blob_sha="1075223f347ba0231d370f7b888bb62572c83ea9" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="c464e68ccd1a9d3203911360271b8c751756d4ba" path=".github/workflows/trump-bicameral-mincut-logwidth-v1-1.yml" git_blob_sha="1075223f347ba0231d370f7b888bb62572c83ea9" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: TRUMP Bicameral Canonical Mincut Logwidth v1.1
 
 on:
@@ -1807,7 +953,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="09fd1a59c39f7d8b74ea5cf170246f4fbd95c926" path=".github/workflows/trump-bicameral-mincut-logwidth.yml" git_blob_sha="b596474c0e90548274d6f6bcecddb09026f598bd" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="c464e68ccd1a9d3203911360271b8c751756d4ba" path=".github/workflows/trump-bicameral-mincut-logwidth.yml" git_blob_sha="b596474c0e90548274d6f6bcecddb09026f598bd" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: TRUMP Bicameral Canonical Mincut Logwidth Explanation
 
 on:
@@ -1879,7 +1025,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="09fd1a59c39f7d8b74ea5cf170246f4fbd95c926" path=".github/workflows/trump-bicameral-pair-separator.yml" git_blob_sha="1e0109529e37f60315154417281efb8473b4b0e8" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="c464e68ccd1a9d3203911360271b8c751756d4ba" path=".github/workflows/trump-bicameral-pair-separator.yml" git_blob_sha="1e0109529e37f60315154417281efb8473b4b0e8" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: TRUMP Bicameral Pair Separator Explanation
 
 on:
@@ -1952,7 +1098,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="09fd1a59c39f7d8b74ea5cf170246f4fbd95c926" path=".github/workflows/trump-bucket-common-core-semijoin-prefilter-v1-1.yml" git_blob_sha="d69a56912396e3a4dffab9454744eb912a290be6" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="c464e68ccd1a9d3203911360271b8c751756d4ba" path=".github/workflows/trump-bucket-common-core-semijoin-prefilter-v1-1.yml" git_blob_sha="d69a56912396e3a4dffab9454744eb912a290be6" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: TRUMP Bucket Common-Core Semijoin Prefilter v1.1
 on:
   push:
@@ -2002,7 +1148,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="09fd1a59c39f7d8b74ea5cf170246f4fbd95c926" path=".github/workflows/trump-bucket-common-core-semijoin-prefilter.yml" git_blob_sha="7ffb56ca2ddc80eaea1d903912542bed7caadb56" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="c464e68ccd1a9d3203911360271b8c751756d4ba" path=".github/workflows/trump-bucket-common-core-semijoin-prefilter.yml" git_blob_sha="7ffb56ca2ddc80eaea1d903912542bed7caadb56" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: TRUMP Bucket Common-Core Semijoin Prefilter
 
 on:
@@ -2057,7 +1203,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="09fd1a59c39f7d8b74ea5cf170246f4fbd95c926" path=".github/workflows/trump-bucket-common-core-v1-diagnostic.yml" git_blob_sha="75f296f79e618e10b665522253636d26666b77fb" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="c464e68ccd1a9d3203911360271b8c751756d4ba" path=".github/workflows/trump-bucket-common-core-v1-diagnostic.yml" git_blob_sha="75f296f79e618e10b665522253636d26666b77fb" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: TRUMP Bucket Common-Core v1 Control Diagnostic
 on:
   push:
@@ -2085,7 +1231,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="09fd1a59c39f7d8b74ea5cf170246f4fbd95c926" path=".github/workflows/trump-bucket-unique-core-conditioned-factorized-payload-v1-1.yml" git_blob_sha="7e8b05f900798d688c0741d59f0af47b7616c325" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="c464e68ccd1a9d3203911360271b8c751756d4ba" path=".github/workflows/trump-bucket-unique-core-conditioned-factorized-payload-v1-1.yml" git_blob_sha="7e8b05f900798d688c0741d59f0af47b7616c325" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: TRUMP Bucket Unique-Core Conditioned Factorized Payload v1.1
 on:
   push:
@@ -2148,7 +1294,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="09fd1a59c39f7d8b74ea5cf170246f4fbd95c926" path=".github/workflows/trump-bucket-unique-core-conditioned-factorized-payload-v1-2.yml" git_blob_sha="1d0ff6ff113255cd504407a5b1be7218c83443d3" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="c464e68ccd1a9d3203911360271b8c751756d4ba" path=".github/workflows/trump-bucket-unique-core-conditioned-factorized-payload-v1-2.yml" git_blob_sha="1d0ff6ff113255cd504407a5b1be7218c83443d3" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: TRUMP Bucket Unique-Core Conditioned Factorized Payload v1.2
 on:
   push:
@@ -2212,7 +1358,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="09fd1a59c39f7d8b74ea5cf170246f4fbd95c926" path=".github/workflows/trump-bucket-unique-core-conditioned-factorized-payload.yml" git_blob_sha="7552c2f853e60d4d60c686c1bd04817e35026fbb" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="c464e68ccd1a9d3203911360271b8c751756d4ba" path=".github/workflows/trump-bucket-unique-core-conditioned-factorized-payload.yml" git_blob_sha="7552c2f853e60d4d60c686c1bd04817e35026fbb" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: TRUMP Bucket Unique-Core Conditioned Factorized Payload
 on:
   push:
@@ -2274,7 +1420,7 @@ jobs:
 
 </JANUS_TRUMP_FRONTIER_MEMORY>
 
-<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="09fd1a59c39f7d8b74ea5cf170246f4fbd95c926" path=".github/workflows/trump-bucket-unique-core-fixed-depth-1-2-2.yml" git_blob_sha="4b57962c20946017a5406ad1332c43e53678a57c" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="c464e68ccd1a9d3203911360271b8c751756d4ba" path=".github/workflows/trump-bucket-unique-core-fixed-depth-1-2-2.yml" git_blob_sha="4b57962c20946017a5406ad1332c43e53678a57c" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
 name: TRUMP Bucket Unique-Core Fixed-Depth 1-2-2
 on:
   push:
@@ -2322,6 +1468,309 @@ jobs:
           echo 'MAX_LOGICAL_LEAVES=32'
           echo 'SEPARATOR_DEPTH=3_FIXED'
           echo 'UNBOUNDED_RECURSION=0'
+          echo 'SEPARATOR_SETS_SIZE_GE3=0'
+          echo 'THREE_PLUS_JOIN_CHAIN=0'
+          echo 'GLOBAL_RESIDUAL_CARTESIAN_PRODUCT=0'
+          echo 'P_VS_NP=OPEN'
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="c464e68ccd1a9d3203911360271b8c751756d4ba" path=".github/workflows/trump-bucket-unique-core-remainder-forensic.yml" git_blob_sha="2e92a43c3b32e122dfa2592c1891359dab51aaab" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: TRUMP Bucket Unique-Core Remainder Forensic
+on:
+  push:
+    branches:
+      - research/trump-bucket-unique-core-residual-remainder-forensic-2026-09-15
+permissions:
+  contents: read
+jobs:
+  remainder-forensic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run independent remainder forensic checker
+        run: |
+          set -euo pipefail
+          python -m research.tools.apma_bucket_remainder_forensic.independent_checker | tee /tmp/result.json
+      - name: Assert diagnostic verdict and firewalls
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          z=json.loads(Path('/tmp/result.json').read_text().strip().splitlines()[-1])
+          assert z['verdict']=='PASS_DIAGNOSTIC_BICAMERAL_BUCKET_UNIQUE_CORE_RESIDUAL_SINGLE_THEN_PAIR_THEN_REMAINDER_STRUCTURE_FORENSIC', z
+          assert all(z['checks'].values()), {k:v for k,v in z['checks'].items() if not v}
+          assert z['scientific_firewall']['P_VS_NP']=='OPEN'
+          assert z['scientific_firewall']['GENERAL_SAT_IN_P']=='NOT_PROVED'
+          print(json.dumps({'verdict':z['verdict'],'summary':z['candidate_summary']},sort_keys=True))
+          PY
+      - name: v3.12 single-then-pair forensic regression
+        run: python -m research.tools.apma_bucket_single_then_pair_forensic.independent_checker
+      - name: Authority notice
+        run: |
+          echo 'AUTHORITY=DIAGNOSTIC_ONLY'
+          echo 'SAT_BRANCH_EXECUTION=0'
+          echo 'SOLVER_EXECUTION=0'
+          echo 'PAIR_CARRIER_EXECUTION=0'
+          echo 'UNBOUNDED_RECURSIVE_SEARCH=0'
+          echo 'THREE_PLUS_JOIN_CHAIN=0'
+          echo 'GLOBAL_RESIDUAL_CARTESIAN_PRODUCT=0'
+          echo 'P_VS_NP=OPEN'
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="c464e68ccd1a9d3203911360271b8c751756d4ba" path=".github/workflows/trump-bucket-unique-core-residual-3plus-forensic.yml" git_blob_sha="8228e642a634a826e8906bdacb9372d8a6cc4954" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: TRUMP Bucket Unique-Core Residual 3plus Forensic
+on:
+  push:
+    branches: [research/trump-bucket-unique-core-residual-3plus-forensic-2026-09-15]
+    paths:
+      - 'research/TRUMP_BICAMERAL_BUCKET_UNIQUE_CORE_RESIDUAL_3PLUS_STRUCTURE_FORENSIC_PREREGISTRATION_2026-09-15.json'
+      - 'research/tools/apma_bucket_residual_3plus_forensic/**'
+      - '.github/workflows/trump-bucket-unique-core-residual-3plus-forensic.yml'
+  workflow_dispatch:
+
+jobs:
+  residual-3plus-forensic:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Run independent forensic checker
+        run: |
+          set -euo pipefail
+          python -m research.tools.apma_bucket_residual_3plus_forensic.independent_checker | tee /tmp/forensic.json
+      - name: Assert diagnostic verdict and firewalls
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          z=json.loads(Path('/tmp/forensic.json').read_text().strip().splitlines()[-1])
+          assert z['verdict']=='PASS_DIAGNOSTIC_BICAMERAL_BUCKET_UNIQUE_CORE_RESIDUAL_3PLUS_STRUCTURE_FORENSIC', z
+          assert all(z['checks'].values()), {k:v for k,v in z['checks'].items() if not v}
+          assert z['scientific_firewall']['P_VS_NP']=='OPEN'
+          assert z['scientific_firewall']['GENERAL_SAT_IN_P']=='NOT_PROVED'
+          print(json.dumps({'verdict':z['verdict'],'factors':z['target_factor_ids'],'edges':z['edges'],'running_intersection':z['running_intersection'],'relation_articulations':z['relation_articulation_vertices'],'variable_articulations':z['variable_articulation_points'],'semijoin':z['semijoin_closure']},sort_keys=True))
+          PY
+      - name: v3.6 regression
+        run: python -m research.tools.apma_bucket_residual_le2.independent_checker
+      - name: Authority notice
+        run: |
+          echo 'DIAGNOSTIC_ONLY=YES'
+          echo 'THREE_PLUS_JOIN_CHAIN=FORBIDDEN'
+          echo 'GLOBAL_RESIDUAL_CARTESIAN_PRODUCT=0'
+          echo 'P_VS_NP=OPEN'
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="c464e68ccd1a9d3203911360271b8c751756d4ba" path=".github/workflows/trump-bucket-unique-core-residual-component-le2.yml" git_blob_sha="cf8a8d80bba48814577a3e9f24db88afab254efe" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: TRUMP Bucket Unique-Core Residual Component LE2 Factorized Payload
+on:
+  push:
+    branches: [research/trump-bucket-unique-core-residual-le2-2026-09-15]
+    paths:
+      - 'research/TRUMP_BICAMERAL_BUCKET_UNIQUE_CORE_RESIDUAL_COMPONENT_LE2_FACTORIZED_PAYLOAD_PREREGISTRATION_2026-09-15.json'
+      - 'research/tools/apma_bucket_residual_le2/residual_le2_factorized_payload.py'
+      - 'research/tools/apma_bucket_residual_le2/independent_checker.py'
+      - '.github/workflows/trump-bucket-unique-core-residual-component-le2.yml'
+  workflow_dispatch:
+
+jobs:
+  residual-le2:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+
+      - name: Run independent residual LE2 checker
+        run: |
+          set -euo pipefail
+          python -m research.tools.apma_bucket_residual_le2.independent_checker | tee /tmp/residual-le2.json
+
+      - name: Assert scoped verdict and firewalls
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          z=json.loads(Path('/tmp/residual-le2.json').read_text().strip().splitlines()[-1])
+          assert z['verdict']=='PASS_SCOPED_BICAMERAL_BUCKET_UNIQUE_CORE_RESIDUAL_COMPONENT_LE2_FACTORIZED_PAYLOAD_V1', z
+          assert all(z['checks'].values()), {k:v for k,v in z['checks'].items() if not v}
+          assert z['scientific_firewall']['P_VS_NP']=='OPEN'
+          assert z['scientific_firewall']['GENERAL_SAT_IN_P']=='NOT_PROVED'
+          assert z['scientific_firewall']['GENERAL_PARTIAL_OVERLAP_FACTORIZATION']=='NOT_PROVED'
+          print(json.dumps({'verdict':z['verdict'],'controls':z['controls']},sort_keys=True))
+          PY
+
+      - name: v3.5 conditioned payload regression
+        run: python -m research.tools.apma_bucket_conditioned_factorized_payload.independent_checker_v1_2
+
+      - name: Two-relation one-join regression
+        run: python -m research.tools.apma_derived_boundary_factor.independent_checker_v1_1
+
+      - name: Factorized feedback regression
+        run: python -m research.tools.apma_factorized_feedback.independent_checker
+
+      - name: Guarded elimination regression
+        run: python -m research.tools.apma_guarded_elimination.independent_checker
+
+      - name: Schaefer mixed-carrier barrier regression
+        run: python -m research.tools.apma_mixed_carrier_barrier.check_schaefer_barrier
+
+      - name: Authority notice
+        run: |
+          echo 'SCOPE=UNIQUE_CORE_RESIDUAL_COMPONENT_SIZE_LE2_ONLY'
+          echo 'PAIR_JOIN=EXACTLY_ONE_PER_TWO_RELATION_COMPONENT'
+          echo 'RESIDUAL_COMPONENT_3PLUS=OPEN'
+          echo 'GLOBAL_RESIDUAL_CARTESIAN_PRODUCT=FORBIDDEN'
+          echo 'MULTIPLE_CORE_STATES=OPEN'
+          echo 'L2_BUDGET_RAISE=NO'
+          echo 'P_VS_NP=OPEN'
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="c464e68ccd1a9d3203911360271b8c751756d4ba" path=".github/workflows/trump-bucket-unique-core-residual-no-pair-forensic.yml" git_blob_sha="20b4d84be78f8c19ef616def2dd08747bda272a8" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: TRUMP Bucket Unique-Core Residual No-Pair Forensic
+on:
+  push:
+    branches:
+      - research/trump-bucket-unique-core-residual-no-pair-forensic-2026-09-15
+permissions:
+  contents: read
+jobs:
+  no-pair-forensic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run independent no-pair forensic checker
+        run: |
+          set -euo pipefail
+          python -m research.tools.apma_bucket_residual_no_pair_forensic.independent_checker | tee /tmp/result.json
+      - name: Assert diagnostic verdict and firewalls
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          z=json.loads(Path('/tmp/result.json').read_text().strip().splitlines()[-1])
+          assert z['verdict']=='PASS_DIAGNOSTIC_BICAMERAL_BUCKET_UNIQUE_CORE_RESIDUAL_NO_PAIR_SEPARATOR_STRUCTURE_FORENSIC', z
+          assert all(z['checks'].values()), {k:v for k,v in z['checks'].items() if not v}
+          assert z['scientific_firewall']['P_VS_NP']=='OPEN'
+          assert z['scientific_firewall']['GENERAL_SAT_IN_P']=='NOT_PROVED'
+          print(json.dumps({'verdict':z['verdict'],'candidate_summary':z['candidate_summary'],'independent_summary':z['independent_summary']},sort_keys=True))
+          PY
+      - name: v3.10 pair-separator regression
+        run: python -m research.tools.apma_bucket_residual_pair_separator.independent_checker
+      - name: Authority notice
+        run: |
+          echo 'AUTHORITY=DIAGNOSTIC_ONLY'
+          echo 'CUT_CAP=3'
+          echo 'SEPARATOR_SIZE_GE4_ENUMERATION=0'
+          echo 'THREE_PLUS_JOIN_CHAIN=0'
+          echo 'GLOBAL_RESIDUAL_CARTESIAN_PRODUCT=0'
+          echo 'P_VS_NP=OPEN'
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="c464e68ccd1a9d3203911360271b8c751756d4ba" path=".github/workflows/trump-bucket-unique-core-residual-no-single-forensic.yml" git_blob_sha="776820cb0f78392a721bc828e7c8aefe858a5bc1" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: TRUMP Bucket Unique-Core Residual No-Single Forensic
+on:
+  push:
+    branches: [research/trump-bucket-unique-core-residual-no-single-forensic-2026-09-15]
+    paths:
+      - 'research/TRUMP_BICAMERAL_BUCKET_UNIQUE_CORE_RESIDUAL_NO_SINGLE_SEPARATOR_STRUCTURE_FORENSIC_PREREGISTRATION_2026-09-15.json'
+      - 'research/tools/apma_bucket_residual_no_single_forensic/**'
+      - '.github/workflows/trump-bucket-unique-core-residual-no-single-forensic.yml'
+  workflow_dispatch:
+jobs:
+  forensic:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Run independent forensic checker
+        run: |
+          set -euo pipefail
+          python -m research.tools.apma_bucket_residual_no_single_forensic.independent_checker | tee /tmp/forensic.json
+      - name: Assert diagnostic verdict and firewalls
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          z=json.loads(Path('/tmp/forensic.json').read_text().strip().splitlines()[-1])
+          assert z['verdict']=='PASS_DIAGNOSTIC_BICAMERAL_BUCKET_UNIQUE_CORE_RESIDUAL_NO_SINGLE_SEPARATOR_STRUCTURE_FORENSIC', z
+          assert all(z['checks'].values()), {k:v for k,v in z['checks'].items() if not v}
+          assert z['scientific_firewall']['P_VS_NP']=='OPEN'
+          assert z['scientific_firewall']['GENERAL_SAT_IN_P']=='NOT_PROVED'
+          print(json.dumps({'verdict':z['verdict'],'controls':z['controls']},sort_keys=True))
+          PY
+      - name: v3.8 single-separator regression
+        run: python -m research.tools.apma_bucket_residual_single_separator.independent_checker
+      - name: Authority notice
+        run: |
+          echo 'DIAGNOSTIC_ONLY=YES'
+          echo 'MAX_SEPARATOR_SIZE_PROFILED=2'
+          echo 'PAIR_ASSIGNMENT_BRANCHING=0'
+          echo 'THREE_PLUS_JOIN_CHAIN=0'
+          echo 'GLOBAL_RESIDUAL_CARTESIAN_PRODUCT=0'
+          echo 'P_VS_NP=OPEN'
+
+</JANUS_TRUMP_FRONTIER_MEMORY>
+
+<JANUS_TRUMP_FRONTIER_MEMORY repository="Hawkar-usls/Janus-Fundamentum" commit="c464e68ccd1a9d3203911360271b8c751756d4ba" path=".github/workflows/trump-bucket-unique-core-residual-pair-separator.yml" git_blob_sha="ece3c0662726e3bcf292202a67089ef35c7071dd" authority="UNVERIFIED_READ_ONLY_TRAINING_MEMORY">
+name: TRUMP Bucket Unique-Core Residual Pair Separator
+on:
+  push:
+    branches: [research/trump-bucket-unique-core-residual-pair-separator-2026-09-15]
+    paths:
+      - 'research/TRUMP_BICAMERAL_BUCKET_UNIQUE_CORE_RESIDUAL_TWO_VARIABLE_SEPARATOR_FACTORIZED_PAYLOAD_PREREGISTRATION_2026-09-15.json'
+      - 'research/tools/apma_bucket_residual_pair_separator/**'
+      - '.github/workflows/trump-bucket-unique-core-residual-pair-separator.yml'
+  workflow_dispatch:
+jobs:
+  pair-separator:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Run independent pair-separator checker
+        run: |
+          set -euo pipefail
+          python -m research.tools.apma_bucket_residual_pair_separator.independent_checker | tee /tmp/result.json
+      - name: Assert scoped verdict and firewalls
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          z=json.loads(Path('/tmp/result.json').read_text().strip().splitlines()[-1])
+          assert z['verdict']=='PASS_SCOPED_BICAMERAL_BUCKET_UNIQUE_CORE_RESIDUAL_TWO_VARIABLE_SEPARATOR_FACTORIZED_PAYLOAD_V1', z
+          assert all(z['checks'].values()), {k:v for k,v in z['checks'].items() if not v}
+          assert z['scientific_firewall']['P_VS_NP']=='OPEN'
+          assert z['scientific_firewall']['GENERAL_SAT_IN_P']=='NOT_PROVED'
+          print(json.dumps({'verdict':z['verdict'],'controls':z['controls']},sort_keys=True))
+          PY
+      - name: v3.8 single-separator regression
+        run: python -m research.tools.apma_bucket_residual_single_separator.independent_checker
+      - name: v3.6 residual <=2 regression
+        run: python -m research.tools.apma_bucket_residual_le2.independent_checker
+      - name: v3.5 conditioned payload regression
+        run: python -m research.tools.apma_bucket_conditioned_factorized_payload.independent_checker_v1_2
+      - name: Guarded elimination regression
+        run: python -m research.tools.apma_guarded_elimination.independent_checker
+      - name: Schaefer mixed-carrier barrier regression
+        run: python -m research.tools.apma_mixed_carrier_barrier.check_schaefer_barrier
+      - name: Authority notice
+        run: |
+          echo 'PAIR_DISCOVERY=O(V^2)'
+          echo 'PAIR_BRANCH_ASSIGNMENTS=4'
           echo 'SEPARATOR_SETS_SIZE_GE3=0'
           echo 'THREE_PLUS_JOIN_CHAIN=0'
           echo 'GLOBAL_RESIDUAL_CARTESIAN_PRODUCT=0'
