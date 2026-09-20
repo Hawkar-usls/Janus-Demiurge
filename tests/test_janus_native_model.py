@@ -11,7 +11,7 @@ import torch
 from janus_model.cli import _augment_prompt
 from janus_model.decision import _validate_candidate_set, _verified_outcome_prior, decide
 from janus_model.model import ByteTokenizer, JanusModelConfig, JanusTinyTransformer, parameter_count
-from janus_model.organs import build_bicameral_context
+from janus_model.organs import build_bicameral_context, build_modular_context
 from janus_model.reflection import build_reflection
 from janus_model.train_registry import promotion_gate, resolve_training_seed, save_checkpoint
 
@@ -91,6 +91,98 @@ class JanusNativeModelTests(unittest.TestCase):
             self.assertIn("HRAiN@aaaaaaaa=STRUCTURE", augmented)
             self.assertIn("iNaiHR@bbbbbbbb=ASSOCIATION", augmented)
             self.assertIn("VERIFY=DECIDES", augmented)
+
+    def test_pnp_research_supervisor_is_hash_bound_read_only_prompt_context(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            scouts = root / "scouts"
+            scouts.mkdir()
+            for agent_id, repo, role, commit in [
+                ("SCOUT_HRAIN_02", "Hawkar-usls/Hrain", "COGNITION_RECON", "a" * 40),
+                ("SCOUT_INAIHR_03", "Hawkar-usls/iNaiHR", "REVERSE_COGNITION_RECON", "b" * 40),
+            ]:
+                obj = {
+                    "agent_id": agent_id,
+                    "role": role,
+                    "created_at_utc": "2026-09-20T00:00:00Z",
+                    "status": "OBSERVED_REPOSITORY_STATE",
+                    "target": {"repository": repo, "ref": "main"},
+                    "focus": "test",
+                    "repository_snapshot": {
+                        "target_repo": repo,
+                        "target_commit": commit,
+                        "file_count": 1,
+                        "recent_commits": [],
+                    },
+                }
+                (scouts / f"{agent_id}.json").write_text(json.dumps(obj), encoding="utf-8")
+
+            pnp = root / "pnp.json"
+            pnp.write_text(json.dumps({
+                "schema": "janus.pnp_autoresearch_context.v1",
+                "context_sha256": "c" * 64,
+                "fundamentum": {
+                    "commit": "d" * 40,
+                    "read_only": True,
+                    "tracks": {"P_VS_NP": "OPEN"},
+                },
+                "authority": {
+                    "truth": False,
+                    "proof": False,
+                    "scientific_claim_promotion": False,
+                    "fundamentum_mutation": False,
+                    "autonomous_merge": False,
+                },
+                "research_supervisor": {
+                    "schema": "janus.research_supervisor_state.v1",
+                    "status": "ACTIVE_FAIL_CLOSED",
+                    "organ_count": 8,
+                    "route_stage_count": 8,
+                    "source_binding_current": True,
+                    "promotion_barrier": "BLOCKED",
+                    "scientific_claim_promotion": False,
+                    "fundamentum_mutation": False,
+                    "autonomous_merge": False,
+                    "p_vs_np_auto_promotion": False,
+                    "candidate_routes": [{
+                        "candidate_id": "JANUS-PNP-POLY-SAT-CANDIDATE",
+                        "status": "SUPERVISED_CANDIDATE",
+                        "next_required_stage": "PRECOMMIT_AND_DISCRIMINATE",
+                        "promotion_barrier": "BLOCKED",
+                        "stages": [{
+                            "stage": "PRECOMMIT_AND_DISCRIMINATE",
+                            "organ": "AURA_PRECOMMIT_DISCRIMINATOR",
+                            "status": "REQUIRED_NOT_RUN",
+                        }],
+                    }],
+                },
+            }), encoding="utf-8")
+
+            ctx = build_modular_context(
+                scouts,
+                pnp_research_context_path=pnp,
+            )
+            self.assertEqual(ctx["pnp_research"]["status"], "BOUND_READ_ONLY_PNP_RESEARCH_SUPERVISOR")
+            self.assertEqual(ctx["pnp_research"]["P_VS_NP"], "OPEN")
+            self.assertEqual(ctx["pnp_research"]["promotion_barrier"], "BLOCKED")
+            self.assertEqual(ctx["pnp_research"]["organ_count"], 8)
+            self.assertFalse(ctx["pnp_research"]["grants_mutation_authority"])
+            self.assertFalse(ctx["pnp_research"]["supervisor_is_proof"])
+            self.assertFalse(ctx["pnp_research"]["route_assignment_is_evidence"])
+            self.assertFalse(ctx["firewalls"]["pnp_research_grants_mutation"])
+            self.assertFalse(ctx["firewalls"]["pnp_supervisor_is_proof"])
+            self.assertFalse(ctx["firewalls"]["pnp_route_assignment_is_evidence"])
+            self.assertTrue(ctx["firewalls"]["pnp_promotion_barrier_must_remain_blocked"])
+            self.assertIn("SUPERVISOR=BLOCKED", ctx["native_prompt_suffix"])
+            self.assertIn("JANUS-PNP-POLY-SAT-CANDIDATE", ctx["native_prompt_suffix"])
+            self.assertIn("PRECOMMIT_AND_DISCRIMINATE", ctx["native_prompt_suffix"])
+            self.assertIn("ROUTE!=EVIDENCE", ctx["native_prompt_suffix"])
+
+            bad = json.loads(pnp.read_text(encoding="utf-8"))
+            bad["research_supervisor"]["promotion_barrier"] = "PASS"
+            pnp.write_text(json.dumps(bad), encoding="utf-8")
+            with self.assertRaisesRegex(RuntimeError, "ORGAN_PNP_PROMOTION_BARRIER_REJECTED"):
+                build_modular_context(scouts, pnp_research_context_path=pnp)
 
     def test_modular_reflection_accepts_self_memory_but_never_promotes_it(self):
         with tempfile.TemporaryDirectory() as td:
