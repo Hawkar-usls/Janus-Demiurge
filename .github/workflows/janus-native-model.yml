@@ -135,6 +135,7 @@ jobs:
             --scout-root scout_swarm/state/agents \
             --module-registry runtime/janus-self-memory/JANUS/MODULES/JANUS-REPOSITORY-MODULE-REGISTRY-v1.0.json \
             --self-memory-root runtime/janus-self-memory/JANUS \
+            --pnp-research-context janus_model/state/JANUS_PNP_AUTORESEARCH_CONTEXT.json \
             --out runtime/organ-context.json
           python - <<'PY'
           import json
@@ -151,7 +152,27 @@ jobs:
               raise SystemExit('JANUS_MODULAR_CONTEXT_FIREWALL_FAIL')
           if fw.get('raw_self_reflection_is_training_source') is not False:
               raise SystemExit('JANUS_SELF_MEMORY_TRAINING_FIREWALL_FAIL')
-          print(json.dumps({'modules':obj['module_count'],'self_memory_digest':obj['self_memory']['digest_sha256'],'status':obj['status']},indent=2))
+          pnp=obj.get('pnp_research') or {}
+          if pnp.get('status') != 'BOUND_READ_ONLY_PNP_RESEARCH_SUPERVISOR':
+              raise SystemExit(f"JANUS_PNP_SUPERVISOR_NOT_BOUND:{pnp.get('status')}")
+          if pnp.get('P_VS_NP') != 'OPEN' or pnp.get('promotion_barrier') != 'BLOCKED':
+              raise SystemExit('JANUS_PNP_SUPERVISOR_CLAIM_BOUNDARY_FAIL')
+          if pnp.get('grants_mutation_authority') is not False or pnp.get('supervisor_is_proof') is not False or pnp.get('route_assignment_is_evidence') is not False:
+              raise SystemExit('JANUS_PNP_SUPERVISOR_AUTHORITY_FAIL')
+          if fw.get('pnp_research_grants_mutation') is not False or fw.get('pnp_supervisor_is_proof') is not False or fw.get('pnp_route_assignment_is_evidence') is not False:
+              raise SystemExit('JANUS_PNP_SUPERVISOR_FIREWALL_FAIL')
+          if fw.get('pnp_promotion_barrier_must_remain_blocked') is not True:
+              raise SystemExit('JANUS_PNP_PROMOTION_BARRIER_FIREWALL_FAIL')
+          if 'SUPERVISOR=BLOCKED' not in str(obj.get('native_prompt_suffix') or '') or 'ROUTE!=EVIDENCE' not in str(obj.get('native_prompt_suffix') or ''):
+              raise SystemExit('JANUS_PNP_NATIVE_PROMPT_BINDING_FAIL')
+          print(json.dumps({
+              'modules':obj['module_count'],
+              'self_memory_digest':obj['self_memory']['digest_sha256'],
+              'pnp_supervisor_digest':pnp.get('digest_sha256'),
+              'pnp_candidate_routes':len(pnp.get('candidate_routes') or []),
+              'pnp_next':[r.get('next_required_stage') for r in (pnp.get('candidate_routes') or [])[:4]],
+              'status':obj['status']
+          },indent=2))
           PY
           echo 'JANUS_NATIVE_MODULAR_ORGANS=PASS'
 
