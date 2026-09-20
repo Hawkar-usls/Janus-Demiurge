@@ -1,0 +1,78 @@
+name: JANUS Autonomous P-vs-NP Research Loop
+
+on:
+  schedule:
+    - cron: '37 */2 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/janus_pnp_autoresearch.py'
+      - '.github/workflows/janus-pnp-autoresearch.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: janus-pnp-autoresearch
+  cancel-in-progress: false
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Fetch Fundamentum as read-only research source
+        run: |
+          set -euo pipefail
+          rm -rf runtime/pnp
+          mkdir -p runtime/pnp
+          git clone --depth 1 https://github.com/Hawkar-usls/Janus-Fundamentum.git runtime/pnp/Janus-Fundamentum
+      - name: Run JANUS own bounded research cycle
+        run: |
+          set -euo pipefail
+          python -m py_compile tools/janus_pnp_autoresearch.py
+          python tools/janus_pnp_autoresearch.py             --fundamentum runtime/pnp/Janus-Fundamentum             --out runtime/pnp/JANUS_PNP_AUTORESEARCH_CONTEXT.json
+          python - <<'PY'
+          import json
+          x=json.load(open('runtime/pnp/JANUS_PNP_AUTORESEARCH_CONTEXT.json'))
+          assert x['schema']=='janus.pnp_autoresearch_context.v1'
+          assert x['fundamentum']['read_only'] is True
+          assert x['authority']['truth'] is False
+          assert x['authority']['proof'] is False
+          assert x['authority']['fundamentum_mutation'] is False
+          assert x['authority']['autonomous_merge'] is False
+          assert x['fundamentum']['tracks']['P_VS_NP']=='OPEN'
+          print('JANUS_PNP_AUTORESEARCH_FIREWALL=PASS')
+          PY
+      - name: Persist JANUS-owned research context
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git switch main
+          git pull --rebase origin main
+          mkdir -p janus_model/state
+          cp runtime/pnp/JANUS_PNP_AUTORESEARCH_CONTEXT.json janus_model/state/JANUS_PNP_AUTORESEARCH_CONTEXT.json
+          git config user.name 'janus-pnp-autoresearch[bot]'
+          git config user.email 'janus-pnp-autoresearch[bot]@users.noreply.github.com'
+          git add -f janus_model/state/JANUS_PNP_AUTORESEARCH_CONTEXT.json
+          if git diff --cached --quiet; then
+            echo 'JANUS_PNP_AUTORESEARCH_NO_CHANGE'
+          else
+            git commit -m 'JANUS: refresh autonomous P-vs-NP candidate research context'
+            git push origin HEAD:main
+          fi
+      - name: Wake native JANUS brain
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run janus-native-model.yml --ref main
+          echo 'JANUS_NATIVE_WAKE=DISPATCHED'
