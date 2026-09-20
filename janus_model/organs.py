@@ -397,14 +397,21 @@ def build_modular_context(
             "terminal_authority": "VERIFY",
         },
     }
-    digest = sha256_bytes(canonical_bytes(core))
-    core["context_sha256"] = digest
     trump_digest = (trump_research.get("digest_sha256") or "NONE")[:8]
     frontier_commit = (trump_research.get("frontier_top_commit") or "NONE")[:8]
     intake = trump_research["native_frontier_intake"]
     intake_commit = (intake.get("selected_commit") or "NONE")[:8]
     pnp_digest = (pnp_research.get("digest_sha256") or "NONE")[:8]
     pnp_routes = pnp_research.get("candidate_routes") or []
+    pnp_next_stage = str((pnp_routes[0] if pnp_routes else {}).get("next_required_stage") or "NONE")
+    pnp_next_code = pnp_next_stage[:12]
+    core["native_prompt_compact"] = (
+        f"M{len(modules)}|H{hrain['target_commit'][:8]}|I{inaihr['target_commit'][:8]}|"
+        f"T{trump_research.get('P_VS_NP') or 'OPEN'}|F{intake_commit}|P{pnp_digest}|"
+        f"PBLOCKED|N{pnp_next_code}|ROUTE_NO_EVID|V2"
+    )
+    digest = sha256_bytes(canonical_bytes(core))
+    core["context_sha256"] = digest
     pnp_next = ",".join(
         f"{str(row.get('candidate_id') or '?')[:28]}->{str(row.get('next_required_stage') or 'NONE')[:28]}"
         for row in pnp_routes[:4]
