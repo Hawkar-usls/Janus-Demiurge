@@ -50,6 +50,8 @@ def build_supervisor(candidates,fabric,head,hrain,inaihr,probes):
             if stage=="SOURCE_PROVENANCE":
                 status="BOUND" if source_bound else "STALE_OR_UNRESOLVED"
                 detail=f"Fundamentum head {head}; HRAiN/iNaiHR must bind same source commit."
+            elif stage=="PRECOMMIT_AND_DISCRIMINATE":
+                detail="Use information-gain questions to separate live hypotheses, then freeze/commit the candidate before observing the target outcome when a blind test is possible."
             elif stage=="EXECUTION_RECEIPT":
                 p=probe_by_candidate.get(cand["id"])
                 if p and p.get("status")=="PASS":
