@@ -60,6 +60,22 @@ def _load_read_only_organ_context(organ_context_path: str) -> dict:
             raise SystemExit("JANUS_MODULE_OBSERVATION_AUTHORITY_FAIL")
         if firewalls.get("raw_self_reflection_is_training_source") is not False:
             raise SystemExit("JANUS_SELF_MEMORY_TRAINING_FIREWALL_FAIL")
+        pnp = obj.get("pnp_research")
+        if pnp is not None:
+            if not isinstance(pnp, dict) or pnp.get("status") != "BOUND_READ_ONLY_PNP_RESEARCH_SUPERVISOR":
+                raise SystemExit("JANUS_PNP_CONTEXT_NOT_BOUND")
+            if pnp.get("P_VS_NP") != "OPEN" or pnp.get("promotion_barrier") != "BLOCKED":
+                raise SystemExit("JANUS_PNP_CONTEXT_CLAIM_BOUNDARY_FAIL")
+            if pnp.get("grants_mutation_authority") is not False:
+                raise SystemExit("JANUS_PNP_CONTEXT_MUTATION_AUTHORITY_FAIL")
+            if pnp.get("supervisor_is_proof") is not False or pnp.get("route_assignment_is_evidence") is not False:
+                raise SystemExit("JANUS_PNP_CONTEXT_EPISTEMIC_FIREWALL_FAIL")
+            if firewalls.get("pnp_research_grants_mutation") is not False:
+                raise SystemExit("JANUS_PNP_FIREWALL_MUTATION_FAIL")
+            if firewalls.get("pnp_supervisor_is_proof") is not False or firewalls.get("pnp_route_assignment_is_evidence") is not False:
+                raise SystemExit("JANUS_PNP_FIREWALL_EPISTEMIC_FAIL")
+            if firewalls.get("pnp_promotion_barrier_must_remain_blocked") is not True:
+                raise SystemExit("JANUS_PNP_FIREWALL_PROMOTION_BARRIER_FAIL")
     return obj
 
 
