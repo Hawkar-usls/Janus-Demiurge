@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths:
       - 'tools/janus_pnp_autoresearch.py'
+      - 'janus_model/policy/JANUS_RESEARCH_ORGAN_FABRIC.json'
       - '.github/workflows/janus-pnp-autoresearch.yml'
 
 permissions:
@@ -50,7 +51,20 @@ jobs:
           assert x['authority']['fundamentum_mutation'] is False
           assert x['authority']['autonomous_merge'] is False
           assert x['fundamentum']['tracks']['P_VS_NP']=='OPEN'
+          s=x['research_supervisor']
+          assert s['schema']=='janus.research_supervisor_state.v1'
+          assert s['status']=='ACTIVE_FAIL_CLOSED'
+          assert s['organ_count']==7
+          assert s['route_stage_count']==7
+          assert s['promotion_barrier']=='BLOCKED'
+          assert s['scientific_claim_promotion'] is False
+          assert s['fundamentum_mutation'] is False
+          assert s['autonomous_merge'] is False
+          assert s['p_vs_np_auto_promotion'] is False
+          assert len(s['candidate_routes'])==len(x['janus_own_candidates'])
+          assert all(r['promotion_barrier']=='BLOCKED' for r in s['candidate_routes'])
           print('JANUS_PNP_AUTORESEARCH_FIREWALL=PASS')
+          print('JANUS_RESEARCH_ORGAN_FABRIC=PASS')
           PY
       - name: Persist JANUS-owned research context
         shell: bash
