@@ -165,12 +165,16 @@ jobs:
               raise SystemExit('JANUS_PNP_PROMOTION_BARRIER_FIREWALL_FAIL')
           if 'SUPERVISOR=BLOCKED' not in str(obj.get('native_prompt_suffix') or '') or 'ROUTE!=EVIDENCE' not in str(obj.get('native_prompt_suffix') or ''):
               raise SystemExit('JANUS_PNP_NATIVE_PROMPT_BINDING_FAIL')
+          compact=str(obj.get('native_prompt_compact') or '')
+          if 'PBLOCKED' not in compact or 'NPRECOMMIT' not in compact or 'ROUTE_NO_EVID' not in compact:
+              raise SystemExit('JANUS_PNP_NATIVE_COMPACT_BINDING_FAIL')
           print(json.dumps({
               'modules':obj['module_count'],
               'self_memory_digest':obj['self_memory']['digest_sha256'],
               'pnp_supervisor_digest':pnp.get('digest_sha256'),
               'pnp_candidate_routes':len(pnp.get('candidate_routes') or []),
               'pnp_next':[r.get('next_required_stage') for r in (pnp.get('candidate_routes') or [])[:4]],
+              'native_prompt_compact':compact,
               'status':obj['status']
           },indent=2))
           PY
