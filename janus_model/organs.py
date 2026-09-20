@@ -10,6 +10,7 @@ HRAIN_AGENT = "SCOUT_HRAIN_02"
 INAIHR_AGENT = "SCOUT_INAIHR_03"
 DEFAULT_TRUMP_RESEARCH_CONTEXT = Path("janus_model/state/JANUS_TRUMP_RESEARCH_CONTEXT.json")
 DEFAULT_TRUMP_FRONTIER_INTAKE = Path("janus_model/state/JANUS_TRUMP_FRONTIER_INTAKE.json")
+DEFAULT_PNP_RESEARCH_CONTEXT = Path("janus_model/state/JANUS_PNP_AUTORESEARCH_CONTEXT.json")
 CORE_EXPECTED = {
     HRAIN_AGENT: ("Hawkar-usls/Hrain", "LEFT_HRAIN", "STRUCTURAL_CONTEXT_GROUNDING_MEDIATOR"),
     INAIHR_AGENT: ("Hawkar-usls/iNaiHR", "RIGHT_INAIHR", "ASSOCIATIVE_CONTEXT"),
@@ -159,6 +160,110 @@ def _trump_frontier_intake_identity(path: Path | None) -> dict:
     }
 
 
+
+def _pnp_research_supervisor_identity(path: Path | None) -> dict:
+    if path is None:
+        path = DEFAULT_PNP_RESEARCH_CONTEXT
+    if not path.is_file():
+        return {
+            "status": "PNP_RESEARCH_SUPERVISOR_NOT_BOUND",
+            "digest_sha256": None,
+            "context_sha256": None,
+            "P_VS_NP": "OPEN",
+            "source_binding_current": False,
+            "organ_count": 0,
+            "route_stage_count": 0,
+            "candidate_routes": [],
+            "promotion_barrier": "BLOCKED",
+            "read_only": True,
+            "grants_mutation_authority": False,
+            "supervisor_is_proof": False,
+            "route_assignment_is_evidence": False,
+        }
+
+    obj = _load_json(path)
+    if obj.get("schema") != "janus.pnp_autoresearch_context.v1":
+        raise RuntimeError("ORGAN_PNP_CONTEXT_SCHEMA_REJECTED")
+    fundamentum = obj.get("fundamentum") or {}
+    tracks = fundamentum.get("tracks") or {}
+    if tracks.get("P_VS_NP") != "OPEN":
+        raise RuntimeError("ORGAN_PNP_P_VS_NP_MUST_REMAIN_OPEN")
+    if fundamentum.get("read_only") is not True:
+        raise RuntimeError("ORGAN_PNP_FUNDAMENTUM_READ_ONLY_REQUIRED")
+
+    authority = obj.get("authority") or {}
+    for key in ("truth", "proof", "scientific_claim_promotion", "fundamentum_mutation", "autonomous_merge"):
+        if authority.get(key) is not False:
+            raise RuntimeError(f"ORGAN_PNP_AUTHORITY_REJECTED:{key}")
+
+    supervisor = obj.get("research_supervisor") or {}
+    if supervisor.get("schema") != "janus.research_supervisor_state.v1":
+        raise RuntimeError("ORGAN_PNP_SUPERVISOR_SCHEMA_REJECTED")
+    if supervisor.get("status") != "ACTIVE_FAIL_CLOSED":
+        raise RuntimeError("ORGAN_PNP_SUPERVISOR_STATUS_REJECTED")
+    if supervisor.get("promotion_barrier") != "BLOCKED":
+        raise RuntimeError("ORGAN_PNP_PROMOTION_BARRIER_REJECTED")
+    for key in ("scientific_claim_promotion", "fundamentum_mutation", "autonomous_merge", "p_vs_np_auto_promotion"):
+        if supervisor.get(key) is not False:
+            raise RuntimeError(f"ORGAN_PNP_SUPERVISOR_AUTHORITY_REJECTED:{key}")
+
+    organ_count = supervisor.get("organ_count")
+    route_stage_count = supervisor.get("route_stage_count")
+    if not isinstance(organ_count, int) or not (1 <= organ_count <= 64):
+        raise RuntimeError("ORGAN_PNP_ORGAN_COUNT_REJECTED")
+    if not isinstance(route_stage_count, int) or not (1 <= route_stage_count <= 32):
+        raise RuntimeError("ORGAN_PNP_ROUTE_STAGE_COUNT_REJECTED")
+
+    routes = supervisor.get("candidate_routes") or []
+    if not isinstance(routes, list) or len(routes) > 64:
+        raise RuntimeError("ORGAN_PNP_CANDIDATE_ROUTES_REJECTED")
+    compact_routes = []
+    for route in routes:
+        if not isinstance(route, dict):
+            raise RuntimeError("ORGAN_PNP_CANDIDATE_ROUTE_OBJECT_REQUIRED")
+        candidate_id = route.get("candidate_id")
+        if not isinstance(candidate_id, str) or not candidate_id:
+            raise RuntimeError("ORGAN_PNP_CANDIDATE_ID_REJECTED")
+        if route.get("promotion_barrier") != "BLOCKED":
+            raise RuntimeError(f"ORGAN_PNP_CANDIDATE_BARRIER_REJECTED:{candidate_id}")
+        stages = route.get("stages") or []
+        if not isinstance(stages, list) or len(stages) > 32:
+            raise RuntimeError(f"ORGAN_PNP_CANDIDATE_STAGES_REJECTED:{candidate_id}")
+        compact_stages = []
+        for stage in stages:
+            if not isinstance(stage, dict):
+                raise RuntimeError(f"ORGAN_PNP_STAGE_OBJECT_REQUIRED:{candidate_id}")
+            name = stage.get("stage")
+            organ = stage.get("organ")
+            status = stage.get("status")
+            if not all(isinstance(v, str) and v for v in (name, organ, status)):
+                raise RuntimeError(f"ORGAN_PNP_STAGE_FIELDS_REJECTED:{candidate_id}")
+            compact_stages.append({"stage": name, "organ": organ, "status": status})
+        compact_routes.append({
+            "candidate_id": candidate_id,
+            "status": route.get("status"),
+            "next_required_stage": route.get("next_required_stage"),
+            "promotion_barrier": "BLOCKED",
+            "stages": compact_stages,
+        })
+
+    return {
+        "status": "BOUND_READ_ONLY_PNP_RESEARCH_SUPERVISOR",
+        "digest_sha256": sha256_file(path),
+        "context_sha256": obj.get("context_sha256"),
+        "P_VS_NP": "OPEN",
+        "fundamentum_commit": fundamentum.get("commit"),
+        "source_binding_current": supervisor.get("source_binding_current") is True,
+        "organ_count": organ_count,
+        "route_stage_count": route_stage_count,
+        "candidate_routes": compact_routes,
+        "promotion_barrier": "BLOCKED",
+        "read_only": True,
+        "grants_mutation_authority": False,
+        "supervisor_is_proof": False,
+        "route_assignment_is_evidence": False,
+    }
+
 def _trump_research_identity(path: Path | None, intake_path: Path | None = None) -> dict:
     intake = _trump_frontier_intake_identity(intake_path)
     if path is None:
@@ -216,6 +321,7 @@ def build_modular_context(
     self_memory_root: Path | None = None,
     trump_research_context_path: Path | None = None,
     trump_frontier_intake_path: Path | None = None,
+    pnp_research_context_path: Path | None = None,
 ) -> dict:
     if module_registry_path is not None:
         registry = _load_json(module_registry_path)
@@ -254,13 +360,14 @@ def build_modular_context(
     inaihr = modules[INAIHR_AGENT]
     self_memory = _self_memory_identity(self_memory_root)
     trump_research = _trump_research_identity(trump_research_context_path, trump_frontier_intake_path)
+    pnp_research = _pnp_research_supervisor_identity(pnp_research_context_path)
     degraded_module_ids = sorted(
         agent_id for agent_id, module in modules.items() if module.get("observation_degraded") is True
     )
     core = {
         "schema": "janus.model.modular_organ_context.v3",
         "status": "READ_ONLY_MODULAR_ORGAN_CONTEXT",
-        "canonical_formula": "HRAIN_GROUNDS -> EYE_BRIDGES -> INAIHR_ASSOCIATES -> HRAIN_MEDIATES -> TRUMP_RESEARCH_INFORMS -> NATIVE_MODEL_DECIDES -> VERIFY_DECIDES",
+        "canonical_formula": "HRAIN_GROUNDS -> EYE_BRIDGES -> INAIHR_ASSOCIATES -> HRAIN_MEDIATES -> TRUMP_RESEARCH_INFORMS -> PNP_SUPERVISOR_ROUTES -> NATIVE_MODEL_DECIDES -> VERIFY_DECIDES",
         "module_count": len(modules),
         "degraded_module_count": len(degraded_module_ids),
         "degraded_module_ids": degraded_module_ids,
@@ -269,6 +376,7 @@ def build_modular_context(
         "organs": {"HRAiN": hrain, "iNaiHR": inaihr},
         "self_memory": self_memory,
         "trump_research": trump_research,
+        "pnp_research": pnp_research,
         "firewalls": {
             "read_only": True,
             "module_observation_grants_mutation": False,
@@ -282,6 +390,10 @@ def build_modular_context(
             "trump_context_grants_mutation": False,
             "trump_frontier_is_proof": False,
             "trump_frontier_intake_is_proof": False,
+            "pnp_research_grants_mutation": False,
+            "pnp_supervisor_is_proof": False,
+            "pnp_route_assignment_is_evidence": False,
+            "pnp_promotion_barrier_must_remain_blocked": True,
             "terminal_authority": "VERIFY",
         },
     }
@@ -291,12 +403,19 @@ def build_modular_context(
     frontier_commit = (trump_research.get("frontier_top_commit") or "NONE")[:8]
     intake = trump_research["native_frontier_intake"]
     intake_commit = (intake.get("selected_commit") or "NONE")[:8]
+    pnp_digest = (pnp_research.get("digest_sha256") or "NONE")[:8]
+    pnp_routes = pnp_research.get("candidate_routes") or []
+    pnp_next = ",".join(
+        f"{str(row.get('candidate_id') or '?')[:28]}->{str(row.get('next_required_stage') or 'NONE')[:28]}"
+        for row in pnp_routes[:4]
+    ) or "NONE"
     core["native_prompt_suffix"] = (
         f"CTX MODULES={len(modules)}; DEGRADED={len(degraded_module_ids)}; HRAiN@{hrain['target_commit'][:8]}=STRUCTURE; "
         f"iNaiHR@{inaihr['target_commit'][:8]}=ASSOCIATION; "
         f"SELF@{(self_memory.get('digest_sha256') or 'NONE')[:8]}; "
         f"TRUMP@{trump_digest}=OPEN; FRONTIER@{frontier_commit}; INTAKE@{intake_commit}=READ_ONLY; "
-        "VERIFY=DECIDES; AGREEMENT!=TRUTH; FRONTIER!=PROOF; INTAKE!=PROOF; PATCH!=PASS"
+        f"PNP@{pnp_digest}=OPEN; SUPERVISOR={pnp_research.get('promotion_barrier', 'BLOCKED')}; PNP_NEXT={pnp_next}; "
+        "VERIFY=DECIDES; AGREEMENT!=TRUTH; FRONTIER!=PROOF; INTAKE!=PROOF; ROUTE!=EVIDENCE; SUPERVISOR!=PROOF; PATCH!=PASS"
     )
     return core
 
@@ -313,6 +432,7 @@ def main() -> None:
     ap.add_argument("--self-memory-root")
     ap.add_argument("--trump-research-context")
     ap.add_argument("--trump-frontier-intake")
+    ap.add_argument("--pnp-research-context")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
     context = build_modular_context(
@@ -321,6 +441,7 @@ def main() -> None:
         Path(args.self_memory_root) if args.self_memory_root else None,
         Path(args.trump_research_context) if args.trump_research_context else None,
         Path(args.trump_frontier_intake) if args.trump_frontier_intake else None,
+        Path(args.pnp_research_context) if args.pnp_research_context else None,
     )
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -338,6 +459,10 @@ def main() -> None:
         "trump_frontier_top_commit": context["trump_research"]["frontier_top_commit"],
         "trump_intake_status": intake["status"],
         "trump_intake_commit": intake["selected_commit"],
+        "pnp_research_status": context["pnp_research"]["status"],
+        "pnp_research_digest": context["pnp_research"]["digest_sha256"],
+        "pnp_promotion_barrier": context["pnp_research"]["promotion_barrier"],
+        "pnp_candidate_route_count": len(context["pnp_research"]["candidate_routes"]),
         "hrain_commit": context["organs"]["HRAiN"]["target_commit"],
         "inaihr_commit": context["organs"]["iNaiHR"]["target_commit"],
     }, indent=2))
