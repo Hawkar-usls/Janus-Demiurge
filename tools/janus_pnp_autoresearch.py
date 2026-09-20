@@ -31,7 +31,7 @@ def run_probe(root,rel,timeout=150):
     p=root/rel
     if not p.exists():return {"path":rel,"status":"MISSING"}
     try:
-        r=subprocess.run(["python",str(p)],cwd=str(root),text=True,capture_output=True,timeout=timeout)
+        r=subprocess.run(["python",rel],cwd=str(root),text=True,capture_output=True,timeout=timeout)
         tail=((r.stdout or "")+"\n"+(r.stderr or ""))[-5000:]
         return {"path":rel,"status":"PASS" if r.returncode==0 else "FAIL","returncode":r.returncode,"output_tail":tail}
     except subprocess.TimeoutExpired:
