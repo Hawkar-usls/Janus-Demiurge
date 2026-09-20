@@ -177,6 +177,24 @@ class JanusNativeModelTests(unittest.TestCase):
             self.assertIn("JANUS-PNP-POLY-SAT-CANDIDATE", ctx["native_prompt_suffix"])
             self.assertIn("PRECOMMIT_AND_DISCRIMINATE", ctx["native_prompt_suffix"])
             self.assertIn("ROUTE!=EVIDENCE", ctx["native_prompt_suffix"])
+            self.assertIn("PBLOCKED", ctx["native_prompt_compact"])
+            self.assertIn("NPRECOMMIT_AN", ctx["native_prompt_compact"])
+            self.assertIn("ROUTE_NO_EVID", ctx["native_prompt_compact"])
+
+            runtime_ctx = root / "runtime-context.json"
+            runtime_ctx.write_text(json.dumps(ctx), encoding="utf-8")
+            packed = _augment_prompt("QUESTION", str(runtime_ctx), 128)
+            self.assertIn("PBLOCKED", packed)
+            self.assertIn("NPRECOMMIT_AN", packed)
+            self.assertIn("ROUTE_NO_EVID", packed)
+            self.assertLessEqual(len(ByteTokenizer.encode(packed, bos=True)), 128)
+
+            tampered_ctx = dict(ctx)
+            tampered_ctx["pnp_research"] = dict(ctx["pnp_research"])
+            tampered_ctx["pnp_research"]["promotion_barrier"] = "PASS"
+            runtime_ctx.write_text(json.dumps(tampered_ctx), encoding="utf-8")
+            with self.assertRaisesRegex(SystemExit, "JANUS_PNP_CONTEXT_CLAIM_BOUNDARY_FAIL"):
+                _augment_prompt("QUESTION", str(runtime_ctx), 128)
 
             bad = json.loads(pnp.read_text(encoding="utf-8"))
             bad["research_supervisor"]["promotion_barrier"] = "PASS"
