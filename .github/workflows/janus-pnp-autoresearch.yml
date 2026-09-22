@@ -9,6 +9,9 @@ on:
     paths:
       - 'tools/janus_pnp_autoresearch.py'
       - 'janus_model/policy/JANUS_RESEARCH_ORGAN_FABRIC.json'
+      - 'janus_model/policy/JANUS_PNP_CORPUS_FABRIC.json'
+      - 'janus_model/extensions/pnp_corpus_memory.py'
+      - 'janus_model/corpus.py'
       - '.github/workflows/janus-pnp-autoresearch.yml'
 
 permissions:
@@ -30,6 +33,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Verify PNP corpus memory adapter
+        run: |
+          set -euo pipefail
+          python -m py_compile janus_model/extensions/pnp_corpus_memory.py janus_model/corpus.py tools/janus_pnp_autoresearch.py
+          python janus_model/extensions/pnp_corpus_memory.py --self-test
+
       - name: Fetch Fundamentum as read-only research source
         run: |
           set -euo pipefail
@@ -66,6 +75,25 @@ jobs:
           print('JANUS_PNP_AUTORESEARCH_FIREWALL=PASS')
           print('JANUS_RESEARCH_ORGAN_FABRIC=PASS')
           PY
+
+      - name: Build read-only TOPA PNP corpus memory when available
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          python janus_model/extensions/pnp_corpus_memory.py \
+            --out-text runtime/pnp/JANUS_PNP_CORPUS_MEMORY.txt \
+            --out-manifest runtime/pnp/JANUS_PNP_CORPUS_MEMORY_MANIFEST.json \
+            --max-bytes 300000
+          RC=$?
+          set -e
+          if [ "$RC" -eq 0 ]; then
+            echo 'JANUS_PNP_CORPUS_MEMORY=READY'
+          else
+            rm -f runtime/pnp/JANUS_PNP_CORPUS_MEMORY.txt runtime/pnp/JANUS_PNP_CORPUS_MEMORY_MANIFEST.json
+            echo "JANUS_PNP_CORPUS_MEMORY=DEGRADED_SOURCE_UNAVAILABLE:$RC"
+          fi
+
       - name: Persist JANUS-owned research context
         shell: bash
         run: |
@@ -75,9 +103,16 @@ jobs:
           git pull --rebase origin main
           mkdir -p janus_model/state
           cp runtime/pnp/JANUS_PNP_AUTORESEARCH_CONTEXT.json janus_model/state/JANUS_PNP_AUTORESEARCH_CONTEXT.json
+          if [ -f runtime/pnp/JANUS_PNP_CORPUS_MEMORY.txt ]; then
+            cp runtime/pnp/JANUS_PNP_CORPUS_MEMORY.txt janus_model/state/JANUS_PNP_CORPUS_MEMORY.txt
+            cp runtime/pnp/JANUS_PNP_CORPUS_MEMORY_MANIFEST.json janus_model/state/JANUS_PNP_CORPUS_MEMORY_MANIFEST.json
+          fi
           git config user.name 'janus-pnp-autoresearch[bot]'
           git config user.email 'janus-pnp-autoresearch[bot]@users.noreply.github.com'
           git add -f janus_model/state/JANUS_PNP_AUTORESEARCH_CONTEXT.json
+          if [ -f janus_model/state/JANUS_PNP_CORPUS_MEMORY.txt ] && [ -f janus_model/state/JANUS_PNP_CORPUS_MEMORY_MANIFEST.json ]; then
+            git add -f janus_model/state/JANUS_PNP_CORPUS_MEMORY.txt janus_model/state/JANUS_PNP_CORPUS_MEMORY_MANIFEST.json
+          fi
           if git diff --cached --quiet; then
             echo 'JANUS_PNP_AUTORESEARCH_NO_CHANGE'
           else
