@@ -62,8 +62,8 @@ jobs:
           set -euo pipefail
           rm -rf runtime/fundamentum
           mkdir -p runtime
-          git clone --filter=blob:none --no-checkout https://github.com/Hawkar-usls/Janus-Fundamentum.git runtime/fundamentum
-          git -C runtime/fundamentum fetch --prune origin '+refs/heads/*:refs/remotes/origin/*'
+          git clone --filter=blob:limit=1m --no-checkout https://github.com/Hawkar-usls/Janus-Fundamentum.git runtime/fundamentum
+          git -C runtime/fundamentum fetch --filter=blob:limit=1m --prune origin '+refs/heads/*:refs/remotes/origin/*'
           echo "KEYMASTER_FUNDAMENTUM_BRANCHES=$(git -C runtime/fundamentum for-each-ref --format='%(refname:short)' refs/remotes/origin | wc -l)"
 
       - name: Run proof-carrying mechanism composition
