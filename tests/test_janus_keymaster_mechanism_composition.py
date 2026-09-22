@@ -97,6 +97,17 @@ class KeymasterMechanismCompositionTests(unittest.TestCase):
                 "authority": {"test": True},
             }
             (repo / "registry" / "typed.json").write_text(json.dumps(typed), encoding="utf-8")
+            barrier = {
+                "schema": "janus.keymaster.barrier.v1",
+                "id": "TEST_DYNAMIC_BARRIER",
+                "from_type": "TEST_A",
+                "to_type": "TEST_B",
+                "status": "PROVED",
+                "kind": "ANTI_LOOP",
+                "scope": "TEST_ONLY",
+                "authority": {"test": True}
+            }
+            (repo / "registry" / "barrier.json").write_text(json.dumps(barrier), encoding="utf-8")
             (repo / "registry" / "untyped.json").write_text(
                 json.dumps({"artifact_id": "UNTYPED_PASS", "status": "PASS"}),
                 encoding="utf-8",
@@ -116,6 +127,8 @@ class KeymasterMechanismCompositionTests(unittest.TestCase):
             self.assertGreaterEqual(len(scan["refs"]), 2)
             dyn = {x["id"] for x in scan["dynamic_mechanisms"]}
             self.assertIn("TEST_TYPED_MECHANISM", dyn)
+            dynamic_barriers = {x["id"] for x in scan["dynamic_barriers"]}
+            self.assertIn("TEST_DYNAMIC_BARRIER", dynamic_barriers)
             queued = {x["artifact_id"] for x in scan["normalization_queue"]}
             self.assertIn("UNTYPED_PASS", queued)
             self.assertIn("BRANCH_PASS", queued)
@@ -144,6 +157,40 @@ class KeymasterMechanismCompositionTests(unittest.TestCase):
             queued = {x["artifact_id"] for x in scan["normalization_queue"]}
             self.assertIn("NESTED_PASS", queued)
             self.assertNotIn("OPAQUE", queued)
+
+    def test_dynamic_barrier_penalty_demotes_known_antiloop(self) -> None:
+        reg = load_registry(REGISTRY)
+        cfg = load_contract(CONTRACT)
+        scan = {
+            "snapshot_sha256": "3" * 64,
+            "refs": [],
+            "artifacts": [],
+            "dynamic_mechanisms": [],
+            "dynamic_barriers": [{
+                "id": "TEST_EP_REPACKAGING",
+                "from_type": "THREE_SHEET_DISJUNCTIVE_CSP",
+                "to_type": "EP_COMPACT_REPRESENTATION",
+                "status": "PROVED",
+                "kind": "REPACKAGING",
+                "scope": "TEST_ONLY",
+                "authority": {"test": True},
+                "penalty": 12,
+            }],
+            "normalization_queue": [],
+        }
+        report = compose(reg, scan, cfg)
+        top = report["missing_interface_queue"][0]
+        self.assertNotEqual(
+            (top["from_type"], top["to_type"]),
+            ("THREE_SHEET_DISJUNCTIVE_CSP", "EP_COMPACT_REPRESENTATION"),
+        )
+        hit = next(
+            x for x in report["missing_interface_queue"]
+            if (x["from_type"], x["to_type"]) ==
+               ("THREE_SHEET_DISJUNCTIVE_CSP", "EP_COMPACT_REPRESENTATION")
+        )
+        self.assertEqual(hit["barrier_penalty"], 12)
+        self.assertEqual(hit["barriers"][0]["kind"], "REPACKAGING")
 
     def test_dynamic_candidate_cannot_self_promote(self) -> None:
         reg = load_registry(REGISTRY)
