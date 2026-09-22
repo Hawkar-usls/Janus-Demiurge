@@ -1,0 +1,147 @@
+name: JANUS Keymaster Mechanism Composition
+
+on:
+  schedule:
+    - cron: '17 */2 * * *'
+  workflow_dispatch:
+  repository_dispatch:
+    types: [fundamentum-branch-update]
+  pull_request:
+    paths:
+      - 'janus_model/keymaster_mechanism_composer.py'
+      - 'janus_model/keymaster/MECHANISM_COMPOSITION_CONTRACT-v1.json'
+      - 'janus_model/keymaster/MECHANISM_REGISTRY-v0.json'
+      - 'janus_model/keymaster/MECHANISM_COMPOSITION_README.md'
+      - 'tests/test_janus_keymaster_mechanism_composition.py'
+      - '.github/workflows/janus-keymaster-mechanism-composition.yml'
+  push:
+    branches:
+      - main
+      - feature/keymaster-mechanism-composition-v0
+    paths:
+      - 'janus_model/keymaster_mechanism_composer.py'
+      - 'janus_model/keymaster/MECHANISM_COMPOSITION_CONTRACT-v1.json'
+      - 'janus_model/keymaster/MECHANISM_REGISTRY-v0.json'
+      - 'janus_model/keymaster/MECHANISM_COMPOSITION_README.md'
+      - 'tests/test_janus_keymaster_mechanism_composition.py'
+      - '.github/workflows/janus-keymaster-mechanism-composition.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: janus-keymaster-mechanism-composition
+  cancel-in-progress: false
+
+jobs:
+  compose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout Demiurge
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verify Keymaster composition kernel
+        run: |
+          set -euo pipefail
+          python -m py_compile janus_model/keymaster_mechanism_composer.py
+          python -m unittest -v tests/test_janus_keymaster_mechanism_composition.py
+
+      - name: Fetch all Fundamentum branches read-only
+        run: |
+          set -euo pipefail
+          rm -rf runtime/fundamentum
+          mkdir -p runtime
+          git clone --filter=blob:none --no-checkout https://github.com/Hawkar-usls/Janus-Fundamentum.git runtime/fundamentum
+          git -C runtime/fundamentum fetch --prune origin '+refs/heads/*:refs/remotes/origin/*'
+          echo "KEYMASTER_FUNDAMENTUM_BRANCHES=$(git -C runtime/fundamentum for-each-ref --format='%(refname:short)' refs/remotes/origin | wc -l)"
+
+      - name: Run proof-carrying mechanism composition
+        run: |
+          set -euo pipefail
+          python -m janus_model.keymaster_mechanism_composer \
+            --registry janus_model/keymaster/MECHANISM_REGISTRY-v0.json \
+            --contract janus_model/keymaster/MECHANISM_COMPOSITION_CONTRACT-v1.json \
+            --fundamentum runtime/fundamentum \
+            --out runtime/keymaster-mechanism-composition.json
+
+      - name: Verify scientific firewalls
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          x=json.load(open('runtime/keymaster-mechanism-composition.json'))
+          assert x['schema']=='janus.keymaster.mechanism_composition_report.v1'
+          assert x['status']=='COMPLETE'
+          f=x['firewall']
+          assert f['fundamentum_is_scientific_authority'] is True
+          assert f['automatic_theorem_promotion'] is False
+          assert f['automatic_d1_promotion'] is False
+          assert f['automatic_p_equals_np_claim'] is False
+          assert f['training_signal_is_evidence'] is False
+          assert f['complete_path_is_proof'] is False
+          assert f['D1']=='EMPTY'
+          assert f['P_VS_NP']=='OPEN'
+          print('JANUS_KEYMASTER_MECHANISM_FIREWALL=PASS')
+          print('UNIVERSAL_LIFECYCLE_CANDIDATES',len(x['complete_universal_lifecycle_candidates']))
+          print('MISSING_INTERFACES',len(x['missing_interface_queue']))
+          print('NORMALIZATION_QUEUE',len(x['normalization_queue']))
+          PY
+
+      - name: Decide whether composition state changed
+        id: decide
+        shell: bash
+        run: |
+          set -euo pipefail
+          NEW_SHA=$(python -c "import json; print(json.load(open('runtime/keymaster-mechanism-composition.json'))['report_sha256'])")
+          OLD_SHA=''
+          if [ -f janus_model/state/KEYMASTER_MECHANISM_COMPOSITION_LATEST.json ]; then
+            OLD_SHA=$(python -c "import json; print(json.load(open('janus_model/state/KEYMASTER_MECHANISM_COMPOSITION_LATEST.json')).get('report_sha256',''))")
+          fi
+          if [ "$NEW_SHA" = "$OLD_SHA" ]; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+          fi
+          echo "new_sha=$NEW_SHA" >> "$GITHUB_OUTPUT"
+          echo "old_sha=$OLD_SHA" >> "$GITHUB_OUTPUT"
+          echo "KEYMASTER_MECHANISM_STATE=$OLD_SHA->$NEW_SHA"
+
+      - name: Persist non-authoritative Keymaster state on main
+        if: steps.decide.outputs.changed == 'true' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p janus_model/state janus_model/receipts
+          cp runtime/keymaster-mechanism-composition.json janus_model/state/KEYMASTER_MECHANISM_COMPOSITION_LATEST.json
+          cp runtime/keymaster-mechanism-composition.json "janus_model/receipts/keymaster-mechanism-composition-${GITHUB_RUN_ID}.json"
+          git config user.name 'janus-keymaster-mechanism-composition'
+          git config user.email 'janus-keymaster-mechanism-composition@users.noreply.github.com'
+          git add -f \
+            janus_model/state/KEYMASTER_MECHANISM_COMPOSITION_LATEST.json \
+            "janus_model/receipts/keymaster-mechanism-composition-${GITHUB_RUN_ID}.json"
+          if git diff --cached --quiet; then
+            echo 'JANUS_KEYMASTER_MECHANISM_NO_STATE_CHANGE'
+            exit 0
+          fi
+          git commit -m "JANUS Keymaster mechanism composition: remember run ${GITHUB_RUN_ID}"
+          git pull --rebase origin main
+          git push origin HEAD:main
+          echo 'JANUS_KEYMASTER_MECHANISM_PERSIST=PASS'
+
+      - name: Upload mechanism composition evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-keymaster-mechanism-composition-${{ github.run_id }}
+          path: runtime/keymaster-mechanism-composition.json
+          if-no-files-found: error
+          retention-days: 30
