@@ -63,6 +63,13 @@ class KeymasterMechanismCompositionTests(unittest.TestCase):
         self.assertTrue(report["missing_interface_queue"])
         pairs = {(x["from_type"], x["to_type"]) for x in report["missing_interface_queue"]}
         self.assertIn(("SIGNED_OR3_CSP", "TRACTABLE_FIXED_TEMPLATE_CSP"), pairs)
+        self.assertIn(("ARBITRARY_SIGNED_3CNF", "SAT_DECISION_WITNESS"), pairs)
+        self.assertNotEqual(
+            (report["missing_interface_queue"][0]["from_type"], report["missing_interface_queue"][0]["to_type"]),
+            ("ARBITRARY_SIGNED_3CNF", "SAT_DECISION_WITNESS"),
+        )
+        contexts = [x["proved_context_edges"] for x in report["missing_interface_queue"]]
+        self.assertEqual(contexts, sorted(contexts, reverse=True))
 
     def test_scan_new_branch_ingests_typed_contract_and_queues_untyped_pass(self) -> None:
         cfg = load_contract(CONTRACT)
