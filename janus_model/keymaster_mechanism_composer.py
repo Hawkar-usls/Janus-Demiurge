@@ -447,7 +447,10 @@ def compose(registry: dict, scan: dict, contract: dict) -> dict:
             gaps.append({
                 "from_type": src,
                 "to_type": dst,
-                "distance_to_goal_if_closed": fd + 1 + bd,
+                "proved_prefix_edges": fd,
+                "proved_suffix_edges": bd,
+                "proved_context_edges": fd + bd,
+                "complete_path_edges_if_closed": fd + 1 + bd,
                 "barriers": _barriers_for_gap(registry.get("barriers", []), src, dst),
                 "required_contract": {
                     "semantics": "EXACT",
@@ -458,7 +461,15 @@ def compose(registry: dict, scan: dict, contract: dict) -> dict:
                     "universal_scope": True,
                 },
             })
-    gaps.sort(key=lambda x: (x["distance_to_goal_if_closed"], len(x["barriers"]), x["from_type"], x["to_type"]))
+    gaps.sort(
+        key=lambda x: (
+            -x["proved_context_edges"],
+            len(x["barriers"]),
+            -min(x["proved_prefix_edges"], x["proved_suffix_edges"]),
+            x["from_type"],
+            x["to_type"],
+        )
+    )
 
     candidate_only = sorted(
         [
