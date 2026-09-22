@@ -14,6 +14,7 @@ BASE="https://raw.githubusercontent.com/Hawkar-usls/TOPA/janus/pnp-autoresearch-
 URLS={
   "corpus":BASE+"/CORPUS.json",
   "ledger":BASE+"/CORPUS_WEIGHT_LEDGER.json",
+  "dedupe":BASE+"/DEDUPE_RECEIPT.json",
   "drive_receipt":BASE+"/DRIVE_INDEX_RECEIPT.json",
 }
 
@@ -36,16 +37,26 @@ def fetch_json(url:str,optional:bool=False)->dict:
             return {"status":"UNAVAILABLE","error":f"{type(exc).__name__}:{exc}"}
         raise
 
-def validate(corpus:dict,ledger:dict)->None:
+def semantic_hash(obj:dict)->str:
+    clean=dict(obj)
+    clean.pop("semantic_sha256",None)
+    return sh(clean)
+
+def validate(corpus:dict,ledger:dict,dedupe:dict)->None:
     if corpus.get("schema")!="janus.topa.pnp_corpus.v1":
         raise RuntimeError("PNP_CORPUS_SCHEMA_REJECTED")
     if corpus.get("P_VS_NP")!="OPEN":
         raise RuntimeError("PNP_CORPUS_P_VS_NP_MUST_REMAIN_OPEN")
+    if corpus.get("D1")!="EMPTY":
+        raise RuntimeError("PNP_CORPUS_D1_MUST_REMAIN_EMPTY")
     if corpus.get("successor_algorithm")!="LOCKED":
         raise RuntimeError("PNP_CORPUS_SUCCESSOR_LOCK_REQUIRED")
     auth=corpus.get("authority") or {}
     if auth.get("truth") is not False or auth.get("proof") is not False or auth.get("scientific_claim_promotion") is not False:
         raise RuntimeError("PNP_CORPUS_AUTHORITY_REJECTED")
+    corpus_sha=semantic_hash(corpus)
+    if corpus.get("semantic_sha256")!=corpus_sha:
+        raise RuntimeError("PNP_CORPUS_SEMANTIC_SHA256_MISMATCH")
     if ledger.get("schema")!="janus.topa.pnp_corpus_weight_ledger.v1":
         raise RuntimeError("PNP_WEIGHT_LEDGER_SCHEMA_REJECTED")
     la=ledger.get("authority") or {}
@@ -53,6 +64,17 @@ def validate(corpus:dict,ledger:dict)->None:
         raise RuntimeError("PNP_WEIGHT_LEDGER_AUTHORITY_REJECTED")
     if la.get("source_documents_immutable") is not True:
         raise RuntimeError("PNP_WEIGHT_LEDGER_SOURCE_IMMUTABILITY_REQUIRED")
+    ledger_sha=semantic_hash(ledger)
+    if ledger.get("semantic_sha256")!=ledger_sha:
+        raise RuntimeError("PNP_WEIGHT_LEDGER_SEMANTIC_SHA256_MISMATCH")
+    if ledger.get("corpus_semantic_sha256")!=corpus_sha:
+        raise RuntimeError("PNP_CORPUS_LEDGER_BINDING_MISMATCH")
+    if dedupe.get("schema")!="janus.topa.pnp_corpus_dedupe_receipt.v1" or dedupe.get("status")!="PASS":
+        raise RuntimeError("PNP_DEDUPE_RECEIPT_REJECTED")
+    if dedupe.get("corpus_semantic_sha256")!=corpus_sha:
+        raise RuntimeError("PNP_DEDUPE_CORPUS_BINDING_MISMATCH")
+    if dedupe.get("ledger_semantic_sha256")!=ledger_sha:
+        raise RuntimeError("PNP_DEDUPE_LEDGER_BINDING_MISMATCH")
 
 def render_record(row:dict)->str:
     routing=row.get("routing") or {}
@@ -79,8 +101,8 @@ def render_record(row:dict)->str:
       + ">\n"+text+"\n</JANUS_PNP_CORPUS_RECORD>\n"
     )
 
-def build(corpus:dict,ledger:dict,drive_receipt:dict,max_bytes:int)->tuple[str,dict]:
-    validate(corpus,ledger)
+def build(corpus:dict,ledger:dict,dedupe:dict,drive_receipt:dict,max_bytes:int)->tuple[str,dict]:
+    validate(corpus,ledger,dedupe)
     rows=list(corpus.get("records") or [])
     rows.sort(key=lambda r:(-float((r.get("routing") or {}).get("attention_priority") or 0),str(r.get("record_id") or "")))
     chunks=[];used=0;selected=[]
@@ -106,6 +128,9 @@ def build(corpus:dict,ledger:dict,drive_receipt:dict,max_bytes:int)->tuple[str,d
       "source_branch":"janus/pnp-autoresearch-state",
       "source_corpus_semantic_sha256":corpus.get("semantic_sha256"),
       "source_ledger_semantic_sha256":ledger.get("semantic_sha256"),
+      "source_dedupe_corpus_semantic_sha256":dedupe.get("corpus_semantic_sha256"),
+      "source_dedupe_ledger_semantic_sha256":dedupe.get("ledger_semantic_sha256"),
+      "state_bundle_binding":"PASS",
       "drive_index_status":drive_receipt.get("status"),
       "training_pack_sha256":sha_bytes(raw),
       "training_bytes":len(raw),
@@ -140,19 +165,35 @@ def build(corpus:dict,ledger:dict,drive_receipt:dict,max_bytes:int)->tuple[str,d
 
 def self_test()->dict:
     corpus={
-      "schema":"janus.topa.pnp_corpus.v1","P_VS_NP":"OPEN","successor_algorithm":"LOCKED",
-      "semantic_sha256":"c","authority":{"truth":False,"proof":False,"scientific_claim_promotion":False},
+      "schema":"janus.topa.pnp_corpus.v1","P_VS_NP":"OPEN","D1":"EMPTY","successor_algorithm":"LOCKED",
+      "authority":{"truth":False,"proof":False,"scientific_claim_promotion":False},
       "records":[{"record_id":"r1","publication_key":"k","title":"T","source_url":"u","text":"x","routing":{"attention_priority":0.8}}]
     }
+    corpus["semantic_sha256"]=semantic_hash(corpus)
     ledger={
-      "schema":"janus.topa.pnp_corpus_weight_ledger.v1","semantic_sha256":"w",
+      "schema":"janus.topa.pnp_corpus_weight_ledger.v1",
+      "corpus_semantic_sha256":corpus["semantic_sha256"],
       "authority":{"weights_are_truth":False,"weights_are_evidence":False,"source_documents_immutable":True}
     }
-    text,m=build(corpus,ledger,{"status":"TEST"},10000)
+    ledger["semantic_sha256"]=semantic_hash(ledger)
+    dedupe={
+      "schema":"janus.topa.pnp_corpus_dedupe_receipt.v1","status":"PASS",
+      "corpus_semantic_sha256":corpus["semantic_sha256"],
+      "ledger_semantic_sha256":ledger["semantic_sha256"],
+    }
+    text,m=build(corpus,ledger,dedupe,{"status":"TEST"},10000)
     assert "JANUS_PNP_CORPUS_RECORD" in text
     assert m["training_material_is_truth"] is False
     assert m["authority"]["authority_delta"]==0
-    return {"schema":"janus.pnp.corpus_training_memory.self_test.v1","status":"PASS","authority_delta":0}
+    assert m["state_bundle_binding"]=="PASS"
+    bad=dict(dedupe);bad["ledger_semantic_sha256"]="0"*64
+    try:
+        validate(corpus,ledger,bad)
+    except RuntimeError as exc:
+        assert "PNP_DEDUPE_LEDGER_BINDING_MISMATCH" in str(exc)
+    else:
+        raise AssertionError("mixed state bundle must fail closed")
+    return {"schema":"janus.pnp.corpus_training_memory.self_test.v1","status":"PASS","authority_delta":0,"state_bundle_binding":True}
 
 def main()->int:
     ap=argparse.ArgumentParser()
@@ -167,8 +208,9 @@ def main()->int:
         raise SystemExit("OUT_TEXT_AND_MANIFEST_REQUIRED")
     corpus=fetch_json(URLS["corpus"])
     ledger=fetch_json(URLS["ledger"])
+    dedupe=fetch_json(URLS["dedupe"])
     drive=fetch_json(URLS["drive_receipt"],optional=True)
-    text,manifest=build(corpus,ledger,drive,a.max_bytes)
+    text,manifest=build(corpus,ledger,dedupe,drive,a.max_bytes)
     tp=Path(a.out_text);mp=Path(a.out_manifest)
     tp.parent.mkdir(parents=True,exist_ok=True);mp.parent.mkdir(parents=True,exist_ok=True)
     tp.write_text(text,encoding="utf-8")
