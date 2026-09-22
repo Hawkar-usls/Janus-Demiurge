@@ -43,8 +43,8 @@ jobs:
           source={
             'schema':'janus.topa.pnp_corpus.v1',
             'P_VS_NP':'OPEN',
+            'D1':'EMPTY',
             'successor_algorithm':'LOCKED',
-            'semantic_sha256':'source',
             'authority':{'truth':False,'proof':False,'scientific_claim_promotion':False},
             'records':[{
               'record_id':'r1','publication_key':'k1','title':'Projection invariant',
@@ -52,12 +52,19 @@ jobs:
               'text':'routing memory only','routing':{'attention_priority':0.8}
             }]
           }
+          source['semantic_sha256']=pcm.semantic_hash(source)
           ledger={
             'schema':'janus.topa.pnp_corpus_weight_ledger.v1',
-            'semantic_sha256':'weights',
+            'corpus_semantic_sha256':source['semantic_sha256'],
             'authority':{'weights_are_truth':False,'weights_are_evidence':False,'source_documents_immutable':True}
           }
-          text,manifest=pcm.build(source,ledger,{'status':'CI'},100000)
+          ledger['semantic_sha256']=pcm.semantic_hash(ledger)
+          dedupe={
+            'schema':'janus.topa.pnp_corpus_dedupe_receipt.v1','status':'PASS',
+            'corpus_semantic_sha256':source['semantic_sha256'],
+            'ledger_semantic_sha256':ledger['semantic_sha256'],
+          }
+          text,manifest=pcm.build(source,ledger,dedupe,{'status':'CI'},100000)
           with tempfile.TemporaryDirectory() as td:
             td=Path(td)
             t=td/'memory.txt'; m=td/'manifest.json'
@@ -71,5 +78,6 @@ jobs:
             assert lm['training_material_is_truth'] is False
             assert lm['contribution_grants_authority'] is False
             assert lm['authority']['authority_delta']==0
+            assert lm['state_bundle_binding']=='PASS'
           print('JANUS_PNP_CORPUS_MEMORY_FIREWALL=PASS')
           PY
