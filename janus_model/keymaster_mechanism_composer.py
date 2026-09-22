@@ -169,6 +169,42 @@ def _status_token(obj: dict) -> str | None:
     return None
 
 
+def _ref_exists(repo: Path, ref: str) -> bool:
+    proc = subprocess.run(
+        ["git", "rev-parse", "--verify", "--quiet", ref],
+        cwd=str(repo),
+        text=True,
+        capture_output=True,
+    )
+    return proc.returncode == 0
+
+
+def _scan_ref(repo: Path, branch: str) -> str:
+    remote = f"origin/{branch}"
+    return remote if _ref_exists(repo, remote) else branch
+
+
+def _git_delta_tree(repo: Path, base_ref: str, ref: str, roots: list[str]) -> list[tuple[str, str]]:
+    try:
+        out = run(
+            ["git", "diff", "--name-only", "--diff-filter=AM", f"{base_ref}...{ref}", "--", *roots],
+            cwd=repo,
+        )
+    except RuntimeError:
+        return _git_tree(repo, ref, roots)
+    rows: list[tuple[str, str]] = []
+    for path in out.splitlines():
+        path = path.strip()
+        if not path or Path(path).suffix.lower() not in TEXT_EXTENSIONS:
+            continue
+        try:
+            blob_sha = run(["git", "rev-parse", f"{ref}:{path}"], cwd=repo).strip()
+        except RuntimeError:
+            continue
+        rows.append((path, blob_sha))
+    return rows
+
+
 def _artifact_summary(obj: dict, *, branch: str, path: str, blob_sha: str) -> dict:
     boundary = obj.get("scientific_boundary") or obj.get("scientific_state") or {}
     return {
@@ -216,14 +252,16 @@ def scan_fundamentum(repo: Path, contract: dict) -> dict:
     normalization_by_key: dict[tuple[str, str], dict] = {}
     blob_cache: dict[str, dict | None] = {}
     max_json_bytes = int(scan.get("max_json_bytes", 500000))
+    main_ref = _scan_ref(repo, "main")
     for row in refs:
         branch = row["branch"]
-        ref = branch if (repo / ".git").exists() and branch == "main" else f"origin/{branch}"
-        try:
+        ref = _scan_ref(repo, branch)
+        if branch == "main":
             tree = _git_tree(repo, ref, scan["roots"])
-        except RuntimeError:
-            ref = branch
-            tree = _git_tree(repo, ref, scan["roots"])
+        else:
+            tree = _git_delta_tree(repo, main_ref, ref, scan["roots"])
+        row["scan_mode"] = "FULL_MAIN" if branch == "main" else "DELTA_FROM_MAIN"
+        row["scanned_file_count"] = len(tree)
         branch_artifacts = 0
         for path, blob_sha in tree:
             if not path.endswith(".json"):
