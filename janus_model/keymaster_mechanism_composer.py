@@ -190,9 +190,9 @@ def _dynamic_mechanisms(obj: dict, *, branch: str, path: str, blob_sha: str) -> 
 def scan_fundamentum(repo: Path, contract: dict) -> dict:
     scan = contract["fundamentum_scan"]
     refs = discover_refs(repo, scan["branch_patterns"], int(scan["max_branches"]))
-    artifacts = []
+    artifacts_by_key: dict[tuple[str, str], dict] = {}
     dynamic = []
-    normalization_queue = []
+    normalization_by_key: dict[tuple[str, str], dict] = {}
     blob_cache: dict[str, dict | None] = {}
     max_json_bytes = int(scan.get("max_json_bytes", 500000))
     for row in refs:
@@ -229,25 +229,35 @@ def scan_fundamentum(repo: Path, contract: dict) -> dict:
                 obj = parsed
             summary = _artifact_summary(obj, branch=branch, path=path, blob_sha=blob_sha)
             if any(summary.get(k) is not None for k in ("artifact_id", "status", "P_VS_NP", "D1")):
-                artifacts.append(summary)
+                key = (path, blob_sha)
+                if key not in artifacts_by_key:
+                    artifacts_by_key[key] = {**summary, "branches": [branch]}
+                elif branch not in artifacts_by_key[key]["branches"]:
+                    artifacts_by_key[key]["branches"].append(branch)
                 branch_artifacts += 1
             dyn = _dynamic_mechanisms(obj, branch=branch, path=path, blob_sha=blob_sha)
             if dyn:
                 dynamic.extend(dyn)
             elif summary.get("status") in PROVED_STATUSES | CANDIDATE_STATUSES:
-                normalization_queue.append({
-                    "branch": branch,
-                    "path": path,
-                    "blob_sha": blob_sha,
-                    "artifact_id": summary.get("artifact_id"),
-                    "status": summary.get("status"),
-                    "reason": "AUTHORITY_LIKE_ARTIFACT_HAS_NO_TYPED_KEYMASTER_MECHANISM_CONTRACT",
-                })
+                key = (path, blob_sha)
+                if key not in normalization_by_key:
+                    normalization_by_key[key] = {
+                        "path": path,
+                        "blob_sha": blob_sha,
+                        "branches": [branch],
+                        "artifact_id": summary.get("artifact_id"),
+                        "status": summary.get("status"),
+                        "reason": "AUTHORITY_LIKE_ARTIFACT_HAS_NO_TYPED_KEYMASTER_MECHANISM_CONTRACT",
+                    }
+                elif branch not in normalization_by_key[key]["branches"]:
+                    normalization_by_key[key]["branches"].append(branch)
         row["authority_artifact_count"] = branch_artifacts
+    artifacts = sorted(artifacts_by_key.values(), key=lambda x: (x["path"], x["blob_sha"]))
+    normalization_queue = sorted(normalization_by_key.values(), key=lambda x: (x["path"], x["blob_sha"]))
     digest = sha256_bytes(canonical_bytes({
         "refs": refs,
         "artifacts": artifacts,
-        "dynamic_mechanisms": [x["id"] for x in dynamic],
+        "dynamic_mechanisms": sorted({x["id"] for x in dynamic}),
     }))
     return {
         "repository": "Hawkar-usls/Janus-Fundamentum",
