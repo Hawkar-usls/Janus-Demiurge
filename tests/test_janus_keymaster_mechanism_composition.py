@@ -113,6 +113,31 @@ class KeymasterMechanismCompositionTests(unittest.TestCase):
             self.assertIn("UNTYPED_PASS", queued)
             self.assertIn("BRANCH_PASS", queued)
 
+    def test_mapping_status_is_fail_closed_or_explicitly_normalized(self) -> None:
+        cfg = load_contract(CONTRACT)
+        with tempfile.TemporaryDirectory(prefix="keymaster-status-test-") as td:
+            repo = Path(td)
+            subprocess.check_call(["git", "init", "-b", "main"], cwd=repo)
+            git(repo, "config", "user.email", "keymaster-test@example.invalid")
+            git(repo, "config", "user.name", "Keymaster Test")
+            (repo / "registry").mkdir()
+            (repo / "research").mkdir()
+            (repo / "registry" / "nested-pass.json").write_text(
+                json.dumps({"artifact_id": "NESTED_PASS", "status": {"status": "PASS"}}),
+                encoding="utf-8",
+            )
+            (repo / "registry" / "opaque-status.json").write_text(
+                json.dumps({"artifact_id": "OPAQUE", "status": {"phase": "PASS"}}),
+                encoding="utf-8",
+            )
+            git(repo, "add", ".")
+            git(repo, "commit", "-m", "status fixtures")
+
+            scan = scan_fundamentum(repo, cfg)
+            queued = {x["artifact_id"] for x in scan["normalization_queue"]}
+            self.assertIn("NESTED_PASS", queued)
+            self.assertNotIn("OPAQUE", queued)
+
     def test_dynamic_candidate_cannot_self_promote(self) -> None:
         reg = load_registry(REGISTRY)
         cfg = load_contract(CONTRACT)
