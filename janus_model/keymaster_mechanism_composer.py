@@ -148,6 +148,27 @@ def _git_tree(repo: Path, ref: str, roots: list[str]) -> list[tuple[str, str]]:
     return rows
 
 
+def _status_token(obj: dict) -> str | None:
+    """Extract only an explicit scalar scientific status.
+
+    Fundamentum receipts are intentionally heterogeneous. A mapping-valued
+    status is metadata, not a permission to promote an artifact. We accept a
+    nested token only from a small allow-list and otherwise fail closed.
+    """
+    status = obj.get("status")
+    if isinstance(status, str):
+        return status
+    verdict = obj.get("verdict")
+    if isinstance(verdict, str):
+        return verdict
+    if isinstance(status, dict):
+        for key in ("status", "verdict", "state"):
+            value = status.get(key)
+            if isinstance(value, str):
+                return value
+    return None
+
+
 def _artifact_summary(obj: dict, *, branch: str, path: str, blob_sha: str) -> dict:
     boundary = obj.get("scientific_boundary") or obj.get("scientific_state") or {}
     return {
@@ -156,7 +177,7 @@ def _artifact_summary(obj: dict, *, branch: str, path: str, blob_sha: str) -> di
         "blob_sha": blob_sha,
         "artifact_id": obj.get("artifact_id"),
         "schema": obj.get("schema"),
-        "status": obj.get("status") or obj.get("verdict"),
+        "status": _status_token(obj),
         "P_VS_NP": boundary.get("P_VS_NP") if isinstance(boundary, dict) else None,
         "D1": boundary.get("D1") if isinstance(boundary, dict) else None,
         "current_target": obj.get("current_target") or obj.get("next") or obj.get("next_action"),
