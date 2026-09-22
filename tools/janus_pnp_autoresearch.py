@@ -6,7 +6,10 @@ from pathlib import Path
 URLS={
  "hrain":"https://raw.githubusercontent.com/Hawkar-usls/Hrain/janus/fundamentum-structural-memory/data/fundamentum-mirror/LATEST.json",
  "inaihr":"https://raw.githubusercontent.com/Hawkar-usls/iNaiHR/janus/fundamentum-associative-memory/data/fundamentum-associative/ASSOCIATIONS.json",
- "topa":"https://raw.githubusercontent.com/Hawkar-usls/TOPA/janus/pnp-autoresearch-state/data/pnp-autoresearch/LATEST.json"
+ "topa":"https://raw.githubusercontent.com/Hawkar-usls/TOPA/janus/pnp-autoresearch-state/data/pnp-autoresearch/LATEST.json",
+ "topa_corpus":"https://raw.githubusercontent.com/Hawkar-usls/TOPA/janus/pnp-autoresearch-state/data/pnp-autoresearch/CORPUS.json",
+ "topa_weights":"https://raw.githubusercontent.com/Hawkar-usls/TOPA/janus/pnp-autoresearch-state/data/pnp-autoresearch/CORPUS_WEIGHT_LEDGER.json",
+ "topa_drive":"https://raw.githubusercontent.com/Hawkar-usls/TOPA/janus/pnp-autoresearch-state/data/pnp-autoresearch/DRIVE_INDEX_RECEIPT.json"
 }
 UA="JANUS-Demiurge-PNP-Autoresearch/1.1"
 FABRIC_PATH=Path(__file__).resolve().parents[1]/"janus_model/policy/JANUS_RESEARCH_ORGAN_FABRIC.json"
@@ -120,6 +123,9 @@ def main():
     hrain=fetch(URLS["hrain"])
     inaihr=fetch(URLS["inaihr"])
     topa=fetch(URLS["topa"],optional=True)
+    topa_corpus=fetch(URLS["topa_corpus"],optional=True)
+    topa_weights=fetch(URLS["topa_weights"],optional=True)
+    topa_drive=fetch(URLS["topa_drive"],optional=True)
     fabric=load_fabric()
     tracks={
       "P_VS_NP":extract(status,"P_VS_NP","OPEN"),
@@ -143,19 +149,51 @@ def main():
       "status":"ACTIVE_CANDIDATE_RESEARCH",
       "goal":"P_VS_NP_RESEARCH_WITHOUT_CLAIM_PROMOTION",
       "fundamentum":{"repository":"Hawkar-usls/Janus-Fundamentum","commit":head,"read_only":True,"tracks":tracks},
-      "memory":{"hrain":hrain,"inaihr_source_commit":inaihr.get("source_commit"),"inaihr_routes":inaihr.get("routes",[]),"topa":topa},
+      "memory":{
+        "hrain":hrain,
+        "inaihr_source_commit":inaihr.get("source_commit"),
+        "inaihr_routes":inaihr.get("routes",[]),
+        "topa":topa,
+        "pnp_corpus":{
+          "status":topa_corpus.get("status"),
+          "schema":topa_corpus.get("schema"),
+          "record_count":topa_corpus.get("record_count"),
+          "new_publication_count":topa_corpus.get("new_publication_count"),
+          "semantic_sha256":topa_corpus.get("semantic_sha256"),
+          "successor_algorithm":topa_corpus.get("successor_algorithm"),
+          "top_attention":[
+            {"record_id":r.get("record_id"),"title":r.get("title"),"attention_priority":(r.get("routing") or {}).get("attention_priority"),"source_url":r.get("source_url")}
+            for r in (topa_corpus.get("records") or [])[:12]
+          ],
+          "weights_are_truth":False
+        },
+        "pnp_corpus_weights":{
+          "status":topa_weights.get("status"),
+          "schema":topa_weights.get("schema"),
+          "weight_count":topa_weights.get("weight_count"),
+          "semantic_sha256":topa_weights.get("semantic_sha256"),
+          "weights_are_truth":False
+        },
+        "pnp_drive":{
+          "status":topa_drive.get("status"),
+          "source":topa_drive.get("source"),
+          "oauth_configured":topa_drive.get("oauth_configured"),
+          "drive_status_is_scientific_evidence":False
+        }
+      },
       "janus_own_candidates":candidates,
       "bounded_replay_probes":probes,
       "research_supervisor":supervisor,
       "next_actions":[
         "Follow research_supervisor.next_required_stage before treating any candidate as promotion-ready.",
-        "Use TOPA discovery graph to challenge candidates and search for prior art/counterexamples.",
+        "Use TOPA discovery graph and PNP corpus to challenge candidates and search for prior art/counterexamples.",
+        "Use corpus attention weights only for routing; never as truth, evidence, or theorem authority.",
         "Use HRAiN structural index to locate exact committed attack surfaces.",
         "Use iNaiHR associative routes only to generate candidate questions.",
         "Prefer falsification and exact replay before any candidate expansion."
       ],
       "authority":{"truth":False,"proof":False,"scientific_claim_promotion":False,"fundamentum_mutation":False,"autonomous_merge":False},
-      "laws":["OWN_RESEARCH != FUNDAMENTUM_AUTHORITY","MODEL_OUTPUT != PROOF","FINITE_REPLAY != ASYMPTOTIC_THEOREM","P_VS_NP = OPEN","NO_EXPLICIT_PROOF_GATE => NO_PNP_PROMOTION"]
+      "laws":["OWN_RESEARCH != FUNDAMENTUM_AUTHORITY","TOPA_CORPUS != FUNDAMENTUM_AUTHORITY","ATTENTION_WEIGHT != EVIDENCE","MODEL_OUTPUT != PROOF","FINITE_REPLAY != ASYMPTOTIC_THEOREM","P_VS_NP = OPEN","NO_EXPLICIT_PROOF_GATE => NO_PNP_PROMOTION"]
     }
     obj["context_sha256"]=sh(obj)
     out.parent.mkdir(parents=True,exist_ok=True)

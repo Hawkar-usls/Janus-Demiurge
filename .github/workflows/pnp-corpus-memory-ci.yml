@@ -1,0 +1,84 @@
+name: JANUS PNP Corpus Memory CI
+
+on:
+  pull_request:
+    paths:
+      - 'janus_model/corpus.py'
+      - 'janus_model/extensions/pnp_corpus_memory.py'
+      - 'janus_model/policy/JANUS_PNP_CORPUS_FABRIC.json'
+      - 'tools/janus_pnp_autoresearch.py'
+      - '.github/workflows/janus-pnp-autoresearch.yml'
+      - '.github/workflows/pnp-corpus-memory-ci.yml'
+  push:
+    branches:
+      - 'integration/pnp-corpus-fabric-v1'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile and self-test
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            janus_model/corpus.py \
+            janus_model/extensions/pnp_corpus_memory.py \
+            tools/janus_pnp_autoresearch.py
+          python janus_model/extensions/pnp_corpus_memory.py --self-test
+          python -m unittest tests.test_janus_keymaster
+      - name: Verify corpus-loader authority and leakage firewalls
+        run: |
+          python - <<'PY'
+          import json, tempfile
+          from pathlib import Path
+          from janus_model.extensions import pnp_corpus_memory as pcm
+          from janus_model import corpus as jc
+
+          source={
+            'schema':'janus.topa.pnp_corpus.v1',
+            'P_VS_NP':'OPEN',
+            'D1':'EMPTY',
+            'successor_algorithm':'LOCKED',
+            'authority':{'truth':False,'proof':False,'scientific_claim_promotion':False},
+            'records':[{
+              'record_id':'r1','publication_key':'k1','title':'Projection invariant',
+              'source_url':'https://example.invalid/paper','status':'UNEXAMINED',
+              'text':'routing memory only','routing':{'attention_priority':0.8}
+            }]
+          }
+          source['semantic_sha256']=pcm.semantic_hash(source)
+          ledger={
+            'schema':'janus.topa.pnp_corpus_weight_ledger.v1',
+            'corpus_semantic_sha256':source['semantic_sha256'],
+            'authority':{'weights_are_truth':False,'weights_are_evidence':False,'source_documents_immutable':True}
+          }
+          ledger['semantic_sha256']=pcm.semantic_hash(ledger)
+          dedupe={
+            'schema':'janus.topa.pnp_corpus_dedupe_receipt.v1','status':'PASS',
+            'corpus_semantic_sha256':source['semantic_sha256'],
+            'ledger_semantic_sha256':ledger['semantic_sha256'],
+          }
+          text,manifest=pcm.build(source,ledger,dedupe,{'status':'CI'},100000)
+          with tempfile.TemporaryDirectory() as td:
+            td=Path(td)
+            t=td/'memory.txt'; m=td/'manifest.json'
+            t.write_text(text,encoding='utf-8')
+            m.write_text(json.dumps(manifest),encoding='utf-8')
+            loaded,lm=jc._load_pnp_corpus_memory(t,m)
+            assert loaded==text
+            assert lm['training_only'] is True
+            assert lm['adaptive_holdout_inclusion'] is False
+            assert lm['frozen_anchor_inclusion'] is False
+            assert lm['training_material_is_truth'] is False
+            assert lm['contribution_grants_authority'] is False
+            assert lm['authority']['authority_delta']==0
+            assert lm['state_bundle_binding']=='PASS'
+          print('JANUS_PNP_CORPUS_MEMORY_FIREWALL=PASS')
+          PY
