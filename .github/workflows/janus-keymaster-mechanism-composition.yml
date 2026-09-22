@@ -13,7 +13,6 @@ on:
       - 'janus_model/keymaster/MECHANISM_REGISTRY-v0.json'
       - 'janus_model/keymaster/MECHANISM_COMPOSITION_README.md'
       - 'janus_model/keymaster/PRIMARY_REPOSITORY_CONTRIBUTORS-v2.json'
-      - 'janus_model/keymaster/PRIMARY_REPOSITORY_CONTRIBUTORS-v2.json'
       - 'tests/test_janus_keymaster_mechanism_composition.py'
       - '.github/workflows/janus-keymaster-mechanism-composition.yml'
   push:
@@ -122,22 +121,40 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p janus_model/state janus_model/receipts
-          cp runtime/keymaster-mechanism-composition.json janus_model/state/KEYMASTER_MECHANISM_COMPOSITION_LATEST.json
-          cp runtime/keymaster-mechanism-composition.json "janus_model/receipts/keymaster-mechanism-composition-${GITHUB_RUN_ID}.json"
+          REPORT="$RUNNER_TEMP/keymaster-mechanism-composition.json"
+          cp runtime/keymaster-mechanism-composition.json "$REPORT"
+          RECEIPT="janus_model/receipts/keymaster-mechanism-composition-${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT}.json"
+
           git config user.name 'janus-keymaster-mechanism-composition'
           git config user.email 'janus-keymaster-mechanism-composition@users.noreply.github.com'
-          git add -f \
-            janus_model/state/KEYMASTER_MECHANISM_COMPOSITION_LATEST.json \
-            "janus_model/receipts/keymaster-mechanism-composition-${GITHUB_RUN_ID}.json"
-          if git diff --cached --quiet; then
-            echo 'JANUS_KEYMASTER_MECHANISM_NO_STATE_CHANGE'
-            exit 0
-          fi
-          git commit -m "JANUS Keymaster mechanism composition: remember run ${GITHUB_RUN_ID}"
-          git pull --rebase origin main
-          git push origin HEAD:main
-          echo 'JANUS_KEYMASTER_MECHANISM_PERSIST=PASS'
+
+          for TRY in 1 2 3; do
+            git fetch origin main
+            git reset --hard origin/main
+            mkdir -p janus_model/state janus_model/receipts
+            cp "$REPORT" janus_model/state/KEYMASTER_MECHANISM_COMPOSITION_LATEST.json
+            cp "$REPORT" "$RECEIPT"
+            git add -f \
+              janus_model/state/KEYMASTER_MECHANISM_COMPOSITION_LATEST.json \
+              "$RECEIPT"
+
+            if git diff --cached --quiet; then
+              echo 'JANUS_KEYMASTER_MECHANISM_NO_STATE_CHANGE'
+              exit 0
+            fi
+
+            git commit -m "JANUS Keymaster mechanism composition: remember run ${GITHUB_RUN_ID} attempt ${GITHUB_RUN_ATTEMPT}"
+            if git push origin HEAD:main; then
+              echo 'JANUS_KEYMASTER_MECHANISM_PERSIST=PASS'
+              exit 0
+            fi
+
+            echo "JANUS_KEYMASTER_MECHANISM_PERSIST_RETRY=${TRY}"
+            sleep 2
+          done
+
+          echo 'JANUS_KEYMASTER_MECHANISM_PERSIST=FAIL'
+          exit 1
 
       - name: Upload mechanism composition evidence
         if: always()
