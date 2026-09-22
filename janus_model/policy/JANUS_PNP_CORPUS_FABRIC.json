@@ -6,7 +6,10 @@
     "branch": "janus/pnp-autoresearch-state",
     "corpus_path": "data/pnp-autoresearch/CORPUS.json",
     "weight_ledger_path": "data/pnp-autoresearch/CORPUS_WEIGHT_LEDGER.json",
-    "drive_receipt_path": "data/pnp-autoresearch/DRIVE_INDEX_RECEIPT.json"
+    "drive_receipt_path": "data/pnp-autoresearch/DRIVE_INDEX_RECEIPT.json",
+    "dedupe_receipt_path": "data/pnp-autoresearch/DEDUPE_RECEIPT.json",
+    "state_bundle_binding_required": true,
+    "binding_rule": "CORPUS_SEMANTIC_SHA256 + LEDGER_SEMANTIC_SHA256 MUST MATCH DEDUPE_RECEIPT"
   },
   "authority": {
     "scientific_repository": "Hawkar-usls/Janus-Fundamentum",
@@ -17,7 +20,8 @@
     "weights_are_evidence": false,
     "training_grants_authority": false,
     "fundamentum_mutation": false,
-    "automatic_claim_promotion": false
+    "automatic_claim_promotion": false,
+    "D1": "EMPTY"
   },
   "corpus_memory": {
     "text_path": "janus_model/state/JANUS_PNP_CORPUS_MEMORY.txt",
@@ -25,13 +29,15 @@
     "training_only": true,
     "adaptive_holdout_inclusion": false,
     "frozen_anchor_inclusion": false,
-    "max_bytes": 300000
+    "max_bytes": 300000,
+    "fail_closed_on_mixed_state_bundle": true
   },
   "laws": [
     "TOPA_CORPUS != WORLD_TRUTH",
     "ATTENTION_WEIGHT != SCIENTIFIC_EVIDENCE",
     "TRAINING_MEMORY != PROOF",
     "SOURCE_URL_REQUIRES_VERIFICATION_BEFORE_CLAIM",
-    "P_VS_NP = OPEN"
+    "P_VS_NP = OPEN",
+    "MIXED_STATE_BUNDLE != TRAINING_MEMORY"
   ]
 }
