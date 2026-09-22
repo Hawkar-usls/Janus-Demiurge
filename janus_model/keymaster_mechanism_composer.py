@@ -193,6 +193,7 @@ def scan_fundamentum(repo: Path, contract: dict) -> dict:
     artifacts = []
     dynamic = []
     normalization_queue = []
+    blob_cache: dict[str, dict | None] = {}
     max_json_bytes = int(scan.get("max_json_bytes", 500000))
     for row in refs:
         branch = row["branch"]
@@ -206,16 +207,26 @@ def scan_fundamentum(repo: Path, contract: dict) -> dict:
         for path, blob_sha in tree:
             if not path.endswith(".json"):
                 continue
-            size = int(run(["git", "cat-file", "-s", blob_sha], cwd=repo).strip())
-            if size > max_json_bytes:
-                continue
-            raw = run(["git", "show", f"{ref}:{path}"], cwd=repo)
-            try:
-                obj = json.loads(raw)
-            except json.JSONDecodeError:
-                continue
-            if not isinstance(obj, dict):
-                continue
+            if blob_sha in blob_cache:
+                obj = blob_cache[blob_sha]
+                if obj is None:
+                    continue
+            else:
+                size = int(run(["git", "cat-file", "-s", blob_sha], cwd=repo).strip())
+                if size > max_json_bytes:
+                    blob_cache[blob_sha] = None
+                    continue
+                raw = run(["git", "show", f"{ref}:{path}"], cwd=repo)
+                try:
+                    parsed = json.loads(raw)
+                except json.JSONDecodeError:
+                    blob_cache[blob_sha] = None
+                    continue
+                if not isinstance(parsed, dict):
+                    blob_cache[blob_sha] = None
+                    continue
+                blob_cache[blob_sha] = parsed
+                obj = parsed
             summary = _artifact_summary(obj, branch=branch, path=path, blob_sha=blob_sha)
             if any(summary.get(k) is not None for k in ("artifact_id", "status", "P_VS_NP", "D1")):
                 artifacts.append(summary)
