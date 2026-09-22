@@ -113,10 +113,21 @@ def discover_refs(repo: Path, patterns: list[str], max_refs: int) -> list[dict]:
         if not any(fnmatch.fnmatch(branch, pattern) for pattern in patterns):
             continue
         by_branch.setdefault(branch, sha)
-    rows = [{"branch": b, "sha": s} for b, s in sorted(by_branch.items())]
+    rows = []
+    for branch, sha in by_branch.items():
+        try:
+            commit_ts = int(run(["git", "show", "-s", "--format=%ct", sha], cwd=repo).strip())
+        except (RuntimeError, ValueError):
+            commit_ts = 0
+        rows.append({"branch": branch, "sha": sha, "commit_ts": commit_ts})
+    rows.sort(key=lambda row: (row["commit_ts"], row["branch"]), reverse=True)
     if len(rows) > max_refs:
-        rows = rows[-max_refs:]
-    return rows
+        kept = rows[:max_refs]
+        main = next((row for row in rows if row["branch"] == "main"), None)
+        if main is not None and all(row["branch"] != "main" for row in kept):
+            kept[-1] = main
+        rows = kept
+    return sorted(rows, key=lambda row: row["branch"])
 
 
 def _git_tree(repo: Path, ref: str, roots: list[str]) -> list[tuple[str, str]]:
