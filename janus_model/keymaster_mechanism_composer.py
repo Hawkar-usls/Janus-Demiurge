@@ -17,6 +17,16 @@ PROVED_STATUSES = {"PASS", "PROVED", "SOURCE_PROVED", "FROZEN_PASS"}
 CANDIDATE_STATUSES = {"CANDIDATE", "AUDIT_PASS", "CANDIDATE_AUDIT_PASS", "FORMAL_PROOF_REQUIRED"}
 TEXT_EXTENSIONS = {".json", ".md", ".markdown", ".txt", ".yml", ".yaml"}
 
+BARRIER_PENALTIES = {
+    "FULL_BLOCKER": 100,
+    "SCOPED_BLOCKER": 4,
+    "REPACKAGING": 12,
+    "ANTI_LOOP": 8,
+    "REPRESENTATION_LOWER_BOUND": 6,
+    "DISCOVERY_HARDNESS": 5,
+    "CAUTION": 2,
+}
+
 
 def canonical_bytes(obj: Any) -> bytes:
     return json.dumps(obj, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -63,6 +73,19 @@ def _validate_mechanism(row: dict) -> dict:
     return row
 
 
+def _validate_barrier(row: dict) -> dict:
+    required = ["id", "from_type", "to_type", "status", "kind", "scope", "authority"]
+    missing = [k for k in required if k not in row]
+    if missing:
+        raise RuntimeError(f"KEYMASTER_BARRIER_FIELDS_MISSING:{row.get('id')}:{','.join(missing)}")
+    if row["kind"] not in BARRIER_PENALTIES:
+        raise RuntimeError(f"KEYMASTER_BARRIER_KIND_REJECTED:{row['id']}:{row['kind']}")
+    row["penalty"] = int(row.get("penalty", BARRIER_PENALTIES[row["kind"]]))
+    if row["penalty"] < 0:
+        raise RuntimeError(f"KEYMASTER_BARRIER_PENALTY_REJECTED:{row['id']}")
+    return row
+
+
 def load_registry(path: Path) -> dict:
     reg = load_json(path)
     if reg.get("schema") != REGISTRY_SCHEMA:
@@ -71,10 +94,20 @@ def load_registry(path: Path) -> dict:
     ids = [x["id"] for x in mechanisms]
     if len(ids) != len(set(ids)):
         raise RuntimeError("KEYMASTER_MECHANISM_DUPLICATE_ID")
-    barriers = reg.get("barriers") or []
-    if any(not isinstance(x, dict) or "id" not in x for x in barriers):
-        raise RuntimeError("KEYMASTER_BARRIER_ROW_REJECTED")
+    barriers = []
+    for raw in reg.get("barriers") or []:
+        if not isinstance(raw, dict) or "id" not in raw:
+            raise RuntimeError("KEYMASTER_BARRIER_ROW_REJECTED")
+        row = dict(raw)
+        row.setdefault("from_type", "*")
+        row.setdefault("to_type", "*")
+        row.setdefault("status", "PROVED")
+        row.setdefault("kind", "SCOPED_BLOCKER")
+        row.setdefault("scope", "UNSPECIFIED_SCOPED_BARRIER")
+        row.setdefault("authority", "SEED_REGISTRY")
+        barriers.append(_validate_barrier(row))
     reg["mechanisms"] = mechanisms
+    reg["barriers"] = barriers
     return reg
 
 
@@ -249,11 +282,37 @@ def _dynamic_mechanisms(obj: dict, *, branch: str, path: str, blob_sha: str) -> 
     return rows
 
 
+def _dynamic_barriers(obj: dict, *, branch: str, path: str, blob_sha: str) -> list[dict]:
+    rows = []
+    payloads: list[dict] = []
+    if obj.get("schema") == "janus.keymaster.barrier.v1":
+        payloads.append(obj)
+    kb = obj.get("keymaster_barrier")
+    if isinstance(kb, dict):
+        payloads.append(kb)
+    if isinstance(kb, list):
+        payloads.extend(x for x in kb if isinstance(x, dict))
+    for payload in payloads:
+        row = dict(payload)
+        row.setdefault("authority", {})
+        authority = row["authority"] if isinstance(row["authority"], dict) else {"source": row["authority"]}
+        row["authority"] = {
+            **authority,
+            "repository": "Hawkar-usls/Janus-Fundamentum",
+            "branch": branch,
+            "path": path,
+            "blob_sha": blob_sha,
+        }
+        rows.append(_validate_barrier(row))
+    return rows
+
+
 def scan_fundamentum(repo: Path, contract: dict) -> dict:
     scan = contract["fundamentum_scan"]
     refs = discover_refs(repo, scan["branch_patterns"], int(scan["max_branches"]))
     artifacts_by_key: dict[tuple[str, str], dict] = {}
     dynamic = []
+    dynamic_barriers = []
     normalization_by_key: dict[tuple[str, str], dict] = {}
     blob_cache: dict[str, dict | None] = {}
     max_json_bytes = int(scan.get("max_json_bytes", 500000))
@@ -302,7 +361,8 @@ def scan_fundamentum(repo: Path, contract: dict) -> dict:
             dyn = _dynamic_mechanisms(obj, branch=branch, path=path, blob_sha=blob_sha)
             if dyn:
                 dynamic.extend(dyn)
-            elif summary.get("status") in PROVED_STATUSES | CANDIDATE_STATUSES:
+            dynamic_barriers.extend(_dynamic_barriers(obj, branch=branch, path=path, blob_sha=blob_sha))
+            if not dyn and summary.get("status") in PROVED_STATUSES | CANDIDATE_STATUSES:
                 key = (path, blob_sha)
                 if key not in normalization_by_key:
                     normalization_by_key[key] = {
@@ -322,12 +382,14 @@ def scan_fundamentum(repo: Path, contract: dict) -> dict:
         "refs": refs,
         "artifacts": artifacts,
         "dynamic_mechanisms": sorted({x["id"] for x in dynamic}),
+        "dynamic_barriers": sorted({x["id"] for x in dynamic_barriers}),
     }))
     return {
         "repository": "Hawkar-usls/Janus-Fundamentum",
         "refs": refs,
         "artifacts": artifacts,
         "dynamic_mechanisms": dynamic,
+        "dynamic_barriers": dynamic_barriers,
         "normalization_queue": normalization_queue,
         "snapshot_sha256": digest,
     }
@@ -416,16 +478,27 @@ def _barriers_for_gap(barriers: list[dict], src: str, dst: str) -> list[dict]:
         bf = b.get("from_type", "*")
         bt = b.get("to_type", "*")
         if (bf in ("*", src)) and (bt in ("*", dst)):
-            hits.append({"id": b["id"], "scope": b.get("scope"), "authority": b.get("authority")})
-    return hits
+            hits.append({
+                "id": b["id"],
+                "kind": b.get("kind", "SCOPED_BLOCKER"),
+                "penalty": int(b.get("penalty", BARRIER_PENALTIES["SCOPED_BLOCKER"])),
+                "scope": b.get("scope"),
+                "authority": b.get("authority"),
+            })
+    return sorted(hits, key=lambda x: (-x["penalty"], x["id"]))
 
 
 def compose(registry: dict, scan: dict, contract: dict) -> dict:
-    merged = list(registry["mechanisms"]) + list(scan["dynamic_mechanisms"])
+    merged = list(registry["mechanisms"]) + list(scan.get("dynamic_mechanisms", []))
     by_id: dict[str, dict] = {}
     for row in merged:
         by_id[row["id"]] = row
     merged = list(by_id.values())
+
+    barrier_by_id: dict[str, dict] = {}
+    for row in list(registry.get("barriers", [])) + list(scan.get("dynamic_barriers", [])):
+        barrier_by_id[row["id"]] = row
+    barriers = list(barrier_by_id.values())
 
     authoritative = [x for x in merged if eligible_edge(x, allow_candidates=False)]
     shadow = [x for x in merged if eligible_edge(x, allow_candidates=True)]
@@ -444,6 +517,8 @@ def compose(registry: dict, scan: dict, contract: dict) -> dict:
         for dst, bd in sorted(back.items(), key=lambda x: (x[1], x[0])):
             if src == dst or (src, dst) in existing_pairs:
                 continue
+            gap_barriers = _barriers_for_gap(barriers, src, dst)
+            barrier_penalty = sum(x["penalty"] for x in gap_barriers)
             gaps.append({
                 "from_type": src,
                 "to_type": dst,
@@ -451,7 +526,9 @@ def compose(registry: dict, scan: dict, contract: dict) -> dict:
                 "proved_suffix_edges": bd,
                 "proved_context_edges": fd + bd,
                 "complete_path_edges_if_closed": fd + 1 + bd,
-                "barriers": _barriers_for_gap(registry.get("barriers", []), src, dst),
+                "barriers": gap_barriers,
+                "barrier_penalty": barrier_penalty,
+                "lockpick_score": (fd + bd) * 10 - barrier_penalty,
                 "required_contract": {
                     "semantics": "EXACT",
                     "construction_poly": True,
@@ -463,8 +540,8 @@ def compose(registry: dict, scan: dict, contract: dict) -> dict:
             })
     gaps.sort(
         key=lambda x: (
+            -x["lockpick_score"],
             -x["proved_context_edges"],
-            len(x["barriers"]),
             -min(x["proved_prefix_edges"], x["proved_suffix_edges"]),
             x["from_type"],
             x["to_type"],
@@ -493,7 +570,8 @@ def compose(registry: dict, scan: dict, contract: dict) -> dict:
         "fundamentum_snapshot_sha256": scan["snapshot_sha256"],
         "fundamentum_refs": scan["refs"],
         "authority_artifact_count": len(scan["artifacts"]),
-        "typed_dynamic_mechanism_count": len(scan["dynamic_mechanisms"]),
+        "typed_dynamic_mechanism_count": len(scan.get("dynamic_mechanisms", [])),
+        "typed_dynamic_barrier_count": len(scan.get("dynamic_barriers", [])),
         "normalization_queue": scan["normalization_queue"],
         "registry_mechanism_count": len(registry["mechanisms"]),
         "authoritative_edge_count": len(authoritative),
