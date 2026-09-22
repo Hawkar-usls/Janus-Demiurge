@@ -98,28 +98,33 @@ def load_contract(path: Path) -> dict:
 
 def discover_refs(repo: Path, patterns: list[str], max_refs: int) -> list[dict]:
     raw = run(
-        ["git", "for-each-ref", "--format=%(refname:short) %(objectname)", "refs/heads", "refs/remotes/origin"],
+        [
+            "git", "for-each-ref",
+            "--format=%(refname:short)%09%(objectname)%09%(committerdate:unix)",
+            "refs/heads", "refs/remotes/origin",
+        ],
         cwd=repo,
     )
-    by_branch: dict[str, str] = {}
+    by_branch: dict[str, dict] = {}
     for line in raw.splitlines():
-        parts = line.strip().split()
-        if len(parts) != 2:
+        parts = line.rstrip().split("\t")
+        if len(parts) != 3:
             continue
-        ref, sha = parts
+        ref, sha, ts = parts
         if ref == "origin/HEAD":
             continue
         branch = ref[len("origin/"):] if ref.startswith("origin/") else ref
         if not any(fnmatch.fnmatch(branch, pattern) for pattern in patterns):
             continue
-        by_branch.setdefault(branch, sha)
-    rows = []
-    for branch, sha in by_branch.items():
         try:
-            commit_ts = int(run(["git", "show", "-s", "--format=%ct", sha], cwd=repo).strip())
-        except (RuntimeError, ValueError):
+            commit_ts = int(ts)
+        except ValueError:
             commit_ts = 0
-        rows.append({"branch": branch, "sha": sha, "commit_ts": commit_ts})
+        current = by_branch.get(branch)
+        row = {"branch": branch, "sha": sha, "commit_ts": commit_ts}
+        if current is None or (commit_ts, sha) > (current["commit_ts"], current["sha"]):
+            by_branch[branch] = row
+    rows = list(by_branch.values())
     rows.sort(key=lambda row: (row["commit_ts"], row["branch"]), reverse=True)
     if len(rows) > max_refs:
         kept = rows[:max_refs]
