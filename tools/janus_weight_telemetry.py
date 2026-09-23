@@ -183,7 +183,12 @@ def main() -> None:
                 continue
             if decision.get("checkpoint_sha256") == checkpoint_sha:
                 matches.append((path, decision))
-    if len(matches) > 1:
+    # Multiple historical outbox decisions may legitimately reference the same
+    # immutable checkpoint after reruns. If a current checkpoint-bound
+    # JANUS_LATEST_DECISION already exists, it is the validated durable witness
+    # and the older outbox lineage must not make telemetry fail. Ambiguity still
+    # fails closed when no current durable witness exists.
+    if len(matches) > 1 and current_latest is None:
         raise SystemExit("MULTIPLE_NATIVE_DECISIONS_FOR_CURRENT_CHECKPOINT")
 
     decision_source = "NO_MATCHING_DECISION"
