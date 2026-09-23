@@ -9,6 +9,9 @@ on:
   pull_request:
     paths:
       - 'janus_model/keymaster_mechanism_composer.py'
+      - 'janus_model/keymaster_trump_bridge.py'
+      - 'trump/TRUMP_MANIFEST.json'
+      - 'tests/test_janus_keymaster_trump_bridge.py'
       - 'janus_model/keymaster/MECHANISM_COMPOSITION_CONTRACT-v1.json'
       - 'janus_model/keymaster/MECHANISM_REGISTRY-v0.json'
       - 'janus_model/keymaster/MECHANISM_COMPOSITION_README.md'
@@ -21,6 +24,9 @@ on:
       - feature/keymaster-mechanism-composition-v0
     paths:
       - 'janus_model/keymaster_mechanism_composer.py'
+      - 'janus_model/keymaster_trump_bridge.py'
+      - 'trump/TRUMP_MANIFEST.json'
+      - 'tests/test_janus_keymaster_trump_bridge.py'
       - 'janus_model/keymaster/MECHANISM_COMPOSITION_CONTRACT-v1.json'
       - 'janus_model/keymaster/MECHANISM_REGISTRY-v0.json'
       - 'janus_model/keymaster/MECHANISM_COMPOSITION_README.md'
@@ -53,8 +59,8 @@ jobs:
       - name: Verify Keymaster composition kernel
         run: |
           set -euo pipefail
-          python -m py_compile janus_model/keymaster_mechanism_composer.py
-          python -m unittest -v tests/test_janus_keymaster_mechanism_composition.py
+          python -m py_compile janus_model/keymaster_mechanism_composer.py janus_model/keymaster_trump_bridge.py
+          python -m unittest -v tests/test_janus_keymaster_mechanism_composition.py tests/test_janus_keymaster_trump_bridge.py
 
       - name: Fetch all Fundamentum branches read-only
         run: |
@@ -74,6 +80,14 @@ jobs:
             --fundamentum runtime/fundamentum \
             --out runtime/keymaster-mechanism-composition.json
 
+      - name: Build Keymaster → TRUMP candidate bridge
+        run: |
+          set -euo pipefail
+          python -m janus_model.keymaster_trump_bridge \
+            --keymaster runtime/keymaster-mechanism-composition.json \
+            --manifest trump/TRUMP_MANIFEST.json \
+            --out runtime/keymaster-trump-bridge.json
+
       - name: Verify scientific firewalls
         run: |
           set -euo pipefail
@@ -91,7 +105,19 @@ jobs:
           assert f['complete_path_is_proof'] is False
           assert f['D1']=='EMPTY'
           assert f['P_VS_NP']=='OPEN'
+          p=x['progress_readout']
+          assert p['metric_kind']=='PROOF_OBLIGATION_COMPLETENESS_NOT_PROBABILITY'
+          assert p['p_equals_np_probability'] is None
+          assert p['proof_authorized'] is False
+          b=json.load(open('runtime/keymaster-trump-bridge.json'))
+          assert b['schema']=='janus.keymaster.trump_runtime_bridge.v1'
+          assert b['firewall']['P_VS_NP']=='OPEN'
+          assert b['firewall']['D1']=='EMPTY'
+          assert b['firewall']['route_coverage_is_probability'] is False
+          assert b['self_application']['proof_authority'] is False
+          assert b['self_application']['direct_main_writeback'] is False
           print('JANUS_KEYMASTER_MECHANISM_FIREWALL=PASS')
+          print('KEYMASTER_TRUMP_BRIDGE=PASS', b['selected_source_id'])
           print('UNIVERSAL_LIFECYCLE_CANDIDATES',len(x['complete_universal_lifecycle_candidates']))
           print('MISSING_INTERFACES',len(x['missing_interface_queue']))
           print('NORMALIZATION_QUEUE',len(x['normalization_queue']))
@@ -103,18 +129,26 @@ jobs:
         run: |
           set -euo pipefail
           NEW_SHA=$(python -c "import json; print(json.load(open('runtime/keymaster-mechanism-composition.json'))['report_sha256'])")
+          NEW_BRIDGE_SHA=$(python -c "import json; print(json.load(open('runtime/keymaster-trump-bridge.json'))['bridge_sha256'])")
           OLD_SHA=''
+          OLD_BRIDGE_SHA=''
           if [ -f janus_model/state/KEYMASTER_MECHANISM_COMPOSITION_LATEST.json ]; then
             OLD_SHA=$(python -c "import json; print(json.load(open('janus_model/state/KEYMASTER_MECHANISM_COMPOSITION_LATEST.json')).get('report_sha256',''))")
           fi
-          if [ "$NEW_SHA" = "$OLD_SHA" ]; then
+          if [ -f janus_model/state/KEYMASTER_TRUMP_BRIDGE_LATEST.json ]; then
+            OLD_BRIDGE_SHA=$(python -c "import json; print(json.load(open('janus_model/state/KEYMASTER_TRUMP_BRIDGE_LATEST.json')).get('bridge_sha256',''))")
+          fi
+          if [ "$NEW_SHA" = "$OLD_SHA" ] && [ "$NEW_BRIDGE_SHA" = "$OLD_BRIDGE_SHA" ]; then
             echo 'changed=false' >> "$GITHUB_OUTPUT"
           else
             echo 'changed=true' >> "$GITHUB_OUTPUT"
           fi
           echo "new_sha=$NEW_SHA" >> "$GITHUB_OUTPUT"
           echo "old_sha=$OLD_SHA" >> "$GITHUB_OUTPUT"
+          echo "new_bridge_sha=$NEW_BRIDGE_SHA" >> "$GITHUB_OUTPUT"
+          echo "old_bridge_sha=$OLD_BRIDGE_SHA" >> "$GITHUB_OUTPUT"
           echo "KEYMASTER_MECHANISM_STATE=$OLD_SHA->$NEW_SHA"
+          echo "KEYMASTER_TRUMP_BRIDGE_STATE=$OLD_BRIDGE_SHA->$NEW_BRIDGE_SHA"
 
       - name: Persist non-authoritative Keymaster state on main
         if: steps.decide.outputs.changed == 'true' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
@@ -122,8 +156,11 @@ jobs:
         run: |
           set -euo pipefail
           REPORT="$RUNNER_TEMP/keymaster-mechanism-composition.json"
+          BRIDGE="$RUNNER_TEMP/keymaster-trump-bridge.json"
           cp runtime/keymaster-mechanism-composition.json "$REPORT"
+          cp runtime/keymaster-trump-bridge.json "$BRIDGE"
           RECEIPT="janus_model/receipts/keymaster-mechanism-composition-${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT}.json"
+          BRIDGE_RECEIPT="janus_model/receipts/keymaster-trump-bridge-${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT}.json"
 
           git config user.name 'janus-keymaster-mechanism-composition'
           git config user.email 'janus-keymaster-mechanism-composition@users.noreply.github.com'
@@ -133,10 +170,14 @@ jobs:
             git reset --hard origin/main
             mkdir -p janus_model/state janus_model/receipts
             cp "$REPORT" janus_model/state/KEYMASTER_MECHANISM_COMPOSITION_LATEST.json
+            cp "$BRIDGE" janus_model/state/KEYMASTER_TRUMP_BRIDGE_LATEST.json
             cp "$REPORT" "$RECEIPT"
+            cp "$BRIDGE" "$BRIDGE_RECEIPT"
             git add -f \
               janus_model/state/KEYMASTER_MECHANISM_COMPOSITION_LATEST.json \
-              "$RECEIPT"
+              janus_model/state/KEYMASTER_TRUMP_BRIDGE_LATEST.json \
+              "$RECEIPT" \
+              "$BRIDGE_RECEIPT"
 
             if git diff --cached --quiet; then
               echo 'JANUS_KEYMASTER_MECHANISM_NO_STATE_CHANGE'
@@ -161,6 +202,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: janus-keymaster-mechanism-composition-${{ github.run_id }}
-          path: runtime/keymaster-mechanism-composition.json
+          path: |
+            runtime/keymaster-mechanism-composition.json
+            runtime/keymaster-trump-bridge.json
           if-no-files-found: error
           retention-days: 30
