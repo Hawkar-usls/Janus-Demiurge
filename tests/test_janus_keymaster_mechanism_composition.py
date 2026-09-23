@@ -49,6 +49,36 @@ class KeymasterMechanismCompositionTests(unittest.TestCase):
         self.assertEqual(report["firewall"]["D1"], "EMPTY")
         self.assertEqual(report["firewall"]["P_VS_NP"], "OPEN")
 
+    def test_progress_readout_is_route_completeness_not_pnp_probability(self) -> None:
+        reg = load_registry(REGISTRY)
+        cfg = load_contract(CONTRACT)
+        scan = {
+            "snapshot_sha256": "9" * 64,
+            "refs": [],
+            "artifacts": [],
+            "dynamic_mechanisms": [],
+            "dynamic_barriers": [],
+            "normalization_queue": [],
+        }
+        report = compose(reg, scan, cfg)
+        progress = report["progress_readout"]
+        self.assertEqual(progress["metric_kind"], "PROOF_OBLIGATION_COMPLETENESS_NOT_PROBABILITY")
+        self.assertIsNone(progress["p_equals_np_probability"])
+        self.assertEqual(progress["p_vs_np"], "OPEN")
+        self.assertFalse(progress["proof_authorized"])
+        self.assertGreaterEqual(progress["stage"], 0)
+        self.assertLessEqual(progress["stage"], progress["stage_max"])
+        self.assertGreaterEqual(progress["best_route_coverage_percent"], 0.0)
+        self.assertLessEqual(progress["best_route_coverage_percent"], 100.0)
+        self.assertIn("ROUTE_COVERAGE_PERCENT_IS_NOT_P_EQUALS_NP_PROBABILITY", progress["laws"])
+        adoption = report["runtime_adoption_policy"]
+        self.assertTrue(adoption["candidate_use_allowed"])
+        self.assertTrue(adoption["self_application_allowed"])
+        self.assertFalse(adoption["proof_authority_granted"])
+        self.assertFalse(adoption["scientific_claim_promotion_granted"])
+        self.assertFalse(adoption["direct_main_writeback"])
+        self.assertFalse(adoption["automatic_merge"])
+
     def test_missing_interface_queue_is_nonempty(self) -> None:
         reg = load_registry(REGISTRY)
         cfg = load_contract(CONTRACT)
