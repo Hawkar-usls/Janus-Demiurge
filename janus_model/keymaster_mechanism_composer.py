@@ -490,6 +490,69 @@ def _barriers_for_gap(barriers: list[dict], src: str, dst: str) -> list[dict]:
     return sorted(hits, key=lambda x: (-x["penalty"], x["id"]))
 
 
+def _progress_readout(authoritative_paths: list[list[str]], shadow_paths: list[list[str]], gaps: list[dict]) -> dict:
+    best = gaps[0] if gaps else None
+    if authoritative_paths:
+        stage = 3
+        label = "AUTHORITATIVE_COMPLETE_ROUTE_EXISTS"
+        coverage = 100.0
+    elif shadow_paths:
+        stage = 2
+        label = "COMPLETE_ROUTE_EXISTS_WITH_UNSEALED_CANDIDATE"
+        coverage = 100.0
+    elif best:
+        stage = 2
+        label = "ONE_INTERFACE_AWAY_ON_BEST_TYPED_ROUTE"
+        denom = max(1, int(best.get("complete_path_edges_if_closed", 1)))
+        coverage = round(100.0 * int(best.get("proved_context_edges", 0)) / denom, 1)
+    else:
+        stage = 0
+        label = "NO_TYPED_ROUTE_CONTEXT"
+        coverage = 0.0
+
+    best_route = None
+    if best:
+        best_route = {
+            "from_type": best["from_type"],
+            "to_type": best["to_type"],
+            "proved_prefix_edges": best["proved_prefix_edges"],
+            "proved_suffix_edges": best["proved_suffix_edges"],
+            "proved_context_edges": best["proved_context_edges"],
+            "complete_path_edges_if_closed": best["complete_path_edges_if_closed"],
+            "barrier_penalty": best["barrier_penalty"],
+            "lockpick_score": best["lockpick_score"],
+        }
+
+    return {
+        "schema": "janus.keymaster.progress_readout.v1",
+        "metric_kind": "PROOF_OBLIGATION_COMPLETENESS_NOT_PROBABILITY",
+        "stage": stage,
+        "stage_max": 5,
+        "stage_label": label,
+        "stage_ladder": [
+            "0_NO_TYPED_ROUTE_CONTEXT",
+            "1_TYPED_FRAGMENTS_ONLY",
+            "2_SINGLE_GAP_OR_UNSEALED_COMPLETE_ROUTE",
+            "3_AUTHORITATIVE_COMPLETE_ROUTE",
+            "4_INDEPENDENT_REPLAY_AND_RELEASE_GATES",
+            "5_PROOF_AUTHORIZED_RELEASE",
+        ],
+        "best_route_coverage_percent": coverage,
+        "best_route": best_route,
+        "authoritative_complete_route_count": len(authoritative_paths),
+        "shadow_complete_route_count": len(shadow_paths),
+        "p_equals_np_probability": None,
+        "p_vs_np": "OPEN",
+        "proof_authorized": False,
+        "laws": [
+            "ROUTE_COVERAGE_PERCENT_IS_NOT_P_EQUALS_NP_PROBABILITY",
+            "ONE_MISSING_INTERFACE_DOES_NOT_MEAN_ONE_EASY_LEMMA_REMAINS",
+            "COMPLETE_ROUTE_IS_NOT_PROOF_UNTIL_INDEPENDENT_REPLAY_AND_RELEASE_GATES_PASS",
+            "P_VS_NP_REMAINS_OPEN_UNTIL_PROOF_AUTHORIZED_RELEASE",
+        ],
+    }
+
+
 def compose(registry: dict, scan: dict, contract: dict) -> dict:
     merged = list(registry["mechanisms"]) + list(scan.get("dynamic_mechanisms", []))
     by_id: dict[str, dict] = {}
@@ -584,6 +647,19 @@ def compose(registry: dict, scan: dict, contract: dict) -> dict:
         "shadow_paths_including_unsealed_candidates": shadow_paths,
         "missing_interface_queue": gaps[: int(contract["search"].get("max_gap_results", 50))],
         "candidate_only_mechanisms": candidate_only,
+        "progress_readout": _progress_readout(authoritative_paths, shadow_paths, gaps),
+        "runtime_adoption_policy": {
+            "mode": "BEST_ADMITTED_EXECUTABLE_CANDIDATE_FOR_JANUS_INTERNAL_USE",
+            "selection_authority": "KEYMASTER_TRUMP_BRIDGE",
+            "candidate_use_allowed": True,
+            "self_application_allowed": True,
+            "self_application_scope": "CANDIDATE_INTERNAL_TASKS_ONLY",
+            "proof_authority_granted": False,
+            "scientific_claim_promotion_granted": False,
+            "direct_main_writeback": False,
+            "automatic_merge": False,
+            "on_full_authoritative_route": "VERIFY_SOURCE_THEN_SELFTEST_THEN_INDEPENDENT_REPLAY_THEN_RELEASE_GATE",
+        },
         "firewall": {
             "fundamentum_is_scientific_authority": True,
             "automatic_theorem_promotion": False,
@@ -625,6 +701,8 @@ def main() -> None:
         "shadow_paths": len(report["shadow_paths_including_unsealed_candidates"]),
         "missing_interfaces": len(report["missing_interface_queue"]),
         "normalization_queue": len(report["normalization_queue"]),
+        "progress_stage": report["progress_readout"]["stage"],
+        "best_route_coverage_percent": report["progress_readout"]["best_route_coverage_percent"],
         "D1": report["firewall"]["D1"],
         "P_VS_NP": report["firewall"]["P_VS_NP"],
     }, indent=2))
