@@ -3,6 +3,7 @@ import importlib.util
 import json
 from pathlib import Path
 import sys
+import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -56,6 +57,77 @@ class TrumpCandidateRuntimeTests(unittest.TestCase):
         bad["candidate_sources"][0]["repository"] = "someone/else"
         with self.assertRaisesRegex(trump.TrumpCandidateError, "SOURCE_REPOSITORY_NOT_ADMITTED"):
             trump.validate_manifest(bad)
+
+    def test_missing_keymaster_bridge_falls_back_to_manifest_primary(self):
+        with tempfile.TemporaryDirectory(prefix="trump-keymaster-bridge-") as td:
+            source, selection = trump.select_runtime_source(
+                self.manifest,
+                Path(td) / "missing.json",
+            )
+        self.assertEqual(source["id"], "C025_UNIFIED_PROOF_CARRYING_AKINATOR_JEC")
+        self.assertEqual(selection["mode"], "MANIFEST_PRIMARY_FALLBACK")
+        self.assertEqual(selection["bridge_status"], "MISSING")
+
+    def test_valid_keymaster_bridge_selects_admitted_runtime(self):
+        bridge = {
+            "schema": "janus.keymaster.trump_runtime_bridge.v1",
+            "status": "CANDIDATE_RUNTIME_SELECTED",
+            "trump_manifest_sha256": trump.sha256_json(self.manifest),
+            "bridge_sha256": "b" * 64,
+            "selected_source_id": "C025_UNIFIED_PROOF_CARRYING_AKINATOR_JEC",
+            "progress_readout": {
+                "stage": 2,
+                "best_route_coverage_percent": 90.0,
+            },
+            "self_application": {
+                "selected_runtime_may_solve_internal_candidate_tasks": True,
+                "proof_authority": False,
+                "scientific_claim_promotion_authority": False,
+                "direct_main_writeback": False,
+                "automatic_merge": False,
+            },
+            "firewall": {
+                "P_VS_NP": "OPEN",
+                "D1": "EMPTY",
+            },
+        }
+        with tempfile.TemporaryDirectory(prefix="trump-keymaster-bridge-") as td:
+            p = Path(td) / "bridge.json"
+            p.write_text(json.dumps(bridge), encoding="utf-8")
+            source, selection = trump.select_runtime_source(self.manifest, p)
+        self.assertEqual(source["id"], bridge["selected_source_id"])
+        self.assertEqual(selection["mode"], "KEYMASTER_TRUMP_BRIDGE")
+        self.assertEqual(selection["progress_stage"], 2)
+        self.assertEqual(selection["best_route_coverage_percent"], 90.0)
+        self.assertFalse(selection["route_coverage_is_probability"])
+
+    def test_keymaster_bridge_authority_escalation_falls_back(self):
+        bridge = {
+            "schema": "janus.keymaster.trump_runtime_bridge.v1",
+            "status": "CANDIDATE_RUNTIME_SELECTED",
+            "trump_manifest_sha256": trump.sha256_json(self.manifest),
+            "selected_source_id": "C025_UNIFIED_PROOF_CARRYING_AKINATOR_JEC",
+            "progress_readout": {},
+            "self_application": {
+                "selected_runtime_may_solve_internal_candidate_tasks": True,
+                "proof_authority": True,
+                "scientific_claim_promotion_authority": False,
+                "direct_main_writeback": False,
+                "automatic_merge": False,
+            },
+            "firewall": {
+                "P_VS_NP": "OPEN",
+                "D1": "EMPTY",
+            },
+        }
+        with tempfile.TemporaryDirectory(prefix="trump-keymaster-bridge-") as td:
+            p = Path(td) / "bridge.json"
+            p.write_text(json.dumps(bridge), encoding="utf-8")
+            source, selection = trump.select_runtime_source(self.manifest, p)
+        self.assertEqual(source["id"], "C025_UNIFIED_PROOF_CARRYING_AKINATOR_JEC")
+        self.assertEqual(selection["mode"], "MANIFEST_PRIMARY_FALLBACK")
+        self.assertEqual(selection["bridge_status"], "REJECTED_FAIL_CLOSED")
+        self.assertIn("PROOF_AUTHORITY", selection["bridge_error"])
 
     def test_status_receipt_is_candidate_only(self):
         receipt = trump.status_receipt()
