@@ -361,8 +361,10 @@ def scan_fundamentum(repo: Path, contract: dict) -> dict:
             dyn = _dynamic_mechanisms(obj, branch=branch, path=path, blob_sha=blob_sha)
             if dyn:
                 dynamic.extend(dyn)
-            dynamic_barriers.extend(_dynamic_barriers(obj, branch=branch, path=path, blob_sha=blob_sha))
-            if not dyn and summary.get("status") in PROVED_STATUSES | CANDIDATE_STATUSES:
+            dyn_barriers = _dynamic_barriers(obj, branch=branch, path=path, blob_sha=blob_sha)
+            dynamic_barriers.extend(dyn_barriers)
+            evidence_only = obj.get("keymaster_evidence_only") is True
+            if not dyn and not dyn_barriers and not evidence_only and summary.get("status") in PROVED_STATUSES | CANDIDATE_STATUSES:
                 key = (path, blob_sha)
                 if key not in normalization_by_key:
                     normalization_by_key[key] = {

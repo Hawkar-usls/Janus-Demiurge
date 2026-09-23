@@ -132,6 +132,7 @@ class KeymasterMechanismCompositionTests(unittest.TestCase):
             queued = {x["artifact_id"] for x in scan["normalization_queue"]}
             self.assertIn("UNTYPED_PASS", queued)
             self.assertIn("BRANCH_PASS", queued)
+            self.assertNotIn("TEST_DYNAMIC_BARRIER", queued)
 
     def test_mapping_status_is_fail_closed_or_explicitly_normalized(self) -> None:
         cfg = load_contract(CONTRACT)
@@ -191,6 +192,30 @@ class KeymasterMechanismCompositionTests(unittest.TestCase):
         )
         self.assertEqual(hit["barrier_penalty"], 12)
         self.assertEqual(hit["barriers"][0]["kind"], "REPACKAGING")
+
+    def test_evidence_only_receipt_skips_normalization_queue(self) -> None:
+        cfg = load_contract(CONTRACT)
+        with tempfile.TemporaryDirectory(prefix="keymaster-evidence-test-") as td:
+            repo = Path(td)
+            subprocess.check_call(["git", "init", "-b", "main"], cwd=repo)
+            git(repo, "config", "user.email", "keymaster-test@example.invalid")
+            git(repo, "config", "user.name", "Keymaster Test")
+            (repo / "registry").mkdir()
+            (repo / "research").mkdir()
+            (repo / "research" / "receipt.json").write_text(
+                json.dumps({
+                    "artifact_id": "EVIDENCE_ONLY_PASS",
+                    "status": "PASS",
+                    "keymaster_evidence_only": True,
+                }),
+                encoding="utf-8",
+            )
+            git(repo, "add", ".")
+            git(repo, "commit", "-m", "evidence fixture")
+
+            scan = scan_fundamentum(repo, cfg)
+            queued = {x["artifact_id"] for x in scan["normalization_queue"]}
+            self.assertNotIn("EVIDENCE_ONLY_PASS", queued)
 
     def test_dynamic_candidate_cannot_self_promote(self) -> None:
         reg = load_registry(REGISTRY)
