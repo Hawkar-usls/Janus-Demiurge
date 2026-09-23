@@ -4,11 +4,13 @@ on:
   push:
     paths:
       - 'trump/**'
+      - 'janus_model/state/KEYMASTER_TRUMP_BRIDGE_LATEST.json'
       - 'tests/test_trump_candidate_runtime_v0_1.py'
       - '.github/workflows/trump-candidate-runtime-v0.1.yml'
   pull_request:
     paths:
       - 'trump/**'
+      - 'janus_model/state/KEYMASTER_TRUMP_BRIDGE_LATEST.json'
       - 'tests/test_trump_candidate_runtime_v0_1.py'
       - '.github/workflows/trump-candidate-runtime-v0.1.yml'
   workflow_dispatch:
@@ -41,6 +43,11 @@ jobs:
           assert r['use_allowed'] is True
           assert r['authority']['proof_authority'] is False
           assert r['scientific_boundary']['P_VS_NP']=='OPEN'
+          selection=r['source']['selection']
+          assert selection['mode'] in {'KEYMASTER_TRUMP_BRIDGE','MANIFEST_PRIMARY_FALLBACK'}
+          if __import__('pathlib').Path('janus_model/state/KEYMASTER_TRUMP_BRIDGE_LATEST.json').exists():
+              assert selection['mode']=='KEYMASTER_TRUMP_BRIDGE'
+              assert selection['route_coverage_is_probability'] is False
           PY
 
   pinned-source-live-gate:
