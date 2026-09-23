@@ -115,11 +115,12 @@ class JanusKeymasterTests(unittest.TestCase):
 
     def test_keymaster_digest_is_a_learning_cycle_wake_input(self):
         registry = "1" * 64
-        evaluation = "2" * 64
-        first = _learning_cycle_digest(registry, "3" * 64, evaluation)
-        second = _learning_cycle_digest(registry, "4" * 64, evaluation)
+        frontier = "2" * 64
+        evaluation_contract = "5" * 64
+        first = _learning_cycle_digest(registry, "3" * 64, frontier, evaluation_contract)
+        second = _learning_cycle_digest(registry, "4" * 64, frontier, evaluation_contract)
         self.assertNotEqual(first, second)
-        self.assertEqual(first, _learning_cycle_digest(registry, "3" * 64, evaluation))
+        self.assertEqual(first, _learning_cycle_digest(registry, "3" * 64, frontier, evaluation_contract))
 
     def test_tracked_selection_excludes_generated_and_secretish_paths(self):
         with tempfile.TemporaryDirectory() as td:
