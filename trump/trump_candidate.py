@@ -23,6 +23,7 @@ from typing import Any, Callable
 
 ROOT = Path(__file__).resolve().parent
 MANIFEST_PATH = ROOT / "TRUMP_MANIFEST.json"
+KEYMASTER_BRIDGE_PATH = ROOT.parent / "janus_model" / "state" / "KEYMASTER_TRUMP_BRIDGE_LATEST.json"
 USER_AGENT = "JANUS-TRUMP-CANDIDATE/0.1"
 
 
@@ -89,11 +90,74 @@ def validate_manifest(manifest: dict) -> None:
             raise TrumpCandidateError("TRUMP_SOURCE_SCIENTIFIC_BOUNDARY_VIOLATION")
 
 
-def primary_source(manifest: dict) -> dict:
+def _manifest_primary_source(manifest: dict) -> dict:
     for source in manifest["candidate_sources"]:
         if source.get("runtime_role") == "PRIMARY_EXECUTABLE_CANDIDATE":
             return source
     raise TrumpCandidateError("TRUMP_PRIMARY_CANDIDATE_MISSING")
+
+
+def select_runtime_source(
+    manifest: dict,
+    bridge_path: Path = KEYMASTER_BRIDGE_PATH,
+) -> tuple[dict, dict]:
+    fallback = _manifest_primary_source(manifest)
+    fallback_receipt = {
+        "mode": "MANIFEST_PRIMARY_FALLBACK",
+        "bridge_status": "MISSING",
+        "selected_source_id": fallback.get("id"),
+    }
+    if not bridge_path.exists():
+        return fallback, fallback_receipt
+
+    try:
+        bridge = json.loads(bridge_path.read_text(encoding="utf-8"))
+        if bridge.get("schema") != "janus.keymaster.trump_runtime_bridge.v1":
+            raise TrumpCandidateError("TRUMP_KEYMASTER_BRIDGE_SCHEMA_MISMATCH")
+        if bridge.get("trump_manifest_sha256") != sha256_json(manifest):
+            raise TrumpCandidateError("TRUMP_KEYMASTER_BRIDGE_MANIFEST_STALE")
+        firewall = bridge.get("firewall") or {}
+        if firewall.get("P_VS_NP") != "OPEN" or firewall.get("D1") != "EMPTY":
+            raise TrumpCandidateError("TRUMP_KEYMASTER_BRIDGE_SCIENTIFIC_BOUNDARY_VIOLATION")
+        self_application = bridge.get("self_application") or {}
+        if self_application.get("proof_authority") is not False:
+            raise TrumpCandidateError("TRUMP_KEYMASTER_BRIDGE_PROOF_AUTHORITY_VIOLATION")
+        if self_application.get("scientific_claim_promotion_authority") is not False:
+            raise TrumpCandidateError("TRUMP_KEYMASTER_BRIDGE_CLAIM_AUTHORITY_VIOLATION")
+        if self_application.get("direct_main_writeback") is not False:
+            raise TrumpCandidateError("TRUMP_KEYMASTER_BRIDGE_MAIN_WRITE_VIOLATION")
+        if self_application.get("automatic_merge") is not False:
+            raise TrumpCandidateError("TRUMP_KEYMASTER_BRIDGE_AUTO_MERGE_VIOLATION")
+        if self_application.get("selected_runtime_may_solve_internal_candidate_tasks") is not True:
+            raise TrumpCandidateError("TRUMP_KEYMASTER_BRIDGE_RUNTIME_USE_NOT_ADMITTED")
+
+        selected_id = bridge.get("selected_source_id")
+        selected = next((x for x in manifest["candidate_sources"] if x.get("id") == selected_id), None)
+        if selected is None:
+            raise TrumpCandidateError("TRUMP_KEYMASTER_BRIDGE_SOURCE_NOT_IN_MANIFEST")
+        selection = selected.get("runtime_selection") or {}
+        if selection.get("candidate_runtime_admitted") is not True:
+            raise TrumpCandidateError("TRUMP_KEYMASTER_SELECTED_SOURCE_NOT_ADMITTED")
+        return selected, {
+            "mode": "KEYMASTER_TRUMP_BRIDGE",
+            "bridge_status": bridge.get("status"),
+            "bridge_sha256": bridge.get("bridge_sha256"),
+            "selected_source_id": selected_id,
+            "progress_stage": (bridge.get("progress_readout") or {}).get("stage"),
+            "best_route_coverage_percent": (bridge.get("progress_readout") or {}).get("best_route_coverage_percent"),
+            "route_coverage_is_probability": False,
+        }
+    except (OSError, json.JSONDecodeError, TrumpCandidateError) as err:
+        return fallback, {
+            **fallback_receipt,
+            "bridge_status": "REJECTED_FAIL_CLOSED",
+            "bridge_error": str(err),
+        }
+
+
+def primary_source(manifest: dict) -> dict:
+    source, _ = select_runtime_source(manifest)
+    return source
 
 
 def raw_source_url(source: dict) -> str:
@@ -132,16 +196,21 @@ def import_candidate_module(data: bytes, source: dict):
 
 
 def base_receipt(manifest: dict, source: dict) -> dict:
+    selected, selection_receipt = select_runtime_source(manifest)
+    if selected.get("id") != source.get("id"):
+        raise TrumpCandidateError("TRUMP_RUNTIME_SOURCE_SELECTION_DRIFT")
     return {
         "schema": "janus.trump.candidate_runtime_receipt.v0.1",
         "component": "TRUMP",
         "mode": "CANDIDATE_RUNTIME_TISSUE",
         "manifest_digest": sha256_json(manifest),
         "source": {
+            "id": source.get("id"),
             "repository": source["repository"],
             "commit": source["pinned_commit"],
             "path": source["path"],
             "git_blob_sha": source["git_blob_sha"],
+            "selection": selection_receipt,
         },
         "authority": {
             "proof_authority": False,
