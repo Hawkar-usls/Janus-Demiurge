@@ -512,7 +512,7 @@ def _barriers_for_gap(
             continue
         bf = b.get("from_type", "*")
         bt = b.get("to_type", "*")
-        direct = (bf in ("*", src)) and (bt in ("*", dst"))
+        direct = (bf in ("*", src)) and (bt in ("*", dst))
         inherited = False
         if not direct and bf != "*" and bt != "*":
             # If a candidate src->dst edge plus already-authoritative exact
