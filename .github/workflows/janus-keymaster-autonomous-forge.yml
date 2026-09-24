@@ -1,0 +1,214 @@
+name: JANUS Keymaster Autonomous Lockpick Forge
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '43 * * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'janus_model/keymaster_autonomous_forge.py'
+      - 'tests/test_keymaster_autonomous_forge.py'
+      - '.github/workflows/janus-keymaster-autonomous-forge.yml'
+
+permissions:
+  contents: write
+  actions: write
+  copilot-requests: write
+
+concurrency:
+  group: janus-keymaster-autonomous-lockpick-forge
+  cancel-in-progress: false
+
+jobs:
+  forge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verify autonomous forge kernel
+        run: |
+          set -euo pipefail
+          python -m py_compile janus_model/keymaster_autonomous_forge.py
+          python -m unittest -v tests/test_keymaster_autonomous_forge.py
+
+      - name: Fetch current research memory and previous autonomous state
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/keymaster-autonomous
+          curl --fail --location --retry 3 --max-time 30 \
+            'https://raw.githubusercontent.com/Hawkar-usls/TOPA/janus/pnp-autoresearch-state/data/pnp-autoresearch/source-records.jsonl' \
+            -o runtime/keymaster-autonomous/topa-source-records.jsonl
+          curl --fail --location --retry 3 --max-time 30 \
+            'https://raw.githubusercontent.com/Hawkar-usls/Hrain/janus/fundamentum-structural-memory/data/fundamentum-mirror/LATEST.json' \
+            -o runtime/keymaster-autonomous/hrain-latest.json
+          curl --fail --location --retry 3 --max-time 30 \
+            'https://raw.githubusercontent.com/Hawkar-usls/iNaiHR/janus/fundamentum-associative-memory/data/fundamentum-associative/ASSOCIATIONS.json' \
+            -o runtime/keymaster-autonomous/inaihr-associations.json
+
+          git fetch origin janus/autonomous-keymaster-lockpick || true
+          if git show origin/janus/autonomous-keymaster-lockpick:janus_model/autonomous-keymaster/KEYMASTER_AUTONOMOUS_FORGE_LATEST.json \
+              > runtime/keymaster-autonomous/previous.json 2>/dev/null; then
+            echo 'JANUS_AUTONOMOUS_FORGE_PREVIOUS=FOUND'
+          else
+            rm -f runtime/keymaster-autonomous/previous.json
+            echo 'JANUS_AUTONOMOUS_FORGE_PREVIOUS=NONE'
+          fi
+
+      - name: Prepare current #1 lockpick prompt
+        shell: bash
+        run: |
+          set -euo pipefail
+          ARGS=(
+            --keymaster janus_model/state/KEYMASTER_MECHANISM_COMPOSITION_LATEST.json
+            --topa-records runtime/keymaster-autonomous/topa-source-records.jsonl
+            --hrain runtime/keymaster-autonomous/hrain-latest.json
+            --inaihr runtime/keymaster-autonomous/inaihr-associations.json
+            --prompt-out runtime/keymaster-autonomous/prompt.json
+            --out runtime/keymaster-autonomous/preflight.json
+          )
+          if [ -f runtime/keymaster-autonomous/previous.json ]; then
+            ARGS+=(--previous runtime/keymaster-autonomous/previous.json)
+          fi
+          python -m janus_model.keymaster_autonomous_forge "${ARGS[@]}"
+          python - <<'PY'
+          import json
+          p=json.load(open('runtime/keymaster-autonomous/prompt.json'))
+          target=p['target']
+          if target is None:
+              print('JANUS_AUTONOMOUS_FORGE_TARGET=NONE')
+          else:
+              print('JANUS_AUTONOMOUS_FORGE_TARGET=' + target['from_type'] + '->' + target['to_type'])
+              print('JANUS_AUTONOMOUS_FORGE_LOCKPICK_SCORE=' + str(target.get('lockpick_score')))
+          print('JANUS_AUTONOMOUS_FORGE_SEARCH_QUERIES=' + str(len(p['search_queries'])))
+          print('JANUS_AUTONOMOUS_FORGE_DONORS=' + str(len(p['discovery_donors'])))
+          PY
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Synthesize one bounded candidate algorithm
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          COPILOT_AUTO_UPDATE: 'false'
+        shell: bash
+        run: |
+          set +e
+          npm install -g @github/copilot
+          copilot -p "$(cat runtime/keymaster-autonomous/prompt.json)" \
+            --model auto \
+            --output-format=json \
+            --no-ask-user \
+            --no-color \
+            --no-custom-instructions \
+            --no-remote \
+            --no-remote-export \
+            --disable-builtin-mcps \
+            --deny-tool=read \
+            --deny-tool=write \
+            --deny-tool=shell \
+            --deny-tool=url \
+            --deny-tool=memory \
+            > runtime/keymaster-autonomous/model-output.json 2>&1
+          echo "JANUS_AUTONOMOUS_FORGE_MODEL_RC=$?"
+          exit 0
+
+      - name: Finalize fail-closed autonomous candidate state
+        shell: bash
+        run: |
+          set -euo pipefail
+          ARGS=(
+            --keymaster janus_model/state/KEYMASTER_MECHANISM_COMPOSITION_LATEST.json
+            --topa-records runtime/keymaster-autonomous/topa-source-records.jsonl
+            --hrain runtime/keymaster-autonomous/hrain-latest.json
+            --inaihr runtime/keymaster-autonomous/inaihr-associations.json
+            --out runtime/keymaster-autonomous/KEYMASTER_AUTONOMOUS_FORGE_LATEST.json
+          )
+          if [ -f runtime/keymaster-autonomous/previous.json ]; then
+            ARGS+=(--previous runtime/keymaster-autonomous/previous.json)
+          fi
+          if [ -f runtime/keymaster-autonomous/model-output.json ]; then
+            ARGS+=(--model-output runtime/keymaster-autonomous/model-output.json)
+          fi
+          python -m janus_model.keymaster_autonomous_forge "${ARGS[@]}"
+
+          python - <<'PY'
+          import json
+          x=json.load(open('runtime/keymaster-autonomous/KEYMASTER_AUTONOMOUS_FORGE_LATEST.json'))
+          assert x['schema']=='janus.keymaster.autonomous_forge.v1'
+          f=x['firewall']
+          assert f['branch_only_research'] is True
+          assert f['writes_fundamentum_main'] is False
+          assert f['writes_user_research_branch'] is False
+          assert f['automatic_merge'] is False
+          assert f['automatic_theorem_promotion'] is False
+          assert f['automatic_p_equals_np_claim'] is False
+          assert f['model_output_is_proof'] is False
+          assert f['candidate_algorithm_is_proof'] is False
+          assert f['P_VS_NP']=='OPEN'
+          assert f['D1']=='EMPTY'
+          assert x['keymaster_shadow_admission'] is False
+          candidate=x.get('candidate')
+          if candidate:
+              assert candidate['keymaster_shadow_admission'] is False
+              assert candidate['authority']['proof'] is False
+              assert candidate['authority']['automatic_merge'] is False
+          print('JANUS_AUTONOMOUS_FORGE_FIREWALL=PASS')
+          print('JANUS_AUTONOMOUS_FORGE_STATUS=' + x['status'])
+          print('JANUS_AUTONOMOUS_FORGE_CYCLES=' + str(x['cycle_count']))
+          print('JANUS_AUTONOMOUS_FORGE_DISTINCT=' + str(x['distinct_candidate_count']))
+          PY
+
+      - name: Persist only to JANUS autonomous parallel branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          STATE="$RUNNER_TEMP/KEYMASTER_AUTONOMOUS_FORGE_LATEST.json"
+          cp runtime/keymaster-autonomous/KEYMASTER_AUTONOMOUS_FORGE_LATEST.json "$STATE"
+
+          git config user.name 'janus-autonomous-keymaster-forge[bot]'
+          git config user.email 'janus-autonomous-keymaster-forge[bot]@users.noreply.github.com'
+          git fetch origin janus/autonomous-keymaster-lockpick
+          git switch -C janus/autonomous-keymaster-lockpick origin/janus/autonomous-keymaster-lockpick
+
+          mkdir -p janus_model/autonomous-keymaster/receipts
+          cp "$STATE" janus_model/autonomous-keymaster/KEYMASTER_AUTONOMOUS_FORGE_LATEST.json
+          cp "$STATE" "janus_model/autonomous-keymaster/receipts/forge-${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT}.json"
+          git add -f janus_model/autonomous-keymaster
+
+          if git diff --cached --quiet; then
+            echo 'JANUS_AUTONOMOUS_FORGE_NO_CHANGE'
+          else
+            git commit -m "JANUS autonomous lockpick forge: run ${GITHUB_RUN_ID}"
+            git push origin HEAD:janus/autonomous-keymaster-lockpick
+            echo 'JANUS_AUTONOMOUS_FORGE_BRANCH_PERSIST=PASS'
+          fi
+
+      - name: Wake Keymaster rescan
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run janus-keymaster-mechanism-composition.yml --ref main
+          echo 'JANUS_AUTONOMOUS_FORGE_KEYMASTER_WAKE=DISPATCHED'
+
+      - name: Upload forge evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-autonomous-keymaster-forge-${{ github.run_id }}
+          path: |
+            runtime/keymaster-autonomous/prompt.json
+            runtime/keymaster-autonomous/model-output.json
+            runtime/keymaster-autonomous/KEYMASTER_AUTONOMOUS_FORGE_LATEST.json
+          if-no-files-found: warn
+          retention-days: 14
