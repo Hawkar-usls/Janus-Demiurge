@@ -8,6 +8,7 @@ from pathlib import Path
 
 from janus_model.keymaster_mechanism_composer import (
     CANDIDATE_STATUSES,
+    _barriers_for_gap,
     compose,
     load_autonomous_forge,
     load_contract,
@@ -249,6 +250,34 @@ class KeymasterMechanismCompositionTests(unittest.TestCase):
             queued = {x["artifact_id"] for x in scan["normalization_queue"]}
             self.assertIn("NESTED_PASS", queued)
             self.assertNotIn("OPAQUE", queued)
+
+    def test_compositional_barrier_propagates_through_proved_downstream_edge(self) -> None:
+        authoritative = [
+            {
+                "id": "M_B_TO_C",
+                "input_type": "B",
+                "output_type": "C",
+                "status": "PROVED",
+            }
+        ]
+        barriers = [
+            {
+                "id": "B_A_TO_C",
+                "from_type": "A",
+                "to_type": "C",
+                "status": "PROVED",
+                "kind": "REPRESENTATION_LOWER_BOUND",
+                "scope": "A_TO_C_BLOCKED",
+                "authority": {"test": True},
+                "penalty": 6,
+            }
+        ]
+        hits = _barriers_for_gap(barriers, "A", "B", authoritative, 8)
+        self.assertEqual(len(hits), 1)
+        self.assertEqual(hits[0]["id"], "B_A_TO_C")
+        self.assertEqual(hits[0]["inheritance"], "COMPOSITIONAL_IMPLICATION")
+        self.assertEqual(hits[0]["implied_blocked_route"], {"from_type": "A", "to_type": "C"})
+        self.assertEqual(hits[0]["penalty"], 6)
 
     def test_dynamic_barrier_penalty_demotes_known_antiloop(self) -> None:
         reg = load_registry(REGISTRY)
