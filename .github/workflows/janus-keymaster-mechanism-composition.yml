@@ -41,6 +41,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: janus-keymaster-mechanism-composition-${{ github.sha }}
@@ -178,6 +179,19 @@ jobs:
           echo "old_sha=$OLD_SHA" >> "$GITHUB_OUTPUT"
           echo "new_bridge_sha=$NEW_BRIDGE_SHA" >> "$GITHUB_OUTPUT"
           echo "old_bridge_sha=$OLD_BRIDGE_SHA" >> "$GITHUB_OUTPUT"
+          FORGE_RETARGET=$(python - <<'PY'
+          import json
+          x=json.load(open('runtime/keymaster-mechanism-composition.json'))
+          queue=x.get('missing_interface_queue') or []
+          top=queue[0] if queue else {}
+          old=(x.get('autonomous_forge') or {}).get('target') or {}
+          a=(top.get('from_type'),top.get('to_type'))
+          b=(old.get('from_type'),old.get('to_type'))
+          print('true' if a!=(None,None) and a!=b else 'false')
+          PY
+          )
+          echo "forge_retarget=$FORGE_RETARGET" >> "$GITHUB_OUTPUT"
+          echo "KEYMASTER_FORGE_RETARGET=$FORGE_RETARGET"
           echo "KEYMASTER_MECHANISM_STATE=$OLD_SHA->$NEW_SHA"
           echo "KEYMASTER_TRUMP_BRIDGE_STATE=$OLD_BRIDGE_SHA->$NEW_BRIDGE_SHA"
 
@@ -227,6 +241,15 @@ jobs:
 
           echo 'JANUS_KEYMASTER_MECHANISM_PERSIST=FAIL'
           exit 1
+
+      - name: Wake autonomous forge when top lock changes
+        if: steps.decide.outputs.forge_retarget == 'true' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh workflow run janus-keymaster-autonomous-forge.yml --ref main
+          echo 'JANUS_KEYMASTER_FORGE_RETARGET_WAKE=DISPATCHED'
 
       - name: Upload mechanism composition evidence
         if: always()
