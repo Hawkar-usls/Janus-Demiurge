@@ -100,6 +100,25 @@ class AutonomousForgeTests(unittest.TestCase):
         self.assertFalse(state["firewall"]["automatic_p_equals_np_claim"])
         self.assertEqual(state["firewall"]["P_VS_NP"], "OPEN")
 
+    def test_quota_free_fallback_generates_candidate_without_external_model(self) -> None:
+        records = [
+            {
+                "provider": "OPENALEX",
+                "archive_id": "D1",
+                "title": "Tseitin formulas and circuit decomposition",
+                "text": "tseitin circuit treewidth decomposition exact",
+                "source_url": "https://example.invalid/d1",
+                "review_state": "UNEXAMINED",
+                "scientific_authority": "DISCOVERY_METADATA_ONLY",
+            }
+        ]
+        state = build_state(keymaster_report(), records)
+        self.assertEqual(state["status"], "NEW_CANDIDATE_ALGORITHM_PROPOSED")
+        self.assertEqual(state["candidate_proposer"], "DETERMINISTIC_COMBINATORIAL_FALLBACK")
+        self.assertEqual(state["candidate"]["synthesis_origin"], "DETERMINISTIC_COMBINATORIAL_FALLBACK")
+        self.assertFalse(state["candidate"]["keymaster_shadow_admission"])
+        self.assertFalse(state["keymaster_shadow_admission"])
+
     def test_duplicate_candidate_does_not_fake_progress(self) -> None:
         first = build_state(keymaster_report(), [], model_candidate=candidate())
         second = build_state(keymaster_report(), [], previous=first, model_candidate=candidate())
