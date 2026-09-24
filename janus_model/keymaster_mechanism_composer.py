@@ -472,21 +472,78 @@ def _backward_depth(mechanisms: list[dict], goal: str, max_depth: int) -> dict[s
     return depth
 
 
-def _barriers_for_gap(barriers: list[dict], src: str, dst: str) -> list[dict]:
+def _reachable(
+    mechanisms: list[dict],
+    start: str,
+    goal: str,
+    max_depth: int,
+) -> bool:
+    if start == goal:
+        return True
+    by_input: dict[str, list[str]] = {}
+    for row in mechanisms:
+        by_input.setdefault(row["input_type"], []).append(row["output_type"])
+    q = deque([(start, 0)])
+    seen = {start}
+    while q:
+        typ, depth = q.popleft()
+        if depth >= max_depth:
+            continue
+        for out in by_input.get(typ, []):
+            if out == goal:
+                return True
+            if out not in seen:
+                seen.add(out)
+                q.append((out, depth + 1))
+    return False
+
+
+def _barriers_for_gap(
+    barriers: list[dict],
+    src: str,
+    dst: str,
+    authoritative: list[dict],
+    max_depth: int,
+) -> list[dict]:
     hits = []
+    seen: set[str] = set()
     for b in barriers:
         if b.get("status") not in PROVED_STATUSES:
             continue
         bf = b.get("from_type", "*")
         bt = b.get("to_type", "*")
-        if (bf in ("*", src)) and (bt in ("*", dst)):
-            hits.append({
-                "id": b["id"],
-                "kind": b.get("kind", "SCOPED_BLOCKER"),
-                "penalty": int(b.get("penalty", BARRIER_PENALTIES["SCOPED_BLOCKER"])),
-                "scope": b.get("scope"),
-                "authority": b.get("authority"),
-            })
+        direct = (bf in ("*", src)) and (bt in ("*", dst"))
+        inherited = False
+        if not direct and bf != "*" and bt != "*":
+            # If a candidate src->dst edge plus already-authoritative exact
+            # edges would complete a route that a proved barrier forbids, the
+            # gap inherits that barrier. This is implication, not promotion:
+            #
+            #   barrier(bf -> bt)
+            #   bf =>* src ; [candidate src -> dst] ; dst =>* bt
+            #
+            # therefore admitting the candidate would imply the blocked route.
+            inherited = (
+                _reachable(authoritative, bf, src, max_depth)
+                and _reachable(authoritative, dst, bt, max_depth)
+            )
+        if not direct and not inherited:
+            continue
+        if b["id"] in seen:
+            continue
+        seen.add(b["id"])
+        hits.append({
+            "id": b["id"],
+            "kind": b.get("kind", "SCOPED_BLOCKER"),
+            "penalty": int(b.get("penalty", BARRIER_PENALTIES["SCOPED_BLOCKER"])),
+            "scope": b.get("scope"),
+            "authority": b.get("authority"),
+            "inheritance": "DIRECT" if direct else "COMPOSITIONAL_IMPLICATION",
+            "implied_blocked_route": {
+                "from_type": bf,
+                "to_type": bt,
+            },
+        })
     return sorted(hits, key=lambda x: (-x["penalty"], x["id"]))
 
 
@@ -645,7 +702,13 @@ def compose(registry: dict, scan: dict, contract: dict, autonomous_forge: dict |
         for dst, bd in sorted(back.items(), key=lambda x: (x[1], x[0])):
             if src == dst or (src, dst) in existing_pairs:
                 continue
-            gap_barriers = _barriers_for_gap(barriers, src, dst)
+            gap_barriers = _barriers_for_gap(
+                barriers,
+                src,
+                dst,
+                authoritative,
+                max_depth,
+            )
             barrier_penalty = sum(x["penalty"] for x in gap_barriers)
             gaps.append({
                 "from_type": src,
