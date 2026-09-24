@@ -129,25 +129,49 @@ def select_donors(records: list[dict], target: dict | None, limit: int = 12) -> 
     ]
 
 
+LITERATURE_TYPE_ALIASES = {
+    "ARBITRARY_SIGNED_3CNF": "arbitrary signed 3-CNF SAT",
+    "SIGNED_OR3_CSP": "Boolean OR-3 constraint satisfaction problem",
+    "THREE_SHEET_DISJUNCTIVE_CSP": "disjunctive CSP union of tractable relations",
+    "SPARSE_F2_AFFINE_RANK1_COMPLETION": "sparse GF(2) affine rank-one completion Boolean constraints",
+    "XOR_AND_FIXED_BOOLEAN_CSP": "Boolean XOR AND constraint system",
+    "BOOLEAN_XOR_AND_CHECK_CIRCUIT": "Boolean XOR AND circuit parity constraints",
+    "TSEITIN_CNF_EQSAT": "Tseitin CNF equisatisfiable circuit encoding auxiliary variables",
+    "CNF_WITH_POLY_PREFIX_FACTOR_WIDTH_VTREE_ORDER": "CNF vtree factor width knowledge compilation TDD",
+    "BOOLEAN_CIRCUIT_TREEWIDTH_LE_FIXED_K": "Boolean circuit bounded treewidth fixed parameter",
+    "POLY_SIZE_TDD_REPRESENTATION": "polynomial-size TDD structured deterministic DNNF",
+    "SHORT_PP_FIXED_TRACTABLE_BASIS": "short primitive-positive definition fixed tractable constraint language",
+    "TRACTABLE_FIXED_TEMPLATE_CSP": "fixed-template tractable Boolean CSP",
+    "SAT_DECISION_WITNESS": "SAT decision satisfying assignment witness",
+}
+
+
+def literature_phrase(type_id: Any) -> str:
+    key = str(type_id or "")
+    if key in LITERATURE_TYPE_ALIASES:
+        return LITERATURE_TYPE_ALIASES[key]
+    return " ".join(key.lower().split("_"))
+
+
 def build_search_queries(target: dict | None) -> list[str]:
     if not target:
         return []
-    src = str(target.get("from_type") or "").replace("_", " ").lower()
-    dst = str(target.get("to_type") or "").replace("_", " ").lower()
-    scopes = [
-        str(x.get("scope") or "").replace("_", " ").lower()
-        for x in target.get("barriers") or []
-        if x.get("scope")
-    ]
+    src = literature_phrase(target.get("from_type"))
+    dst = literature_phrase(target.get("to_type"))
     queries = [
         f"{src} {dst} exact polynomial algorithm",
-        f"{src} to {dst} reduction reconstruction verification",
-        f"{src} {dst} parameterized tractable representation",
-        f"{src} {dst} dynamic programming decomposition",
+        f"{src} {dst} reduction knowledge compilation",
+        f"{src} {dst} parameterized complexity decomposition",
+        f"{src} {dst} lower bound counterexample",
+        f"{src} dynamic programming {dst}",
+        f"{src} compact representation reconstruction verification {dst}",
     ]
-    for scope in scopes[:2]:
-        queries.append(f"{src} {dst} bypass {scope}")
-    return queries[:6]
+    out=[];seen=set()
+    for query in queries:
+        key=" ".join(query.lower().split())
+        if key not in seen:
+            seen.add(key);out.append(query)
+    return out[:6]
 
 
 def _extract_json_value(raw: str) -> Any:
