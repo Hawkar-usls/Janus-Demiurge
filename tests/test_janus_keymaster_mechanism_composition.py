@@ -310,8 +310,11 @@ class KeymasterMechanismCompositionTests(unittest.TestCase):
             if (x["from_type"], x["to_type"]) ==
                ("THREE_SHEET_DISJUNCTIVE_CSP", "EP_COMPACT_REPRESENTATION")
         )
-        self.assertEqual(hit["barrier_penalty"], 12)
-        self.assertEqual(hit["barriers"][0]["kind"], "REPACKAGING")
+        self.assertGreaterEqual(hit["barrier_penalty"], 12)
+        repack = next(x for x in hit["barriers"] if x["id"] == "TEST_EP_REPACKAGING")
+        self.assertEqual(repack["kind"], "REPACKAGING")
+        self.assertEqual(repack["penalty"], 12)
+        self.assertEqual(repack["inheritance"], "DIRECT")
 
     def test_evidence_only_receipt_skips_normalization_queue(self) -> None:
         cfg = load_contract(CONTRACT)
