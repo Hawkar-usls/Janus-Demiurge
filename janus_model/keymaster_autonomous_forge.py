@@ -256,6 +256,180 @@ def normalize_candidate(candidate: dict, target: dict) -> dict:
     return out
 
 
+def deterministic_candidate_pool(target: dict, donors: list[dict]) -> list[dict]:
+    src = str(target.get("from_type") or "SOURCE")
+    dst = str(target.get("to_type") or "TARGET")
+    donor_titles = [str(x.get("title") or "") for x in donors if x.get("title")]
+    donor_ids = [
+        str(x.get("archive_id") or x.get("source_url"))
+        for x in donors
+        if x.get("archive_id") or x.get("source_url")
+    ]
+
+    families = [
+        {
+            "family": "EXACT_INTERFACE_QUOTIENT",
+            "strategy": (
+                f"Construct an exact observable-signature quotient of {src}; compile quotient transitions into {dst} only "
+                "when every source operation preserves the quotient and the quotient interaction graph has fixed width."
+            ),
+            "steps": [
+                "Extract the source incidence/constraint interface and define an exact signature for each live component.",
+                "Merge only components with byte-identical exact signatures under all exposed source operations.",
+                "Build the quotient interaction graph without semantic-oracle equivalence tests.",
+                "Reject the candidate immediately if quotient width or signature count is not polynomially bounded.",
+                "Compile each quotient node and interface transition into the target circuit representation.",
+                "Reconstruct a source witness by replaying stored exact quotient maps and verify it against the original instance.",
+            ],
+            "falsifiers": [
+                "Search bounded Tseitin families for superpolynomially many exact quotient signatures.",
+                "Search for a pair merged by the proposed signature that separates after one legal source operation.",
+                "Measure target treewidth on adversarial expander-derived instances and reject on unbounded growth.",
+            ],
+        },
+        {
+            "family": "SEPARATOR_SIGNATURE_DP",
+            "strategy": (
+                f"Derive a source-native separator decomposition for {src}, store only exact boundary signatures, and compile "
+                f"the resulting dynamic program into {dst} if separator adhesion and signature algebra remain fixed-width."
+            ),
+            "steps": [
+                "Build a deterministic decomposition from the explicit source incidence structure.",
+                "For each separator, enumerate only exact boundary signatures admitted by the frozen interface grammar.",
+                "Compose child tables by exact join/projection rules with explicit provenance for every transition.",
+                "Reject if separator size, table dimension, or transition fanout lacks a fixed polynomial bound.",
+                "Translate the accepted decomposition to a circuit whose bags correspond to separator states.",
+                "Recover and verify a satisfying assignment or UNSAT certificate by backward table replay.",
+            ],
+            "falsifiers": [
+                "Construct expander/Tseitin instances that force separator adhesion to grow with input size.",
+                "Search for boundary signatures whose exact composition requires exponentially many states.",
+                "Compare reconstructed witnesses against brute force on small exhaustive controls.",
+            ],
+        },
+        {
+            "family": "CYCLE_SPACE_PARITY_OVERLAY",
+            "strategy": (
+                f"For parity-heavy {src}, isolate the GF(2) cycle-space component, route it through polynomial linear algebra, "
+                f"and expose only the residual interaction to {dst}; reject unless the residual circuit width is fixed."
+            ),
+            "steps": [
+                "Extract the GF(2) incidence matrix and compute a polynomial-size cycle/cut-space basis.",
+                "Eliminate pure affine parity degrees of freedom by exact Gaussian elimination.",
+                "Represent each remaining non-affine interaction as a typed boundary constraint over the affine quotient.",
+                "Reject if the number or arity of non-affine boundary interactions is not polynomially and width-bounded.",
+                "Compile the affine solver plus residual boundary controller into the target circuit.",
+                "Lift any target witness through the affine basis and verify all original clauses exactly.",
+            ],
+            "falsifiers": [
+                "Search signed Tseitin controls where non-affine residue remains extensive after affine elimination.",
+                "Search instances where affine quotienting preserves size but target treewidth still grows linearly.",
+                "Exhaustively verify witness lifting on small parity/non-parity mixed instances.",
+            ],
+        },
+        {
+            "family": "TRACTABLE_ISLAND_CONTRACTION",
+            "strategy": (
+                f"Partition {src} into maximal source-certified tractable islands, contract each island to an exact interface "
+                f"relation, and compile the island interaction graph into {dst} only if global interface width stays fixed."
+            ),
+            "steps": [
+                "Detect maximal subinstances certified by existing tractable mechanism contracts.",
+                "Compute exact interface relations for each island using only their admitted polynomial solvers.",
+                "Contract islands while preserving all exposed boundary assignments and reconstruction maps.",
+                "Reject if contraction creates a SAT-like selector, unbounded interface relation, or exponential table.",
+                "Compile the contracted interaction graph to the target fixed-width circuit form.",
+                "Reconstruct island witnesses and verify the complete original assignment.",
+            ],
+            "falsifiers": [
+                "Search mixtures of individually tractable islands whose interface graph encodes unrestricted SAT.",
+                "Search contraction steps that silently introduce explicit selector variables or exponential relations.",
+                "Stress reconstruction when several islands share correlated boundary variables.",
+            ],
+        },
+        {
+            "family": "PROOF_CARRYING_ELIMINATION_SCHEDULE",
+            "strategy": (
+                f"Generate an elimination schedule for {src} where every step carries a local exactness and width certificate; "
+                f"compile the certified schedule into {dst} and reject at the first step lacking a polynomial-width certificate."
+            ),
+            "steps": [
+                "Enumerate a bounded set of deterministic elimination priorities derived from source-local invariants.",
+                "For each proposed elimination, construct an exact local replacement plus reconstruction certificate.",
+                "Maintain a symbolic width ledger charging every new clause, factor, or circuit dependency.",
+                "Reject a schedule immediately if any local certificate fails or cumulative width exceeds the fixed target bound.",
+                "Compile the surviving certified schedule into the target circuit decomposition.",
+                "Replay all certificates backward to reconstruct and verify the source decision/witness.",
+            ],
+            "falsifiers": [
+                "Run the schedule on known elimination-order counterfamilies and reject if width explodes.",
+                "Search for locally cheap steps whose cumulative representation size is superpolynomial.",
+                "Cross-check every accepted local replacement by exhaustive truth-table equivalence on bounded supports.",
+            ],
+        },
+    ]
+
+    out = []
+    for index, spec in enumerate(families):
+        donor_note = donor_titles[index % len(donor_titles)] if donor_titles else "no external donor selected"
+        candidate = {
+            "schema": CANDIDATE_SCHEMA,
+            "candidate_id": f"AUTO_{spec['family']}_{src}_TO_{dst}",
+            "title": f"{spec['family']} candidate for {src} -> {dst}",
+            "target_from_type": src,
+            "target_to_type": dst,
+            "strategy": spec["strategy"] + f" Donor-context anchor: {donor_note}.",
+            "algorithm_steps": spec["steps"],
+            "complexity_plan": {
+                "construction": "Require an explicit polynomial bound on decomposition/quotient construction before admission.",
+                "state": "Require a polynomial bound on all stored signatures/tables and a fixed bound on target width.",
+                "reconstruction": "Store provenance maps at every reduction and require polynomial backward replay.",
+                "verification": "Verify the reconstructed source witness/certificate directly in polynomial time.",
+            },
+            "proof_obligations": [
+                {"id": x, "status": "OPEN", "attack": f"Prove or falsify {x} for {spec['family']} on arbitrary input size."}
+                for x in REQUIRED_PROOF_OBLIGATIONS
+            ],
+            "falsification_tests": [
+                {"id": f"F{i+1}", "test": test}
+                for i, test in enumerate(spec["falsifiers"])
+            ],
+            "donor_ids": donor_ids[:6],
+            "anti_loop_rationale": (
+                f"Operator family {spec['family']} must be compared against existing Keymaster barriers and prior fingerprints; "
+                "a renamed known route or a route requiring a hidden SAT/semantic-equivalence oracle is rejected."
+            ),
+            "resource_firewall": {"hidden_oracle": False, "hidden_exponential_state": False},
+            "authority": {
+                "truth": False,
+                "proof": False,
+                "scientific_claim_promotion": False,
+                "fundamentum_mutation": False,
+                "automatic_merge": False,
+            },
+            "synthesis_origin": "DETERMINISTIC_COMBINATORIAL_FALLBACK",
+            "operator_family": spec["family"],
+        }
+        out.append(candidate)
+    return out
+
+
+def synthesize_deterministic_candidate(
+    target: dict | None,
+    donors: list[dict],
+    previous: dict | None,
+) -> dict | None:
+    if target is None:
+        return None
+    seen = set((previous or {}).get("recent_candidate_fingerprints") or [])
+    pool = deterministic_candidate_pool(target, donors)
+    for row in pool:
+        normalized = normalize_candidate(row, target)
+        if candidate_fingerprint(normalized) not in seen:
+            return row
+    return pool[0] if pool else None
+
+
 def candidate_fingerprint(candidate: dict) -> str:
     return sha256_json({
         "target_from_type": candidate.get("target_from_type"),
@@ -343,9 +517,16 @@ def build_state(report: dict, records: list[dict], *, previous: dict | None = No
     candidate = None
     candidate_error = None
     duplicate = False
-    if target and model_candidate is not None:
+    proposer = "NONE"
+    selected_input = model_candidate
+    if target and selected_input is None:
+        selected_input = synthesize_deterministic_candidate(target, donors, previous)
+        proposer = "DETERMINISTIC_COMBINATORIAL_FALLBACK" if selected_input is not None else "NONE"
+    elif selected_input is not None:
+        proposer = "EXTERNAL_MODEL"
+    if target and selected_input is not None:
         try:
-            candidate = normalize_candidate(model_candidate, target)
+            candidate = normalize_candidate(selected_input, target)
             fp = candidate_fingerprint(candidate)
             duplicate = fp in set(recent)
             candidate["candidate_fingerprint"] = fp
@@ -355,6 +536,22 @@ def build_state(report: dict, records: list[dict], *, previous: dict | None = No
                 recent.append(fp)
         except RuntimeError as err:
             candidate_error = str(err)
+            if proposer == "EXTERNAL_MODEL":
+                fallback = synthesize_deterministic_candidate(target, donors, previous)
+                if fallback is not None:
+                    try:
+                        candidate = normalize_candidate(fallback, target)
+                        proposer = "DETERMINISTIC_COMBINATORIAL_FALLBACK_AFTER_MODEL_REJECTION"
+                        fp = candidate_fingerprint(candidate)
+                        duplicate = fp in set(recent)
+                        candidate["candidate_fingerprint"] = fp
+                        if duplicate:
+                            candidate["status"] = "DUPLICATE_CANDIDATE_NO_ADVANCE"
+                        else:
+                            recent.append(fp)
+                    except RuntimeError as fallback_err:
+                        candidate = None
+                        candidate_error = candidate_error + ";FALLBACK:" + str(fallback_err)
     if target is None:
         status = "NO_OPEN_INTERFACE"
     elif candidate is None:
@@ -377,6 +574,7 @@ def build_state(report: dict, records: list[dict], *, previous: dict | None = No
         "selected_donors": donors,
         "candidate": candidate,
         "candidate_error": candidate_error,
+        "candidate_proposer": proposer,
         "recent_candidate_fingerprints": recent[-32:],
         "prompt_sha256": sha256_json(prompt),
         "source_memory": {
