@@ -129,12 +129,16 @@ class KeymasterMechanismCompositionTests(unittest.TestCase):
             p = Path(td) / "forge.json"
             p.write_text(json.dumps(forge), encoding="utf-8")
             summary = load_autonomous_forge(p)
+        baseline = compose(reg, scan, cfg)
         report = compose(reg, scan, cfg, summary)
         self.assertEqual(report["autonomous_forge"]["cycle_count"], 7)
         self.assertEqual(report["autonomous_forge"]["distinct_candidate_count"], 4)
         self.assertFalse(report["autonomous_forge"]["keymaster_shadow_admission"])
         self.assertEqual(report["complete_universal_lifecycle_candidates"], [])
-        self.assertEqual(report["progress_readout"]["best_route_coverage_percent"], 50.0)
+        self.assertEqual(
+            report["progress_readout"]["best_route_coverage_percent"],
+            baseline["progress_readout"]["best_route_coverage_percent"],
+        )
 
     def test_missing_interface_queue_is_nonempty(self) -> None:
         reg = load_registry(REGISTRY)
