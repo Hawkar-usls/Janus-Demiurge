@@ -553,7 +553,70 @@ def _progress_readout(authoritative_paths: list[list[str]], shadow_paths: list[l
     }
 
 
-def compose(registry: dict, scan: dict, contract: dict) -> dict:
+def load_autonomous_forge(path: Path | None) -> dict | None:
+    if path is None or not path.exists():
+        return None
+    obj = load_json(path)
+    if obj.get("schema") != "janus.keymaster.autonomous_forge.v1":
+        raise RuntimeError("KEYMASTER_AUTONOMOUS_FORGE_SCHEMA_REJECTED")
+    firewall = obj.get("firewall") or {}
+    if firewall.get("branch_only_research") is not True:
+        raise RuntimeError("KEYMASTER_AUTONOMOUS_FORGE_BRANCH_BOUNDARY_REJECTED")
+    for key in (
+        "writes_fundamentum_main",
+        "writes_user_research_branch",
+        "automatic_merge",
+        "automatic_theorem_promotion",
+        "automatic_p_equals_np_claim",
+        "model_output_is_proof",
+        "candidate_algorithm_is_proof",
+    ):
+        if firewall.get(key) is not False:
+            raise RuntimeError(f"KEYMASTER_AUTONOMOUS_FORGE_AUTHORITY_REJECTED:{key}")
+    if firewall.get("P_VS_NP") != "OPEN" or firewall.get("D1") != "EMPTY":
+        raise RuntimeError("KEYMASTER_AUTONOMOUS_FORGE_SCIENTIFIC_BOUNDARY_REJECTED")
+    if obj.get("keymaster_shadow_admission") is not False:
+        raise RuntimeError("KEYMASTER_AUTONOMOUS_FORGE_SHADOW_ADMISSION_REJECTED")
+    candidate = obj.get("candidate")
+    if candidate is not None:
+        if not isinstance(candidate, dict):
+            raise RuntimeError("KEYMASTER_AUTONOMOUS_FORGE_CANDIDATE_REJECTED")
+        if candidate.get("keymaster_shadow_admission") is not False:
+            raise RuntimeError("KEYMASTER_AUTONOMOUS_FORGE_CANDIDATE_SHADOW_REJECTED")
+        authority = candidate.get("authority") or {}
+        if authority.get("proof") is not False or authority.get("automatic_merge") is not False:
+            raise RuntimeError("KEYMASTER_AUTONOMOUS_FORGE_CANDIDATE_AUTHORITY_REJECTED")
+    return {
+        "schema": obj.get("schema"),
+        "status": obj.get("status"),
+        "state_sha256": obj.get("state_sha256"),
+        "cycle_count": int(obj.get("cycle_count") or 0),
+        "candidate_proposal_count": int(obj.get("candidate_proposal_count") or 0),
+        "distinct_candidate_count": int(obj.get("distinct_candidate_count") or 0),
+        "duplicate_candidate_count": int(obj.get("duplicate_candidate_count") or 0),
+        "target": obj.get("target"),
+        "search_queries": obj.get("search_queries") or [],
+        "selected_donor_count": len(obj.get("selected_donors") or []),
+        "candidate": {
+            "candidate_id": candidate.get("candidate_id"),
+            "title": candidate.get("title"),
+            "status": candidate.get("status"),
+            "candidate_fingerprint": candidate.get("candidate_fingerprint"),
+            "keymaster_shadow_admission": False,
+        } if isinstance(candidate, dict) else None,
+        "next_action": obj.get("next_action"),
+        "keymaster_shadow_admission": False,
+        "authority": {
+            "proof": False,
+            "scientific_claim_promotion": False,
+            "automatic_merge": False,
+            "P_VS_NP": "OPEN",
+            "D1": "EMPTY",
+        },
+    }
+
+
+def compose(registry: dict, scan: dict, contract: dict, autonomous_forge: dict | None = None) -> dict:
     merged = list(registry["mechanisms"]) + list(scan.get("dynamic_mechanisms", []))
     by_id: dict[str, dict] = {}
     for row in merged:
@@ -647,6 +710,23 @@ def compose(registry: dict, scan: dict, contract: dict) -> dict:
         "shadow_paths_including_unsealed_candidates": shadow_paths,
         "missing_interface_queue": gaps[: int(contract["search"].get("max_gap_results", 50))],
         "candidate_only_mechanisms": candidate_only,
+        "autonomous_forge": autonomous_forge or {
+            "status": "NOT_CONNECTED",
+            "cycle_count": 0,
+            "candidate_proposal_count": 0,
+            "distinct_candidate_count": 0,
+            "duplicate_candidate_count": 0,
+            "target": None,
+            "candidate": None,
+            "keymaster_shadow_admission": False,
+            "authority": {
+                "proof": False,
+                "scientific_claim_promotion": False,
+                "automatic_merge": False,
+                "P_VS_NP": "OPEN",
+                "D1": "EMPTY",
+            },
+        },
         "progress_readout": _progress_readout(authoritative_paths, shadow_paths, gaps),
         "runtime_adoption_policy": {
             "mode": "BEST_ADMITTED_EXECUTABLE_CANDIDATE_FOR_JANUS_INTERNAL_USE",
@@ -681,13 +761,15 @@ def main() -> None:
     ap.add_argument("--registry", required=True)
     ap.add_argument("--contract", required=True)
     ap.add_argument("--fundamentum", required=True)
+    ap.add_argument("--autonomous-forge")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
 
     registry = load_registry(Path(args.registry))
     contract = load_contract(Path(args.contract))
     scan = scan_fundamentum(Path(args.fundamentum), contract)
-    report = compose(registry, scan, contract)
+    forge = load_autonomous_forge(Path(args.autonomous_forge)) if args.autonomous_forge else None
+    report = compose(registry, scan, contract, forge)
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -703,6 +785,9 @@ def main() -> None:
         "normalization_queue": len(report["normalization_queue"]),
         "progress_stage": report["progress_readout"]["stage"],
         "best_route_coverage_percent": report["progress_readout"]["best_route_coverage_percent"],
+        "autonomous_forge_status": report["autonomous_forge"]["status"],
+        "autonomous_forge_cycles": report["autonomous_forge"]["cycle_count"],
+        "autonomous_forge_distinct_candidates": report["autonomous_forge"]["distinct_candidate_count"],
         "D1": report["firewall"]["D1"],
         "P_VS_NP": report["firewall"]["P_VS_NP"],
     }, indent=2))
