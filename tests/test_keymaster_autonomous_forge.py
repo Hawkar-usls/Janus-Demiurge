@@ -4,7 +4,9 @@ import unittest
 
 from janus_model.keymaster_autonomous_forge import (
     CANDIDATE_SCHEMA,
+    build_search_queries,
     build_state,
+    literature_phrase,
     normalize_candidate,
     select_target,
 )
@@ -99,6 +101,21 @@ class AutonomousForgeTests(unittest.TestCase):
         self.assertFalse(state["firewall"]["automatic_theorem_promotion"])
         self.assertFalse(state["firewall"]["automatic_p_equals_np_claim"])
         self.assertEqual(state["firewall"]["P_VS_NP"], "OPEN")
+
+    def test_internal_type_names_are_translated_for_literature_search(self) -> None:
+        report = keymaster_report()
+        report["missing_interface_queue"][0]["from_type"] = "TSEITIN_CNF_EQSAT"
+        report["missing_interface_queue"][0]["to_type"] = "BOOLEAN_CIRCUIT_TREEWIDTH_LE_FIXED_K"
+        target = select_target(report)
+        queries = build_search_queries(target)
+        self.assertEqual(len(queries), 6)
+        self.assertTrue(any("Tseitin CNF" in q for q in queries))
+        self.assertTrue(any("bounded treewidth" in q for q in queries))
+        self.assertFalse(any("TSEITIN_CNF_EQSAT" in q for q in queries))
+        self.assertEqual(
+            literature_phrase("BOOLEAN_XOR_AND_CHECK_CIRCUIT"),
+            "Boolean XOR AND circuit parity constraints",
+        )
 
     def test_quota_free_fallback_generates_candidate_without_external_model(self) -> None:
         records = [
