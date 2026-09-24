@@ -146,6 +146,23 @@ LITERATURE_TYPE_ALIASES = {
 }
 
 
+LITERATURE_SEARCH_KEYWORDS = {
+    "ARBITRARY_SIGNED_3CNF": "3-SAT CNF",
+    "SIGNED_OR3_CSP": "Boolean OR CSP",
+    "THREE_SHEET_DISJUNCTIVE_CSP": "disjunctive CSP tractable relations",
+    "SPARSE_F2_AFFINE_RANK1_COMPLETION": "GF2 affine rank one constraints",
+    "XOR_AND_FIXED_BOOLEAN_CSP": "XOR AND Boolean CSP",
+    "BOOLEAN_XOR_AND_CHECK_CIRCUIT": "XOR circuits parity",
+    "TSEITIN_CNF_EQSAT": "Tseitin CNF encoding",
+    "CNF_WITH_POLY_PREFIX_FACTOR_WIDTH_VTREE_ORDER": "vtree factor width TDD",
+    "BOOLEAN_CIRCUIT_TREEWIDTH_LE_FIXED_K": "bounded treewidth circuits",
+    "POLY_SIZE_TDD_REPRESENTATION": "TDD structured DNNF",
+    "SHORT_PP_FIXED_TRACTABLE_BASIS": "primitive positive tractable CSP",
+    "TRACTABLE_FIXED_TEMPLATE_CSP": "fixed template tractable CSP",
+    "SAT_DECISION_WITNESS": "SAT decision witness",
+}
+
+
 def literature_phrase(type_id: Any) -> str:
     key = str(type_id or "")
     if key in LITERATURE_TYPE_ALIASES:
@@ -156,15 +173,19 @@ def literature_phrase(type_id: Any) -> str:
 def build_search_queries(target: dict | None) -> list[str]:
     if not target:
         return []
-    src = literature_phrase(target.get("from_type"))
-    dst = literature_phrase(target.get("to_type"))
+    src_id = str(target.get("from_type") or "")
+    dst_id = str(target.get("to_type") or "")
+    src = literature_phrase(src_id)
+    dst = literature_phrase(dst_id)
+    sk = LITERATURE_SEARCH_KEYWORDS.get(src_id, src)
+    dk = LITERATURE_SEARCH_KEYWORDS.get(dst_id, dst)
     queries = [
-        f"{src} {dst} exact polynomial algorithm",
-        f"{src} {dst} reduction knowledge compilation",
-        f"{src} {dst} parameterized complexity decomposition",
-        f"{src} {dst} lower bound counterexample",
-        f"{src} dynamic programming {dst}",
-        f"{src} compact representation reconstruction verification {dst}",
+        f"{sk} {dk}",
+        f"{sk} knowledge compilation",
+        f"{dk} Boolean circuits",
+        f"{sk} {dk} lower bounds",
+        f"{sk} dynamic programming decomposition",
+        f"{dk} parameterized complexity SAT",
     ]
     out=[];seen=set()
     for query in queries:
