@@ -9,6 +9,9 @@ on:
   pull_request:
     paths:
       - 'janus_model/keymaster_mechanism_composer.py'
+      - 'janus_model/keymaster_autonomous_forge.py'
+      - 'tests/test_keymaster_autonomous_forge.py'
+      - '.github/workflows/janus-keymaster-autonomous-forge.yml'
       - 'janus_model/keymaster_trump_bridge.py'
       - 'trump/TRUMP_MANIFEST.json'
       - 'tests/test_janus_keymaster_trump_bridge.py'
@@ -24,6 +27,9 @@ on:
       - feature/keymaster-mechanism-composition-v0
     paths:
       - 'janus_model/keymaster_mechanism_composer.py'
+      - 'janus_model/keymaster_autonomous_forge.py'
+      - 'tests/test_keymaster_autonomous_forge.py'
+      - '.github/workflows/janus-keymaster-autonomous-forge.yml'
       - 'janus_model/keymaster_trump_bridge.py'
       - 'trump/TRUMP_MANIFEST.json'
       - 'tests/test_janus_keymaster_trump_bridge.py'
@@ -71,14 +77,32 @@ jobs:
           git -C runtime/fundamentum fetch --filter=blob:limit=1m --prune origin '+refs/heads/*:refs/remotes/origin/*'
           echo "KEYMASTER_FUNDAMENTUM_BRANCHES=$(git -C runtime/fundamentum for-each-ref --format='%(refname:short)' refs/remotes/origin | wc -l)"
 
+      - name: Fetch JANUS autonomous forge state read-only
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p runtime
+          git fetch origin janus/autonomous-keymaster-lockpick || true
+          if git show origin/janus/autonomous-keymaster-lockpick:janus_model/autonomous-keymaster/KEYMASTER_AUTONOMOUS_FORGE_LATEST.json > runtime/keymaster-autonomous-forge.json 2>/dev/null; then
+            echo 'KEYMASTER_AUTONOMOUS_FORGE_SOURCE=BOUND'
+          else
+            rm -f runtime/keymaster-autonomous-forge.json
+            echo 'KEYMASTER_AUTONOMOUS_FORGE_SOURCE=NOT_AVAILABLE'
+          fi
+
       - name: Run proof-carrying mechanism composition
         run: |
           set -euo pipefail
-          python -m janus_model.keymaster_mechanism_composer \
-            --registry janus_model/keymaster/MECHANISM_REGISTRY-v0.json \
-            --contract janus_model/keymaster/MECHANISM_COMPOSITION_CONTRACT-v1.json \
-            --fundamentum runtime/fundamentum \
+          ARGS=(
+            --registry janus_model/keymaster/MECHANISM_REGISTRY-v0.json
+            --contract janus_model/keymaster/MECHANISM_COMPOSITION_CONTRACT-v1.json
+            --fundamentum runtime/fundamentum
             --out runtime/keymaster-mechanism-composition.json
+          )
+          if [ -f runtime/keymaster-autonomous-forge.json ]; then
+            ARGS+=(--autonomous-forge runtime/keymaster-autonomous-forge.json)
+          fi
+          python -m janus_model.keymaster_mechanism_composer "${ARGS[@]}"
 
       - name: Build Keymaster → TRUMP candidate bridge
         run: |
@@ -105,6 +129,13 @@ jobs:
           assert f['complete_path_is_proof'] is False
           assert f['D1']=='EMPTY'
           assert f['P_VS_NP']=='OPEN'
+          af=x['autonomous_forge']
+          assert af['keymaster_shadow_admission'] is False
+          assert af['authority']['proof'] is False
+          assert af['authority']['scientific_claim_promotion'] is False
+          assert af['authority']['automatic_merge'] is False
+          assert af['authority']['P_VS_NP']=='OPEN'
+          assert af['authority']['D1']=='EMPTY'
           p=x['progress_readout']
           assert p['metric_kind']=='PROOF_OBLIGATION_COMPLETENESS_NOT_PROBABILITY'
           assert p['p_equals_np_probability'] is None
