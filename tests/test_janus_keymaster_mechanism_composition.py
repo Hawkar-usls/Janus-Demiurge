@@ -9,6 +9,7 @@ from pathlib import Path
 from janus_model.keymaster_mechanism_composer import (
     CANDIDATE_STATUSES,
     compose,
+    load_autonomous_forge,
     load_contract,
     load_registry,
     scan_fundamentum,
@@ -78,6 +79,62 @@ class KeymasterMechanismCompositionTests(unittest.TestCase):
         self.assertFalse(adoption["scientific_claim_promotion_granted"])
         self.assertFalse(adoption["direct_main_writeback"])
         self.assertFalse(adoption["automatic_merge"])
+
+    def test_autonomous_forge_is_activity_only_and_cannot_enter_shadow_graph(self) -> None:
+        reg = load_registry(REGISTRY)
+        cfg = load_contract(CONTRACT)
+        scan = {
+            "snapshot_sha256": "8" * 64,
+            "refs": [],
+            "artifacts": [],
+            "dynamic_mechanisms": [],
+            "dynamic_barriers": [],
+            "normalization_queue": [],
+        }
+        forge = {
+            "schema": "janus.keymaster.autonomous_forge.v1",
+            "status": "NEW_CANDIDATE_ALGORITHM_PROPOSED",
+            "state_sha256": "f" * 64,
+            "cycle_count": 7,
+            "candidate_proposal_count": 5,
+            "distinct_candidate_count": 4,
+            "duplicate_candidate_count": 1,
+            "target": {"from_type": "A", "to_type": "B"},
+            "search_queries": ["A B exact polynomial algorithm"],
+            "selected_donors": [{"title": "donor"}],
+            "candidate": {
+                "candidate_id": "AUTO-1",
+                "title": "candidate",
+                "status": "CANDIDATE_ALGORITHM_PROPOSED_UNVERIFIED",
+                "candidate_fingerprint": "e" * 64,
+                "keymaster_shadow_admission": False,
+                "authority": {"proof": False, "automatic_merge": False},
+            },
+            "next_action": "RUN_PROOF_OBLIGATION_AND_FALSIFICATION_GATES",
+            "keymaster_shadow_admission": False,
+            "firewall": {
+                "branch_only_research": True,
+                "writes_fundamentum_main": False,
+                "writes_user_research_branch": False,
+                "automatic_merge": False,
+                "automatic_theorem_promotion": False,
+                "automatic_p_equals_np_claim": False,
+                "model_output_is_proof": False,
+                "candidate_algorithm_is_proof": False,
+                "P_VS_NP": "OPEN",
+                "D1": "EMPTY",
+            },
+        }
+        with tempfile.TemporaryDirectory(prefix="keymaster-forge-test-") as td:
+            p = Path(td) / "forge.json"
+            p.write_text(json.dumps(forge), encoding="utf-8")
+            summary = load_autonomous_forge(p)
+        report = compose(reg, scan, cfg, summary)
+        self.assertEqual(report["autonomous_forge"]["cycle_count"], 7)
+        self.assertEqual(report["autonomous_forge"]["distinct_candidate_count"], 4)
+        self.assertFalse(report["autonomous_forge"]["keymaster_shadow_admission"])
+        self.assertEqual(report["complete_universal_lifecycle_candidates"], [])
+        self.assertEqual(report["progress_readout"]["best_route_coverage_percent"], 50.0)
 
     def test_missing_interface_queue_is_nonempty(self) -> None:
         reg = load_registry(REGISTRY)
