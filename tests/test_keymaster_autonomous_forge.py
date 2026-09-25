@@ -136,12 +136,30 @@ class AutonomousForgeTests(unittest.TestCase):
         self.assertFalse(state["candidate"]["keymaster_shadow_admission"])
         self.assertFalse(state["keymaster_shadow_admission"])
 
-    def test_duplicate_candidate_does_not_fake_progress(self) -> None:
+    def test_pending_candidate_blocks_candidate_churn_until_attacked(self) -> None:
         first = build_state(keymaster_report(), [], model_candidate=candidate())
         second = build_state(keymaster_report(), [], previous=first, model_candidate=candidate())
-        self.assertEqual(second["status"], "DUPLICATE_CANDIDATE_NO_ADVANCE")
-        self.assertEqual(second["distinct_candidate_count"], 1)
-        self.assertEqual(second["duplicate_candidate_count"], 1)
+        self.assertEqual(second["status"], "WAITING_FOR_CANDIDATE_ATTACK")
+        self.assertEqual(second["candidate_proposer"], "CARRY_FORWARD_PENDING_CANDIDATE")
+        self.assertEqual(second["candidate"]["candidate_id"], first["candidate"]["candidate_id"])
+        self.assertEqual(second["candidate_proposal_count"], first["candidate_proposal_count"])
+        self.assertEqual(second["distinct_candidate_count"], first["distinct_candidate_count"])
+        self.assertEqual(second["duplicate_candidate_count"], first["duplicate_candidate_count"])
+        self.assertEqual(second["next_action"], "RUN_PROOF_OBLIGATION_AND_FALSIFICATION_GATES")
+
+    def test_target_change_allows_new_candidate_generation(self) -> None:
+        first = build_state(keymaster_report(), [], model_candidate=candidate())
+        changed = keymaster_report()
+        changed["missing_interface_queue"][0]["from_type"] = "C"
+        changed["missing_interface_queue"][0]["to_type"] = "D"
+        new_candidate = candidate()
+        new_candidate["candidate_id"] = "candidate-2"
+        new_candidate["target_from_type"] = "C"
+        new_candidate["target_to_type"] = "D"
+        second = build_state(changed, [], previous=first, model_candidate=new_candidate)
+        self.assertEqual(second["status"], "NEW_CANDIDATE_ALGORITHM_PROPOSED")
+        self.assertEqual(second["candidate_proposal_count"], first["candidate_proposal_count"] + 1)
+        self.assertEqual(second["distinct_candidate_count"], first["distinct_candidate_count"] + 1)
 
 
 if __name__ == "__main__":
