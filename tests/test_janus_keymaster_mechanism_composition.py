@@ -155,6 +155,15 @@ class KeymasterMechanismCompositionTests(unittest.TestCase):
             "candidate_proposal_count": 5,
             "distinct_candidate_count": 4,
             "duplicate_candidate_count": 1,
+            "deferred_candidate_count": 2,
+            "mathematically_falsified_candidate_count": 1,
+            "last_candidate_attack": {
+                "status": "DEFERRED_NONEXECUTABLE_PROPOSAL",
+                "candidate_id": "AUTO-0",
+                "advance_forge": True,
+                "mathematical_falsification": False,
+                "attack_sha256": "a" * 64,
+            },
             "target": {"from_type": "A", "to_type": "B"},
             "search_queries": ["A B exact polynomial algorithm"],
             "selected_donors": [{"title": "donor"}],
@@ -189,6 +198,9 @@ class KeymasterMechanismCompositionTests(unittest.TestCase):
         report = compose(reg, scan, cfg, summary)
         self.assertEqual(report["autonomous_forge"]["cycle_count"], 7)
         self.assertEqual(report["autonomous_forge"]["distinct_candidate_count"], 4)
+        self.assertEqual(report["autonomous_forge"]["deferred_candidate_count"], 2)
+        self.assertEqual(report["autonomous_forge"]["mathematically_falsified_candidate_count"], 1)
+        self.assertEqual(report["autonomous_forge"]["last_candidate_attack"]["status"], "DEFERRED_NONEXECUTABLE_PROPOSAL")
         self.assertFalse(report["autonomous_forge"]["keymaster_shadow_admission"])
         self.assertEqual(report["complete_universal_lifecycle_candidates"], [])
         self.assertEqual(
