@@ -1,0 +1,147 @@
+name: JANUS Keymaster Candidate Attacker
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '03 * * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'janus_model/keymaster_candidate_attacker.py'
+      - 'tests/test_keymaster_candidate_attacker.py'
+      - '.github/workflows/janus-keymaster-candidate-attacker.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: janus-autonomous-keymaster-loop
+  cancel-in-progress: false
+
+jobs:
+  attack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verify candidate attacker
+        run: |
+          set -euo pipefail
+          python -m py_compile janus_model/keymaster_candidate_attacker.py
+          python -m unittest -v tests/test_keymaster_candidate_attacker.py
+
+      - name: Fetch current autonomous forge candidate
+        id: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/keymaster-attack
+          git fetch origin janus/autonomous-keymaster-lockpick || true
+          if git show origin/janus/autonomous-keymaster-lockpick:janus_model/autonomous-keymaster/KEYMASTER_AUTONOMOUS_FORGE_LATEST.json \
+              > runtime/keymaster-attack/forge.json 2>/dev/null; then
+            echo 'available=true' >> "$GITHUB_OUTPUT"
+            echo 'JANUS_KEYMASTER_ATTACK_FORGE_SOURCE=BOUND'
+          else
+            echo 'available=false' >> "$GITHUB_OUTPUT"
+            echo 'JANUS_KEYMASTER_ATTACK_FORGE_SOURCE=NOT_AVAILABLE'
+          fi
+
+      - name: Attack current candidate fail-closed
+        if: steps.source.outputs.available == 'true'
+        id: attack
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m janus_model.keymaster_candidate_attacker \
+            --keymaster janus_model/state/KEYMASTER_MECHANISM_COMPOSITION_LATEST.json \
+            --forge runtime/keymaster-attack/forge.json \
+            --out runtime/keymaster-attack/KEYMASTER_CANDIDATE_ATTACK_LATEST.json
+
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          x=json.load(open('runtime/keymaster-attack/KEYMASTER_CANDIDATE_ATTACK_LATEST.json'))
+          print('advance=' + ('true' if x['advance_forge'] else 'false'))
+          print('status=' + x['status'])
+          PY
+
+      - name: Verify attack authority firewall
+        if: steps.source.outputs.available == 'true'
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          x=json.load(open('runtime/keymaster-attack/KEYMASTER_CANDIDATE_ATTACK_LATEST.json'))
+          assert x['schema']=='janus.keymaster.autonomous_candidate_attack.v1'
+          assert x['candidate_is_proved'] is False
+          assert x['candidate_is_keymaster_edge'] is False
+          assert x['keymaster_shadow_admission'] is False
+          f=x['firewall']
+          assert f['candidate_survival_is_proof'] is False
+          assert f['deferred_nonexecutability_is_mathematical_falsification'] is False
+          assert f['automatic_shadow_admission'] is False
+          assert f['automatic_theorem_promotion'] is False
+          assert f['automatic_p_equals_np_claim'] is False
+          assert f['automatic_merge'] is False
+          assert f['writes_fundamentum_main'] is False
+          assert f['writes_user_research_branch'] is False
+          assert f['P_VS_NP']=='OPEN'
+          assert f['D1']=='EMPTY'
+          if x['status']=='DEFERRED_NONEXECUTABLE_PROPOSAL':
+              assert x['advance_forge'] is True
+              assert x['mathematical_falsification'] is False
+          print('JANUS_KEYMASTER_CANDIDATE_ATTACK_FIREWALL=PASS')
+          print('JANUS_KEYMASTER_CANDIDATE_ATTACK_STATUS=' + x['status'])
+          print('JANUS_KEYMASTER_CANDIDATE_ATTACK_ADVANCE=' + str(x['advance_forge']))
+          PY
+
+      - name: Persist attack result only to autonomous branch
+        if: steps.source.outputs.available == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          ATTACK="$RUNNER_TEMP/KEYMASTER_CANDIDATE_ATTACK_LATEST.json"
+          cp runtime/keymaster-attack/KEYMASTER_CANDIDATE_ATTACK_LATEST.json "$ATTACK"
+
+          git config user.name 'janus-keymaster-attacker[bot]'
+          git config user.email 'janus-keymaster-attacker[bot]@users.noreply.github.com'
+          git fetch origin janus/autonomous-keymaster-lockpick
+          git switch -C janus/autonomous-keymaster-lockpick origin/janus/autonomous-keymaster-lockpick
+
+          mkdir -p janus_model/autonomous-keymaster/receipts
+          cp "$ATTACK" janus_model/autonomous-keymaster/KEYMASTER_CANDIDATE_ATTACK_LATEST.json
+          cp "$ATTACK" "janus_model/autonomous-keymaster/receipts/attack-${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT}.json"
+          git add -f janus_model/autonomous-keymaster
+
+          if git diff --cached --quiet; then
+            echo 'JANUS_KEYMASTER_ATTACK_NO_STATE_CHANGE'
+          else
+            git commit -m "JANUS autonomous candidate attack: run ${GITHUB_RUN_ID}"
+            git push origin HEAD:janus/autonomous-keymaster-lockpick
+            echo 'JANUS_KEYMASTER_ATTACK_PERSIST=PASS'
+          fi
+
+      - name: Advance forge when current candidate is released
+        if: steps.source.outputs.available == 'true' && steps.attack.outputs.advance == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh workflow run janus-keymaster-autonomous-forge.yml --ref main
+          echo 'JANUS_KEYMASTER_ATTACK_FORGE_WAKE=DISPATCHED'
+
+      - name: Upload attack evidence
+        if: always() && steps.source.outputs.available == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-keymaster-candidate-attack-${{ github.run_id }}
+          path: runtime/keymaster-attack/KEYMASTER_CANDIDATE_ATTACK_LATEST.json
+          if-no-files-found: error
+          retention-days: 14
