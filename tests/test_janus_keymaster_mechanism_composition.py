@@ -81,6 +81,61 @@ class KeymasterMechanismCompositionTests(unittest.TestCase):
         self.assertFalse(adoption["direct_main_writeback"])
         self.assertFalse(adoption["automatic_merge"])
 
+    def test_proven_delta_reports_zero_when_only_report_activity_changes(self) -> None:
+        reg = load_registry(REGISTRY)
+        cfg = load_contract(CONTRACT)
+        scan = {
+            "snapshot_sha256": "7" * 64,
+            "refs": [],
+            "artifacts": [],
+            "dynamic_mechanisms": [],
+            "dynamic_barriers": [],
+            "normalization_queue": [],
+        }
+        baseline = compose(reg, scan, cfg)
+        current = compose(reg, scan, cfg, previous_report=baseline)
+        delta = current["proven_delta"]
+        self.assertEqual(delta["mathematical_progress"], "ZERO")
+        self.assertEqual(delta["proven_advance_event_count"], 0)
+        self.assertEqual(delta["authoritative_edge_delta"], 0)
+        self.assertEqual(delta["proved_barrier_delta"], 0)
+        self.assertEqual(delta["complete_route_delta"], 0)
+        self.assertEqual(delta["stage_delta"], 0)
+        self.assertEqual(delta["law"], "ROUTE_COVERAGE_DELTA_IS_NOT_PROVEN_PROGRESS")
+
+    def test_proven_delta_counts_new_authoritative_edge_as_positive(self) -> None:
+        reg = load_registry(REGISTRY)
+        cfg = load_contract(CONTRACT)
+        base_scan = {
+            "snapshot_sha256": "6" * 64,
+            "refs": [],
+            "artifacts": [],
+            "dynamic_mechanisms": [],
+            "dynamic_barriers": [],
+            "normalization_queue": [],
+        }
+        baseline = compose(reg, base_scan, cfg)
+        new_edge = {
+            "id": "TEST_NEW_PROVED_EDGE",
+            "input_type": "TEST_DELTA_A",
+            "output_type": "TEST_DELTA_B",
+            "status": "PROVED",
+            "semantics": "EXACT",
+            "construction_poly": True,
+            "state_poly": True,
+            "reconstruction_poly": True,
+            "verification_poly": True,
+            "universal_scope": True,
+            "roles": ["REPRESENTATION"],
+            "authority": {"test": True},
+        }
+        scan = {**base_scan, "dynamic_mechanisms": [new_edge]}
+        current = compose(reg, scan, cfg, previous_report=baseline)
+        delta = current["proven_delta"]
+        self.assertEqual(delta["mathematical_progress"], "POSITIVE")
+        self.assertEqual(delta["authoritative_edge_delta"], 1)
+        self.assertGreaterEqual(delta["proven_advance_event_count"], 1)
+
     def test_autonomous_forge_is_activity_only_and_cannot_enter_shadow_graph(self) -> None:
         reg = load_registry(REGISTRY)
         cfg = load_contract(CONTRACT)
