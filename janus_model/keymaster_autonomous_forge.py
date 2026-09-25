@@ -35,6 +35,32 @@ def load_json(path: Path | None, default: Any = None) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+ATTACK_SCHEMA = "janus.keymaster.autonomous_candidate_attack.v1"
+
+
+def validate_attack_result(value: dict | None) -> dict | None:
+    if value is None:
+        return None
+    if value.get("schema") != ATTACK_SCHEMA:
+        raise RuntimeError("AUTONOMOUS_FORGE_ATTACK_SCHEMA_REJECTED")
+    fw = value.get("firewall") or {}
+    if fw.get("P_VS_NP") != "OPEN" or fw.get("D1") != "EMPTY":
+        raise RuntimeError("AUTONOMOUS_FORGE_ATTACK_SCIENTIFIC_BOUNDARY_REJECTED")
+    if fw.get("automatic_theorem_promotion") is not False:
+        raise RuntimeError("AUTONOMOUS_FORGE_ATTACK_PROMOTION_REJECTED")
+    if fw.get("automatic_p_equals_np_claim") is not False:
+        raise RuntimeError("AUTONOMOUS_FORGE_ATTACK_PNP_CLAIM_REJECTED")
+    if fw.get("automatic_merge") is not False:
+        raise RuntimeError("AUTONOMOUS_FORGE_ATTACK_MERGE_REJECTED")
+    if fw.get("writes_fundamentum_main") is not False:
+        raise RuntimeError("AUTONOMOUS_FORGE_ATTACK_MAIN_WRITE_REJECTED")
+    if value.get("candidate_is_proved") is not False:
+        raise RuntimeError("AUTONOMOUS_FORGE_ATTACK_PROOF_ESCALATION_REJECTED")
+    if value.get("keymaster_shadow_admission") is not False:
+        raise RuntimeError("AUTONOMOUS_FORGE_ATTACK_SHADOW_ESCALATION_REJECTED")
+    return value
+
+
 def load_jsonl(path: Path | None) -> list[dict]:
     if path is None or not path.exists():
         return []
@@ -549,7 +575,16 @@ def build_prompt_packet(report: dict, target: dict | None, donors: list[dict], p
     }
 
 
-def build_state(report: dict, records: list[dict], *, previous: dict | None = None, model_candidate: dict | None = None, hrain: dict | None = None, inaihr: dict | None = None) -> dict:
+def build_state(
+    report: dict,
+    records: list[dict],
+    *,
+    previous: dict | None = None,
+    model_candidate: dict | None = None,
+    hrain: dict | None = None,
+    inaihr: dict | None = None,
+    attack_result: dict | None = None,
+) -> dict:
     validate_keymaster(report)
     target = select_target(report)
     donors = select_donors(records, target)
@@ -558,6 +593,8 @@ def build_state(report: dict, records: list[dict], *, previous: dict | None = No
     prev_proposals = int((previous or {}).get("candidate_proposal_count") or 0)
     prev_distinct = int((previous or {}).get("distinct_candidate_count") or 0)
     prev_duplicates = int((previous or {}).get("duplicate_candidate_count") or 0)
+    prev_deferred = int((previous or {}).get("deferred_candidate_count") or 0)
+    prev_falsified = int((previous or {}).get("mathematically_falsified_candidate_count") or 0)
     recent = list((previous or {}).get("recent_candidate_fingerprints") or [])[-31:]
     candidate = None
     candidate_error = None
@@ -571,11 +608,20 @@ def build_state(report: dict, records: list[dict], *, previous: dict | None = No
         and previous_target.get("from_type") == target.get("from_type")
         and previous_target.get("to_type") == target.get("to_type")
     )
+    attack_result = validate_attack_result(attack_result)
+    attack_matches_previous = (
+        isinstance(attack_result, dict)
+        and isinstance(previous_candidate, dict)
+        and attack_result.get("candidate_fingerprint") == previous_candidate.get("candidate_fingerprint")
+        and attack_result.get("candidate_id") == previous_candidate.get("candidate_id")
+    )
+    attack_advances_forge = attack_matches_previous and attack_result.get("advance_forge") is True
     pending_attack = (
         same_target
         and isinstance(previous_candidate, dict)
         and previous_candidate.get("status") == "CANDIDATE_ALGORITHM_PROPOSED_UNVERIFIED"
         and (previous or {}).get("next_action") == "RUN_PROOF_OBLIGATION_AND_FALSIFICATION_GATES"
+        and not attack_advances_forge
     )
 
     selected_input = model_candidate
@@ -633,6 +679,20 @@ def build_state(report: dict, records: list[dict], *, previous: dict | None = No
         "candidate_proposal_count": prev_proposals + (1 if candidate is not None and not pending_attack else 0),
         "distinct_candidate_count": prev_distinct + (1 if candidate is not None and not duplicate and not pending_attack else 0),
         "duplicate_candidate_count": prev_duplicates + (1 if duplicate and not pending_attack else 0),
+        "deferred_candidate_count": prev_deferred + (
+            1 if attack_advances_forge and str(attack_result.get("status") or "").startswith("DEFERRED_") else 0
+        ),
+        "mathematically_falsified_candidate_count": prev_falsified + (
+            1 if attack_advances_forge and attack_result.get("mathematical_falsification") is True else 0
+        ),
+        "last_candidate_attack": {
+            "status": attack_result.get("status"),
+            "candidate_id": attack_result.get("candidate_id"),
+            "candidate_fingerprint": attack_result.get("candidate_fingerprint"),
+            "advance_forge": attack_result.get("advance_forge"),
+            "mathematical_falsification": attack_result.get("mathematical_falsification"),
+            "attack_sha256": attack_result.get("attack_sha256"),
+        } if attack_matches_previous else None,
         "keymaster_report_sha256": report.get("report_sha256"),
         "target": target,
         "search_queries": build_search_queries(target),
@@ -681,6 +741,7 @@ def main() -> None:
     ap.add_argument("--inaihr")
     ap.add_argument("--previous")
     ap.add_argument("--model-output")
+    ap.add_argument("--attack-result")
     ap.add_argument("--prompt-out")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
@@ -690,6 +751,7 @@ def main() -> None:
     hrain = load_json(Path(args.hrain), {}) if args.hrain else {}
     inaihr = load_json(Path(args.inaihr), {}) if args.inaihr else {}
     model_candidate = parse_model_candidate(Path(args.model_output)) if args.model_output else None
+    attack_result = load_json(Path(args.attack_result), None) if args.attack_result else None
     target = select_target(validate_keymaster(report))
     donors = select_donors(records, target)
     prompt = build_prompt_packet(report, target, donors, previous, hrain, inaihr)
@@ -697,7 +759,15 @@ def main() -> None:
         p = Path(args.prompt_out)
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(json.dumps(prompt, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    obj = build_state(report, records, previous=previous, model_candidate=model_candidate, hrain=hrain, inaihr=inaihr)
+    obj = build_state(
+        report,
+        records,
+        previous=previous,
+        model_candidate=model_candidate,
+        hrain=hrain,
+        inaihr=inaihr,
+        attack_result=attack_result,
+    )
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -706,6 +776,8 @@ def main() -> None:
         "cycle_count": obj["cycle_count"],
         "candidate_proposal_count": obj["candidate_proposal_count"],
         "distinct_candidate_count": obj["distinct_candidate_count"],
+        "deferred_candidate_count": obj["deferred_candidate_count"],
+        "mathematically_falsified_candidate_count": obj["mathematically_falsified_candidate_count"],
         "target": obj["target"],
         "candidate_id": (obj.get("candidate") or {}).get("candidate_id"),
         "keymaster_shadow_admission": obj["keymaster_shadow_admission"],
