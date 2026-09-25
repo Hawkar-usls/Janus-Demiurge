@@ -359,6 +359,10 @@ def build_attack(
         candidate_survives = False
         rejection = "REFERENCE_PROFILE_DOES_NOT_YET_IMPLEMENT_FULL_CANDIDATE"
         advance_forge = True
+    elif not controls_rows:
+        status = "ATTACK_CONTROLS_NOT_MATERIALIZED"
+        candidate_survives = False
+        rejection = "NO_EXECUTABLE_CONTROL_REPLAY"
     else:
         status = "SURVIVES_EXECUTABLE_REFERENCE_BATTERY__PROOF_OBLIGATIONS_OPEN"
         candidate_survives = True
