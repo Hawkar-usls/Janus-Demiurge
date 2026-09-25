@@ -209,11 +209,17 @@ jobs:
             echo 'JANUS_AUTONOMOUS_FORGE_BRANCH_PERSIST=PASS'
           fi
 
-      - name: Wake executable candidate materializer
+      - name: Wake executable candidate materializer only for a novel candidate
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          STATUS=$(python -c "import json; print(json.load(open('janus_model/autonomous-keymaster/KEYMASTER_AUTONOMOUS_FORGE_LATEST.json')).get('status',''))")
+          CANDIDATE_STATUS=$(python -c "import json; x=json.load(open('janus_model/autonomous-keymaster/KEYMASTER_AUTONOMOUS_FORGE_LATEST.json')); print((x.get('candidate') or {}).get('status',''))")
+          if [ "$STATUS" != "NEW_CANDIDATE_ALGORITHM_PROPOSED" ] || [ "$CANDIDATE_STATUS" != "CANDIDATE_ALGORITHM_PROPOSED_UNVERIFIED" ]; then
+            echo "JANUS_AUTONOMOUS_FORGE_MATERIALIZER_WAKE=SKIPPED_STATUS:$STATUS:$CANDIDATE_STATUS"
+            exit 0
+          fi
           gh workflow run janus-keymaster-candidate-materializer.yml --ref main
           echo 'JANUS_AUTONOMOUS_FORGE_MATERIALIZER_WAKE=DISPATCHED'
 

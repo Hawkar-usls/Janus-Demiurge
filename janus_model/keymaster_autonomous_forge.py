@@ -438,6 +438,107 @@ def deterministic_candidate_pool(target: dict, donors: list[dict]) -> list[dict]
                 "Cross-check every accepted local replacement by exhaustive truth-table equivalence on bounded supports.",
             ],
         },
+        {
+            "family": "SYMBOLIC_AFFINE_INTERFACE_CONTRACTION",
+            "strategy": (
+                f"Partition {src} into source-certified affine islands, represent each exact island boundary relation symbolically "
+                f"as a GF(2) linear system instead of an explicit tuple table, and compile the residual interaction into {dst} "
+                "only when the symbolic interface rank and non-affine coupling admit a polynomial global bound."
+            ),
+            "steps": [
+                "Detect only islands whose tractability certificate exposes an affine GF(2) constraint system.",
+                "Project each island onto its boundary by exact Gaussian elimination, storing a row-space basis and affine offset rather than satisfying tuples.",
+                "Compose shared affine interfaces by row reduction while retaining provenance maps for eliminated variables.",
+                "Keep every non-affine cross-island constraint explicit and typed; do not absorb it into the affine solver.",
+                "Reject if residual non-affine interaction width or symbolic basis storage lacks a polynomial bound.",
+                "Compile the symbolic affine layer plus residual controller into the target representation and replay provenance for witness reconstruction.",
+            ],
+            "falsifiers": [
+                "Search mixed XOR/AND instances where affine projection leaves an extensive non-affine residual.",
+                "Search cases where symbolic projection is polynomial but the target residual width still grows unboundedly.",
+                "Exhaustively compare projected affine boundary systems with direct truth tables on small islands.",
+            ],
+        },
+        {
+            "family": "RANK_FACTORED_SEPARATOR_DP",
+            "strategy": (
+                f"Build separators for {src}, factor each boundary state into an affine GF(2) row-space component plus a residual "
+                f"non-affine signature, and compile into {dst} only if residual signature count and separator interaction remain polynomial."
+            ),
+            "steps": [
+                "Construct a deterministic source-native separator decomposition without semantic-oracle calls.",
+                "Extract affine equations crossing each separator and reduce them to an independent boundary basis.",
+                "Store only the basis, affine offset, and residual non-affine signature rather than enumerating affine boundary tuples.",
+                "Compose adjacent separator states by exact basis intersection/elimination plus explicit residual joins.",
+                "Reject if residual signatures, basis update work, or induced target width lacks a polynomial bound.",
+                "Reconstruct a source witness by reversing residual joins and affine elimination, then verify the original instance.",
+            ],
+            "falsifiers": [
+                "Use expander/Tseitin controls to test whether separator adhesion remains unbounded after rank factoring.",
+                "Search instances where the residual non-affine signature family is exponential despite low affine rank.",
+                "Cross-check separator composition against exhaustive assignments on bounded supports.",
+            ],
+        },
+        {
+            "family": "AFFINE_QUOTIENT_THEN_CERTIFIED_ELIMINATION",
+            "strategy": (
+                f"First quotient the maximal affine portion of {src} by exact Gaussian elimination, then run a proof-carrying "
+                f"elimination schedule only on the typed residual before compiling to {dst}."
+            ),
+            "steps": [
+                "Extract the maximal syntactically certified affine subsystem and compute an exact echelon basis.",
+                "Substitute affine pivots into the remaining constraints while recording polynomial-size reconstruction maps.",
+                "Run deterministic elimination priorities on the residual constraints only.",
+                "Attach an exact local replacement certificate and cumulative size/width charge to every residual elimination step.",
+                "Reject immediately on superpolynomial residual growth, width growth, or failed local equivalence.",
+                "Compile a surviving schedule to the target representation and replay both elimination and affine maps for verification.",
+            ],
+            "falsifiers": [
+                "Search mixed instances where affine substitution densifies the residual superpolynomially or destroys width bounds.",
+                "Run known bad elimination-order families after affine preprocessing and charge cumulative generated state.",
+                "Exhaustively verify local substitutions and witness lifting on bounded mixed XOR/non-affine instances.",
+            ],
+        },
+        {
+            "family": "SYMBOLIC_ISLAND_THEN_SEPARATOR_DP",
+            "strategy": (
+                f"Contract only source-certified tractable islands of {src} whose exact boundary behavior has a polynomial symbolic "
+                f"representation, then apply separator DP to the contracted interaction graph before compiling into {dst}."
+            ),
+            "steps": [
+                "Classify tractable islands by an explicit symbolic interface contract; reject tuple-enumeration-only interfaces of unbounded arity.",
+                "Materialize each admitted interface as its native polynomial symbolic object with reconstruction provenance.",
+                "Construct the contracted island interaction graph while keeping cross-island constraints explicit.",
+                "Build a deterministic separator decomposition of that contracted graph and compose symbolic interface states exactly.",
+                "Reject if contracted adhesion, symbolic state count, or transition fanout lacks a polynomial bound.",
+                "Compile the admitted decomposition into the target representation and reconstruct every island witness before final verification.",
+            ],
+            "falsifiers": [
+                "Search correlated tractable islands whose contracted graph still realizes unrestricted high-width interaction.",
+                "Search symbolic interface algebras whose exact join operation creates superpolynomial representation growth.",
+                "Compare reconstructed global witnesses against brute force on bounded island mixtures.",
+            ],
+        },
+        {
+            "family": "DECISION_DAG_INTERFACE_REFINEMENT",
+            "strategy": (
+                f"Represent exact boundary behavior of {src} by a canonical decision DAG refined only on exposed variables and "
+                f"operations; compile the DAG interaction into {dst} only if node count and induced width have an explicit polynomial bound."
+            ),
+            "steps": [
+                "Start from a coarse boundary partition defined by syntactic exposed-variable observations.",
+                "Refine a node only when a concrete legal source operation distinguishes two currently coalesced states.",
+                "Hash-cons identical residual nodes structurally without semantic-equivalence oracle calls.",
+                "Maintain exact reconstruction provenance for every split and transition.",
+                "Reject if canonical DAG node count, refinement work, or target interaction width lacks a polynomial bound.",
+                "Compile the final DAG controller to the target representation and verify reconstructed witnesses directly.",
+            ],
+            "falsifiers": [
+                "Search parity and hidden-weight families whose reduced decision DAG requires exponentially many nodes in the chosen order.",
+                "Search adversarial variable orders where structural hash-consing fails to control width.",
+                "Exhaustively test that every bounded DAG merge preserves all legal continuation outcomes.",
+            ],
+        },
     ]
 
     out = []
@@ -498,7 +599,7 @@ def synthesize_deterministic_candidate(
         normalized = normalize_candidate(row, target)
         if candidate_fingerprint(normalized) not in seen:
             return row
-    return pool[0] if pool else None
+    return None
 
 
 def candidate_fingerprint(candidate: dict) -> str:
@@ -675,7 +776,7 @@ def build_state(
     elif pending_attack:
         status = "WAITING_FOR_CANDIDATE_ATTACK"
     elif candidate is None:
-        status = "SEARCHED_NO_VALID_MODEL_CANDIDATE"
+        status = "SEARCHED_NO_NOVEL_FALLBACK_CANDIDATE"
     elif duplicate:
         status = "DUPLICATE_CANDIDATE_NO_ADVANCE"
     else:
@@ -725,6 +826,8 @@ def build_state(
         "next_action": (
             "RUN_PROOF_OBLIGATION_AND_FALSIFICATION_GATES"
             if pending_attack or (candidate is not None and not duplicate)
+            else "WAIT_FOR_NEW_DONOR_OR_MODEL_CAPACITY"
+            if status == "SEARCHED_NO_NOVEL_FALLBACK_CANDIDATE"
             else "GENERATE_DIFFERENT_CANDIDATE_FOR_SAME_TOP_GAP"
             if target is not None
             else "WAIT_FOR_KEYMASTER_OPEN_INTERFACE"

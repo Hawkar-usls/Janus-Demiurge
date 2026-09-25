@@ -6,9 +6,12 @@ from janus_model.keymaster_autonomous_forge import (
     CANDIDATE_SCHEMA,
     build_search_queries,
     build_state,
+    candidate_fingerprint,
+    deterministic_candidate_pool,
     literature_phrase,
     normalize_candidate,
     select_target,
+    synthesize_deterministic_candidate,
 )
 
 
@@ -135,6 +138,61 @@ class AutonomousForgeTests(unittest.TestCase):
         self.assertEqual(state["candidate"]["synthesis_origin"], "DETERMINISTIC_COMBINATORIAL_FALLBACK")
         self.assertFalse(state["candidate"]["keymaster_shadow_admission"])
         self.assertFalse(state["keymaster_shadow_admission"])
+
+
+    def test_repair_pool_contains_symbolic_non_table_variants(self) -> None:
+        target = select_target(keymaster_report())
+        pool = deterministic_candidate_pool(target, [])
+        families = [row["operator_family"] for row in pool]
+        self.assertGreaterEqual(len(families), 10)
+        self.assertIn("SYMBOLIC_AFFINE_INTERFACE_CONTRACTION", families)
+        self.assertIn("RANK_FACTORED_SEPARATOR_DP", families)
+        self.assertIn("AFFINE_QUOTIENT_THEN_CERTIFIED_ELIMINATION", families)
+        self.assertIn("SYMBOLIC_ISLAND_THEN_SEPARATOR_DP", families)
+        self.assertIn("DECISION_DAG_INTERFACE_REFINEMENT", families)
+        symbolic = next(row for row in pool if row["operator_family"] == "SYMBOLIC_AFFINE_INTERFACE_CONTRACTION")
+        self.assertIn("instead of an explicit tuple table", symbolic["strategy"])
+
+    def test_exhausted_fallback_returns_none_instead_of_duplicate(self) -> None:
+        target = select_target(keymaster_report())
+        pool = deterministic_candidate_pool(target, [])
+        seen = [
+            candidate_fingerprint(normalize_candidate(row, target))
+            for row in pool
+        ]
+        previous = {"recent_candidate_fingerprints": seen}
+        self.assertIsNone(synthesize_deterministic_candidate(target, [], previous))
+
+    def test_exhausted_fallback_state_stops_duplicate_churn(self) -> None:
+        target = select_target(keymaster_report())
+        pool = deterministic_candidate_pool(target, [])
+        seen = [
+            candidate_fingerprint(normalize_candidate(row, target))
+            for row in pool
+        ]
+        previous = {
+            "cycle_count": 10,
+            "candidate_proposal_count": 10,
+            "distinct_candidate_count": 10,
+            "duplicate_candidate_count": 0,
+            "deferred_candidate_count": 10,
+            "mathematically_falsified_candidate_count": 0,
+            "materialized_variant_falsified_count": 1,
+            "recent_candidate_fingerprints": seen,
+            "target": target,
+            "candidate": None,
+            "next_action": "WAIT_FOR_NEW_DONOR_OR_MODEL_CAPACITY",
+            "firewall": {
+                "P_VS_NP": "OPEN",
+                "D1": "EMPTY",
+            },
+        }
+        state = build_state(keymaster_report(), [], previous=previous)
+        self.assertEqual(state["status"], "SEARCHED_NO_NOVEL_FALLBACK_CANDIDATE")
+        self.assertIsNone(state["candidate"])
+        self.assertEqual(state["next_action"], "WAIT_FOR_NEW_DONOR_OR_MODEL_CAPACITY")
+        self.assertEqual(state["distinct_candidate_count"], 10)
+        self.assertEqual(state["duplicate_candidate_count"], 0)
 
     def test_pending_candidate_blocks_candidate_churn_until_attacked(self) -> None:
         first = build_state(keymaster_report(), [], model_candidate=candidate())
