@@ -300,6 +300,7 @@ def build_attack(report: dict, forge: dict, controls: Any = None) -> dict:
             "automatic_shadow_admission": False,
             "automatic_theorem_promotion": False,
             "automatic_p_equals_np_claim": False,
+            "automatic_merge": False,
             "writes_fundamentum_main": False,
             "writes_user_research_branch": False,
             "P_VS_NP": "OPEN",
