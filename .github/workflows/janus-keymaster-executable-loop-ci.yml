@@ -1,0 +1,56 @@
+name: JANUS Keymaster Executable Progress Loop CI
+
+on:
+  pull_request:
+    paths:
+      - 'janus_model/keymaster_candidate_materializer.py'
+      - 'janus_model/keymaster_candidate_attacker.py'
+      - 'janus_model/keymaster_autonomous_forge.py'
+      - 'tests/test_keymaster_candidate_materializer.py'
+      - 'tests/test_keymaster_candidate_attacker.py'
+      - 'tests/test_keymaster_autonomous_forge.py'
+      - '.github/workflows/janus-keymaster-candidate-materializer.yml'
+      - '.github/workflows/janus-keymaster-candidate-attacker.yml'
+      - '.github/workflows/janus-keymaster-autonomous-forge.yml'
+      - '.github/workflows/janus-keymaster-executable-loop-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  executable-loop-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile kernels
+        run: |
+          python -m py_compile \
+            janus_model/keymaster_candidate_materializer.py \
+            janus_model/keymaster_candidate_attacker.py \
+            janus_model/keymaster_autonomous_forge.py
+      - name: Run executable-loop unit tests
+        run: |
+          python -m unittest -v \
+            tests/test_keymaster_candidate_materializer.py \
+            tests/test_keymaster_candidate_attacker.py \
+            tests/test_keymaster_autonomous_forge.py
+      - name: Enforce epistemic boundary
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          files = [
+              Path('janus_model/keymaster_candidate_materializer.py'),
+              Path('janus_model/keymaster_candidate_attacker.py'),
+              Path('janus_model/keymaster_autonomous_forge.py'),
+          ]
+          text='\n'.join(p.read_text() for p in files)
+          assert '"P_VS_NP": "OPEN"' in text
+          assert '"automatic_theorem_promotion": False' in text
+          assert '"automatic_p_equals_np_claim": False' in text
+          print('JANUS_KEYMASTER_EXECUTABLE_LOOP_EPISTEMIC_FIREWALL=PASS')
+          PY
