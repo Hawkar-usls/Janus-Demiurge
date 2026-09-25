@@ -563,13 +563,31 @@ def build_state(report: dict, records: list[dict], *, previous: dict | None = No
     candidate_error = None
     duplicate = False
     proposer = "NONE"
+
+    previous_target = (previous or {}).get("target") or {}
+    previous_candidate = (previous or {}).get("candidate")
+    same_target = (
+        target is not None
+        and previous_target.get("from_type") == target.get("from_type")
+        and previous_target.get("to_type") == target.get("to_type")
+    )
+    pending_attack = (
+        same_target
+        and isinstance(previous_candidate, dict)
+        and previous_candidate.get("status") == "CANDIDATE_ALGORITHM_PROPOSED_UNVERIFIED"
+        and (previous or {}).get("next_action") == "RUN_PROOF_OBLIGATION_AND_FALSIFICATION_GATES"
+    )
+
     selected_input = model_candidate
-    if target and selected_input is None:
+    if pending_attack:
+        candidate = dict(previous_candidate)
+        proposer = "CARRY_FORWARD_PENDING_CANDIDATE"
+    elif target and selected_input is None:
         selected_input = synthesize_deterministic_candidate(target, donors, previous)
         proposer = "DETERMINISTIC_COMBINATORIAL_FALLBACK" if selected_input is not None else "NONE"
     elif selected_input is not None:
         proposer = "EXTERNAL_MODEL"
-    if target and selected_input is not None:
+    if target and selected_input is not None and not pending_attack:
         try:
             candidate = normalize_candidate(selected_input, target)
             fp = candidate_fingerprint(candidate)
@@ -599,6 +617,8 @@ def build_state(report: dict, records: list[dict], *, previous: dict | None = No
                         candidate_error = candidate_error + ";FALLBACK:" + str(fallback_err)
     if target is None:
         status = "NO_OPEN_INTERFACE"
+    elif pending_attack:
+        status = "WAITING_FOR_CANDIDATE_ATTACK"
     elif candidate is None:
         status = "SEARCHED_NO_VALID_MODEL_CANDIDATE"
     elif duplicate:
@@ -610,9 +630,9 @@ def build_state(report: dict, records: list[dict], *, previous: dict | None = No
         "status": status,
         "mode": "AUTONOMOUS_TARGETED_LOCKPICK_FORGE",
         "cycle_count": prev_cycles + 1,
-        "candidate_proposal_count": prev_proposals + (1 if candidate is not None else 0),
-        "distinct_candidate_count": prev_distinct + (1 if candidate is not None and not duplicate else 0),
-        "duplicate_candidate_count": prev_duplicates + (1 if duplicate else 0),
+        "candidate_proposal_count": prev_proposals + (1 if candidate is not None and not pending_attack else 0),
+        "distinct_candidate_count": prev_distinct + (1 if candidate is not None and not duplicate and not pending_attack else 0),
+        "duplicate_candidate_count": prev_duplicates + (1 if duplicate and not pending_attack else 0),
         "keymaster_report_sha256": report.get("report_sha256"),
         "target": target,
         "search_queries": build_search_queries(target),
@@ -629,7 +649,7 @@ def build_state(report: dict, records: list[dict], *, previous: dict | None = No
         },
         "next_action": (
             "RUN_PROOF_OBLIGATION_AND_FALSIFICATION_GATES"
-            if candidate is not None and not duplicate
+            if pending_attack or (candidate is not None and not duplicate)
             else "GENERATE_DIFFERENT_CANDIDATE_FOR_SAME_TOP_GAP"
             if target is not None
             else "WAIT_FOR_KEYMASTER_OPEN_INTERFACE"
