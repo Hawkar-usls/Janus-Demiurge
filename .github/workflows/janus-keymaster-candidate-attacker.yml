@@ -3,7 +3,7 @@ name: JANUS Keymaster Candidate Attacker
 on:
   workflow_dispatch:
   schedule:
-    - cron: '03 * * * *'
+    - cron: '23 * * * *'
   push:
     branches: [main]
     paths:
@@ -38,32 +38,78 @@ jobs:
           python -m py_compile janus_model/keymaster_candidate_attacker.py
           python -m unittest -v tests/test_keymaster_candidate_attacker.py
 
-      - name: Fetch current autonomous forge candidate
+      - name: Fetch current forge and materialized executable
         id: source
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p runtime/keymaster-attack
           git fetch origin janus/autonomous-keymaster-lockpick || true
+
           if git show origin/janus/autonomous-keymaster-lockpick:janus_model/autonomous-keymaster/KEYMASTER_AUTONOMOUS_FORGE_LATEST.json \
               > runtime/keymaster-attack/forge.json 2>/dev/null; then
-            echo 'available=true' >> "$GITHUB_OUTPUT"
-            echo 'JANUS_KEYMASTER_ATTACK_FORGE_SOURCE=BOUND'
+            echo 'forge=true' >> "$GITHUB_OUTPUT"
           else
-            echo 'available=false' >> "$GITHUB_OUTPUT"
-            echo 'JANUS_KEYMASTER_ATTACK_FORGE_SOURCE=NOT_AVAILABLE'
+            echo 'forge=false' >> "$GITHUB_OUTPUT"
           fi
 
+          if git show origin/janus/autonomous-keymaster-lockpick:janus_model/autonomous-keymaster/KEYMASTER_CANDIDATE_MATERIALIZATION_LATEST.json \
+              > runtime/keymaster-attack/materialization.json 2>/dev/null \
+            && git show origin/janus/autonomous-keymaster-lockpick:janus_model/autonomous-keymaster/materialized/MATERIALIZED_CANDIDATE_LATEST.py \
+              > runtime/keymaster-attack/materialized_candidate.py 2>/dev/null; then
+            echo 'materialization=true' >> "$GITHUB_OUTPUT"
+          else
+            rm -f runtime/keymaster-attack/materialization.json runtime/keymaster-attack/materialized_candidate.py
+            echo 'materialization=false' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify materialization identity and artifact SHA
+        if: steps.source.outputs.forge == 'true' && steps.source.outputs.materialization == 'true'
+        id: binding
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import hashlib, json
+          f=json.load(open('runtime/keymaster-attack/forge.json'))
+          m=json.load(open('runtime/keymaster-attack/materialization.json'))
+          c=f.get('candidate') or {}
+          actual=hashlib.sha256(open('runtime/keymaster-attack/materialized_candidate.py','rb').read()).hexdigest()
+          identity_ok=(
+              m.get('candidate_id') == c.get('candidate_id')
+              and m.get('candidate_fingerprint') == c.get('candidate_fingerprint')
+              and actual == (m.get('executable_artifact') or {}).get('sha256')
+          )
+          print('bound=' + ('true' if identity_ok else 'false'))
+          print('JANUS_KEYMASTER_ATTACK_MATERIALIZATION_BOUND=' + str(identity_ok))
+          PY
+
+      - name: Independently execute materialized battery
+        if: steps.source.outputs.forge == 'true' && steps.binding.outputs.bound == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python runtime/keymaster-attack/materialized_candidate.py --battery \
+            > runtime/keymaster-attack/materialized-execution.json
+
       - name: Attack current candidate fail-closed
-        if: steps.source.outputs.available == 'true'
+        if: steps.source.outputs.forge == 'true'
         id: attack
         shell: bash
         run: |
           set -euo pipefail
-          python -m janus_model.keymaster_candidate_attacker \
-            --keymaster janus_model/state/KEYMASTER_MECHANISM_COMPOSITION_LATEST.json \
-            --forge runtime/keymaster-attack/forge.json \
+          ARGS=(
+            --keymaster janus_model/state/KEYMASTER_MECHANISM_COMPOSITION_LATEST.json
+            --forge runtime/keymaster-attack/forge.json
             --out runtime/keymaster-attack/KEYMASTER_CANDIDATE_ATTACK_LATEST.json
+          )
+          if [ -f runtime/keymaster-attack/materialization.json ] && [ "${${ steps.binding.outputs.bound }}" = "true" ]; then
+            ARGS+=(--materialization runtime/keymaster-attack/materialization.json)
+          fi
+          if [ -f runtime/keymaster-attack/materialized-execution.json ]; then
+            ARGS+=(--execution runtime/keymaster-attack/materialized-execution.json)
+          fi
+          python -m janus_model.keymaster_candidate_attacker "${ARGS[@]}"
 
           python - <<'PY' >> "$GITHUB_OUTPUT"
           import json
@@ -72,8 +118,8 @@ jobs:
           print('status=' + x['status'])
           PY
 
-      - name: Verify attack authority firewall
-        if: steps.source.outputs.available == 'true'
+      - name: Verify attack authority firewall and scope
+        if: steps.source.outputs.forge == 'true'
         run: |
           set -euo pipefail
           python - <<'PY'
@@ -85,7 +131,7 @@ jobs:
           assert x['keymaster_shadow_admission'] is False
           f=x['firewall']
           assert f['candidate_survival_is_proof'] is False
-          assert f['deferred_nonexecutability_is_mathematical_falsification'] is False
+          assert f['materialized_variant_falsification_is_candidate_family_falsification'] is False
           assert f['automatic_shadow_admission'] is False
           assert f['automatic_theorem_promotion'] is False
           assert f['automatic_p_equals_np_claim'] is False
@@ -94,16 +140,26 @@ jobs:
           assert f['writes_user_research_branch'] is False
           assert f['P_VS_NP']=='OPEN'
           assert f['D1']=='EMPTY'
-          if x['status']=='DEFERRED_NONEXECUTABLE_PROPOSAL':
+          if x['status']=='REJECTED_MATERIALIZED_VARIANT_EXACT_COUNTEREXAMPLE':
+              assert x['advance_forge'] is True
+              assert x['mathematical_falsification'] is True
+              assert x['candidate_scope_falsified'] is False
+              assert x['materialized_variant_falsified'] is True
+              assert x['falsification_scope']=='MATERIALIZED_VARIANT_ONLY'
+              assert x['independent_replay']['status']=='PASS_EXACT_PROFILE_COUNTEREXAMPLE'
+          if x['status']=='DEFERRED_PARTIAL_EXECUTABLE_PROFILE':
               assert x['advance_forge'] is True
               assert x['mathematical_falsification'] is False
+              assert x['candidate_scope_falsified'] is False
+              assert x['materialized_variant_falsified'] is False
           print('JANUS_KEYMASTER_CANDIDATE_ATTACK_FIREWALL=PASS')
           print('JANUS_KEYMASTER_CANDIDATE_ATTACK_STATUS=' + x['status'])
           print('JANUS_KEYMASTER_CANDIDATE_ATTACK_ADVANCE=' + str(x['advance_forge']))
+          print('JANUS_KEYMASTER_CANDIDATE_ATTACK_SCOPE=' + str(x.get('falsification_scope')))
           PY
 
       - name: Persist attack result only to autonomous branch
-        if: steps.source.outputs.available == 'true'
+        if: steps.source.outputs.forge == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -129,7 +185,7 @@ jobs:
           fi
 
       - name: Advance forge when current candidate is released
-        if: steps.source.outputs.available == 'true' && steps.attack.outputs.advance == 'true'
+        if: steps.source.outputs.forge == 'true' && steps.attack.outputs.advance == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -138,10 +194,13 @@ jobs:
           echo 'JANUS_KEYMASTER_ATTACK_FORGE_WAKE=DISPATCHED'
 
       - name: Upload attack evidence
-        if: always() && steps.source.outputs.available == 'true'
+        if: always() && steps.source.outputs.forge == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: janus-keymaster-candidate-attack-${{ github.run_id }}
-          path: runtime/keymaster-attack/KEYMASTER_CANDIDATE_ATTACK_LATEST.json
-          if-no-files-found: error
+          path: |
+            runtime/keymaster-attack/KEYMASTER_CANDIDATE_ATTACK_LATEST.json
+            runtime/keymaster-attack/materialization.json
+            runtime/keymaster-attack/materialized-execution.json
+          if-no-files-found: warn
           retention-days: 14
