@@ -355,9 +355,10 @@ def build_attack(
         candidate_survives = False
         rejection = "NEGATIVE_CONTROL_REPLAY_NOT_CLEAN"
     elif isinstance(mat, dict) and not (mat.get("executable_artifact") or {}).get("entrypoints_complete"):
-        status = "PARTIAL_EXECUTABLE_ATTACK_PROFILE__PROOF_OBLIGATIONS_OPEN"
+        status = "DEFERRED_PARTIAL_EXECUTABLE_PROFILE"
         candidate_survives = False
         rejection = "REFERENCE_PROFILE_DOES_NOT_YET_IMPLEMENT_FULL_CANDIDATE"
+        advance_forge = True
     else:
         status = "SURVIVES_EXECUTABLE_REFERENCE_BATTERY__PROOF_OBLIGATIONS_OPEN"
         candidate_survives = True
@@ -451,7 +452,7 @@ def build_attack(
             else "REPLAY_MATERIALIZED_ARTIFACT"
             if status == "ATTACK_WAITING_FOR_INDEPENDENT_EXECUTION_REPLAY"
             else "IMPLEMENT_FULL_REFERENCE_VARIANT_OR_ATTACK_OPEN_OBLIGATIONS"
-            if status == "PARTIAL_EXECUTABLE_ATTACK_PROFILE__PROOF_OBLIGATIONS_OPEN"
+            if status == "DEFERRED_PARTIAL_EXECUTABLE_PROFILE"
             else "ATTACK_OPEN_PROOF_OBLIGATIONS"
             if candidate_survives
             else "REPAIR_ATTACK_REPLAY"
