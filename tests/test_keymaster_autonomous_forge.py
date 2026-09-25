@@ -147,6 +147,35 @@ class AutonomousForgeTests(unittest.TestCase):
         self.assertEqual(second["duplicate_candidate_count"], first["duplicate_candidate_count"])
         self.assertEqual(second["next_action"], "RUN_PROOF_OBLIGATION_AND_FALSIFICATION_GATES")
 
+    def test_attacker_release_advances_to_next_candidate(self) -> None:
+        first = build_state(keymaster_report(), [], model_candidate=candidate())
+        attack = {
+            "schema": "janus.keymaster.autonomous_candidate_attack.v1",
+            "status": "DEFERRED_NONEXECUTABLE_PROPOSAL",
+            "candidate_id": first["candidate"]["candidate_id"],
+            "candidate_fingerprint": first["candidate"]["candidate_fingerprint"],
+            "advance_forge": True,
+            "mathematical_falsification": False,
+            "candidate_is_proved": False,
+            "keymaster_shadow_admission": False,
+            "attack_sha256": "f" * 64,
+            "firewall": {
+                "automatic_theorem_promotion": False,
+                "automatic_p_equals_np_claim": False,
+                "automatic_merge": False,
+                "writes_fundamentum_main": False,
+                "P_VS_NP": "OPEN",
+                "D1": "EMPTY",
+            },
+        }
+        second = build_state(keymaster_report(), [], previous=first, attack_result=attack)
+        self.assertEqual(second["status"], "NEW_CANDIDATE_ALGORITHM_PROPOSED")
+        self.assertNotEqual(second["candidate"]["candidate_fingerprint"], first["candidate"]["candidate_fingerprint"])
+        self.assertEqual(second["deferred_candidate_count"], 1)
+        self.assertEqual(second["mathematically_falsified_candidate_count"], 0)
+        self.assertEqual(second["last_candidate_attack"]["status"], "DEFERRED_NONEXECUTABLE_PROPOSAL")
+        self.assertTrue(second["last_candidate_attack"]["advance_forge"])
+
     def test_target_change_allows_new_candidate_generation(self) -> None:
         first = build_state(keymaster_report(), [], model_candidate=candidate())
         changed = keymaster_report()
