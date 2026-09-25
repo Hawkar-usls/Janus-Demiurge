@@ -89,15 +89,26 @@ def controls(pass_all=True) -> dict:
 
 
 class CandidateAttackerTests(unittest.TestCase):
-    def test_survivor_never_becomes_proof_or_keymaster_edge(self) -> None:
+    def test_nonexecutable_proposal_is_deferred_and_releases_forge(self) -> None:
         x = build_attack(report(), forge(), controls())
-        self.assertEqual(x["status"], "SURVIVES_KNOWN_CONTROL_SCREEN__PROOF_OBLIGATIONS_OPEN")
-        self.assertTrue(x["candidate_survives_known_screen"])
+        self.assertEqual(x["status"], "DEFERRED_NONEXECUTABLE_PROPOSAL")
+        self.assertFalse(x["candidate_survives_known_screen"])
         self.assertFalse(x["candidate_is_proved"])
         self.assertFalse(x["candidate_is_keymaster_edge"])
+        self.assertTrue(x["advance_forge"])
+        self.assertFalse(x["mathematical_falsification"])
         self.assertFalse(x["keymaster_shadow_admission"])
-        self.assertFalse(x["firewall"]["candidate_survival_is_proof"])
+        self.assertFalse(x["firewall"]["deferred_nonexecutability_is_mathematical_falsification"])
         self.assertEqual(len(x["proof_work_packet"]["proof_obligations"]), 6)
+
+    def test_executable_candidate_can_reach_known_control_screen(self) -> None:
+        f = forge()
+        f["candidate"]["executable_artifact"] = {"path": "candidate.py", "sha256": "e" * 64}
+        x = build_attack(report(), f, controls())
+        self.assertEqual(x["status"], "SURVIVES_KNOWN_CONTROL_SCREEN__PROOF_OBLIGATIONS_OPEN")
+        self.assertTrue(x["candidate_survives_known_screen"])
+        self.assertFalse(x["advance_forge"])
+        self.assertFalse(x["candidate_is_proved"])
 
     def test_known_typed_barrier_rejects_candidate(self) -> None:
         barrier = {
@@ -109,6 +120,8 @@ class CandidateAttackerTests(unittest.TestCase):
         x = build_attack(report([barrier], 6), forge(), controls())
         self.assertEqual(x["status"], "REJECTED_KNOWN_TYPED_BARRIER")
         self.assertFalse(x["candidate_survives_known_screen"])
+        self.assertTrue(x["advance_forge"])
+        self.assertTrue(x["mathematical_falsification"])
         self.assertEqual(x["next_action"], "RETURN_TO_FORGE_FOR_DIFFERENT_CANDIDATE")
 
     def test_changed_top_gap_rejects_stale_candidate(self) -> None:
