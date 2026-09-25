@@ -103,6 +103,9 @@ jobs:
           if [ -f runtime/keymaster-autonomous-forge.json ]; then
             ARGS+=(--autonomous-forge runtime/keymaster-autonomous-forge.json)
           fi
+          if [ -f janus_model/state/KEYMASTER_MECHANISM_COMPOSITION_LATEST.json ]; then
+            ARGS+=(--previous-report janus_model/state/KEYMASTER_MECHANISM_COMPOSITION_LATEST.json)
+          fi
           python -m janus_model.keymaster_mechanism_composer "${ARGS[@]}"
 
       - name: Build Keymaster → TRUMP candidate bridge
@@ -141,6 +144,11 @@ jobs:
           assert p['metric_kind']=='PROOF_OBLIGATION_COMPLETENESS_NOT_PROBABILITY'
           assert p['p_equals_np_probability'] is None
           assert p['proof_authorized'] is False
+          d=x['proven_delta']
+          assert d['schema']=='janus.keymaster.proven_delta.v1'
+          assert d['law']=='ROUTE_COVERAGE_DELTA_IS_NOT_PROVEN_PROGRESS'
+          assert d['mathematical_progress'] in {'ZERO','POSITIVE','REGRESSION_OR_RECLASSIFICATION','UNRESOLVED_BASELINE'}
+          assert isinstance(d['proven_advance_event_count'], int)
           b=json.load(open('runtime/keymaster-trump-bridge.json'))
           assert b['schema']=='janus.keymaster.trump_runtime_bridge.v1'
           assert b['firewall']['P_VS_NP']=='OPEN'
@@ -153,6 +161,10 @@ jobs:
           print('UNIVERSAL_LIFECYCLE_CANDIDATES',len(x['complete_universal_lifecycle_candidates']))
           print('MISSING_INTERFACES',len(x['missing_interface_queue']))
           print('NORMALIZATION_QUEUE',len(x['normalization_queue']))
+          print('MATHEMATICAL_PROGRESS',d['mathematical_progress'])
+          print('PROVEN_ADVANCE_EVENTS',d['proven_advance_event_count'])
+          print('AUTHORITATIVE_EDGE_DELTA',d['authoritative_edge_delta'])
+          print('PROVED_BARRIER_DELTA',d['proved_barrier_delta'])
           PY
 
       - name: Decide whether composition state changed
