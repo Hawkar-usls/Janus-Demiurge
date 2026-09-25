@@ -209,6 +209,14 @@ jobs:
             echo 'JANUS_AUTONOMOUS_FORGE_BRANCH_PERSIST=PASS'
           fi
 
+      - name: Wake executable candidate materializer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh workflow run janus-keymaster-candidate-materializer.yml --ref main
+          echo 'JANUS_AUTONOMOUS_FORGE_MATERIALIZER_WAKE=DISPATCHED'
+
       - name: Wake Keymaster rescan
         env:
           GH_TOKEN: ${{ github.token }}
