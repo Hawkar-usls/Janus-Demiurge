@@ -1,0 +1,156 @@
+name: JANUS Keymaster Candidate Materializer
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '13 * * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'janus_model/keymaster_candidate_materializer.py'
+      - 'tests/test_keymaster_candidate_materializer.py'
+      - '.github/workflows/janus-keymaster-candidate-materializer.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: janus-autonomous-keymaster-loop
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verify executable materializer
+        run: |
+          set -euo pipefail
+          python -m py_compile janus_model/keymaster_candidate_materializer.py
+          python -m unittest -v tests/test_keymaster_candidate_materializer.py
+
+      - name: Fetch current autonomous forge candidate
+        id: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/keymaster-materializer
+          git fetch origin janus/autonomous-keymaster-lockpick || true
+          if git show origin/janus/autonomous-keymaster-lockpick:janus_model/autonomous-keymaster/KEYMASTER_AUTONOMOUS_FORGE_LATEST.json \
+              > runtime/keymaster-materializer/forge.json 2>/dev/null; then
+            echo 'available=true' >> "$GITHUB_OUTPUT"
+            echo 'JANUS_KEYMASTER_MATERIALIZER_FORGE_SOURCE=BOUND'
+          else
+            echo 'available=false' >> "$GITHUB_OUTPUT"
+            echo 'JANUS_KEYMASTER_MATERIALIZER_FORGE_SOURCE=NOT_AVAILABLE'
+          fi
+
+      - name: Materialize current candidate into executable reference variant
+        if: steps.source.outputs.available == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p janus_model/autonomous-keymaster/materialized
+          python -m janus_model.keymaster_candidate_materializer \
+            --forge runtime/keymaster-materializer/forge.json \
+            --artifact-out janus_model/autonomous-keymaster/materialized/MATERIALIZED_CANDIDATE_LATEST.py \
+            --out runtime/keymaster-materializer/KEYMASTER_CANDIDATE_MATERIALIZATION_LATEST.json
+
+          python janus_model/autonomous-keymaster/materialized/MATERIALIZED_CANDIDATE_LATEST.py --battery \
+            > runtime/keymaster-materializer/MATERIALIZED_EXECUTION_MATERIALIZER.json
+
+      - name: Verify artifact binding and scientific firewall
+        if: steps.source.outputs.available == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, pathlib
+          m=json.load(open('runtime/keymaster-materializer/KEYMASTER_CANDIDATE_MATERIALIZATION_LATEST.json'))
+          e=json.load(open('runtime/keymaster-materializer/MATERIALIZED_EXECUTION_MATERIALIZER.json'))
+          p=pathlib.Path(m['executable_artifact']['path'])
+          actual=hashlib.sha256(p.read_bytes()).hexdigest()
+          assert actual == m['executable_artifact']['sha256']
+          assert e['candidate_id'] == m['candidate_id']
+          assert e['candidate_fingerprint'] == m['candidate_fingerprint']
+          assert e['profile_id'] == m['profile_id']
+          f=m['firewall']
+          assert f['generated_code_is_proof'] is False
+          assert f['bounded_battery_is_proof'] is False
+          assert f['materialized_variant_is_candidate_family_theorem'] is False
+          assert f['automatic_theorem_promotion'] is False
+          assert f['automatic_p_equals_np_claim'] is False
+          assert f['automatic_merge'] is False
+          assert f['writes_fundamentum_main'] is False
+          assert f['writes_user_research_branch'] is False
+          assert f['P_VS_NP']=='OPEN'
+          assert f['D1']=='EMPTY'
+          print('JANUS_KEYMASTER_MATERIALIZER_BINDING=PASS')
+          print('JANUS_KEYMASTER_MATERIALIZER_STATUS=' + m['status'])
+          print('JANUS_KEYMASTER_MATERIALIZER_PROFILE=' + m['profile_id'])
+          print('JANUS_KEYMASTER_MATERIALIZER_EXECUTION=' + e['status'])
+          PY
+
+      - name: Persist materialization only to autonomous branch
+        if: steps.source.outputs.available == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          REPORT="$RUNNER_TEMP/KEYMASTER_CANDIDATE_MATERIALIZATION_LATEST.json"
+          EXECUTION="$RUNNER_TEMP/MATERIALIZED_EXECUTION_MATERIALIZER.json"
+          ARTIFACT="$RUNNER_TEMP/MATERIALIZED_CANDIDATE_LATEST.py"
+          cp runtime/keymaster-materializer/KEYMASTER_CANDIDATE_MATERIALIZATION_LATEST.json "$REPORT"
+          cp runtime/keymaster-materializer/MATERIALIZED_EXECUTION_MATERIALIZER.json "$EXECUTION"
+          cp janus_model/autonomous-keymaster/materialized/MATERIALIZED_CANDIDATE_LATEST.py "$ARTIFACT"
+
+          git config user.name 'janus-keymaster-materializer[bot]'
+          git config user.email 'janus-keymaster-materializer[bot]@users.noreply.github.com'
+          git fetch origin janus/autonomous-keymaster-lockpick
+          git switch -C janus/autonomous-keymaster-lockpick origin/janus/autonomous-keymaster-lockpick
+
+          mkdir -p janus_model/autonomous-keymaster/materialized
+          mkdir -p janus_model/autonomous-keymaster/receipts
+          cp "$REPORT" janus_model/autonomous-keymaster/KEYMASTER_CANDIDATE_MATERIALIZATION_LATEST.json
+          cp "$EXECUTION" janus_model/autonomous-keymaster/MATERIALIZED_EXECUTION_MATERIALIZER_LATEST.json
+          cp "$ARTIFACT" janus_model/autonomous-keymaster/materialized/MATERIALIZED_CANDIDATE_LATEST.py
+          cp "$REPORT" "janus_model/autonomous-keymaster/receipts/materialization-${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT}.json"
+          cp "$EXECUTION" "janus_model/autonomous-keymaster/receipts/materializer-execution-${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT}.json"
+          git add -f janus_model/autonomous-keymaster
+
+          if git diff --cached --quiet; then
+            echo 'JANUS_KEYMASTER_MATERIALIZER_NO_STATE_CHANGE'
+          else
+            git commit -m "JANUS executable candidate materialization: run ${GITHUB_RUN_ID}"
+            git push origin HEAD:janus/autonomous-keymaster-lockpick
+            echo 'JANUS_KEYMASTER_MATERIALIZER_PERSIST=PASS'
+          fi
+
+      - name: Wake independent candidate attacker
+        if: steps.source.outputs.available == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh workflow run janus-keymaster-candidate-attacker.yml --ref main
+          echo 'JANUS_KEYMASTER_MATERIALIZER_ATTACK_WAKE=DISPATCHED'
+
+      - name: Upload materialization evidence
+        if: always() && steps.source.outputs.available == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-keymaster-candidate-materialization-${{ github.run_id }}
+          path: |
+            runtime/keymaster-materializer/KEYMASTER_CANDIDATE_MATERIALIZATION_LATEST.json
+            runtime/keymaster-materializer/MATERIALIZED_EXECUTION_MATERIALIZER.json
+            janus_model/autonomous-keymaster/materialized/MATERIALIZED_CANDIDATE_LATEST.py
+          if-no-files-found: error
+          retention-days: 14
