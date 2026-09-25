@@ -112,6 +112,10 @@ jobs:
           cp runtime/keymaster-materializer/MATERIALIZED_EXECUTION_MATERIALIZER.json "$EXECUTION"
           cp janus_model/autonomous-keymaster/materialized/MATERIALIZED_CANDIDATE_LATEST.py "$ARTIFACT"
 
+          # The generated artifact is untracked on main and already copied to RUNNER_TEMP.
+          # Remove it before switching to the autonomous branch, where the same path is tracked.
+          rm -f janus_model/autonomous-keymaster/materialized/MATERIALIZED_CANDIDATE_LATEST.py
+
           git config user.name 'janus-keymaster-materializer[bot]'
           git config user.email 'janus-keymaster-materializer[bot]@users.noreply.github.com'
           git fetch origin janus/autonomous-keymaster-lockpick
