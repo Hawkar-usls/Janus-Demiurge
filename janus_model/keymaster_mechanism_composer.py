@@ -610,6 +610,69 @@ def _progress_readout(authoritative_paths: list[list[str]], shadow_paths: list[l
     }
 
 
+def _proven_delta(
+    previous: dict | None,
+    *,
+    authoritative_edge_count: int,
+    proved_barrier_count: int,
+    complete_route_count: int,
+    progress: dict,
+) -> dict:
+    if not isinstance(previous, dict) or previous.get("schema") != SCHEMA:
+        return {
+            "schema": "janus.keymaster.proven_delta.v1",
+            "baseline": "UNAVAILABLE",
+            "baseline_report_sha256": None,
+            "authoritative_edge_delta": 0,
+            "proved_barrier_delta": 0,
+            "complete_route_delta": 0,
+            "stage_delta": 0,
+            "route_coverage_delta_percent": 0.0,
+            "mathematical_progress": "UNRESOLVED_BASELINE",
+            "proven_advance_event_count": 0,
+            "law": "ROUTE_COVERAGE_DELTA_IS_NOT_PROVEN_PROGRESS",
+        }
+
+    prev_progress = previous.get("progress_readout") or {}
+    edge_delta = authoritative_edge_count - int(previous.get("authoritative_edge_count") or 0)
+    barrier_delta = proved_barrier_count - int(previous.get("proved_barrier_count") or previous.get("typed_dynamic_barrier_count") or 0)
+    route_delta = complete_route_count - len(previous.get("complete_universal_lifecycle_candidates") or [])
+    stage_delta = int(progress.get("stage") or 0) - int(prev_progress.get("stage") or 0)
+    coverage_delta = round(
+        float(progress.get("best_route_coverage_percent") or 0.0)
+        - float(prev_progress.get("best_route_coverage_percent") or 0.0),
+        1,
+    )
+    advances = sum(
+        1 for value in (edge_delta, barrier_delta, route_delta, stage_delta)
+        if value > 0
+    )
+    regressions = sum(
+        1 for value in (edge_delta, barrier_delta, route_delta, stage_delta)
+        if value < 0
+    )
+    if advances > 0:
+        status = "POSITIVE"
+    elif regressions > 0:
+        status = "REGRESSION_OR_RECLASSIFICATION"
+    else:
+        status = "ZERO"
+
+    return {
+        "schema": "janus.keymaster.proven_delta.v1",
+        "baseline": "PREVIOUS_KEYMASTER_REPORT",
+        "baseline_report_sha256": previous.get("report_sha256"),
+        "authoritative_edge_delta": edge_delta,
+        "proved_barrier_delta": barrier_delta,
+        "complete_route_delta": route_delta,
+        "stage_delta": stage_delta,
+        "route_coverage_delta_percent": coverage_delta,
+        "mathematical_progress": status,
+        "proven_advance_event_count": advances,
+        "law": "ROUTE_COVERAGE_DELTA_IS_NOT_PROVEN_PROGRESS",
+    }
+
+
 def load_autonomous_forge(path: Path | None) -> dict | None:
     if path is None or not path.exists():
         return None
@@ -673,7 +736,13 @@ def load_autonomous_forge(path: Path | None) -> dict | None:
     }
 
 
-def compose(registry: dict, scan: dict, contract: dict, autonomous_forge: dict | None = None) -> dict:
+def compose(
+    registry: dict,
+    scan: dict,
+    contract: dict,
+    autonomous_forge: dict | None = None,
+    previous_report: dict | None = None,
+) -> dict:
     merged = list(registry["mechanisms"]) + list(scan.get("dynamic_mechanisms", []))
     by_id: dict[str, dict] = {}
     for row in merged:
@@ -754,6 +823,16 @@ def compose(registry: dict, scan: dict, contract: dict, autonomous_forge: dict |
         key=lambda x: x["id"],
     )
 
+    progress = _progress_readout(authoritative_paths, shadow_paths, gaps)
+    proved_barrier_count = sum(1 for x in barriers if x.get("status") in PROVED_STATUSES)
+    proven_delta = _proven_delta(
+        previous_report,
+        authoritative_edge_count=len(authoritative),
+        proved_barrier_count=proved_barrier_count,
+        complete_route_count=len(authoritative_paths),
+        progress=progress,
+    )
+
     report = {
         "schema": SCHEMA,
         "status": "COMPLETE",
@@ -763,6 +842,7 @@ def compose(registry: dict, scan: dict, contract: dict, autonomous_forge: dict |
         "authority_artifact_count": len(scan["artifacts"]),
         "typed_dynamic_mechanism_count": len(scan.get("dynamic_mechanisms", [])),
         "typed_dynamic_barrier_count": len(scan.get("dynamic_barriers", [])),
+        "proved_barrier_count": proved_barrier_count,
         "normalization_queue": scan["normalization_queue"],
         "registry_mechanism_count": len(registry["mechanisms"]),
         "authoritative_edge_count": len(authoritative),
@@ -790,7 +870,8 @@ def compose(registry: dict, scan: dict, contract: dict, autonomous_forge: dict |
                 "D1": "EMPTY",
             },
         },
-        "progress_readout": _progress_readout(authoritative_paths, shadow_paths, gaps),
+        "progress_readout": progress,
+        "proven_delta": proven_delta,
         "runtime_adoption_policy": {
             "mode": "BEST_ADMITTED_EXECUTABLE_CANDIDATE_FOR_JANUS_INTERNAL_USE",
             "selection_authority": "KEYMASTER_TRUMP_BRIDGE",
@@ -825,6 +906,7 @@ def main() -> None:
     ap.add_argument("--contract", required=True)
     ap.add_argument("--fundamentum", required=True)
     ap.add_argument("--autonomous-forge")
+    ap.add_argument("--previous-report")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
 
@@ -832,7 +914,8 @@ def main() -> None:
     contract = load_contract(Path(args.contract))
     scan = scan_fundamentum(Path(args.fundamentum), contract)
     forge = load_autonomous_forge(Path(args.autonomous_forge)) if args.autonomous_forge else None
-    report = compose(registry, scan, contract, forge)
+    previous = load_json(Path(args.previous_report)) if args.previous_report and Path(args.previous_report).exists() else None
+    report = compose(registry, scan, contract, forge, previous)
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -851,6 +934,10 @@ def main() -> None:
         "autonomous_forge_status": report["autonomous_forge"]["status"],
         "autonomous_forge_cycles": report["autonomous_forge"]["cycle_count"],
         "autonomous_forge_distinct_candidates": report["autonomous_forge"]["distinct_candidate_count"],
+        "mathematical_progress": report["proven_delta"]["mathematical_progress"],
+        "proven_advance_event_count": report["proven_delta"]["proven_advance_event_count"],
+        "authoritative_edge_delta": report["proven_delta"]["authoritative_edge_delta"],
+        "proved_barrier_delta": report["proven_delta"]["proved_barrier_delta"],
         "D1": report["firewall"]["D1"],
         "P_VS_NP": report["firewall"]["P_VS_NP"],
     }, indent=2))
