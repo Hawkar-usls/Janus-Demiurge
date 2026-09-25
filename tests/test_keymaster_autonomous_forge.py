@@ -152,8 +152,10 @@ class AutonomousForgeTests(unittest.TestCase):
         attack = {
             "schema": "janus.keymaster.autonomous_candidate_attack.v1",
             "status": "DEFERRED_NONEXECUTABLE_PROPOSAL",
-            "candidate_id": first["candidate"]["candidate_id"],
-            "candidate_fingerprint": first["candidate"]["candidate_fingerprint"],
+            "candidate": {
+                "candidate_id": first["candidate"]["candidate_id"],
+                "candidate_fingerprint": first["candidate"]["candidate_fingerprint"],
+            },
             "advance_forge": True,
             "mathematical_falsification": False,
             "candidate_is_proved": False,
