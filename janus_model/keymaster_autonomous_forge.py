@@ -595,6 +595,7 @@ def build_state(
     prev_duplicates = int((previous or {}).get("duplicate_candidate_count") or 0)
     prev_deferred = int((previous or {}).get("deferred_candidate_count") or 0)
     prev_falsified = int((previous or {}).get("mathematically_falsified_candidate_count") or 0)
+    prev_materialized_falsified = int((previous or {}).get("materialized_variant_falsified_count") or 0)
     recent = list((previous or {}).get("recent_candidate_fingerprints") or [])[-31:]
     candidate = None
     candidate_error = None
@@ -691,7 +692,10 @@ def build_state(
             1 if attack_advances_forge and str(attack_result.get("status") or "").startswith("DEFERRED_") else 0
         ),
         "mathematically_falsified_candidate_count": prev_falsified + (
-            1 if attack_advances_forge and attack_result.get("mathematical_falsification") is True else 0
+            1 if attack_advances_forge and attack_result.get("candidate_scope_falsified") is True else 0
+        ),
+        "materialized_variant_falsified_count": prev_materialized_falsified + (
+            1 if attack_advances_forge and attack_result.get("materialized_variant_falsified") is True else 0
         ),
         "last_candidate_attack": {
             "status": attack_result.get("status"),
@@ -699,6 +703,9 @@ def build_state(
             "candidate_fingerprint": attack_candidate_fingerprint,
             "advance_forge": attack_result.get("advance_forge"),
             "mathematical_falsification": attack_result.get("mathematical_falsification"),
+            "candidate_scope_falsified": attack_result.get("candidate_scope_falsified"),
+            "materialized_variant_falsified": attack_result.get("materialized_variant_falsified"),
+            "falsification_scope": attack_result.get("falsification_scope"),
             "attack_sha256": attack_result.get("attack_sha256"),
         } if attack_matches_previous else (previous or {}).get("last_candidate_attack"),
         "keymaster_report_sha256": report.get("report_sha256"),
@@ -786,6 +793,7 @@ def main() -> None:
         "distinct_candidate_count": obj["distinct_candidate_count"],
         "deferred_candidate_count": obj["deferred_candidate_count"],
         "mathematically_falsified_candidate_count": obj["mathematically_falsified_candidate_count"],
+        "materialized_variant_falsified_count": obj["materialized_variant_falsified_count"],
         "target": obj["target"],
         "candidate_id": (obj.get("candidate") or {}).get("candidate_id"),
         "keymaster_shadow_admission": obj["keymaster_shadow_admission"],

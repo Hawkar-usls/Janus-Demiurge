@@ -158,6 +158,8 @@ class AutonomousForgeTests(unittest.TestCase):
             },
             "advance_forge": True,
             "mathematical_falsification": False,
+            "candidate_scope_falsified": False,
+            "materialized_variant_falsified": False,
             "candidate_is_proved": False,
             "keymaster_shadow_admission": False,
             "attack_sha256": "f" * 64,
@@ -175,8 +177,41 @@ class AutonomousForgeTests(unittest.TestCase):
         self.assertNotEqual(second["candidate"]["candidate_fingerprint"], first["candidate"]["candidate_fingerprint"])
         self.assertEqual(second["deferred_candidate_count"], 1)
         self.assertEqual(second["mathematically_falsified_candidate_count"], 0)
+        self.assertEqual(second["materialized_variant_falsified_count"], 0)
         self.assertEqual(second["last_candidate_attack"]["status"], "DEFERRED_NONEXECUTABLE_PROPOSAL")
         self.assertTrue(second["last_candidate_attack"]["advance_forge"])
+
+    def test_materialized_variant_falsification_has_separate_counter(self) -> None:
+        first = build_state(keymaster_report(), [], model_candidate=candidate())
+        attack = {
+            "schema": "janus.keymaster.autonomous_candidate_attack.v1",
+            "status": "REJECTED_MATERIALIZED_VARIANT_EXACT_COUNTEREXAMPLE",
+            "candidate": {
+                "candidate_id": first["candidate"]["candidate_id"],
+                "candidate_fingerprint": first["candidate"]["candidate_fingerprint"],
+            },
+            "advance_forge": True,
+            "mathematical_falsification": True,
+            "candidate_scope_falsified": False,
+            "materialized_variant_falsified": True,
+            "falsification_scope": "MATERIALIZED_VARIANT_ONLY",
+            "candidate_is_proved": False,
+            "keymaster_shadow_admission": False,
+            "attack_sha256": "e" * 64,
+            "firewall": {
+                "automatic_theorem_promotion": False,
+                "automatic_p_equals_np_claim": False,
+                "automatic_merge": False,
+                "writes_fundamentum_main": False,
+                "P_VS_NP": "OPEN",
+                "D1": "EMPTY",
+            },
+        }
+        second = build_state(keymaster_report(), [], previous=first, attack_result=attack)
+        self.assertEqual(second["mathematically_falsified_candidate_count"], 0)
+        self.assertEqual(second["materialized_variant_falsified_count"], 1)
+        self.assertTrue(second["last_candidate_attack"]["materialized_variant_falsified"])
+        self.assertFalse(second["last_candidate_attack"]["candidate_scope_falsified"])
 
     def test_target_change_allows_new_candidate_generation(self) -> None:
         first = build_state(keymaster_report(), [], model_candidate=candidate())
