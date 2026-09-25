@@ -71,6 +71,22 @@ class CandidateMaterializerTests(unittest.TestCase):
             "EXECUTED_NO_EXACT_COUNTEREXAMPLE_IN_REFERENCE_BATTERY",
         )
 
+    def test_symbolic_affine_repair_family_has_partial_executable_profile(self) -> None:
+        report, source = materialize(
+            forge("SYMBOLIC_AFFINE_INTERFACE_CONTRACTION"),
+            "runtime/symbolic_affine.py",
+        )
+        self.assertEqual(report["status"], "PARTIAL_EXECUTABLE_ATTACK_PROFILE_READY")
+        self.assertEqual(report["profile_id"], "SYMBOLIC_AFFINE_INTERFACE_REFERENCE_V1")
+        self.assertFalse(report["executable_artifact"]["entrypoints_complete"])
+        ns = {}
+        exec(compile(source, "symbolic_affine.py", "exec"), ns)
+        execution = ns["run_battery"]()
+        self.assertEqual(
+            execution["status"],
+            "EXECUTED_NO_EXACT_COUNTEREXAMPLE_IN_REFERENCE_BATTERY",
+        )
+
     def test_unknown_family_fails_closed(self) -> None:
         report, _ = materialize(forge("ALIEN_FAMILY"), "runtime/c.py")
         self.assertEqual(report["status"], "UNMATERIALIZABLE_UNKNOWN_OPERATOR_FAMILY")
