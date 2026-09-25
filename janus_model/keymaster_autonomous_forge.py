@@ -700,7 +700,7 @@ def build_state(
             "advance_forge": attack_result.get("advance_forge"),
             "mathematical_falsification": attack_result.get("mathematical_falsification"),
             "attack_sha256": attack_result.get("attack_sha256"),
-        } if attack_matches_previous else None,
+        } if attack_matches_previous else (previous or {}).get("last_candidate_attack"),
         "keymaster_report_sha256": report.get("report_sha256"),
         "target": target,
         "search_queries": build_search_queries(target),
