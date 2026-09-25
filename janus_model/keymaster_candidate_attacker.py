@@ -176,7 +176,15 @@ def build_attack(report: dict, forge: dict, controls: Any = None) -> dict:
 
     typed_barriers = list((top or {}).get("barriers") or [])
     barrier_penalty = int((top or {}).get("barrier_penalty") or 0)
+    executable = candidate.get("executable_artifact") if isinstance(candidate, dict) else None
+    executable_bound = (
+        isinstance(executable, dict)
+        and bool(executable.get("path"))
+        and bool(executable.get("sha256"))
+    )
 
+    mathematical_falsification = False
+    advance_forge = False
     if not isinstance(candidate, dict):
         status = "NO_CANDIDATE_TO_ATTACK"
         candidate_survives = False
@@ -189,14 +197,26 @@ def build_attack(report: dict, forge: dict, controls: Any = None) -> dict:
         status = "REJECTED_STALE_TARGET"
         candidate_survives = False
         rejection = "KEYMASTER_TOP_GAP_CHANGED"
+        advance_forge = True
     elif typed_barriers or barrier_penalty > 0:
         status = "REJECTED_KNOWN_TYPED_BARRIER"
         candidate_survives = False
         rejection = "CURRENT_TARGET_HAS_PROVED_BARRIER"
+        mathematical_falsification = True
+        advance_forge = True
+    elif not executable_bound:
+        status = "DEFERRED_NONEXECUTABLE_PROPOSAL"
+        candidate_survives = False
+        rejection = "NO_EXECUTABLE_ARTIFACT_BOUND"
+        advance_forge = True
     elif failed_controls or bad_boundary_controls:
         status = "ATTACK_INFRA_OR_CONTROL_UNRESOLVED"
         candidate_survives = False
         rejection = "NEGATIVE_CONTROL_REPLAY_NOT_CLEAN"
+    elif not controls_rows:
+        status = "ATTACK_CONTROLS_NOT_MATERIALIZED"
+        candidate_survives = False
+        rejection = "NO_EXECUTABLE_CONTROL_REPLAY"
     else:
         status = "SURVIVES_KNOWN_CONTROL_SCREEN__PROOF_OBLIGATIONS_OPEN"
         candidate_survives = True
@@ -233,6 +253,9 @@ def build_attack(report: dict, forge: dict, controls: Any = None) -> dict:
         "candidate_survives_known_screen": candidate_survives,
         "candidate_is_proved": False,
         "candidate_is_keymaster_edge": False,
+        "advance_forge": advance_forge,
+        "mathematical_falsification": mathematical_falsification,
+        "executable_artifact_bound": executable_bound,
         "keymaster_shadow_admission": False,
         "rejection_reason": rejection,
         "keymaster_report_sha256": report.get("report_sha256"),
@@ -260,10 +283,10 @@ def build_attack(report: dict, forge: dict, controls: Any = None) -> dict:
         },
         "proof_work_packet": packet,
         "next_action": (
-            "MATERIALIZE_CANDIDATE_SPECIFIC_FALSIFIERS_AND_ATTACK_OPEN_OBLIGATIONS"
-            if candidate_survives
-            else "RETURN_TO_FORGE_FOR_DIFFERENT_CANDIDATE"
-            if status.startswith("REJECTED")
+            "RETURN_TO_FORGE_FOR_DIFFERENT_CANDIDATE"
+            if advance_forge
+            else "MATERIALIZE_CANDIDATE_SPECIFIC_FALSIFIERS_AND_ATTACK_OPEN_OBLIGATIONS"
+            if candidate_survives or status == "ATTACK_CONTROLS_NOT_MATERIALIZED"
             else "REPAIR_ATTACK_CONTROL_REPLAY"
             if status == "ATTACK_INFRA_OR_CONTROL_UNRESOLVED"
             else "WAIT"
@@ -273,6 +296,7 @@ def build_attack(report: dict, forge: dict, controls: Any = None) -> dict:
             "control_pass_is_proof": False,
             "candidate_generation_is_proof": False,
             "candidate_survival_is_proof": False,
+            "deferred_nonexecutability_is_mathematical_falsification": False,
             "automatic_shadow_admission": False,
             "automatic_theorem_promotion": False,
             "automatic_p_equals_np_claim": False,
@@ -306,6 +330,8 @@ def main() -> None:
         "status": obj["status"],
         "candidate_survives_known_screen": obj["candidate_survives_known_screen"],
         "candidate_is_proved": obj["candidate_is_proved"],
+        "advance_forge": obj["advance_forge"],
+        "mathematical_falsification": obj["mathematical_falsification"],
         "keymaster_shadow_admission": obj["keymaster_shadow_admission"],
         "next_action": obj["next_action"],
         "attack_sha256": obj["attack_sha256"],
