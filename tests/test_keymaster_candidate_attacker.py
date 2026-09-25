@@ -132,7 +132,9 @@ class CandidateAttackerTests(unittest.TestCase):
         self.assertFalse(x["candidate_survives_known_screen"])
 
     def test_control_failure_is_unresolved_not_candidate_falsification(self) -> None:
-        x = build_attack(report(), forge(), controls(False))
+        f = forge()
+        f["candidate"]["executable_artifact"] = {"path": "candidate.py", "sha256": "e" * 64}
+        x = build_attack(report(), f, controls(False))
         self.assertEqual(x["status"], "ATTACK_INFRA_OR_CONTROL_UNRESOLVED")
         self.assertEqual(x["rejection_reason"], "NEGATIVE_CONTROL_REPLAY_NOT_CLEAN")
         self.assertFalse(x["candidate_survives_known_screen"])
