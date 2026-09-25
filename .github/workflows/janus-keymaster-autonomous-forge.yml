@@ -9,6 +9,9 @@ on:
     paths:
       - 'janus_model/keymaster_autonomous_forge.py'
       - 'tests/test_keymaster_autonomous_forge.py'
+      - 'janus_model/keymaster_candidate_attacker.py'
+      - 'tests/test_keymaster_candidate_attacker.py'
+      - '.github/workflows/janus-keymaster-candidate-attacker.yml'
       - '.github/workflows/janus-keymaster-autonomous-forge.yml'
 
 permissions:
@@ -62,6 +65,13 @@ jobs:
             rm -f runtime/keymaster-autonomous/previous.json
             echo 'JANUS_AUTONOMOUS_FORGE_PREVIOUS=NONE'
           fi
+          if git show origin/janus/autonomous-keymaster-lockpick:janus_model/autonomous-keymaster/KEYMASTER_CANDIDATE_ATTACK_LATEST.json \
+              > runtime/keymaster-autonomous/attack.json 2>/dev/null; then
+            echo 'JANUS_AUTONOMOUS_FORGE_ATTACK=FOUND'
+          else
+            rm -f runtime/keymaster-autonomous/attack.json
+            echo 'JANUS_AUTONOMOUS_FORGE_ATTACK=NONE'
+          fi
 
       - name: Prepare current #1 lockpick prompt
         shell: bash
@@ -77,6 +87,9 @@ jobs:
           )
           if [ -f runtime/keymaster-autonomous/previous.json ]; then
             ARGS+=(--previous runtime/keymaster-autonomous/previous.json)
+          fi
+          if [ -f runtime/keymaster-autonomous/attack.json ]; then
+            ARGS+=(--attack-result runtime/keymaster-autonomous/attack.json)
           fi
           python -m janus_model.keymaster_autonomous_forge "${ARGS[@]}"
           python - <<'PY'
@@ -140,6 +153,9 @@ jobs:
           if [ -f runtime/keymaster-autonomous/model-output.json ]; then
             ARGS+=(--model-output runtime/keymaster-autonomous/model-output.json)
           fi
+          if [ -f runtime/keymaster-autonomous/attack.json ]; then
+            ARGS+=(--attack-result runtime/keymaster-autonomous/attack.json)
+          fi
           python -m janus_model.keymaster_autonomous_forge "${ARGS[@]}"
 
           python - <<'PY'
@@ -167,6 +183,8 @@ jobs:
           print('JANUS_AUTONOMOUS_FORGE_STATUS=' + x['status'])
           print('JANUS_AUTONOMOUS_FORGE_CYCLES=' + str(x['cycle_count']))
           print('JANUS_AUTONOMOUS_FORGE_DISTINCT=' + str(x['distinct_candidate_count']))
+          print('JANUS_AUTONOMOUS_FORGE_DEFERRED=' + str(x['deferred_candidate_count']))
+          print('JANUS_AUTONOMOUS_FORGE_MATHEMATICALLY_FALSIFIED=' + str(x['mathematically_falsified_candidate_count']))
           PY
 
       - name: Persist only to JANUS autonomous parallel branch
