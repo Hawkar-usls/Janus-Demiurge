@@ -609,11 +609,19 @@ def build_state(
         and previous_target.get("to_type") == target.get("to_type")
     )
     attack_result = validate_attack_result(attack_result)
+    attack_candidate = attack_result.get("candidate") if isinstance(attack_result, dict) else None
+    attack_candidate = attack_candidate if isinstance(attack_candidate, dict) else {}
+    attack_candidate_id = (
+        attack_result.get("candidate_id") if isinstance(attack_result, dict) else None
+    ) or attack_candidate.get("candidate_id")
+    attack_candidate_fingerprint = (
+        attack_result.get("candidate_fingerprint") if isinstance(attack_result, dict) else None
+    ) or attack_candidate.get("candidate_fingerprint")
     attack_matches_previous = (
         isinstance(attack_result, dict)
         and isinstance(previous_candidate, dict)
-        and attack_result.get("candidate_fingerprint") == previous_candidate.get("candidate_fingerprint")
-        and attack_result.get("candidate_id") == previous_candidate.get("candidate_id")
+        and attack_candidate_fingerprint == previous_candidate.get("candidate_fingerprint")
+        and attack_candidate_id == previous_candidate.get("candidate_id")
     )
     attack_advances_forge = attack_matches_previous and attack_result.get("advance_forge") is True
     pending_attack = (
@@ -687,8 +695,8 @@ def build_state(
         ),
         "last_candidate_attack": {
             "status": attack_result.get("status"),
-            "candidate_id": attack_result.get("candidate_id"),
-            "candidate_fingerprint": attack_result.get("candidate_fingerprint"),
+            "candidate_id": attack_candidate_id,
+            "candidate_fingerprint": attack_candidate_fingerprint,
             "advance_forge": attack_result.get("advance_forge"),
             "mathematical_falsification": attack_result.get("mathematical_falsification"),
             "attack_sha256": attack_result.get("attack_sha256"),
