@@ -48,14 +48,111 @@ jobs:
           if git show origin/janus/autonomous-keymaster-lockpick:janus_model/autonomous-keymaster/KEYMASTER_AUTONOMOUS_FORGE_LATEST.json \
               > runtime/keymaster-materializer/forge.json 2>/dev/null; then
             echo 'available=true' >> "$GITHUB_OUTPUT"
+            CANDIDATE_AVAILABLE="$(python - <<'PY'
+          import json
+          with open('runtime/keymaster-materializer/forge.json', encoding='utf-8') as f:
+              forge = json.load(f)
+          print('true' if forge.get('candidate') is not None else 'false')
+          PY
+          )"
+            echo "candidate_available=${CANDIDATE_AVAILABLE}" >> "$GITHUB_OUTPUT"
             echo 'JANUS_KEYMASTER_MATERIALIZER_FORGE_SOURCE=BOUND'
+            echo "JANUS_KEYMASTER_MATERIALIZER_CANDIDATE_AVAILABLE=${CANDIDATE_AVAILABLE}"
           else
             echo 'available=false' >> "$GITHUB_OUTPUT"
+            echo 'candidate_available=false' >> "$GITHUB_OUTPUT"
             echo 'JANUS_KEYMASTER_MATERIALIZER_FORGE_SOURCE=NOT_AVAILABLE'
           fi
 
+      - name: Fail closed if forge source is unavailable
+        if: steps.source.outputs.available != 'true'
+        run: |
+          echo 'JANUS_KEYMASTER_MATERIALIZER_INFRA_FAILURE=FORGE_SOURCE_UNAVAILABLE'
+          exit 1
+
+      - name: Record healthy idle state when forge has no candidate
+        if: steps.source.outputs.available == 'true' && steps.source.outputs.candidate_available != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from datetime import datetime, timezone
+
+          with open('runtime/keymaster-materializer/forge.json', encoding='utf-8') as f:
+              forge = json.load(f)
+
+          ff = forge.get('firewall') or {}
+          report = {
+              'schema': 'janus.keymaster.candidate_materialization.v1',
+              'status': 'IDLE_NO_CANDIDATE',
+              'generated_at': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+              'candidate': None,
+              'forge_status': forge.get('status'),
+              'forge_next_action': forge.get('next_action'),
+              'cycle_count': forge.get('cycle_count'),
+              'candidate_proposal_count': forge.get('candidate_proposal_count'),
+              'distinct_candidate_count': forge.get('distinct_candidate_count'),
+              'deferred_candidate_count': forge.get('deferred_candidate_count'),
+              'firewall': {
+                  'automatic_theorem_promotion': False,
+                  'automatic_p_equals_np_claim': False,
+                  'automatic_merge': False,
+                  'writes_fundamentum_main': False,
+                  'writes_user_research_branch': False,
+                  'P_VS_NP': ff.get('P_VS_NP', 'OPEN'),
+                  'D1': ff.get('D1', 'EMPTY')
+              }
+          }
+
+          out = 'runtime/keymaster-materializer/KEYMASTER_CANDIDATE_MATERIALIZATION_LATEST.json'
+          with open(out, 'w', encoding='utf-8') as f:
+              json.dump(report, f, indent=2, sort_keys=True)
+              f.write('\n')
+
+          print('JANUS_KEYMASTER_MATERIALIZER_STATUS=IDLE_NO_CANDIDATE')
+          print('JANUS_KEYMASTER_MATERIALIZER_FORGE_STATUS=' + str(report['forge_status']))
+          print('JANUS_KEYMASTER_MATERIALIZER_NEXT_ACTION=' + str(report['forge_next_action']))
+          PY
+
+      - name: Persist healthy idle receipt to autonomous branch
+        if: steps.source.outputs.available == 'true' && steps.source.outputs.candidate_available != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          REPORT="$RUNNER_TEMP/KEYMASTER_CANDIDATE_MATERIALIZATION_LATEST.json"
+          cp runtime/keymaster-materializer/KEYMASTER_CANDIDATE_MATERIALIZATION_LATEST.json "$REPORT"
+
+          git config user.name 'janus-keymaster-materializer[bot]'
+          git config user.email 'janus-keymaster-materializer[bot]@users.noreply.github.com'
+          git fetch origin janus/autonomous-keymaster-lockpick
+          git switch -C janus/autonomous-keymaster-lockpick origin/janus/autonomous-keymaster-lockpick
+
+          mkdir -p janus_model/autonomous-keymaster/receipts
+          cp "$REPORT" janus_model/autonomous-keymaster/KEYMASTER_CANDIDATE_MATERIALIZATION_LATEST.json
+          cp "$REPORT" "janus_model/autonomous-keymaster/receipts/materialization-idle-${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT}.json"
+          git add -f janus_model/autonomous-keymaster/KEYMASTER_CANDIDATE_MATERIALIZATION_LATEST.json \
+            "janus_model/autonomous-keymaster/receipts/materialization-idle-${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT}.json"
+
+          if git diff --cached --quiet; then
+            echo 'JANUS_KEYMASTER_MATERIALIZER_IDLE_NO_STATE_CHANGE'
+          else
+            git commit -m "JANUS materializer idle receipt: run ${GITHUB_RUN_ID}"
+            git push origin HEAD:janus/autonomous-keymaster-lockpick
+            echo 'JANUS_KEYMASTER_MATERIALIZER_IDLE_PERSIST=PASS'
+          fi
+
+      - name: Upload idle evidence
+        if: steps.source.outputs.available == 'true' && steps.source.outputs.candidate_available != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-keymaster-candidate-materialization-idle-${{ github.run_id }}
+          path: runtime/keymaster-materializer/KEYMASTER_CANDIDATE_MATERIALIZATION_LATEST.json
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Materialize current candidate into executable reference variant
-        if: steps.source.outputs.available == 'true'
+        if: steps.source.outputs.candidate_available == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -69,7 +166,7 @@ jobs:
             > runtime/keymaster-materializer/MATERIALIZED_EXECUTION_MATERIALIZER.json
 
       - name: Verify artifact binding and scientific firewall
-        if: steps.source.outputs.available == 'true'
+        if: steps.source.outputs.candidate_available == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -101,7 +198,7 @@ jobs:
           PY
 
       - name: Persist materialization only to autonomous branch
-        if: steps.source.outputs.available == 'true'
+        if: steps.source.outputs.candidate_available == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -112,8 +209,6 @@ jobs:
           cp runtime/keymaster-materializer/MATERIALIZED_EXECUTION_MATERIALIZER.json "$EXECUTION"
           cp janus_model/autonomous-keymaster/materialized/MATERIALIZED_CANDIDATE_LATEST.py "$ARTIFACT"
 
-          # The generated artifact is untracked on main and already copied to RUNNER_TEMP.
-          # Remove it before switching to the autonomous branch, where the same path is tracked.
           rm -f janus_model/autonomous-keymaster/materialized/MATERIALIZED_CANDIDATE_LATEST.py
 
           git config user.name 'janus-keymaster-materializer[bot]'
@@ -139,7 +234,7 @@ jobs:
           fi
 
       - name: Wake independent candidate attacker
-        if: steps.source.outputs.available == 'true'
+        if: steps.source.outputs.candidate_available == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -148,7 +243,7 @@ jobs:
           echo 'JANUS_KEYMASTER_MATERIALIZER_ATTACK_WAKE=DISPATCHED'
 
       - name: Upload materialization evidence
-        if: always() && steps.source.outputs.available == 'true'
+        if: always() && steps.source.outputs.candidate_available == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: janus-keymaster-candidate-materialization-${{ github.run_id }}
