@@ -2,7 +2,7 @@
 import argparse
 import json
 
-META = json.loads('{"candidate_fingerprint": "dbbad10c56a2154ba1b6b8f45a483b0509b00bfef82d844c748b339499eff9b0", "candidate_id": "AUTO_EXACT_INTERFACE_QUOTIENT_BOOLEAN_XOR_AND_CHECK_CIRCUIT_TO_CNF_WITH_POLY_PREFIX_FACTOR_WIDTH_VTREE_ORDER", "operator_family": "EXACT_INTERFACE_QUOTIENT", "profile_id": "EXACT_INTERFACE_QUOTIENT_REFERENCE_V1", "target_from_type": "BOOLEAN_XOR_AND_CHECK_CIRCUIT", "target_to_type": "CNF_WITH_POLY_PREFIX_FACTOR_WIDTH_VTREE_ORDER"}')
+META = json.loads('{"candidate_fingerprint": "f7ec7d510954beaa6badd16eb066816ea491773d6ed0251e4c0c24a47a81977d", "candidate_id": "AUTO_SEPARATOR_SIGNATURE_DP_BOOLEAN_XOR_AND_CHECK_CIRCUIT_TO_CNF_WITH_POLY_PREFIX_FACTOR_WIDTH_VTREE_ORDER", "operator_family": "SEPARATOR_SIGNATURE_DP", "profile_id": "SEPARATOR_SIGNATURE_DP_REFERENCE_V1", "target_from_type": "BOOLEAN_XOR_AND_CHECK_CIRCUIT", "target_to_type": "CNF_WITH_POLY_PREFIX_FACTOR_WIDTH_VTREE_ORDER"}')
 
 def even_parity_count(k):
     if k < 1:
