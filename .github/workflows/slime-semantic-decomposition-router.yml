@@ -1,0 +1,64 @@
+name: Slime Semantic Decomposition Router
+
+on:
+  push:
+    paths:
+      - 'models/slime/slime_decomposition_router.py'
+      - 'models/slime/slime_semantic_candidate_router.py'
+      - 'audits/JANUS_SLIME_SEMANTIC_DECOMPOSITION_ROUTER_V1.json'
+      - '.github/workflows/slime-semantic-decomposition-router.yml'
+  pull_request:
+    paths:
+      - 'models/slime/slime_decomposition_router.py'
+      - 'models/slime/slime_semantic_candidate_router.py'
+      - 'audits/JANUS_SLIME_SEMANTIC_DECOMPOSITION_ROUTER_V1.json'
+      - '.github/workflows/slime-semantic-decomposition-router.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  candidate-generator-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile Slime routers
+        run: |
+          python -m py_compile models/slime/slime_decomposition_router.py
+          python -m py_compile models/slime/slime_semantic_candidate_router.py
+      - name: Run semantic router self-test
+        run: python models/slime/slime_semantic_candidate_router.py
+      - name: Verify generator-verifier firewall
+        run: |
+          python - <<'PY'
+          import inspect
+          from models.slime.slime_semantic_candidate_router import SlimeSemanticCandidateRouter
+
+          params = list(inspect.signature(SlimeSemanticCandidateRouter.generate_manifest).parameters)
+          assert params == ['self', 'clauses'], params
+
+          source = inspect.getsource(SlimeSemanticCandidateRouter.generate_manifest)
+          forbidden = ['assignment_signatures(', 'ps_cut_signatures(', 'truth_table(', 'solve_sat(', 'sat_oracle(']
+          for token in forbidden:
+              assert token not in source, token
+
+          router = SlimeSemanticCandidateRouter()
+          formula = tuple(tuple(range(1, 7)) for _ in range(6))
+          manifest = router.generate_manifest(formula)
+          assert manifest.frozen_before_probe is True
+          assert manifest.exact_ps_width_computed_inside_generator is False
+          assert manifest.sat_oracle_used is False
+          assert len(manifest.candidates) == 4
+          assert all(c.role == 'CANDIDATE_ONLY_NOT_WIDTH_CERTIFICATE' for c in manifest.candidates)
+          print('SLIME_GENERATOR_VERIFIER_FIREWALL = PASS')
+          print('MANIFEST_SHA256 =', manifest.manifest_sha256)
+          print('TOTAL_GENERATION_OPS =', manifest.total_generation_ops)
+          PY
+      - name: Claim ceiling
+        run: |
+          echo 'SLIME_PROPOSAL != DECOMPOSITION_PROOF'
+          echo 'LOW_HEURISTIC_PRESSURE != LOW_PS_WIDTH_THEOREM'
+          echo 'P_VS_NP = OPEN'
