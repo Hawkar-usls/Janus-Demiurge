@@ -1,0 +1,108 @@
+{
+  "schema": "janus.trump.reference.sha256_json_machine.v1",
+  "id": "SHA256_JSON_REFERENCE_MACHINE_V1",
+  "status": "POSITIVE_CONTROL_ONLY_NOT_SAT_THEOREM",
+  "purpose": "Provide a fully explicit deterministic route-law control in which NEXT, state bounds and a polynomial progress rank are known, so TRUMP can validate the PCNER_GPEI contract against a real algorithm without conflating the result with SAT.",
+  "typed_semantics": {
+    "word_type": "uint32",
+    "arithmetic": "mod_2^32",
+    "shift": "logical_right",
+    "rotate": "circular_right",
+    "byte_order": "big_endian",
+    "block_bits": 512,
+    "digest_bits": 256,
+    "rounds_per_block": 64
+  },
+  "initial_hash_words_hex": [
+    "6a09e667", "bb67ae85", "3c6ef372", "a54ff53a",
+    "510e527f", "9b05688c", "1f83d9ab", "5be0cd19"
+  ],
+  "round_constants_hex": [
+    "428a2f98","71374491","b5c0fbcf","e9b5dba5","3956c25b","59f111f1","923f82a4","ab1c5ed5",
+    "d807aa98","12835b01","243185be","550c7dc3","72be5d74","80deb1fe","9bdc06a7","c19bf174",
+    "e49b69c1","efbe4786","0fc19dc6","240ca1cc","2de92c6f","4a7484aa","5cb0a9dc","76f988da",
+    "983e5152","a831c66d","b00327c8","bf597fc7","c6e00bf3","d5a79147","06ca6351","14292967",
+    "27b70a85","2e1b2138","4d2c6dfc","53380d13","650a7354","766a0abb","81c2c92e","92722c85",
+    "a2bfe8a1","a81a664b","c24b8b70","c76c51a3","d192e819","d6990624","f40e3585","106aa070",
+    "19a4c116","1e376c08","2748774c","34b0bcb5","391c0cb3","4ed8aa4a","5b9cca4f","682e6ff3",
+    "748f82ee","78a5636f","84c87814","8cc70208","90befffa","a4506ceb","bef9a3f7","c67178f2"
+  ],
+  "functions": {
+    "Ch(x,y,z)": "(x AND y) XOR ((NOT x) AND z)",
+    "Maj(x,y,z)": "(x AND y) XOR (x AND z) XOR (y AND z)",
+    "Sigma0(x)": "ROTR2(x) XOR ROTR13(x) XOR ROTR22(x)",
+    "Sigma1(x)": "ROTR6(x) XOR ROTR11(x) XOR ROTR25(x)",
+    "sigma0(x)": "ROTR7(x) XOR ROTR18(x) XOR SHR3(x)",
+    "sigma1(x)": "ROTR17(x) XOR ROTR19(x) XOR SHR10(x)"
+  },
+  "message_schedule": {
+    "W[0..15]": "sixteen big-endian uint32 input words from the current padded 512-bit block",
+    "W[t]": "sigma1(W[t-2]) + W[t-7] + sigma0(W[t-15]) + W[t-16] mod 2^32 for 16<=t<64"
+  },
+  "round_transition": {
+    "T1": "h + Sigma1(e) + Ch(e,f,g) + K[t] + W[t] mod 2^32",
+    "T2": "Sigma0(a) + Maj(a,b,c) mod 2^32",
+    "next": {
+      "a": "T1 + T2 mod 2^32",
+      "b": "a",
+      "c": "b",
+      "d": "c",
+      "e": "d + T1 mod 2^32",
+      "f": "e",
+      "g": "f",
+      "h": "g"
+    }
+  },
+  "block_finalize": "H[i] := H[i] + working[i] mod 2^32 for i=0..7",
+  "padding": {
+    "rule": "append one 1 bit, then zero bits until length is congruent to 448 mod 512, then append original bit length as uint64 big-endian",
+    "block_count": "B(N)=ceil((8N+1+64)/512) with the usual zero-padding adjustment, equivalently len(padded_message)/64 bytes"
+  },
+  "pcner_positive_control": {
+    "POLY_FIND": {
+      "law": "There is exactly one scheduled next round transition at each nonterminal round state.",
+      "candidate_count": 1,
+      "discovery_cost": "O(1) per round"
+    },
+    "POLY_HOLD": {
+      "law": "Working state uses eight uint32 words plus a 64-word uint32 schedule for one block; streaming execution does not require retaining the full route trace.",
+      "working_words_upper_bound": 72,
+      "input_relative_bound": "O(1) working words plus input storage/streaming buffer; total encoded input is O(N)"
+    },
+    "POLY_ADVANCE": {
+      "rank": "mu = 64*(B-current_block_index) - current_round_index",
+      "rank_initial": "64*B",
+      "rank_terminal": 0,
+      "strict_descent": "mu_next = mu - 1 on every round transition",
+      "macrostep_bound": "64*B = O(N)"
+    },
+    "EXACTNESS_CERTIFICATION": {
+      "method": "independent comparison against Python hashlib.sha256 plus published fixed test-vector digests",
+      "scope": "finite executable control plus direct inspection of the fixed transition law; not an independent formal proof assistant proof"
+    },
+    "DEBT_RESOURCE_ACCOUNTING": {
+      "rule": "No unbounded trace materialization, advice, search, deferred semantic oracle, or representation-switch debt is permitted in the control run."
+    }
+  },
+  "known_test_vectors": [
+    {"message_utf8": "", "digest_hex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"},
+    {"message_utf8": "abc", "digest_hex": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"},
+    {"message_utf8": "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", "digest_hex": "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1"}
+  ],
+  "hard_firewalls": [
+    "SHA256_POLY_ROUTE != SAT_POLY_ROUTE",
+    "POSITIVE_CONTROL_PASS != PCNER_GPEI_FOR_CNF",
+    "FIXED_SCHEDULE_FOR_SHA256 != UNIVERSAL_SAFE_SCHEDULE_FOR_SAT",
+    "HASH != TRUTH",
+    "DIGEST != IDENTITY",
+    "FINITE_TEST_VECTOR_PASS != GENERAL_CRYPTOGRAPHIC_SECURITY_PROOF",
+    "P_VS_NP = OPEN"
+  ],
+  "scientific_boundary": {
+    "SHA256_reference_algorithm_polynomial_time": true,
+    "SAT_transfer_claimed": false,
+    "universal_GPEI_for_SAT_proved": false,
+    "P_equals_NP_proved": false,
+    "P_VS_NP": "OPEN"
+  }
+}
