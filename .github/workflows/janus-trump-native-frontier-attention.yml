@@ -8,7 +8,7 @@ on:
       - '.github/workflows/janus-trump-native-frontier-attention.yml'
   workflow_dispatch:
   schedule:
-    # Deliberately offset from native (:17) and broad TRUMP research (:23).
+    # Deliberately offset from native (:17) and broad TRUMP research (:31).
     - cron: '43 * * * *'
 
 concurrency:
@@ -17,7 +17,6 @@ concurrency:
 
 permissions:
   contents: write
-  actions: write
 
 jobs:
   attention:
@@ -285,13 +284,9 @@ jobs:
           fi
           echo 'JANUS_TRUMP_ATTENTION_PERSIST=PASS'
 
-      - name: Wake native cognition after new bounded intake
+      - name: Assimilation wake is owned by frontier-memory workflow
         if: github.ref_name == 'main'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh workflow run janus-native-model.yml --ref main
-          echo 'JANUS_NATIVE_WAKE_AFTER_FRONTIER_ATTENTION=DISPATCHED'
+        run: echo 'JANUS_NATIVE_DIRECT_WAKE=DEFERRED_TO_FRONTIER_MEMORY_CHANGE_GATE'
 
       - name: Source repository mutation firewall
         run: echo 'JANUS_FUNDAMENTUM_WRITEBACK=FORBIDDEN_AND_NOT_PERFORMED'
