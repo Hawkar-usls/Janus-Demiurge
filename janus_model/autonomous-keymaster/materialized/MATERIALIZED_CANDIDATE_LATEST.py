@@ -2,7 +2,7 @@
 import argparse
 import json
 
-META = json.loads('{"candidate_fingerprint": "39002072f7778c9a28c845a64cdf4a11f11d4059efd5dd9f7417cc069061105f", "candidate_id": "AUTO_DECISION_DAG_INTERFACE_REFINEMENT_BOOLEAN_XOR_AND_CHECK_CIRCUIT_TO_CNF_WITH_POLY_PREFIX_FACTOR_WIDTH_VTREE_ORDER", "operator_family": "DECISION_DAG_INTERFACE_REFINEMENT", "profile_id": "DECISION_DAG_INTERFACE_REFERENCE_V1", "target_from_type": "BOOLEAN_XOR_AND_CHECK_CIRCUIT", "target_to_type": "CNF_WITH_POLY_PREFIX_FACTOR_WIDTH_VTREE_ORDER"}')
+META = json.loads('{"candidate_fingerprint": "43dad71bf2fe6afa36fe58c7fa4116290d08043d1d59c2e88774c0a265b308e8", "candidate_id": "AUTO_EXACT_INTERFACE_QUOTIENT_THREE_SHEET_DISJUNCTIVE_CSP_TO_EP_COMPACT_REPRESENTATION", "operator_family": "EXACT_INTERFACE_QUOTIENT", "profile_id": "EXACT_INTERFACE_QUOTIENT_REFERENCE_V1", "target_from_type": "THREE_SHEET_DISJUNCTIVE_CSP", "target_to_type": "EP_COMPACT_REPRESENTATION"}')
 
 def even_parity_count(k):
     if k < 1:
