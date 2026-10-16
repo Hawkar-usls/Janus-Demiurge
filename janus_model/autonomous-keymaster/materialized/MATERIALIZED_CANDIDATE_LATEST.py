@@ -2,7 +2,7 @@
 import argparse
 import json
 
-META = json.loads('{"candidate_fingerprint": "1b36c5f7908bf7c0a9b9492140fcdd5981fc442c80fdbd6563fd5bb24a2147d5", "candidate_id": "AUTO_TRACTABLE_ISLAND_CONTRACTION_THREE_SHEET_DISJUNCTIVE_CSP_TO_EP_COMPACT_REPRESENTATION", "operator_family": "TRACTABLE_ISLAND_CONTRACTION", "profile_id": "TRACTABLE_ISLAND_CONTRACTION_EXPLICIT_INTERFACE_V1", "target_from_type": "THREE_SHEET_DISJUNCTIVE_CSP", "target_to_type": "EP_COMPACT_REPRESENTATION"}')
+META = json.loads('{"candidate_fingerprint": "081735d267d3e37b39e03da6dfb0ce4bb89298975cd70689b85abb7284da4f24", "candidate_id": "AUTO_PROOF_CARRYING_ELIMINATION_SCHEDULE_THREE_SHEET_DISJUNCTIVE_CSP_TO_EP_COMPACT_REPRESENTATION", "operator_family": "PROOF_CARRYING_ELIMINATION_SCHEDULE", "profile_id": "PROOF_CARRYING_ELIMINATION_REFERENCE_V1", "target_from_type": "THREE_SHEET_DISJUNCTIVE_CSP", "target_to_type": "EP_COMPACT_REPRESENTATION"}')
 
 def even_parity_count(k):
     if k < 1:
