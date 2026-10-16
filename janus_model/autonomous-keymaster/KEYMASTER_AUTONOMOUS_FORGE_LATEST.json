@@ -1,14 +1,14 @@
 {
   "candidate": {
     "algorithm_steps": [
-      "Construct a deterministic source-native separator decomposition without semantic-oracle calls.",
-      "Extract affine equations crossing each separator and reduce them to an independent boundary basis.",
-      "Store only the basis, affine offset, and residual non-affine signature rather than enumerating affine boundary tuples.",
-      "Compose adjacent separator states by exact basis intersection/elimination plus explicit residual joins.",
-      "Reject if residual signatures, basis update work, or induced target width lacks a polynomial bound.",
-      "Reconstruct a source witness by reversing residual joins and affine elimination, then verify the original instance."
+      "Extract the maximal syntactically certified affine subsystem and compute an exact echelon basis.",
+      "Substitute affine pivots into the remaining constraints while recording polynomial-size reconstruction maps.",
+      "Run deterministic elimination priorities on the residual constraints only.",
+      "Attach an exact local replacement certificate and cumulative size/width charge to every residual elimination step.",
+      "Reject immediately on superpolynomial residual growth, width growth, or failed local equivalence.",
+      "Compile a surviving schedule to the target representation and replay both elimination and affine maps for verification."
     ],
-    "anti_loop_rationale": "Operator family RANK_FACTORED_SEPARATOR_DP must be compared against existing Keymaster barriers and prior fingerprints; a renamed known route or a route requiring a hidden SAT/semantic-equivalence oracle is rejected.",
+    "anti_loop_rationale": "Operator family AFFINE_QUOTIENT_THEN_CERTIFIED_ELIMINATION must be compared against existing Keymaster barriers and prior fingerprints; a renamed known route or a route requiring a hidden SAT/semantic-equivalence oracle is rejected.",
     "authority": {
       "automatic_merge": false,
       "fundamentum_mutation": false,
@@ -16,8 +16,8 @@
       "scientific_claim_promotion": false,
       "truth": false
     },
-    "candidate_fingerprint": "e949d80f94f7a1335f2b7936c364b765003bcabff4c121ec70523e7d76e0f5ba",
-    "candidate_id": "AUTO_RANK_FACTORED_SEPARATOR_DP_THREE_SHEET_DISJUNCTIVE_CSP_TO_EP_COMPACT_REPRESENTATION",
+    "candidate_fingerprint": "ecf2008c9cc36da0dbbd5e55671447d6714535a4413aaf1c8a663e1acf6547a0",
+    "candidate_id": "AUTO_AFFINE_QUOTIENT_THEN_CERTIFIED_ELIMINATION_THREE_SHEET_DISJUNCTIVE_CSP_TO_EP_COMPACT_REPRESENTATION",
     "complexity_plan": {
       "construction": "Require an explicit polynomial bound on decomposition/quotient construction before admission.",
       "reconstruction": "Store provenance maps at every reduction and require polynomial backward replay.",
@@ -35,48 +35,48 @@
     "falsification_tests": [
       {
         "id": "F1",
-        "test": "Use expander/Tseitin controls to test whether separator adhesion remains unbounded after rank factoring."
+        "test": "Search mixed instances where affine substitution densifies the residual superpolynomially or destroys width bounds."
       },
       {
         "id": "F2",
-        "test": "Search instances where the residual non-affine signature family is exponential despite low affine rank."
+        "test": "Run known bad elimination-order families after affine preprocessing and charge cumulative generated state."
       },
       {
         "id": "F3",
-        "test": "Cross-check separator composition against exhaustive assignments on bounded supports."
+        "test": "Exhaustively verify local substitutions and witness lifting on bounded mixed XOR/non-affine instances."
       }
     ],
     "keymaster_shadow_admission": false,
     "keymaster_shadow_admission_reason": "PROOF_OBLIGATIONS_UNDISCHARGED",
-    "operator_family": "RANK_FACTORED_SEPARATOR_DP",
+    "operator_family": "AFFINE_QUOTIENT_THEN_CERTIFIED_ELIMINATION",
     "proof_obligations": [
       {
-        "attack": "Prove or falsify EXACT_SEMANTICS for RANK_FACTORED_SEPARATOR_DP on arbitrary input size.",
+        "attack": "Prove or falsify EXACT_SEMANTICS for AFFINE_QUOTIENT_THEN_CERTIFIED_ELIMINATION on arbitrary input size.",
         "id": "EXACT_SEMANTICS",
         "status": "OPEN"
       },
       {
-        "attack": "Prove or falsify POLYNOMIAL_CONSTRUCTION for RANK_FACTORED_SEPARATOR_DP on arbitrary input size.",
+        "attack": "Prove or falsify POLYNOMIAL_CONSTRUCTION for AFFINE_QUOTIENT_THEN_CERTIFIED_ELIMINATION on arbitrary input size.",
         "id": "POLYNOMIAL_CONSTRUCTION",
         "status": "OPEN"
       },
       {
-        "attack": "Prove or falsify POLYNOMIAL_STATE for RANK_FACTORED_SEPARATOR_DP on arbitrary input size.",
+        "attack": "Prove or falsify POLYNOMIAL_STATE for AFFINE_QUOTIENT_THEN_CERTIFIED_ELIMINATION on arbitrary input size.",
         "id": "POLYNOMIAL_STATE",
         "status": "OPEN"
       },
       {
-        "attack": "Prove or falsify POLYNOMIAL_RECONSTRUCTION for RANK_FACTORED_SEPARATOR_DP on arbitrary input size.",
+        "attack": "Prove or falsify POLYNOMIAL_RECONSTRUCTION for AFFINE_QUOTIENT_THEN_CERTIFIED_ELIMINATION on arbitrary input size.",
         "id": "POLYNOMIAL_RECONSTRUCTION",
         "status": "OPEN"
       },
       {
-        "attack": "Prove or falsify POLYNOMIAL_VERIFICATION for RANK_FACTORED_SEPARATOR_DP on arbitrary input size.",
+        "attack": "Prove or falsify POLYNOMIAL_VERIFICATION for AFFINE_QUOTIENT_THEN_CERTIFIED_ELIMINATION on arbitrary input size.",
         "id": "POLYNOMIAL_VERIFICATION",
         "status": "OPEN"
       },
       {
-        "attack": "Prove or falsify UNIVERSAL_SCOPE for RANK_FACTORED_SEPARATOR_DP on arbitrary input size.",
+        "attack": "Prove or falsify UNIVERSAL_SCOPE for AFFINE_QUOTIENT_THEN_CERTIFIED_ELIMINATION on arbitrary input size.",
         "id": "UNIVERSAL_SCOPE",
         "status": "OPEN"
       }
@@ -87,18 +87,18 @@
     },
     "schema": "janus.keymaster.autonomous_candidate.v1",
     "status": "CANDIDATE_ALGORITHM_PROPOSED_UNVERIFIED",
-    "strategy": "Build separators for THREE_SHEET_DISJUNCTIVE_CSP, factor each boundary state into an affine GF(2) row-space component plus a residual non-affine signature, and compile into EP_COMPACT_REPRESENTATION only if residual signature count and separator interaction remain polynomial. Donor-context anchor: Automated computational modelling for complicated partial differential equations.",
+    "strategy": "First quotient the maximal affine portion of THREE_SHEET_DISJUNCTIVE_CSP by exact Gaussian elimination, then run a proof-carrying elimination schedule only on the typed residual before compiling to EP_COMPACT_REPRESENTATION. Donor-context anchor: A framework for good SAT translations, with applications to CNF representations of XOR constraints.",
     "synthesis_origin": "DETERMINISTIC_COMBINATORIAL_FALLBACK",
     "target_from_type": "THREE_SHEET_DISJUNCTIVE_CSP",
     "target_to_type": "EP_COMPACT_REPRESENTATION",
-    "title": "RANK_FACTORED_SEPARATOR_DP candidate for THREE_SHEET_DISJUNCTIVE_CSP -> EP_COMPACT_REPRESENTATION"
+    "title": "AFFINE_QUOTIENT_THEN_CERTIFIED_ELIMINATION candidate for THREE_SHEET_DISJUNCTIVE_CSP -> EP_COMPACT_REPRESENTATION"
   },
   "candidate_error": null,
-  "candidate_proposal_count": 40,
+  "candidate_proposal_count": 41,
   "candidate_proposer": "DETERMINISTIC_COMBINATORIAL_FALLBACK",
-  "cycle_count": 152,
+  "cycle_count": 153,
   "deferred_candidate_count": 25,
-  "distinct_candidate_count": 32,
+  "distinct_candidate_count": 33,
   "duplicate_candidate_count": 8,
   "firewall": {
     "D1": "EMPTY",
@@ -113,13 +113,13 @@
     "writes_fundamentum_main": false,
     "writes_user_research_branch": false
   },
-  "keymaster_report_sha256": "05b50d012eb2fc6303beede147472887a742f06b6254676a72bee0949a5f3ad8",
+  "keymaster_report_sha256": "eb98364ec1d2ba679af1427670429b9b3a89e0d2ae53f4954daa69fd405c843f",
   "keymaster_shadow_admission": false,
   "last_candidate_attack": {
     "advance_forge": true,
-    "attack_sha256": "13fa38bd51de0e75ecc72f7a440ff47d6c71d979815ab1d734db63d4c1123fe9",
-    "candidate_fingerprint": "0e86245c8bbb35bb613d197ce6c2cbd29bd677594a94e51bcc730e1ed554271f",
-    "candidate_id": "AUTO_SYMBOLIC_AFFINE_INTERFACE_CONTRACTION_THREE_SHEET_DISJUNCTIVE_CSP_TO_EP_COMPACT_REPRESENTATION",
+    "attack_sha256": "6dd0aacef589683f4c89a9f717e4977f5cd5fe0fa3a9f71d094b35721cc21296",
+    "candidate_fingerprint": "e949d80f94f7a1335f2b7936c364b765003bcabff4c121ec70523e7d76e0f5ba",
+    "candidate_id": "AUTO_RANK_FACTORED_SEPARATOR_DP_THREE_SHEET_DISJUNCTIVE_CSP_TO_EP_COMPACT_REPRESENTATION",
     "candidate_scope_falsified": true,
     "falsification_scope": "CANDIDATE_SCOPE",
     "materialized_variant_falsified": false,
@@ -127,12 +127,11 @@
     "status": "REJECTED_KNOWN_TYPED_BARRIER"
   },
   "materialized_variant_falsified_count": 2,
-  "mathematically_falsified_candidate_count": 6,
+  "mathematically_falsified_candidate_count": 7,
   "mode": "AUTONOMOUS_TARGETED_LOCKPICK_FORGE",
   "next_action": "RUN_PROOF_OBLIGATION_AND_FALSIFICATION_GATES",
-  "prompt_sha256": "55543d7c3266c8b9493272a36774b3929267f63e3c3eaccd99ed39d1498f4bc2",
+  "prompt_sha256": "911410c018b44e6763c690b5baafd5da9255c37ea7a7f67c9be0a3a6757bda06",
   "recent_candidate_fingerprints": [
-    "018a6eeae154e931e29fe4348c5263bdf5aa1774d60204adc8877d2c745ce549",
     "9e9999de2806ea0b67ffdf4c2cb0ecc82c9d1cb2d4cb8f1716cc1328327bb4f8",
     "9a71fba8958b4eff327cb1a9ffa6920f40800385b36cf175fb95d8ba39a0a0c0",
     "01168fdb6e3ed0709d8c7275a0dfd62b27c7d18f36c70b734d7b7592d88c42a3",
@@ -163,7 +162,8 @@
     "1b36c5f7908bf7c0a9b9492140fcdd5981fc442c80fdbd6563fd5bb24a2147d5",
     "081735d267d3e37b39e03da6dfb0ce4bb89298975cd70689b85abb7284da4f24",
     "0e86245c8bbb35bb613d197ce6c2cbd29bd677594a94e51bcc730e1ed554271f",
-    "e949d80f94f7a1335f2b7936c364b765003bcabff4c121ec70523e7d76e0f5ba"
+    "e949d80f94f7a1335f2b7936c364b765003bcabff4c121ec70523e7d76e0f5ba",
+    "ecf2008c9cc36da0dbbd5e55671447d6714535a4413aaf1c8a663e1acf6547a0"
   ],
   "schema": "janus.keymaster.autonomous_forge.v1",
   "search_queries": [
@@ -289,7 +289,7 @@
     "inaihr_source_commit": "b2e0d84ea8e1b014ac28071885792d3527fd81ce",
     "topa_record_count_seen": 147
   },
-  "state_sha256": "e2b96e1b09fe603ec39992d731043b1501f3ce23fdf12b39939fa3d48d382074",
+  "state_sha256": "aefb35bd97b1da1d15cb1cceacd45c147659cc86efd517ac6f5111b1e51c735d",
   "status": "NEW_CANDIDATE_ALGORITHM_PROPOSED",
   "target": {
     "barrier_penalty": 4,
