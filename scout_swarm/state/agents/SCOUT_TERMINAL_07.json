@@ -2,7 +2,7 @@
   "schema": "janus.demiurge.scout_agent.report.v2.spiral",
   "agent_id": "SCOUT_TERMINAL_07",
   "role": "TERMINAL_RECON",
-  "created_at_utc": "2026-10-17T11:08:28Z",
+  "created_at_utc": "2026-10-17T15:54:27Z",
   "status": "DEGRADED_MODEL_QUOTA_EXHAUSTED",
   "target": {
     "repository": "Hawkar-usls/-Terminal-for-Janus",
@@ -12,8 +12,8 @@
   "repository_snapshot": {
     "target_repo": "Hawkar-usls/-Terminal-for-Janus",
     "target_ref": "main",
-    "target_commit": "94308b02dfafbf1a8bd5b360cb1169aa93fce992",
-    "file_count": 126,
+    "target_commit": "5b89bdc3461d24b32fab459d2160b5e3ebe7e7e7",
+    "file_count": 130,
     "top_level": [
       ".github",
       ".janus",
@@ -34,16 +34,16 @@
       "tools"
     ],
     "recent_commits": [
+      "5b89bdc3461d24b32fab459d2160b5e3ebe7e7e7\t2026-10-17T13:00:59Z\tSync Keymaster automation telemetry",
+      "7fd03ca0f80adb52b2056303a97810341ad461ee\t2026-10-17T15:17:45+03:00\tAdd durable read-only JANUS ecosystem observer (#32)",
+      "bfb121aaab5fd022cc2bdb9eee98e7aaa78217d7\t2026-10-17T11:11:51Z\tReceipt: whole-constellation JANUS spiral run",
+      "6d7ef13381a5e8320db636da639592edee4261e8\t2026-10-17T11:11:30Z\tReceipt: JANUS constellation ring scan",
       "94308b02dfafbf1a8bd5b360cb1169aa93fce992\t2026-10-17T09:15:51Z\tSync Keymaster automation telemetry",
       "61321f94231a3e5a1046a2b8e9ec0c993f5fc0e7\t2026-10-17T11:36:37+03:00\tBeetle receiver: replay queued batches and persist durable ACK",
       "973ec2744b7ec89c609ef8d7e24c82022b5fc5aa\t2026-10-17T05:04:16Z\tSync Keymaster automation telemetry",
       "52e2c90a1048a6a344eae79a6c380ca16c57cb7c\t2026-10-17T05:00:56Z\tReceipt: whole-constellation JANUS spiral run",
       "abeefcd6c0cd4e3253d40af1ad65e9132ae0ee28\t2026-10-17T05:00:34Z\tReceipt: JANUS constellation ring scan",
-      "938f13fdbc43fa38f67dc3f2245829ecd3de337c\t2026-10-17T00:48:31Z\tSync Keymaster automation telemetry",
-      "254c232a308cd943f724a892431771c41ad85d0b\t2026-10-16T22:47:08Z\tSync Keymaster automation telemetry",
-      "0f4a8c7f53980a15111fbeb8ec51eedd76f8dce9\t2026-10-16T21:44:36Z\tReceipt: whole-constellation JANUS spiral run",
-      "64180ba3ed92e3af3159faf2babe37f15150c6d7\t2026-10-16T21:44:17Z\tReceipt: JANUS constellation ring scan",
-      "b2a2c94cecc5d62aff48ec99f4b4879b9f0d2c04\t2026-10-16T20:02:13Z\tSync Keymaster automation telemetry"
+      "938f13fdbc43fa38f67dc3f2245829ecd3de337c\t2026-10-17T00:48:31Z\tSync Keymaster automation telemetry"
     ],
     "selected_sources": [
       {
@@ -56,7 +56,7 @@
       },
       {
         "path": "README.md",
-        "excerpt": "<div align=\"center\">\n\n# Terminal for Janus\n### Human-authorized operator control plane for the JANUS constellation\n\n![Status](https://img.shields.io/badge/status-active%20prototype-2ea043)\n![Role](https://img.shields.io/badge/role-operator%20control%20plane-8250df)\n\n`HAWKAR → TERMINAL COMMAND → TARGET → GATE → EXECUTOR → RECEIPT → HABITAT`\n\n</div>\n\n## Role\n\nTerminal is the operator-facing entry point for JANUS repository orchestration. It is intended to coordinate reads, human-authorized writes, tests, workflow launches, deployment requests, Habitat handoffs and cross-repository receipts.\n\nIt is **not** a truth authority and it does not turn interface access into autonomous control.\n\n```text\nTERMINAL_ACCESS != TRUTH_AUTHORITY\nCOMMAND != EVIDENCE\nWRITE != VERIFIED_RETURN\nWORKFLOW_PASS != WORLD_TRUTH\nHUMAN_AUTHORIZED_WRITE != UNBOUNDED_AUTONOMY\n```\n\n## Connected constellation\n\nThe machine-readable map is [`config/JANUS_CONSTELLATION.json`](config/JANUS_CONSTELLATION.json).\n\nPrimary control path:\n\n```text\nTerminal\n  ├─ JANUS-SPI / Hawkar-usls\n  ├─ Habitat / Janus_Genesis@janus/habitat\n  ├─ DemiHead arbiter\n  ├─ Aura Oracle reflection peer\n  ├─ HRain / iNaiHR\n  ├─ Janus-Fundamentum / AIFC\n  ├─ Janus-Cosmos / janus-io-public\n  ├─ Swarm / Fast-CAT-SHAiTan\n  ├─ SCOBY-D0 / janus-lapis\n  └─ janus-meta-registry\n```\n\n## Command model\n\nA Terminal-managed operation should leave a machine-readable command receipt under `commands/`.\n\nEach command records:\n\n- who requested it;\n- target repositories;\n- intended operation;\n- authority mode;\n- expected outputs;\n- forbidden promotions;\n- resulting workflow/commit/receipt evidence.\n\nDefault authority is `READ_ONLY`. Writes require explicit human authorization.\n\nCanonical control-plane contract:\n[`contracts/JANUS_TERMINAL_CONTROL_PLANE-v1.0.json`](contracts/JANUS_TERMINAL_CONTROL_PLANE-v1.0.json)\n\n## First bound operation\n\nThe first Terminal-managed integration is:\n\n**Aura Oracle ↔ JANUS Semantic-Predictive Intelligence ↔ DemiHead ↔ Habitat**\n\nCommand receipt:\n[`commands/2026-08-21-FIRST_LIVE_SPIRAL.json`](commands/2026-08-21-FIRST_LIVE_SPIRAL.json)\n\nWorkflow:\n[`.github/workflows/janus-terminal-first-live-spiral.yml`](.github/workflows/janus-terminal-first-live-spiral.yml)\n\nThe first reference run is deliberately fail-closed: `DemiHead = HOLD`, Aura cannot become a predictive label, and a workflow success cannot become `VERIFIED_RETURN` or scientific truth.\n\n## Executors\n\nTerminal may be used with multiple execution surfaces:\n\n- connected ChatGPT GitHub executor;\n- GitHub Actions;\n- optional local `gh`/git tooling;\n- optional NAS/PC runtime after a real persistent executor is connected.\n\nCredentials must never be committed into this repository.\n\n## Habitat\n\nThe original `.janus/HABITAT_LINK.json` remains authoritative for the repository-to-Habitat safety boundary: repository source history stays authoritative, write-back is denied by default, and explicit human authorization is required for writes.\n\n## Status\n\nThis is an **active prototype**, not a production-grade remote-administration system. Persistent NAS execution and production security hardening remain separate gates.\n\n→ [`PROJECT_STATUS.json`](PROJECT_STATUS.json)\n\n---\n\n<div align=\"center\">\n\n**Hawkar / JANUS**\n\n</div>\n"
+        "excerpt": "<div align=\"center\">\n\n# Terminal for Janus\n### Human-authorized operator control plane for the JANUS constellation\n\n![Status](https://img.shields.io/badge/status-active%20prototype-2ea043)\n![Role](https://img.shields.io/badge/role-operator%20control%20plane-8250df)\n\n`HAWKAR → TERMINAL COMMAND → TARGET → GATE → EXECUTOR → RECEIPT → HABITAT`\n\n</div>\n\n## Role\n\nTerminal is the operator-facing entry point for JANUS repository orchestration. It is intended to coordinate reads, human-authorized writes, tests, workflow launches, deployment requests, Habitat handoffs and cross-repository receipts.\n\nIt is **not** a truth authority and it does not turn interface access into autonomous control.\n\n```text\nTERMINAL_ACCESS != TRUTH_AUTHORITY\nCOMMAND != EVIDENCE\nWRITE != VERIFIED_RETURN\nWORKFLOW_PASS != WORLD_TRUTH\nHUMAN_AUTHORIZED_WRITE != UNBOUNDED_AUTONOMY\n```\n\n## Connected constellation\n\nThe machine-readable map is [`config/JANUS_CONSTELLATION.json`](config/JANUS_CONSTELLATION.json).\n\nThe **public ecosystem observer** is intentionally separate from that executable\nconstellation. It checks the full public repository list, accounts for upstream\nworking copies, and tracks proposed read-only integrations without auto-enrolling\nnew projects in the live scanner. This matters because membership in\n`JANUS_CONSTELLATION.json` causes scheduled cross-repository clone/audit work.\n\n- Candidate contracts: [`config/JANUS_ECOSYSTEM_OBSERVER.json`](config/JANUS_ECOSYSTEM_OBSERVER.json)\n- Read-only observer: [`tools/janus_ecosystem_observer.py`](tools/janus_ecosystem_observer.py)\n- Weekly/manual workflow: [`.github/workflows/janus-ecosystem-observer.yml`](.github/workflows/janus-ecosystem-observer.yml)\n- Persistent receipt: branch `janus/ecosystem-observations`, file\n  `receipts/JANUS_ECOSYSTEM_OBSERVATION_LATEST.json`\n\nThe observation carries a SHA-256 integrity digest and a monotonic predecessor\nlink. A missing API response or tampered previous receipt fails closed and does\nnot overwrite the last good state. The workflow reads only public repository\nmetadata and writes only its own receipt branch. A discovered repository is not\nthereby running, authorized, tested, trustworthy, or scientific evidence.\n\nRun locally (public GitHub API required):\n\n```bash\npython tools/janus_ecosystem_observer.py --live --output /tmp/janus-ecosystem-observation.json\npython tools/janus_ecosystem_observer.py --verify /tmp/janus-ecosystem-observation.json\n```\n\nPrimary control path:\n\n```text\nTerminal\n  ├─ JANUS-SPI / Hawkar-usls\n  ├─ Habitat / Janus_Genesis@janus/habitat\n  ├─ DemiHead arbiter\n  ├─ Aura Oracle reflection peer\n  ├─ HRain / iNaiHR\n  ├─ Janus-Fundamentum / AIFC\n  ├─ Janus-Cosmos / janus-io-public\n  ├─ Swarm / Fast-CAT-SHAiTan\n  ├─ SCOBY-D0 / janus-lapis\n  └─ janus-meta-registry\n```\n\n## Command model\n\nA Terminal-managed operation should leave a machine-readable command receipt under `commands/`.\n\nEach command records:\n\n- who requested it;\n- target repositories;\n- intended operation;\n- authority mode;\n- expected outputs;\n- forbidden promotions;\n- resulting workflow/commit/receipt evidence.\n\nDefault authority is `READ_ONLY`. Writes require explicit human authorization.\n\nCanonical control-plane contract:\n[`contracts/JANUS_TERMINAL_CONTROL_PLANE-v1.0.json`](contracts/JANUS_TERMINAL_CONTROL_PLANE-v1.0.json)\n\n## First bound operation\n\nThe first Terminal-managed integration is:\n\n**Aura Oracle ↔ JANUS Semantic-Predictive Intelligence ↔ DemiHead ↔ Habitat**\n\nCommand receipt:\n[`commands/2026-08-21-FIRST_LIVE_SPIRAL.json`](commands/2026-08-21-FIRST_LIVE_SPIRAL.json)\n\nWorkflow:\n[`.github/workflows/janus-terminal-first-live-spiral.yml`](.github/workflows/janus-terminal-first-live-spiral.yml)\n\nThe first reference run is deliberately fail-closed: `DemiHead = HOLD`, Aura cannot become a predictive label, and a workflow success cannot become `VERIFIED_RETURN` or scientific truth.\n\n## Executors\n\nTerminal may be used with multiple execution surfaces:\n\n- connected ChatGPT GitHub executor;\n- GitHub Actions;\n- optional local `gh`/git tooling;\n- optional NAS/PC runtime after a real persistent executor is connected.\n\nCredentials must never be committed into this repository.\n\n## Habitat\n\nThe original `.janus/HABITAT_LINK.json` remains authoritative for the repository-to-Habitat safety boundary: repository source history stays authoritative, write-back is denied by default, and explicit human authorization is required for writes.\n\n## Status\n\nThis is an **active prototype**, not a production-grade remote-administration system. Persistent NAS execution and production security hardening remain separate gates.\n\n→ [`PROJECT_STATUS.json`](PROJECT_STATUS.json)\n\n---\n\n<div align=\"center\">\n\n**Hawkar / JANUS**\n\n</div>\n"
       },
       {
         "path": "contracts/JANUS_BIDIRECTIONAL_PULSE_SPIRAL_PROTOCOL-v2.0.json",
@@ -109,9 +109,9 @@
     "oracle_guidance": null
   },
   "spiral": {
-    "turn": 210,
-    "parent_report_sha256": "fd17b337f565c3e0fa11568be480e9dee5665922d6e94d7fed304273f84bb51d",
-    "previous_target_commit": "938f13fdbc43fa38f67dc3f2245829ecd3de337c",
+    "turn": 211,
+    "parent_report_sha256": "baca9ca687c4c034a07104edcb8d09491510a6e581a28928d66a28b52601465a",
+    "previous_target_commit": "94308b02dfafbf1a8bd5b360cb1169aa93fce992",
     "identity_persistent": true,
     "previous_report_is_evidence": false,
     "retained_lessons": [
@@ -173,7 +173,7 @@
   },
   "janus_agent_token": {
     "scope": "EPHEMERAL_GITHUB_RUN_AGENT",
-    "fingerprint": "93c38c545e358c02",
+    "fingerprint": "ec098afe9b0a00bd",
     "raw_token_persisted": false
   },
   "evidence_gate": {
