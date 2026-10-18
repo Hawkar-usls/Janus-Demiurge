@@ -1,0 +1,29 @@
+name: JANUS Divergent Mind R1 - organ snapshot pilot
+
+on:
+  pull_request:
+    paths:
+      - 'janus_model/divergent_mind_r1*.py'
+      - 'janus_model/eval/DIVERGENT_MIND_*R1*.json'
+      - 'tests/test_janus_divergent_mind_r1.py'
+      - '.github/workflows/janus-divergent-mind-r1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-organ-snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run v0 and R1 fail-closed tests
+        run: python -m unittest discover -s tests -p 'test_janus_divergent_mind*.py' -v
+      - name: Run algorithm-blind v0 diagnostic
+        run: python -m janus_model.divergent_mind_benchmark
+      - name: Run R1 designer diagnostic without effect authority
+        run: python -m janus_model.divergent_mind_r1_benchmark
