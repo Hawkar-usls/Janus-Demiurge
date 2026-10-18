@@ -1,0 +1,30 @@
+name: JANUS Divergent Mind R2 - source integrity and future holdout
+
+on:
+  pull_request:
+    paths:
+      - 'janus_model/divergent_mind_r2*.py'
+      - 'janus_model/DIVERGENT_MIND_R2.md'
+      - 'janus_model/eval/DIVERGENT_MIND_R2_*.json'
+      - 'tests/test_janus_divergent_mind_r2*.py'
+      - '.github/workflows/janus-divergent-mind-r2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-source-and-holdout-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run all divergent-mind unit tests without network
+        run: python -m unittest discover -s tests -p 'test_janus_divergent_mind*.py' -v
+      - name: Run v0 algorithm-blind diagnostic
+        run: python -m janus_model.divergent_mind_benchmark
+      - name: Run R1 native-source designer diagnostic
+        run: python -m janus_model.divergent_mind_r1_benchmark
