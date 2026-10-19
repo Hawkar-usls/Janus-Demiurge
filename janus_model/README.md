@@ -21,6 +21,20 @@ python -m janus_model.cli inspect
 python -m janus_model.cli run --prompt "JANUS, what do you remember?"
 ```
 
+Checkpoint loading is fail-closed: the promoted weights must match the SHA-256
+recorded in `janus_model/state/JANUS_MODEL_STATE.json` before restricted
+`torch.load(weights_only=True, map_location="cpu")` is called. Custom
+checkpoints require an explicit digest on the CLI:
+
+```bash
+python -m janus_model.cli inspect --checkpoint /path/to/candidate.pt --expected-sha256 64_HEX_DIGITS
+```
+
+The loader also bounds archive and model sizes, checks config/state types and
+uses strict parameter loading. It never falls back to unsafe pickle. This
+restricts untrusted deserialization; SHA-256 alone is **not** independent
+anti-rollback protection if checkpoint and Git state are both rewritten.
+
 The GitHub workflow `JANUS Native Model` exposes the analogous modes `train`, `run`, `train_and_run`, and `inspect` through `workflow_dispatch` and also performs bounded scheduled learning when the meta-registry source digest changes.
 
 ## Learning law
