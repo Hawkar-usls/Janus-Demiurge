@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import hmac
 import json
 import math
 import os
 import random
+import re
+import zipfile
 from pathlib import Path
 
 import torch
@@ -93,11 +96,125 @@ def eval_loss(model, stream, batches, batch_size, seed):
     return sum(vals) / len(vals)
 
 
-def load_checkpoint(path):
-    obj = torch.load(path, map_location="cpu", weights_only=False)
-    cfg = JanusModelConfig.from_dict(obj["config"])
+MAX_CHECKPOINT_BYTES = 100_000_000  # GitHub's per-file limit; larger weights need sharding.
+MAX_CHECKPOINT_UNCOMPRESSED_BYTES = 100_000_000
+MAX_MODEL_PARAMETERS = 30_000_000
+PROMOTED_CHECKPOINT = Path(__file__).resolve().parent / "checkpoints" / "promoted.pt"
+PROMOTED_STATE = Path(__file__).resolve().parent / "state" / "JANUS_MODEL_STATE.json"
+
+
+def _checkpoint_digest(path, expected_sha256):
+    """Verify the byte identity *before* any PyTorch deserialization.
+
+    The canonical promoted model must match its committed state even when the
+    caller did not pass a hash. Other checkpoints may supply an explicit hash.
+    This is an integrity check, not a signature against rewritten Git history.
+    """
+    path = Path(path)
+    if expected_sha256 is not None and (
+        not isinstance(expected_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", expected_sha256)
+    ):
+        raise RuntimeError("JANUS_CHECKPOINT_EXPECTED_DIGEST_INVALID")
+    try:
+        size = path.stat().st_size
+    except OSError as exc:
+        raise RuntimeError("JANUS_CHECKPOINT_UNREADABLE") from exc
+    if size <= 0 or size > MAX_CHECKPOINT_BYTES:
+        raise RuntimeError("JANUS_CHECKPOINT_SIZE_REJECTED")
+    if path.resolve() == PROMOTED_CHECKPOINT.resolve():
+        try:
+            state = json.loads(PROMOTED_STATE.read_text(encoding="utf-8"))
+            state_sha256 = state["checkpoint_sha256"]
+        except (OSError, KeyError, ValueError, TypeError) as exc:
+            raise RuntimeError("JANUS_PROMOTED_CHECKPOINT_STATE_MISSING_OR_INVALID") from exc
+        if not isinstance(state_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", state_sha256):
+            raise RuntimeError("JANUS_PROMOTED_CHECKPOINT_STATE_MISSING_OR_INVALID")
+        if expected_sha256 is not None and not hmac.compare_digest(expected_sha256, state_sha256):
+            raise RuntimeError("JANUS_CHECKPOINT_EXPECTED_DIGEST_CONFLICT")
+        expected_sha256 = state_sha256
+    if expected_sha256 is not None:
+        digest = sha256_file(path)
+        if not hmac.compare_digest(digest, expected_sha256):
+            raise RuntimeError("JANUS_CHECKPOINT_SHA256_MISMATCH")
+
+    # Refuse legacy pickle-only files and grossly oversized ZIP payloads even
+    # before calling the restricted weights-only unpickler.
+    try:
+        with zipfile.ZipFile(path) as archive:
+            members = archive.infolist()
+            if len(members) > 4096 or sum(info.file_size for info in members) > MAX_CHECKPOINT_UNCOMPRESSED_BYTES:
+                raise RuntimeError("JANUS_CHECKPOINT_ARCHIVE_LIMIT_REJECTED")
+            if not any(info.filename.endswith("/data.pkl") for info in members):
+                raise RuntimeError("JANUS_CHECKPOINT_ARCHIVE_STRUCTURE_REJECTED")
+    except (zipfile.BadZipFile, OSError) as exc:
+        raise RuntimeError("JANUS_CHECKPOINT_ARCHIVE_INVALID") from exc
+
+
+def _validated_model_config(raw):
+    if not isinstance(raw, dict):
+        raise RuntimeError("JANUS_CHECKPOINT_CONFIG_INVALID")
+    limits = {
+        "vocab_size": (258, 258),
+        "context_length": (32, 8192),
+        "d_model": (16, 1024),
+        "n_heads": (1, 64),
+        "n_layers": (1, 32),
+        "ff_mult": (1, 32),
+    }
+    if set(raw) != {*limits, "dropout"}:
+        raise RuntimeError("JANUS_CHECKPOINT_CONFIG_INVALID")
+    for name, (minimum, maximum) in limits.items():
+        value = raw[name]
+        if type(value) is not int or not minimum <= value <= maximum:
+            raise RuntimeError("JANUS_CHECKPOINT_CONFIG_INVALID")
+    dropout = raw["dropout"]
+    if type(dropout) not in (float, int) or not math.isfinite(dropout) or not 0 <= dropout < 1:
+        raise RuntimeError("JANUS_CHECKPOINT_CONFIG_INVALID")
+    if raw["d_model"] % raw["n_heads"]:
+        raise RuntimeError("JANUS_CHECKPOINT_CONFIG_INVALID")
+    d = raw["d_model"]
+    ff = raw["ff_mult"]
+    estimated_parameters = (
+        (raw["vocab_size"] + raw["context_length"] + 2) * d
+        + raw["n_layers"] * ((4 + 2 * ff) * d * d + (9 + ff) * d)
+    )
+    if estimated_parameters > MAX_MODEL_PARAMETERS:
+        raise RuntimeError("JANUS_CHECKPOINT_PARAMETER_LIMIT_REJECTED")
+    return JanusModelConfig.from_dict(raw)
+
+
+def load_checkpoint(path, *, expected_sha256=None):
+    _checkpoint_digest(path, expected_sha256)
+    # Explicit is essential: default changed in newer torch versions. Do not
+    # enable safe_globals or fall back to pickle for an incompatible artifact.
+    obj = torch.load(path, map_location="cpu", weights_only=True)
+    if not isinstance(obj, dict) or set(obj) != {"config", "model_state", "meta"}:
+        raise RuntimeError("JANUS_CHECKPOINT_SCHEMA_INVALID")
+    cfg = _validated_model_config(obj["config"])
+    if not isinstance(obj["meta"], dict):
+        raise RuntimeError("JANUS_CHECKPOINT_METADATA_INVALID")
+    try:
+        metadata_size = len(json.dumps(obj["meta"], allow_nan=False))
+    except (TypeError, ValueError, RecursionError) as exc:
+        raise RuntimeError("JANUS_CHECKPOINT_METADATA_INVALID") from exc
+    if metadata_size > 1_000_000:
+        raise RuntimeError("JANUS_CHECKPOINT_METADATA_LIMIT_REJECTED")
+    state = obj["model_state"]
+    if not isinstance(state, dict) or not state or len(state) > 4096:
+        raise RuntimeError("JANUS_CHECKPOINT_STATE_INVALID")
+    parameters = 0
+    for name, tensor in state.items():
+        if not isinstance(name, str) or not isinstance(tensor, torch.Tensor):
+            raise RuntimeError("JANUS_CHECKPOINT_STATE_INVALID")
+        if tensor.layout != torch.strided or not tensor.is_floating_point():
+            raise RuntimeError("JANUS_CHECKPOINT_STATE_INVALID")
+        parameters += tensor.numel()
+        if parameters > MAX_MODEL_PARAMETERS:
+            raise RuntimeError("JANUS_CHECKPOINT_PARAMETER_LIMIT_REJECTED")
+        if not bool(torch.isfinite(tensor).all()):
+            raise RuntimeError("JANUS_CHECKPOINT_NONFINITE_WEIGHTS")
     model = JanusTinyTransformer(cfg)
-    model.load_state_dict(obj["model_state"])
+    model.load_state_dict(state, strict=True)
     return model, obj
 
 
