@@ -1,0 +1,28 @@
+name: JANUS Divergent Mind - read-only pilot
+
+on:
+  pull_request:
+    paths:
+      - 'janus_model/divergent_mind.py'
+      - 'janus_model/divergent_mind_benchmark.py'
+      - 'janus_model/eval/DIVERGENT_MIND_*.json'
+      - 'tests/test_janus_divergent_mind.py'
+      - '.github/workflows/janus-divergent-mind-pilot.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run bounded read-only unit and negative-control checks
+        run: python -m unittest discover -s tests -p 'test_janus_divergent_mind.py' -v
+      - name: Run algorithm-blind diagnostic
+        run: python -m janus_model.divergent_mind_benchmark
