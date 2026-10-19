@@ -10,6 +10,7 @@ on:
       - '!janus_model/receipts/**'
       - '!janus_model/outbox/**'
       - 'tests/test_janus_native_model.py'
+      - 'tests/test_janus_checkpoint_security.py'
       - '.github/workflows/janus-native-model.yml'
   workflow_dispatch:
     inputs:
@@ -89,6 +90,7 @@ jobs:
         run: |
           python -m py_compile janus_model/*.py
           python -m unittest -v tests/test_janus_native_model.py
+          python -m unittest -v tests/test_janus_checkpoint_security.py
           python - <<'PY'
           from pathlib import Path
           forbidden = ('copilot', 'openai', 'anthropic', 'gemini', 'ollama')
