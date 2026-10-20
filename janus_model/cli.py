@@ -7,7 +7,7 @@ from pathlib import Path
 import torch
 
 from janus_model.model import ByteTokenizer
-from janus_model.train_registry import load_checkpoint, sha256_file
+from janus_model.train_registry import PROMOTED_CHECKPOINT, load_checkpoint, sha256_file
 
 ALLOWED_ORGAN_CONTEXT_STATUSES = {"READ_ONLY_ORGAN_CONTEXT", "READ_ONLY_MODULAR_ORGAN_CONTEXT"}
 PROMPT_PREFIX = "Q:"
@@ -132,17 +132,21 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
     run = sub.add_parser("run")
     run.add_argument("--checkpoint", default="janus_model/checkpoints/promoted.pt")
+    run.add_argument("--expected-sha256", help="Expected SHA-256 for a non-promoted checkpoint")
     run.add_argument("--prompt", required=True)
     run.add_argument("--organ-context")
     run.add_argument("--max-new-tokens", type=int, default=160)
     run.add_argument("--temperature", type=float, default=0.75)
     ins = sub.add_parser("inspect")
     ins.add_argument("--checkpoint", default="janus_model/checkpoints/promoted.pt")
+    ins.add_argument("--expected-sha256", help="Expected SHA-256 for a non-promoted checkpoint")
     a = ap.parse_args()
     path = Path(a.checkpoint)
     if not path.exists():
         raise SystemExit("JANUS_CHECKPOINT_MISSING")
-    model, obj = load_checkpoint(path)
+    if path.resolve() != PROMOTED_CHECKPOINT.resolve() and not a.expected_sha256:
+        raise SystemExit("JANUS_CUSTOM_CHECKPOINT_REQUIRES_EXPECTED_SHA256")
+    model, obj = load_checkpoint(path, expected_sha256=a.expected_sha256)
     if a.cmd == "inspect":
         print(
             json.dumps(
