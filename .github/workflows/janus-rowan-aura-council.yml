@@ -1,0 +1,58 @@
+name: JANUS Demiurge AURA Rowan Council
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '43 */6 * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/rowan_research_council.py'
+      - '.github/workflows/janus-rowan-aura-council.yml'
+  pull_request:
+    paths:
+      - 'tools/rowan_research_council.py'
+      - 'tests/test_rowan_research_council.py'
+      - '.github/workflows/janus-rowan-aura-council.yml'
+      - 'beetle/DEMIURGE_BEETLE_DIRECTIVES.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: demiurge-rowan-aura-council
+  cancel-in-progress: false
+
+jobs:
+  council:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify independent cross-repo evidence admission
+        run: python -m unittest discover -s tests -p 'test_rowan_research_council.py'
+      - name: Generate source-bound proposal (without Rowan key or workflow dispatch)
+        if: github.event_name != 'pull_request'
+        run: python tools/rowan_research_council.py
+      - name: Save bounded research proposal, never change provider budget
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f research/rowan/LATEST_COUNCIL.json ]; then
+            echo "DEMIURGE_ROWAN=WAIT_FOR_MATCHED_AURA_SOURCE"
+            exit 0
+          fi
+          git add research/rowan/LATEST_COUNCIL.json
+          if git diff --cached --quiet; then echo "DEMIURGE_ROWAN=NO_NEW_SOURCE"; exit 0; fi
+          git config user.name 'JANUS Demiurge Research Council'
+          git config user.email 'actions@users.noreply.github.com'
+          git commit -m '[demiurge] Update source-verified Rowan/AURA research council'
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
