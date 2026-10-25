@@ -53,7 +53,7 @@ def verify(meta,aura):
         raise CouncilHold("AURA_SEARCH_ADMISSION_SCOPE_DRIFT")
     authority=aura.get("bounded_authority",{})
     for key in ("may_resolve_own_forecast","may_submit_rowan_jobs","may_modify_rowan_credit_budget",
-                "may_change_model_weights","may_promote_TPOA_scientific_gate"):
+                "may_change_model_weights","may_promote_TOPA_scientific_gate"):
         if authority.get(key) is not False:
             raise CouncilHold("AURA_AUTHORITY_ESCALATION")
     if aura.get("information_gain")!="NOT_ESTIMATED_NO_CALIBRATED_HYPOTHESIS_PRIORS":
