@@ -4,6 +4,12 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '41 */6 * * *'
+  pull_request:
+    paths:
+      - 'tools/demiurge_rex_need_discovery.py'
+      - 'tools/nexus_rex_need_gate.py'
+      - 'tests/test_rex_need_discovery_v1.py'
+      - '.github/workflows/janus-rex-need-discovery.yml'
   push:
     branches: [main]
     paths:
@@ -25,7 +31,38 @@ permissions:
   actions: write
 
 jobs:
+  verify-provenance-on-pr:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify integrity gates without any durable Rex admission
+        run: |
+          python -m pip install pytest
+          pytest -q tests/test_rex_need_discovery_v1.py tests/test_rex_director_v1_1.py tests/test_rex_v1.py
+      - name: Replay actual tracked Rex ledger in isolated PR runner, no Git write token
+        run: |
+          python tools/demiurge_rex_need_discovery.py \
+            --policy rex/need_discovery_policy.json \
+            --repo-root . \
+            --out-dir rex/need_proposals/generated
+          python tools/nexus_rex_need_gate.py \
+            --policy rex/need_gate_policy.json \
+            --repo-root . \
+            --proposals-dir rex/need_proposals/generated \
+            --desires-dir rex/desires/approved \
+            --admissions-dir rex/need_admissions
+
   discover-and-gate:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -62,6 +99,9 @@ jobs:
           git config user.name 'janus-rex-need-discovery'
           git config user.email 'janus-rex-need-discovery@users.noreply.github.com'
           git add -f rex/need_proposals/generated rex/need_admissions rex/desires/approved
+          if [ -d rex/need_gate_observations ]; then
+            git add -f rex/need_gate_observations
+          fi
           git diff --cached --name-only -- 'rex/desires/approved/*.json' > /tmp/rex_new_approved_desires.txt
           if [ -s /tmp/rex_new_approved_desires.txt ]; then
             echo 'approved_changed=true' >> "$GITHUB_OUTPUT"

@@ -135,8 +135,12 @@ def main() -> int:
         if not isinstance(record_count, int) or record_count < min_records:
             raise SystemExit(f"insufficient evidence count: {proposal_id}")
         actual_count = safe_record_count(observed_path)
-        if actual_count != record_count:
-            raise SystemExit(f"evidence count drift: {proposal_id}:{record_count}!={actual_count}")
+        # Counts can increase as a living append-only ledger accumulates. Never
+        # admit an old snapshot as current. Shrinkage is an integrity failure,
+        # even when the old bounded references are still present.
+        if actual_count < record_count:
+            raise SystemExit(f"evidence count regression: {proposal_id}:{record_count}>{actual_count}")
+        grew_since_snapshot = actual_count > record_count
         if not isinstance(refs, list) or not refs:
             raise SystemExit(f"evidence refs required: {proposal_id}")
         for ref in refs:
@@ -174,6 +178,21 @@ def main() -> int:
             raise SystemExit(f"bounded inputs required: {proposal_id}")
         if life_input != nexus_input:
             raise SystemExit(f"birth/lifecycle snapshot mismatch: {proposal_id}")
+
+        if grew_since_snapshot:
+            # Only the explicitly pinned SHA-256 references were verified.
+            # This is NOT a proof of full historical ancestry and never grants
+            # an admission, lifecycle, or code authority.
+            skipped.append({
+                "proposal_id": proposal_id,
+                "reason": "STALE_SNAPSHOT_GROWTH_HOLD",
+                "proposal_sha256": sha256_file(proposal_path),
+                "snapshot_record_count": record_count,
+                "current_record_count": actual_count,
+                "verified_reference_count": len(refs),
+                "authority_delta": 0,
+            })
+            continue
 
         desire_path = desires_dir / f"{proposal_id}.json"
         receipt_path = admissions_dir / f"{proposal_id}.json"
@@ -229,9 +248,31 @@ def main() -> int:
             (created if changed else unchanged).append(p.relative_to(root).as_posix())
         approved += 1
 
+    growth_holds = [x for x in skipped if x.get("reason") == "STALE_SNAPSHOT_GROWTH_HOLD"]
+    # Machine-readable append-only witness: the runner commits this with other
+    # bounded receipts. Deterministic content means repeat checks are no-write.
+    stale_receipt_path = None
+    if growth_holds:
+        stale_receipt = {
+            "schema": "janus.nexus.rex_stale_snapshot_hold.v1",
+            "status": "STALE_SNAPSHOT_GROWTH_HOLD",
+            "holds": growth_holds,
+            "verification_scope": "PINNED_REFERENCES_ONLY__NOT_FULL_LEDGER_ANCESTRY",
+            "automatically_approved_stale_proposals": 0,
+            "authority_delta": 0,
+        }
+        digest = hashlib.sha256(json.dumps(
+            stale_receipt, sort_keys=True, separators=(",", ":"),
+            ensure_ascii=False).encode("utf-8")).hexdigest()[:20]
+        stale_receipt_path = root / "rex/need_gate_observations" / f"REX-STALE-{digest}.json"
+        write_if_changed(stale_receipt_path, stale_receipt)
+
     summary = {
         "schema": "janus.nexus.rex_need_gate_receipt.v1",
-        "status": "PASS",
+        "status": "STALE_SNAPSHOTS_HELD" if growth_holds else "PASS",
+        "stale_snapshot_holds": len(growth_holds),
+        "stale_snapshot_receipt": stale_receipt_path.relative_to(root).as_posix()
+            if stale_receipt_path is not None else None,
         "approved_this_run": approved,
         "created_or_changed": created,
         "unchanged": sorted(set(unchanged)),
