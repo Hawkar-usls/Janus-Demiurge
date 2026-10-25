@@ -26,7 +26,7 @@ def fixtures(n=0):
         "next_discriminating_question_id":"RAW_ASSAY_LINEAGE" if n<8 else "EXTERNAL_HOLDOUT",
         "information_gain":"NOT_ESTIMATED_NO_CALIBRATED_HYPOTHESIS_PRIORS",
         "bounded_authority":{k:False for k in ("may_resolve_own_forecast","may_submit_rowan_jobs",
-            "may_modify_rowan_credit_budget","may_change_model_weights","may_promote_TPOA_scientific_gate")}
+            "may_modify_rowan_credit_budget","may_change_model_weights","may_promote_TOPA_scientific_gate")}
     }
     packet["packet_digest_sha256"]=m.sha(packet)
     return state,packet
