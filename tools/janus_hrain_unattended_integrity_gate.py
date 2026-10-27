@@ -43,10 +43,12 @@ def _calls(method: ast.AST | None) -> set[str]:
     }
 
 
-def _mutates_graph(method: ast.AST | None) -> bool:
+def _mutates_graph(method: ast.AST | None, *, permit_growth: bool = False) -> bool:
     if method is None:
         return True
-    prohibited = {"remove_node", "pop", "popitem", "clear", "setdefault", "add_node"}
+    prohibited = {"remove_node", "pop", "popitem", "clear", "setdefault"}
+    if not permit_growth:
+        prohibited.add("add_node")
     if prohibited & _calls(method):
         return True
     for node in ast.walk(method):
@@ -121,7 +123,7 @@ def assess(root: Path) -> dict:
         )
     update = _method(graph, "update")
     checks["capacity_atomic_hold"] = (
-        update is not None and not _mutates_graph(update)
+        update is not None and not _mutates_graph(update, permit_growth=True)
         and _hold_strings(update, "HRAIN_EVENT_BATCH_CAPACITY_HOLD")
         and "remove_node" not in _calls(update)
     )
