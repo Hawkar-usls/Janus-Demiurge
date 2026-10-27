@@ -1,0 +1,41 @@
+name: JANUS HRAiN Incremental Transaction Safety
+on:
+  pull_request:
+    paths:
+      - 'tools/janus_hrain_incremental_transaction.py'
+      - 'tests/test_hrain_incremental_transaction.py'
+      - '.github/workflows/janus-hrain-incremental-transaction.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/janus_hrain_incremental_transaction.py'
+      - 'tests/test_hrain_incremental_transaction.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  synthetic:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    timeout-minutes: 12
+    steps:
+      - name: Fetch pinned reviewed code, never owner's private files
+        shell: pwsh
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          New-Item -ItemType Directory -Force -Path tools,tests | Out-Null
+          $base="https://raw.githubusercontent.com/Hawkar-usls/Janus-Demiurge/$env:SOURCE_SHA"
+          foreach($path in @('tools/janus_hrain_incremental_transaction.py','tests/test_hrain_incremental_transaction.py')) {
+            Invoke-WebRequest -Uri "$base/$path" -OutFile ($path -replace '/', [IO.Path]::DirectorySeparatorChar)
+          }
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prove non-destructive pessimistic crash hold and optimistic CAS
+        run: |
+          python -m py_compile tools/janus_hrain_incremental_transaction.py
+          python -m unittest discover -v -s tests -p test_hrain_incremental_transaction.py
