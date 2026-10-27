@@ -203,6 +203,31 @@ def assess(root: Path) -> dict:
             "LOCAL_ORIGIN_REQUIRED", "/api/", "/ws"
         ))
     )
+    # A healthy identity/route guard alone cannot prevent data loss on restart:
+    # a corrupt source must abort before the server's periodic writer starts.
+    boot_loaders = [
+        n for n in server.body if isinstance(n, ast.AsyncFunctionDef)
+        and n.name == "load_graph_state"
+    ]
+    server_runners = [
+        n for n in server.body if isinstance(n, ast.AsyncFunctionDef)
+        and n.name == "run_server"
+    ]
+    loader = boot_loaders[0] if len(boot_loaders) == 1 else None
+    runner = server_runners[0] if len(server_runners) == 1 else None
+    load_code = ast.unparse(loader) if loader else ""
+    runner_code = ast.unparse(runner) if runner else ""
+    writer_start = runner_code.find("asyncio.create_task(save_graph_state())")
+    loader_start = runner_code.find("await load_graph_state()")
+    checks["server_corrupt_boot_fail_closed"] = bool(
+        loader is not None and runner is not None
+        and "HRAIN_STATE_CORRUPT_BOOT_HOLD" in load_code
+        and "raise RuntimeError(" in load_code
+        and "json.load(" in load_code
+        and "os.path.getsize(" in load_code
+        and "os.path.islink(" in load_code
+        and writer_start > loader_start >= 0
+    )
     compressor = _method(graph, "compress_clusters")
     checks["compression_hold"] = (
         compressor is not None
