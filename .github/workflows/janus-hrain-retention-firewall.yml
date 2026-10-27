@@ -1,0 +1,43 @@
+name: JANUS HRAiN No-Delete Retention Firewall
+on:
+  pull_request:
+    paths:
+      - 'hrain_graph_engine.py'
+      - 'tests/test_hrain_retention_firewall.py'
+      - '.github/workflows/janus-hrain-retention-firewall.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'hrain_graph_engine.py'
+      - 'tests/test_hrain_retention_firewall.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  retention-synthetic:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    timeout-minutes: 10
+    steps:
+      - name: Download pinned source and tests, avoiding Windows-invalid legacy paths
+        shell: pwsh
+        env:
+          SRC_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          New-Item -ItemType Directory -Force -Path tests | Out-Null
+          $base = "https://raw.githubusercontent.com/Hawkar-usls/Janus-Demiurge/$env:SRC_SHA"
+          Invoke-WebRequest -Uri "$base/hrain_graph_engine.py" -OutFile hrain_graph_engine.py
+          Invoke-WebRequest -Uri "$base/tests/test_hrain_retention_firewall.py" -OutFile tests/test_hrain_retention_firewall.py
+          Invoke-WebRequest -Uri "$base/tests/test_hrain_runtime_compression_hold.py" -OutFile tests/test_hrain_runtime_compression_hold.py
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install numpy
+      - name: Compile and verify no-delete and compression HOLD contracts
+        run: |
+          python -m py_compile hrain_graph_engine.py tests/test_hrain_retention_firewall.py
+          python -m unittest discover -v -s tests -p test_hrain_retention_firewall.py
+          python -m unittest discover -v -s tests -p test_hrain_runtime_compression_hold.py
