@@ -120,15 +120,37 @@ async def save_graph_state():
                 logger.error(f"Ошибка сохранения графа: {e}")
 
 async def load_graph_state():
-    """Загружает состояние графа из файла при старте."""
-    if os.path.exists(HRAIN_STATE_FILE):
-        try:
-            with open(HRAIN_STATE_FILE, 'r', encoding='utf-8') as f:
-                state = json.load(f)
-            graph_engine.load_full_state(state)
-            logger.info(f"Граф загружен: {len(graph_engine.nodes)} узлов, {len(graph_engine.edges)} рёбер")
-        except Exception as e:
-            logger.error(f"Ошибка загрузки графа: {e}")
+    """Fail-closed boot: never replace unreadable persistent memory with empty state.
+
+    The periodic save loop is started only AFTER this completes successfully.
+    Corrupt/partial/symlinked owner state makes startup fail without touching
+    the original file. Missing file alone permits explicit first initialization.
+    """
+    if not os.path.exists(HRAIN_STATE_FILE):
+        return False
+    try:
+        if os.path.islink(HRAIN_STATE_FILE):
+            raise ValueError("HRAIN_STATE_SYMLINK_BOOT_HOLD")
+        if not (1 <= os.path.getsize(HRAIN_STATE_FILE) <= 32_000_000):
+            raise ValueError("HRAIN_STATE_SIZE_BOOT_HOLD")
+        with open(HRAIN_STATE_FILE, 'r', encoding='utf-8') as f:
+            state = json.load(
+                f,
+                parse_constant=lambda _: (_ for _ in ()).throw(
+                    ValueError("HRAIN_STATE_NONFINITE_BOOT_HOLD")
+                ),
+            )
+        if not isinstance(state, dict) or not isinstance(state.get('nodes'), dict) or not isinstance(state.get('edges'), dict):
+            raise ValueError("HRAIN_STATE_STRUCTURE_BOOT_HOLD")
+        if (type(state.get('tick')) is not int or state['tick'] < 0
+                or type(state.get('node_counter')) is not int or state['node_counter'] < 0):
+            raise ValueError("HRAIN_STATE_COUNTER_BOOT_HOLD")
+        graph_engine.load_full_state(state)
+    except Exception as exc:
+        logger.critical("HRAIN_STATE_CORRUPT_BOOT_HOLD: persistent graph preserved; startup stopped")
+        raise RuntimeError("HRAIN_STATE_CORRUPT_BOOT_HOLD") from exc
+    logger.info("HRAiN validated graph loaded: %s nodes / %s edges", len(graph_engine.nodes), len(graph_engine.edges))
+    return True
 
 # ==============================================================================
 # HTTP ОБРАБОТЧИКИ
