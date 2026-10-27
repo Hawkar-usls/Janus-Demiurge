@@ -13,6 +13,7 @@ from unittest import mock
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 import janus_hrain_lossless_shadow as shadow
+import janus_hrain_shadow_independent_verify as independent
 
 
 def sample():
@@ -97,6 +98,9 @@ class ShadowContract(unittest.TestCase):
             self.assertNotIn("synthetic a", report.getvalue())
             self.assertEqual(source.read_bytes(), original)
             self.assertTrue(out.is_file())
+            independent_result = independent.verify(source, out)
+            self.assertEqual(independent_result["status"], "INDEPENDENT_BYTE_EXACT_SHADOW_VERIFIED")
+            self.assertEqual(independent_result["originalEdges"], 8)
             with mock.patch.object(sys, "argv", ["shadow", "--snapshot", str(source), "--shadow", str(out), "--verify-only"]):
                 with redirect_stdout(io.StringIO()) as verified:
                     shadow.main()
