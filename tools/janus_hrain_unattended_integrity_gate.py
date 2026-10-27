@@ -155,6 +155,54 @@ def assess(root: Path) -> dict:
             for method, args in routes
         ) == 1
     )
+    # Reject a future network/public exposure of the historical server,
+    # including a change that removes the token check while leaving the UI
+    # full-write HOLD in place.
+    guard_defs = [
+        n for n in server.body if isinstance(n, ast.AsyncFunctionDef)
+        and n.name == "janus_local_access_guard"
+    ]
+    guard = guard_defs[0] if len(guard_defs) == 1 else None
+    guard_ast = ast.unparse(guard) if guard else ""
+    binds = [
+        n.value for n in server.body
+        if isinstance(n, ast.Assign)
+        and any(isinstance(t, ast.Name) and t.id == "HRAIN_LOCAL_BIND_HOST" for t in n.targets)
+    ]
+    loopback_binding = (
+        len(binds) == 1 and isinstance(binds[0], ast.Constant)
+        and binds[0].value == "127.0.0.1"
+    )
+    sites = [
+        n for n in ast.walk(server) if isinstance(n, ast.Call)
+        and isinstance(n.func, ast.Attribute)
+        and n.func.attr == "TCPSite"
+    ]
+    applications = [
+        n for n in ast.walk(server) if isinstance(n, ast.Call)
+        and isinstance(n.func, ast.Attribute)
+        and n.func.attr == "Application"
+    ]
+    sites_use_loopback = (
+        len(sites) == 1 and len(sites[0].args) >= 3
+        and isinstance(sites[0].args[1], ast.Name)
+        and sites[0].args[1].id == "HRAIN_LOCAL_BIND_HOST"
+    )
+    wired_guard = any(
+        "janus_local_access_guard" in ast.unparse(k.value)
+        for app in applications for k in app.keywords
+        if k.arg == "middlewares"
+    )
+    checks["server_local_api_authority"] = (
+        loopback_binding and sites_use_loopback and wired_guard
+        and guard is not None
+        and all(s in guard_ast for s in (
+            "Host", "Origin", "request.remote", "X-JANUS-Local-Token",
+            "JANUS_HRAIN_LOCAL_API_TOKEN", "hmac.compare_digest",
+            "API_TOKEN_REQUIRED", "LOOPBACK_HOST_REQUIRED",
+            "LOCAL_ORIGIN_REQUIRED", "/api/", "/ws"
+        ))
+    )
     compressor = _method(graph, "compress_clusters")
     checks["compression_hold"] = (
         compressor is not None
