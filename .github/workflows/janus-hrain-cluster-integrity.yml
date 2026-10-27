@@ -1,0 +1,30 @@
+name: JANUS HRAiN Legacy Cluster Integrity Preflight
+on:
+  pull_request:
+    paths:
+      - 'tools/janus_hrain_compression_preflight.py'
+      - 'tests/test_janus_hrain_compression_preflight.py'
+      - '.github/workflows/janus-hrain-cluster-integrity.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/janus_hrain_compression_preflight.py'
+      - 'tests/test_janus_hrain_compression_preflight.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  no-destructive-cluster-import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Pure preflight module syntax
+        run: python -m py_compile tools/janus_hrain_compression_preflight.py
+      - name: Four synthetic non-mutating cluster risk regressions
+        run: python -m unittest discover -v -s tests -p test_janus_hrain_compression_preflight.py
