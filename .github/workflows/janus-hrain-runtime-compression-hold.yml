@@ -23,13 +23,15 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-          sparse-checkout: |
-            hrain_graph_engine.py
-            tests/test_hrain_runtime_compression_hold.py
-          sparse-checkout-cone-mode: false
+      - name: Fetch two pinned files (Windows-safe; repository contains legacy colon filenames)
+        shell: pwsh
+        env:
+          SRC_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          New-Item -ItemType Directory -Force tests | Out-Null
+          $base = "https://raw.githubusercontent.com/Hawkar-usls/Janus-Demiurge/$env:SRC_SHA"
+          Invoke-WebRequest -Uri "$base/hrain_graph_engine.py" -OutFile hrain_graph_engine.py
+          Invoke-WebRequest -Uri "$base/tests/test_hrain_runtime_compression_hold.py" -OutFile tests/test_hrain_runtime_compression_hold.py
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
