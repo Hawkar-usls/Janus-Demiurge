@@ -15,6 +15,7 @@ from pathlib import Path
 SCHEMA = "janus.hrain.unattended_integrity_gate.v1"
 SOURCES = {
     "graph": "hrain_graph_engine.py",
+    "server": "server.py",
     "autonomy": "restored/hrain_autonomy.py",
     "checkpoint": "tools/janus_hrain_private_checkpoint_ledger.py",
     "shadow": "tools/janus_hrain_lossless_shadow.py",
@@ -100,8 +101,39 @@ def assess(root: Path) -> dict:
     root = Path(root).resolve()
     trees = _syntax(root)
     graph = _class(trees["graph"], "HrainGraphEngine")
+    server = trees["server"]
     autonomy = _class(trees["autonomy"], "HrainAutonomy")
     checks = {}
+    save_endpoint = next(
+        (n for n in server.body if isinstance(n, ast.AsyncFunctionDef)
+         and n.name == "handle_save_state"), None
+    )
+    if save_endpoint is None:
+        checks["server_wholesale_save_hold"] = False
+    else:
+        # Exactly one return without parsing request, graph accesses, awaits,
+        # persistence, or any other statements. Protect against guard bypass
+        # via hidden branch or untrusted flags.
+        server_response = ast.unparse(save_endpoint.body[1:]) if len(save_endpoint.body) > 1 else ""
+        handler_dump = ast.dump(save_endpoint, include_attributes=False)
+        checks["server_wholesale_save_hold"] = (
+            len(save_endpoint.body) == 2
+            and isinstance(save_endpoint.body[0], ast.Expr)
+            and isinstance(save_endpoint.body[0].value, ast.Constant)
+            and isinstance(save_endpoint.body[-1], ast.Return)
+            and "HOLD_LEGACY_GRAPH_REPLACEMENT" in handler_dump
+            and "409" in handler_dump
+            and "json_response" in server_response
+            and "graph_engine" not in handler_dump
+            and "persist_state" not in handler_dump
+            and "request.json" not in server_response
+        )
+    routes = ast.unparse(server)
+    checks["server_ui_read_route_retained"] = (
+        "'/api/hrain/state'" in routes
+        and "'/api/hrain/save'" in routes
+        and "handle_get_state" in routes
+    )
     compressor = _method(graph, "compress_clusters")
     checks["compression_hold"] = (
         compressor is not None
