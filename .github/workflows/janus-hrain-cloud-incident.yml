@@ -5,14 +5,36 @@ on:
       - JANUS HRAiN Unattended Integrity Gate
     types: [completed]
   workflow_dispatch:
+  pull_request:
+    paths:
+      - 'tools/janus_hrain_cloud_incident.cjs'
+      - 'tests/janus_hrain_cloud_incident.test.cjs'
+      - '.github/workflows/janus-hrain-cloud-incident.yml'
 permissions:
   contents: read
-  issues: write
 concurrency:
   group: janus-hrain-safety-incident-once
   cancel-in-progress: false
 jobs:
+  classifier-unit:
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            tools/janus_hrain_cloud_incident.cjs
+            tests/janus_hrain_cloud_incident.test.cjs
+          sparse-checkout-cone-mode: false
+      - run: node --test tests/janus_hrain_cloud_incident.test.cjs
   issue-on-new-failure:
+    permissions:
+      contents: read
+      issues: write
     if: >-
       github.event_name == 'workflow_run' &&
       github.event.workflow_run.conclusion == 'failure' &&
