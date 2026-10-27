@@ -11,6 +11,10 @@ import argparse
 import hashlib
 import json
 import random
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from hrain_graph_engine import HrainGraphEngine
 from restored.hrain_autonomy import HrainAutonomy
@@ -24,7 +28,7 @@ def fingerprint(value: dict) -> str:
 
 
 def simulate(cycles: int = 300, seed: int = 1408, capacity: int = 80) -> dict:
-    if not (20 <= cycles <= 1500 and 16 <= capacity <= 500
+    if not (60 <= cycles <= 1500 and 16 <= capacity <= 500
             and type(seed) is int and 0 <= seed < 2 ** 32):
         raise ValueError("SYNTHETIC_SIMULATION_INPUT_BOUNDS_HOLD")
     random.seed(seed)
