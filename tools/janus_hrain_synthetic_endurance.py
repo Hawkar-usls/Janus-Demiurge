@@ -101,7 +101,7 @@ def main() -> int:
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
     result = simulate(args.cycles, args.seed, args.capacity)
-    encoded = json.dumps(result, sort_keys=True, ensure_ascii=True) + "\\n"
+    encoded = json.dumps(result, sort_keys=True, ensure_ascii=True) + "\n"
     if args.report:
         if args.report.is_symlink() or args.report.exists():
             raise FileExistsError("SYNTHETIC_REPORT_REFUSES_OVERWRITE")
