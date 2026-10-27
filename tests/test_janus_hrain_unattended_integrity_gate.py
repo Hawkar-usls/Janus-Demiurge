@@ -74,8 +74,8 @@ class UnattendedGateTests(unittest.TestCase):
     def test_server_full_overwrite_unblocked_is_fatal(self):
         self.change(
             "server",
-            '    return web.json_response(\\n        {',
-            '    graph_engine.nodes = {}\\n    return web.json_response(\\n        {',
+            '    return web.json_response(\n        {',
+            '    graph_engine.nodes = {}\n    return web.json_response(\n        {',
         )
         self.assertIn("server_wholesale_save_hold", assess(self.copy)["failed"])
 
