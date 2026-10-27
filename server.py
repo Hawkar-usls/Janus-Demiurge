@@ -11,6 +11,7 @@ HRAIN SERVER v78 — ИНТЕГРАЦИЯ С ЖИВЫМ ГРАФОМ (PHYSARUM)
 """
 
 import os
+import hmac
 import json
 import logging
 import asyncio
@@ -30,6 +31,9 @@ DEVICE_COMMANDS_FILE = os.path.join(RAW_LOGS_DIR, "device_commands.json")
 
 active_websockets = set()
 state_lock = asyncio.Lock()
+HRAIN_SERVER_PORT = 1138
+HRAIN_LOCAL_BIND_HOST = "127.0.0.1"
+
 graph_engine = None  # будет инициализирован при старте
 
 # ========== БУФЕРИЗАЦИЯ ДАННЫХ УСТРОЙСТВ ==========
@@ -367,6 +371,30 @@ async def websocket_handler(request):
 # ==============================================================================
 # ЗАПУСК СЕРВЕРА
 # ==============================================================================
+@web.middleware
+async def janus_local_access_guard(request, handler):
+    """Fail-closed v78 API authority, matching owner-local v89 policy.
+
+    Mutating GET endpoints exist (e.g. device command pop), so all /api/*
+    and WebSocket access require a local host, loopback peer and an explicit
+    per-instance API token. Never trust forwarded-client headers.
+    """
+    hosts = {f"127.0.0.1:{HRAIN_SERVER_PORT}", f"localhost:{HRAIN_SERVER_PORT}"}
+    host = request.headers.get("Host", "").lower()
+    if host not in hosts or request.remote not in ("127.0.0.1", "::1"):
+        return web.json_response({"error": "LOOPBACK_HOST_REQUIRED"}, status=403)
+    origin = request.headers.get("Origin")
+    if origin is not None and origin not in {f"http://{value}" for value in hosts}:
+        return web.json_response({"error": "LOCAL_ORIGIN_REQUIRED"}, status=403)
+    if request.path.startswith("/api/") or request.path == "/ws":
+        token = os.environ.get("JANUS_HRAIN_LOCAL_API_TOKEN", "")
+        provided = request.headers.get("X-JANUS-Local-Token", "")
+        if not (24 <= len(token) <= 256 and 1 <= len(provided) <= 256
+                and hmac.compare_digest(provided, token)):
+            return web.json_response({"error": "API_TOKEN_REQUIRED"}, status=403)
+    return await handler(request)
+
+
 async def run_server():
     global graph_engine
     graph_engine = HrainGraphEngine()
@@ -376,7 +404,7 @@ async def run_server():
     asyncio.create_task(save_graph_state())
     asyncio.create_task(flush_pending())   # запускаем буферную задачу
 
-    app = web.Application(client_max_size=10 * 1024 * 1024)  # 10 MB
+    app = web.Application(client_max_size=10 * 1024 * 1024, middlewares=[janus_local_access_guard])  # 10 MB
     app.add_routes([
         web.get('/', handle_index),
         web.get('/api/hrain/state', handle_get_state),
@@ -391,7 +419,7 @@ async def run_server():
 
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', 1138)
+    site = web.TCPSite(runner, HRAIN_LOCAL_BIND_HOST, HRAIN_SERVER_PORT)
     await site.start()
 
     logger.info("[HRAIN] Визуальная оболочка активна. Доступ: http://localhost:1138")
