@@ -9,6 +9,7 @@ on:
       - 'hrain_graph_engine.py'
       - 'restored/hrain_autonomy.py'
       - 'tools/janus_hrain_*'
+      - 'tests/test_janus_hrain_synthetic_endurance.py'
       - 'tests/test_janus_hrain_unattended_integrity_gate.py'
       - '.github/workflows/janus-hrain-unattended-integrity.yml'
   pull_request:
@@ -16,6 +17,7 @@ on:
       - 'hrain_graph_engine.py'
       - 'restored/hrain_autonomy.py'
       - 'tools/janus_hrain_*'
+      - 'tests/test_janus_hrain_synthetic_endurance.py'
       - 'tests/test_janus_hrain_unattended_integrity_gate.py'
       - '.github/workflows/janus-hrain-unattended-integrity.yml'
 permissions:
@@ -44,6 +46,8 @@ jobs:
             'tools/janus_hrain_lossless_shadow.py',
             'tools/janus_hrain_shadow_independent_verify.py',
             'tools/janus_hrain_unattended_integrity_gate.py',
+            'tools/janus_hrain_synthetic_endurance.py',
+            'tests/test_janus_hrain_synthetic_endurance.py',
             'tests/test_janus_hrain_unattended_integrity_gate.py',
             'tests/test_janus_hrain_private_checkpoint_ledger.py',
             'tests/test_janus_hrain_lossless_shadow.py',
@@ -71,11 +75,17 @@ jobs:
           python -m unittest discover -v -s tests -p test_janus_hrain_private_checkpoint_ledger.py
           python -m unittest discover -v -s tests -p test_janus_hrain_lossless_shadow.py
           python -m unittest discover -v -s tests -p test_hrain_autonomy_sandbox.py
+      - name: Simulate 300 independent synthetic autonomy cycles
+        run: |
+          python tools/janus_hrain_synthetic_endurance.py --cycles 300 --capacity 80 --report hrain-synthetic-endurance.json
+          python -m unittest discover -v -s tests -p test_janus_hrain_synthetic_endurance.py
       - name: Keep minimal public report for audit
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: hrain-public-safety-report
-          path: hrain-public-safety-report.json
+          path: |
+            hrain-public-safety-report.json
+            hrain-synthetic-endurance.json
           retention-days: 7
           if-no-files-found: ignore
