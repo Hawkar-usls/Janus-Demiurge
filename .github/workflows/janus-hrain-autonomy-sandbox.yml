@@ -1,0 +1,43 @@
+name: JANUS HRAiN Owner Autonomy Sandbox Intake
+on:
+  pull_request:
+    paths:
+      - 'restored/hrain_autonomy.py'
+      - 'tests/test_hrain_autonomy_sandbox.py'
+      - '.github/workflows/janus-hrain-autonomy-sandbox.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'restored/hrain_autonomy.py'
+      - 'tests/test_hrain_autonomy_sandbox.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-owner-autonomy:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    timeout-minutes: 10
+    steps:
+      - name: Fetch pinned reviewed files only (no Windows-invalid legacy filenames)
+        shell: pwsh
+        env:
+          SRC_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          New-Item -ItemType Directory -Force -Path restored,tests | Out-Null
+          $base="https://raw.githubusercontent.com/Hawkar-usls/Janus-Demiurge/$env:SRC_SHA"
+          foreach($path in @('hrain_graph_engine.py','restored/experimental_sat_profile.py','restored/hrain_autonomy.py','tests/test_hrain_autonomy_sandbox.py')) {
+            $local=$path -replace '/', [IO.Path]::DirectorySeparatorChar
+            Invoke-WebRequest -Uri "$base/$path" -OutFile $local
+          }
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install numpy
+      - name: Compile and exercise disposable graph ONLY
+        run: |
+          python -m py_compile restored/hrain_autonomy.py restored/experimental_sat_profile.py
+          python -m unittest discover -v -s tests -p test_hrain_autonomy_sandbox.py
