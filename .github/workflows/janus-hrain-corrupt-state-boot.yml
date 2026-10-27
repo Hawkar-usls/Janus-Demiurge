@@ -1,0 +1,40 @@
+name: JANUS HRAiN Non-Destructive Boot Recovery
+on:
+  pull_request:
+    paths:
+      - 'server.py'
+      - 'tests/test_hrain_corrupt_state_boot_hold.py'
+      - '.github/workflows/janus-hrain-corrupt-state-boot.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'server.py'
+      - 'tests/test_hrain_corrupt_state_boot_hold.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  corrupt-boot:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    timeout-minutes: 10
+    steps:
+      - name: Fetch pinned public loader and synthetic test files
+        shell: pwsh
+        env:
+          SRC_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          New-Item -ItemType Directory -Path tests -Force | Out-Null
+          $base="https://raw.githubusercontent.com/Hawkar-usls/Janus-Demiurge/$env:SRC_SHA"
+          Invoke-WebRequest -Uri "$base/server.py" -OutFile server.py
+          Invoke-WebRequest -Uri "$base/tests/test_hrain_corrupt_state_boot_hold.py" -OutFile tests/test_hrain_corrupt_state_boot_hold.py
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prove incomplete owner snapshots cannot be clobbered at startup
+        run: |
+          python -m py_compile server.py tests/test_hrain_corrupt_state_boot_hold.py
+          python -m unittest discover -v -s tests -p test_hrain_corrupt_state_boot_hold.py
