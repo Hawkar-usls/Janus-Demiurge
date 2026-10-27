@@ -51,7 +51,12 @@ class SwarmGenomeLedgerTests(unittest.TestCase):
         parent_spiral = SpiralLedger("scout-template")
         child_spiral = SpiralLedger("scout-cosmos")
         genome = SwarmGenomeLedger()
-        parent = genome.register_spiral_turn(self._turn(parent_spiral, {"role": "SCOUT_TEMPLATE"}))
+        parent = genome.register_spiral_turn(
+            self._turn(parent_spiral, {"role": "SCOUT_TEMPLATE"}),
+            source_class="JANUS_OWNED",
+            lineage_id="JANUS:SCOUT_TEMPLATE",
+            approved_for_identity_derivation=True,
+        )
         child_turn = self._turn(child_spiral, {"role": "COSMOS_SCOUT"})
         child = genome.register_spiral_turn(
             child_turn,
@@ -69,8 +74,16 @@ class SwarmGenomeLedgerTests(unittest.TestCase):
         b = SpiralLedger("b")
         c = SpiralLedger("c")
         genome = SwarmGenomeLedger()
-        na = genome.register_spiral_turn(self._turn(a, {"x": 1}))
-        nb = genome.register_spiral_turn(self._turn(b, {"x": 2}))
+        na = genome.register_spiral_turn(
+            self._turn(a, {"x": 1}),
+            source_class="JANUS_OWNED", lineage_id="JANUS:A",
+            approved_for_identity_derivation=True,
+        )
+        nb = genome.register_spiral_turn(
+            self._turn(b, {"x": 2}),
+            source_class="JANUS_OWNED", lineage_id="JANUS:B",
+            approved_for_identity_derivation=True,
+        )
         nc = genome.register_spiral_turn(
             self._turn(c, {"x": 3}),
             extra_parent_ids=[na.genome_id, nb.genome_id],
@@ -81,6 +94,15 @@ class SwarmGenomeLedgerTests(unittest.TestCase):
         self.assertIn([na.genome_id, nc.genome_id], paths)
         self.assertIn([nb.genome_id, nc.genome_id], paths)
         genome.validate()
+
+    def test_unapproved_cross_entity_parent_is_rejected(self):
+        parent_spiral = SpiralLedger("foreign-unapproved")
+        child_spiral = SpiralLedger("janus-child")
+        genome = SwarmGenomeLedger()
+        parent = genome.register_spiral_turn(self._turn(parent_spiral, {"x": 1}))
+        child = self._turn(child_spiral, {"x": 2})
+        with self.assertRaisesRegex(ValueError, "FOREIGN_OR_UNTRUSTED_IDENTITY_PARENT"):
+            genome.register_spiral_turn(child, extra_parent_ids=[parent.genome_id])
 
     def test_no_delete_api_and_laws_are_present(self):
         genome = SwarmGenomeLedger()
