@@ -72,10 +72,13 @@ def make_shadow(source:bytes):
     relations=[{"source":a,"target":b,"originalEdgeMultiplicity":count}
                for (a,b),count in sorted(projected.items())]
     compressed=zlib.compress(source,level=9)
+    encoded=base64.b64encode(compressed).decode("ascii")
+    if len(encoded)>MAX_SHADOW_BYTES:
+        raise ValueError("SHADOW_ARCHIVE_LENGTH_HOLD")
     return {
         "schema":SCHEMA,"status":"OWNER_PRIVATE_REVERSIBLE_SHADOW_NOT_PRODUCTION",
         "sourceSha256":_hash(source),"sourceBytes":len(source),
-        "archive":{"codec":"zlib+base64","payload":base64.b64encode(compressed).decode("ascii")},
+        "archive":{"codec":"zlib+base64","payload":encoded},
         "compactView":{
             "nodes":condensed,"relations":relations,
             "originalEdgeCount":len(edges),
@@ -154,6 +157,10 @@ def main():
     if args.verify_only:
         shadow=json.loads(args.shadow.read_bytes())
         restored=expanded_bytes(shadow)
+        if not args.snapshot.is_file() or args.snapshot.stat().st_size>MAX_BYTES:
+            raise ValueError("SOURCE_BYTES_OR_FILE_HOLD")
+        if args.snapshot.read_bytes()!=restored:
+            raise ValueError("SHADOW_SOURCE_MISMATCH_HOLD")
         print(json.dumps({"status":"VERIFIED_NO_MUTATIONS",
                           "sha256":_hash(restored),"bytes":len(restored)}))
         return
