@@ -1,0 +1,42 @@
+name: JANUS HRAiN Private Checkpoint Ledger (synthetic-only)
+on:
+  pull_request:
+    paths:
+      - 'tools/janus_hrain_private_checkpoint_ledger.py'
+      - 'tests/test_janus_hrain_private_checkpoint_ledger.py'
+      - '.github/workflows/janus-hrain-checkpoint-ledger.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/janus_hrain_private_checkpoint_ledger.py'
+      - 'tests/test_janus_hrain_private_checkpoint_ledger.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  private-synthetic-only:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    timeout-minutes: 10
+    steps:
+      - name: Download pinned public source only (no local state)
+        shell: pwsh
+        env:
+          SRC_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          New-Item -ItemType Directory -Force -Path tools,tests | Out-Null
+          $base="https://raw.githubusercontent.com/Hawkar-usls/Janus-Demiurge/$env:SRC_SHA"
+          foreach($path in @('tools/janus_hrain_compression_preflight.py','tools/janus_hrain_lossless_shadow.py','tools/janus_hrain_shadow_independent_verify.py','tools/janus_hrain_private_checkpoint_ledger.py','tests/test_janus_hrain_private_checkpoint_ledger.py')) {
+            $local=$path -replace '/', [IO.Path]::DirectorySeparatorChar
+            Invoke-WebRequest -Uri "$base/$path" -OutFile $local
+          }
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile and validate crash-safe checkpoint invariants on synthetic data
+        run: |
+          python -m py_compile tools/janus_hrain_private_checkpoint_ledger.py
+          python -m unittest discover -v -s tests -p test_janus_hrain_private_checkpoint_ledger.py
