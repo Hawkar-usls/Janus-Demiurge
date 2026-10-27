@@ -119,6 +119,22 @@ class UnattendedGateTests(unittest.TestCase):
         )
         self.assertIn("server_local_api_authority", assess(self.copy)["failed"])
 
+    def test_corrupt_loader_exception_must_stop_startup(self):
+        self.change(
+            "server",
+            'raise RuntimeError("HRAIN_STATE_CORRUPT_BOOT_HOLD") from exc',
+            'return False',
+        )
+        self.assertIn("server_corrupt_boot_fail_closed", assess(self.copy)["failed"])
+
+    def test_writer_must_not_start_before_recovery_gate(self):
+        self.change(
+            "server",
+            "    await load_graph_state()",
+            "    asyncio.create_task(save_graph_state())" + chr(10) + "    await load_graph_state()",
+        )
+        self.assertIn("server_corrupt_boot_fail_closed", assess(self.copy)["failed"])
+
     def test_missing_required_file_fails_closed(self):
         (self.copy / SOURCES["checkpoint"]).unlink()
         with self.assertRaisesRegex(ValueError, "SOURCE_MISSING_OR_UNSAFE"):
