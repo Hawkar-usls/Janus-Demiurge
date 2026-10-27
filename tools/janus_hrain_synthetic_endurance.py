@@ -98,9 +98,16 @@ def main() -> int:
     parser.add_argument("--cycles", type=int, default=300)
     parser.add_argument("--seed", type=int, default=1408)
     parser.add_argument("--capacity", type=int, default=80)
+    parser.add_argument("--report", type=Path)
     args = parser.parse_args()
-    print(json.dumps(simulate(args.cycles, args.seed, args.capacity),
-                     sort_keys=True, ensure_ascii=True))
+    result = simulate(args.cycles, args.seed, args.capacity)
+    encoded = json.dumps(result, sort_keys=True, ensure_ascii=True) + "\\n"
+    if args.report:
+        if args.report.is_symlink() or args.report.exists():
+            raise FileExistsError("SYNTHETIC_REPORT_REFUSES_OVERWRITE")
+        with args.report.open("x", encoding="utf-8") as out:
+            out.write(encoded)
+    print(encoded, end="")
     return 0
 
 
