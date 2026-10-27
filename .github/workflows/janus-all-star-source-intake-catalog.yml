@@ -1,0 +1,44 @@
+name: JANUS All Star Safe Paths and Read-Only Intake Catalog
+on:
+  pull_request:
+    paths:
+      - 'restored/project_paths.py'
+      - 'tools/janus_all_star_intake_catalog.py'
+      - 'tests/test_all_star_safe_paths_catalog.py'
+      - '.github/workflows/janus-all-star-source-intake-catalog.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'restored/project_paths.py'
+      - 'tools/janus_all_star_intake_catalog.py'
+      - 'tests/test_all_star_safe_paths_catalog.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  local-free-static-audit:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    timeout-minutes: 8
+    steps:
+      - name: Download pinned reviewed modules (never download owner's private local files)
+        shell: pwsh
+        env:
+          SRC_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          New-Item -ItemType Directory -Force -Path restored,tools,tests | Out-Null
+          $base="https://raw.githubusercontent.com/Hawkar-usls/Janus-Demiurge/$env:SRC_SHA"
+          foreach($path in @('restored/project_paths.py','tools/janus_all_star_intake_catalog.py','tests/test_all_star_safe_paths_catalog.py')) {
+            $local=$path -replace '/', [IO.Path]::DirectorySeparatorChar
+            Invoke-WebRequest -Uri "$base/$path" -OutFile $local
+          }
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Pure synthetic audit tests
+        run: |
+          python -m py_compile restored/project_paths.py tools/janus_all_star_intake_catalog.py
+          python -m unittest discover -v -s tests -p test_all_star_safe_paths_catalog.py
