@@ -90,7 +90,7 @@ class UnattendedGateTests(unittest.TestCase):
     def test_duplicate_handler_must_not_shadow_hold(self):
         path = self.copy / SOURCES["server"]
         with path.open("a", encoding="utf-8") as out:
-            out.write("\\nasync def handle_save_state(request):\\n    return None\\n")
+            out.write("\nasync def handle_save_state(request):\n    return None\n")
         self.assertIn("server_wholesale_save_hold", assess(self.copy)["failed"])
 
     def test_route_to_different_handler_is_rejected(self):
