@@ -1,0 +1,30 @@
+name: JANUS SQLite Batch Lock Regression
+on:
+  pull_request:
+    paths:
+      - janus_db.py
+      - tests/test_janus_db_batch_buffer_lock.py
+      - .github/workflows/janus-db-batch-lock.yml
+  push:
+    branches: [main]
+    paths:
+      - janus_db.py
+      - tests/test_janus_db_batch_buffer_lock.py
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-sqlite-batch-lock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile the module without importing the JANUS runtime
+        run: python -m py_compile janus_db.py
+      - name: Three synthetic temp-SQLite deadlock and loss tests
+        run: python -m unittest discover -v -s tests -p test_janus_db_batch_buffer_lock.py

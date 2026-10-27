@@ -24,11 +24,14 @@ class DatabaseBuffer:
         self._size = 0
 
     def add(self, query: str, params: tuple) -> None:
+        # flush() obtains the same (non-reentrant) Lock. Never call it while
+        # holding the lock here: hitting BUFFER_SIZE would deadlock this thread.
         with self._lock:
             self._buffer.append((query, params))
             self._size += 1
-            if self._size >= BUFFER_SIZE:
-                self.flush()
+            flush_due = self._size >= BUFFER_SIZE
+        if flush_due:
+            self.flush()
 
     def flush(self) -> None:
         with self._lock:
