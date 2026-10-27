@@ -15,15 +15,23 @@ permissions:
   contents: read
 jobs:
   isolated-sqlite-batch-lock:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python: '3.12'
+          - os: windows-latest
+            python: '3.14'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: ${{ matrix.python }}
       - name: Compile the module without importing the JANUS runtime
         run: python -m py_compile janus_db.py
       - name: Three synthetic temp-SQLite deadlock and loss tests
