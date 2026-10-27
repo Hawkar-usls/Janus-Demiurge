@@ -26,7 +26,7 @@ class HrainGraphEngine:
             'cluster_similarity': 0.7,     # порог для кластеризации
             'max_cluster_size': 50,        # макс узлов в кластере до сжатия
             'compression_interval': 1000,  # тиков между сжатиями
-            'max_nodes': 5000,             # абсолютный лимит узлов
+            'max_nodes': 5000,             # hard admission limit; never delete old nodes
             'energy_flow_rate': 0.01,      # доля энергии, передаваемая за шаг
             'exploration_prob': 0.01,      # шанс случайной мутации
             'temporal_window': 100,        # окно для затухания энергии по времени
@@ -38,6 +38,10 @@ class HrainGraphEngine:
         self.node_counter = 0
         self.tick = 0
         self.pending_diffs: List[Dict] = []    # буфер для отправки diff на клиент
+        # Counts only. Never persist node IDs or private content in safety reports.
+        self.retention_holds = {
+            'remove_node': 0, 'decay_edges': 0, 'decay_nodes': 0, 'max_nodes': 0
+        }
 
     # -------------------- Утилиты --------------------
     def _node_id(self, base: str, suffix: str = "") -> str:
@@ -52,6 +56,11 @@ class HrainGraphEngine:
 
     # -------------------- Управление узлами --------------------
     def add_node(self, node_type: str, data: Dict, energy: float = 1.0) -> str:
+        # Admit no new node beyond capacity rather than evicting persistent memory.
+        # Exception occurs BEFORE counters, nodes or diffs are mutated.
+        if len(self.nodes) >= int(self.config['max_nodes']):
+            self.retention_holds['max_nodes'] += 1
+            raise MemoryError("HRAIN_CAPACITY_REACHED_NO_EVICTION")
         node_id = self._node_id(node_type)
         self.nodes[node_id] = {
             'id': node_id,
@@ -70,13 +79,15 @@ class HrainGraphEngine:
         return node_id
 
     def remove_node(self, node_id: str):
+        """Safety quarantine: no live-node deletion without an audited journal.
+
+        Existing callers (including Maxwell and legacy cleanup) receive False
+        and MUST NOT report a successful prune. This deliberate HOLD applies
+        to explicit calls too; there is no config bypass for private memory.
+        """
         if node_id in self.nodes:
-            del self.nodes[node_id]
-            # Удаляем все рёбра, связанные с этим узлом
-            for key in list(self.edges.keys()):
-                if key.startswith(node_id + '->') or key.endswith('->' + node_id):
-                    del self.edges[key]
-            self._record_diff('node_remove', {'id': node_id})
+            self.retention_holds['remove_node'] += 1
+        return False
 
     # -------------------- Связи --------------------
     def add_edge(self, src: str, dst: str, direction: str = "bidir", weight: float = 1.0):
@@ -108,16 +119,16 @@ class HrainGraphEngine:
         for key, edge in list(self.edges.items()):
             edge['weight'] *= self.config['edge_decay']
             if edge['weight'] < 0.01:
-                del self.edges[key]
-                src, dst = key.split('->')
-                self._record_diff('edge_remove', {'src': src, 'dst': dst})
+                # Keep the original relation, including provenance and direction.
+                self.retention_holds['decay_edges'] += 1
 
     def decay_nodes(self):
         """Затухание энергии узлов."""
         for nid, node in list(self.nodes.items()):
             node['energy'] *= self.config['energy_decay']
             if node['energy'] < self.config['node_energy_threshold']:
-                self.remove_node(nid)
+                # Decay is permitted; removing persistent nodes is not.
+                self.retention_holds['decay_nodes'] += 1
 
     def propagate_energy(self):
         """Поток энергии по рёбрам (Physarum)."""
@@ -230,6 +241,11 @@ class HrainGraphEngine:
     # -------------------- Основной цикл --------------------
     def update(self, events: List[Dict]) -> List[Dict]:
         """Принимает список новых событий, обновляет граф, возвращает diff."""
+        # Reject an oversized event batch BEFORE modifying the graph or tick.
+        # Existing graph copies are never truncated to make room.
+        if len(self.nodes) + len(events) > int(self.config['max_nodes']):
+            self.retention_holds['max_nodes'] += 1
+            raise MemoryError("HRAIN_EVENT_BATCH_CAPACITY_HOLD")
         self.tick += 1
         # 1. Добавляем новые узлы из событий
         for ev in events:
@@ -252,11 +268,8 @@ class HrainGraphEngine:
         if self.tick % self.config['compression_interval'] == 0:
             self.compress_clusters()
 
-        # 4. Ограничение общего числа узлов
-        if len(self.nodes) > self.config['max_nodes']:
-            sorted_nodes = sorted(self.nodes.items(), key=lambda x: x[1]['energy'])
-            for nid, _ in sorted_nodes[:len(self.nodes) - self.config['max_nodes']]:
-                self.remove_node(nid)
+        # 4. Never evict historical memory as an implementation of max_nodes.
+        # Capacity is checked before adding an event batch and in add_node().
 
         # 5. Возвращаем накопленные diffs
         diffs = self.pending_diffs
