@@ -101,6 +101,24 @@ class UnattendedGateTests(unittest.TestCase):
         )
         self.assertIn("server_ui_read_route_retained", assess(self.copy)["failed"])
 
+    def test_rejects_public_bind_regression(self):
+        self.change(
+            "server", 'HRAIN_LOCAL_BIND_HOST = "127.0.0.1"',
+            'HRAIN_LOCAL_BIND_HOST = "0.0.0.0"',
+        )
+        self.assertIn("server_local_api_authority", assess(self.copy)["failed"])
+
+    def test_rejects_bypassing_local_header(self):
+        self.change("server", '"X-JANUS-Local-Token"', '"X-Other-Header"')
+        self.assertIn("server_local_api_authority", assess(self.copy)["failed"])
+
+    def test_rejects_unwired_auth_middleware(self):
+        self.change(
+            "server", "middlewares=[janus_local_access_guard]",
+            "middlewares=[]",
+        )
+        self.assertIn("server_local_api_authority", assess(self.copy)["failed"])
+
     def test_missing_required_file_fails_closed(self):
         (self.copy / SOURCES["checkpoint"]).unlink()
         with self.assertRaisesRegex(ValueError, "SOURCE_MISSING_OR_UNSAFE"):
