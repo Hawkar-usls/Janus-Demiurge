@@ -4,6 +4,7 @@ The production module is imported with its config dependency pointed at a
 temporary directory, never the owner's personal Janus database.
 """
 import importlib
+from contextlib import closing
 import pathlib
 import sqlite3
 import sys
@@ -30,7 +31,7 @@ def new_module(tmp):
         return importlib.import_module("janus_db")
 
 def prepare_db(file):
-    with sqlite3.connect(file) as conn:
+    with closing(sqlite3.connect(file)) as conn:
         conn.execute("CREATE TABLE system_metrics ("+COLUMNS+")")
 
 def fake_metrics(index):
@@ -52,7 +53,7 @@ class BufferedMetricsTests(unittest.TestCase):
             thread=threading.Thread(target=worker,daemon=True)
             thread.start()
             self.assertTrue(done.wait(4),"ADD_SELF_DEADLOCK")
-            with sqlite3.connect(db) as conn:
+            with closing(sqlite3.connect(db)) as conn:
                 count=conn.execute("SELECT COUNT(*) FROM system_metrics").fetchone()[0]
             self.assertEqual(count,2)
 
@@ -74,7 +75,7 @@ class BufferedMetricsTests(unittest.TestCase):
                 t.join(timeout=8)
                 self.assertFalse(t.is_alive(),"PARALLEL_ADD_HANG")
             buffer.flush()
-            with sqlite3.connect(db) as conn:
+            with closing(sqlite3.connect(db)) as conn:
                 count=conn.execute("SELECT COUNT(*) FROM system_metrics").fetchone()[0]
             self.assertEqual(count,108)
             self.assertEqual(buffer._size,0)
@@ -93,7 +94,7 @@ class BufferedMetricsTests(unittest.TestCase):
             buffer.db_path=good
             buffer.flush()
             self.assertEqual(buffer._size,0)
-            with sqlite3.connect(good) as conn:
+            with closing(sqlite3.connect(good)) as conn:
                 count=conn.execute("SELECT COUNT(*) FROM system_metrics").fetchone()[0]
             self.assertEqual(count,2)
 
