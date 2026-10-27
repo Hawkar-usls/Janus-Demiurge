@@ -1,0 +1,41 @@
+name: JANUS HRAiN Private Reversible Shadow (synthetic only)
+on:
+  pull_request:
+    paths:
+      - 'tools/janus_hrain_lossless_shadow.py'
+      - 'tests/test_janus_hrain_lossless_shadow.py'
+      - '.github/workflows/janus-hrain-private-shadow.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/janus_hrain_lossless_shadow.py'
+      - 'tests/test_janus_hrain_lossless_shadow.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-source-roundtrip:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    timeout-minutes: 10
+    steps:
+      - name: Download pinned files only (Windows-safe GitHub repository paths)
+        shell: pwsh
+        env:
+          SRC_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          New-Item -ItemType Directory -Force tools,tests | Out-Null
+          $base = "https://raw.githubusercontent.com/Hawkar-usls/Janus-Demiurge/$env:SRC_SHA"
+          Invoke-WebRequest -Uri "$base/tools/janus_hrain_compression_preflight.py" -OutFile tools/janus_hrain_compression_preflight.py
+          Invoke-WebRequest -Uri "$base/tools/janus_hrain_lossless_shadow.py" -OutFile tools/janus_hrain_lossless_shadow.py
+          Invoke-WebRequest -Uri "$base/tests/test_janus_hrain_lossless_shadow.py" -OutFile tests/test_janus_hrain_lossless_shadow.py
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile and test private shadow contract using synthetic fixtures
+        run: |
+          python -m py_compile tools/janus_hrain_lossless_shadow.py tests/test_janus_hrain_lossless_shadow.py
+          python -m unittest discover -v -s tests -p test_janus_hrain_lossless_shadow.py
