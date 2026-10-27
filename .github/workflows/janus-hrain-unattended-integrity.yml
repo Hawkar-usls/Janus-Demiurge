@@ -1,0 +1,81 @@
+name: JANUS HRAiN Unattended Integrity Gate
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'hrain_graph_engine.py'
+      - 'restored/hrain_autonomy.py'
+      - 'tools/janus_hrain_*'
+      - 'tests/test_janus_hrain_unattended_integrity_gate.py'
+      - '.github/workflows/janus-hrain-unattended-integrity.yml'
+  pull_request:
+    paths:
+      - 'hrain_graph_engine.py'
+      - 'restored/hrain_autonomy.py'
+      - 'tools/janus_hrain_*'
+      - 'tests/test_janus_hrain_unattended_integrity_gate.py'
+      - '.github/workflows/janus-hrain-unattended-integrity.yml'
+permissions:
+  contents: read
+concurrency:
+  group: hrain-cloud-integrity-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  guarded-continuity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Fetch immutable public modules only (no private owner files)
+        shell: pwsh
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          New-Item -ItemType Directory -Force -Path tools,tests,restored | Out-Null
+          $base="https://raw.githubusercontent.com/Hawkar-usls/Janus-Demiurge/$env:SOURCE_SHA"
+          $files = @(
+            'hrain_graph_engine.py',
+            'restored/hrain_autonomy.py',
+            'restored/experimental_sat_profile.py',
+            'tools/janus_hrain_private_checkpoint_ledger.py',
+            'tools/janus_hrain_compression_preflight.py',
+            'tools/janus_hrain_lossless_shadow.py',
+            'tools/janus_hrain_shadow_independent_verify.py',
+            'tools/janus_hrain_unattended_integrity_gate.py',
+            'tests/test_janus_hrain_unattended_integrity_gate.py',
+            'tests/test_janus_hrain_private_checkpoint_ledger.py',
+            'tests/test_janus_hrain_lossless_shadow.py',
+            'tests/test_hrain_retention_firewall.py',
+            'tests/test_hrain_runtime_compression_hold.py',
+            'tests/test_hrain_autonomy_sandbox.py'
+          )
+          foreach($path in $files) {
+            $local=$path -replace '/', [IO.Path]::DirectorySeparatorChar
+            Invoke-WebRequest -Uri "$base/$path" -OutFile $local
+          }
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install bounded math dependency
+        run: python -m pip install numpy
+      - name: Independent static fail-closed gate
+        run: python tools/janus_hrain_unattended_integrity_gate.py --repo-root . --output hrain-public-safety-report.json
+      - name: Synthetic adversarial gate tests
+        run: python -m unittest discover -v -s tests -p test_janus_hrain_unattended_integrity_gate.py
+      - name: Synthetic no-delete / recovery / growth regressions
+        run: |
+          python -m unittest discover -v -s tests -p test_hrain_retention_firewall.py
+          python -m unittest discover -v -s tests -p test_hrain_runtime_compression_hold.py
+          python -m unittest discover -v -s tests -p test_janus_hrain_private_checkpoint_ledger.py
+          python -m unittest discover -v -s tests -p test_janus_hrain_lossless_shadow.py
+          python -m unittest discover -v -s tests -p test_hrain_autonomy_sandbox.py
+      - name: Keep minimal public report for audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hrain-public-safety-report
+          path: hrain-public-safety-report.json
+          retention-days: 7
+          if-no-files-found: ignore
