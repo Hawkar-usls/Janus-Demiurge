@@ -1,0 +1,42 @@
+name: JANUS HRAiN Server Loopback Authority
+on:
+  pull_request:
+    paths:
+      - 'server.py'
+      - 'tests/test_hrain_server_local_guard.py'
+      - '.github/workflows/janus-hrain-server-local-guard.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'server.py'
+      - 'tests/test_hrain_server_local_guard.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  loopback-auth:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    timeout-minutes: 10
+    steps:
+      - name: Fetch pinned public code without Windows-invalid filename checkout
+        shell: pwsh
+        env:
+          SRC_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          New-Item -ItemType Directory -Path tests -Force | Out-Null
+          $base="https://raw.githubusercontent.com/Hawkar-usls/Janus-Demiurge/$env:SRC_SHA"
+          Invoke-WebRequest -Uri "$base/server.py" -OutFile server.py
+          Invoke-WebRequest -Uri "$base/tests/test_hrain_server_local_guard.py" -OutFile tests/test_hrain_server_local_guard.py
+          Invoke-WebRequest -Uri "$base/tests/test_hrain_server_full_save_hold.py" -OutFile tests/test_hrain_server_full_save_hold.py
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check local-only API and destructive POST quarantines
+        run: |
+          python -m py_compile server.py tests/test_hrain_server_local_guard.py
+          python -m unittest discover -v -s tests -p test_hrain_server_local_guard.py
+          python -m unittest discover -v -s tests -p test_hrain_server_full_save_hold.py
