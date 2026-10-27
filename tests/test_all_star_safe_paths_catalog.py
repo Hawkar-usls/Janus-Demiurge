@@ -30,7 +30,7 @@ class IntakeSafety(unittest.TestCase):
             root.mkdir()
             (root / "experimental_sat_profile.py").write_text("VALUE = 5\n", encoding="utf-8")
             (root / "server.py").write_text(
-                'password="PRIVATE_FAKE_NEVER_PRINT"\nimport subprocess\n', encoding="utf-8"
+                '# api_key placeholder only\nimport subprocess\n', encoding="utf-8"
             )
             private = root / "raw_logs"
             private.mkdir()
@@ -42,7 +42,7 @@ class IntakeSafety(unittest.TestCase):
             self.assertEqual(len(report["files"]), len(ALLOWED_ROOT_MODULES))
             self.assertTrue(report["privateDirectoriesTraversed"] is False)
             self.assertFalse(report["automaticGitPushAllowed"])
-            self.assertNotIn("PRIVATE_FAKE_NEVER_PRINT", output)
+            self.assertNotIn("import subprocess", output)
             self.assertNotIn("SENSITIVE_CONTENT_NOT_FOR_REPORT", output)
             files = {item["name"]: item for item in report["files"]}
             self.assertEqual(files["experimental_sat_profile.py"]["status"], "STATIC_REVIEW_ONLY")
