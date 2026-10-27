@@ -161,64 +161,24 @@ async def handle_get_state(request):
         return web.json_response({'nodes': nodes, 'links': links})
 
 async def handle_save_state(request):
-    """Принимает граф от фронтенда и синхронизирует с движком."""
-    try:
-        data = await request.json()
-        # Строим состояние для движка
-        new_nodes = {}
-        for n in data.get('nodes', []):
-            new_nodes[n['id']] = {
-                'id': n['id'],
-                'type': n.get('type', 'default'),
-                'data': {
-                    'label': n.get('label', 'Node'),
-                    'emoji': n.get('emoji', '🔮'),
-                    'x': n.get('x', 0),
-                    'y': n.get('y', 0),
-                    'parentId': n.get('parentId'),
-                    'description': n.get('description', ''),
-                    'chatHistory': n.get('chatHistory', [])
-                },
-                'energy': 1.0,
-                'last_used': graph_engine.tick,
-                'cluster': None
-            }
-        new_edges = {}
-        for l in data.get('links', []):
-            src = l['source']
-            dst = l['target']
-            key = f"{src}->{dst}"
-            new_edges[key] = {
-                'weight': 1.0,
-                'direction': 'bidir',
-                'last_traversal': graph_engine.tick
-            }
-        async with state_lock:
-            graph_engine.nodes = new_nodes
-            graph_engine.edges = new_edges
-            # Обновляем счётчик ID
-            max_id = 0
-            for nid in new_nodes:
-                if '_' in nid:
-                    try:
-                        num = int(nid.split('_')[1])
-                        if num > max_id:
-                            max_id = num
-                    except:
-                        pass
-            graph_engine.node_counter = max_id + 1
-            graph_engine.tick += 1
-            # Сохраняем состояние в файл
-            state = graph_engine.get_full_state()
-            tmp = HRAIN_STATE_FILE + ".tmp"
-            with open(tmp, 'w', encoding='utf-8') as f:
-                json.dump(state, f, indent=2)
-            os.replace(tmp, HRAIN_STATE_FILE)
-        await broadcast_update([])  # не отправляем diff, так как весь граф обновлён
-        return web.json_response({"status": "ok"})
-    except Exception as e:
-        logger.error(f"Ошибка сохранения графа: {e}")
-        return web.json_response({"status": "error", "message": str(e)}, status=500)
+    """Fail-closed legacy UI full-graph POST.
+
+    Old frontends send partial snapshots that omit historical node fields,
+    weighted/directed relations and provenance. Replacing the authoritative
+    graph with such a snapshot would silently destroy persistent memory.
+    Incremental versioned writes require a separate, validated authority
+    contract, not a hidden toggle on this legacy endpoint.
+    """
+    return web.json_response(
+        {
+            "status": "HOLD_LEGACY_GRAPH_REPLACEMENT",
+            "message": "Full-graph replacement disabled to preserve JANUS memory.",
+            "source_graph_modified": False,
+            "production_use_authorized": False,
+        },
+        status=409,
+    )
+
 
 async def handle_janus_action(request):
     """Принимает команды от HRAIN (синтез и т.д.)."""
