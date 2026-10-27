@@ -14,7 +14,24 @@ on:
 permissions:
   contents: read
 jobs:
+  prepare-portable-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Upload exactly the synthetic SQLite regression and target source
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-sqlite-portable-test-source
+          path: |
+            janus_db.py
+            tests/test_janus_db_batch_buffer_lock.py
+          if-no-files-found: error
+          retention-days: 1
   isolated-sqlite-batch-lock:
+    needs: prepare-portable-source
     strategy:
       fail-fast: false
       matrix:
@@ -26,17 +43,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 8
     steps:
-      - uses: actions/checkout@v4
+      - name: Retrieve only portable source without Windows git checkout
+        uses: actions/download-artifact@v4
         with:
-          persist-credentials: false
-          sparse-checkout: |
-            janus_db.py
-            tests/test_janus_db_batch_buffer_lock.py
-          sparse-checkout-cone-mode: false
+          name: janus-sqlite-portable-test-source
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - name: Compile the module without importing the JANUS runtime
+      - name: Compile only the module, never start JANUS runtime
         run: python -m py_compile janus_db.py
-      - name: Three synthetic temp-SQLite deadlock and loss tests
+      - name: Three synthetic temp-SQLite tests
         run: python -m unittest discover -v -s tests -p test_janus_db_batch_buffer_lock.py
