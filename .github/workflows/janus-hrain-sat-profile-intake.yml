@@ -1,0 +1,42 @@
+name: JANUS HRAiN All Star SAT Heuristic Intake (bounded)
+on:
+  pull_request:
+    paths:
+      - 'restored/experimental_sat_profile.py'
+      - 'tests/test_hrain_all_star_sat_profile_intake.py'
+      - '.github/workflows/janus-hrain-sat-profile-intake.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'restored/experimental_sat_profile.py'
+      - 'tests/test_hrain_all_star_sat_profile_intake.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bounded-research-only:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    timeout-minutes: 10
+    steps:
+      - name: Download pinned files only (Windows-safe)
+        shell: pwsh
+        env:
+          SRC_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          New-Item -ItemType Directory -Force -Path restored,tests | Out-Null
+          $base = "https://raw.githubusercontent.com/Hawkar-usls/Janus-Demiurge/$env:SRC_SHA"
+          Invoke-WebRequest -Uri "$base/restored/experimental_sat_profile.py" -OutFile restored/experimental_sat_profile.py
+          Invoke-WebRequest -Uri "$base/tests/test_hrain_all_star_sat_profile_intake.py" -OutFile tests/test_hrain_all_star_sat_profile_intake.py
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install minimal math dependency
+        run: python -m pip install numpy
+      - name: Compile and test bounded heuristic
+        run: |
+          python -m py_compile restored/experimental_sat_profile.py tests/test_hrain_all_star_sat_profile_intake.py
+          python -m unittest discover -v -s tests -p test_hrain_all_star_sat_profile_intake.py
