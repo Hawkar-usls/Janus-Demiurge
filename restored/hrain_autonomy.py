@@ -1,4 +1,3 @@
-"""Restored owner All Star HRAiN autonomy for sandbox tests ONLY. No live activation."""
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """Autonomous graph growth logic for HRAIN."""
