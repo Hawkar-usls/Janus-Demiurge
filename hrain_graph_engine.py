@@ -192,36 +192,21 @@ class HrainGraphEngine:
 
     # -------------------- Кластеризация и сжатие --------------------
     def compress_clusters(self):
-        """Схлопывает плотные кластеры в мета-узлы."""
-        node_ids = list(self.nodes.keys())
-        visited = set()
-        clusters = []
-        for nid in node_ids:
-            if nid in visited:
-                continue
-            cluster = [nid]
-            visited.add(nid)
-            for other in node_ids:
-                if other not in visited and self._node_similarity(self.nodes[nid], self.nodes[other]) > self.config['cluster_similarity']:
-                    cluster.append(other)
-                    visited.add(other)
-            if len(cluster) > 1:
-                clusters.append(cluster)
+        """Fail-closed legacy compaction quarantine (issue #342).
 
-        for cluster in clusters:
-            # Собираем средние данные
-            avg_data = {}
-            keys = ['purity', 'temp', 'loss']
-            for k in keys:
-                vals = [self.nodes[nid]['data'].get(k, 0) for nid in cluster]
-                avg_data[k] = np.mean(vals)
-            total_energy = sum(self.nodes[nid]['energy'] for nid in cluster)
-            meta_id = self.add_node('cluster', avg_data, energy=total_energy)
-            for nid in cluster:
-                self.add_edge(meta_id, nid, 'meta->sub', weight=self.nodes[nid]['energy'])
-                self.add_edge(nid, meta_id, 'sub->meta', weight=self.nodes[nid]['energy'])
-                self.remove_node(nid)
-            self._record_diff('cluster_create', {'id': meta_id, 'members': cluster})
+        The former implementation deleted every clustered node and all of its
+        incident edges, including newly created meta/member relations.
+        This public runtime entrypoint MUST NOT mutate the graph, even if
+        invoked manually or by update() at compression_interval. A separate,
+        owner-private lossless shadow is under evaluation; it is not a
+        replacement for this gate or permission to destroy original nodes.
+        """
+        return {
+            "status": "HOLD_LEGACY_DESTRUCTIVE_COMPRESSION",
+            "production_use_authorized": False,
+            "source_nodes": len(self.nodes),
+            "source_edges": len(self.edges),
+        }
 
     # -------------------- Активный подграф (внимание) --------------------
     def get_active_subgraph(self, top_k=50):
