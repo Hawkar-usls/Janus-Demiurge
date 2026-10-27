@@ -15,6 +15,7 @@ from pathlib import Path
 SCHEMA = "janus.hrain.unattended_integrity_gate.v1"
 SOURCES = {
     "graph": "hrain_graph_engine.py",
+    "server": "server.py",
     "autonomy": "restored/hrain_autonomy.py",
     "checkpoint": "tools/janus_hrain_private_checkpoint_ledger.py",
     "shadow": "tools/janus_hrain_lossless_shadow.py",
@@ -100,8 +101,60 @@ def assess(root: Path) -> dict:
     root = Path(root).resolve()
     trees = _syntax(root)
     graph = _class(trees["graph"], "HrainGraphEngine")
+    server = trees["server"]
     autonomy = _class(trees["autonomy"], "HrainAutonomy")
     checks = {}
+    save_handlers = [
+        n for n in server.body if isinstance(n, ast.AsyncFunctionDef)
+        and n.name == "handle_save_state"
+    ]
+    save_endpoint = save_handlers[0] if len(save_handlers) == 1 else None
+    if save_endpoint is None:
+        checks["server_wholesale_save_hold"] = False
+    else:
+        # Exactly one return without parsing request, graph accesses, awaits,
+        # persistence, or any other statements. Protect against guard bypass
+        # via hidden branch or untrusted flags.
+        server_response = ast.unparse(save_endpoint.body[1:]) if len(save_endpoint.body) > 1 else ""
+        handler_dump = ast.dump(save_endpoint, include_attributes=False)
+        checks["server_wholesale_save_hold"] = (
+            len(save_endpoint.body) == 2
+            and isinstance(save_endpoint.body[0], ast.Expr)
+            and isinstance(save_endpoint.body[0].value, ast.Constant)
+            and isinstance(save_endpoint.body[-1], ast.Return)
+            and "HOLD_LEGACY_GRAPH_REPLACEMENT" in handler_dump
+            and "409" in handler_dump
+            and "json_response" in server_response
+            and "graph_engine" not in handler_dump
+            and "persist_state" not in handler_dump
+            and "request.json" not in server_response
+        )
+    routes = [
+        (n.func.attr, n.args)
+        for n in ast.walk(server)
+        if isinstance(n, ast.Call)
+        and isinstance(n.func, ast.Attribute)
+        and isinstance(n.func.value, ast.Name)
+        and n.func.value.id == "web"
+        and n.func.attr in ("get", "post")
+        and len(n.args) >= 2
+    ]
+    def _route_for(verb: str, url: str, handler: str) -> bool:
+        return sum(
+            method == verb and isinstance(args[0], ast.Constant)
+            and args[0].value == url
+            and isinstance(args[1], ast.Name) and args[1].id == handler
+            for method, args in routes
+        ) == 1
+    checks["server_ui_read_route_retained"] = (
+        _route_for("get", "/api/hrain/state", "handle_get_state")
+        and _route_for("post", "/api/hrain/save", "handle_save_state")
+        and sum(
+            method == "post" and isinstance(args[0], ast.Constant)
+            and args[0].value == "/api/hrain/save"
+            for method, args in routes
+        ) == 1
+    )
     compressor = _method(graph, "compress_clusters")
     checks["compression_hold"] = (
         compressor is not None

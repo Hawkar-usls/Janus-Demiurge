@@ -71,6 +71,36 @@ class UnattendedGateTests(unittest.TestCase):
         self.change("checkpoint", '"--create"', '"--unattended-create"')
         self.assertIn("checkpoint_opt_in_only", assess(self.copy)["failed"])
 
+    def test_server_full_overwrite_unblocked_is_fatal(self):
+        self.change(
+            "server",
+            '    return web.json_response(\n        {',
+            '    graph_engine.nodes = {}\n    return web.json_response(\n        {',
+        )
+        self.assertIn("server_wholesale_save_hold", assess(self.copy)["failed"])
+
+    def test_server_status_change_is_detected(self):
+        self.change("server", '        status=409,', '        status=200,')
+        self.assertIn("server_wholesale_save_hold", assess(self.copy)["failed"])
+
+    def test_server_ui_read_route_removal_fails_closed(self):
+        self.change("server", "'/api/hrain/state'", "'/api/hrain/not-found'")
+        self.assertIn("server_ui_read_route_retained", assess(self.copy)["failed"])
+
+    def test_duplicate_handler_must_not_shadow_hold(self):
+        path = self.copy / SOURCES["server"]
+        with path.open("a", encoding="utf-8") as out:
+            out.write("\nasync def handle_save_state(request):\n    return None\n")
+        self.assertIn("server_wholesale_save_hold", assess(self.copy)["failed"])
+
+    def test_route_to_different_handler_is_rejected(self):
+        self.change(
+            "server",
+            "web.post('/api/hrain/save', handle_save_state)",
+            "web.post('/api/hrain/save', handle_janus_action)",
+        )
+        self.assertIn("server_ui_read_route_retained", assess(self.copy)["failed"])
+
     def test_missing_required_file_fails_closed(self):
         (self.copy / SOURCES["checkpoint"]).unlink()
         with self.assertRaisesRegex(ValueError, "SOURCE_MISSING_OR_UNSAFE"):
