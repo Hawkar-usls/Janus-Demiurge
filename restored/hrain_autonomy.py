@@ -86,9 +86,13 @@ class HrainAutonomy:
 
     def enable_synthetic_sandbox(self) -> None:
         """Explicit opt-in for disposable synthetic tests, never live memory."""
-        if not self._synthetic_only:
+        if not self._synthetic_only or self.graph.nodes or self.graph.edges:
             raise PermissionError("HRAIN_AUTONOMY_RESEARCH_ONLY_HOLD")
         self.runtime["running"] = True
+
+    def _assert_synthetic_enabled(self) -> None:
+        if not self._synthetic_only or not self.runtime["running"]:
+            raise PermissionError("HRAIN_AUTONOMY_RESEARCH_ONLY_HOLD")
 
     def roots(self) -> List[Dict[str, Any]]:
         return [node for node in self.graph.nodes.values() if not node["data"].get("parentId")]
@@ -150,6 +154,7 @@ class HrainAutonomy:
         return data
 
     def create_node(self, node_type: str, label: str, description: str, *, parent_id: Optional[str] = None, role: str = "idea", energy: float = 1.0, level: int = 1, score: float = 0.5, emoji: Optional[str] = None, position: Optional[tuple[float, float]] = None, extra: Optional[Dict[str, Any]] = None) -> str:
+        self._assert_synthetic_enabled()
         safe_type = node_type if node_type in VALID_NODE_TYPES else "ally"
         x, y = self._position(parent_id, position)
         payload = self._node_payload(label, safe_type, description, parent_id, role, level, score, x, y, emoji, extra)
@@ -159,6 +164,7 @@ class HrainAutonomy:
         return node_id
 
     def ensure_foundation(self) -> List[str]:
+        self._assert_synthetic_enabled()
         created = []
         for role, label, node_type, description, position, emoji in ROOTS:
             if self.find_role(role):
@@ -191,6 +197,7 @@ class HrainAutonomy:
         return {"nodes": nodes, "links": links, "meta": self.snapshot(include_recent=False)}
 
     def run_dynamics(self) -> None:
+        self._assert_synthetic_enabled()
         self.graph.decay_edges()
         self.graph.decay_nodes()
         self.graph.propagate_energy()
@@ -203,6 +210,7 @@ class HrainAutonomy:
         return f"{src}->{dst}" in self.graph.edges or f"{dst}->{src}" in self.graph.edges
 
     def upsert_device(self, device_id: str, payload: Any) -> None:
+        self._assert_synthetic_enabled()
         role = f"device:{device_id}"
         existing = self.find_role(role)
         observer_id = self.find_role("observer") or self.find_role("core")
@@ -285,6 +293,7 @@ class HrainAutonomy:
         return profile
 
     def _maxwell(self, focus: Optional[Dict[str, Any]]) -> str:
+        self._assert_synthetic_enabled()
         self.runtime["daemon_interventions"] += 1
         self.runtime["daemon_mode"] = "sorting"
         removable = []
@@ -318,6 +327,7 @@ class HrainAutonomy:
         return "Maxwell stabilized the field"
 
     def _grow_child(self, parent: Dict[str, Any], override_type: Optional[str] = None) -> str:
+        self._assert_synthetic_enabled()
         node_type = override_type or random.choice([parent["type"], "ally", "intel", "info", "plug", "sleeper"])
         adjectives, nouns = LEXICON[node_type if node_type in LEXICON else "ally"]
         label = f"{random.choice(adjectives)} {random.choice(nouns)}"
