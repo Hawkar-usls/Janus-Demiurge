@@ -104,10 +104,11 @@ def assess(root: Path) -> dict:
     server = trees["server"]
     autonomy = _class(trees["autonomy"], "HrainAutonomy")
     checks = {}
-    save_endpoint = next(
-        (n for n in server.body if isinstance(n, ast.AsyncFunctionDef)
-         and n.name == "handle_save_state"), None
-    )
+    save_handlers = [
+        n for n in server.body if isinstance(n, ast.AsyncFunctionDef)
+        and n.name == "handle_save_state"
+    ]
+    save_endpoint = save_handlers[0] if len(save_handlers) == 1 else None
     if save_endpoint is None:
         checks["server_wholesale_save_hold"] = False
     else:
@@ -128,11 +129,31 @@ def assess(root: Path) -> dict:
             and "persist_state" not in handler_dump
             and "request.json" not in server_response
         )
-    routes = ast.unparse(server)
+    routes = [
+        (n.func.attr, n.args)
+        for n in ast.walk(server)
+        if isinstance(n, ast.Call)
+        and isinstance(n.func, ast.Attribute)
+        and isinstance(n.func.value, ast.Name)
+        and n.func.value.id == "web"
+        and n.func.attr in ("get", "post")
+        and len(n.args) >= 2
+    ]
+    def _route_for(verb: str, url: str, handler: str) -> bool:
+        return sum(
+            method == verb and isinstance(args[0], ast.Constant)
+            and args[0].value == url
+            and isinstance(args[1], ast.Name) and args[1].id == handler
+            for method, args in routes
+        ) == 1
     checks["server_ui_read_route_retained"] = (
-        "'/api/hrain/state'" in routes
-        and "'/api/hrain/save'" in routes
-        and "handle_get_state" in routes
+        _route_for("get", "/api/hrain/state", "handle_get_state")
+        and _route_for("post", "/api/hrain/save", "handle_save_state")
+        and sum(
+            method == "post" and isinstance(args[0], ast.Constant)
+            and args[0].value == "/api/hrain/save"
+            for method, args in routes
+        ) == 1
     )
     compressor = _method(graph, "compress_clusters")
     checks["compression_hold"] = (
