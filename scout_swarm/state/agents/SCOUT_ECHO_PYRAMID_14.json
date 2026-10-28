@@ -2,7 +2,7 @@
   "schema": "janus.demiurge.scout_agent.report.v2.spiral",
   "agent_id": "SCOUT_ECHO_PYRAMID_14",
   "role": "ACOUSTIC_RECON",
-  "created_at_utc": "2026-10-28T13:29:39Z",
+  "created_at_utc": "2026-10-28T22:49:33Z",
   "status": "DEGRADED_MODEL_PRECHECK_UNAVAILABLE",
   "target": {
     "repository": "Hawkar-usls/Echo-Pyramid",
@@ -12,8 +12,8 @@
   "repository_snapshot": {
     "target_repo": "Hawkar-usls/Echo-Pyramid",
     "target_ref": "main",
-    "target_commit": "ac5317ac0d5289dc9babc1073dc3474aecbec9fa",
-    "file_count": 34,
+    "target_commit": "b0d04d1c8f7a4ea19a8da830220607a441f37f24",
+    "file_count": 35,
     "top_level": [
       ".github",
       ".janus",
@@ -26,6 +26,7 @@
       "tools"
     ],
     "recent_commits": [
+      "b0d04d1c8f7a4ea19a8da830220607a441f37f24\t2026-10-28T20:50:26+02:00\tBind Echo-Pyramid to fail-closed JANUS cross-organ provenance contour (#6)",
       "ac5317ac0d5289dc9babc1073dc3474aecbec9fa\t2026-10-17T23:48:24+03:00\tReplace legacy Beetle latest-only receiver with ordered durable ACK inbox (#5)",
       "b687692692721e4039af7fd5d31d808a66dc1f8b\t2026-09-11T06:33:57+03:00\tAdd JANUS Beetle discovery memory receiver",
       "f1f8ad559c6249ff7a72b8b711c2363bb4200ef9\t2026-08-25T02:25:24+03:00\tJoin JANUS Federated Organism v1.1",
@@ -34,8 +35,7 @@
       "ae6ccc3610ac477f4cfdcab92c4204ccd5ebee7c\t2026-08-20T13:59:39+03:00\techo-pyramid: add underwater acoustic fingerprint recipe",
       "01292707903c91280e2aa980d6f0cc44afcf68aa\t2026-08-19T18:41:29+03:00\tCI: tolerate intentional no-USB queue helper warning",
       "de261db761b18219c8f0f267de857405f59afb8d\t2026-08-19T18:40:45+03:00\tKeep no-USB compose smoke focused on syntax and symbols",
-      "9b2ccc0838227cfdea575826546c265cf7fb93a0\t2026-08-19T18:38:51+03:00\tHarden reciprocal link workflow after promotion",
-      "749ae9399c670e12859cc4261293cbe0736abb12\t2026-08-19T18:34:04+03:00\tPromote reciprocal resonant Cosmos DemiHead Voice link metadata"
+      "9b2ccc0838227cfdea575826546c265cf7fb93a0\t2026-08-19T18:38:51+03:00\tHarden reciprocal link workflow after promotion"
     ],
     "selected_sources": [
       {
@@ -45,6 +45,10 @@
       {
         "path": "README.md",
         "excerpt": "# Echo-Pyramid — JANUS physical voice body\n\n`Echo-Pyramid` is the hardware-facing JANUS voice node for **M5Stack Echo Pyramid + Atom Matrix**.\n\nIt joins three independent authorities without collapsing their responsibilities:\n\n1. **Hardware** — `m5stack/M5Echo-Pyramid`: ES7210 microphone/AEC, ES8311 codec, AW87559 amplifier, SI5351 clock and STM32 touch/RGB.\n2. **Swarm body** — `Hawkar-usls/janus-distributed-ai-swarm/firmware/pyramid/ATOM_MATRIX_Pyramid.ino`: Bluetooth A2DP, approval gate, UI/touch, ESP-NOW worker and audio-priority scheduling.\n3. **Voice language** — `Hawkar-usls/The-Voice-of-Janus`: larynx/TTS upstream and the deterministic Pyramid Language acoustic operator.\n\n```text\nTEXT / PHONE / MIC / MUSIC\n          |\n          v\nordinary source PCM\n          |\n          v\nPYRAMID LANGUAGE v0.3\n          |\n          v\nphysical Echo Pyramid speaker path\n```\n\nThe source remains the source: speech is not replaced by tones and music is not replaced by a synthetic drone.\n\n```text\nORDINARY_AUDIO_PCM\n  -> SAME_SOURCE_AUDIO_WITH_PYRAMID_ACOUSTIC_COLORATION\n```\n\n## Current physical path\n\n```text\nordinary JANUS voice / music / Bluetooth PCM\n        |\n        v\nexisting JANUS safe gain + mono queue\n        |\n        v\njanus_audio PCM block boundary\n        |\n        +--> apply queued Pyramid control request\n        |\n        v\n119 Hz peaking EQ\n        |\n        v\n117 / 119 / 121 Hz resonator bank\n        |\n        v\ngeometry-derived room tail\n        |\n        v\ndry/wet mix -> soft limiter\n        |\n        v\nruntime Pyramid-space depth crossfade\n        |\n        v\nreal-time audio budget guard\n        |\n        v\nM5EchoPyramid::write()\n        |\n        v\nES8311 -> AW87559 -> speaker\n```\n\nThe DSP runs in the existing `janus_audio` playback task immediately before `ep.write()`. It does **not** create a second I2S owner and does not move floating-point room processing into the Bluetooth callback.\n\n## Language v0.3 and embedded revision\n\nThe acoustic language remains:\n\n```text\nPYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3\n```\n\nThe current bounded physical implementation is:\n\n```text\nPYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3/ESP32-r2\n```\n\n`ESP32-r2` is an implementation revision, not a new language version. The canonical acoustic parameters stay fixed:\n\n```text\nanchor band:          117–121 Hz\ncenter:               119 Hz\nQ:                    29.75\npeaking gain:         +11.5 dB\nanchor decay:         1.65 s\nresonators:           117 / 119 / 121 Hz\nroom geometry:        10.45 x 5.20 x 5.80 m\nspeed of sound:       343 m/s\nroom decay:           0.78\nwet / dry:            0.72 / 0.62\nmain sample rate:     44.1 kHz\n```\n\n## Embedded room-tail adaptation\n\nThe EQ and 117/119/121 resonators stay at full **44.1 kHz**. Only the geometry-derived room tail is evaluated at **11.025 kHz** to bound classic ESP32 SRAM/CPU use.\n\n```text\n672 + 334 + 373 + 354 = 1733 PCM16 samples\n1733 * 2 bytes = 3466 bytes\n```\n\nThe reference delay damping is `0.22` at 44.1 kHz. `ESP32-r2` compensates for the four-sample room update interval with:\n\n```text\nd_embedded = d_source^4 = 0.22^4 = 0.00234256\n```\n\nThis preserves the recurrence persistence more closely in wall-clock time instead of stretching it by the decimation factor.\n\n## Runtime depth\n\nThe DSP exposes `setAmountPercent(0..100)`:\n\n- `100%` — full canonical Pyramid Language v0.3 effect;\n- `50%` — source/effect midpoint;\n- `0%` — dry output while acoustic state still advances;\n- hard bypass — DSP disabled entirely.\n\nDepth changes ramp over the next PCM block to avoid an abrupt discontinuity.\n\n## One owner for mutable DSP state\n\nExternal control never resets resonators or delay buffers directly from `loopTask`/USB while `janus_audio` may be using them.\n\nThe physical runtime uses a `portMUX`-guarded request mailbox:\n\n```text\nUSB / future local controller\n        |\n        v\npending enable / depth / failsafe-clear request\n        |\n        v\njanus_audio takes request at next PCM block boundary\n        |\n        v\nDSP mutable state changes under one runtime owner\n```\n\nInvariant:\n\n```text\nDSP_MUTABLE_STATE_HAS_ONE_RUNTIME_OWNER\n```\n\n`PYR?` reports both current and pending control state so a queued command is visible before the next audio block applies it.\n\n## Audio-budget failsafe\n\nThe effect is subordinate to clean audio transport:\n\n```text\nAUDIO_CONTINUITY_HAS_PRIORITY_OVER_EFFECT\n```\n\nA 256-frame block at 44.1 kHz represents roughly **5804 µs**. The default guard is:\n\n```text\nJANUS_PYRAMID_DSP_FAILSAFE = 1\nJANUS_PYRAMID_DSP_OVER_BUDGET_TRIP = 3\n```\n\nThree consecutive DSP blocks at or above their PCM-time budget trip the physical layer to dry bypass. Future queued PCM is left untouched; a one-time DSP reset is performed from the main loop only after the trip guarantees new audio calls return dry.\n\n```text\nPYRAMID_LANGUAGE_FAILSAFE | DRY_BYPASS reason=DSP_OVER_BUDGET ...\n```\n\nNo acoustic parameter is silently changed in response to load. `PYR=ON` queues an explicit failsafe clear + clean DSP re-enable at the next PCM block boundary; reboot also clears the trip.\n\n## Local USB A/B control\n\nWhen the canonical swarm firmware does not already consume Serial input, the composed runtime enables:\n\n```text\nPYR?        report current + pending DSP/failsafe state\nPYR=0       queue dry-output depth\nPYR=25      queue 25% Pyramid-space depth\nPYR=50      queue 50% depth\nPYR=100     queue full v0.3 depth\nPYR=OFF     queue hard bypass\nPYR=ON      queue failsafe clear + DSP enable\n```\n\nThis is local USB tuning, **not network control**.\n\nSerial input has one owner. If a future swarm firmware begins consuming `Serial.available()` / `Serial.read()`, the composer fails closed. Intentional fallback:\n\n```bash\npython tools/compose_swarm_firmware.py \\\n  ../janus-distributed-ai-swarm/firmware/pyramid/ATOM_MATRIX_Pyramid.ino \\\n  build/ATOM_MATRIX_Pyramid_JanusVoice.ino \\\n  --no-usb-control\n```\n\nThat mode preserves DSP, timing telemetry, the request mailbox and the autonomous audio-budget failsafe without consuming Serial input.\n\n## Real-time telemetry\n\nThe composed runtime emits a 10-second summary:\n\n```text\nPYRAMID_LANGUAGE |\n  enabled=1\n  depth=100%\n  failsafe=0\n  trips=0\n  anchor=117/119/121Hz\n  dsp_ema_us=...\n  dsp_peak_us=...\n  budget_us=5804\n  dsp_load=...%\n  delay_bytes=3466\n  heap=...\n```\n\nOnly real-device telemetry can establish the physical Bluetooth-era CPU margin.\n\n## Compose the full swarm firmware\n\n```bash\npython tools/compose_swarm_firmware.py \\\n  ../janus-distributed-ai-swarm/firmware/pyramid/ATOM_MATRIX_Pyramid.ino \\\n  build/ATOM_MATRIX_Pyramid_JanusVoice.ino\n```\n\nThe composer is fail-closed. It requires unique structural anchors, checks Serial-input ownership, never overwrites the canonical swarm source, copies the current DSP/profile headers beside the generated `.ino`, and emits a SHA-256 receipt.\n\nCurrent receipt schema:\n\n```text\njanus.echo_pyramid.compose_receipt.v2.6\n```\n\n## Generated Arduino source bundle\n\n`.github/workflows/compose-firmware.yml` independ"
+      },
+      {
+        "path": ".janus/JANUS_CROSS_ORGAN_SOURCE_LINK.json",
+        "excerpt": "{\n  \"schema\": \"janus.organ.cross_organ_source_link.v1\",\n  \"organ\": \"Hawkar-usls/Echo-Pyramid\",\n  \"lane\": \"NOTIFY\",\n  \"purpose\": \"ACOUSTIC_RESEARCH_INTERFACE\",\n  \"source_state\": \"NOTIFICATION_METADATA_DISCOVERY\",\n  \"blocked_claim\": \"NO_PHYSICAL_SIGNAL_OR_DELIVERY_CLAIM\",\n  \"source_contracts\": [\n    {\n      \"repo\": \"Hawkar-usls/janus-meta-registry\",\n      \"path\": \"data/integrations/contour/LATEST.json\",\n      \"expected_status\": \"PASS_PUBLIC_SOURCE_LINKS_ONLY\",\n      \"pending_until_source_witness_published\": true\n    }\n  ],\n  \"link_type\": \"RECIPROCAL_READ_ONLY_SOURCE_POINTER\",\n  \"authority\": {\n    \"observe_public_provenance\": true,\n    \"submit_rowan_job\": false,\n    \"spend_rowan_credits\": false,\n    \"trigger_external_workflows\": false,\n    \"change_heLIOS_compute_lease\": false,\n    \"authorize_market_payment\": false,\n    \"issue_operator_command\": false,\n    \"promote_scientific_claim\": false,\n    \"publish_private_data\": false\n  },\n  \"delivery_witness\": \"NOT_ATTESTED_SOURCE_LINK_ONLY\",\n  \"source_sha_policy\": \"SOURCE_HASHES_ONLY_NOT_WORLD_TRUTH\",\n  \"registry_reconciliation\": \"INDEPENDENT_WITNESS_REQUIRED\",\n  \"created_utc\": \"2026-10-28\"\n}\n"
       },
       {
         "path": ".janus/JANUS_ORGANISM_LINK.json",
@@ -93,8 +97,8 @@
     "oracle_guidance": null
   },
   "spiral": {
-    "turn": 252,
-    "parent_report_sha256": "94ec30826584d7cfa228aa87dac379ee921c47e589c5aca37df6be2fdd908645",
+    "turn": 253,
+    "parent_report_sha256": "9af457d5386cf1bea2e05e9ade19090a5735a9b287fdafacfbe16e061c970744",
     "previous_target_commit": "ac5317ac0d5289dc9babc1073dc3474aecbec9fa",
     "identity_persistent": true,
     "previous_report_is_evidence": false,
@@ -145,7 +149,7 @@
     "new_lessons": [
       "Shared model preflight blocked synthesis without erasing repository evidence or Scout identity."
     ],
-    "ascent_status": "NO_ASCENT",
+    "ascent_status": "ASCENDED_NEW_EVIDENCE",
     "logical_ring": false
   },
   "model_error": "MODEL_PREFLIGHT:UNAVAILABLE",
@@ -157,7 +161,7 @@
   },
   "janus_agent_token": {
     "scope": "EPHEMERAL_GITHUB_RUN_AGENT",
-    "fingerprint": "3ad50216d5cc4a9f",
+    "fingerprint": "1d612feabac9b4bc",
     "raw_token_persisted": false
   },
   "evidence_gate": {
