@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - 'daddy_keymaster/champion_release.py'
+      - 'daddy_keymaster/quarantine.py'
+      - 'tests/test_champion_quarantine.py'
       - 'daddy_keymaster/CHAMPION_RELEASE.md'
       - 'tests/test_champion_release.py'
       - 'tests/test_champion_release_torch_e2e.py'
@@ -13,6 +15,8 @@ on:
     branches: [main]
     paths:
       - 'daddy_keymaster/champion_release.py'
+      - 'daddy_keymaster/quarantine.py'
+      - 'tests/test_champion_quarantine.py'
       - 'tests/test_champion_release.py'
       - 'tests/test_champion_release_torch_e2e.py'
       - 'tests/test_champion_real_incumbent.py'
@@ -42,7 +46,9 @@ jobs:
       - name: Compile fail-closed controller
         run: python -m py_compile daddy_keymaster/champion_release.py tests/test_champion_release.py
       - name: Run local Git CAS and rollback regression tests (no external network)
-        run: python -m unittest discover -s tests -p 'test_champion_release.py' -v
+        run: |
+          python -m unittest discover -s tests -p 'test_champion_release.py' -v
+          python -m unittest discover -s tests -p 'test_champion_quarantine.py' -v
       - name: Assert production publisher remains sealed
         run: |
           python - <<'PY'
