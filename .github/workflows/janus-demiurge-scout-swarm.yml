@@ -40,6 +40,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       model_status: ${{ steps.probe.outputs.model_status }}
+      failure_reason: ${{ steps.probe.outputs.failure_reason }}
     steps:
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -63,8 +64,7 @@ jobs:
             --no-ask-user \
             --no-color \
             --no-custom-instructions \
-            --no-remote \
-            --no-remote-export \
+            --sync-session=off \
             --disable-builtin-mcps \
             --deny-tool=read \
             --deny-tool=write \
@@ -74,15 +74,22 @@ jobs:
             > model-preflight.out 2>&1
           RC=$?
           cat model-preflight.out
+          FAILURE_REASON='none'
           if grep -q 'quota_exceeded' model-preflight.out; then
             STATUS='QUOTA_EXHAUSTED'
+            FAILURE_REASON='rate_limit'
+          elif grep -Eqi -- '(was removed|unknown option|unknown flag|unrecognized option)' model-preflight.out; then
+            STATUS='UNAVAILABLE'
+            FAILURE_REASON='invalid_cli_argument'
           elif [ "$RC" -eq 0 ] && grep -q 'PASS' model-preflight.out; then
             STATUS='AVAILABLE'
           else
             STATUS='UNAVAILABLE'
+            FAILURE_REASON='unknown'
           fi
           echo "model_status=$STATUS" >> "$GITHUB_OUTPUT"
-          echo "JANUS_SCOUT_MODEL_PREFLIGHT=$STATUS"
+          echo "failure_reason=$FAILURE_REASON" >> "$GITHUB_OUTPUT"
+          echo "JANUS_SCOUT_MODEL_PREFLIGHT=$STATUS reason=$FAILURE_REASON"
           exit 0
 
   plan:
@@ -156,7 +163,8 @@ jobs:
           python tools/demiurge_scout_snapshot_only.py \
             --run-agent '${{ matrix.id }}' \
             --output runtime/${{ matrix.id }}/report.json \
-            --model-status '${{ needs.model_preflight.outputs.model_status }}'
+            --model-status '${{ needs.model_preflight.outputs.model_status }}' \
+            --failure-reason '${{ needs.model_preflight.outputs.failure_reason }}'
       - name: Upload Scout report
         if: always()
         uses: actions/upload-artifact@v4
