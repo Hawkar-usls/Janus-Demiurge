@@ -341,7 +341,7 @@ def collect(config_path: Path, out_dir: Path) -> dict:
             record, pack = collect_repository(contributor, max_bytes, root)
             records.append(record)
             packs.append(pack)
-            (packs_dir / f"{contributor['id']}.txt").write_text(pack, encoding="utf-8")
+            (packs_dir / f"{contributor['id']}.txt").write_bytes(pack.encode("utf-8"))
 
     training_text = "".join(packs)
     training_sha = sha256_bytes(training_text.encode("utf-8"))
@@ -370,7 +370,7 @@ def collect(config_path: Path, out_dir: Path) -> dict:
     if identity["contributor_count"] != required_count or identity["training_bytes"] <= 0:
         raise RuntimeError(f"KEYMASTER_{required_count}_OF_{required_count}_NOT_READY")
 
-    (out_dir / "training.txt").write_text(training_text, encoding="utf-8")
+    (out_dir / "training.txt").write_bytes(training_text.encode("utf-8"))
     (out_dir / "manifest.json").write_text(
         json.dumps(identity, ensure_ascii=False, indent=2, sort_keys=True),
         encoding="utf-8",
