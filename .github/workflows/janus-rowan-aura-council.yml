@@ -1,6 +1,10 @@
 name: JANUS Demiurge AURA Rowan Council
 
 on:
+  workflow_run:
+    workflows: ['JANUS Native Model', 'JANUS Demiurge Conductor v1']
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
   schedule:
     - cron: '45 * * * *'
@@ -25,11 +29,17 @@ concurrency:
 
 jobs:
   council:
+    if: >-
+      ${{ github.event_name != 'workflow_run' ||
+          (github.event.workflow_run.conclusion == 'success' &&
+           github.event.workflow_run.head_branch == 'main' &&
+           github.event.workflow_run.head_repository.full_name == github.repository) }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event_name == 'workflow_run' && 'main' || github.sha }}
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
