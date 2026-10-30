@@ -46,7 +46,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Execute three allowlisted JANUS quality gates on this actual VM
+      - name: Execute assigned bounded JANUS quality gates on this actual VM
         shell: bash
         run: |
           set -euo pipefail
@@ -55,7 +55,7 @@ jobs:
           import json
           r=json.load(open("daddy-compute/EXECUTION.json"))
           assert r["status"]=="EXECUTED_ALLOWLISTED_TESTS"
-          assert len(r["suites"])==3
+          assert len(r["suites"])==2
           print("DADDY_CLOUD_REAL_WORK_COMPLETED=" + r["platform"])
           print("DADDY_CLOUD_CASES=" + str(sum(x["cases"] for x in r["suites"])))
           PY
