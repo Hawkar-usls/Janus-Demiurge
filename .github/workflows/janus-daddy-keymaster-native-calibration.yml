@@ -1,0 +1,249 @@
+name: JANUS DADDY_KEYMASTER Native CPU Calibration
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 4 * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'daddy_keymaster/native_calibration.py'
+      - 'tests/test_daddy_keymaster_native_calibration.py'
+      - 'janus_model/train_registry.py'
+      - '.github/workflows/janus-daddy-keymaster-native-calibration.yml'
+  pull_request:
+    paths:
+      - 'daddy_keymaster/native_calibration.py'
+      - 'tests/test_daddy_keymaster_native_calibration.py'
+      - 'janus_model/train_registry.py'
+      - '.github/workflows/janus-daddy-keymaster-native-calibration.yml'
+
+concurrency:
+  group: janus-daddy-keymaster-native-calibration
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install only native JANUS CPU runtime
+        run: python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Verify native training kernel, safety and pinned incumbent SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p test_daddy_keymaster_native_calibration.py -v
+          python -m unittest -v tests/test_janus_native_model.py
+          python - <<'PY'
+          from daddy_keymaster.native_calibration import canonical_checkpoint
+          from pathlib import Path
+          print('DADDY_NATIVE_PARENT=' + canonical_checkpoint(Path('.')))
+          PY
+      - name: Build exact native registry corpus (same builder as canonical learning)
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/Hawkar-usls/janus-meta-registry.git runtime/meta-registry
+          python -m janus_model.corpus \
+            --registry runtime/meta-registry \
+            --out runtime/corpus \
+            --max-train-bytes 2000000 \
+            --max-holdout-bytes 300000
+          python - <<'PY'
+          from daddy_keymaster.native_calibration import corpus_identity
+          from pathlib import Path
+          m, contract = corpus_identity(Path('.'))
+          print('DADDY_NATIVE_SOURCE=' + m['source_digest'])
+          print('DADDY_NATIVE_FROZEN_CONTRACT=' + contract['contract_sha256'])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: daddy-native-exact-corpus
+          path: |
+            runtime/corpus/train.txt
+            runtime/corpus/holdout.txt
+            runtime/corpus/corpus_manifest.json
+          retention-days: 3
+          if-no-files-found: error
+
+  calibrate:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - arch: x64
+            vm: ubuntu-24.04
+          - arch: arm64
+            vm: ubuntu-24.04-arm
+    runs-on: ${{ matrix.vm }}
+    timeout-minutes: 17
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install native JANUS model on this short-lived worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ matrix.arch }}" = x64 ]; then
+            python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+          else
+            python -m pip install --disable-pip-version-check torch
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: daddy-native-exact-corpus
+          path: runtime/corpus
+      - name: Execute own checkpoint inference and one bounded candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m daddy_keymaster.native_calibration worker \
+            --out runtime/native-worker-status.json
+          python - <<'PY'
+          import json, os
+          arch=os.environ['RUNNER_ARCH']
+          x=json.load(open('runtime/native-calibration/'+arch+'/WORKER.json'))
+          assert x['status']=='EXECUTED_NATIVE_WEIGHT_CALIBRATION'
+          assert x['external_model_used'] is False
+          assert x['auto_write_main'] is False
+          print('JANUS_NATIVE_CPU_MODEL_EXECUTED=' + arch)
+          print('JANUS_NATIVE_CHALLENGER=' + x['candidate_status'])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-calibration-${{ matrix.arch }}
+          path: runtime/native-calibration/${{ runner.arch }}/
+          retention-days: 3
+          if-no-files-found: error
+
+  independent-evaluation:
+    needs: calibrate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Load native CPU evaluator
+        run: python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+      - uses: actions/download-artifact@v4
+        with:
+          name: daddy-native-exact-corpus
+          path: runtime/corpus
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: native-calibration-*
+          path: runtime/native-inputs
+          merge-multiple: false
+      - name: Independently compare challengers with the incumbent on protected data
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m daddy_keymaster.native_calibration audit \
+            --inputs runtime/native-inputs \
+            --out runtime/native-audit/AUDIT.json
+          python - <<'PY'
+          import json
+          a=json.load(open('runtime/native-audit/AUDIT.json'))
+          assert len(a['workers'])==2
+          assert a['main_checkpoint_mutated'] is False
+          assert a['automatic_production_promotion'] is False
+          assert a['authority_delta']==0 and a['paid_resources'] is False
+          print('DADDY_NATIVE_CLOUD_BEST_GATE=' + a['status'])
+          print('DADDY_NATIVE_CANONICAL_MODEL=' + a['incumbent_checkpoint_sha256'])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: daddy-native-independent-calibration-receipt
+          path: runtime/native-audit/AUDIT.json
+          retention-days: 14
+          if-no-files-found: error
+
+  archive-reviewed:
+    if: github.event_name != 'pull_request'
+    needs: independent-evaluation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: daddy-native-independent-calibration-receipt
+          path: runtime/native-audit
+      - name: Verify immutable source binding and no automatic main mutation
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          from daddy_keymaster.broker import sha
+          a=json.loads(Path('runtime/native-audit/AUDIT.json').read_text())
+          b={k:v for k,v in a.items() if k!='receipt_sha256'}
+          assert a['receipt_sha256']==sha(b)
+          assert a['commit']==os.environ['GITHUB_SHA']
+          assert a['run_id']==os.environ['GITHUB_RUN_ID']
+          assert a['attempt']==os.environ['GITHUB_RUN_ATTEMPT']
+          assert a['status'] in ('INCUMBENT_RETAINED','BEST_CANDIDATE_REVIEW_ONLY')
+          assert a['automatic_production_promotion'] is False
+          assert a['authority_delta']==0 and a['paid_resources'] is False
+          print('DADDY_NATIVE_ARCHIVE_GATE=PASS')
+          PY
+      - name: Persist independently verified calibration history outside main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'janus-daddy-keymaster[bot]'
+          git config user.email 'actions@users.noreply.github.com'
+          BRANCH='janus/daddy-keymaster-state'
+          git fetch --no-tags origin "$BRANCH"
+          git worktree add -b daddy-native-state ../daddy-native-state FETCH_HEAD
+          DEST='../daddy-native-state/daddy_keymaster/state/native'
+          mkdir -p "$DEST/receipts"
+          ID="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          [[ "$ID" =~ ^[0-9]{5,}-[1-9][0-9]*$ ]]
+          if [ -f "$DEST/receipts/$ID.json" ]; then
+            cmp --silent "$DEST/receipts/$ID.json" runtime/native-audit/AUDIT.json || exit 1
+          else
+            cp runtime/native-audit/AUDIT.json "$DEST/receipts/$ID.json"
+          fi
+          cp runtime/native-audit/AUDIT.json "$DEST/LATEST.json"
+          git -C ../daddy-native-state add -f "daddy_keymaster/state/native/receipts/$ID.json"
+          git -C ../daddy-native-state add -f daddy_keymaster/state/native/LATEST.json
+          git -C ../daddy-native-state diff --cached --check
+          if ! git -C ../daddy-native-state diff --cached --quiet; then
+            git -C ../daddy-native-state commit -m "daddy-keymaster: archive independent native calibration $ID"
+            git -C ../daddy-native-state push origin HEAD:"$BRANCH"
+          fi
+          echo 'DADDY_NATIVE_CALIBRATION_DURABLE_ARCHIVE=PASS'
