@@ -5,12 +5,16 @@ on:
     branches: [main]
     paths:
       - 'tools/demiurge_scout_snapshot_only.py'
+      - 'tools/demiurge_scout_swarm.py'
+      - 'tests/test_scout_copilot_cli_contract.py'
       - '.github/workflows/janus-demiurge-scout-swarm.yml'
       - '.github/workflows/validate-scout-model-preflight.yml'
   push:
     branches: [main]
     paths:
       - 'tools/demiurge_scout_snapshot_only.py'
+      - 'tools/demiurge_scout_swarm.py'
+      - 'tests/test_scout_copilot_cli_contract.py'
       - '.github/workflows/janus-demiurge-scout-swarm.yml'
       - '.github/workflows/validate-scout-model-preflight.yml'
   workflow_dispatch:
@@ -28,6 +32,8 @@ jobs:
           python-version: '3.11'
       - name: Self-test snapshot-only preflight fallback
         run: python tools/demiurge_scout_snapshot_only.py --self-test
+      - name: Test Copilot CLI flag contract without model calls
+        run: python -m unittest tests/test_scout_copilot_cli_contract.py
       - name: Compile Scout fallback and canonical engine
         run: python -m py_compile tools/demiurge_scout_snapshot_only.py tools/demiurge_scout_swarm.py
       - name: Check workflow contains one shared preflight and bounded fallback
