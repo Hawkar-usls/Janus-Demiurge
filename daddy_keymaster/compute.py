@@ -30,7 +30,9 @@ OVERLAP = "test_rex_code_need_bridge.py"
 SOURCES = ("daddy_keymaster/compute.py", "daddy_keymaster/broker.py",
            "daddy_keymaster/providers.py", "daddy_keymaster/POLICY.json",
            "tests/test_daddy_keymaster.py", "tests/test_daddy_keymaster_providers.py",
-           "tests/test_rex_code_need_bridge.py")
+           "tests/test_rex_code_need_bridge.py",
+           "tests/test_daddy_keymaster_compute.py",
+           ".github/workflows/janus-daddy-keymaster-compute.yml")
 ARCH = ("X64", "ARM64")
 COMMIT = re.compile(r"^[0-9a-f]{40}$")
 RUN = re.compile(r"^[0-9]{5,}$")
@@ -45,7 +47,7 @@ def manifest(root):
 def check_env(env, *, allow_arch=True):
     if (env.get("GITHUB_ACTIONS") != "true" or
         env.get("GITHUB_REPOSITORY") != "Hawkar-usls/Janus-Demiurge" or
-        env.get("GITHUB_EVENT_NAME") not in ("push", "pull_request", "workflow_dispatch") or
+        env.get("GITHUB_EVENT_NAME") not in ("push", "pull_request", "workflow_dispatch", "schedule") or
         not COMMIT.fullmatch(env.get("GITHUB_SHA", "")) or
         not RUN.fullmatch(env.get("GITHUB_RUN_ID", "")) or
         not ATTEMPT.fullmatch(env.get("GITHUB_RUN_ATTEMPT", "")) or
