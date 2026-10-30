@@ -1,6 +1,8 @@
 name: JANUS DADDY_KEYMASTER Two Authorized Cloud Compute Workers
 
 on:
+  schedule:
+    - cron: '37 2,14 * * *'
   workflow_dispatch:
   push:
     branches: [main]
@@ -18,7 +20,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: janus-daddy-keymaster-registry
+  group: janus-daddy-keymaster-compute
   cancel-in-progress: false
 
 jobs:
@@ -26,6 +28,7 @@ jobs:
     name: JANUS real ephemeral CPU worker (${{ matrix.arch }})
     strategy:
       fail-fast: false
+      max-parallel: 2
       matrix:
         include:
           - arch: x64
@@ -60,7 +63,7 @@ jobs:
         with:
           name: daddy-compute-${{ matrix.arch }}
           path: daddy-compute/EXECUTION.json
-          retention-days: 14
+          retention-days: 7
           if-no-files-found: error
 
   independent-auditor:
@@ -108,7 +111,7 @@ jobs:
         with:
           name: daddy-compute-independent-audit
           path: daddy-compute/AUDIT.json
-          retention-days: 14
+          retention-days: 7
           if-no-files-found: error
 
   persist-audited-evidence:
