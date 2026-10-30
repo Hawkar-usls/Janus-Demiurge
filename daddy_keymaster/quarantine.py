@@ -93,6 +93,7 @@ def build(audit_path: Path, inputs_root: Path, output_root: Path, *,
                 w.get('commit') == commit and
                 str(w.get('run_id')) == run_id and str(w.get('attempt')) == attempt and
                 w.get('architecture') == arch and
+                w.get('status') == 'EXECUTED_NATIVE_WEIGHT_CALIBRATION' and
                 w.get('candidate_status') == 'PROMOTED' and
                 w.get('candidate_checkpoint_sha256') == candidate_sha and
                 w.get('parent_checkpoint_sha256') ==
