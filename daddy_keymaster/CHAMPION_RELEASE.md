@@ -33,3 +33,49 @@ The regression suite uses a **temporary local bare Git remote**, no access to re
 - Trusted evaluator/issuer CI binding, candidate retention beyond short artifact expiry, canonical writer concurrency integration, reviewed promotion permissions, consumer ACK and post-promotion rollback monitoring.
 
 **Current real decision:** calibration run `41139181887` is `INCUMBENT_RETAINED`. Nothing in this PR promotes or replaces the active checkpoint.
+
+## R2 candidate quarantine (new, no deployment)
+
+The existing scheduled/PR native-calibration workflow now runs the
+`daddy_keymaster.quarantine` verifier **only after** the independent native
+auditor. It is a narrow bytes-custody mechanism, not a new issuer:
+
+- `INCUMBENT_RETAINED`: produces only a `NO_ACCEPTED_WINNER` local receipt,
+  exports **no** candidate checkpoint. The production model is untouched.
+- `BEST_CANDIDATE_REVIEW_ONLY`: checks the audit digest, exact GitHub run/
+  attempt/commit, two-worker quorum, worker/training receipt checksums, source,
+  evaluation-contract SHA, parent SHA, candidate SHA and size. Then copies
+  `CANDIDATE.pt` into a `QUARANTINED_REVIEW_ONLY` artifact with SHA-bound
+  metadata. No Git push or `contents:write` permission.
+- Artifact retention is **14 days**, including exact corpus and worker artifacts,
+  to permit replay. Retention is bounded; it may consume GitHub artifact storage
+  quota and does not constitute durable, externally witnessed preservation.
+- Any absent, expired or conflicting artifact is HOLD. The quarantine receipt
+  explicitly asserts `independent_blind_final_proven:false` and
+  `automatic_production_promotion:false`.
+
+## Evidence and independent verification
+
+- Owner-authorized Yaksa Windows: 13 CAS/audit safety tests PASS;
+  one actual PyTorch training→gate→preview publish→rollback E2E PASS;
+  three **real committed production incumbent** negative controls PASS;
+  six quarantine receipt/bytes/replay safety tests PASS.
+- Current canonical `promoted.pt` validated as SHA-256
+  `fc767adb812ac3bea54c44cbccfa9680941f95e2c8a77120559b41da044d9463`
+  with a normal `weights_only=True` load, forward loss and short inference.
+  A candidate with identical bytes is explicitly rejected.
+- The local isolated trained checkpoint improved synthetic losses on three
+  held-out *fixture* sets, and the prior R2 version passed on Linux x64 and ARM64.
+  This is engineering verification, NOT a production champion result.
+- The release preview itself now rejects all non-local Git remotes
+  (`CHAMPION_REAL_REMOTE_PUBLISH_FORBIDDEN`) even if an untrusted caller
+  self-labels its report `TRUSTED_WORKFLOW_VERIFIED`.
+
+**True production admission remains blocked** until: independent *prospective*
+blind final material under separate custody; contamination audit against the
+canonical corpus, historical weights and replayed experiments; trusted identity
+and artifact verification in a least-privileged issuer; secure checkpoint
+deserialization (PR #301 reconciliation); actual nonregressing candidate
+measured against the current canonical checkpoint; current-head CAS; and
+consumer ACK/rollback supervision. Do not interpret any synthetic or rehearsal
+receipt as authority to promote.
