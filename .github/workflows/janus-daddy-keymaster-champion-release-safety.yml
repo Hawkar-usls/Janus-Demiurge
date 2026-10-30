@@ -1,0 +1,51 @@
+name: JANUS DADDY_KEYMASTER Champion Release Safety
+
+on:
+  pull_request:
+    paths:
+      - 'daddy_keymaster/champion_release.py'
+      - 'daddy_keymaster/CHAMPION_RELEASE.md'
+      - 'tests/test_champion_release.py'
+      - '.github/workflows/janus-daddy-keymaster-champion-release-safety.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'daddy_keymaster/champion_release.py'
+      - 'tests/test_champion_release.py'
+      - '.github/workflows/janus-daddy-keymaster-champion-release-safety.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-daddy-keymaster-champion-release-safety-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  admission-negative-controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile fail-closed controller
+        run: python -m py_compile daddy_keymaster/champion_release.py tests/test_champion_release.py
+      - name: Run local Git CAS and rollback regression tests (no external network)
+        run: python -m unittest discover -s tests -p 'test_champion_release.py' -v
+      - name: Assert production publisher remains sealed
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('daddy_keymaster/champion_release.py').read_text()
+          assert 'CHAMPION_PUBLISH_CLI_SEALED_UNTIL_TRUSTED_BLIND_ISSUER' in s
+          assert "git(root, 'push', 'origin', 'HEAD:main')" in s
+          assert 'force-with-lease' not in s and '--force' not in s
+          print('CHAMPION_RELEASE_PRODUCTION_WRITE_DISABLED=PASS')
+          PY
