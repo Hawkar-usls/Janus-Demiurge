@@ -90,6 +90,7 @@ def authoritative_state(root):
 
 def verify_audit(audit, incumbent_sha, candidate_sha):
     """Check the original x64/ARM64 receipt; NOT an identity signature."""
+    require(candidate_sha != incumbent_sha, 'CHAMPION_CANDIDATE_IDENTICAL_TO_INCUMBENT')
     require(audit.get('schema') == AUDIT_SCHEMA and
             audit.get('receipt_sha256') == sha({k: v for k, v in audit.items()
                                                  if k != 'receipt_sha256'}),
@@ -153,6 +154,8 @@ def assess(root, candidate_path, audit_path, corpus_manifest_path,
     final = read_json(final_manifest_path)
     path = Path(final_holdout_path)
     require(final.get('schema') == 'janus.daddy_keymaster.blind_final.v1' and
+            final.get('adaptive_holdout_sha256') == hash_file(adaptive_path) and
+            final.get('anchor_sha256') == hash_file(DEFAULT_ANCHOR) and
             final.get('training_excluded') is True and
             final.get('selection_excluded') is True and
             final.get('checkpoint_source_sha256') == parent_sha and
@@ -231,6 +234,16 @@ def journaled_state(old, report):
     return state
 
 
+def _require_local_preview_remote(root):
+    # This R2 proposal is a TEST ONLY publisher. No GitHub remote may be changed,
+    # regardless of fabricated report flags or caller-supplied enable=True.
+    # A future separately reviewed, authenticated issuer is required for main.
+    remote = git(root, 'remote', 'get-url', 'origin')
+    local = Path(remote)
+    require(local.is_absolute() and local.is_dir() and (local / 'HEAD').is_file(),
+            'CHAMPION_REAL_REMOTE_PUBLISH_FORBIDDEN')
+
+
 def publish(root, candidate_path, report, expected_head, *, enable=False):
     """Only a separate authenticated issuer may invoke this in an isolated checkout.
 
@@ -239,6 +252,7 @@ def publish(root, candidate_path, report, expected_head, *, enable=False):
     """
     root = Path(root).resolve()
     require(enable is True, 'CHAMPION_PUBLISH_DISABLED_BY_DEFAULT')
+    _require_local_preview_remote(root)
     source_preflight(root, expected_head)
     state, parent_sha = authoritative_state(root)
     require(parent_sha == report.get('parent_checkpoint_sha256') and
