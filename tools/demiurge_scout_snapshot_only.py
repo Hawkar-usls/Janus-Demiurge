@@ -26,6 +26,7 @@ def build_report(
     *,
     model_status: str,
     token_fp: str,
+    failure_reason: str = "unknown",
 ) -> Dict[str, Any]:
     spiral_context = engine.inherited_spiral_context(previous)
     target_available = bool(snapshot.get("target_commit")) and not snapshot.get("snapshot_error")
@@ -86,6 +87,7 @@ def build_report(
             "logical_ring": False,
         },
         "model_error": model_error,
+        "synthesis_failure_reason": (failure_reason if target_available else "upstream_tool_failure"),
         "model_preflight": {
             "status": str(model_status or "UNAVAILABLE").upper(),
             "scope": "ONE_SHARED_CHECK_PER_SWARM_RUN",
@@ -107,7 +109,7 @@ def build_report(
     }
 
 
-def run_snapshot_only(agent_id: str, output: Path, model_status: str) -> None:
+def run_snapshot_only(agent_id: str, output: Path, model_status: str, failure_reason: str = "unknown") -> None:
     agents = engine.agent_map()
     if agent_id not in agents:
         raise SystemExit(f"UNKNOWN_AGENT:{agent_id}")
@@ -129,7 +131,7 @@ def run_snapshot_only(agent_id: str, output: Path, model_status: str) -> None:
                 "snapshot_error": f"{type(exc).__name__}:{exc}"[:2000],
             }
 
-    report = build_report(agent, previous, snapshot, model_status=model_status, token_fp=token_fp)
+    report = build_report(agent, previous, snapshot, model_status=model_status, token_fp=token_fp, failure_reason=failure_reason)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(
@@ -149,6 +151,7 @@ def self_test() -> None:
     snapshot = {"target_commit": "abc", "target_repo": "owner/repo", "target_ref": "main"}
     report = build_report(agent, None, snapshot, model_status="QUOTA_EXHAUSTED", token_fp="deadbeef")
     assert report["status"] == "DEGRADED_MODEL_QUOTA_EXHAUSTED"
+    assert report["synthesis_failure_reason"] == "unknown"
     assert report["model_preflight"]["model_call_attempted_by_this_scout"] is False
     assert report["evidence_gate"]["repository_observation_bound_to_commit"] is True
     assert report["spiral"]["identity_persistent"] is True
@@ -160,6 +163,7 @@ def main() -> int:
     parser.add_argument("--run-agent")
     parser.add_argument("--output")
     parser.add_argument("--model-status", default="UNAVAILABLE")
+    parser.add_argument("--failure-reason", default="unknown")
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
     if args.self_test:
@@ -167,7 +171,7 @@ def main() -> int:
         return 0
     if not args.run_agent or not args.output:
         parser.error("--run-agent and --output are required")
-    run_snapshot_only(args.run_agent, Path(args.output), args.model_status)
+    run_snapshot_only(args.run_agent, Path(args.output), args.model_status, args.failure_reason)
     return 0
 
 
