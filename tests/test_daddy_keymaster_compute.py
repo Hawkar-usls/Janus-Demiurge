@@ -96,7 +96,7 @@ class RealComputeTests(unittest.TestCase):
 
     def test_bad_env_rejected(self):
         for key,val in [("GITHUB_REPOSITORY","attacker/repo"),("GITHUB_ACTIONS","false"),
-                        ("GITHUB_EVENT_NAME","schedule"),("RUNNER_ARCH","UNKNOWN")]:
+                        ("GITHUB_EVENT_NAME","workflow_run"),("RUNNER_ARCH","UNKNOWN")]:
             env=dict(ENV)
             env[key]=val
             with self.assertRaises(ValueError):
