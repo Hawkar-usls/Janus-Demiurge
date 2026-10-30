@@ -34,8 +34,8 @@ def build_report(
     if target_available:
         normalized_status = str(model_status or "UNAVAILABLE").upper()
         status = (
-            "DEGRADED_MODEL_QUOTA_EXHAUSTED"
-            if normalized_status == "QUOTA_EXHAUSTED"
+            "DEGRADED_MODEL_POLICY_HOLD" if normalized_status == "SKIPPED_POLICY"
+            else "DEGRADED_MODEL_QUOTA_EXHAUSTED" if normalized_status == "QUOTA_EXHAUSTED"
             else "DEGRADED_MODEL_PRECHECK_UNAVAILABLE"
         )
         analysis = {
@@ -152,6 +152,9 @@ def self_test() -> None:
     report = build_report(agent, None, snapshot, model_status="QUOTA_EXHAUSTED", token_fp="deadbeef")
     assert report["status"] == "DEGRADED_MODEL_QUOTA_EXHAUSTED"
     assert report["synthesis_failure_reason"] == "unknown"
+    held = build_report(agent, None, snapshot, model_status="SKIPPED_POLICY", token_fp="deadbeef", failure_reason="policy_hold")
+    assert held["status"] == "DEGRADED_MODEL_POLICY_HOLD"
+    assert held["synthesis_failure_reason"] == "policy_hold"
     assert report["model_preflight"]["model_call_attempted_by_this_scout"] is False
     assert report["evidence_gate"]["repository_observation_bound_to_commit"] is True
     assert report["spiral"]["identity_persistent"] is True
