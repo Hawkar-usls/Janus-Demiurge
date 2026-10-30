@@ -23,6 +23,15 @@ on:
       - 'tests/test_spiral_evolution.py'
       - 'tests/test_scout_observation_health.py'
   workflow_dispatch:
+    inputs:
+      synthesis_rollout:
+        description: "Scoped model usage; default snapshots only, explicit canary at one agent"
+        type: choice
+        required: true
+        default: snapshot_only
+        options:
+          - snapshot_only
+          - canary
   schedule:
     - cron: '41 */6 * * *'
 
@@ -39,17 +48,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      model_status: ${{ steps.probe.outputs.model_status }}
+      model_status: ${{ steps.probe.outputs.model_status || 'SKIPPED_POLICY' }}
+      failure_reason: ${{ steps.probe.outputs.failure_reason || 'policy_hold' }}
     steps:
       - name: Set up Node
+        if: github.event_name == 'workflow_dispatch' && inputs.synthesis_rollout == 'canary'
         uses: actions/setup-node@v4
         with:
           node-version: '22'
       - name: Install GitHub Copilot CLI
+        if: github.event_name == 'workflow_dispatch' && inputs.synthesis_rollout == 'canary'
         run: |
           npm install -g @github/copilot
           copilot --version
       - name: Probe model availability once for the whole swarm
+        if: github.event_name == 'workflow_dispatch' && inputs.synthesis_rollout == 'canary'
         id: probe
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -63,8 +76,7 @@ jobs:
             --no-ask-user \
             --no-color \
             --no-custom-instructions \
-            --no-remote \
-            --no-remote-export \
+            --sync-session=off \
             --disable-builtin-mcps \
             --deny-tool=read \
             --deny-tool=write \
@@ -74,15 +86,22 @@ jobs:
             > model-preflight.out 2>&1
           RC=$?
           cat model-preflight.out
+          FAILURE_REASON='none'
           if grep -q 'quota_exceeded' model-preflight.out; then
             STATUS='QUOTA_EXHAUSTED'
+            FAILURE_REASON='rate_limit'
+          elif grep -Eqi -- '(was removed|unknown option|unknown flag|unrecognized option)' model-preflight.out; then
+            STATUS='UNAVAILABLE'
+            FAILURE_REASON='invalid_cli_argument'
           elif [ "$RC" -eq 0 ] && grep -q 'PASS' model-preflight.out; then
             STATUS='AVAILABLE'
           else
             STATUS='UNAVAILABLE'
+            FAILURE_REASON='unknown'
           fi
           echo "model_status=$STATUS" >> "$GITHUB_OUTPUT"
-          echo "JANUS_SCOUT_MODEL_PREFLIGHT=$STATUS"
+          echo "failure_reason=$FAILURE_REASON" >> "$GITHUB_OUTPUT"
+          echo "JANUS_SCOUT_MODEL_PREFLIGHT=$STATUS reason=$FAILURE_REASON"
           exit 0
 
   plan:
@@ -130,17 +149,17 @@ jobs:
         with:
           python-version: '3.11'
       - name: Set up Node when model synthesis is available
-        if: needs.model_preflight.outputs.model_status == 'AVAILABLE'
+        if: github.event_name == 'workflow_dispatch' && inputs.synthesis_rollout == 'canary' && matrix.id == 'SCOUT_TERMINAL_07' && needs.model_preflight.outputs.model_status == 'AVAILABLE'
         uses: actions/setup-node@v4
         with:
           node-version: '22'
       - name: Install GitHub Copilot CLI when model synthesis is available
-        if: needs.model_preflight.outputs.model_status == 'AVAILABLE'
+        if: github.event_name == 'workflow_dispatch' && inputs.synthesis_rollout == 'canary' && matrix.id == 'SCOUT_TERMINAL_07' && needs.model_preflight.outputs.model_status == 'AVAILABLE'
         run: |
           npm install -g @github/copilot
           copilot --version
       - name: Run ${{ matrix.id }} with model synthesis
-        if: needs.model_preflight.outputs.model_status == 'AVAILABLE'
+        if: github.event_name == 'workflow_dispatch' && inputs.synthesis_rollout == 'canary' && matrix.id == 'SCOUT_TERMINAL_07' && needs.model_preflight.outputs.model_status == 'AVAILABLE'
         env:
           GITHUB_TOKEN: ${{ github.token }}
           COPILOT_AUTO_UPDATE: 'false'
@@ -149,14 +168,15 @@ jobs:
           python tools/demiurge_scout_swarm.py \
             --run-agent '${{ matrix.id }}' \
             --output runtime/${{ matrix.id }}/report.json
-      - name: Run ${{ matrix.id }} snapshot-only after shared model preflight block
-        if: needs.model_preflight.outputs.model_status != 'AVAILABLE'
+      - name: Run ${{ matrix.id }} snapshot-only for policy hold or shared model block
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.synthesis_rollout == 'canary' && matrix.id == 'SCOUT_TERMINAL_07' && needs.model_preflight.outputs.model_status == 'AVAILABLE') }}
         run: |
           mkdir -p runtime/${{ matrix.id }}
           python tools/demiurge_scout_snapshot_only.py \
             --run-agent '${{ matrix.id }}' \
             --output runtime/${{ matrix.id }}/report.json \
-            --model-status '${{ needs.model_preflight.outputs.model_status }}'
+            --model-status '${{ needs.model_preflight.outputs.model_status == 'AVAILABLE' && 'SKIPPED_POLICY' || needs.model_preflight.outputs.model_status }}' \
+            --failure-reason '${{ needs.model_preflight.outputs.model_status == 'AVAILABLE' && 'policy_hold' || needs.model_preflight.outputs.failure_reason }}'
       - name: Upload Scout report
         if: always()
         uses: actions/upload-artifact@v4

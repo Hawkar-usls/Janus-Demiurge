@@ -282,7 +282,7 @@ Rules:
         })
         cmd = [
             "copilot", "-p", prompt, "--output-format=json", "--no-ask-user", "--no-color",
-            "--no-custom-instructions", "--no-remote", "--no-remote-export", "--disable-builtin-mcps",
+            "--no-custom-instructions", "--sync-session=off", "--disable-builtin-mcps",
             "--deny-tool=read", "--deny-tool=write", "--deny-tool=shell", "--deny-tool=url", "--deny-tool=memory",
         ]
         result = subprocess.run(cmd, cwd=td, env=env, text=True, capture_output=True, timeout=180)
@@ -336,6 +336,32 @@ def classify_ascent(previous: Optional[Dict[str, Any]], snapshot: Dict[str, Any]
     if canonical_hash(current_signal) != canonical_hash(prior_signal):
         return "INTEGRATED_LESSON"
     return "NO_ASCENT"
+
+
+def classify_synthesis_failure(error: Optional[str]) -> Optional[str]:
+    """Classify model-plane faults without interpreting model text as evidence."""
+    if not error:
+        return None
+    message = error.lower()
+    if any(x in message for x in ("was removed", "unknown option", "unknown flag", "unrecognized option")):
+        return "invalid_cli_argument"
+    if any(x in message for x in ("quota_exceeded", "rate_limit", "rate limit", "http 429")):
+        return "rate_limit"
+    if any(x in message for x in ("context_overflow", "context length", "context window", "too many tokens")):
+        return "context_overflow"
+    if any(x in message for x in ("timeout", "timed out", "timeoutexpired")):
+        return "timeout"
+    if any(x in message for x in ("scout_copilot_jsonl_missing_assistant_json", "scout_analysis_not_json_object", "jsondecodeerror")):
+        return "invalid_output_format"
+    if "schema mismatch" in message or "validationerror" in message:
+        return "schema_mismatch"
+    if "empty response" in message or "empty_response" in message:
+        return "empty_response"
+    if any(x in message for x in ("model unavailable", "model not found", "model_unavailable")):
+        return "model_unavailable"
+    if any(x in message for x in ("authentication", "unauthorized", "forbidden", "upstream")):
+        return "upstream_tool_failure"
+    return "unknown"
 
 
 def run_agent(agent_id: str, output: Path) -> None:
@@ -408,6 +434,7 @@ def run_agent(agent_id: str, output: Path) -> None:
             "logical_ring": False,
         },
         "model_error": model_error,
+        "synthesis_failure_reason": classify_synthesis_failure(model_error) if status == "DEGRADED_MODEL_UNAVAILABLE" else None,
         "janus_agent_token": {
             "scope": "EPHEMERAL_GITHUB_RUN_AGENT",
             "fingerprint": token_fp,
