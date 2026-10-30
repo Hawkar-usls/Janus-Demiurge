@@ -40,6 +40,10 @@ class ChampionAuditTests(unittest.TestCase):
     def test_review_receipt_is_not_production_authority(self):
         verify_audit(self.audit(), 'b' * 64, 'a' * 64)
 
+    def test_identical_checkpoint_is_not_a_winner(self):
+        with self.assertRaisesRegex(Hold, 'CANDIDATE_IDENTICAL_TO_INCUMBENT'):
+            verify_audit(self.audit(), 'a' * 64, 'a' * 64)
+
     def test_rejected_audit_refused(self):
         x = self.audit()
         x['status'] = 'INCUMBENT_RETAINED'
@@ -158,6 +162,19 @@ class GitCASRollbackTests(unittest.TestCase):
             rollback_latest(self.repo, current)
         self.assertEqual(run('git', 'rev-parse', 'origin/main', cwd=self.repo),
                          current)
+
+    def test_live_github_remote_never_published_by_preview(self):
+        # Enforce the production embargo BEFORE any network fetch or file edit.
+        candidate = self.base / 'candidate.pt'
+        candidate.write_bytes(b'potential candidate')
+        run('git', 'remote', 'set-url', 'origin',
+            'https://github.com/Hawkar-usls/Janus-Demiurge.git', cwd=self.repo)
+        with self.assertRaisesRegex(Hold, 'REAL_REMOTE_PUBLISH_FORBIDDEN'):
+            publish(self.repo, candidate, {'source_authentication':
+                    'TRUSTED_WORKFLOW_VERIFIED'}, self.original_commit,
+                    enable=True)
+        self.assertEqual((self.repo / CHECKPOINT).read_bytes(),
+                         b'previous verified checkpoint')
 
     def test_report_cannot_publish_without_trusted_issuer(self):
         candidate = self.base / 'candidate.pt'
