@@ -1,0 +1,97 @@
+name: JANUS DADDY_KEYMASTER Compute Registry Witness
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 */6 * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'daddy_keymaster/**'
+      - 'tests/test_daddy_keymaster.py'
+      - '.github/workflows/janus-daddy-keymaster.yml'
+  pull_request:
+    paths:
+      - 'daddy_keymaster/**'
+      - 'tests/test_daddy_keymaster.py'
+      - '.github/workflows/janus-daddy-keymaster.yml'
+
+concurrency:
+  group: janus-daddy-keymaster-registry
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  validate-and-refresh:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || 'main' }}
+          persist-credentials: ${{ github.event_name != 'pull_request' }}
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify four-provider broker with no unauthorized access
+        run: python -m unittest discover -s tests -p test_daddy_keymaster.py -v
+      - name: Observe current authorized Actions runner and plan safe jobs
+        run: |
+          python -m daddy_keymaster.broker --out daddy-output/REPORT.json
+          python - <<'PY'
+          import json
+          r=json.load(open('daddy-output/REPORT.json'))
+          assert set(r['providers']) == {'github_actions','oracle_always_free','boinc_volunteer','ray_cluster'}
+          assert r['status'] == 'DRY_RUN_NO_REMOTE_DISPATCH'
+          assert r['automatic_remote_dispatch'] is False
+          assert r['authority_delta'] == 0
+          assert r['external_instances_created'] == 0
+          assert r['paid_resources_used'] is False
+          assert len(r['active']) == 1 and r['active'][0]['provider'] == 'github_actions'
+          print('DADDY_KEYMASTER_GITHUB_REAL_WORKER_OBSERVED=PASS')
+          print('DADDY_KEYMASTER_EXTERNAL_PROVIDERS=WAIT_OWNER_REGISTRATION')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: daddy-keymaster-capacity-receipt
+          path: daddy-output/REPORT.json
+          retention-days: 14
+          if-no-files-found: error
+      - name: Persist append-only witness and refresh current roster
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          BRANCH='janus/daddy-keymaster-state'
+          git config user.name 'janus-daddy-keymaster[bot]'
+          git config user.email 'actions@users.noreply.github.com'
+          if git fetch --no-tags origin "$BRANCH"; then
+            git worktree add -b daddy-state ../daddy-state FETCH_HEAD
+          else
+            git worktree add -b daddy-state ../daddy-state HEAD
+          fi
+          mkdir -p ../daddy-state/daddy_keymaster/state/receipts
+          ID="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          [[ "$ID" =~ ^[0-9]{5,}-[1-9][0-9]*$ ]]
+          RECEIPT="../daddy-state/daddy_keymaster/state/receipts/$ID.json"
+          if [[ -f "$RECEIPT" ]]; then
+            cmp --silent "$RECEIPT" daddy-output/REPORT.json || { echo 'DADDY_IMMUTABLE_CONFLICT' >&2; exit 1; }
+          else
+            cp daddy-output/REPORT.json "$RECEIPT"
+          fi
+          cp daddy-output/REPORT.json ../daddy-state/daddy_keymaster/state/LATEST.json
+          git -C ../daddy-state add -f "daddy_keymaster/state/receipts/$ID.json"
+          git -C ../daddy-state add -f daddy_keymaster/state/LATEST.json
+          git -C ../daddy-state diff --cached --check
+          if git -C ../daddy-state diff --cached --quiet; then
+            echo 'DADDY_KEYMASTER_NO_CHANGE=PASS'
+            exit 0
+          fi
+          git -C ../daddy-state commit -m "daddy-keymaster: capacity witness $ID"
+          git -C ../daddy-state push origin HEAD:"$BRANCH"
+          echo 'DADDY_KEYMASTER_DURABLE_REGISTRY=PASS'

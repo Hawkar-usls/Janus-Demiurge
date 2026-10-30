@@ -1,0 +1,67 @@
+{
+  "schema": "janus.daddy_keymaster.policy.v1",
+  "version": "0.1",
+  "name": "JANUS DADDY_KEYMASTER — Distributed Compute Broker",
+  "enabled": true,
+  "automatic_remote_dispatch": false,
+  "cloud_provisioning": false,
+  "paid_resources": false,
+  "host_scanning": false,
+  "permission_escalation": false,
+  "authority_delta": 0,
+  "allowed_task_kinds": [
+    "contract_test",
+    "readonly_index",
+    "pure_module_eval"
+  ],
+  "providers": {
+    "github_actions": {
+      "source": "github_actions",
+      "enabled": true,
+      "free_only": true,
+      "owner_authorization_required": true,
+      "max_concurrent_tasks": 1,
+      "mode": "CURRENT_RUN_ONLY",
+      "requires": "RUNNING_OWN_PUBLIC_REPOSITORY_WORKFLOW"
+    },
+    "oracle_always_free": {
+      "source": "oracle_always_free",
+      "enabled": false,
+      "free_only": true,
+      "owner_authorization_required": true,
+      "max_concurrent_tasks": 1,
+      "mode": "OWNER_REGISTERED_ONLY",
+      "requires": "OCI_ACCOUNT_AND_ZERO_BILLING_GUARD"
+    },
+    "boinc_volunteer": {
+      "source": "boinc_volunteer",
+      "enabled": false,
+      "free_only": true,
+      "owner_authorization_required": true,
+      "max_concurrent_tasks": 1,
+      "mode": "OWN_BONC_PROJECT_WITH_OPT_IN",
+      "requires": "OWNER_OPERATED_PROJECT_AND_VOLUNTEER_CONSENT"
+    },
+    "ray_cluster": {
+      "source": "ray_cluster",
+      "enabled": false,
+      "free_only": true,
+      "owner_authorization_required": true,
+      "max_concurrent_tasks": 1,
+      "mode": "OWNER_REGISTERED_ONLY",
+      "requires": "TRUSTED_PRIVATE_CLUSTER_AND_BOUND_JOB_GATE"
+    }
+  },
+  "security": [
+    "NO_PUBLIC_HOST_SCANS",
+    "NO_PUBLIC_SSH_RDP_BRUTE_FORCE",
+    "NO_EXPOSED_CREDENTIAL_REUSE",
+    "NO_THIRD_PARTY_BONC_CLIENT_TAKEOVER",
+    "NO_DYNAMIC_AUTH_FROM_UNTRUSTED_CRAWL",
+    "NO_REMOTE_EXECUTION_UNTIL_SEPARATE_APPROVED_DRIVER",
+    "EXTERNAL_URLS_NE_EXECUTION_AUTHORITY",
+    "NO_PAID_ROWAN",
+    "NO_PRIVILEGE_ESCALATION",
+    "ALL_RECEIPTS_SHA256"
+  ]
+}
