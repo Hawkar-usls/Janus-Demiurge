@@ -1,0 +1,126 @@
+name: JANUS Rex Research to Reviewed Code Need
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '47 */6 * * *'
+  workflow_run:
+    workflows: ['JANUS Research Spine']
+    types: [completed]
+  pull_request:
+    paths:
+      - 'tools/rex_code_need_bridge.py'
+      - 'tests/test_rex_code_need_bridge.py'
+      - '.github/workflows/janus-rex-code-need-bridge.yml'
+      - 'docs/REX_CODE_NEED_BRIDGE.md'
+
+concurrency:
+  group: janus-rex-code-need-bridge
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  verify-and-propose:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: ${{ github.event_name == 'pull_request' && 'read' || 'write' }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/Janus-Demiurge
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || 'main' }
+          path: brain
+          fetch-depth: 1
+          persist-credentials: ${{ github.event_name != 'pull_request' }
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify positive, adversarial and source-binding controls
+        working-directory: brain
+        run: python -m unittest discover -v -s tests -p test_rex_code_need_bridge.py
+      - uses: actions/checkout@v4
+        if: github.event_name != 'pull_request'
+        with:
+          repository: Hawkar-usls/Janus-Demiurge
+          ref: beetle-memory
+          path: receiver
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            data/beetle-runtime/CONTEXT.json
+      - uses: actions/checkout@v4
+        if: github.event_name != 'pull_request'
+        with:
+          repository: Hawkar-usls/janus-lapis
+          ref: beetle-state
+          path: delivery
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            data/beetle-state/latest_delivery_health.json
+      - uses: actions/checkout@v4
+        if: github.event_name != 'pull_request'
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: janus/autonomous-code-state
+          path: coder
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            STATE.json
+      - name: Source-pinned Rex discovery of one preadmitted pure-code need
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=brain python -m tools.rex_code_need_bridge \
+            --research brain/janus_model/state/JANUS_RESEARCH_SPINE.json \
+            --research-commit "$(git -C brain rev-parse HEAD)" \
+            --beetle receiver/data/beetle-runtime/CONTEXT.json \
+            --beetle-commit "$(git -C receiver rev-parse HEAD)" \
+            --delivery delivery/data/beetle-state/latest_delivery_health.json \
+            --delivery-commit "$(git -C delivery rev-parse HEAD)" \
+            --coder coder/STATE.json \
+            --coder-commit "$(git -C coder rev-parse HEAD)" \
+            --out out/CODE_NEED.json
+      - uses: actions/upload-artifact@v4
+        if: github.event_name != 'pull_request'
+        with:
+          name: janus-rex-source-bound-code-need
+          path: out/CODE_NEED.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Save immutable need to isolated durable state, never main
+        if: github.event_name != 'pull_request'
+        working-directory: brain
+        shell: bash
+        run: |
+          set -euo pipefail
+          BRANCH=janus/rex-code-need-state
+          git config user.name 'janus-rex-code-needs[bot]'
+          git config user.email 'actions@users.noreply.github.com'
+          if git fetch --no-tags origin "$BRANCH"; then
+            git worktree add ../need-state FETCH_HEAD
+            git -C ../need-state switch -C rex-code-need-state
+          else
+            git worktree add -b rex-code-need-state ../need-state HEAD
+          fi
+          NEED_ID="$(python -c 'import json; print(json.load(open("../out/CODE_NEED.json"))["need_id"])')"
+          [[ "$NEED_ID" =~ ^code_need_[0-9a-f]{20}$ ]]
+          mkdir -p ../need-state/rex/code_needs
+          DEST="../need-state/rex/code_needs/$NEED_ID.json"
+          if [[ -f "$DEST" ]]; then
+            cmp --silent "$DEST" ../out/CODE_NEED.json || { echo 'IMMUTABLE_NEED_CONFLICT' >&2; exit 1; }
+            echo "REX_CODE_NEED_IDEMPOTENT=$NEED_ID"
+            exit 0
+          fi
+          cp ../out/CODE_NEED.json "$DEST"
+          git -C ../need-state add "rex/code_needs/$NEED_ID.json"
+          git -C ../need-state diff --cached --check
+          git -C ../need-state commit -m "rex: append source-bound code need $NEED_ID"
+          git -C ../need-state push origin HEAD:"$BRANCH"
+          echo "REX_CODE_NEED_PERSISTED=$NEED_ID"
