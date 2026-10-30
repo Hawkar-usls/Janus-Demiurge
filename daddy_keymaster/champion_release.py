@@ -303,8 +303,8 @@ def rollback_latest(root, expected_head, *, enable=False):
             'CHAMPION_ROLLBACK_NOT_APPLICABLE')
     require(git(root, 'merge-base', '--is-ancestor', old_ref, 'HEAD') == '',
             'CHAMPION_ROLLBACK_NOT_ANCESTOR')
-    old_bytes = git(root, 'show', f'{old_ref}:{CHECKPOINT}', binary=True)
-    old_state = json.loads(git(root, 'show', f'{old_ref}:{STATE}'))
+    old_bytes = git(root, 'show', f'{old_ref}:{CHECKPOINT.as_posix()}', binary=True)
+    old_state = json.loads(git(root, 'show', f'{old_ref}:{STATE.as_posix()}'))
     require(digest(old_bytes) == old_sha and
             old_state.get('checkpoint_sha256') == old_sha and
             0 < len(old_bytes) <= MAX_WEIGHT_BYTES,
