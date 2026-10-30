@@ -9,6 +9,8 @@ on:
       - 'janus_model/extensions/org_surface.py'
       - 'janus_model/extensions/wikipedia_trunk.py'
       - 'janus_model/extensions/semantic_synthesis_context.py'
+      - 'tools/beetle_runtime_consumer.py'
+      - 'tests/test_beetle_runtime_consumer.py'
       - 'tests/test_janus_research_spine.py'
       - 'tests/test_janus_org_surface.py'
       - 'tests/test_janus_wikipedia_trunk.py'
@@ -60,7 +62,8 @@ jobs:
             tests/test_janus_research_spine.py \
             tests/test_janus_org_surface.py \
             tests/test_janus_wikipedia_trunk.py \
-            tests/test_janus_semantic_synthesis_context.py
+            tests/test_janus_semantic_synthesis_context.py \
+            tests/test_beetle_runtime_consumer.py
           echo 'JANUS_RESEARCH_SPINE_KERNELS=PASS'
 
       - name: Bind complete public Hawkar-usls repository surface
@@ -110,6 +113,19 @@ jobs:
           print(f"JANUS_SEMANTIC_SYNTHESIS_CONTEXT={x['status']}:candidates={x['source']['candidate_count_selected']}:routes={len(x['research_route_seeds'])}:sha={x['context_sha256']}")
           PY
 
+      - name: Mount source-bound Beetle triage context
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --filter=blob:none origin beetle-memory
+          INBOX_SOURCE=$(git rev-parse FETCH_HEAD)
+          if git cat-file -e "$INBOX_SOURCE:data/beetle-runtime/CONTEXT.json" 2>/dev/null; then
+            git show "$INBOX_SOURCE:data/beetle-runtime/CONTEXT.json" > runtime/JANUS_BEETLE_RUNTIME_CONTEXT.json
+            echo "JANUS_BEETLE_CONTEXT_SOURCE=$INBOX_SOURCE"
+          else
+            echo 'JANUS_BEETLE_CONTEXT=NOT_YET_MOUNTED'
+          fi
+
       - name: Pull autonomous Wikipedia background context
         shell: bash
         run: |
@@ -143,7 +159,13 @@ jobs:
           echo 'JANUS_RESEARCH_ORGANS_FETCH=PASS'
 
       - name: Build TOPA arXiv org Wikipedia semantic Demi_Head Fundamentum context
+        shell: bash
         run: |
+          set -euo pipefail
+          BEETLE_ARGS=()
+          if [[ -f runtime/JANUS_BEETLE_RUNTIME_CONTEXT.json ]]; then
+            BEETLE_ARGS=(--beetle-context runtime/JANUS_BEETLE_RUNTIME_CONTEXT.json)
+          fi
           python -m janus_model.extensions.research_spine_v2 \
             --topa-root runtime/research/TOPA \
             --demi-head-root runtime/research/Demi_Head \
@@ -151,6 +173,7 @@ jobs:
             --org-surface runtime/JANUS_ORG_SURFACE.json \
             --wikipedia runtime/JANUS_WIKIPEDIA_TRUNK.json \
             --semantic-synthesis runtime/JANUS_SEMANTIC_SYNTHESIS_CONTEXT.json \
+            "${BEETLE_ARGS[@]}" \
             --out runtime/JANUS_RESEARCH_SPINE.json \
             --max-results 4 \
             --timeout 12

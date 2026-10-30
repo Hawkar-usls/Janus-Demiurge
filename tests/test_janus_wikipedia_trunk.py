@@ -5,6 +5,23 @@ from janus_model.extensions import wikipedia_trunk as wiki
 
 
 class WikipediaTrunkTests(unittest.TestCase):
+    def test_registry_inspired_hypothesis_routes_reach_next_search(self):
+        research = {
+            "hypothesis_routes": ["Replay-safe discovery processing", "Independent verifier recovery"],
+            "improvement_policy": {"primary_target": "Hawkar-usls/Janus-Fundamentum"},
+        }
+        topics = wiki.derive_topics(None, research, max_topics=6)
+        self.assertIn("Replay safe discovery processing", topics)
+        self.assertIn("Independent verifier recovery", topics)
+
+    def test_route_attention_is_not_exhausted_by_first_route_keyword_expansions(self):
+        research = {"hypothesis_routes": ["security safety integrity proof verification", "Replay recovery"]}
+        self.assertEqual(wiki.derive_topics(None, research, max_topics=2), research["hypothesis_routes"])
+
+    def test_empty_or_nontext_routes_do_not_create_empty_searches(self):
+        topics = wiki.derive_topics(None, {"hypothesis_routes": ["https://example.org/", None]})
+        self.assertTrue(all(topics))
+
     def test_topics_derive_from_current_state_and_stay_bounded(self):
         decision = {
             "selected": {

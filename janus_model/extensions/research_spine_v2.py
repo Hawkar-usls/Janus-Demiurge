@@ -8,6 +8,7 @@ from janus_model.extensions import research_spine as base
 from janus_model.extensions.org_surface import SCHEMA as ORG_SCHEMA
 from janus_model.extensions.wikipedia_trunk import SCHEMA as WIKI_SCHEMA
 from janus_model.extensions.semantic_synthesis_context import SCHEMA as SYNTH_CONTEXT_SCHEMA
+from tools.beetle_runtime_consumer import load_context as load_beetle_context
 
 
 def _load(path: Path, schema: str, label: str) -> dict:
@@ -26,6 +27,7 @@ def build_research_spine_v2(
     arxiv_queries: list[str],
     *,
     semantic_synthesis_path: Path | None = None,
+    beetle_context_path: Path | None = None,
     max_results: int = 4,
     timeout: float = 12.0,
     enable_arxiv: bool = True,
@@ -61,6 +63,10 @@ def build_research_spine_v2(
             raise RuntimeError("RESEARCH_SPINE_V2_SYNTH_PROMOTION_CEILING_REJECTED")
         obj["research_spine"]["semantic_synthesis"] = synth
 
+    beetle = load_beetle_context(beetle_context_path) if beetle_context_path is not None else None
+    if beetle is not None:
+        obj["research_spine"]["beetle"] = beetle
+
     obj["external_context"] = {
         "org_surface_status": org.get("status"),
         "wikipedia_status": wiki.get("status"),
@@ -72,8 +78,20 @@ def build_research_spine_v2(
         "semantic_synthesis_status": synth.get("status") if synth else "NOT_MOUNTED",
         "semantic_synthesis_candidate_count": ((synth.get("source") or {}).get("candidate_count_selected") if synth else 0),
         "semantic_synthesis_route_count": len(synth.get("research_route_seeds") or []) if synth else 0,
+        "beetle_processing_status": beetle["status"] if beetle else "NOT_MOUNTED",
+        "beetle_processed_sequence": beetle["last_processed_sequence"] if beetle else None,
+        "beetle_route_count": len(beetle["hypothesis_routes"]) if beetle else 0,
     }
-    obj["hypothesis_routes"] = list(synth.get("research_route_seeds") or []) if synth else []
+    registry_routes = list(synth.get("research_route_seeds") or []) if synth else []
+    beetle_routes = beetle["hypothesis_routes"] if beetle else []
+    # Interleave registry inspiration (through iNaiHR) and Beetle discoveries so
+    # the next search budget does not silently starve either source.
+    routes = []
+    for index in range(max(len(registry_routes), len(beetle_routes))):
+        for group in (registry_routes, beetle_routes):
+            if index < len(group) and group[index] not in routes:
+                routes.append(group[index])
+    obj["hypothesis_routes"] = routes[:12]
     obj["claim_ceiling"].update({
         "org_surface_presence_is_truth": False,
         "org_surface_grants_authority": False,
@@ -85,6 +103,9 @@ def build_research_spine_v2(
         "semantic_synthesis_is_direct_gradient_signal": False,
         "semantic_synthesis_grants_mutation_authority": False,
         "semantic_synthesis_auto_promotes_candidates": False,
+        "beetle_triage_is_independent_verification": False,
+        "beetle_triage_is_model_learning": False,
+        "beetle_context_grants_mutation_authority": False,
     })
     obj["laws"].extend([
         "ORG_SURFACE_VISIBILITY != AUTHORITY",
@@ -111,6 +132,7 @@ def main() -> None:
     ap.add_argument("--org-surface", required=True)
     ap.add_argument("--wikipedia", required=True)
     ap.add_argument("--semantic-synthesis")
+    ap.add_argument("--beetle-context")
     ap.add_argument("--out", required=True)
     ap.add_argument("--arxiv-query", action="append", default=[])
     ap.add_argument("--max-results", type=int, default=4)
@@ -128,6 +150,7 @@ def main() -> None:
         Path(args.wikipedia),
         queries,
         semantic_synthesis_path=Path(args.semantic_synthesis) if args.semantic_synthesis else None,
+        beetle_context_path=Path(args.beetle_context) if args.beetle_context else None,
         max_results=args.max_results,
         timeout=args.timeout,
         enable_arxiv=not args.no_arxiv,
@@ -146,6 +169,8 @@ def main() -> None:
         "semantic_synthesis_status": obj["external_context"]["semantic_synthesis_status"],
         "semantic_synthesis_candidate_count": obj["external_context"]["semantic_synthesis_candidate_count"],
         "semantic_synthesis_route_count": obj["external_context"]["semantic_synthesis_route_count"],
+        "beetle_processing_status": obj["external_context"]["beetle_processing_status"],
+        "beetle_route_count": obj["external_context"]["beetle_route_count"],
     }, indent=2))
     if obj["status"] == "BLOCKED_REQUIRED_RESEARCH_ORGAN":
         raise SystemExit(2)
