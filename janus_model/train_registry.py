@@ -94,7 +94,7 @@ def eval_loss(model, stream, batches, batch_size, seed):
 
 
 def load_checkpoint(path):
-    obj = torch.load(path, map_location="cpu", weights_only=False)
+    obj = torch.load(path, map_location="cpu", weights_only=True)
     cfg = JanusModelConfig.from_dict(obj["config"])
     model = JanusTinyTransformer(cfg)
     model.load_state_dict(obj["model_state"])
