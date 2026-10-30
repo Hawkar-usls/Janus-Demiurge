@@ -68,7 +68,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
-      contents: ${{ github.event_name == 'pull_request' && 'read' || 'write' }}
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -110,6 +110,45 @@ jobs:
           path: daddy-compute/AUDIT.json
           retention-days: 14
           if-no-files-found: error
+
+  persist-audited-evidence:
+    if: github.event_name != 'pull_request'
+    needs: independent-auditor
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: daddy-compute-independent-audit
+          path: daddy-compute
+      - name: Reverify hash, exact commit and zero authority before storing
+        run: |
+          python - <<'PY'
+          import json, os, subprocess
+          from daddy_keymaster.broker import sha
+          from daddy_keymaster.compute import manifest
+          o=json.load(open('daddy-compute/AUDIT.json'))
+          b={k:v for k,v in o.items() if k!='receipt_sha256'}
+          assert o['receipt_sha256']==sha(b)
+          assert o['commit']==os.environ['GITHUB_SHA']==subprocess.check_output(
+              ['git','rev-parse','HEAD'],text=True).strip()
+          assert o['run_id']==os.environ['GITHUB_RUN_ID']
+          assert o['attempt']==os.environ['GITHUB_RUN_ATTEMPT']
+          assert o['source_manifest']==manifest('.')
+          assert o['status']=='TWO_EPHEMERAL_WORKERS_VERIFIED'
+          assert o['authority_delta']==0 and o['persistent_capacity_claim'] is False
+          assert o['paid_resources_used'] is False
+          assert [x['platform'] for x in o['workers']]==['ARM64','X64']
+          print('DADDY_COMPUTE_PERSISTENCE_INDEPENDENT_REPLAY=PASS')
+          PY
       - name: Persist verified execution record on isolated state branch
         if: github.event_name != 'pull_request'
         shell: bash
