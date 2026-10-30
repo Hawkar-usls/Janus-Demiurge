@@ -69,4 +69,28 @@ class Tests(unittest.TestCase):
         a["packet_digest_sha256"]=m.sha({k:v for k,v in a.items() if k!="packet_digest_sha256"})
         with self.assertRaises(m.CouncilHold):m.council(s,a)
 
+    def test_new_source_generation_only_accepted_when_aura_rebound(self):
+        old, stale = fixtures(8)
+        new = dict(old)
+        new["latest_durable_external_run"] = old["latest_durable_external_run"] + 1
+        with self.assertRaisesRegex(m.CouncilHold, "AURA_NOT_BOUND_TO_LATEST_META_CHECKPOINT"):
+            m.council(new, stale)
+        matched = dict(stale)
+        matched["source"] = dict(stale["source"])
+        matched["source"]["upstream_run"] = new["latest_durable_external_run"]
+        matched["source"]["state_sha256"] = m.sha(new)
+        matched["packet_digest_sha256"] = m.sha({k: v for k, v in matched.items() if k != "packet_digest_sha256"})
+        out = m.council(new, matched)
+        self.assertEqual(out["sources"]["meta_registry"]["canonical_run"], new["latest_durable_external_run"])
+        self.assertFalse(out["gates"]["rowan_credit_spend_new"])
+
+    def test_receiver_recovery_wake_is_same_repo_success_only(self):
+        workflow = (Path(__file__).resolve().parents[1] /
+                    ".github/workflows/janus-rowan-aura-council.yml").read_text()
+        self.assertIn("JANUS Beetle Memory Receiver", workflow)
+        self.assertIn("github.event.workflow_run.conclusion == 'success'", workflow)
+        self.assertIn("github.event.workflow_run.head_branch == 'main'", workflow)
+        self.assertIn("github.event.workflow_run.head_repository.full_name == github.repository", workflow)
+        self.assertIn("cron: '45 * * * *'", workflow)
+
 if __name__=="__main__":unittest.main()
