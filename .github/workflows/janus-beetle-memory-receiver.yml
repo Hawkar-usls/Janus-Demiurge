@@ -7,6 +7,8 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/janus-beetle-memory-receiver.yml'
+      - 'tools/beetle_runtime_consumer.py'
+      - 'tests/test_beetle_runtime_consumer.py'
 
 permissions:
   contents: write
@@ -25,6 +27,15 @@ jobs:
         with:
           path: target
           fetch-depth: 0
+
+      - name: Preserve source-bound consumer before switching to inbox branch
+        id: consumer
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p runtime
+          cp target/tools/beetle_runtime_consumer.py runtime/beetle_runtime_consumer.py
+          echo "source_sha=$(git -C target rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Checkout pinned JANUS Beetle receiver
         uses: actions/checkout@v4
@@ -56,7 +67,33 @@ jobs:
             --target-repository "$GITHUB_REPOSITORY" \
             --max-batches 96
 
-      - name: Commit batches and ACK atomically to isolated branch
+      - name: Checkout delivery manifest after inbox staging
+        uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-lapis
+          ref: beetle-state
+          path: delivery-source
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: data/beetle-state/mirrors/Hawkar-usls__Janus-Demiurge/delivery.json
+
+      - name: Triage delivered packages into research questions
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f target/data/beetle-inbox/ACK.json ]]; then
+            echo 'JANUS_BEETLE_PROCESSING=NO_DURABLE_INBOX_ACK'
+            exit 0
+          fi
+          python runtime/beetle_runtime_consumer.py \
+            --delivery-manifest delivery-source/data/beetle-state/mirrors/Hawkar-usls__Janus-Demiurge/delivery.json \
+            --inbox-dir target/data/beetle-inbox \
+            --out-dir target/data/beetle-runtime \
+            --source-commit "$(git -C delivery-source rev-parse HEAD)" \
+            --consumer-commit '${{ steps.consumer.outputs.source_sha }}' \
+            --max-batches 96
+
+      - name: Commit delivery and processing receipts atomically to isolated branch
         shell: bash
         working-directory: target
         run: |
@@ -65,9 +102,10 @@ jobs:
           git config user.name 'janus-beetle-memory[bot]'
           git config user.email 'janus-beetle-memory[bot]@users.noreply.github.com'
           git add data/beetle-inbox
+          if [[ -d data/beetle-runtime ]]; then git add data/beetle-runtime; fi
           if git diff --cached --quiet; then
             echo 'Inbox already up to date'
             exit 0
           fi
-          git commit -m 'beetle-memory: durable ordered inbox + ACK'
+          git commit -m 'beetle-memory: durable inbox and source-bound research triage'
           git push origin HEAD:beetle-memory

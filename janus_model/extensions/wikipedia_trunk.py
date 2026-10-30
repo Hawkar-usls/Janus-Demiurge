@@ -48,6 +48,11 @@ def _clean_query(text: str) -> str:
 
 def derive_topics(decision: dict | None, research: dict | None, max_topics: int = 6) -> list[str]:
     candidates: list[str] = []
+    # Reserve attention for the preceding cycle's source-bound discoveries.
+    # These are search strings, never commands or verification of their claims.
+    routes = research.get("hypothesis_routes") if isinstance(research, dict) else None
+    if isinstance(routes, list):
+        candidates.extend(route for route in routes[:2] if isinstance(route, str))
     if isinstance(decision, dict):
         selected = decision.get("selected") or {}
         for key in ("score_text", "candidate_id", "priority_class"):
@@ -70,7 +75,13 @@ def derive_topics(decision: dict | None, research: dict | None, max_topics: int 
                 q = re.sub(r"\b(all|cat):", " ", q, flags=re.IGNORECASE)
                 q = re.sub(r"\b(AND|OR)\b", " ", q, flags=re.IGNORECASE)
                 candidates.append(q)
+    # Keep both reserved routes ahead of keyword expansions of the first one.
     expanded: list[str] = []
+    if isinstance(routes, list):
+        for route in routes[:2]:
+            cleaned = _clean_query(route) if isinstance(route, str) else ""
+            if cleaned:
+                expanded.append(cleaned)
     mapping = {
         "integrity": "data integrity",
         "security": "computer security",

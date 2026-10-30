@@ -1,0 +1,34 @@
+name: Beetle runtime consumption contract
+
+on:
+  pull_request:
+    paths:
+      - 'tools/beetle_runtime_consumer.py'
+      - 'janus_model/extensions/research_spine_v2.py'
+      - 'janus_model/extensions/wikipedia_trunk.py'
+      - 'tests/test_beetle_runtime_consumer.py'
+      - 'tests/test_janus_wikipedia_trunk.py'
+      - '.github/workflows/janus-beetle-memory-receiver.yml'
+      - '.github/workflows/janus-research-spine.yml'
+      - '.github/workflows/beetle-runtime-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify processing, replay, crash recovery and research routing
+        run: |
+          python -m unittest discover -s tests -p test_beetle_runtime_consumer.py -v
+          python -m unittest discover -s tests -p test_janus_wikipedia_trunk.py -v
+          python -m unittest discover -s tests -p test_janus_research_spine.py -v
+          python -m unittest discover -s tests -p test_janus_semantic_synthesis_context.py -v
+          python -m unittest discover -s tests -p test_janus_org_surface.py -v
