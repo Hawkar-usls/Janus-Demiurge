@@ -1,0 +1,187 @@
+name: JANUS DADDY_KEYMASTER Two Authorized Cloud Compute Workers
+
+on:
+  schedule:
+    - cron: '37 2,14 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'daddy_keymaster/**'
+      - 'tests/test_daddy_keymaster_compute.py'
+      - '.github/workflows/janus-daddy-keymaster-compute.yml'
+  pull_request:
+    paths:
+      - 'daddy_keymaster/**'
+      - 'tests/test_daddy_keymaster_compute.py'
+      - '.github/workflows/janus-daddy-keymaster-compute.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-daddy-keymaster-compute
+  cancel-in-progress: false
+
+jobs:
+  worker:
+    name: JANUS real ephemeral CPU worker (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - arch: x64
+            platform: ubuntu-24.04
+          - arch: arm64
+            platform: ubuntu-24.04-arm
+    runs-on: ${{ matrix.platform }}
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Execute assigned bounded JANUS quality gates on this actual VM
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m daddy_keymaster.compute execute --output daddy-compute/EXECUTION.json
+          python - <<'PY'
+          import json
+          r=json.load(open("daddy-compute/EXECUTION.json"))
+          assert r["status"]=="EXECUTED_ALLOWLISTED_TESTS"
+          assert len(r["suites"])==2
+          print("DADDY_CLOUD_REAL_WORK_COMPLETED=" + r["platform"])
+          print("DADDY_CLOUD_CASES=" + str(sum(x["cases"] for x in r["suites"])))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: daddy-compute-${{ matrix.arch }}
+          path: daddy-compute/EXECUTION.json
+          retention-days: 7
+          if-no-files-found: error
+
+  independent-auditor:
+    needs: worker
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: ${{ github.event_name != 'pull_request' }}
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify adversarial scenarios before accepting worker receipts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p test_daddy_keymaster_compute.py -v
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: daddy-compute-*
+          path: daddy-compute-inputs
+          merge-multiple: false
+      - name: Independently verify both real machines, exact sources and cases
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m daddy_keymaster.compute audit \
+            --inputs daddy-compute-inputs \
+            --output daddy-compute/AUDIT.json
+          python - <<'PY'
+          import json
+          x=json.load(open("daddy-compute/AUDIT.json"))
+          assert x["status"]=="TWO_EPHEMERAL_WORKERS_VERIFIED"
+          assert x["cross_architecture_agreement"] is True
+          assert x["paid_resources_used"] is False
+          assert x["persistent_capacity_claim"] is False
+          assert x["authority_delta"] == 0
+          print("JANUS_DADDY_KEYMASTER_TWO_GITHUB_CLOUD_VMS=PASS")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: daddy-compute-independent-audit
+          path: daddy-compute/AUDIT.json
+          retention-days: 7
+          if-no-files-found: error
+
+  persist-audited-evidence:
+    if: github.event_name != 'pull_request'
+    needs: independent-auditor
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: daddy-compute-independent-audit
+          path: daddy-compute
+      - name: Reverify hash, exact commit and zero authority before storing
+        run: |
+          python - <<'PY'
+          import json, os, subprocess
+          from daddy_keymaster.broker import sha
+          from daddy_keymaster.compute import manifest
+          o=json.load(open('daddy-compute/AUDIT.json'))
+          b={k:v for k,v in o.items() if k!='receipt_sha256'}
+          assert o['receipt_sha256']==sha(b)
+          assert o['commit']==os.environ['GITHUB_SHA']==subprocess.check_output(
+              ['git','rev-parse','HEAD'],text=True).strip()
+          assert o['run_id']==os.environ['GITHUB_RUN_ID']
+          assert o['attempt']==os.environ['GITHUB_RUN_ATTEMPT']
+          assert o['source_manifest']==manifest('.')
+          assert o['status']=='TWO_EPHEMERAL_WORKERS_VERIFIED'
+          assert o['authority_delta']==0 and o['persistent_capacity_claim'] is False
+          assert o['paid_resources_used'] is False
+          assert [x['platform'] for x in o['workers']]==['ARM64','X64']
+          print('DADDY_COMPUTE_PERSISTENCE_INDEPENDENT_REPLAY=PASS')
+          PY
+      - name: Persist verified execution record on isolated state branch
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          BRANCH='janus/daddy-keymaster-state'
+          git config user.name 'janus-daddy-keymaster[bot]'
+          git config user.email 'actions@users.noreply.github.com'
+          git fetch --no-tags origin "$BRANCH"
+          git worktree add -b daddy-compute-state ../daddy-compute-state FETCH_HEAD
+          DEST="../daddy-compute-state/daddy_keymaster/state/compute"
+          mkdir -p "$DEST/receipts"
+          ID="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          [[ "$ID" =~ ^[0-9]{5,}-[1-9][0-9]*$ ]]
+          if [[ -f "$DEST/receipts/$ID.json" ]]; then
+            cmp --silent "$DEST/receipts/$ID.json" daddy-compute/AUDIT.json || {
+              echo 'DADDY_COMPUTE_RECEIPT_CONFLICT' >&2
+              exit 1
+            }
+          else
+            cp daddy-compute/AUDIT.json "$DEST/receipts/$ID.json"
+          fi
+          cp daddy-compute/AUDIT.json "$DEST/LATEST.json"
+          git -C ../daddy-compute-state add -f "daddy_keymaster/state/compute/receipts/$ID.json"
+          git -C ../daddy-compute-state add -f daddy_keymaster/state/compute/LATEST.json
+          git -C ../daddy-compute-state diff --cached --check
+          if git -C ../daddy-compute-state diff --cached --quiet; then
+            echo 'JANUS_DADDY_COMPUTE_IDEMPOTENT=PASS'
+            exit 0
+          fi
+          git -C ../daddy-compute-state commit -m "daddy-keymaster: independently attest dual ephemeral worker run $ID"
+          git -C ../daddy-compute-state push origin HEAD:"$BRANCH"
+          echo 'JANUS_DADDY_COMPUTE_DURABLE_WITNESS=PASS'
