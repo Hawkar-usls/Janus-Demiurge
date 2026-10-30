@@ -9,11 +9,13 @@ on:
     paths:
       - 'daddy_keymaster/**'
       - 'tests/test_daddy_keymaster.py'
+      - 'tests/test_daddy_keymaster_providers.py'
       - '.github/workflows/janus-daddy-keymaster.yml'
   pull_request:
     paths:
       - 'daddy_keymaster/**'
       - 'tests/test_daddy_keymaster.py'
+      - 'tests/test_daddy_keymaster_providers.py'
       - '.github/workflows/janus-daddy-keymaster.yml'
 
 concurrency:
@@ -40,6 +42,8 @@ jobs:
           python-version: '3.12'
       - name: Verify four-provider broker with no unauthorized access
         run: python -m unittest discover -s tests -p test_daddy_keymaster.py -v
+      - name: Verify OCI, BOINC and Ray activation firewalls
+        run: python -m unittest discover -s tests -p test_daddy_keymaster_providers.py -v
       - name: Observe current authorized Actions runner and plan safe jobs
         run: |
           python -m daddy_keymaster.broker --out daddy-output/REPORT.json
@@ -56,6 +60,17 @@ jobs:
           print('DADDY_KEYMASTER_GITHUB_REAL_WORKER_OBSERVED=PASS')
           print('DADDY_KEYMASTER_EXTERNAL_PROVIDERS=WAIT_OWNER_REGISTRATION')
           PY
+      - name: Evaluate three external provider readiness gates without credentials
+        run: |
+          python -m daddy_keymaster.providers --out daddy-output/PROVIDERS.json
+          python - <<'PY'
+          import json
+          p=json.load(open('daddy-output/PROVIDERS.json'))
+          assert p['status']=='NO_EXTERNAL_PROVIDER_ACTIVATED'
+          assert p['network_connections_attempted']==0
+          assert all(not v['actual_capacity_attested'] for v in p['providers'].values())
+          print('DADDY_KEYMASTER_ORACLE_BOINC_RAY_UNVERIFIED=PASS')
+          PY
       - name: Retire ephemeral runner from next-job availability
         run: |
           python -m daddy_keymaster.roster --receipt daddy-output/REPORT.json --out daddy-output/LATEST.json
@@ -66,6 +81,12 @@ jobs:
           assert x["persistent_provider_ready_counts"]["github_actions"] == 0
           print("DADDY_KEYMASTER_NO_FALSE_PERSISTENT_WORKER=PASS")
           PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: daddy-keymaster-provider-readiness
+          path: daddy-output/PROVIDERS.json
+          retention-days: 14
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
           name: daddy-keymaster-capacity-receipt
@@ -95,8 +116,10 @@ jobs:
             cp daddy-output/REPORT.json "$RECEIPT"
           fi
           cp daddy-output/LATEST.json ../daddy-state/daddy_keymaster/state/LATEST.json
+          cp daddy-output/PROVIDERS.json ../daddy-state/daddy_keymaster/state/PROVIDERS_LATEST.json
           git -C ../daddy-state add -f "daddy_keymaster/state/receipts/$ID.json"
           git -C ../daddy-state add -f daddy_keymaster/state/LATEST.json
+          git -C ../daddy-state add -f daddy_keymaster/state/PROVIDERS_LATEST.json
           git -C ../daddy-state diff --cached --check
           if git -C ../daddy-state diff --cached --quiet; then
             echo 'DADDY_KEYMASTER_NO_CHANGE=PASS'
