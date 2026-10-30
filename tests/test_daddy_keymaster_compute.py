@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 import unittest
 
-from daddy_keymaster.compute import ARCH, SOURCES, SUITES, audit, check_env, manifest
+from daddy_keymaster.compute import ARCH, SOURCES, SUITES, ASSIGNMENTS, audit, check_env, manifest
 from daddy_keymaster.broker import sha
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,7 +23,7 @@ def receipt(platform):
            "commit":ENV["GITHUB_SHA"],"repository":ENV["GITHUB_REPOSITORY"],
            "platform":platform,"runner_os":"Linux",
            "source_manifest":manifest(ROOT),
-           "suites":[{"suite":name,"cases":10,"status":"PASS"} for name in SUITES],
+           "suites":[{"suite":name,"cases":10,"status":"PASS"} for name in ASSIGNMENTS[platform]],
            "status":"EXECUTED_ALLOWLISTED_TESTS",
            "auth":"PUBLIC_REPO_GITHUB_RUNNER",
            "external_provider_activation":False,"paid_work":False,
@@ -44,7 +44,7 @@ class RealComputeTests(unittest.TestCase):
         self.assertFalse(result["worker_lease_after_job"])
         self.assertFalse(result["persistent_capacity_claim"])
         self.assertFalse(result["claims_full_distributed_recovery"])
-        self.assertEqual(result["total_test_cases_per_worker"],30)
+        self.assertEqual(result["total_test_cases_by_platform"],{"X64":20,"ARM64":20})
         self.assertEqual({v["platform"] for v in result["workers"]},set(ARCH))
         self.assertEqual(result["receipt_sha256"],sha({k:v for k,v in result.items() if k!="receipt_sha256"}))
 
@@ -78,7 +78,7 @@ class RealComputeTests(unittest.TestCase):
 
     def test_one_arch_fewer_cases_rejected(self):
         r=receipt("X64")
-        r["suites"][0]["cases"]=9
+        r["suites"][1]["cases"]=9
         with self.assertRaisesRegex(ValueError,"ARCH_TEST_DISAGREEMENT"):
             audit(ROOT,[reseal(r),receipt("ARM64")],ENV)
 
