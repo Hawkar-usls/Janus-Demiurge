@@ -79,3 +79,29 @@ deserialization (PR #301 reconciliation); actual nonregressing candidate
 measured against the current canonical checkpoint; current-head CAS; and
 consumer ACK/rollback supervision. Do not interpret any synthetic or rehearsal
 receipt as authority to promote.
+
+## Quarantined real candidate B and two-architecture replay
+
+A genuine owner-local bounded candidate, checkpoint SHA
+`e89352cf649c67d8fb88e9cb6b929897460fd99e0d5bcd29e6c096b4ff39a321`,
+is stored in public research-only branch
+`janus/champion-r2-quarantine-20261031`, immutable commit
+`1ae68da4ab52e79d8a3788426939f3c7807427ca`.
+It derives from the original canonical parent
+`fc767adb812ac3bea54c44cbccfa9680941f95e2c8a77120559b41da044d9463`;
+the original adaptive and frozen-anchor gate passed, and an independently
+chosen technical RFC test improved for five preregistered evaluation seeds.
+Trial A was rejected; candidate B was retained **in quarantine, not main**.
+
+The PR safety job now reads that exact Git commit and SHA-pinned
+`candidate.pt` on Linux x64 and ARM64, verifies original training receipt,
+reruns frozen-anchor and RFC 9113 comparisons with a CPU-only PyTorch loader,
+and uploads a **research-only** read-only receipt. It never promotes
+weights or grants review/report fields deployment authority.
+
+This is independent **cloud execution and byte identity**, not an
+independently escrowed blind test. The precise adaptive corpus is not
+replayed in that job; promotion still requires external data custody,
+a genuinely independent source/split leakage audit, source and issuer
+authentication, secure checkpoint loader PR #301 review, consumer ACK
+and an authenticated CAS promotion workflow.
