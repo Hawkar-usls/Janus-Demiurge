@@ -22,6 +22,11 @@ SCHEMA = "janus.daddy_keymaster.github_compute_receipt.v1"
 AUDIT_SCHEMA = "janus.daddy_keymaster.github_compute_audit.v1"
 SUITES = ("test_daddy_keymaster.py", "test_daddy_keymaster_providers.py",
           "test_rex_code_need_bridge.py")
+ASSIGNMENTS = {
+    "X64": ("test_daddy_keymaster.py", "test_rex_code_need_bridge.py"),
+    "ARM64": ("test_daddy_keymaster_providers.py", "test_rex_code_need_bridge.py"),
+}
+OVERLAP = "test_rex_code_need_bridge.py"
 SOURCES = ("daddy_keymaster/compute.py", "daddy_keymaster/broker.py",
            "daddy_keymaster/providers.py", "daddy_keymaster/POLICY.json",
            "tests/test_daddy_keymaster.py", "tests/test_daddy_keymaster_providers.py",
@@ -61,7 +66,7 @@ def execute(root, env):
         raise ValueError("DADDY_COMPUTE_SOURCE_SHA_MISMATCH")
     file_hashes = manifest(root)
     executed = []
-    for suite in SUITES:
+    for suite in ASSIGNMENTS[env["RUNNER_ARCH"]]:
         p = subprocess.run([sys.executable, "-m", "unittest", "discover", "-s",
                             "tests", "-p", suite, "-v"], cwd=root, text=True,
                            capture_output=True, timeout=120, check=False,
@@ -95,6 +100,7 @@ def audit(root, receipts, env):
     seen = set()
     verified = []
     common = None
+    totals = {}
     for r in receipts:
         if not isinstance(r, dict):
             raise ValueError("DADDY_COMPUTE_RECEIPT_MALFORMED")
@@ -119,16 +125,19 @@ def audit(root, receipts, env):
             raise ValueError("DADDY_COMPUTE_DUPLICATE_PLATFORM")
         seen.add(platform)
         suites = r.get("suites")
-        if (not isinstance(suites, list) or len(suites) != len(SUITES) or
-            [s.get("suite") for s in suites if isinstance(s, dict)] != list(SUITES) or
+        if (not isinstance(suites, list) or len(suites) != len(ASSIGNMENTS[platform]) or
+            [s.get("suite") for s in suites if isinstance(s, dict)] != list(ASSIGNMENTS[platform]) or
             any(not isinstance(s, dict) or s.get("status") != "PASS" or
                 type(s.get("cases")) is not int or not 1 <= s["cases"] <= 10000
                 for s in suites)):
             raise ValueError("DADDY_COMPUTE_UNVERIFIED_SUITES")
         counts = {s["suite"]: s["cases"] for s in suites}
-        if common is not None and common != counts:
+        if common is not None and common[OVERLAP] != counts[OVERLAP]:
             raise ValueError("DADDY_COMPUTE_ARCH_TEST_DISAGREEMENT")
+        if common is not None and set(common) | set(counts) != set(SUITES):
+            raise ValueError("DADDY_COMPUTE_TASK_COVERAGE_INCOMPLETE")
         common = counts
+        totals[platform] = sum(counts.values())
         verified.append({"platform": platform, "receipt_sha256": r["receipt_sha256"],
                          "cases": counts})
     if seen != set(ARCH):
@@ -138,7 +147,12 @@ def audit(root, receipts, env):
         "run_id": env["GITHUB_RUN_ID"], "attempt": env["GITHUB_RUN_ATTEMPT"],
         "commit": env["GITHUB_SHA"], "repository": env["GITHUB_REPOSITORY"],
         "workers": sorted(verified, key=lambda row: row["platform"]),
-        "total_test_cases_per_worker": sum(common.values()),
+        "total_test_cases_by_platform": totals,
+        "task_assignment": {k: list(ASSIGNMENTS[k]) for k in ARCH},
+        "independently_repeated_suite": OVERLAP,
+        "fair_use": {"maximum_simultaneous_compute_workers": 2,
+                     "scheduled_dispatches_per_day": 2,
+                     "runner_job_timeout_minutes": 10},
         "cross_architecture_agreement": True, "source_manifest": local,
         "worker_lease_after_job": False, "persistent_capacity_claim": False,
         "actual_remote_oracle_boinc_ray_used": False,
