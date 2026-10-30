@@ -8,12 +8,16 @@ on:
     branches: [main]
     paths:
       - 'daddy_keymaster/native_calibration.py'
+      - 'daddy_keymaster/quarantine.py'
+      - 'tests/test_champion_quarantine.py'
       - 'tests/test_daddy_keymaster_native_calibration.py'
       - 'janus_model/train_registry.py'
       - '.github/workflows/janus-daddy-keymaster-native-calibration.yml'
   pull_request:
     paths:
       - 'daddy_keymaster/native_calibration.py'
+      - 'daddy_keymaster/quarantine.py'
+      - 'tests/test_champion_quarantine.py'
       - 'tests/test_daddy_keymaster_native_calibration.py'
       - 'janus_model/train_registry.py'
       - '.github/workflows/janus-daddy-keymaster-native-calibration.yml'
@@ -46,6 +50,7 @@ jobs:
           set -euo pipefail
           python -m unittest discover -s tests -p test_daddy_keymaster_native_calibration.py -v
           python -m unittest -v tests/test_janus_native_model.py
+          python -m unittest discover -s tests -p test_champion_quarantine.py -v
           python - <<'PY'
           from daddy_keymaster.native_calibration import canonical_checkpoint
           from pathlib import Path
@@ -75,7 +80,7 @@ jobs:
             runtime/corpus/train.txt
             runtime/corpus/holdout.txt
             runtime/corpus/corpus_manifest.json
-          retention-days: 3
+          retention-days: 14
           if-no-files-found: error
 
   calibrate:
@@ -133,7 +138,7 @@ jobs:
         with:
           name: native-calibration-${{ matrix.arch }}
           path: runtime/native-calibration/${{ runner.arch }}/
-          retention-days: 3
+          retention-days: 14
           if-no-files-found: error
 
   independent-evaluation:
@@ -177,6 +182,32 @@ jobs:
           print('DADDY_NATIVE_CLOUD_BEST_GATE=' + a['status'])
           print('DADDY_NATIVE_CANONICAL_MODEL=' + a['incumbent_checkpoint_sha256'])
           PY
+      - name: Quarantine accepted winner bytes without any promotion authority
+        id: quarantine
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m daddy_keymaster.quarantine \
+            --audit runtime/native-audit/AUDIT.json \
+            --inputs runtime/native-inputs \
+            --output runtime/native-quarantine
+          STATUS=$(python -c "import json;print(json.load(open('runtime/native-quarantine/QUARANTINE.json'))['status'])")
+          if [ "$STATUS" = QUARANTINED_REVIEW_ONLY ]; then
+            echo 'available=true' >> "$GITHUB_OUTPUT"
+            echo 'DADDY_NATIVE_REVIEW_ONLY_CANDIDATE_QUARANTINED=TRUE'
+          else
+            echo 'available=false' >> "$GITHUB_OUTPUT"
+            echo 'DADDY_NATIVE_NO_WINNER_NO_WEIGHTS_EXPORTED=TRUE'
+          fi
+      - uses: actions/upload-artifact@v4
+        if: steps.quarantine.outputs.available == 'true'
+        with:
+          name: daddy-native-quarantined-winner
+          path: |
+            runtime/native-quarantine/candidate.pt
+            runtime/native-quarantine/QUARANTINE.json
+          retention-days: 14
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
           name: daddy-native-independent-calibration-receipt
