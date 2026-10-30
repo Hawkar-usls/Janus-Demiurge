@@ -19,7 +19,7 @@ The policy in `POLICY.json` pins all four source identities and denies network h
 
 The only current executable cloud worker is GitHub Actions itself. `broker.py` observes its **real** per-run environment, determines bounded capabilities, and computes a deterministic non-executing task plan. It does not treat an ephemeral runner as a permanently owned server. `TASKS.json` contains two safe example tasks; they are not executed or sent anywhere by the broker.
 
-Workflow `JANUS DADDY_KEYMASTER Compute Registry Witness` runs scheduled six-hourly, on explicit dispatch, when code changes merge into main and as read-only PR CI. Each cloud pass performs adversarial tests and publishes a source-bound report. Trusted runs save `LATEST.json` and immutable per-run receipts in isolated `janus/daddy-keymaster-state`, **never** in main. `LATEST` is refreshed, so prior ephemeral workers do not remain falsely selectable; history stays available in the append-only receipts.
+Workflow `JANUS DADDY_KEYMASTER Compute Registry Witness` runs scheduled six-hourly, on explicit dispatch, when code changes merge into main and as read-only PR CI. Each cloud pass performs adversarial tests and publishes a source-bound report. Trusted runs save a post-job persistent-capacity roster in `LATEST.json` and immutable per-run observations under `receipts/` in isolated `janus/daddy-keymaster-state`, **never** in main. The GitHub runner is counted as ready only *during its own witness job*; the persisted roster retires that ephemeral runner and explicitly reports zero reusable capacity outside that job. History stays available in append-only receipts.
 
 ## Activation path for each source
 

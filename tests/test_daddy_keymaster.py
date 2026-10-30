@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import unittest
 
+from daddy_keymaster.roster import finalize
 from daddy_keymaster.broker import (
     PROVIDERS, build_registry, check_policy, report, validate_approved_registry,
     plan, sha
@@ -115,6 +116,22 @@ class DaddyKeymasterTests(unittest.TestCase):
         bad["host_scanning"] = True
         with self.assertRaises(ValueError):
             check_policy(bad)
+
+    def test_finished_actions_worker_not_reusable_from_latest(self):
+        observed = report(POLICY, REGISTRY, TASKS, NOW, env=GH)
+        roster = finalize(observed)
+        self.assertEqual(roster["status"], "NO_PERSISTENT_CAPACITY_ATTESTED")
+        self.assertEqual(roster["available_outside_witness_job"], [])
+        self.assertEqual(roster["persistent_provider_ready_counts"]["github_actions"], 0)
+        self.assertEqual(roster["last_seen_now_unavailable"][0]["id"],
+                         observed["active"][0]["id"])
+        self.assertEqual(roster, finalize(observed))
+
+    def test_mutated_observation_cannot_forge_persistent_roster(self):
+        observed = report(POLICY, REGISTRY, TASKS, NOW, env=GH)
+        observed["active"][0]["state"] = "PERMANENT_FREE_DEDICATED"
+        with self.assertRaises(ValueError):
+            finalize(observed)
 
     def test_receipt_is_hash_bound_and_no_implicit_dispatch(self):
         out = report(POLICY, REGISTRY, TASKS, NOW, env=GH)

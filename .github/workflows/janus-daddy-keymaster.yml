@@ -56,6 +56,16 @@ jobs:
           print('DADDY_KEYMASTER_GITHUB_REAL_WORKER_OBSERVED=PASS')
           print('DADDY_KEYMASTER_EXTERNAL_PROVIDERS=WAIT_OWNER_REGISTRATION')
           PY
+      - name: Retire ephemeral runner from next-job availability
+        run: |
+          python -m daddy_keymaster.roster --receipt daddy-output/REPORT.json --out daddy-output/LATEST.json
+          python - <<'PY'
+          import json
+          x=json.load(open("daddy-output/LATEST.json"))
+          assert x["available_outside_witness_job"] == []
+          assert x["persistent_provider_ready_counts"]["github_actions"] == 0
+          print("DADDY_KEYMASTER_NO_FALSE_PERSISTENT_WORKER=PASS")
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: daddy-keymaster-capacity-receipt
@@ -84,7 +94,7 @@ jobs:
           else
             cp daddy-output/REPORT.json "$RECEIPT"
           fi
-          cp daddy-output/REPORT.json ../daddy-state/daddy_keymaster/state/LATEST.json
+          cp daddy-output/LATEST.json ../daddy-state/daddy_keymaster/state/LATEST.json
           git -C ../daddy-state add -f "daddy_keymaster/state/receipts/$ID.json"
           git -C ../daddy-state add -f daddy_keymaster/state/LATEST.json
           git -C ../daddy-state diff --cached --check
