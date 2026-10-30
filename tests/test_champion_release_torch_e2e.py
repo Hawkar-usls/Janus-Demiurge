@@ -165,6 +165,8 @@ class RealTorchChampionE2E(unittest.TestCase):
                         "checkpoint_source_sha256": incumbent_sha,
                         "corpus_source_digest": source_digest,
                         "sha256": hash_file(final),
+                        "adaptive_holdout_sha256": hash_file(adaptive),
+                        "anchor_sha256": hash_file(anchor),
                     }
                     fmanifest_path = files / "final_manifest.json"
                     fmanifest_path.write_text(json.dumps(fmanifest), encoding="utf-8")
