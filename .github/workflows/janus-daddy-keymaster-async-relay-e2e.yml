@@ -1,0 +1,120 @@
+name: JANUS DADDY_KEYMASTER Async Relay Cross-VM E2E
+
+on:
+  pull_request:
+    paths:
+      - 'daddy_keymaster/async_relay.py'
+      - 'tests/test_daddy_keymaster_async_relay.py'
+      - '.github/workflows/janus-daddy-keymaster-async-relay-e2e.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-daddy-async-relay-e2e
+  cancel-in-progress: false
+
+jobs:
+  origin-x64:
+    name: Origin X64 (durable local checkpoint)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Adversarial process crash, competing claims and fencing tests
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p test_daddy_keymaster_async_relay.py -v
+      - name: Produce synthetic immutable provenance handoff
+        run: |
+          set -euo pipefail
+          mkdir -p relay-data
+          python -m daddy_keymaster.async_relay origin --db relay-data/relay.sqlite --out relay-data/origin.json
+          test -f relay-data/relay.sqlite
+          test -f relay-data/origin.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: daddy-async-relay-origin
+          path: |
+            relay-data/relay.sqlite
+            relay-data/origin.json
+          if-no-files-found: error
+          retention-days: 3
+
+  resume-arm64:
+    name: Resume on a different ARM64 GitHub VM
+    needs: origin-x64
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: daddy-async-relay-origin
+          path: relay-data
+      - name: Verify original digest, restart journal and finish next task
+        run: |
+          set -euo pipefail
+          python -m daddy_keymaster.async_relay resume \
+            --db relay-data/relay.sqlite \
+            --parent relay-data/origin.json \
+            --out relay-data/resume.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: daddy-async-relay-resumed
+          path: |
+            relay-data/relay.sqlite
+            relay-data/origin.json
+            relay-data/resume.json
+          if-no-files-found: error
+          retention-days: 3
+
+  independent-witness:
+    name: Fresh Linux witness (no write access)
+    needs: resume-arm64
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: daddy-async-relay-resumed
+          path: relay-data
+      - name: Reverify all persisted events and complete tasks
+        run: |
+          set -euo pipefail
+          python -m daddy_keymaster.async_relay witness \
+            --db relay-data/relay.sqlite \
+            --parent relay-data/resume.json \
+            --out relay-data/witness.json
+          python - <<'PY'
+          import json
+          x=json.load(open('relay-data/witness.json'))
+          assert x['status']=='TWO_EPHEMERAL_GITHUB_WORKERS_RELAYED'
+          assert x['tasks_complete']==2 and x['events']==8
+          assert x['external_dispatches']==0
+          assert x['production_promotion'] is False
+          print('JANUS_ASYNC_RELAY_X64_TO_ARM64_TO_WITNESS=PASS')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: daddy-async-relay-independent-witness
+          path: relay-data/witness.json
+          if-no-files-found: error
+          retention-days: 7
