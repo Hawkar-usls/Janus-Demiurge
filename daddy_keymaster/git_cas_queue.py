@@ -104,6 +104,13 @@ def _transition(tasks, kind, tid, detail):
             row["checkpoint_sha256"] != detail["checkpoint_sha256"]):
             raise ValueError("CAS_MISSING_CHECKPOINT")
         row.update(state="COMPLETE", result_sha256=_sha(detail["result_sha256"]))
+    elif kind == "SKIP_SUPERSEDED":
+        _exact(detail, ("source_sha256", "reason"))
+        if (row["state"] != "QUEUED" or
+            detail["source_sha256"] != row["source_sha256"] or
+            detail["reason"] != "UNCLAIMED_OLD_MAIN_VERSION"):
+            raise ValueError("CAS_CANNOT_SKIP_CLAIMED_WORK")
+        row["state"] = "SKIPPED"
     elif kind == "HOLD":
         _exact(detail, ("generation", "reason"))
         if (row["state"] != "LEASED" or
@@ -170,6 +177,23 @@ def enqueue(state, task_id, kind, source_sha256, *, priority=1, cpu=1,
         "kind": kind, "source_sha256": source_sha256, "priority": priority,
         "cpu": cpu, "max_seconds": max_seconds,
     })
+
+
+def skip_unclaimed_obsolete(state, current_source_sha256):
+    """One append-only skip per old unclaimed task; no leased/uncertain replay."""
+    verify(state)
+    _sha(current_source_sha256)
+    obsolete = sorted(tid for tid, row in state["tasks"].items()
+                      if row["state"] == "QUEUED" and
+                      row["source_sha256"] != current_source_sha256)
+    if not obsolete:
+        return state, None
+    tid = obsolete[0]
+    next_state = _append(state, "SKIP_SUPERSEDED", tid, {
+        "source_sha256": state["tasks"][tid]["source_sha256"],
+        "reason": "UNCLAIMED_OLD_MAIN_VERSION",
+    })
+    return next_state, tid
 
 
 def claim(state, holder, allowed_kinds, cpu, *, now):
