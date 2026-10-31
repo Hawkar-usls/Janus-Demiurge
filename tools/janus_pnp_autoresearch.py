@@ -141,6 +141,16 @@ def main():
     supervisor=build_supervisor(candidates,fabric,head,hrain,inaihr,probes)
     evidence=json.loads(Path(a.evidence_bundle).read_text(encoding="utf-8"))
     evidence=validate_bundle(evidence,head)
+    ledger=json.loads(Path(a.beetle_ledger).read_text(encoding="utf-8"))
+    cleanroom=json.loads(Path(a.policy0a_cleanroom).read_text(encoding="utf-8"))
+    if ledger.get("schema")!="janus.beetle.individual_ledger_replay.v1" or ledger.get("status")!="ALL_RECORDED_BATCHES_RESULT_AND_RECEIPT_REPLAYED":
+        raise ValueError("BEETLE_LEDGER_UNVERIFIED")
+    if ledger.get("beetle_source_commit")!=evidence["beetle"]["source_commit"] or ledger.get("validated_batches")!=evidence["beetle"]["last_processed_sequence"]:
+        raise ValueError("BEETLE_LEDGER_SOURCE_MISMATCH")
+    if ledger.get("validated_results")!=ledger.get("validated_batches") or ledger.get("validated_receipts")!=ledger.get("validated_batches") or ledger.get("validated_input_packets")!=ledger.get("validated_batches"):
+        raise ValueError("BEETLE_LEDGER_INCOMPLETE")
+    if ledger.get("recomputed_context_sha256")!=evidence["beetle"]["source_context_sha256"] or ledger.get("cursor_receipt_sha256")!=evidence["beetle"]["last_processing_receipt_sha256"] or ledger.get("source_truth_independently_established") is not False:
+        raise ValueError("BEETLE_LEDGER_RECEIPT_OR_AUTHORITY")
     if tracks["P_VS_NP"]!="OPEN":
         raise ValueError("P_VS_NP_MUST_REMAIN_OPEN")
     # This supervisor is already the sole research authority boundary. The
