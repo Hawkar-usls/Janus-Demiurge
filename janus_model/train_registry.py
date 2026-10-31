@@ -22,6 +22,7 @@ from janus_model.eval_contract import (
     contract_identity,
     sha256_file,
 )
+from janus_model.checkpoint_admission import preflight as checkpoint_preflight, checked_config
 from janus_model.model import (
     ByteTokenizer,
     JanusModelConfig,
@@ -93,11 +94,25 @@ def eval_loss(model, stream, batches, batch_size, seed):
     return sum(vals) / len(vals)
 
 
-def load_checkpoint(path):
+def load_checkpoint(path, expected_sha256=None):
+    """Check exact committed identity, bounded allocation and tensor finiteness."""
+    checkpoint_preflight(Path(path), expected_sha256=expected_sha256)
     obj = torch.load(path, map_location="cpu", weights_only=True)
-    cfg = JanusModelConfig.from_dict(obj["config"])
+    if not isinstance(obj, dict) or not isinstance(obj.get("model_state"), dict):
+        raise RuntimeError("JANUS_CHECKPOINT_OBJECT_SHAPE_HOLD")
+    clean = checked_config(obj.get("config"))
+    cfg = JanusModelConfig.from_dict(clean)
+    state = obj["model_state"]
+    if len(state) > 4096 or any(not isinstance(k, str) or not isinstance(v, torch.Tensor)
+                                for k, v in state.items()):
+        raise RuntimeError("JANUS_CHECKPOINT_STATE_SCHEMA_HOLD")
+    if sum(v.numel() for v in state.values()) > 30_000_000:
+        raise RuntimeError("JANUS_CHECKPOINT_STATE_TENSOR_BUDGET_HOLD")
+    for value in state.values():
+        if torch.is_floating_point(value) and not bool(torch.isfinite(value).all().item()):
+            raise RuntimeError("JANUS_CHECKPOINT_NONFINITE_WEIGHTS_HOLD")
     model = JanusTinyTransformer(cfg)
-    model.load_state_dict(obj["model_state"])
+    model.load_state_dict(state, strict=True)
     return model, obj
 
 
