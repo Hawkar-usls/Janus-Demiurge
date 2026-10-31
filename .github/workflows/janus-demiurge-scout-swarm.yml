@@ -47,7 +47,7 @@ jobs:
           node-version: '22'
       - name: Install GitHub Copilot CLI
         run: |
-          npm install -g @github/copilot
+          npm install -g @github/copilot@1.0.105
           copilot --version
       - name: Probe model availability once for the whole swarm
         id: probe
@@ -63,8 +63,7 @@ jobs:
             --no-ask-user \
             --no-color \
             --no-custom-instructions \
-            --no-remote \
-            --no-remote-export \
+            --sync-session=off \
             --disable-builtin-mcps \
             --deny-tool=read \
             --deny-tool=write \
@@ -137,7 +136,7 @@ jobs:
       - name: Install GitHub Copilot CLI when model synthesis is available
         if: needs.model_preflight.outputs.model_status == 'AVAILABLE'
         run: |
-          npm install -g @github/copilot
+          npm install -g @github/copilot@1.0.105
           copilot --version
       - name: Run ${{ matrix.id }} with model synthesis
         if: needs.model_preflight.outputs.model_status == 'AVAILABLE'
