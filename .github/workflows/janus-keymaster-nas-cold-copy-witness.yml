@@ -1,0 +1,30 @@
+name: JANUS Keymaster offline cold-copy witness
+
+on:
+  pull_request:
+    paths:
+      - 'daddy_keymaster/nas_cold_copy_witness.py'
+      - 'tests/test_keymaster_nas_cold_copy_witness.py'
+      - '.github/workflows/janus-keymaster-nas-cold-copy-witness.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'daddy_keymaster/nas_cold_copy_witness.py'
+      - 'tests/test_keymaster_nas_cold_copy_witness.py'
+      - '.github/workflows/janus-keymaster-nas-cold-copy-witness.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  synthetic-offline-witness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate no-network read-only cold-copy witness
+        run: python -m unittest discover -s tests -p 'test_keymaster_nas_cold_copy_witness.py' -v
