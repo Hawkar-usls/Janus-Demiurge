@@ -88,3 +88,45 @@ hashes. Production requires an independently authenticated custody domain.
 
 Truth boundary: this is a proof of transportable *state and work sequencing*
 for synthetic project tasks, not proof of scientific model improvement.
+
+## R2 staging · Git fast-forward cross-process CAS (separate PR branch)
+
+`daddy_keymaster/git_cas_queue.py` now supplies an independent, JSON-native
+queue using a dedicated **lab-only** Git branch:
+`janus/daddy-keymaster-cas-lab-20261031` and fixed path
+`state/relay_queue.json`.
+
+This code is **not a dispatcher**. It creates a proposed journal append for
+one typed synthetic or authorized project task, reads the exact ref SHA and
+then commits a single-parent child. A normal non-forced Git push must be a
+fast-forward, so two competing children of the same parent cannot both advance
+the ref. A failed push is a terminal `Conflict` decision for the stale attempt:
+no silent retry, duplicate external effect, or force push.
+
+Two-clone tests initialize a dedicated local bare Git server, make independent
+clones, then race distinct lease claims against the same remote branch. Tests
+also check event-chain replay, stale source/result digests, timeout => HOLD and
+checkpoint/complete handoff between independently re-fetched clones.
+
+### Scope of evidence
+
+- Simulated shared Git server via **separate local Git clones**, potentially
+  competing processes on one CI host. This is a real Git ref race, **not** yet
+  a live GitHub remote multi-host contention test.
+- Real GitHub-hosted runners retain `contents: read` on PRs; production or
+  remote lab writes require independent trusted authorization. The adapter
+  deliberately denies GitHub writes outside a trusted main workflow_dispatch
+  guard and the fixed lab-only branch.
+- A Git ref fast-forward verifies the single-branch linear extension. It does
+  not provide exactly-once external side effects, a signed remote audit
+  authority, automatic machine discovery, multi-host availability, or a
+  globally enforced worker budget across unrelated workflows.
+- Because the state is append-only with a finite event cap, periodic safe
+  compaction will require a separately reviewed snapshot witness.
+
+### Next real acceptance gate
+
+Run a **trusted, opt-in cross-host GitHub remote CAS test** against only the
+isolated lab branch, under reviewed least-privilege credentials; verify that
+one of two claims rejects and survives a remote worker crash without source
+or champion mutation. Use separate readonly Witness for final receipt.
