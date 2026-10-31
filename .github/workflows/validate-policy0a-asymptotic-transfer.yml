@@ -1,0 +1,78 @@
+name: JANUS Policy0A Independent All-N Transfer Audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/pnp_policy0a_asymptotic_transfer_witness.py'
+      - 'tests/test_pnp_policy0a_asymptotic_transfer_witness.py'
+      - 'docs/PNP_POLICY0A_INDEPENDENT_ASYMPTOTIC_TRANSFER.md'
+      - '.github/workflows/validate-policy0a-asymptotic-transfer.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/pnp_policy0a_asymptotic_transfer_witness.py'
+      - 'tests/test_pnp_policy0a_asymptotic_transfer_witness.py'
+      - '.github/workflows/validate-policy0a-asymptotic-transfer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-policy0a-asymptotic-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  all-n-transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Recompute exact symbolic polynomial identities and adversarial mutations
+        run: |
+          python -m unittest -v tests/test_pnp_policy0a_asymptotic_transfer_witness.py
+          python tools/pnp_policy0a_asymptotic_transfer_witness.py \
+            --out runtime/pnp/ASYPTOTIC_TRANSFER_CERTIFICATE.json
+      - name: Independently pin the actual policy and GT source Git blobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/Hawkar-usls/Janus-Fundamentum.git runtime/Janus-Fundamentum
+          git clone --depth 1 https://github.com/Hawkar-usls/TOPA.git runtime/TOPA
+          policy_sha=$(git -C runtime/Janus-Fundamentum hash-object experiments/direct/janus_tear_policy0a_masked_tseitin.py)
+          gt_sha=$(git -C runtime/TOPA hash-object research/mathematics/p-vs-np/source_gt.py)
+          padded_sha=$(git -C runtime/TOPA hash-object research/mathematics/p-vs-np/policy0a_padded_gt_counterfamily.py)
+          test "$policy_sha" = "c3684f9cc8a7f3d5470d2218bf9296310ad317e9"
+          test "$gt_sha" = "fc3ad084944aa303da3ec64b64c637d3cdf24e2a"
+          test "$padded_sha" = "9002e5b96724fe6534af08cd881264351481623a"
+          echo 'JANUS_POLICY0A_PREMISE_SOURCE_PIN=PASS'
+      - name: Enforce external-theorem and P-vs-NP claim ceilings
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('runtime/pnp/ASYPTOTIC_TRANSFER_CERTIFICATE.json')
+          report=json.loads(p.read_text())
+          premise=report['conditional_transfer']
+          assert report['status']=='ALL_N_ALGEBRA_CERTIFIED__GT_THEOREM_DEPENDENCY_EXPLICIT'
+          assert premise['assumes_peer_reviewed_FCWS_theorem'] is True
+          assert report['external_GT_theorem_independently_reproved'] is False
+          assert report['machine_checked_general_projection_induction'] is False
+          assert report['unrestricted_SAT_lower_bound'] is False
+          assert report['P_VS_NP']=='OPEN'
+          assert report['authority_delta']==0
+          print('JANUS_POLICY0A_ASYMPTOTIC_TRANSFER_ALGEBRA=PASS')
+          print('JANUS_EXTERNAL_GT_THEOREM_INDEPENDENT_REPROOF=NOT_CLAIMED')
+          print('JANUS_P_VS_NP=OPEN')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: janus-policy0a-asymptotic-transfer-witness
+          path: runtime/pnp/ASYPTOTIC_TRANSFER_CERTIFICATE.json
+          if-no-files-found: warn
+          retention-days: 14
