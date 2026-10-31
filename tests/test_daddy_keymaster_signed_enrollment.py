@@ -92,8 +92,8 @@ class EnrollmentTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.verify(body,sig,node_id="owner-candidate-other")
         with self.assertRaisesRegex(ValueError,"ENROLL_SIGNATURE_NOT_AUTHENTIC"):
-            forged={**body,"node_id":"owner-candidate-other"}
-            self.verify(forged,sig,node_id="owner-candidate-other")
+            forged={**body,"node_id":"owner-candidate-other123"}
+            self.verify(forged,sig,node_id="owner-candidate-other123")
 
     def test_future_attestation_denied(self):
         body,sig=make_attestation(self.c,NODE,CANARY,"2026-10-31T16:30:40Z",self.priv)
