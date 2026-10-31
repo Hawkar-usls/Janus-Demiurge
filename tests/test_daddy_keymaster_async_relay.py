@@ -173,6 +173,25 @@ class AsyncRelayTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "RELAY_EVENT_CHAIN_INVALID"):
             self.store.witness()
 
+    def test_mutated_result_digest_detected_by_journal_replay(self):
+        self.add()
+        token = self.store.claim("worker-first", ["contract_test"], 2, now=NOW)
+        self.store.checkpoint(token, SRC, now=NOW)
+        self.store.complete(token, SRC, now=NOW)
+        with sqlite3.connect(self.db) as db:
+            db.execute("UPDATE tasks SET result_sha256=? WHERE id='task-one'",
+                       ("f" * 64,))
+        with self.assertRaisesRegex(ValueError, "RELAY_ROW_JOURNAL_DIVERGED"):
+            self.store.witness()
+
+    def test_mutated_source_identity_detected_by_journal_replay(self):
+        self.add()
+        with sqlite3.connect(self.db) as db:
+            db.execute("UPDATE tasks SET source_sha256=? WHERE id='task-one'",
+                       ("b" * 64,))
+        with self.assertRaisesRegex(ValueError, "RELAY_ROW_JOURNAL_DIVERGED"):
+            self.store.witness()
+
     def test_arbitrary_db_state_mutation_detected(self):
         self.add()
         with sqlite3.connect(self.db) as db:
