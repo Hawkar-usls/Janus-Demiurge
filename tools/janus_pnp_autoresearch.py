@@ -202,6 +202,7 @@ def main():
       "fundamentum":{"repository":"Hawkar-usls/Janus-Fundamentum","commit":head,"read_only":True,"tracks":tracks},
       "memory":{"hrain":hrain,"inaihr_source_commit":inaihr.get("source_commit"),"inaihr_routes":inaihr.get("routes",[]),"topa":topa},
       "content_evidence_bundle":evidence,
+      "deep_replay_receipts":{"beetle":ledger,"policy0a":cleanroom},
       "janus_own_candidates":candidates,
       "bounded_replay_probes":probes,
       "research_supervisor":supervisor,
