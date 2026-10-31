@@ -245,6 +245,8 @@ def audit(state, receipts, source_sha, run_id):
             row["holder"].startswith("gha-" + run_id + "-") and
             tid not in seen):
             raise ValueError("DADDY_AUDIT_MISSING_COMMITTED_RECEIPT")
+    if any(row["state"] == "HOLD" for row in state["tasks"].values()):
+        raise ValueError("DADDY_WITNESS_UNRESOLVED_HOLD")
     return {"status": "INDEPENDENT_BOUND_CI_WITNESS",
             "verified_receipts": len(seen), "queue_epoch": state["epoch"],
             "tip_sha256": state["tip_sha256"], "production_promotion": False}
