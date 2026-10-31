@@ -1,0 +1,69 @@
+name: JANUS PNP Content Evidence Independent Replay
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/pnp_content_evidence_bridge.py'
+      - 'tests/test_pnp_content_evidence_bridge.py'
+      - 'tools/janus_pnp_autoresearch.py'
+      - '.github/workflows/janus-pnp-autoresearch.yml'
+      - '.github/workflows/validate-pnp-content-evidence.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  independent-finite-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reject altered source, counterfeit ACK, and unauthorized promotion
+        run: |
+          python -m unittest -v tests/test_pnp_content_evidence_bridge.py
+          python -m py_compile tools/janus_pnp_autoresearch.py tools/pnp_content_evidence_bridge.py
+      - name: Fetch exact public source trees as data, not executable code
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/pnp
+          git clone --depth 1 https://github.com/Hawkar-usls/Janus-Fundamentum.git runtime/pnp/Janus-Fundamentum
+          git clone --depth 1 https://github.com/Hawkar-usls/TOPA.git runtime/pnp/TOPA
+          git fetch --no-tags --depth=1 origin beetle-memory
+          BEETLE_HEAD=$(git rev-parse FETCH_HEAD)
+          mkdir -p runtime/pnp/beetle
+          git show "$BEETLE_HEAD:data/beetle-runtime/CONTEXT.json" > runtime/pnp/beetle/CONTEXT.json
+          git show "$BEETLE_HEAD:data/beetle-runtime/PROCESSING_ACK.json" > runtime/pnp/beetle/PROCESSING_ACK.json
+          python tools/pnp_content_evidence_bridge.py \
+            --fundamentum runtime/pnp/Janus-Fundamentum \
+            --topa runtime/pnp/TOPA \
+            --beetle-context runtime/pnp/beetle/CONTEXT.json \
+            --beetle-ack runtime/pnp/beetle/PROCESSING_ACK.json \
+            --beetle-commit "$BEETLE_HEAD" \
+            --out runtime/pnp/JANUS_PNP_CONTENT_EVIDENCE.json
+      - name: Assert independent finite verification does not promote science
+        run: |
+          python - <<'PY'
+          import json
+          x=json.load(open('runtime/pnp/JANUS_PNP_CONTENT_EVIDENCE.json'))
+          assert x['schema']=='janus.pnp.content_evidence_bundle.v1'
+          assert x['p_vs_np']=='OPEN'
+          assert x['fundamentum']['independent_finite_replay']['case_count']==16
+          assert x['topa']['independent_finite_replay']['sink_pair_resolvents_checked']==331776
+          assert x['topa']['source_reported_result']=='REFUTED_FOR_CURRENT_POLICY0A'
+          assert x['beetle']['independent_source_truth_established'] is False
+          assert all(v is False for v in x['authority'].values())
+          print('JANUS_PNP_FINITE_CONTENT_WITNESS=PASS')
+          print('JANUS_PNP_GENERAL_CLAIM=OPEN')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: janus-pnp-bounded-content-evidence
+          path: runtime/pnp/JANUS_PNP_CONTENT_EVIDENCE.json
+          if-no-files-found: warn
+          retention-days: 14
