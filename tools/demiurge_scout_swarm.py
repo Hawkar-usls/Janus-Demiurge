@@ -480,10 +480,12 @@ def consolidate(reports_root: Path, run_id: str, sha: str) -> None:
                 continue
             expected_target = manifest_agents[aid]
             target = obj.get("target") if isinstance(obj.get("target"), dict) else {}
+            authority = obj.get("authority") if isinstance(obj.get("authority"), dict) else {}
+            evidence = obj.get("evidence_gate") if isinstance(obj.get("evidence_gate"), dict) else {}
             if (target.get("repository") != expected_target["target_repo"] or
                 target.get("ref") != expected_target["target_ref"] or
-                obj.get("authority", {}).get("target_repository_write") is not False or
-                obj.get("evidence_gate", {}).get("world_truth") is not False):
+                authority.get("target_repository_write") is not False or
+                evidence.get("world_truth") is not False):
                 raise ValueError("SCOUT_REPORT_AUTHORITY_OR_TARGET_MISMATCH:" + str(aid))
             if aid in reports:
                 raise ValueError("SCOUT_DUPLICATE_AGENT_RECEIPT:" + str(aid))
