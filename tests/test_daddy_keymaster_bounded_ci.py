@@ -115,6 +115,17 @@ class HeartbeatTests(unittest.TestCase):
             finish(store, ENV, token, fake, now=NOW)
         self.assertEqual(store.read()[1]["epoch"], old)
 
+    def test_witness_reports_old_unresolved_hold_as_degraded(self):
+        from daddy_keymaster.git_cas_queue import reconcile_expired
+        store = Store()
+        prepare(store, ENV, now=NOW)
+        token = take(store, ENV, "X64", now=NOW)
+        _, state = store.read()
+        state, held = reconcile_expired(state, now="2026-10-31T12:10:00Z")
+        self.assertEqual(held, [token["task_id"]])
+        with self.assertRaisesRegex(ValueError, "UNRESOLVED_HOLD"):
+            audit(state, [], SOURCE, ENV["GITHUB_RUN_ID"])
+
     def test_invalid_arch_can_not_claim(self):
         store = Store()
         prepare(store, ENV, now=NOW)
