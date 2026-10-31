@@ -20,6 +20,7 @@ SCHEMA = "janus.daddy_keymaster.git_cas_queue.v1"
 ZERO = "0" * 64
 STATE_PATH = "state/relay_queue.json"
 BRANCH = "janus/daddy-keymaster-cas-lab-20261031"
+RUNTIME_BRANCH = "janus/daddy-keymaster-ci-queue-state"
 HEX = re.compile(r"^[0-9a-f]{64}$")
 COMMIT = re.compile(r"^[0-9a-f]{40}$")
 MAX_TASKS = 32
@@ -270,15 +271,23 @@ class GitCAS:
     """
 
     def __init__(self, repo, branch=BRANCH):
-        if branch != BRANCH:
+        if branch not in (BRANCH, RUNTIME_BRANCH):
             raise ValueError("CAS_BRANCH_SCOPE_REFUSED")
+        if branch == RUNTIME_BRANCH and not (
+            os.getenv("JANUS_DADDY_CI_RUNTIME") == "TRUE"
+            and os.getenv("GITHUB_ACTIONS") == "true"
+            and os.getenv("GITHUB_REPOSITORY") == "Hawkar-usls/Janus-Demiurge"
+            and os.getenv("GITHUB_REF") == "refs/heads/main"
+            and os.getenv("GITHUB_EVENT_NAME") in ("schedule", "workflow_dispatch")
+        ):
+            raise ValueError("CAS_RUNTIME_BRANCH_NOT_AUTHORIZED")
         self.repo = Path(repo)
         self.branch = branch
         remote = _git(repo, "remote", "get-url", "origin").stdout.decode().strip()
         self.remote = remote
         if re.search(r"github\.com[:/]", remote, re.I):
             if not (os.getenv("JANUS_RELAY_CAS_WRITE_AUTHORIZED") == "TRUE"
-                    and os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+                    and os.getenv("GITHUB_EVENT_NAME") in ("workflow_dispatch", "schedule")
                     and os.getenv("GITHUB_REF") == "refs/heads/main"
                     and os.getenv("GITHUB_REPOSITORY") == "Hawkar-usls/Janus-Demiurge"):
                 raise ValueError("CAS_REMOTE_GITHUB_WRITE_NOT_AUTHORIZED")
