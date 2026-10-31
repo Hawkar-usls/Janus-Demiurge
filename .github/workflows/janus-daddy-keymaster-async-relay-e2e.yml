@@ -4,6 +4,9 @@ on:
   pull_request:
     paths:
       - 'daddy_keymaster/async_relay.py'
+      - 'daddy_keymaster/git_cas_queue.py'
+      - 'tests/test_daddy_keymaster_git_cas_state.py'
+      - 'tests/test_daddy_keymaster_git_cas_remote.py'
       - 'tests/test_daddy_keymaster_async_relay.py'
       - 'daddy_keymaster/ASYNC_RELAY.md'
       - '.github/workflows/janus-daddy-keymaster-async-relay-e2e.yml'
@@ -32,6 +35,11 @@ jobs:
         run: |
           set -euo pipefail
           python -m unittest discover -s tests -p test_daddy_keymaster_async_relay.py -v
+      - name: Verify two-clone Git CAS conflict and stale-holder safety
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p 'test_daddy_keymaster_git_cas_*.py' -v
+          echo 'DADDY_GIT_CAS_TWO_CLIENT_CONFLICT=PASS'
       - name: Produce synthetic immutable provenance handoff
         run: |
           set -euo pipefail
