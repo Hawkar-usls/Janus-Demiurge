@@ -121,6 +121,21 @@ class HeartbeatTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             take(store, ENV, "GPU", now=NOW)
 
+    def test_real_allowlisted_ci_suites_complete_across_two_workers(self):
+        store = Store()
+        prepare(store, ENV, now=NOW)
+        receipts = []
+        for arch in ("X64", "ARM64"):
+            token = take(store, ENV, arch, now=NOW)
+            record = run_contract(token, {**ENV, "RUNNER_ARCH": arch}, ROOT)
+            self.assertEqual(record["status"], "ALLOWLISTED_TEST_SUITE_PASSED")
+            self.assertEqual(record["external_effects"], 0)
+            self.assertEqual(finish(store, ENV, token, record, now=NOW), "COMPLETE")
+            receipts.append(record)
+        receipt = audit(store.read()[1], receipts, SOURCE, ENV["GITHUB_RUN_ID"])
+        self.assertEqual(receipt["verified_receipts"], 2)
+        self.assertEqual(receipt["status"], "INDEPENDENT_BOUND_CI_WITNESS")
+
     def test_run_contract_rejects_arch_mismatch_without_subprocess(self):
         store = Store()
         prepare(store, ENV, now=NOW)
