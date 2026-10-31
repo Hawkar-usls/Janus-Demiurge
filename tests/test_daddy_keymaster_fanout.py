@@ -110,7 +110,7 @@ class BoundedFanoutTests(unittest.TestCase):
         self.assertIn("github.event_name != 'pull_request'", text)
         self.assertIn("persist-credentials: false", text)
         self.assertIn("permissions:\n  contents: read", text)
-        self.assertIn("scheduled", text.lower())
+        self.assertIn("schedule:", text)
         self.assertIn("daddy-keymaster-state", text)
         self.assertNotIn("curl", text)
         self.assertNotIn("copilot", text.lower())
