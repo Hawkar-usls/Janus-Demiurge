@@ -11,6 +11,8 @@ on:
       - 'restored/hrain_autonomy.py'
       - 'tools/janus_hrain_*'
       - 'tests/test_janus_hrain_synthetic_endurance.py'
+      - 'tools/janus_hrain_process_restart_gate.py'
+      - 'tests/test_janus_hrain_process_restart_gate.py'
       - 'tests/test_janus_hrain_unattended_integrity_gate.py'
       - '.github/workflows/janus-hrain-unattended-integrity.yml'
   pull_request:
@@ -20,6 +22,8 @@ on:
       - 'restored/hrain_autonomy.py'
       - 'tools/janus_hrain_*'
       - 'tests/test_janus_hrain_synthetic_endurance.py'
+      - 'tools/janus_hrain_process_restart_gate.py'
+      - 'tests/test_janus_hrain_process_restart_gate.py'
       - 'tests/test_janus_hrain_unattended_integrity_gate.py'
       - '.github/workflows/janus-hrain-unattended-integrity.yml'
 permissions:
@@ -50,6 +54,8 @@ jobs:
             'tools/janus_hrain_shadow_independent_verify.py',
             'tools/janus_hrain_unattended_integrity_gate.py',
             'tools/janus_hrain_synthetic_endurance.py',
+            'tools/janus_hrain_process_restart_gate.py',
+            'tests/test_janus_hrain_process_restart_gate.py',
             'tests/test_janus_hrain_synthetic_endurance.py',
             'tests/test_janus_hrain_unattended_integrity_gate.py',
             'tests/test_janus_hrain_private_checkpoint_ledger.py',
@@ -82,6 +88,10 @@ jobs:
         run: |
           python tools/janus_hrain_synthetic_endurance.py --cycles 300 --capacity 80 --report hrain-synthetic-endurance.json
           python -m unittest discover -v -s tests -p test_janus_hrain_synthetic_endurance.py
+      - name: Exercise real child SIGKILL and fresh-process recovery on synthetic graph only
+        run: |
+          python tools/janus_hrain_process_restart_gate.py --report hrain-process-restart-report.json
+          python -m unittest -v tests/test_janus_hrain_process_restart_gate.py
       - name: Keep minimal public report for audit
         if: always()
         uses: actions/upload-artifact@v4
@@ -90,5 +100,6 @@ jobs:
           path: |
             hrain-public-safety-report.json
             hrain-synthetic-endurance.json
+            hrain-process-restart-report.json
           retention-days: 7
           if-no-files-found: ignore
