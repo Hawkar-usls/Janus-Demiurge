@@ -1,0 +1,30 @@
+name: JANUS NAS historical code_dna lineage (metadata-only)
+
+on:
+  pull_request:
+    paths:
+      - 'tools/nas_code_dna_lineage.py'
+      - 'tests/test_nas_code_dna_lineage.py'
+      - '.github/workflows/janus-nas-code-dna-lineage.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/nas_code_dna_lineage.py'
+      - 'tests/test_nas_code_dna_lineage.py'
+      - '.github/workflows/janus-nas-code-dna-lineage.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static-metadata-lineage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run offline, synthetic safety tests
+        run: python -m unittest discover -s tests -p 'test_nas_code_dna_lineage.py' -v
