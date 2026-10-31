@@ -13,6 +13,7 @@ import json
 import os
 import re
 import sqlite3
+from contextlib import closing
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import quote
@@ -49,7 +50,7 @@ def build(source: Path) -> dict:
 
     rows = []
     try:
-        with sqlite3.connect(_source_uri(source), uri=True, timeout=2) as db:
+        with closing(sqlite3.connect(_source_uri(source), uri=True, timeout=2)) as db:
             db.execute("PRAGMA query_only=ON")
             # No SELECT from vault, personal memory, chat or model blobs.
             cursor = db.execute(
