@@ -10,6 +10,7 @@ on:
       - 'tools/janus_pnp_autoresearch.py'
       - 'tools/pnp_content_evidence_bridge.py'
       - 'tools/pnp_policy0a_cleanroom_replay.py'
+      - 'tools/pnp_policy0a_asymptotic_transfer_witness.py'
       - 'tools/beetle_individual_ledger_replay.py'
       - 'tests/test_pnp_deep_evidence_replay.py'
       - 'tests/test_pnp_content_evidence_bridge.py'
@@ -66,6 +67,8 @@ jobs:
             --out runtime/pnp/JANUS_BEETLE_INDIVIDUAL_LEDGER.json
           python tools/pnp_policy0a_cleanroom_replay.py \
             --out runtime/pnp/JANUS_POLICY0A_CLEANROOM.json
+          python tools/pnp_policy0a_asymptotic_transfer_witness.py \
+            --out runtime/pnp/JANUS_POLICY0A_ASYMPTOTIC_TRANSFER.json
           echo 'JANUS_PNP_CONTENT_SOURCE_REPLAY=PASS'
       - name: Run independent finite evidence and tamper regressions
         run: |
@@ -74,7 +77,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m py_compile tools/janus_pnp_autoresearch.py
-          python tools/janus_pnp_autoresearch.py             --fundamentum runtime/pnp/Janus-Fundamentum             --evidence-bundle runtime/pnp/JANUS_PNP_CONTENT_EVIDENCE.json             --beetle-ledger runtime/pnp/JANUS_BEETLE_INDIVIDUAL_LEDGER.json             --policy0a-cleanroom runtime/pnp/JANUS_POLICY0A_CLEANROOM.json             --out runtime/pnp/JANUS_PNP_AUTORESEARCH_CONTEXT.json
+          python tools/janus_pnp_autoresearch.py             --fundamentum runtime/pnp/Janus-Fundamentum             --evidence-bundle runtime/pnp/JANUS_PNP_CONTENT_EVIDENCE.json             --beetle-ledger runtime/pnp/JANUS_BEETLE_INDIVIDUAL_LEDGER.json             --policy0a-cleanroom runtime/pnp/JANUS_POLICY0A_CLEANROOM.json             --asymptotic-transfer runtime/pnp/JANUS_POLICY0A_ASYMPTOTIC_TRANSFER.json             --out runtime/pnp/JANUS_PNP_AUTORESEARCH_CONTEXT.json
           python - <<'PY'
           import json
           x=json.load(open('runtime/pnp/JANUS_PNP_AUTORESEARCH_CONTEXT.json'))
@@ -106,6 +109,14 @@ jobs:
           assert e['deep_evidence']['external_gt_theorem_independently_proved'] is False
           assert e['deep_evidence']['asymptotic_refutation_independently_proved'] is False
           assert e['deep_evidence']['p_vs_np_remains_open'] is True
+          a=e['asymptotic_transfer']
+          assert a['status']=='CONDITIONAL_PUBLISHED_GT_THEOREM_TRANSFER_FOR_FROZEN_POLICY0A'
+          assert a['independent_all_n_algebra'] is True
+          assert a['external_gt_theorem_independently_reproved'] is False
+          assert a['general_projection_machine_checked'] is False
+          assert a['different_calculi_refuted'] is False
+          assert a['may_satisfy_promotion_gate'] is False
+          assert x['asymptotic_transfer_witness']['P_VS_NP']=='OPEN'
           assert x['content_evidence_bundle']['bundle_sha256']==e['bundle_sha256']
           assert all(r['content_evidence_verification']=='FINITE_ONLY_NO_PROMOTION' for r in s['candidate_routes'])
           assert len(s['candidate_routes'])==len(x['janus_own_candidates'])
