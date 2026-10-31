@@ -109,6 +109,27 @@ def marker_at(store, head, source_digest):
     ))
     if marker["source_sha256"] != source_digest:
         raise ValueError("ARCHIVE_MARKER_SOURCE_MISMATCH")
+    serial = marker["segment"]
+    if type(serial) is not int or not 1 <= serial <= 1000000:
+        raise ValueError("ARCHIVE_MARKER_SEGMENT_INVALID")
+    segment_path = f"{ARCHIVE_DIR}/{serial:08d}.json"
+    segment = _read_at(store.repo, head, segment_path)
+    _verify_receipt(segment, ARCHIVE_SCHEMA, (
+        "serial", "source_ref", "previous_segment_digest_sha256",
+        "queue", "queue_tip_sha256",
+    ))
+    if (segment["receipt_sha256"] != marker["segment_digest_sha256"] or
+        not isinstance(marker["task_ids"], list) or
+        not isinstance(marker["terminal_states"], list) or
+        len(marker["task_ids"]) != len(marker["terminal_states"])):
+        raise ValueError("ARCHIVE_MARKER_SEGMENT_MISMATCH")
+    actual = sorted(
+        (tid, row["state"]) for tid, row in segment["queue"]["tasks"].items()
+        if row["source_sha256"] == source_digest
+    )
+    if (actual != sorted(zip(marker["task_ids"], marker["terminal_states"])) or
+        any(state not in ("COMPLETE", "SKIPPED") for _, state in actual)):
+        raise ValueError("ARCHIVE_MARKER_PROJECTION_MISMATCH")
     return marker
 
 
