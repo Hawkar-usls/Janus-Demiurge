@@ -114,7 +114,7 @@ def run_probe(root,rel,timeout=150):
         return {"path":rel,"status":"ERROR","error":type(e).__name__+":"+str(e)}
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument("--fundamentum",required=True);ap.add_argument("--out",required=True);ap.add_argument("--evidence-bundle",required=True);a=ap.parse_args()
+    ap=argparse.ArgumentParser();ap.add_argument("--fundamentum",required=True);ap.add_argument("--out",required=True);ap.add_argument("--evidence-bundle",required=True);ap.add_argument("--beetle-ledger",required=True);ap.add_argument("--policy0a-cleanroom",required=True);a=ap.parse_args()
     root=Path(a.fundamentum);out=Path(a.out)
     head=subprocess.check_output(["git","rev-parse","HEAD"],cwd=root,text=True).strip()
     status=read_status(root)
