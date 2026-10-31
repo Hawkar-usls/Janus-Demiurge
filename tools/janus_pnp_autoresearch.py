@@ -159,6 +159,13 @@ def main():
         raise ValueError("TOPA_CLEANROOM_FINITE_SCOPE")
     if symbolic.get("positive_for_n_ge_3") is not True or symbolic.get("external_GT_lower_bound_independently_established") is not False or symbolic.get("full_policy0a_asymptotic_result_independently_proved") is not False:
         raise ValueError("TOPA_CLEANROOM_ASYMPTOTIC_SCOPE")
+    asymptotic=json.loads(Path(a.asymptotic_transfer).read_text(encoding="utf-8"))
+    premise=asymptotic.get("conditional_transfer",{})
+    if asymptotic.get("schema")!="janus.pnp.policy0a_asymptotic_transfer_witness.v1"             or asymptotic.get("status")!="ALL_N_ALGEBRA_CERTIFIED__GT_THEOREM_DEPENDENCY_EXPLICIT"             or asymptotic.get("P_VS_NP")!="OPEN" or asymptotic.get("authority_delta")!=0             or premise.get("source_theorem")!="Beame-Impagliazzo-Pitassi-Segerlind-2010-Definition-4.24-Theorem-4.28"             or premise.get("source_lower_bound")!="FCWS_GT_n_nodes_at_least_2^(n-2)"             or premise.get("conditional_residual_count_lower_bound")!="S(H_n)>=2^(n-2)"             or premise.get("assumes_peer_reviewed_FCWS_theorem") is not True             or asymptotic.get("external_GT_theorem_independently_reproved") is not False             or asymptotic.get("machine_checked_general_projection_induction") is not False             or asymptotic.get("unrestricted_SAT_lower_bound") is not False:
+        raise ValueError("ASYMPTOTIC_TRANSFER_PREMISE_OR_CLAIM_BOUNDARY_INVALID")
+    polys=asymptotic.get("exact_polynomials_coefficients_ascending_degree",{})
+    if polys.get("L0")!=[0,3,378,-509,512]             or polys.get("p_squared_minus_4L0")!=[0,-12,-1512,2036,2048]             or min(polys.get("strict_slack_substitute_n_equals_m_plus_3",[-1]))<0             or polys.get("core_frequency_minus_sink_frequency")!=[0,0,128]:
+        raise ValueError("ASYMPTOTIC_TRANSFER_POLYNOMIALS_CHANGED")
     if tracks["P_VS_NP"]!="OPEN":
         raise ValueError("P_VS_NP_MUST_REMAIN_OPEN")
     # This supervisor is already the sole research authority boundary. The
