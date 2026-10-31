@@ -178,6 +178,18 @@ def main():
       "may_satisfy_promotion_gate":False,
       "next_action":"Attack C023/Policy0B with a distinct reproducible counterexample; do not reuse a Policy0A refutation as a universal C023/P-vs-NP proof.",
     }
+    supervisor["content_evidence"]["deep_evidence"]={
+      "status":"ALL_BATCHES_AND_FINITE_MECHANICS_REPLAYED_NO_GENERAL_PROOF",
+      "beetle_individual_batches_checked":ledger["validated_batches"],
+      "beetle_source_commit":ledger["beetle_source_commit"],
+      "cleanroom_n3_sink_pairs_checked":finite["sink_pairs_checked"],
+      "cleanroom_n3_source_code_imported":finite["source_code_imported"],
+      "symbolic_sink_budget_positive_for_n_ge_3":symbolic["positive_for_n_ge_3"],
+      "external_gt_theorem_independently_proved":False,
+      "asymptotic_refutation_independently_proved":False,
+      "p_vs_np_remains_open":True,
+      "may_satisfy_promotion_gate":False,
+    }
     for route in supervisor["candidate_routes"]:
         route["source_evidence_handoffs"]=evidence["research_handback"].get(route["candidate_id"],[])
         route["content_evidence_verification"]="FINITE_ONLY_NO_PROMOTION"
