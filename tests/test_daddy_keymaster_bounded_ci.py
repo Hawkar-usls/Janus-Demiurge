@@ -4,6 +4,7 @@ import hashlib
 import json
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 
 from daddy_keymaster.broker import sha
 from daddy_keymaster.bounded_ci import (
@@ -41,6 +42,21 @@ class Store:
         self.epoch += 1
 
 class HeartbeatTests(unittest.TestCase):
+    def setUp(self):
+        # Unit-store tests isolate task policy; Git archive CAS is tested
+        # separately against real competing bare Git clones.
+        a = patch("daddy_keymaster.bounded_ci.rotate_if_ready",
+                  return_value={"status": "EMPTY", "segment": 0})
+        b = patch("daddy_keymaster.bounded_ci.archive_status",
+                  side_effect=lambda store, source: {
+                      "state": store.read()[1],
+                      "current_already_archived": False,
+                  })
+        a.start()
+        b.start()
+        self.addCleanup(a.stop)
+        self.addCleanup(b.stop)
+
     def test_context_does_not_accept_pr_or_untrusted_run(self):
         self.assertEqual(context(ENV)["GITHUB_RUN_ID"], ENV["GITHUB_RUN_ID"])
         for changes in ({"GITHUB_EVENT_NAME": "pull_request"},
