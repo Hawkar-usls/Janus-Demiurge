@@ -165,6 +165,8 @@ class RotationTests(unittest.TestCase):
         reverted = prepare(self.a, source_a, now=NOW)
         self.assertEqual(reverted["status"], "VERSION_ALREADY_ARCHIVED")
         self.assertEqual(reverted["queued"], 0)
+        self.assertIsNone(take(self.a, source_a, "X64", now=NOW))
+        self.assertIsNone(take(self.b, source_a, "ARM64", now=NOW))
         self.assertEqual(_archive_context(self.a, self.a.read()[0])[0], 2)
 
     def test_bounded_prepare_refuses_to_archive_live_old_lease(self):
