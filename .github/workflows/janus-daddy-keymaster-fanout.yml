@@ -37,8 +37,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
-      matrix: \${{ steps.plan.outputs.matrix }}
-      count: \${{ steps.plan.outputs.count }}
+      matrix: ${{ steps.plan.outputs.matrix }}
+      count: ${{ steps.plan.outputs.count }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -52,7 +52,7 @@ jobs:
         id: plan
         shell: bash
         env:
-          REQUESTED: \${{ github.event_name == 'workflow_dispatch' && inputs.worker_count || '4' }}
+          REQUESTED: ${{ github.event_name == 'workflow_dispatch' && inputs.worker_count || '4' }}
         run: |
           set -euo pipefail
           test "$REQUESTED" = '4' -o "$REQUESTED" = '8'
@@ -67,9 +67,9 @@ jobs:
     strategy:
       fail-fast: false
       max-parallel: 4
-      matrix: \${{ fromJSON(needs.plan.outputs.matrix) }}
-    name: Bounded CPU worker \${{ matrix.id }}
-    runs-on: \${{ matrix.platform }}
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    name: Bounded CPU worker ${{ matrix.id }}
+    runs-on: ${{ matrix.platform }}
     timeout-minutes: 6
     permissions:
       contents: read
@@ -84,11 +84,11 @@ jobs:
         run: |
           set -euo pipefail
           python -m daddy_keymaster.fanout execute \
-            --worker-id '\${{ matrix.id }}' \
+            --worker-id '${{ matrix.id }}' \
             --output fanout/EXECUTION.json
       - uses: actions/upload-artifact@v4
         with:
-          name: fanout-\${{ matrix.id }}
+          name: fanout-${{ matrix.id }}
           path: fanout/EXECUTION.json
           if-no-files-found: error
           retention-days: 7
@@ -116,7 +116,7 @@ jobs:
           set -euo pipefail
           python -m daddy_keymaster.fanout audit \
             --inputs fanout-receipts \
-            --count '\${{ needs.plan.outputs.count }}' \
+            --count '${{ needs.plan.outputs.count }}' \
             --output fanout-audit/AUDIT.json
       - uses: actions/upload-artifact@v4
         with:
@@ -166,7 +166,7 @@ jobs:
           git config user.name 'janus-daddy-keymaster[bot]'
           git config user.email 'actions@users.noreply.github.com'
           BRANCH='janus/daddy-keymaster-state'
-          ID="\${GITHUB_RUN_ID}-\${GITHUB_RUN_ATTEMPT}"
+          ID="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           [[ "$ID" =~ ^[0-9]{5,}-[1-9][0-9]*$ ]]
           DEST="daddy_keymaster/state/fanout/receipts/$ID.json"
           for RETRY in 1 2 3 4; do
