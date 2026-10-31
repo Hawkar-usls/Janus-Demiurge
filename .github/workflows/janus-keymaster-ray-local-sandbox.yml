@@ -1,0 +1,58 @@
+name: JANUS DADDY_KEYMASTER Ray Local CPU Sandbox
+
+# One GitHub-hosted CPU machine; two independent local Ray workers.
+# This is a diagnostic, NEVER an Oracle/BOINC/private-Ray activation.
+on:
+  pull_request:
+    paths:
+      - 'daddy_keymaster/ray_local_sandbox.py'
+      - 'tests/test_keymaster_ray_local_sandbox.py'
+      - '.github/workflows/janus-keymaster-ray-local-sandbox.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'daddy_keymaster/ray_local_sandbox.py'
+      - 'tests/test_keymaster_ray_local_sandbox.py'
+      - '.github/workflows/janus-keymaster-ray-local-sandbox.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-keymaster-ray-local-sandbox
+  cancel-in-progress: false
+
+jobs:
+  isolated-ray-cpu:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check admission, non-public source and no arbitrary work
+        run: |
+          python -m py_compile daddy_keymaster/ray_local_sandbox.py
+          python -m unittest -v tests/test_keymaster_ray_local_sandbox.py
+      - name: Install pinned Ray CPU runtime (no provider credentials)
+        run: python -m pip install --disable-pip-version-check ray==2.59.0
+      - name: Prove two independent SHA-bound Ray CPU actors locally
+        run: |
+          python -m daddy_keymaster.ray_local_sandbox \
+            --output runtime/ray-local-sandbox/RECEIPT.json
+      - name: Stop local Ray node and all Ray child processes
+        if: always()
+        run: ray stop --force || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: janus-keymaster-ray-local-sandbox
+          path: runtime/ray-local-sandbox/RECEIPT.json
+          retention-days: 7
+          if-no-files-found: ignore
