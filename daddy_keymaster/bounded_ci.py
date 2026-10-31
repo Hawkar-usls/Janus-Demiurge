@@ -18,7 +18,7 @@ import sys
 from daddy_keymaster.broker import canonical, check_policy, load, sha, utc_now
 from daddy_keymaster.git_cas_queue import (
     Conflict, GitCAS, RUNTIME_BRANCH, claim, checkpoint, complete,
-    enqueue, reconcile_expired, verify,
+    enqueue, reconcile_expired, skip_unclaimed_obsolete, verify,
 )
 
 KINDS = ("contract_test", "pure_module_eval")
@@ -85,6 +85,14 @@ def _advance(store, operation, *, max_attempts=MAX_ATTEMPTS):
 def prepare(store, env, *, now):
     """Enroll one *version-bound* pair of repo CI tests, never per idle poll."""
     source = _source(env)
+    # Old unclaimed tasks target a different main SHA and are never executed
+    # under newer source code. Preserve each as an explicit audited event.
+    for _ in range(32):
+        skipped = _advance(store, lambda state: skip_unclaimed_obsolete(state, source))
+        if skipped is None:
+            break
+    else:
+        raise ValueError("DADDY_SUPERSEDED_DRAIN_LIMIT")
     for kind in KINDS:
         tid = _task_id(kind, env)
         def add(state):
