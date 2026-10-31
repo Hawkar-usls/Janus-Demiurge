@@ -152,6 +152,11 @@ def take(store, env, arch, *, now):
     def select(state):
         row = state["tasks"].get(tid)
         if row is None:
+            # Archived exact source identities remain terminal. A future
+            # source revert must not silently rerun a historical test.
+            archived = archive_status(store, _source(env))
+            if archived["current_already_archived"]:
+                return state, None
             raise ValueError("DADDY_TASK_NOT_QUEUED")
         if row["state"] == "COMPLETE":
             return state, None
