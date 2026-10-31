@@ -9,6 +9,9 @@ on:
     paths:
       - 'tools/janus_pnp_autoresearch.py'
       - 'tools/pnp_content_evidence_bridge.py'
+      - 'tools/pnp_policy0a_cleanroom_replay.py'
+      - 'tools/beetle_individual_ledger_replay.py'
+      - 'tests/test_pnp_deep_evidence_replay.py'
       - 'tests/test_pnp_content_evidence_bridge.py'
       - 'janus_model/policy/JANUS_RESEARCH_ORGAN_FABRIC.json'
       - '.github/workflows/janus-pnp-autoresearch.yml'
@@ -57,6 +60,12 @@ jobs:
             --beetle-ack runtime/pnp/beetle/PROCESSING_ACK.json \
             --beetle-commit "$BEETLE_SOURCE_HEAD" \
             --out runtime/pnp/JANUS_PNP_CONTENT_EVIDENCE.json
+          git worktree add --detach runtime/pnp/beetle-state "$BEETLE_SOURCE_HEAD"
+          python tools/beetle_individual_ledger_replay.py \
+            --beetle-state runtime/pnp/beetle-state \
+            --out runtime/pnp/JANUS_BEETLE_INDIVIDUAL_LEDGER.json
+          python tools/pnp_policy0a_cleanroom_replay.py \
+            --out runtime/pnp/JANUS_POLICY0A_CLEANROOM.json
           echo 'JANUS_PNP_CONTENT_SOURCE_REPLAY=PASS'
       - name: Run independent finite evidence and tamper regressions
         run: |
@@ -65,7 +74,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m py_compile tools/janus_pnp_autoresearch.py
-          python tools/janus_pnp_autoresearch.py             --fundamentum runtime/pnp/Janus-Fundamentum             --evidence-bundle runtime/pnp/JANUS_PNP_CONTENT_EVIDENCE.json             --out runtime/pnp/JANUS_PNP_AUTORESEARCH_CONTEXT.json
+          python tools/janus_pnp_autoresearch.py             --fundamentum runtime/pnp/Janus-Fundamentum             --evidence-bundle runtime/pnp/JANUS_PNP_CONTENT_EVIDENCE.json             --beetle-ledger runtime/pnp/JANUS_BEETLE_INDIVIDUAL_LEDGER.json             --policy0a-cleanroom runtime/pnp/JANUS_POLICY0A_CLEANROOM.json             --out runtime/pnp/JANUS_PNP_AUTORESEARCH_CONTEXT.json
           python - <<'PY'
           import json
           x=json.load(open('runtime/pnp/JANUS_PNP_AUTORESEARCH_CONTEXT.json'))
@@ -92,6 +101,11 @@ jobs:
           assert e['source_truth_independently_proven'] is False
           assert e['topa_finite_sink_pairs_checked']==331776
           assert e['a3_finite_combinatorial_cases_checked']==16
+          assert e['deep_evidence']['beetle_individual_batches_checked']>=1
+          assert e['deep_evidence']['cleanroom_n3_source_code_imported'] is False
+          assert e['deep_evidence']['external_gt_theorem_independently_proved'] is False
+          assert e['deep_evidence']['asymptotic_refutation_independently_proved'] is False
+          assert e['deep_evidence']['p_vs_np_remains_open'] is True
           assert x['content_evidence_bundle']['bundle_sha256']==e['bundle_sha256']
           assert all(r['content_evidence_verification']=='FINITE_ONLY_NO_PROMOTION' for r in s['candidate_routes'])
           assert len(s['candidate_routes'])==len(x['janus_own_candidates'])
