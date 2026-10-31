@@ -20,6 +20,11 @@ Every scheduled window (04:41 and 16:41 UTC, twice daily) or human-issued
    with the exact completed Git journal state and fails if any task was put
    into unresolved HOLD.
 
+When `main` advances, a not-yet-claimed old-version task is explicitly
+marked `SKIPPED` with an append-only event before newer tests are admitted.
+Leased tasks can never be silently skipped or replayed. An old uncertain
+lease remains HOLD and turns the independent Witness red.
+
 When a commit has already been processed, the next scheduled run is idle;
 **there is no recursive Actions dispatch, no continuous spin loop and no
 execution unrelated to this repo's production/testing/release**. GitHub
