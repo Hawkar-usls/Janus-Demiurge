@@ -53,41 +53,41 @@ def build(source: Path) -> dict:
         with closing(sqlite3.connect(_source_uri(source), uri=True, timeout=2)) as db:
             db.execute("PRAGMA query_only=ON")
             # No SELECT from vault, personal memory, chat or model blobs.
-            cursor = db.execute(
+            with closing(db.execute(
                 "SELECT id, timestamp, version_tag, file_name, source_code "
                 "FROM code_dna ORDER BY id ASC LIMIT ?", (MAX_ROWS + 1,)
-            )
-            for ident, timestamp, version_tag, original_name, code in cursor:
-                if len(rows) >= MAX_ROWS:
-                    raise LineageHold("CODE_DNA_ROW_CAP_HOLD")
-                if type(ident) is not int or ident < 1:
-                    raise LineageHold("BAD_ROW_ID_HOLD")
-                if not isinstance(timestamp, str) or len(timestamp) > 40:
-                    raise LineageHold("BAD_TIMESTAMP_HOLD")
-                try:
-                    datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-                except ValueError as exc:
-                    raise LineageHold("BAD_TIMESTAMP_HOLD") from exc
-                if not isinstance(version_tag, str) or not VALID_TAG.fullmatch(version_tag):
-                    raise LineageHold("BAD_VERSION_TAG_HOLD")
-                if not isinstance(original_name, str):
-                    raise LineageHold("BAD_SOURCE_NAME_HOLD")
-                basename = original_name.replace("\\", "/").rsplit("/", 1)[-1]
-                if not VALID_BASENAME.fullmatch(basename):
-                    raise LineageHold("BAD_SOURCE_NAME_HOLD")
-                if not isinstance(code, str):
-                    raise LineageHold("SOURCE_CODE_MUST_BE_TEXT_HOLD")
-                encoded = code.encode("utf-8")
-                if not encoded or len(encoded) > MAX_SOURCE_BYTES:
-                    raise LineageHold("SOURCE_CODE_SIZE_HOLD")
-                rows.append({
-                    "id": ident,
-                    "timestamp": timestamp,
-                    "version_tag": version_tag,
-                    "source_basename": basename,
-                    "source_utf8_bytes": len(encoded),
-                    "source_text_sha256": hashlib.sha256(encoded).hexdigest(),
-                })
+            )) as cursor:
+                for ident, timestamp, version_tag, original_name, code in cursor:
+                    if len(rows) >= MAX_ROWS:
+                        raise LineageHold("CODE_DNA_ROW_CAP_HOLD")
+                    if type(ident) is not int or ident < 1:
+                        raise LineageHold("BAD_ROW_ID_HOLD")
+                    if not isinstance(timestamp, str) or len(timestamp) > 40:
+                        raise LineageHold("BAD_TIMESTAMP_HOLD")
+                    try:
+                        datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+                    except ValueError as exc:
+                        raise LineageHold("BAD_TIMESTAMP_HOLD") from exc
+                    if not isinstance(version_tag, str) or not VALID_TAG.fullmatch(version_tag):
+                        raise LineageHold("BAD_VERSION_TAG_HOLD")
+                    if not isinstance(original_name, str):
+                        raise LineageHold("BAD_SOURCE_NAME_HOLD")
+                    basename = original_name.replace("\\", "/").rsplit("/", 1)[-1]
+                    if not VALID_BASENAME.fullmatch(basename):
+                        raise LineageHold("BAD_SOURCE_NAME_HOLD")
+                    if not isinstance(code, str):
+                        raise LineageHold("SOURCE_CODE_MUST_BE_TEXT_HOLD")
+                    encoded = code.encode("utf-8")
+                    if not encoded or len(encoded) > MAX_SOURCE_BYTES:
+                        raise LineageHold("SOURCE_CODE_SIZE_HOLD")
+                    rows.append({
+                        "id": ident,
+                        "timestamp": timestamp,
+                        "version_tag": version_tag,
+                        "source_basename": basename,
+                        "source_utf8_bytes": len(encoded),
+                        "source_text_sha256": hashlib.sha256(encoded).hexdigest(),
+                    })
     except sqlite3.DatabaseError as exc:
         raise LineageHold("INVALID_OR_INACCESSIBLE_CODE_DNA_SQLITE_HOLD") from exc
 
