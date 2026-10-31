@@ -1,0 +1,192 @@
+name: JANUS DADDY_KEYMASTER Audited 4-8 CPU Workers
+
+# Existing 2-worker attestation is retained independently.
+# Daily four-way bounded fanout. Eight shards require an explicit dispatch.
+on:
+  pull_request:
+    paths:
+      - 'daddy_keymaster/fanout.py'
+      - 'tests/test_daddy_keymaster_fanout.py'
+      - '.github/workflows/janus-daddy-keymaster-fanout.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'daddy_keymaster/fanout.py'
+      - 'tests/test_daddy_keymaster_fanout.py'
+      - '.github/workflows/janus-daddy-keymaster-fanout.yml'
+  workflow_dispatch:
+    inputs:
+      worker_count:
+        description: 'Bounded GitHub-hosted CPU workers, not model requests'
+        required: true
+        type: choice
+        default: '4'
+        options: ['4', '8']
+  schedule:
+    - cron: '47 3 * * *'
+
+concurrency:
+  group: janus-daddy-keymaster-audited-fanout
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      matrix: \${{ steps.plan.outputs.matrix }}
+      count: \${{ steps.plan.outputs.count }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify fanout admission and adversarial receipt tests
+        run: python -m unittest -v tests/test_daddy_keymaster_fanout.py
+      - name: Admit bounded worker set
+        id: plan
+        shell: bash
+        env:
+          REQUESTED: \${{ github.event_name == 'workflow_dispatch' && inputs.worker_count || '4' }}
+        run: |
+          set -euo pipefail
+          test "$REQUESTED" = '4' -o "$REQUESTED" = '8'
+          MATRIX=$(python -m daddy_keymaster.fanout plan --count "$REQUESTED")
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+          echo "count=$REQUESTED" >> "$GITHUB_OUTPUT"
+          echo "DADDY_FANOUT_ADMITTED=$REQUESTED max_parallel=4"
+
+  worker:
+    if: github.event_name != 'pull_request'
+    needs: plan
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix: \${{ fromJSON(needs.plan.outputs.matrix) }}
+    name: Bounded CPU worker \${{ matrix.id }}
+    runs-on: \${{ matrix.platform }}
+    timeout-minutes: 6
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Execute fixed allowlisted test shard
+        run: |
+          set -euo pipefail
+          python -m daddy_keymaster.fanout execute \
+            --worker-id '\${{ matrix.id }}' \
+            --output fanout/EXECUTION.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fanout-\${{ matrix.id }}
+          path: fanout/EXECUTION.json
+          if-no-files-found: error
+          retention-days: 7
+
+  independent-auditor:
+    if: github.event_name != 'pull_request'
+    needs: [plan, worker]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: fanout-*
+          path: fanout-receipts
+      - name: Independently bind every worker to exact SHA, shard and run
+        run: |
+          set -euo pipefail
+          python -m daddy_keymaster.fanout audit \
+            --inputs fanout-receipts \
+            --count '\${{ needs.plan.outputs.count }}' \
+            --output fanout-audit/AUDIT.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: daddy-keymaster-audited-fanout
+          path: fanout-audit/AUDIT.json
+          if-no-files-found: error
+          retention-days: 14
+
+  persist-witness:
+    if: github.event_name != 'pull_request'
+    needs: [plan, independent-auditor]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: daddy-keymaster-audited-fanout
+          path: fanout-audit
+      - name: Verify immutable witness digest and original run
+        run: |
+          python - <<'PY'
+          import json, os
+          from daddy_keymaster.broker import sha
+          from daddy_keymaster.fanout import source_manifest
+          from pathlib import Path
+          d=json.loads(Path('fanout-audit/AUDIT.json').read_text())
+          assert d['receipt_sha256']==sha({k:v for k,v in d.items() if k!='receipt_sha256'})
+          assert d['commit']==os.environ['GITHUB_SHA']
+          assert d['run_id']==os.environ['GITHUB_RUN_ID']
+          assert d['attempt']==os.environ['GITHUB_RUN_ATTEMPT']
+          assert d['source_manifest']==source_manifest(Path('.'))
+          assert d['status'] in ('4_EPHEMERAL_WORKERS_VERIFIED','8_EPHEMERAL_WORKERS_VERIFIED')
+          assert d['authority_delta']==0 and d['paid_resources_used'] is False
+          PY
+      - name: Append audit to existing state branch with bounded CAS retries
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'janus-daddy-keymaster[bot]'
+          git config user.email 'actions@users.noreply.github.com'
+          BRANCH='janus/daddy-keymaster-state'
+          ID="\${GITHUB_RUN_ID}-\${GITHUB_RUN_ATTEMPT}"
+          [[ "$ID" =~ ^[0-9]{5,}-[1-9][0-9]*$ ]]
+          DEST="daddy_keymaster/state/fanout/receipts/$ID.json"
+          for RETRY in 1 2 3 4; do
+            git fetch --no-tags origin "$BRANCH"
+            git worktree add --detach "$RUNNER_TEMP/fanout-state" FETCH_HEAD
+            mkdir -p "$RUNNER_TEMP/fanout-state/daddy_keymaster/state/fanout/receipts"
+            if test -f "$RUNNER_TEMP/fanout-state/$DEST"; then
+              cmp "$RUNNER_TEMP/fanout-state/$DEST" fanout-audit/AUDIT.json
+              echo 'DADDY_FANOUT_IMMUTABLE_IDEMPOTENT=PASS'
+              exit 0
+            fi
+            cp fanout-audit/AUDIT.json "$RUNNER_TEMP/fanout-state/$DEST"
+            git -C "$RUNNER_TEMP/fanout-state" add -f "$DEST"
+            git -C "$RUNNER_TEMP/fanout-state" diff --cached --check
+            git -C "$RUNNER_TEMP/fanout-state" commit -m "keymaster: witness 4-8 bounded workers $ID"
+            if git -C "$RUNNER_TEMP/fanout-state" push origin HEAD:"$BRANCH"; then
+              echo 'DADDY_FANOUT_WITNESS_PERSISTED=PASS'
+              exit 0
+            fi
+            git worktree remove --force "$RUNNER_TEMP/fanout-state"
+          done
+          echo 'DADDY_FANOUT_STATE_CAS_RETRY_EXHAUSTED' >&2
+          exit 1
