@@ -1,0 +1,187 @@
+name: JANUS DADDY_KEYMASTER Bounded Project CI Heartbeat
+
+on:
+  pull_request:
+    paths:
+      - 'daddy_keymaster/bounded_ci.py'
+      - 'daddy_keymaster/git_cas_queue.py'
+      - 'tests/test_daddy_keymaster_bounded_ci.py'
+      - '.github/workflows/janus-daddy-keymaster-bounded-heartbeat.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'daddy_keymaster/bounded_ci.py'
+      - 'daddy_keymaster/git_cas_queue.py'
+      - '.github/workflows/janus-daddy-keymaster-bounded-heartbeat.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '41 4,16 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-daddy-keymaster-bounded-heartbeat
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate bounded heartbeat and git-ref CAS invariants
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p test_daddy_keymaster_bounded_ci.py -v
+          python -m unittest discover -s tests -p 'test_daddy_keymaster_git_cas_*.py' -v
+
+  prepare:
+    if: github.event_name != 'pull_request'
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    env:
+      JANUS_DADDY_CI_RUNTIME: 'TRUE'
+      JANUS_RELAY_CAS_WRITE_AUTHORIZED: 'TRUE'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Open isolated queue worktree
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin refs/heads/janus/daddy-keymaster-ci-queue-state
+          git worktree add --detach "$RUNNER_TEMP/daddy-ci-state" FETCH_HEAD
+      - name: Enqueue one CI test pair per source SHA; reconcile expired to HOLD
+        run: |
+          set -euo pipefail
+          python -m daddy_keymaster.bounded_ci prepare \
+            --state-repo "$RUNNER_TEMP/daddy-ci-state" \
+            --out "$RUNNER_TEMP/daddy-prepare.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: daddy-bounded-prepare
+          path: ${{ runner.temp }}/daddy-prepare.json
+          retention-days: 7
+
+  worker:
+    if: github.event_name != 'pull_request'
+    needs: prepare
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - arch: X64
+            platform: ubuntu-24.04
+          - arch: ARM64
+            platform: ubuntu-24.04-arm
+    runs-on: ${{ matrix.platform }}
+    timeout-minutes: 9
+    permissions:
+      contents: write
+    env:
+      JANUS_DADDY_CI_RUNTIME: 'TRUE'
+      JANUS_RELAY_CAS_WRITE_AUTHORIZED: 'TRUE'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Read shared queue in isolated worktree
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin refs/heads/janus/daddy-keymaster-ci-queue-state
+          git worktree add --detach "$RUNNER_TEMP/daddy-ci-state" FETCH_HEAD
+      - name: Claim one typed CI task using Git CAS
+        run: |
+          python -m daddy_keymaster.bounded_ci claim \
+            --state-repo "$RUNNER_TEMP/daddy-ci-state" \
+            --arch "${{ matrix.arch }}" \
+            --out "$RUNNER_TEMP/daddy-token.json"
+      - name: Execute allowlisted repository development tests only
+        run: |
+          python -m daddy_keymaster.bounded_ci execute \
+            --token-file "$RUNNER_TEMP/daddy-token.json" \
+            --out "$RUNNER_TEMP/receipt.json"
+      - name: Persist receipt before journal completion
+        uses: actions/upload-artifact@v4
+        with:
+          name: daddy-bounded-ci-${{ matrix.arch }}
+          path: ${{ runner.temp }}/receipt.json
+          retention-days: 7
+          if-no-files-found: error
+      - name: Commit checkpoint and completion with live lease
+        run: |
+          python -m daddy_keymaster.bounded_ci finish \
+            --state-repo "$RUNNER_TEMP/daddy-ci-state" \
+            --token-file "$RUNNER_TEMP/daddy-token.json" \
+            --receipt-file "$RUNNER_TEMP/receipt.json" \
+            --out "$RUNNER_TEMP/daddy-finish.json"
+
+  independent-witness:
+    if: always() && github.event_name != 'pull_request' && needs.prepare.result == 'success'
+    needs: [prepare, worker]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    permissions:
+      contents: read
+    env:
+      JANUS_DADDY_CI_RUNTIME: 'TRUE'
+      JANUS_RELAY_CAS_WRITE_AUTHORIZED: 'TRUE'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Read exact current queue without write permission
+        run: |
+          git fetch --no-tags origin refs/heads/janus/daddy-keymaster-ci-queue-state
+          git worktree add --detach "$RUNNER_TEMP/daddy-ci-state" FETCH_HEAD
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: daddy-bounded-ci-*
+          path: daddy-bounded-receipts
+      - name: Independently bind uploaded receipts to committed results
+        run: |
+          python - <<'PY'
+          import json, pathlib
+          files=sorted(pathlib.Path('daddy-bounded-receipts').glob('*/receipt.json'))
+          assert len(files)==2, "DADDY_MISSING_WORKER_RECEIPT"
+          pathlib.Path('daddy-bounded-receipts.json').write_text(
+              json.dumps([json.loads(p.read_text()) for p in files]))
+          PY
+          python -m daddy_keymaster.bounded_ci audit \
+            --state-repo "$RUNNER_TEMP/daddy-ci-state" \
+            --receipt-file daddy-bounded-receipts.json \
+            --out "$RUNNER_TEMP/daddy-witness.json"
+          python - <<'PY'
+          import json,os
+          x=json.load(open(os.environ['RUNNER_TEMP']+'/daddy-witness.json'))
+          assert x['status']=='INDEPENDENT_BOUND_CI_WITNESS'
+          assert x['production_promotion'] is False
+          print('JANUS_BOUNDED_CI_WITNESS=PASS')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: daddy-bounded-ci-witness
+          path: ${{ runner.temp }}/daddy-witness.json
+          retention-days: 14
