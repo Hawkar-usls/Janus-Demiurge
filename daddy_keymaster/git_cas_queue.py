@@ -302,7 +302,7 @@ class GitCAS:
             and os.getenv("GITHUB_ACTIONS") == "true"
             and os.getenv("GITHUB_REPOSITORY") == "Hawkar-usls/Janus-Demiurge"
             and os.getenv("GITHUB_REF") == "refs/heads/main"
-            and os.getenv("GITHUB_EVENT_NAME") in ("schedule", "workflow_dispatch")
+            and os.getenv("GITHUB_EVENT_NAME") in ("schedule", "workflow_dispatch", "push")
         ):
             raise ValueError("CAS_RUNTIME_BRANCH_NOT_AUTHORIZED")
         self.repo = Path(repo)
@@ -311,7 +311,7 @@ class GitCAS:
         self.remote = remote
         if re.search(r"github\.com[:/]", remote, re.I):
             if not (os.getenv("JANUS_RELAY_CAS_WRITE_AUTHORIZED") == "TRUE"
-                    and os.getenv("GITHUB_EVENT_NAME") in ("workflow_dispatch", "schedule")
+                    and os.getenv("GITHUB_EVENT_NAME") in ("workflow_dispatch", "schedule", "push")
                     and os.getenv("GITHUB_REF") == "refs/heads/main"
                     and os.getenv("GITHUB_REPOSITORY") == "Hawkar-usls/Janus-Demiurge"):
                 raise ValueError("CAS_REMOTE_GITHUB_WRITE_NOT_AUTHORIZED")
