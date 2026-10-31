@@ -1,0 +1,56 @@
+name: Validate Native Checkpoint SHA Admission
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'janus_model/checkpoint_admission.py'
+      - 'janus_model/train_registry.py'
+      - 'janus_model/cli.py'
+      - 'tests/test_janus_checkpoint_admission.py'
+      - '.github/workflows/janus-native-model.yml'
+      - '.github/workflows/validate-native-checkpoint-admission.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'janus_model/checkpoint_admission.py'
+      - 'janus_model/train_registry.py'
+      - 'janus_model/cli.py'
+      - 'tests/test_janus_checkpoint_admission.py'
+      - '.github/workflows/validate-native-checkpoint-admission.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checkpoint-admission:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install local JANUS CPU tensor runtime only
+        run: python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Check admission, adversarial weights and real committed checkpoint
+        run: |
+          python -m py_compile janus_model/checkpoint_admission.py janus_model/train_registry.py janus_model/cli.py
+          python -m unittest -v tests/test_janus_checkpoint_admission.py
+      - name: Verify no unsafe pickle fallback or privilege expansion
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          code=Path('janus_model/train_registry.py').read_text()
+          check=Path('janus_model/checkpoint_admission.py').read_text()
+          cli=Path('janus_model/cli.py').read_text()
+          assert 'weights_only=True' in code
+          assert 'weights_only=False' not in code
+          assert 'checkpoint_preflight(' in code
+          assert 'JANUS_CUSTOM_CHECKPOINT_REQUIRES_DIGEST' in cli
+          assert 'MAX_UNCOMPRESSED_BYTES' in check
+          print('JANUS_NATIVE_CHECKPOINT_ADMISSION_STATIC_GATE=PASS')
+          PY
