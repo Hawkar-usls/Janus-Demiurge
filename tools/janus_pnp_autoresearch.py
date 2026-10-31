@@ -197,6 +197,18 @@ def main():
       "p_vs_np_remains_open":True,
       "may_satisfy_promotion_gate":False,
     }
+    supervisor["content_evidence"]["asymptotic_transfer"]={
+      "status":"CONDITIONAL_PUBLISHED_GT_THEOREM_TRANSFER_FOR_FROZEN_POLICY0A",
+      "source_theorem":premise["source_theorem"],
+      "independent_all_n_algebra":True,
+      "source_lower_bound":premise["source_lower_bound"],
+      "conditional_policy0a_bound":premise["conditional_residual_count_lower_bound"],
+      "external_gt_theorem_independently_reproved":False,
+      "general_projection_machine_checked":False,
+      "different_calculi_refuted":False,
+      "p_vs_np_open":True,
+      "may_satisfy_promotion_gate":False,
+    }
     for route in supervisor["candidate_routes"]:
         route["source_evidence_handoffs"]=evidence["research_handback"].get(route["candidate_id"],[])
         route["content_evidence_verification"]="FINITE_ONLY_NO_PROMOTION"
@@ -210,6 +222,7 @@ def main():
       "memory":{"hrain":hrain,"inaihr_source_commit":inaihr.get("source_commit"),"inaihr_routes":inaihr.get("routes",[]),"topa":topa},
       "content_evidence_bundle":evidence,
       "deep_replay_receipts":{"beetle":ledger,"policy0a":cleanroom},
+      "asymptotic_transfer_witness":asymptotic,
       "janus_own_candidates":candidates,
       "bounded_replay_probes":probes,
       "research_supervisor":supervisor,
