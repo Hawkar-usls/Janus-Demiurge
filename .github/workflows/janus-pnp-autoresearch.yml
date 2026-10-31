@@ -8,6 +8,8 @@ on:
     branches: [main]
     paths:
       - 'tools/janus_pnp_autoresearch.py'
+      - 'tools/pnp_content_evidence_bridge.py'
+      - 'tests/test_pnp_content_evidence_bridge.py'
       - 'janus_model/policy/JANUS_RESEARCH_ORGAN_FABRIC.json'
       - '.github/workflows/janus-pnp-autoresearch.yml'
 
@@ -36,11 +38,34 @@ jobs:
           rm -rf runtime/pnp
           mkdir -p runtime/pnp
           git clone --depth 1 https://github.com/Hawkar-usls/Janus-Fundamentum.git runtime/pnp/Janus-Fundamentum
+      - name: Collect TOPA counterexample and exact Beetle processing ACK
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/Hawkar-usls/TOPA.git runtime/pnp/TOPA
+          git fetch --no-tags --depth=1 origin beetle-memory
+          BEETLE_SOURCE_HEAD=$(git rev-parse FETCH_HEAD)
+          mkdir -p runtime/pnp/beetle
+          git show "$BEETLE_SOURCE_HEAD:data/beetle-runtime/CONTEXT.json" \
+            > runtime/pnp/beetle/CONTEXT.json
+          git show "$BEETLE_SOURCE_HEAD:data/beetle-runtime/PROCESSING_ACK.json" \
+            > runtime/pnp/beetle/PROCESSING_ACK.json
+          python tools/pnp_content_evidence_bridge.py \
+            --fundamentum runtime/pnp/Janus-Fundamentum \
+            --topa runtime/pnp/TOPA \
+            --beetle-context runtime/pnp/beetle/CONTEXT.json \
+            --beetle-ack runtime/pnp/beetle/PROCESSING_ACK.json \
+            --beetle-commit "$BEETLE_SOURCE_HEAD" \
+            --out runtime/pnp/JANUS_PNP_CONTENT_EVIDENCE.json
+          echo 'JANUS_PNP_CONTENT_SOURCE_REPLAY=PASS'
+      - name: Run independent finite evidence and tamper regressions
+        run: |
+          python -m unittest -v tests/test_pnp_content_evidence_bridge.py
       - name: Run JANUS own bounded research cycle
         run: |
           set -euo pipefail
           python -m py_compile tools/janus_pnp_autoresearch.py
-          python tools/janus_pnp_autoresearch.py             --fundamentum runtime/pnp/Janus-Fundamentum             --out runtime/pnp/JANUS_PNP_AUTORESEARCH_CONTEXT.json
+          python tools/janus_pnp_autoresearch.py             --fundamentum runtime/pnp/Janus-Fundamentum             --evidence-bundle runtime/pnp/JANUS_PNP_CONTENT_EVIDENCE.json             --out runtime/pnp/JANUS_PNP_AUTORESEARCH_CONTEXT.json
           python - <<'PY'
           import json
           x=json.load(open('runtime/pnp/JANUS_PNP_AUTORESEARCH_CONTEXT.json'))
@@ -61,6 +86,14 @@ jobs:
           assert s['fundamentum_mutation'] is False
           assert s['autonomous_merge'] is False
           assert s['p_vs_np_auto_promotion'] is False
+          e=s['content_evidence']
+          assert e['status']=='FINITE_REPLAY_WITH_OPEN_GENERAL_GATES'
+          assert e['may_satisfy_promotion_gate'] is False
+          assert e['source_truth_independently_proven'] is False
+          assert e['topa_finite_sink_pairs_checked']==331776
+          assert e['a3_finite_combinatorial_cases_checked']==16
+          assert x['content_evidence_bundle']['bundle_sha256']==e['bundle_sha256']
+          assert all(r['content_evidence_verification']=='FINITE_ONLY_NO_PROMOTION' for r in s['candidate_routes'])
           assert len(s['candidate_routes'])==len(x['janus_own_candidates'])
           assert all(r['promotion_barrier']=='BLOCKED' for r in s['candidate_routes'])
           print('JANUS_PNP_AUTORESEARCH_FIREWALL=PASS')
