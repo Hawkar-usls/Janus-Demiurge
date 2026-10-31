@@ -34,7 +34,7 @@ def context(env=None):
     env = dict(os.environ if env is None else env)
     if (env.get("GITHUB_ACTIONS") != "true"
         or env.get("GITHUB_REPOSITORY") != "Hawkar-usls/Janus-Demiurge"
-        or env.get("GITHUB_EVENT_NAME") not in ("schedule", "workflow_dispatch")
+        or env.get("GITHUB_EVENT_NAME") not in ("schedule", "workflow_dispatch", "push")
         or env.get("GITHUB_REF") != "refs/heads/main"
         or not re.fullmatch(r"[0-9a-f]{40}", env.get("GITHUB_SHA", ""))
         or not re.fullmatch(r"[0-9]{5,}", env.get("GITHUB_RUN_ID", ""))
