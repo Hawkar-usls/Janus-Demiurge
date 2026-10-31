@@ -7,6 +7,8 @@ on:
       - 'tools/pnp_policy0a_asymptotic_transfer_witness.py'
       - 'tests/test_pnp_policy0a_asymptotic_transfer_witness.py'
       - 'docs/PNP_POLICY0A_INDEPENDENT_ASYMPTOTIC_TRANSFER.md'
+      - 'tools/janus_pnp_autoresearch.py'
+      - '.github/workflows/janus-pnp-autoresearch.yml'
       - '.github/workflows/validate-policy0a-asymptotic-transfer.yml'
   push:
     branches: [main]
@@ -35,6 +37,7 @@ jobs:
       - name: Recompute exact symbolic polynomial identities and adversarial mutations
         run: |
           python -m unittest -v tests/test_pnp_policy0a_asymptotic_transfer_witness.py
+          python -m py_compile tools/janus_pnp_autoresearch.py
           python tools/pnp_policy0a_asymptotic_transfer_witness.py \
             --out runtime/pnp/ASYPTOTIC_TRANSFER_CERTIFICATE.json
       - name: Independently pin the actual policy and GT source Git blobs
