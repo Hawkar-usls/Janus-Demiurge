@@ -1,0 +1,29 @@
+name: JANUS NAS Historical Code Steward Receipt Proof
+
+on:
+  pull_request:
+    paths:
+      - 'archaeology/nas_steward_v161/**'
+      - 'tests/test_nas_legacy_code_steward_receipts.py'
+      - '.github/workflows/janus-nas-code-steward-static.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'archaeology/nas_steward_v161/**'
+      - 'tests/test_nas_legacy_code_steward_receipts.py'
+      - '.github/workflows/janus-nas-code-steward-static.yml'
+permissions:
+  contents: read
+jobs:
+  archived-receipts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify historical receipts and inert archive
+        run: python -m unittest discover -s tests -p test_nas_legacy_code_steward_receipts.py -v
