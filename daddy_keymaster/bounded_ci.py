@@ -16,6 +16,7 @@ import subprocess
 import sys
 
 from daddy_keymaster.broker import canonical, check_policy, load, sha, utc_now
+from daddy_keymaster.queue_rotation import rotate_if_ready, status as archive_status
 from daddy_keymaster.git_cas_queue import (
     Conflict, GitCAS, RUNTIME_BRANCH, claim, checkpoint, complete,
     enqueue, reconcile_expired, skip_unclaimed_obsolete, verify,
@@ -83,16 +84,29 @@ def _advance(store, operation, *, max_attempts=MAX_ATTEMPTS):
 
 
 def prepare(store, env, *, now):
-    """Enroll one *version-bound* pair of repo CI tests, never per idle poll."""
+    """Idempotent per-source task pair, with a verified terminal-only rollover."""
     source = _source(env)
-    # Old unclaimed tasks target a different main SHA and are never executed
-    # under newer source code. Preserve each as an explicit audited event.
+    # Archive fully completed prior sources in one atomic Git ref update.
+    first = rotate_if_ready(store, source)
+    if first["status"] == "UNRESOLVED_LEASE":
+        raise ValueError("DADDY_ARCHIVE_UNCERTAIN_LEASE_HOLD")
+    # Old QUEUED work is explicitly superseded, never silently dropped.
     for _ in range(32):
         skipped = _advance(store, lambda state: skip_unclaimed_obsolete(state, source))
         if skipped is None:
             break
     else:
         raise ValueError("DADDY_SUPERSEDED_DRAIN_LIMIT")
+    second = rotate_if_ready(store, source)
+    if second["status"] == "UNRESOLVED_LEASE":
+        raise ValueError("DADDY_ARCHIVE_UNCERTAIN_LEASE_HOLD")
+    archive = archive_status(store, source)
+    if archive["current_already_archived"]:
+        if any(r["source_sha256"] == source for r in archive["state"]["tasks"].values()):
+            raise ValueError("DADDY_ARCHIVE_DUPLICATE_SOURCE_IN_ACTIVE")
+        return {"status": "VERSION_ALREADY_ARCHIVED",
+                "source_sha256": source, "epoch": archive["state"]["epoch"],
+                "queued": 0, "held": 0, "no_remote_dispatch": True}
     for kind in KINDS:
         tid = _task_id(kind, env)
         def add(state):
@@ -101,21 +115,16 @@ def prepare(store, env, *, now):
                     state["tasks"][tid]["kind"] != kind):
                     raise ValueError("DADDY_TASK_ID_REBOUND")
                 return state, "EXISTS"
-            new = enqueue(state, tid, kind, source,
-                          priority=(2 if kind == "contract_test" else 1),
-                          max_seconds=300)
-            return new, "QUEUED"
+            return enqueue(state, tid, kind, source,
+                           priority=(2 if kind == "contract_test" else 1),
+                           max_seconds=300), "QUEUED"
         _advance(store, add)
-
-    # Expired leases are uncertain; NEVER silently requeue or repeat effects.
-    # Advance one journal event at a time for safe CAS.
     for _ in range(2):
         def recover(state):
             nxt, held = reconcile_expired(state, now=now)
             if not held:
                 return state, []
             if len(held) > 1:
-                # Mutation of multiple events must be split, so do not commit.
                 from daddy_keymaster.git_cas_queue import _append
                 row = state["tasks"][held[0]]
                 nxt = _append(state, "HOLD", held[0], {
