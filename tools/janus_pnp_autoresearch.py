@@ -2,6 +2,7 @@
 from __future__ import annotations
 import argparse, hashlib, json, re, subprocess, urllib.request
 from pathlib import Path
+from pnp_content_evidence_bridge import validate_bundle
 
 URLS={
  "hrain":"https://raw.githubusercontent.com/Hawkar-usls/Hrain/janus/fundamentum-structural-memory/data/fundamentum-mirror/LATEST.json",
@@ -113,7 +114,7 @@ def run_probe(root,rel,timeout=150):
         return {"path":rel,"status":"ERROR","error":type(e).__name__+":"+str(e)}
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument("--fundamentum",required=True);ap.add_argument("--out",required=True);a=ap.parse_args()
+    ap=argparse.ArgumentParser();ap.add_argument("--fundamentum",required=True);ap.add_argument("--out",required=True);ap.add_argument("--evidence-bundle",required=True);a=ap.parse_args()
     root=Path(a.fundamentum);out=Path(a.out)
     head=subprocess.check_output(["git","rev-parse","HEAD"],cwd=root,text=True).strip()
     status=read_status(root)
@@ -138,12 +139,39 @@ def main():
       run_probe(root,"experiments/direct/janus_tear_policy0a_reason_reuse_audit_v2.py")
     ]
     supervisor=build_supervisor(candidates,fabric,head,hrain,inaihr,probes)
+    evidence=json.loads(Path(a.evidence_bundle).read_text(encoding="utf-8"))
+    evidence=validate_bundle(evidence,head)
+    if tracks["P_VS_NP"]!="OPEN":
+        raise ValueError("P_VS_NP_MUST_REMAIN_OPEN")
+    # This supervisor is already the sole research authority boundary. The
+    # evidence adapter offers source-bound *questions*, not answered proof gates.
+    supervisor["content_evidence"]={
+      "schema":"janus.research_supervisor_content_handoff.v1",
+      "bundle_sha256":evidence["bundle_sha256"],
+      "fundamentum_commit":evidence["fundamentum"]["source_commit"],
+      "topa_commit":evidence["topa"]["source_commit"],
+      "beetle_sequence":evidence["beetle"]["last_processed_sequence"],
+      "status":"FINITE_REPLAY_WITH_OPEN_GENERAL_GATES",
+      "topa_counterexample_reported":"REFUTED_FOR_CURRENT_POLICY0A",
+      "topa_finite_sink_pairs_checked":evidence["topa"]["independent_finite_replay"]["sink_pair_resolvents_checked"],
+      "a3_finite_combinatorial_cases_checked":evidence["fundamentum"]["independent_finite_replay"]["case_count"],
+      "beetle_discovery_routes_count":evidence["beetle"]["route_count"],
+      "source_truth_independently_proven":False,
+      "may_satisfy_promotion_gate":False,
+      "next_action":"Attack C023/Policy0B with a distinct reproducible counterexample; do not reuse a Policy0A refutation as a universal C023/P-vs-NP proof.",
+    }
+    for route in supervisor["candidate_routes"]:
+        route["source_evidence_handoffs"]=evidence["research_handback"].get(route["candidate_id"],[])
+        route["content_evidence_verification"]="FINITE_ONLY_NO_PROMOTION"
+        if route["promotion_barrier"]!="BLOCKED":
+            raise ValueError("PROMOTION_BARRIER_CANNOT_BE_CLEARED_BY_SOURCE_EVIDENCE")
     obj={
       "schema":"janus.pnp_autoresearch_context.v1",
       "status":"ACTIVE_CANDIDATE_RESEARCH",
       "goal":"P_VS_NP_RESEARCH_WITHOUT_CLAIM_PROMOTION",
       "fundamentum":{"repository":"Hawkar-usls/Janus-Fundamentum","commit":head,"read_only":True,"tracks":tracks},
       "memory":{"hrain":hrain,"inaihr_source_commit":inaihr.get("source_commit"),"inaihr_routes":inaihr.get("routes",[]),"topa":topa},
+      "content_evidence_bundle":evidence,
       "janus_own_candidates":candidates,
       "bounded_replay_probes":probes,
       "research_supervisor":supervisor,
@@ -152,7 +180,9 @@ def main():
         "Use TOPA discovery graph to challenge candidates and search for prior art/counterexamples.",
         "Use HRAiN structural index to locate exact committed attack surfaces.",
         "Use iNaiHR associative routes only to generate candidate questions.",
-        "Prefer falsification and exact replay before any candidate expansion."
+        "Prefer falsification and exact replay before any candidate expansion.",
+        "Preserve the finite TOPA Policy0A sink counterexample and reject unjustified generalization to Policy0B or P vs NP.",
+        "Revisit existing Beetle discovery routes only as hypotheses, never proof or direct gradient signal."
       ],
       "authority":{"truth":False,"proof":False,"scientific_claim_promotion":False,"fundamentum_mutation":False,"autonomous_merge":False},
       "laws":["OWN_RESEARCH != FUNDAMENTUM_AUTHORITY","MODEL_OUTPUT != PROOF","FINITE_REPLAY != ASYMPTOTIC_THEOREM","P_VS_NP = OPEN","NO_EXPLICIT_PROOF_GATE => NO_PNP_PROMOTION"]
