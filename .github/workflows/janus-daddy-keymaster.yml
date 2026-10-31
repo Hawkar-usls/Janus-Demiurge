@@ -44,6 +44,20 @@ jobs:
         run: python -m unittest discover -s tests -p test_daddy_keymaster.py -v
       - name: Verify OCI, BOINC and Ray activation firewalls
         run: python -m unittest discover -s tests -p test_daddy_keymaster_providers.py -v
+      - name: Verify sealed dynamic pool preview (no dispatch)
+        run: |
+          python -m unittest discover -s tests -p test_daddy_keymaster_dynamic_pool.py -v
+          python -m daddy_keymaster.dynamic_pool --out daddy-output/ROTATION.json
+          python - <<'PY'
+          import json
+          r=json.load(open('daddy-output/ROTATION.json'))
+          assert r['status']=='DRY_RUN_ROTATION_PREVIEW_ONLY'
+          assert r['max_parallel']==2
+          assert r['actions_dispatched']==0 and r['runners_provisioned']==0
+          assert r['lease_mutations']==0 and r['authority_delta']==0
+          assert r['production_promotion'] is False
+          print('DADDY_DYNAMIC_POOL_R0_SEALED_PREVIEW=PASS')
+          PY
       - name: Observe current authorized Actions runner and plan safe jobs
         run: |
           python -m daddy_keymaster.broker --out daddy-output/REPORT.json
@@ -92,6 +106,12 @@ jobs:
           name: daddy-keymaster-capacity-receipt
           path: daddy-output/REPORT.json
           retention-days: 14
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: daddy-keymaster-rotation-preview
+          path: daddy-output/ROTATION.json
+          retention-days: 3
           if-no-files-found: error
       - name: Persist append-only witness and refresh current roster
         if: github.event_name != 'pull_request'
