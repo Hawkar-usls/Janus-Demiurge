@@ -1,0 +1,55 @@
+name: JANUS Native Fixed Competency Baseline
+
+# Separate public fixed-prompt trial; not blind final-test custody.
+# No training, champion promotion, paid model, or repository mutation.
+on:
+  pull_request:
+    paths:
+      - 'janus_model/competency_baseline.py'
+      - 'janus_model/output_quality.py'
+      - 'tests/test_janus_native_competency_baseline.py'
+      - '.github/workflows/janus-native-fixed-competency-baseline.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'janus_model/competency_baseline.py'
+      - 'tests/test_janus_native_competency_baseline.py'
+      - '.github/workflows/janus-native-fixed-competency-baseline.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-native-fixed-competency-baseline-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  independent-public-prompt-trial:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify frozen public prompt scorer without model calls
+        run: |
+          python -m py_compile janus_model/competency_baseline.py
+          python -m unittest -v tests/test_janus_native_competency_baseline.py
+      - name: Install CPU-only torch for own checkpoint
+        run: python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Benchmark own promoted checkpoint without gradient updates
+        run: |
+          python -m janus_model.competency_baseline \
+            --out runtime/native-competency/BASELINE.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-native-fixed-competency-baseline
+          path: runtime/native-competency/BASELINE.json
+          if-no-files-found: error
+          retention-days: 14
