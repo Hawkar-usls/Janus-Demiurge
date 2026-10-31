@@ -1,0 +1,106 @@
+name: HELIOS voluntary native calibration
+on:
+  schedule:
+    - cron: '43 * * * *'
+  workflow_dispatch:
+    inputs:
+      operator_drill:
+        description: Independently audit the fixed operator drill from the learning data branch
+        type: boolean
+        default: false
+  pull_request:
+    paths:
+      - 'janus_model/extensions/helios_calibration.py'
+      - 'tools/extensions/helios_*'
+      - 'tests/extensions/test_helios_calibration.py'
+      - '.github/workflows/helios-native-learning.yml'
+permissions:
+  contents: read
+concurrency:
+  group: helios-native-calibration-${{ github.event_name == 'pull_request' && github.ref || 'state' }}
+  cancel-in-progress: false
+jobs:
+  verify:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m unittest discover -s tests/extensions -p test_helios_calibration.py -v
+      - run: python tools/test_janus_self_extension_surface.py
+  calibration:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: ${{ github.event_name != 'pull_request' }}
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Restore isolated append-only adapter state
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          mkdir -p runtime
+          if git ls-remote --exit-code --heads origin janus/helios-adapter-state; then
+            git fetch origin janus/helios-adapter-state:refs/remotes/origin/helios-adapter-state
+            git worktree add runtime/calibration-state refs/remotes/origin/helios-adapter-state
+          else
+            mkdir runtime/calibration-state
+            git -C runtime/calibration-state init
+            git -C runtime/calibration-state checkout --orphan janus/helios-adapter-state
+          fi
+      - name: Check for unprocessed consented numeric work
+        if: github.event_name != 'pull_request'
+        id: preflight
+        env:
+          OPERATOR_DRILL: ${{ github.event.inputs.operator_drill }}
+        run: |
+          ARGS=()
+          if [ "$OPERATOR_DRILL" = true ]; then ARGS+=(--drill); fi
+          python -m tools.extensions.helios_learning_cycle preflight --state runtime/calibration-state --pending runtime/calibration-pending.json "${ARGS[@]}"
+      - name: Install independent native evaluator
+        if: github.event_name == 'pull_request' || steps.preflight.outputs.pending == 'true'
+        run: python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Test bounded calibration and inference rollback
+        if: github.event_name == 'pull_request' || steps.preflight.outputs.pending == 'true'
+        run: python -m unittest discover -s tests/extensions -p test_helios_calibration.py -v
+      - name: Evaluate actual checkpoint and frozen anchor
+        if: github.event_name != 'pull_request' && steps.preflight.outputs.pending == 'true'
+        run: python -m tools.extensions.helios_learning_cycle audit --state runtime/calibration-state --pending runtime/calibration-pending.json
+      - name: Preserve lessons and admitted adapter on isolated branch
+        if: github.event_name != 'pull_request' && steps.preflight.outputs.pending == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          git -C runtime/calibration-state config user.name janus-native-calibration
+          git -C runtime/calibration-state config user.email janus-native-calibration@users.noreply.github.com
+          git -C runtime/calibration-state add baselines attempts admitted ADAPTER_LATEST.json 2>/dev/null || git -C runtime/calibration-state add baselines attempts
+          if git -C runtime/calibration-state diff --cached --quiet; then exit 0; fi
+          git -C runtime/calibration-state commit -m "Remember independently audited HELIOS calibration $GITHUB_RUN_ID"
+          git -C runtime/calibration-state remote get-url origin >/dev/null 2>&1 || git -C runtime/calibration-state remote add origin "https://github.com/$GITHUB_REPOSITORY.git"
+          gh auth setup-git
+          git -C runtime/calibration-state push origin HEAD:janus/helios-adapter-state
+      - uses: actions/upload-artifact@v4
+        if: always() && github.event_name != 'pull_request'
+        with:
+          name: helios-native-calibration-${{ github.run_id }}
+          path: |
+            runtime/calibration-state/attempts/
+            runtime/calibration-state/ADAPTER_LATEST.json
+            runtime/calibration-state/baselines/
+          if-no-files-found: ignore
+          retention-days: 30
