@@ -58,7 +58,7 @@ def source_manifest(root: Path) -> dict:
 def check_env(env: dict, *, worker: bool = False) -> None:
     if (env.get("GITHUB_ACTIONS") != "true"
             or env.get("GITHUB_REPOSITORY") != "Hawkar-usls/Janus-Demiurge"
-            or env.get("GITHUB_EVENT_NAME") not in ("schedule", "workflow_dispatch")
+            or env.get("GITHUB_EVENT_NAME") not in ("schedule", "workflow_dispatch", "push")
             or env.get("GITHUB_REF") != "refs/heads/main"
             or not SHA.fullmatch(env.get("GITHUB_SHA", ""))
             or not RUN_ID.fullmatch(env.get("GITHUB_RUN_ID", ""))
