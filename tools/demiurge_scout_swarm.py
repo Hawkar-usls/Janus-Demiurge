@@ -282,7 +282,7 @@ Rules:
         })
         cmd = [
             "copilot", "-p", prompt, "--output-format=json", "--no-ask-user", "--no-color",
-            "--no-custom-instructions", "--no-remote", "--no-remote-export", "--disable-builtin-mcps",
+            "--no-custom-instructions", "--sync-session=off", "--disable-builtin-mcps",
             "--deny-tool=read", "--deny-tool=write", "--deny-tool=shell", "--deny-tool=url", "--deny-tool=memory",
         ]
         result = subprocess.run(cmd, cwd=td, env=env, text=True, capture_output=True, timeout=180)
