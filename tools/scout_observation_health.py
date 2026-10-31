@@ -33,7 +33,13 @@ def snapshot_observed(report: Dict[str, Any]) -> bool:
 
 
 def model_synthesis_ok(report: Dict[str, Any]) -> bool:
-    return report.get("status") == "OBSERVED_REPOSITORY_STATE" and not report.get("model_error")
+    analysis = report.get("analysis")
+    return (report.get("status") == "OBSERVED_REPOSITORY_STATE"
+            and not report.get("model_error")
+            and isinstance(analysis, dict)
+            and isinstance(analysis.get("summary"), str)
+            and bool(analysis["summary"].strip())
+            and isinstance(analysis.get("observations"), list))
 
 
 def classify_reports(reports: Dict[str, Dict[str, Any]], expected: Iterable[str]) -> Dict[str, Any]:

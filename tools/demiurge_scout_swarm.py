@@ -223,10 +223,6 @@ def extract_copilot_jsonl(stdout: str) -> Dict[str, Any]:
             delta = data.get("deltaContent", data.get("delta"))
             if isinstance(delta, str):
                 deltas.append(delta)
-        else:
-            for text in deep_strings(data):
-                if '"summary"' in text and "{" in text:
-                    finals.append(text)
     for candidate in reversed(finals):
         try:
             return extract_json_object(candidate)
@@ -289,6 +285,42 @@ Rules:
         if result.returncode != 0:
             raise RuntimeError("COPILOT_CLI_EXIT_%s:%s" % (result.returncode, scrub((result.stderr or result.stdout or "")[-1600:])))
         return extract_copilot_jsonl(result.stdout)
+
+
+def validate_model_analysis(obj: Dict[str, Any], commit: str) -> Dict[str, Any]:
+    """Only a structurally grounded assistant response may count as synthesis."""
+    if not isinstance(obj, dict) or not isinstance(obj.get("summary"), str) or not obj["summary"].strip():
+        raise ValueError("SCOUT_MODEL_SCHEMA_MISMATCH_SUMMARY")
+    for field in ("observations", "risks", "open_questions", "next_checks", "lessons"):
+        if not isinstance(obj.get(field), list):
+            raise ValueError("SCOUT_MODEL_SCHEMA_MISMATCH_" + field.upper())
+    for item in obj["observations"]:
+        if (not isinstance(item, dict) or not isinstance(item.get("claim"), str) or
+            not item["claim"].strip() or not isinstance(item.get("support"), dict) or
+            item["support"].get("commit") != commit or
+            not isinstance(item["support"].get("path"), str) or
+            not item["support"]["path"].strip()):
+            raise ValueError("SCOUT_MODEL_UNGROUNDED_OBSERVATION")
+    return obj
+
+
+def classify_synthesis_failure(error: Optional[str]) -> Optional[str]:
+    if not error:
+        return None
+    e = error.lower()
+    for needles, category in (
+        (("quota_exceeded", "monthly quota", "rate limit", "http 429"), "rate_limit"),
+        (("--no-remote", "unknown option", "unrecognized option"), "invalid_cli_argument"),
+        (("context window", "context length", "token limit"), "context_overflow"),
+        (("timeoutexpired", "timed out"), "timeout"),
+        (("jsonl_missing", "not_json_object"), "invalid_output_format"),
+        (("schema_mismatch", "ungrounded_observation"), "schema_mismatch"),
+        (("model unavailable", "model_unavailable"), "model_unavailable"),
+        (("copilot_cli_exit_", "connection reset"), "upstream_tool_failure"),
+    ):
+        if any(needle in e for needle in needles):
+            return category
+    return "unknown"
 
 
 def normalize_analysis(obj: Dict[str, Any], commit: str) -> Dict[str, Any]:
@@ -356,7 +388,9 @@ def run_agent(agent_id: str, output: Path) -> None:
             run(["git", "clone", "--depth", "20", "--branch", agent["target_ref"], clone_url, str(repo)], timeout=180)
             snapshot = repository_snapshot(repo, agent)
             try:
-                analysis = normalize_analysis(call_copilot(agent, snapshot, spiral_context), snapshot["target_commit"])
+                analysis = normalize_analysis(validate_model_analysis(
+                    call_copilot(agent, snapshot, spiral_context), snapshot["target_commit"]),
+                    snapshot["target_commit"])
                 status = "OBSERVED_REPOSITORY_STATE"
             except Exception as exc:
                 model_error = f"{type(exc).__name__}:{exc}"[:2000]
@@ -408,6 +442,8 @@ def run_agent(agent_id: str, output: Path) -> None:
             "logical_ring": False,
         },
         "model_error": model_error,
+        "synthesis_failure_reason": ("target_unavailable" if status == "DEGRADED_TARGET_UNAVAILABLE"
+                                     else classify_synthesis_failure(model_error)),
         "janus_agent_token": {
             "scope": "EPHEMERAL_GITHUB_RUN_AGENT",
             "fingerprint": token_fp,
@@ -430,15 +466,30 @@ def consolidate(reports_root: Path, run_id: str, sha: str) -> None:
     manifest = load_manifest()
     expected = [a["id"] for a in manifest["agents"]]
     reports: Dict[str, Dict[str, Any]] = {}
+    manifest_agents = {a["id"]: a for a in manifest["agents"]}
     if reports_root.exists():
         for path in reports_root.glob("**/report.json"):
             try:
                 obj = json.loads(path.read_text(encoding="utf-8"))
-                aid = obj.get("agent_id")
-                if aid in expected:
-                    reports[aid] = obj
-            except Exception:
-                pass
+            except (OSError, ValueError):
+                continue
+            if not isinstance(obj, dict):
+                continue
+            aid = obj.get("agent_id")
+            if aid not in expected:
+                continue
+            expected_target = manifest_agents[aid]
+            target = obj.get("target") if isinstance(obj.get("target"), dict) else {}
+            authority = obj.get("authority") if isinstance(obj.get("authority"), dict) else {}
+            evidence = obj.get("evidence_gate") if isinstance(obj.get("evidence_gate"), dict) else {}
+            if (target.get("repository") != expected_target["target_repo"] or
+                target.get("ref") != expected_target["target_ref"] or
+                authority.get("target_repository_write") is not False or
+                evidence.get("world_truth") is not False):
+                raise ValueError("SCOUT_REPORT_AUTHORITY_OR_TARGET_MISMATCH:" + str(aid))
+            if aid in reports:
+                raise ValueError("SCOUT_DUPLICATE_AGENT_RECEIPT:" + str(aid))
+            reports[aid] = obj
     run_dir = ROOT / "scout_swarm" / "outbox" / "runs" / str(run_id)
     run_dir.mkdir(parents=True, exist_ok=True)
     state_dir = ROOT / "scout_swarm" / "state" / "agents"

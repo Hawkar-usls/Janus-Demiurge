@@ -6,6 +6,8 @@ on:
     paths:
       - 'tools/scout_observation_health.py'
       - 'tests/test_scout_observation_health.py'
+      - 'tests/test_scout_evidence_schema.py'
+      - 'tools/demiurge_scout_swarm.py'
       - '.github/workflows/validate-scout-observation-health.yml'
       - '.github/workflows/janus-demiurge-scout-swarm.yml'
   push:
@@ -13,6 +15,8 @@ on:
     paths:
       - 'tools/scout_observation_health.py'
       - 'tests/test_scout_observation_health.py'
+      - 'tests/test_scout_evidence_schema.py'
+      - 'tools/demiurge_scout_swarm.py'
       - '.github/workflows/validate-scout-observation-health.yml'
       - '.github/workflows/janus-demiurge-scout-swarm.yml'
   workflow_dispatch:
@@ -30,7 +34,9 @@ jobs:
           python-version: '3.11'
       - name: Unit-test snapshot/model/transport separation
         run: python -m unittest tests/test_scout_observation_health.py
+      - name: Test model schema, provenance and duplicate report rejection
+        run: python -m unittest -v tests/test_scout_evidence_schema.py
       - name: Self-test deterministic health normalizer
         run: python tools/scout_observation_health.py --self-test
       - name: Compile health-plane module
-        run: python -m py_compile tools/scout_observation_health.py
+        run: python -m py_compile tools/scout_observation_health.py tools/demiurge_scout_swarm.py

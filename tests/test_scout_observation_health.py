@@ -24,7 +24,7 @@ class ScoutObservationHealthTests(unittest.TestCase):
     def test_target_failure_remains_degraded(self):
         expected = ["A", "B"]
         reports = {
-            "A": {"status": "OBSERVED_REPOSITORY_STATE", "repository_snapshot": {"target_commit": "a"}},
+            "A": {"status": "OBSERVED_REPOSITORY_STATE", "repository_snapshot": {"target_commit": "a"}, "analysis": {"summary": "Observed a", "observations": []}},
             "B": {"status": "DEGRADED_TARGET_UNAVAILABLE", "repository_snapshot": {"snapshot_error": "clone failed"}},
         }
         h = classify_reports(reports, expected)
@@ -32,11 +32,20 @@ class ScoutObservationHealthTests(unittest.TestCase):
         self.assertEqual(h["agents_target_unavailable"], ["B"])
         self.assertEqual(h["status"], "DEGRADED_PARTIAL")
 
+    def test_status_label_cannot_replace_an_analysis(self):
+        expected = ["A"]
+        reports = {"A": {"status": "OBSERVED_REPOSITORY_STATE",
+                         "repository_snapshot": {"target_commit": "a"},
+                         "analysis": {"summary": "", "observations": []}}}
+        health = classify_reports(reports, expected)
+        self.assertEqual(health["agents_snapshot_observed"], 1)
+        self.assertEqual(health["agents_model_synthesis_ok"], 0)
+
     def test_full_model_success_remains_live(self):
         expected = ["A", "B"]
         reports = {
-            "A": {"status": "OBSERVED_REPOSITORY_STATE", "repository_snapshot": {"target_commit": "a"}},
-            "B": {"status": "OBSERVED_REPOSITORY_STATE", "repository_snapshot": {"target_commit": "b"}},
+            "A": {"status": "OBSERVED_REPOSITORY_STATE", "repository_snapshot": {"target_commit": "a"}, "analysis": {"summary": "Observed a", "observations": []}},
+            "B": {"status": "OBSERVED_REPOSITORY_STATE", "repository_snapshot": {"target_commit": "b"}, "analysis": {"summary": "Observed b", "observations": []}},
         }
         h = classify_reports(reports, expected)
         self.assertEqual(h["agents_observed"], 2)
