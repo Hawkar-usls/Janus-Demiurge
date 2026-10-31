@@ -1,0 +1,71 @@
+name: JANUS Demiurge River Confluence Witness
+
+# Bridge upstream Brain Five and the existing P-vs-NP research organs.
+# This workflow never executes external source code or dispatches paid work.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/janus_river_confluence.py'
+      - 'tests/test_janus_river_confluence.py'
+      - 'docs/JANUS_RIVER_CONFLUENCE.md'
+      - '.github/workflows/janus-river-confluence.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/janus_river_confluence.py'
+      - 'tests/test_janus_river_confluence.py'
+      - '.github/workflows/janus-river-confluence.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '49 5 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: demiurge-river-confluence-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  read-only-intake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Offline fail-closed regression gates
+        run: python -m unittest -v tests/test_janus_river_confluence.py
+      - name: Independently inspect five brain organs and three science organs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python tools/janus_river_confluence.py \
+            --out runtime/river-confluence/JANUS_RIVER_CONFLUENCE.json
+      - name: Confirm scientific promotion remains blocked
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("runtime/river-confluence/JANUS_RIVER_CONFLUENCE.json")
+          report=json.loads(p.read_text(encoding="utf-8"))
+          assert report["schema"]=="janus.demiurge.river_confluence.v1"
+          assert report["status"] in ("READ_ONLY_INTAKE_OK","HOLD_UNVERIFIED_UPSTREAM_WITNESS")
+          assert report["science_flow"]["p_vs_np"]=="OPEN"
+          assert report["science_flow"]["universal_polynomial_algorithm_proved"] is False
+          assert report["science_flow"]["scientific_claim_promotion"] is False
+          assert all(value is False for value in report["authority"].values())
+          assert report["brain_flow"]["upstream_witness"]["artifact_payloads_replayed"] is False
+          print("JANUS_RIVER_CONFLUENCE_DIAGNOSTIC="+report["status"])
+          print("JANUS_P_VS_NP_PROOF_PROMOTION=BLOCKED")
+          PY
+      - name: Retain bounded read-only provenance report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-demiurge-river-confluence-readonly
+          path: runtime/river-confluence/JANUS_RIVER_CONFLUENCE.json
+          if-no-files-found: warn
+          retention-days: 14
