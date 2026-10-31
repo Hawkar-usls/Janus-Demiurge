@@ -1,5 +1,8 @@
 """Safety and dedup tests for the non-executing code_dna forensic reader."""
 import hashlib
+import gc
+import os
+import time
 import importlib.util
 import json
 import sqlite3
@@ -17,7 +20,13 @@ spec.loader.exec_module(mod)
 class NASCodeDNAForensicTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
-        self.addCleanup(self.temp.cleanup)
+        # Windows 3.14 can retain SQLite handles until GC; defer cleanup briefly.
+        def cleanup():
+            gc.collect()
+            if os.name == "nt":
+                time.sleep(0.3)
+            self.temp.cleanup()
+        self.addCleanup(cleanup)
         self.db = Path(self.temp.name) / "copy.db"
         con = sqlite3.connect(self.db)
         con.execute("CREATE TABLE code_dna (id INTEGER PRIMARY KEY, timestamp TEXT, version_tag TEXT, file_name TEXT, source_code TEXT)")
