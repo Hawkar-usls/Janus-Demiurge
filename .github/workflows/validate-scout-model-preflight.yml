@@ -4,12 +4,18 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - 'tools/scout_model_preflight.py'
+      - 'tools/demiurge_scout_swarm.py'
+      - 'tests/test_scout_model_preflight.py'
       - 'tools/demiurge_scout_snapshot_only.py'
       - '.github/workflows/janus-demiurge-scout-swarm.yml'
       - '.github/workflows/validate-scout-model-preflight.yml'
   push:
     branches: [main]
     paths:
+      - 'tools/scout_model_preflight.py'
+      - 'tools/demiurge_scout_swarm.py'
+      - 'tests/test_scout_model_preflight.py'
       - 'tools/demiurge_scout_snapshot_only.py'
       - '.github/workflows/janus-demiurge-scout-swarm.yml'
       - '.github/workflows/validate-scout-model-preflight.yml'
@@ -28,16 +34,21 @@ jobs:
           python-version: '3.11'
       - name: Self-test snapshot-only preflight fallback
         run: python tools/demiurge_scout_snapshot_only.py --self-test
-      - name: Compile Scout fallback and canonical engine
-        run: python -m py_compile tools/demiurge_scout_snapshot_only.py tools/demiurge_scout_swarm.py
+      - name: Test strict JSON assistant preflight and scoped model canary
+        run: python -m unittest -v tests/test_scout_model_preflight.py
+      - name: Compile Scout fallback, preflight and canonical engine
+        run: python -m py_compile tools/demiurge_scout_snapshot_only.py tools/demiurge_scout_swarm.py tools/scout_model_preflight.py
       - name: Check workflow contains one shared preflight and bounded fallback
         run: |
           python - <<'PY'
           from pathlib import Path
           text=Path('.github/workflows/janus-demiurge-scout-swarm.yml').read_text()
           assert 'model_preflight:' in text
-          assert "STATUS='QUOTA_EXHAUSTED'" in text
-          assert "needs.model_preflight.outputs.model_status != 'AVAILABLE'" in text
+          assert "failure_reason" in text
+          assert "SKIPPED_POLICY" in text
+          assert "max-parallel: 4" in text
+          assert "matrix.id == 'SCOUT_TERMINAL_07'" in text
+          assert "tools/scout_model_preflight.py" in text
           assert 'demiurge_scout_snapshot_only.py' in text
           assert 'model_call=SKIPPED' not in text  # emitted by helper, not fabricated in workflow
           print('JANUS_SCOUT_SHARED_MODEL_PREFLIGHT_STATIC_GATE=PASS')
