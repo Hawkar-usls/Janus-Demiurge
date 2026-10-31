@@ -61,6 +61,27 @@ class HeartbeatTests(unittest.TestCase):
         self.assertEqual(store.state["epoch"], 2)
         self.assertTrue(second["no_remote_dispatch"])
 
+    def test_new_main_version_skips_only_unclaimed_old_tasks(self):
+        store = Store()
+        prepare(store, ENV, now=NOW)
+        newer = {**ENV, "GITHUB_SHA": "f" * 40}
+        status = prepare(store, newer, now=NOW)
+        self.assertEqual(status["queued"], 2)
+        self.assertEqual(sum(v["state"] == "SKIPPED"
+                             for v in store.state["tasks"].values()), 2)
+        self.assertEqual(sum(v["state"] == "QUEUED"
+                             for v in store.state["tasks"].values()), 2)
+        self.assertEqual(take(store, newer, "X64", now=NOW)["task_id"],
+                         "ci-contract-" + "f" * 40)
+
+    def test_claimed_old_task_is_not_skipped(self):
+        store = Store()
+        prepare(store, ENV, now=NOW)
+        token = take(store, ENV, "X64", now=NOW)
+        newer = {**ENV, "GITHUB_SHA": "f" * 40}
+        prepare(store, newer, now=NOW)
+        self.assertEqual(store.state["tasks"][token["task_id"]]["state"], "LEASED")
+
     def test_transient_cas_conflict_recalculated_not_replayed(self):
         store = Store()
         store.conflict_once = True
