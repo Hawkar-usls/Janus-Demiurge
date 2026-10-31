@@ -50,6 +50,8 @@ def assess(text: str) -> dict:
             json.loads(stripped)
         except (ValueError, TypeError):
             reasons.append("TRUNCATED_OR_INVALID_JSON")
+    if response.count('"') % 2 != 0:
+        reasons.append("UNBALANCED_DOUBLE_QUOTE")
     # Detect exact prompt/control payload echo, not semantic repetition.
     if RESPONSE_MARKER in text:
         head = text.rsplit(RESPONSE_MARKER, 1)[0]
