@@ -140,6 +140,43 @@ class RotationTests(unittest.TestCase):
         self.assertEqual(seg2["receipt_sha256"], digest)
         self.assertEqual(state, empty())
 
+    def test_real_bounded_prepare_rotates_and_never_reruns_archived_sha(self):
+        from daddy_keymaster.bounded_ci import prepare, take
+        from daddy_keymaster.git_cas_queue import checkpoint, complete
+        source_a = {"GITHUB_SHA": "a"*40, "GITHUB_RUN_ID": "41111111111"}
+        source_b = {"GITHUB_SHA": "b"*40, "GITHUB_RUN_ID": "42222222222"}
+        first = prepare(self.a, source_a, now=NOW)
+        self.assertEqual(first["queued"], 2)
+        for arch in ("X64", "ARM64"):
+            token = take(self.a, source_a, arch, now=NOW)
+            self.assertIsNotNone(token)
+            self.update(self.a, lambda s, token=token:
+                        checkpoint(s, token, A, now=NOW))
+            self.update(self.a, lambda s, token=token:
+                        complete(s, token, B, now=NOW))
+        before = self.a.read()[1]
+        self.assertEqual(before["epoch"], 8)
+        new = prepare(self.b, source_b, now=NOW)
+        self.assertEqual(new["queued"], 2)
+        self.assertEqual(self.a.read()[1]["epoch"], 2)
+        self.assertEqual(_archive_context(self.a, self.a.read()[0])[0], 1)
+        archived_source = hashlib.sha256(source_a["GITHUB_SHA"].encode()).hexdigest()
+        self.assertTrue(status(self.a, archived_source)["current_already_archived"])
+        reverted = prepare(self.a, source_a, now=NOW)
+        self.assertEqual(reverted["status"], "VERSION_ALREADY_ARCHIVED")
+        self.assertEqual(reverted["queued"], 0)
+        self.assertEqual(_archive_context(self.a, self.a.read()[0])[0], 2)
+
+    def test_bounded_prepare_refuses_to_archive_live_old_lease(self):
+        from daddy_keymaster.bounded_ci import prepare, take
+        env = {"GITHUB_SHA":"a"*40,"GITHUB_RUN_ID":"41111111111"}
+        prepare(self.a, env, now=NOW)
+        token = take(self.a, env, "X64", now=NOW)
+        self.assertIsNotNone(token)
+        with self.assertRaisesRegex(ValueError, "DADDY_ARCHIVE_UNCERTAIN_LEASE_HOLD"):
+            prepare(self.b, {**env,"GITHUB_SHA":"b"*40}, now=NOW)
+        self.assertEqual(self.a.read()[1]["tasks"][token["task_id"]]["state"], "LEASED")
+
     def test_archive_requires_terminal_state(self):
         self.enqueue_one()
         self.assertEqual(rotate_once(self.a, B)["status"], "NONTERMINAL_TASK")
