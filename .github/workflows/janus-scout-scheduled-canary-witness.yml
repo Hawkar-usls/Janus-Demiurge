@@ -1,0 +1,97 @@
+name: JANUS Scout Scheduled Canary Independent Witness
+
+# Never makes model calls; observes only historical run-specific evidence.
+on:
+  pull_request:
+    paths:
+      - 'tools/scout_schedule_canary_witness.py'
+      - 'tests/test_scout_schedule_canary_witness.py'
+      - '.github/workflows/janus-scout-scheduled-canary-witness.yml'
+  workflow_run:
+    workflows: ['JANUS Demiurge Scout Swarm 17']
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: 'Existing successful scheduled Scout run ID to audit'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: janus-scout-scheduled-canary-witness-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  contract-tests:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Reject forged model success, target mismatch and stale SHA
+        run: python -m unittest -v tests/test_scout_schedule_canary_witness.py
+      - name: Compile audit source
+        run: python -m py_compile tools/scout_schedule_canary_witness.py
+
+  scheduled-witness:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.event == 'schedule' && github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Authenticate source run metadata through GitHub read-only API
+        id: source
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN_ID: ${{ github.event_name == 'workflow_dispatch' && inputs.source_run_id || github.event.workflow_run.id }}
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_RUN_ID" =~ ^[0-9]{5,}$ ]]
+          META=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID")
+          EVENT=$(jq -r .event <<< "$META")
+          RESULT=$(jq -r .conclusion <<< "$META")
+          WORKFLOW=$(jq -r .name <<< "$META")
+          SOURCE_SHA=$(jq -r .head_sha <<< "$META")
+          SOURCE_ATTEMPT=$(jq -r .run_attempt <<< "$META")
+          test "$EVENT" = schedule
+          test "$RESULT" = success
+          test "$WORKFLOW" = 'JANUS Demiurge Scout Swarm 17'
+          test "$SOURCE_ATTEMPT" = 1
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          echo "run_id=$SOURCE_RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+          echo "CANARY_HISTORICAL_SOURCE_AUTHENTICATED=PASS"
+      - name: Read current immutable historical Scout run archive
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin +refs/heads/main:refs/remotes/origin/main
+          git checkout --detach origin/main
+      - name: Independently validate 17 reports and single eligible model canary
+        run: |
+          python tools/scout_schedule_canary_witness.py \
+            --run-id '${{ steps.source.outputs.run_id }}' \
+            --source-sha '${{ steps.source.outputs.source_sha }}' \
+            --output runtime/canary-witness/REPORT.json
+          python -m unittest -q tests/test_scout_schedule_canary_witness.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-scout-canary-witness-${{ steps.source.outputs.run_id }}
+          path: runtime/canary-witness/REPORT.json
+          retention-days: 14
+          if-no-files-found: error
