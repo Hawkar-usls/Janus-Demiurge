@@ -260,18 +260,58 @@ class Relay:
                 rows = [dict(r) for r in db.execute(
                     "SELECT * FROM tasks ORDER BY id"
                 ).fetchall()]
-                # Every committed task state must have a corresponding terminal
-                # journal event, not just an arbitrary row mutation.
-                final = {}
+                # Reconstruct the COMPLETE task row from the append-only journal.
+                # The chain alone does not bind SQLite task table contents.
+                projected = {}
                 for event in all_events:
-                    final[event["task_id"]] = event["kind"]
+                    task_id, kind = event["task_id"], event["kind"]
+                    detail = json.loads(event["detail"])
+                    if kind == "ENQUEUE":
+                        if task_id in projected:
+                            raise ValueError("RELAY_DUPLICATE_JOURNAL_ENQUEUE")
+                        projected[task_id] = {
+                            "id": task_id, "kind": detail["kind"],
+                            "source_sha256": detail["source_sha256"],
+                            "cpu": detail["cpu"], "max_seconds": detail["max_seconds"],
+                            "priority": detail["priority"], "state": "QUEUED",
+                            "generation": 0, "holder": None, "lease_until": None,
+                            "checkpoint_sha256": None, "result_sha256": None,
+                        }
+                        continue
+                    row = projected.get(task_id)
+                    if row is None:
+                        raise ValueError("RELAY_EVENT_WITHOUT_TASK")
+                    if kind == "LEASE":
+                        if (row["state"] != "QUEUED" or
+                            detail["generation"] != row["generation"] + 1):
+                            raise ValueError("RELAY_INVALID_LEASE_TRANSITION")
+                        row.update(state="LEASED", holder=detail["holder"],
+                                   generation=detail["generation"],
+                                   lease_until=detail["lease_until"])
+                    elif kind == "CHECKPOINT":
+                        if (row["state"] != "LEASED" or
+                            row["generation"] != detail["generation"]):
+                            raise ValueError("RELAY_INVALID_CHECKPOINT_TRANSITION")
+                        row["checkpoint_sha256"] = detail["content_sha256"]
+                    elif kind == "COMPLETE":
+                        if (row["state"] != "LEASED" or
+                            row["generation"] != detail["generation"] or
+                            row["checkpoint_sha256"] is None or
+                            row["checkpoint_sha256"] != detail["checkpoint_sha256"]):
+                            raise ValueError("RELAY_INVALID_COMPLETE_TRANSITION")
+                        row.update(state="COMPLETE",
+                                   result_sha256=detail["result_sha256"])
+                    elif kind == "HOLD_UNCERTAIN":
+                        if (row["state"] != "LEASED" or
+                            row["generation"] != detail["generation"]):
+                            raise ValueError("RELAY_INVALID_HOLD_TRANSITION")
+                        row["state"] = "HOLD"
+                    else:
+                        raise ValueError("RELAY_UNKNOWN_EVENT_TYPE")
+                if len(rows) != len(projected):
+                    raise ValueError("RELAY_ROW_JOURNAL_DIVERGED")
                 for row in rows:
-                    expected = {"QUEUED": "ENQUEUE", "LEASED": ("LEASE", "CHECKPOINT"),
-                                "COMPLETE": "COMPLETE", "HOLD": "HOLD_UNCERTAIN"}
-                    kinds = expected[row["state"]]
-                    if final.get(row["id"]) not in (
-                        kinds if isinstance(kinds, tuple) else (kinds,)
-                    ):
+                    if row != projected.get(row["id"]):
                         raise ValueError("RELAY_ROW_JOURNAL_DIVERGED")
                 return {
                     "schema": SCHEMA, "status": "LOCAL_JOURNAL_VERIFIED",
