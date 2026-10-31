@@ -34,14 +34,16 @@ def main():
     if not verify_file.exists():
         verify_file = ROOT / "verify_snapshot.py"
     verify = runpy.run_path(str(verify_file))["validate"]
-    candidates = sorted(SNAPSHOTS.glob("*.receipt.json"),
+    snapshots = ROOT / "snapshots"
+    receipts_dir = ROOT / "node_receipts"
+    candidates = sorted(snapshots.glob("*.receipt.json"),
                         key=lambda p: p.stat().st_mtime_ns, reverse=True)
     need(candidates, "OWNER_NODE_NO_BACKUP_AVAILABLE")
     chosen = None
     for rec in candidates:
         doc = json.loads(rec.read_text(encoding="utf-8-sig"))
         head = doc["head_sha"]
-        zip_path = SNAPSHOTS / (head + ".zip")
+        zip_path = snapshots / (head + ".zip")
         if zip_path.exists():
             chosen = (head, zip_path, rec)
             break
@@ -50,8 +52,8 @@ def main():
     verification = verify(str(zip_path), str(rec_path))
     need(verification["status"]=="JANUS_INDEPENDENT_LOCAL_REPLAY_PASS",
          "OWNER_NODE_VERIFICATION_FAILED")
-    RECEIPTS.mkdir(parents=True,exist_ok=True)
-    target = RECEIPTS / (head+".json")
+    receipts_dir.mkdir(parents=True,exist_ok=True)
+    target = receipts_dir / (head+".json")
     if target.exists():
         existing = json.loads(target.read_text(encoding="utf-8-sig"))
         signature = existing.get("receipt_sha256")
