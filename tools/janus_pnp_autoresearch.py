@@ -151,6 +151,14 @@ def main():
         raise ValueError("BEETLE_LEDGER_INCOMPLETE")
     if ledger.get("recomputed_context_sha256")!=evidence["beetle"]["source_context_sha256"] or ledger.get("cursor_receipt_sha256")!=evidence["beetle"]["last_processing_receipt_sha256"] or ledger.get("source_truth_independently_established") is not False:
         raise ValueError("BEETLE_LEDGER_RECEIPT_OR_AUTHORITY")
+    finite=cleanroom.get("finite",{})
+    symbolic=cleanroom.get("symbolic_sink",{})
+    if cleanroom.get("schema")!="janus.topa.policy0a.cleanroom_finite_and_sink_inequality.v1" or cleanroom.get("status")!="CLEANROOM_FINITE_REPLAY_PASS_ASYMPTOTIC_OPEN" or cleanroom.get("P_VS_NP")!="OPEN" or cleanroom.get("promotion_authority") is not False:
+        raise ValueError("TOPA_CLEANROOM_SCHEMA_OR_AUTHORITY")
+    if finite.get("total_literals")!=31140 or finite.get("sink_pairs_checked")!=331776 or finite.get("both_branch_projections_checked") is not True or finite.get("source_code_imported") is not False or finite.get("full_asymptotic_lower_bound_proved") is not False:
+        raise ValueError("TOPA_CLEANROOM_FINITE_SCOPE")
+    if symbolic.get("positive_for_n_ge_3") is not True or symbolic.get("external_GT_lower_bound_independently_established") is not False or symbolic.get("full_policy0a_asymptotic_result_independently_proved") is not False:
+        raise ValueError("TOPA_CLEANROOM_ASYMPTOTIC_SCOPE")
     if tracks["P_VS_NP"]!="OPEN":
         raise ValueError("P_VS_NP_MUST_REMAIN_OPEN")
     # This supervisor is already the sole research authority boundary. The
