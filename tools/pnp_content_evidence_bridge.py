@@ -100,7 +100,10 @@ def check_topa_finite_sink(artifact: dict) -> dict:
     B = 256 * n * n
     if family.get("p") != "64*n^2" or family.get("B") != "256*n^2":
         raise EvidenceHold("TOPA_SINK_PARAMETERS_MISMATCH")
-    if frozen.get("attempt_budget") != 16 * B + 16 * p or frozen.get("sink_pair_attempts_available") != p * p \
+    core_literals = 4 * (n * (n - 1) // 2) + 3 * n * (n - 1) * (n - 2) + n * (n - 1)
+    literal_count = core_literals + 2 * n * (n - 1) * B + 6 * p
+    if frozen.get("literal_count") != literal_count or frozen.get("attempt_budget") != 4 * literal_count \
+            or frozen.get("sink_pair_attempts_available") != p * p \
             or frozen.get("resolution_attempts") != frozen.get("attempt_budget") \
             or frozen.get("resolution_additions") != 0 or frozen.get("branch_variable_class") != "GT_CORE":
         raise EvidenceHold("TOPA_FROZEN_N3_NUMERIC_MISMATCH")
