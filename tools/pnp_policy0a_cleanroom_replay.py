@@ -31,14 +31,28 @@ def restrict(clauses, var, value):
     return canon(reduced)
 
 def propagate(clauses):
+    # Apply all current unit assignments *simultaneously*. On a padded GT
+    # branch there can be thousands of leaf units; sequential re-sorting
+    # would be quadratic in the number of leaves and exhaust CI time.
     while clauses is not None:
-        singles=[c[0] for c in clauses if len(c)==1]
-        if not singles:
+        units={}
+        for clause in clauses:
+            if len(clause)==1:
+                var,value=abs(clause[0]),clause[0]>0
+                if var in units and units[var]!=value:
+                    return None
+                units[var]=value
+        if not units:
             return clauses
-        for v in singles:
-            clauses=restrict(clauses,abs(v),v>0)
-            if clauses is None:
+        next_clauses=[]
+        for clause in clauses:
+            if any((lit>0)==units[abs(lit)] for lit in clause if abs(lit) in units):
+                continue
+            remaining=tuple(lit for lit in clause if abs(lit) not in units)
+            if not remaining:
                 return None
+            next_clauses.append(remaining)
+        clauses=canon(next_clauses)
 
 def explicit_n3():
     n=3; B=256*n*n; p=64*n*n
