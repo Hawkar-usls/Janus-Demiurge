@@ -216,7 +216,10 @@ def rotate_once(store, current_source_sha256):
         dest = store.repo / path
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_bytes(canonical(content) + b"\n")
-    _git(store.repo, "add", "--", *files)
+    # Force-add ONLY the explicit SHA/serial allowlist above: global project
+    # .gitignore ignores state/ by design, but the dedicated state branch
+    # must persist these immutable archive proofs together in one commit.
+    _git(store.repo, "add", "-f", "--", *files)
     _git(store.repo, "-c", "user.name=janus-archive[bot]",
          "-c", "user.email=janus-archive@users.noreply.github.com",
          "commit", "-m", f"daddy-archive: immutable segment {serial}")

@@ -49,7 +49,10 @@ class RotationTests(unittest.TestCase):
         p = seed / STATE_PATH
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(json.dumps(empty(), sort_keys=True)+"\n")
-        git("-C", seed, "add", STATE_PATH)
+        (seed / ".gitignore").write_text(
+            "state/archive_segments/\nstate/processed_sources/\nstate/relay_archive_head.json\n"
+        )
+        git("-C", seed, "add", ".gitignore", STATE_PATH)
         git("-C", seed, "commit", "-m", "initial queue")
         git("-C", seed, "remote", "add", "origin", bare)
         git("-C", seed, "push", "origin", "HEAD:refs/heads/"+BRANCH)
