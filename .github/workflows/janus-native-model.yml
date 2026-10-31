@@ -10,6 +10,7 @@ on:
       - '!janus_model/receipts/**'
       - '!janus_model/outbox/**'
       - 'tests/test_janus_native_model.py'
+      - 'tests/test_janus_native_output_quality.py'
       - '.github/workflows/janus-native-model.yml'
   workflow_dispatch:
     inputs:
@@ -89,6 +90,7 @@ jobs:
         run: |
           python -m py_compile janus_model/*.py
           python -m unittest -v tests/test_janus_native_model.py
+          python -m unittest -v tests/test_janus_native_output_quality.py
           python - <<'PY'
           from pathlib import Path
           forbidden = ('copilot', 'openai', 'anthropic', 'gemini', 'ollama')
@@ -511,6 +513,14 @@ jobs:
           test -s runtime/native-inference.txt
           echo 'JANUS_NATIVE_MODULAR_PROMPT_TO_OUTPUT=PASS'
 
+      - name: Independently screen native text for truncated or low-signal output
+        if: steps.decide.outputs.do_run == 'true' || steps.decide.outputs.do_train == 'true'
+        run: |
+          python -m janus_model.output_quality \
+            --input runtime/native-inference.txt \
+            --out runtime/native-output-quality.json
+          echo 'JANUS_NATIVE_OUTPUT_QUALITY_RECEIPT=PASS'
+
       - name: Create bounded reflection JSON proposal
         if: (steps.decide.outputs.do_train == 'true') || (github.event_name == 'workflow_dispatch' && steps.decide.outputs.do_run == 'true')
         shell: bash
@@ -619,6 +629,7 @@ jobs:
             runtime/helios-calibration.json
             runtime/native-inspect.json
             runtime/native-inference.txt
+            runtime/native-output-quality.json
             runtime/organ-context.json
             runtime/repair-candidates.json
             runtime/native-repair-decision.json
