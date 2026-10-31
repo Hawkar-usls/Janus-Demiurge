@@ -1,0 +1,29 @@
+name: JANUS NAS Early Cores Static Recovery Check
+
+on:
+  pull_request:
+    paths:
+      - 'archaeology/nas_early_cores_20261031/**'
+      - 'tests/test_daddy_keymaster_nas_legacy_cores.py'
+      - '.github/workflows/janus-nas-early-cores-static.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'archaeology/nas_early_cores_20261031/**'
+      - 'tests/test_daddy_keymaster_nas_legacy_cores.py'
+      - '.github/workflows/janus-nas-early-cores-static.yml'
+permissions:
+  contents: read
+jobs:
+  archive-syntax:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Parse-only legacy core audit (never import old modules)
+        run: python -m unittest discover -s tests -p test_daddy_keymaster_nas_legacy_cores.py -v
