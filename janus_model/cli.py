@@ -134,6 +134,7 @@ def main():
     run.add_argument("--checkpoint", default="janus_model/checkpoints/promoted.pt")
     run.add_argument("--prompt", required=True)
     run.add_argument("--organ-context")
+    run.add_argument("--calibration", help="Optional independently admitted output adapter from the repository state branch")
     run.add_argument("--max-new-tokens", type=int, default=160)
     run.add_argument("--temperature", type=float, default=0.75)
     ins = sub.add_parser("inspect")
@@ -158,6 +159,10 @@ def main():
             )
         )
         return
+    if a.calibration:
+        from janus_model.extensions.helios_calibration import attach_calibration
+        receipt = json.loads(Path(a.calibration).read_text(encoding="utf-8"))
+        attach_calibration(model, receipt, sha256_file(path))
     prompt = _augment_prompt(a.prompt, a.organ_context, model.config.context_length)
     ids = ByteTokenizer.encode(prompt, bos=True)
     if len(ids) > model.config.context_length:

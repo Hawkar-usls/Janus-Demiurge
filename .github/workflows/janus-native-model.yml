@@ -490,13 +490,20 @@ jobs:
           echo "selected=$SELECTED" >> "$GITHUB_OUTPUT"
           echo "JANUS_NATIVE_REPAIR_DECISION=$STATUS:$SELECTED"
 
+      - name: Read optional independently admitted HELIOS adapter
+        if: steps.decide.outputs.do_run == 'true' || steps.decide.outputs.do_train == 'true'
+        continue-on-error: true
+        run: python -m tools.extensions.helios_learning_cycle fetch-adapter --state runtime --pending runtime/helios-calibration.json
+
       - name: Run JANUS from its own weights with modular organs and self memory
         if: steps.decide.outputs.do_run == 'true' || steps.decide.outputs.do_train == 'true'
         shell: bash
         run: |
           PROMPT='${{ github.event.inputs.prompt }}'
           [ -n "$PROMPT" ] || PROMPT='JANUS native checkpoint smoke test: '
-          python -m janus_model.cli run \
+          CALIBRATION_ARGS=()
+          if [ -f runtime/helios-calibration.json ]; then CALIBRATION_ARGS+=(--calibration runtime/helios-calibration.json); fi
+          python -m janus_model.cli run "${CALIBRATION_ARGS[@]}" \
             --checkpoint janus_model/checkpoints/promoted.pt \
             --organ-context runtime/organ-context.json \
             --prompt "$PROMPT" \
@@ -609,6 +616,7 @@ jobs:
             runtime/corpus/corpus_manifest.json
             runtime/training-receipt.json
             runtime/training-persist-guard.json
+            runtime/helios-calibration.json
             runtime/native-inspect.json
             runtime/native-inference.txt
             runtime/organ-context.json
