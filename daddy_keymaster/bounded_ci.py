@@ -155,6 +155,8 @@ def run_contract(token, env, source_root, *, timeout=240):
     if (token["source_sha256"] != _source(env) or
         token["task_id"] != _task_id(kind, env)):
         raise ValueError("DADDY_RECEIPT_TASK_MISMATCH")
+    if env.get("RUNNER_ARCH") not in ARCH_TASK or ARCH_TASK[env["RUNNER_ARCH"]] != kind:
+        raise ValueError("DADDY_WORKER_KIND_ARCH_MISMATCH")
     suite = SUITES[kind]
     cmd = [sys.executable, "-m", "unittest", "discover",
            "-s", "tests", "-p", suite, "-v"]
@@ -226,12 +228,23 @@ def audit(state, receipts, source_sha, run_id):
         row = state["tasks"].get(tid, {})
         if (tid in seen or receipt.get("run_id") != run_id or
             receipt.get("source_sha256") != source or
+            receipt.get("worker_arch") not in ARCH_TASK or
+            ARCH_TASK[receipt["worker_arch"]] != row.get("kind") or
+            receipt.get("suite") != SUITES.get(row.get("kind")) or
+            row.get("holder") != receipt.get("holder") or
+            row.get("generation") != receipt.get("generation") or
             row.get("state") != "COMPLETE" or
             row.get("result_sha256") != receipt["receipt_sha256"] or
             row.get("checkpoint_sha256") != receipt["receipt_sha256"] or
             receipt.get("external_effects") != 0):
             raise ValueError("DADDY_AUDIT_RECEIPT_NOT_COMMITTED")
         seen.add(tid)
+    for tid, row in state["tasks"].items():
+        if (row["state"] == "COMPLETE" and
+            isinstance(row["holder"], str) and
+            row["holder"].startswith("gha-" + run_id + "-") and
+            tid not in seen):
+            raise ValueError("DADDY_AUDIT_MISSING_COMMITTED_RECEIPT")
     return {"status": "INDEPENDENT_BOUND_CI_WITNESS",
             "verified_receipts": len(seen), "queue_epoch": state["epoch"],
             "tip_sha256": state["tip_sha256"], "production_promotion": False}
