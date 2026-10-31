@@ -114,7 +114,7 @@ def run_probe(root,rel,timeout=150):
         return {"path":rel,"status":"ERROR","error":type(e).__name__+":"+str(e)}
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument("--fundamentum",required=True);ap.add_argument("--out",required=True);ap.add_argument("--evidence-bundle",required=True);a=ap.parse_args()
+    ap=argparse.ArgumentParser();ap.add_argument("--fundamentum",required=True);ap.add_argument("--out",required=True);ap.add_argument("--evidence-bundle",required=True);ap.add_argument("--beetle-ledger",required=True);ap.add_argument("--policy0a-cleanroom",required=True);a=ap.parse_args()
     root=Path(a.fundamentum);out=Path(a.out)
     head=subprocess.check_output(["git","rev-parse","HEAD"],cwd=root,text=True).strip()
     status=read_status(root)
@@ -141,6 +141,24 @@ def main():
     supervisor=build_supervisor(candidates,fabric,head,hrain,inaihr,probes)
     evidence=json.loads(Path(a.evidence_bundle).read_text(encoding="utf-8"))
     evidence=validate_bundle(evidence,head)
+    ledger=json.loads(Path(a.beetle_ledger).read_text(encoding="utf-8"))
+    cleanroom=json.loads(Path(a.policy0a_cleanroom).read_text(encoding="utf-8"))
+    if ledger.get("schema")!="janus.beetle.individual_ledger_replay.v1" or ledger.get("status")!="ALL_RECORDED_BATCHES_RESULT_AND_RECEIPT_REPLAYED":
+        raise ValueError("BEETLE_LEDGER_UNVERIFIED")
+    if ledger.get("beetle_source_commit")!=evidence["beetle"]["source_commit"] or ledger.get("validated_batches")!=evidence["beetle"]["last_processed_sequence"]:
+        raise ValueError("BEETLE_LEDGER_SOURCE_MISMATCH")
+    if ledger.get("validated_results")!=ledger.get("validated_batches") or ledger.get("validated_receipts")!=ledger.get("validated_batches") or ledger.get("validated_input_packets")!=ledger.get("validated_batches"):
+        raise ValueError("BEETLE_LEDGER_INCOMPLETE")
+    if ledger.get("recomputed_context_sha256")!=evidence["beetle"]["source_context_sha256"] or ledger.get("cursor_receipt_sha256")!=evidence["beetle"]["last_processing_receipt_sha256"] or ledger.get("source_truth_independently_established") is not False:
+        raise ValueError("BEETLE_LEDGER_RECEIPT_OR_AUTHORITY")
+    finite=cleanroom.get("finite",{})
+    symbolic=cleanroom.get("symbolic_sink",{})
+    if cleanroom.get("schema")!="janus.topa.policy0a.cleanroom_finite_and_sink_inequality.v1" or cleanroom.get("status")!="CLEANROOM_FINITE_REPLAY_PASS_ASYMPTOTIC_OPEN" or cleanroom.get("P_VS_NP")!="OPEN" or cleanroom.get("promotion_authority") is not False:
+        raise ValueError("TOPA_CLEANROOM_SCHEMA_OR_AUTHORITY")
+    if finite.get("total_literals")!=31140 or finite.get("sink_pairs_checked")!=331776 or finite.get("both_branch_projections_checked") is not True or finite.get("source_code_imported") is not False or finite.get("full_asymptotic_lower_bound_proved") is not False:
+        raise ValueError("TOPA_CLEANROOM_FINITE_SCOPE")
+    if symbolic.get("positive_for_n_ge_3") is not True or symbolic.get("external_GT_lower_bound_independently_established") is not False or symbolic.get("full_policy0a_asymptotic_result_independently_proved") is not False:
+        raise ValueError("TOPA_CLEANROOM_ASYMPTOTIC_SCOPE")
     if tracks["P_VS_NP"]!="OPEN":
         raise ValueError("P_VS_NP_MUST_REMAIN_OPEN")
     # This supervisor is already the sole research authority boundary. The
@@ -160,6 +178,18 @@ def main():
       "may_satisfy_promotion_gate":False,
       "next_action":"Attack C023/Policy0B with a distinct reproducible counterexample; do not reuse a Policy0A refutation as a universal C023/P-vs-NP proof.",
     }
+    supervisor["content_evidence"]["deep_evidence"]={
+      "status":"ALL_BATCHES_AND_FINITE_MECHANICS_REPLAYED_NO_GENERAL_PROOF",
+      "beetle_individual_batches_checked":ledger["validated_batches"],
+      "beetle_source_commit":ledger["beetle_source_commit"],
+      "cleanroom_n3_sink_pairs_checked":finite["sink_pairs_checked"],
+      "cleanroom_n3_source_code_imported":finite["source_code_imported"],
+      "symbolic_sink_budget_positive_for_n_ge_3":symbolic["positive_for_n_ge_3"],
+      "external_gt_theorem_independently_proved":False,
+      "asymptotic_refutation_independently_proved":False,
+      "p_vs_np_remains_open":True,
+      "may_satisfy_promotion_gate":False,
+    }
     for route in supervisor["candidate_routes"]:
         route["source_evidence_handoffs"]=evidence["research_handback"].get(route["candidate_id"],[])
         route["content_evidence_verification"]="FINITE_ONLY_NO_PROMOTION"
@@ -172,6 +202,7 @@ def main():
       "fundamentum":{"repository":"Hawkar-usls/Janus-Fundamentum","commit":head,"read_only":True,"tracks":tracks},
       "memory":{"hrain":hrain,"inaihr_source_commit":inaihr.get("source_commit"),"inaihr_routes":inaihr.get("routes",[]),"topa":topa},
       "content_evidence_bundle":evidence,
+      "deep_replay_receipts":{"beetle":ledger,"policy0a":cleanroom},
       "janus_own_candidates":candidates,
       "bounded_replay_probes":probes,
       "research_supervisor":supervisor,

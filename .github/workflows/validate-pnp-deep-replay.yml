@@ -1,0 +1,60 @@
+name: JANUS Deep PNP and Beetle Individual Ledger Witness
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/pnp_policy0a_cleanroom_replay.py'
+      - 'tools/beetle_individual_ledger_replay.py'
+      - 'tests/test_pnp_deep_evidence_replay.py'
+      - '.github/workflows/validate-pnp-deep-replay.yml'
+      - 'tools/janus_pnp_autoresearch.py'
+      - '.github/workflows/janus-pnp-autoresearch.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cleanroom-independent-replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run clean-room finite mathematics and scope regressions
+        run: |
+          python -m unittest -v tests/test_pnp_deep_evidence_replay.py
+          python tools/pnp_policy0a_cleanroom_replay.py --out runtime/deep/POLICY0A_CLEANROOM.json
+      - name: Verify every individual Beetle packet/result/receipt pair
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --single-branch --branch beetle-memory \
+            https://github.com/Hawkar-usls/Janus-Demiurge.git runtime/beetle-state
+          python tools/beetle_individual_ledger_replay.py \
+            --beetle-state runtime/beetle-state \
+            --out runtime/deep/BEETLE_LEDGER_REPLAY.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('runtime/deep/BEETLE_LEDGER_REPLAY.json').read_text())
+          y=json.loads(Path('runtime/deep/POLICY0A_CLEANROOM.json').read_text())
+          assert x['status']=='ALL_RECORDED_BATCHES_RESULT_AND_RECEIPT_REPLAYED'
+          assert x['validated_batches']>=1
+          assert x['validated_results']==x['validated_receipts']==x['validated_batches']
+          assert x['source_truth_independently_established'] is False
+          assert y['finite']['sink_pairs_checked']==331776
+          assert y['symbolic_sink']['full_policy0a_asymptotic_result_independently_proved'] is False
+          assert y['P_VS_NP']=='OPEN'
+          print('JANUS_BEETLE_INDIVIDUAL_BATCH_WITNESS=PASS')
+          print('JANUS_POLICY0A_CLEANROOM_FINITE=PASS')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: janus-pnp-deep-replay-evidence
+          path: runtime/deep/
+          if-no-files-found: warn
+          retention-days: 14
