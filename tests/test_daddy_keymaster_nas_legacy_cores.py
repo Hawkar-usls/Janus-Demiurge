@@ -22,7 +22,7 @@ class NASLegacyCoreTests(unittest.TestCase):
                 ast.parse(raw,filename=name)
                 self.assertNotRegex(raw,r"-----BEGIN (?:RSA|OPENSSH|EC)? ?PRIVATE KEY-----")
                 self.assertNotRegex(raw,r"github_pat_[A-Za-z0-9_]{15}|ghp_[A-Za-z0-9]{15}")
-                self.assertNotRegex(raw,r"192\\.168\\.\\d+\\.\\d+")
+                self.assertNotRegex(raw,r"192[.]168[.][0-9]+[.][0-9]+")
     def test_no_private_model_or_database_assets(self):
         self.assertEqual(sorted(p.name for p in ROOT.iterdir() if p.is_file()
                                 and p.suffix in (".db",".sqlite",".pkl",".pt",".env")),[])
