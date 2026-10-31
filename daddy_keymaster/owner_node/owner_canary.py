@@ -30,7 +30,10 @@ def need(condition, why):
         raise ValueError(why)
 
 def main():
-    verify = runpy.run_path(str(ROOT / "Verify-Snapshot.py"))["validate"]
+    verify_file = ROOT / "Verify-Snapshot.py"
+    if not verify_file.exists():
+        verify_file = ROOT / "verify_snapshot.py"
+    verify = runpy.run_path(str(verify_file))["validate"]
     candidates = sorted(SNAPSHOTS.glob("*.receipt.json"),
                         key=lambda p: p.stat().st_mtime_ns, reverse=True)
     need(candidates, "OWNER_NODE_NO_BACKUP_AVAILABLE")
