@@ -1,0 +1,92 @@
+name: Demiurge LOGOS R1 - research-only symbolic law discovery
+
+on:
+  pull_request:
+    paths:
+      - 'research/logos_001/**'
+      - '.github/workflows/demiurge-logos-001-r1.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/logos_001/**'
+      - '.github/workflows/demiurge-logos-001-r1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: demiurge-logos-r1-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  demiurge-propose:
+    name: Demiurge proposes bounded equations on synthetic training data
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: d21d95cdb3fc506e05113b2d1ac778c52b147564
+          path: meta-registry
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ensure source exactly matches the verified Meta Registry algorithm
+        run: cmp research/logos_001/r1_discover.py meta-registry/research/logos_001/r1_discover.py
+      - name: Produce TRAIN and VALIDATION only
+        run: python meta-registry/research/logos_001/r1_data.py --out /tmp/logos-r1-input.json
+      - name: Ask Demiurge experimental adapter to propose equations
+        run: |
+          python research/logos_001/demiurge_adapter.py \
+            --input /tmp/logos-r1-input.json \
+            --out /tmp/demiurge-logos-r1-candidate.json
+      - name: Check deterministic proposals and validate source contract
+        run: |
+          python research/logos_001/demiurge_adapter.py \
+            --input /tmp/logos-r1-input.json \
+            --out /tmp/demiurge-logos-r1-candidate-repeat.json
+          cmp /tmp/demiurge-logos-r1-candidate.json /tmp/demiurge-logos-r1-candidate-repeat.json
+          python -m unittest discover -s meta-registry/research/logos_001 -p test_r1.py -v
+      - uses: actions/upload-artifact@v4
+        with:
+          name: demiurge-logos-r1-candidate
+          path: /tmp/demiurge-logos-r1-candidate.json
+          retention-days: 14
+          if-no-files-found: error
+
+  independent-witness:
+    name: Independent Meta Registry checker evaluates fresh holdout
+    needs: demiurge-propose
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: d21d95cdb3fc506e05113b2d1ac778c52b147564
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: demiurge-logos-r1-candidate
+          path: /tmp/demiurge-logos-r1-evidence
+      - name: Verify hypotheses and reject false discoveries and four tampered receipts
+        run: |
+          python research/logos_001/r1_witness.py \
+            --candidate /tmp/demiurge-logos-r1-evidence/demiurge-logos-r1-candidate.json \
+            --self-test \
+            --out /tmp/demiurge-logos-r1-independent-witness.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: demiurge-logos-r1-independent-witness
+          path: /tmp/demiurge-logos-r1-independent-witness.json
+          retention-days: 30
+          if-no-files-found: error
