@@ -170,7 +170,8 @@ class RotationTests(unittest.TestCase):
         self.assertEqual(reverted["queued"], 0)
         self.assertIsNone(take(self.a, source_a, "X64", now=NOW))
         self.assertIsNone(take(self.b, source_a, "ARM64", now=NOW))
-        self.assertEqual(_archive_context(self.a, self.a.read()[0])[0], 2)
+        # Stale historical job must never archive/skip source B's queue.
+        self.assertEqual(_archive_context(self.a, self.a.read()[0])[0], 1)
 
     def test_fresh_worker_can_recover_full_archive_chain_without_memory(self):
         # All workers are independently cloned, as on ephemeral GitHub VMs.
@@ -197,10 +198,14 @@ class RotationTests(unittest.TestCase):
         self.assertEqual(result["queued"], 2)
         self.assertEqual(_archive_context(fresh_b, fresh_b.read()[0])[0], 1)
         self.assertTrue(status(fresh_b, source_a)["current_already_archived"])
+        before_old_replay = fresh_b.read()[0]
         self.assertEqual(prepare(fresh_b, env_a, now=NOW)["status"],
                          "VERSION_ALREADY_ARCHIVED")
+        self.assertEqual(fresh_b.read()[0], before_old_replay)
         self.assertIsNone(take(fresh_b, env_a, "X64", now=NOW))
         self.assertEqual(len(fresh_b.read()[1]["tasks"]), 2)
+        self.assertTrue(all(row["state"] == "QUEUED"
+                            for row in fresh_b.read()[1]["tasks"].values()))
 
         # Fresh worker C (no hidden session state) sees B's durable queue,
         # finishes both allowed tasks, and advances to a second archive.
