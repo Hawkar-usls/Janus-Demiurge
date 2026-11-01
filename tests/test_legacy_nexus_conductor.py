@@ -120,6 +120,22 @@ class LegacyNexusConductorTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(called, [True])
         self.assertFalse(out["authority"]["production_service_started"])
 
+    async def test_tampered_plan_or_authority_is_rejected(self):
+        p = build_plan([spec("old_genesis")])
+        async def handler(core):
+            raise RuntimeError("must not be called")
+        p["modules"][0]["capabilities"] = ["NETWORK"]
+        with self.assertRaisesRegex(ValueError, "SHA_MISMATCH"):
+            await probation_run(p, target="old_genesis",
+                               handlers={"old_genesis": handler},
+                               core_port=None, operator_approved=True)
+        p = build_plan([spec("old_genesis")])
+        p["authority"]["uses_exec"] = True
+        with self.assertRaisesRegex(ValueError, "AUTHORITY_FIREWALL"):
+            await probation_run(p, target="old_genesis",
+                               handlers={"old_genesis": handler},
+                               core_port=None, operator_approved=True)
+
     async def test_sync_handler_not_accepted(self):
         p = build_plan([spec("legacy")])
         def legacy(core):
