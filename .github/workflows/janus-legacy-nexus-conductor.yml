@@ -1,0 +1,32 @@
+name: JANUS Demiurge Legacy Nexus-Conductor ABI
+
+on:
+  pull_request:
+    paths:
+      - 'restored/legacy_nexus_conductor.py'
+      - 'tests/test_legacy_nexus_conductor.py'
+      - 'docs/LEGACY_NEXUS_CONDUCTOR_RECOVERY_20261101.md'
+      - '.github/workflows/janus-legacy-nexus-conductor.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'restored/legacy_nexus_conductor.py'
+      - 'tests/test_legacy_nexus_conductor.py'
+      - 'docs/LEGACY_NEXUS_CONDUCTOR_RECOVERY_20261101.md'
+      - '.github/workflows/janus-legacy-nexus-conductor.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  abi-synthetic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: No-network historical-module synthetic ABI test
+        run: python -m unittest discover -s tests -p 'test_legacy_nexus_conductor.py' -v
