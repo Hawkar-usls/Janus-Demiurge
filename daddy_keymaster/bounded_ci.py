@@ -86,6 +86,16 @@ def _advance(store, operation, *, max_attempts=MAX_ATTEMPTS):
 def prepare(store, env, *, now):
     """Idempotent per-source task pair, with a verified terminal-only rollover."""
     source = _source(env)
+    # Fail closed before ANY obsolete-task drain. A delayed retry of a
+    # previously archived main SHA must be read-only: it has no right to
+    # supersede a newer queued generation, even if its own tasks are terminal.
+    already = archive_status(store, source)
+    if already["current_already_archived"]:
+        if any(row["source_sha256"] == source for row in already["state"]["tasks"].values()):
+            raise ValueError("DADDY_ARCHIVE_DUPLICATE_SOURCE_IN_ACTIVE")
+        return {"status": "VERSION_ALREADY_ARCHIVED",
+                "source_sha256": source, "epoch": already["state"]["epoch"],
+                "queued": 0, "held": 0, "no_remote_dispatch": True}
     # Archive fully completed prior sources in one atomic Git ref update.
     first = rotate_if_ready(store, source)
     if first["status"] == "UNRESOLVED_LEASE":
