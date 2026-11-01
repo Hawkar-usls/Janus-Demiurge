@@ -57,6 +57,18 @@ class HeartbeatTests(unittest.TestCase):
         self.addCleanup(a.stop)
         self.addCleanup(b.stop)
 
+    def test_cloud_stages_use_exact_same_event_source_not_mutable_main(self):
+        workflow = (ROOT / ".github/workflows/janus-daddy-keymaster-bounded-heartbeat.yml").read_text()
+        self.assertEqual(workflow.count("ref: ${{ github.sha }}"), 3)
+        self.assertNotIn("          ref: main", workflow)
+        self.assertIn("group: janus-daddy-keymaster-bounded-heartbeat", workflow)
+        self.assertIn("cancel-in-progress: false", workflow)
+        self.assertIn("needs: prepare", workflow)
+        self.assertIn("needs: [prepare, worker]", workflow)
+        self.assertIn("git worktree add --detach", workflow)
+        self.assertNotIn("git push --force", workflow)
+        self.assertNotIn("repository_dispatch:", workflow)
+
     def test_context_does_not_accept_pr_or_untrusted_run(self):
         self.assertEqual(context(ENV)["GITHUB_RUN_ID"], ENV["GITHUB_RUN_ID"])
         for changes in ({"GITHUB_EVENT_NAME": "pull_request"},
