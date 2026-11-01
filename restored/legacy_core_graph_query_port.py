@@ -13,7 +13,7 @@ from restored.memory_graph_query import shortest_path
 SOURCE_SCHEMA = "janus.legacy_core.module_relationships_non_authoritative.v1"
 MAX_NODES = 512
 MAX_EDGES = 2048
-SAFE_ID = re.compile(r"^[a-zA-Z][a-zA-Z0-9_.-]{0,95}$")
+SAFE_ID = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,95}$")
 
 
 class GraphProjectionHold(ValueError):
