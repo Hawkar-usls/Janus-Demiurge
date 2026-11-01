@@ -3,7 +3,7 @@
 ## What is restored from the E-drive
 Early JANUS Nexus discovered code by filename and called `run(core)`; Conductor started modules by priority. Old direct `exec()`, dynamic Python imports, unbounded tasks and auto-quarantine are NOT restored.
 
-Modern modules: `restored/legacy_process_probation.py` and a separate one-shot `restored/legacy_probation_worker.py`. The only admitted entrypoint is a reviewed repository-local graph-query organ, not arbitrary historical Python.
+Modern modules: `tools/legacy_process_probation.py` and a separate one-shot `tools/legacy_probation_worker.py`. The only admitted entrypoint is a reviewed repository-local graph-query organ, not arbitrary historical Python.
 
 ## Admission chain
 1. Caller explicitly opts in using `run_approved_process_probation(graph,start,end,operator_approved=True)`; default denies.
@@ -21,7 +21,7 @@ Neither model promotion, live HRAiN mutation, NAS read, privileged worker dispat
 
 ## Example
 From a trusted developer process, after independently fetching the pinned archive as graph:
-    from restored.legacy_process_probation import run_approved_process_probation
+    from tools.legacy_process_probation import run_approved_process_probation
     result = run_approved_process_probation(graph, 'janus_cortex', 'genesis_engine', operator_approved=True)
 
 The user must approve each direct invocation. This function does not fetch remote files or modify input.
