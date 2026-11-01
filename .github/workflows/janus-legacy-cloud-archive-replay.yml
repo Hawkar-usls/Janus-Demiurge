@@ -1,0 +1,89 @@
+name: JANUS Legacy Core Cloud Witness — pinned archive replay
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/janus-legacy-cloud-archive-replay.yml'
+      - 'demiurge/LEGACY_PROCESS_PROBATION_POLICY.json'
+      - 'tools/legacy_process_probation.py'
+      - 'tools/legacy_probation_worker.py'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/janus-legacy-cloud-archive-replay.yml'
+      - 'demiurge/LEGACY_PROCESS_PROBATION_POLICY.json'
+      - 'tools/legacy_process_probation.py'
+      - 'tools/legacy_probation_worker.py'
+
+permissions:
+  contents: read
+
+jobs:
+  immutable-archive-cloud-replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify complete real E-drive archive graph through SHA-pinned subprocess
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          import urllib.request
+          from tools.legacy_process_probation import (
+              canonical_bytes, run_approved_process_probation, POLICY_PATH
+          )
+
+          # Immutable Meta Registry commit: never trust the movable 'main' path.
+          SOURCE_COMMIT = '84b5f38460beebb359c138f04ddddb37b56cbc84'
+          URL = ('https://raw.githubusercontent.com/Hawkar-usls/janus-meta-registry/'
+                 + SOURCE_COMMIT
+                 + '/data/JANUS-LEGACY-CORE-MODULE-RELATIONSHIP-GRAPH-2026-11-01-v1.0.json')
+          with urllib.request.urlopen(URL, timeout=18) as response:
+              content = response.read(150001)
+          if len(content) > 150000:
+              raise SystemExit('ARCHIVE_SOURCE_BYTES_HOLD')
+          graph = json.loads(content)
+          policy = json.loads(POLICY_PATH.read_text('utf-8'))
+          digest = hashlib.sha256(canonical_bytes(graph)).hexdigest()
+          if digest != policy['archive_artifact_sha256']:
+              raise SystemExit('SOURCE_GIT_COMMIT_OR_POLICY_HASH_MISMATCH')
+          if graph['projection']['node_count'] != 74:
+              raise SystemExit('NODE_COUNT_HOLD')
+          if graph['projection']['relation_count'] != 152:
+              raise SystemExit('RELATION_COUNT_HOLD')
+
+          # Source relation 'reconstructor -> navigator' is present in the
+          # 23 declared-endpoint edges, not one of 129 unresolved endpoints.
+          result = run_approved_process_probation(
+              graph, 'reconstructor', 'navigator', operator_approved=True
+          )
+          organ = result['organ_receipt']
+          assert result['status'] == 'PASS_PROCESS_SEPARATED_SYNTHETIC_PROBATION'
+          assert organ['found'] is True
+          assert organ['path'] == ['reconstructor', 'navigator']
+          assert organ['excluded_unresolved_relations'] == 129
+          assert organ['scientific_authority'] is False
+          assert organ['mutation_authority'] is False
+          assert result['authority']['production_activation'] is False
+          assert result['authority']['os_security_sandbox_proven'] is False
+
+          print(json.dumps({
+              'schema': 'janus.demiurge.legacy_cloud_archive_witness.v1',
+              'status': 'PASS_CROSS_REPO_PINNED_ARCHIVE_PROCESS_REPLAY',
+              'source_commit': SOURCE_COMMIT,
+              'archive_canonical_sha256': digest,
+              'node_count': 74,
+              'structurally_declared_edges': 23,
+              'unresolved_archival_edges_excluded': 129,
+              'query_path': organ['path'],
+              'production_activated': False,
+              'historical_python_executed': False,
+              'OS_sandbox_proven': False,
+          }, sort_keys=True))
+          PY
