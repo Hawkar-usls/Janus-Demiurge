@@ -131,6 +131,22 @@ async def probation_run(plan, *, target, handlers, core_port,
         raise PermissionError("OPERATOR_PROBATION_APPROVAL_REQUIRED")
     if plan.get("schema") != SCHEMA or plan.get("status") != "PLAN_ONLY":
         raise ValueError("VALID_PLAN_REQUIRED")
+    try:
+        identity = {
+            "modules": plan["modules"], "order": plan["order"],
+            "selected_plugin": plan["selected_plugin"]
+        }
+        observed_sha = hashlib.sha256(canonical_bytes(identity)).hexdigest()
+        if observed_sha != plan["plan_sha256"]:
+            raise ValueError("PLAN_IDENTITY_SHA_MISMATCH")
+        if any(plan["authority"].get(k) is not False for k in (
+            "imports_legacy_files", "uses_exec", "auto_discovers_modules",
+            "activates_services", "auto_installs_generated_code",
+            "grants_runtime_admission"
+        )):
+            raise ValueError("PLAN_AUTHORITY_FIREWALL_HOLD")
+    except (KeyError, TypeError, AttributeError) as exc:
+        raise ValueError("MALFORMED_PLAN_HOLD") from exc
     if type(timeout_seconds) not in (int, float) or not 0.01 <= timeout_seconds <= 5.0:
         raise ValueError("TIMEOUT_BOUND_HOLD")
     rows = {r["id"]: r for r in plan["modules"]}
