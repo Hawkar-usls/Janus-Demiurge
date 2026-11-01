@@ -38,3 +38,10 @@ CI: `python -m unittest discover -s tests -p 'test_legacy_nexus_conductor.py' -v
 ## Original March 2026 relationship registry (separate from run dependencies)
 
 The 2026-03-01 expanded registry was independently decoded for **non-authoritative graph context**: 74 declared module nodes, 152 labeled relations, **only 23 relations with both endpoints declared; 129 with an unresolved endpoint** (for example `core`, `memory`, `face`, `vault`, `settings`). Its 61 backslash-U emoji escapes are invalid strict JSON and were normalized for this inspection without rewriting the source. Historical "active" labels are not evidence of live modules. The full sanitized ID/type/relation projection, with per-edge declared-endpoint flag and original source SHA, is archived in [JANUS Meta Registry](https://github.com/Hawkar-usls/janus-meta-registry/blob/main/data/JANUS-LEGACY-CORE-MODULE-RELATIONSHIP-GRAPH-2026-11-01-v1.0.json). **None of these historical relations are ingested as automatic module dependencies or privileged authorization.**
+
+
+## E2E historical relationship graph → real modern organ
+
+`restored/legacy_core_graph_query_port.py` is an additional trusted, modern read-only adapter. It uses the *real* existing `restored.memory_graph_query.shortest_path` algorithm through the reconstructed `async run(core_port)` interface. It accepts only the explicitly typed **non-authoritative** Meta Registry artifact and excludes all relations whose endpoint is not declared in the historic node set. The input data and HRAiN memory are never mutated. The caller must explicitly approve synthetic callback probation and provide the typed port.
+
+**Observed full historical artifact replay on Yaksa**: 74 nodes, **23** internal relations admitted for read-only navigation, **129** unresolved historical relations held outside traversal. All synthetic ABI and graph-port tests passed (12+6). This establishes a usable historical read-only organ pathway — **not** recovery of live legacy service execution or authority to edit the present-day HRAiN graph.
