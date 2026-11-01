@@ -3,8 +3,8 @@ name: JANUS Legacy Module Process Probation
 on:
   pull_request:
     paths:
-      - 'restored/legacy_probation_worker.py'
-      - 'restored/legacy_process_probation.py'
+      - 'tools/legacy_probation_worker.py'
+      - 'tools/legacy_process_probation.py'
       - 'tests/test_legacy_process_probation.py'
       - 'demiurge/LEGACY_PROCESS_PROBATION_POLICY.json'
       - 'docs/LEGACY_PROCESS_PROBATION.md'
@@ -12,8 +12,8 @@ on:
   push:
     branches: [main]
     paths:
-      - 'restored/legacy_probation_worker.py'
-      - 'restored/legacy_process_probation.py'
+      - 'tools/legacy_probation_worker.py'
+      - 'tools/legacy_process_probation.py'
       - 'tests/test_legacy_process_probation.py'
       - 'demiurge/LEGACY_PROCESS_PROBATION_POLICY.json'
       - 'docs/LEGACY_PROCESS_PROBATION.md'
@@ -33,7 +33,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Compile only modern trusted worker/parent
-        run: python -m py_compile restored/legacy_probation_worker.py restored/legacy_process_probation.py
+        run: python -m py_compile tools/legacy_probation_worker.py tools/legacy_process_probation.py
       - name: Pinned policy and real subprocess end-to-end synthetic tests
         run: python -m unittest discover -s tests -p 'test_legacy_process_probation.py' -v
       - name: Keep historical read-only organ and ABI tests passing
