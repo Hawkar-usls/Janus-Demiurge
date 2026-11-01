@@ -33,3 +33,8 @@ Existing `restored/module_integration_planner.py`, `restored/module_auditor.py`,
 ## Validation and next gates
 
 CI: `python -m unittest discover -s tests -p 'test_legacy_nexus_conductor.py' -v` (synthetic only). Next steps: explicit trusted module registry bound to Git SHA, a genuine process-isolated probation backend, deterministic replay before installing any candidate, evidence that a module improved unseen tasks, and a separately approved shadow→canary→rollback production contract.
+
+
+## Original March 2026 relationship registry (separate from run dependencies)
+
+The 2026-03-01 expanded registry was independently decoded for **non-authoritative graph context**: 74 declared module nodes, 152 labeled relations, **only 23 relations with both endpoints declared; 129 with an unresolved endpoint** (for example `core`, `memory`, `face`, `vault`, `settings`). Its 61 backslash-U emoji escapes are invalid strict JSON and were normalized for this inspection without rewriting the source. Historical "active" labels are not evidence of live modules. The full sanitized ID/type/relation projection, with per-edge declared-endpoint flag and original source SHA, is archived in [JANUS Meta Registry](https://github.com/Hawkar-usls/janus-meta-registry/blob/main/data/JANUS-LEGACY-CORE-MODULE-RELATIONSHIP-GRAPH-2026-11-01-v1.0.json). **None of these historical relations are ingested as automatic module dependencies or privileged authorization.**
