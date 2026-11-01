@@ -11,7 +11,7 @@ import subprocess
 import unittest
 from unittest.mock import patch
 
-from restored.legacy_process_probation import (
+from tools.legacy_process_probation import (
     POLICY_PATH, ProcessProbationHold, _check_policy, _run_with_policy,
     canonical_bytes, run_approved_process_probation
 )
@@ -57,7 +57,7 @@ class ProcessProbationTests(unittest.TestCase):
 
     def test_operator_approval_precedes_any_child_process(self):
         graph = archived_graph()
-        with patch("restored.legacy_process_probation.subprocess.run") as runner:
+        with patch("tools.legacy_process_probation.subprocess.run") as runner:
             with self.assertRaisesRegex(PermissionError, "APPROVAL"):
                 _run_with_policy(graph, "cortex", "hero", operator_approved=False,
                                  timeout_seconds=4, policy=synthetic_policy(graph))
@@ -79,7 +79,7 @@ class ProcessProbationTests(unittest.TestCase):
         graph = archived_graph()
         policy = synthetic_policy(graph)
         graph["projection"]["nodes"][0]["id"] = "changed"
-        with patch("restored.legacy_process_probation.subprocess.run") as runner:
+        with patch("tools.legacy_process_probation.subprocess.run") as runner:
             with self.assertRaisesRegex(ProcessProbationHold, "ARCHIVE_SOURCE_SHA_MISMATCH"):
                 _run_with_policy(graph, "cortex", "hero", operator_approved=True,
                                  timeout_seconds=4, policy=policy)
@@ -105,7 +105,7 @@ class ProcessProbationTests(unittest.TestCase):
 
     def test_child_timeout_fails_closed(self):
         graph = archived_graph()
-        with patch("restored.legacy_process_probation.subprocess.run",
+        with patch("tools.legacy_process_probation.subprocess.run",
                    side_effect=subprocess.TimeoutExpired(cmd=["python"], timeout=1)):
             with self.assertRaisesRegex(ProcessProbationHold, "SUBPROCESS_TIMEOUT_KILLED"):
                 _run_with_policy(graph, "cortex", "hero", operator_approved=True,
@@ -129,7 +129,7 @@ class ProcessProbationTests(unittest.TestCase):
         def spy(cmd, **kwargs):
             captured.append((cmd, kwargs))
             return real_subprocess_run(cmd, **kwargs)
-        with patch("restored.legacy_process_probation.subprocess.run", side_effect=spy):
+        with patch("tools.legacy_process_probation.subprocess.run", side_effect=spy):
             _run_with_policy(graph, "cortex", "hero", operator_approved=True,
                              timeout_seconds=4, policy=synthetic_policy(graph))
         self.assertEqual(len(captured), 1)
