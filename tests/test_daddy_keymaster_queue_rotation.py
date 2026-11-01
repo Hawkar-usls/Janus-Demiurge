@@ -172,6 +172,57 @@ class RotationTests(unittest.TestCase):
         self.assertIsNone(take(self.b, source_a, "ARM64", now=NOW))
         self.assertEqual(_archive_context(self.a, self.a.read()[0])[0], 2)
 
+    def test_fresh_worker_can_recover_full_archive_chain_without_memory(self):
+        # All workers are independently cloned, as on ephemeral GitHub VMs.
+        # Source A's terminal-only checkpoint must be archived before a new
+        # source B wave; a fresh clone must not depend on worker A memory.
+        from daddy_keymaster.bounded_ci import prepare, take
+        env_a = {"GITHUB_SHA": "a" * 40, "GITHUB_RUN_ID": "41111111111"}
+        env_b = {"GITHUB_SHA": "b" * 40, "GITHUB_RUN_ID": "42222222222"}
+        env_c = {"GITHUB_SHA": "c" * 40, "GITHUB_RUN_ID": "43333333333"}
+        source_a = hashlib.sha256(env_a["GITHUB_SHA"].encode()).hexdigest()
+        source_b = hashlib.sha256(env_b["GITHUB_SHA"].encode()).hexdigest()
+
+        self.assertEqual(prepare(self.a, env_a, now=NOW)["queued"], 2)
+        for arch in ("X64", "ARM64"):
+            token = take(self.a, env_a, arch, now=NOW)
+            self.assertIsNotNone(token)
+            self.update(self.a, lambda state, t=token: checkpoint(state, t, A, now=NOW))
+            self.update(self.b, lambda state, t=token: complete(state, t, B, now=NOW))
+
+        # The old worker process and clone may disappear here. B's first
+        # clean instance sees the exact same Git-CAS branch and its archive.
+        fresh_b = self.clone(self.folder / "bare.git", "fresh-b")
+        result = prepare(fresh_b, env_b, now=NOW)
+        self.assertEqual(result["queued"], 2)
+        self.assertEqual(_archive_context(fresh_b, fresh_b.read()[0])[0], 1)
+        self.assertTrue(status(fresh_b, source_a)["current_already_archived"])
+        self.assertEqual(prepare(fresh_b, env_a, now=NOW)["status"],
+                         "VERSION_ALREADY_ARCHIVED")
+        self.assertIsNone(take(fresh_b, env_a, "X64", now=NOW))
+        self.assertEqual(len(fresh_b.read()[1]["tasks"]), 2)
+
+        # Fresh worker C (no hidden session state) sees B's durable queue,
+        # finishes both allowed tasks, and advances to a second archive.
+        fresh_c = self.clone(self.folder / "bare.git", "fresh-c")
+        for arch in ("X64", "ARM64"):
+            token = take(fresh_c, env_b, arch, now=NOW)
+            self.assertIsNotNone(token)
+            self.update(fresh_c, lambda state, t=token: checkpoint(state, t, B, now=NOW))
+            self.update(fresh_c, lambda state, t=token: complete(state, t, A, now=NOW))
+
+        fresh_d = self.clone(self.folder / "bare.git", "fresh-d")
+        self.assertEqual(prepare(fresh_d, env_c, now=NOW)["queued"], 2)
+        head, queue = fresh_d.read()
+        self.assertEqual(_archive_context(fresh_d, head)[0], 2)
+        first = _read_at(fresh_d.repo, head, f"{ARCHIVE_DIR}/00000001.json")
+        second = _read_at(fresh_d.repo, head, f"{ARCHIVE_DIR}/00000002.json")
+        self.assertEqual(second["previous_segment_digest_sha256"], first["receipt_sha256"])
+        self.assertTrue(status(fresh_d, source_b)["current_already_archived"])
+        self.assertTrue(status(fresh_d, source_a)["current_already_archived"])
+        self.assertEqual(len(queue["tasks"]), 2)
+        self.assertTrue(all(t["state"] == "QUEUED" for t in queue["tasks"].values()))
+
     def test_bounded_prepare_refuses_to_archive_live_old_lease(self):
         from daddy_keymaster.bounded_ci import prepare, take
         env = {"GITHUB_SHA":"a"*40,"GITHUB_RUN_ID":"41111111111"}
