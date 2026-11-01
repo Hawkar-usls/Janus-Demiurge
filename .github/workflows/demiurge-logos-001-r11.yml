@@ -1,0 +1,95 @@
+name: Demiurge LOGOS R1.1 - NIST real data no-model-promotion witness
+
+on:
+  pull_request:
+    paths:
+      - 'research/logos_001/r11_discover.py'
+      - 'research/logos_001/demiurge_r11_adapter.py'
+      - '.github/workflows/demiurge-logos-001-r11.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/logos_001/r11_discover.py'
+      - 'research/logos_001/demiurge_r11_adapter.py'
+      - '.github/workflows/demiurge-logos-001-r11.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: demiurge-logos-r11-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  real-data-proposals:
+    name: Demiurge fits real NIST train and validation only
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: d594088a7b4bca74f9fc8ddcbcdd24ccae20a2a0
+          path: meta-registry
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Enforce byte-exact Meta Registry R1.1 algorithm source
+        run: cmp research/logos_001/r11_discover.py meta-registry/research/logos_001/r11_discover.py
+      - name: Prepare real instrument TRAIN and VALIDATION only
+        run: python meta-registry/research/logos_001/r11_data.py --part discover --out /tmp/logos-r11-input.json
+      - name: Run research-only Demiurge calibration equation proposer
+        run: |
+          python research/logos_001/demiurge_r11_adapter.py \
+            --input /tmp/logos-r11-input.json \
+            --out /tmp/demiurge-r11-candidate.json
+      - name: Reject non-deterministic candidate source
+        run: |
+          python research/logos_001/demiurge_r11_adapter.py \
+            --input /tmp/logos-r11-input.json \
+            --out /tmp/demiurge-r11-candidate-replay.json
+          cmp /tmp/demiurge-r11-candidate.json /tmp/demiurge-r11-candidate-replay.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: demiurge-r11-candidates
+          path: /tmp/demiurge-r11-candidate.json
+          retention-days: 14
+          if-no-files-found: error
+
+  independent-real-data-witness:
+    name: Independent benchmark witness requires no model promotion
+    needs: real-data-proposals
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: d594088a7b4bca74f9fc8ddcbcdd24ccae20a2a0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: demiurge-r11-candidates
+          path: /tmp/demiurge-r11-evidence
+      - name: Check fresh observed NIST holdout, baselines and tamper controls
+        run: |
+          python research/logos_001/r11_witness.py \
+            --candidate /tmp/demiurge-r11-evidence/demiurge-r11-candidate.json \
+            --out /tmp/demiurge-r11-witness.json --self-test
+      - name: Explicitly enforce R1.1 negative scientific result
+        run: |
+          python -c "import json; r=json.load(open('/tmp/demiurge-r11-witness.json')); assert r['verdict']=='PASS_SCIENTIFIC_EVALUATION_INTEGRITY'; assert r['research_model_promotion_allowed'] is False; assert r['scientific_performance']=='BASELINE_NOT_BEATEN__NO_MODEL_PROMOTION'"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: demiurge-r11-no-model-promotion-witness
+          path: /tmp/demiurge-r11-witness.json
+          retention-days: 30
+          if-no-files-found: error
