@@ -1,0 +1,87 @@
+name: Demiurge LOGOS 001 R1.2 - independent NIST trial no promotion
+
+on:
+  pull_request:
+    paths:
+      - 'research/logos_001/r12_discover.py'
+      - 'research/logos_001/demiurge_r12_adapter.py'
+      - '.github/workflows/demiurge-logos-001-r12.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/logos_001/r12_discover.py'
+      - 'research/logos_001/demiurge_r12_adapter.py'
+      - '.github/workflows/demiurge-logos-001-r12.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: demiurge-logos-r12-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  research-proposals:
+    name: Demiurge proposes nonlinear equations only from NIST train-validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: ca72288b31fc28c7681cbcddf184d73a12c2b6ac
+          path: meta-registry
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Match byte-exact certified Meta Registry discoverer
+        run: cmp research/logos_001/r12_discover.py meta-registry/research/logos_001/r12_discover.py
+      - name: Freeze data to train and validation; no test in Demiurge input
+        run: python meta-registry/research/logos_001/r12_data.py --part discover --out /tmp/r12-train-validation.json
+      - name: Demiurge research candidate equations
+        run: |
+          python research/logos_001/demiurge_r12_adapter.py --input /tmp/r12-train-validation.json --out /tmp/demiurge-r12-proposals.json
+          python research/logos_001/demiurge_r12_adapter.py --input /tmp/r12-train-validation.json --out /tmp/demiurge-r12-proposals-again.json
+          cmp /tmp/demiurge-r12-proposals.json /tmp/demiurge-r12-proposals-again.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: demiurge-logos-r12-proposals
+          path: /tmp/demiurge-r12-proposals.json
+          retention-days: 14
+          if-no-files-found: error
+
+  independent-scientific-witness:
+    name: Independent witnessed heldout metrics and compulsory no model promotion
+    needs: research-proposals
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: ca72288b31fc28c7681cbcddf184d73a12c2b6ac
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: demiurge-logos-r12-proposals
+          path: /tmp/demiurge-r12-evidence
+      - name: Check original NIST source and unseen TEST
+        run: |
+          python research/logos_001/r12_witness.py --candidate /tmp/demiurge-r12-evidence/demiurge-r12-proposals.json --out /tmp/demiurge-r12-verdict.json --self-test
+      - name: Enforce one-of-two partial success and forbid promotion
+        run: |
+          python -c "import json; r=json.load(open('/tmp/demiurge-r12-verdict.json')); assert r['integrity_verdict']=='PASS_CODE_AND_SOURCE_INTEGRITY'; assert r['negative_controls_rejected']==2; assert r['positive_datasets_beating_baseline_5pct']==1; assert r['scientific_performance']=='NOT_COMPETITIVE_IN_ALL_PREDECLARED_DATASETS'; assert r['production_model_promotion_allowed'] is False"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: demiurge-logos-r12-no-promotion-witness
+          path: /tmp/demiurge-r12-verdict.json
+          retention-days: 30
+          if-no-files-found: error
