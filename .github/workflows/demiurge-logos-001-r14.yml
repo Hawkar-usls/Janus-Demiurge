@@ -1,0 +1,117 @@
+name: Demiurge LOGOS R1.4 - external sealed-interface PUBLIC SMOKE ONLY
+
+on:
+  pull_request:
+    paths:
+      - 'research/logos_001/r14_external/**'
+      - 'research/logos_001/R14.md'
+      - '.github/workflows/demiurge-logos-001-r14.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/logos_001/r14_external/**'
+      - 'research/logos_001/R14.md'
+      - '.github/workflows/demiurge-logos-001-r14.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: demiurge-logos-r14-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  demiurge-frozen-submission:
+    name: Demiurge uses frozen predictor; no TEST y and no external authority
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: b9ec00db25b7cec25a826e4808e8427a45e2328c
+          path: meta-registry
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify research predictor and unchanged learner byte-exact
+        run: |
+          cmp research/logos_001/r14_external/r14_submission.py meta-registry/research/logos_001/r14_external/r14_submission.py
+          cmp research/logos_001/r12_discover.py meta-registry/research/logos_001/r12_discover.py
+      - name: Prepare PUBLIC fake scientific inputs with TEST x but no TEST y
+        run: |
+          python - <<'PY'
+          import json,sys
+          from pathlib import Path
+          sys.path.insert(0,'meta-registry/research/logos_001/r14_external')
+          from r14_public_smoke import fixture
+          root=Path('/tmp/demiurge-r14')
+          root.mkdir()
+          for domain in fixture()['domains']:
+              request={'domain_id':domain['domain_id'],'train':domain['train'],
+                       'validation':domain['validation'],
+                       'test_x':[x for x,y in domain['test']]}
+              (root/(domain['domain_id']+'.input.json')).write_text(json.dumps(request))
+          PY
+      - name: Compute model predictions with Demiurge's research code
+        run: |
+          for d in fixture_wave fixture_linear fixture_quadratic; do
+            python research/logos_001/r14_external/r14_submission.py \
+              --input /tmp/demiurge-r14/$d.input.json \
+              --out /tmp/demiurge-r14/$d.output.json
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: demiurge-r14-public-only-proposals
+          path: /tmp/demiurge-r14/*.output.json
+          retention-days: 7
+          if-no-files-found: error
+
+  mock-independent-witness:
+    name: Public synthetic evaluator MUST refuse any external PASS
+    needs: demiurge-frozen-submission
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: b9ec00db25b7cec25a826e4808e8427a45e2328c
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pinned scientific benchmark dependencies
+        run: python -m pip install --disable-pip-version-check numpy==1.26.4 scipy==1.14.1 scikit-learn==1.5.2 cryptography==44.0.3
+      - uses: actions/download-artifact@v4
+        with:
+          name: demiurge-r14-public-only-proposals
+          path: /tmp/demiurge-r14-fake-output
+      - name: Assemble fake-only proposals for independent custodian protocol check
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('/tmp/demiurge-r14-fake-output')
+          out={'protocol':'PUBLIC_FIXTURE_PROTOCOL_SMOKE_ONLY',
+               'outputs':[json.loads((root/(x+'.output.json')).read_text())
+                          for x in ('fixture_wave','fixture_linear','fixture_quadratic')]}
+          Path('/tmp/demiurge-r14-bundle.json').write_text(json.dumps(out))
+          PY
+      - name: Independently verify protocol but never claim independent real scientific result
+        run: |
+          python research/logos_001/r14_external/r14_public_smoke.py \
+            --mode custodian --input /tmp/demiurge-r14-bundle.json \
+            --out /tmp/demiurge-r14-public-receipt.json
+          python -c "import json; d=json.load(open('/tmp/demiurge-r14-public-receipt.json')); assert d['status']=='UNSIGNED_DRAFT_NOT_EXTERNAL_PROOF'; assert d['independent_external_evaluation_verified'] is False; assert d['production_model_promotion_allowed'] is False"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: demiurge-r14-public-receipt-not-independent-science
+          path: /tmp/demiurge-r14-public-receipt.json
+          if-no-files-found: error
+          retention-days: 7
