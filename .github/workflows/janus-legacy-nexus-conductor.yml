@@ -5,6 +5,8 @@ on:
     paths:
       - 'restored/legacy_nexus_conductor.py'
       - 'tests/test_legacy_nexus_conductor.py'
+      - 'restored/legacy_core_graph_query_port.py'
+      - 'tests/test_legacy_core_graph_query_port.py'
       - 'docs/LEGACY_NEXUS_CONDUCTOR_RECOVERY_20261101.md'
       - '.github/workflows/janus-legacy-nexus-conductor.yml'
   push:
@@ -12,6 +14,8 @@ on:
     paths:
       - 'restored/legacy_nexus_conductor.py'
       - 'tests/test_legacy_nexus_conductor.py'
+      - 'restored/legacy_core_graph_query_port.py'
+      - 'tests/test_legacy_core_graph_query_port.py'
       - 'docs/LEGACY_NEXUS_CONDUCTOR_RECOVERY_20261101.md'
       - '.github/workflows/janus-legacy-nexus-conductor.yml'
   workflow_dispatch:
@@ -29,4 +33,6 @@ jobs:
         with:
           python-version: '3.12'
       - name: No-network historical-module synthetic ABI test
-        run: python -m unittest discover -s tests -p 'test_legacy_nexus_conductor.py' -v
+        run: |
+          python -m unittest discover -s tests -p 'test_legacy_nexus_conductor.py' -v
+          python -m unittest discover -s tests -p 'test_legacy_core_graph_query_port.py' -v
