@@ -53,6 +53,29 @@ async def _execute(request: dict) -> dict:
     graph = request["graph"]
     if not isinstance(graph, dict):
         raise ValueError("GRAPH_OBJECT_HOLD")
+    # The historical artifact is DATA, not an executable task specification.
+    # Accept only the known Meta Registry archival projection fields.
+    if not set(graph).issubset({
+        "artifact_id", "schema", "status", "source", "projection",
+        "interpretation", "security", "links"
+    }):
+        raise ValueError("GRAPH_TOP_LEVEL_FIELDS_HOLD")
+    projection = graph.get("projection")
+    if not isinstance(projection, dict) or set(projection) != {
+        "node_count", "relation_count", "relations_with_both_endpoints_declared",
+        "relations_with_unresolved_endpoint", "nodes", "historical_relations"
+    }:
+        raise ValueError("GRAPH_PROJECTION_FIELDS_HOLD")
+    if not isinstance(projection["nodes"], list) or not isinstance(projection["historical_relations"], list):
+        raise ValueError("GRAPH_LIST_FIELDS_HOLD")
+    for node in projection["nodes"]:
+        if not isinstance(node, dict) or set(node) != {"id", "kind"}:
+            raise ValueError("GRAPH_NODE_FIELDS_HOLD")
+    for edge in projection["historical_relations"]:
+        if not isinstance(edge, dict) or set(edge) != {
+            "from", "to", "historical_relation", "endpoints_declared_in_legacy_nodes"
+        }:
+            raise ValueError("GRAPH_EDGE_FIELDS_HOLD")
     identity = json.dumps(graph, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     if len(identity) > 300000 or hashlib.sha256(identity).hexdigest() != request["artifact_sha256"]:
         raise ValueError("ARCHIVE_GRAPH_SHA_HOLD")
