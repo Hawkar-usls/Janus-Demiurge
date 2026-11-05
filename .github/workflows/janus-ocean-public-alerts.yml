@@ -1,0 +1,177 @@
+name: JANUS Ocean / Historical Ukraine Public Air-Alert Research
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/janus-ocean-public-alerts.yml'
+  schedule:
+    - cron: '37 03 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-ocean-public-alerts-daily
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    name: Freeze ~4 years public oblast alert starts, verify completeness
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ensure pinned PyTorch CPU
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check --retries 3 \
+              'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - name: Fetch Ukrainian air-alert starts, oblast level, 2022 onward
+        env:
+          PYTHONPATH: .
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/ukraine_alert_research.py snapshot \
+            --output data/janus_ukraine_alert_snapshot.json
+          sha256sum data/janus_ukraine_alert_snapshot.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-alerts-four-years-snapshot
+          path: data/janus_ukraine_alert_snapshot.json
+          retention-days: 30
+          if-no-files-found: error
+
+  river:
+    name: Alert River ${{ matrix.worker }}
+    needs: [snapshot]
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        worker: [0, 1, 2, 3, 4, 5, 6, 7]
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      PYTHONPATH: .
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ensure pinned PyTorch CPU
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check --retries 3 \
+              'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-alerts-four-years-snapshot
+          path: data
+      - name: Train JanusTinyTransformer on strictly historical oblast-day data
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/ukraine_alert_research.py worker \
+            --snapshot data/janus_ukraine_alert_snapshot.json \
+            --workers 8 --worker ${{ matrix.worker }} --steps 260 \
+            --budget 35 --batch 64 --output out/alert-river-${{ matrix.worker }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-public-alert-river-${{ matrix.worker }}
+          path: |
+            out/alert-river-${{ matrix.worker }}/weights.pt
+            out/alert-river-${{ matrix.worker }}/river.json
+          retention-days: 30
+          if-no-files-found: error
+
+  ocean:
+    name: Alert Ocean / blinded chronological holdout and civilian safety gate
+    needs: [snapshot, river]
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    permissions:
+      contents: write
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      PYTHONPATH: .
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ensure pinned PyTorch CPU
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check --retries 3 \
+              'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-alerts-four-years-snapshot
+          path: data
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: janus-public-alert-river-*
+          path: rivers
+          merge-multiple: false
+      - name: Aggregate, calibrate on validation, compare historical baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/ukraine_alert_research.py aggregate \
+            --snapshot data/janus_ukraine_alert_snapshot.json \
+            --workers 8 --input rivers --output ocean
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-public-alert-research-result-${{ github.run_id }}
+          path: |
+            ocean/alerts_result.json
+            ocean/alerts_precommit.json
+            ocean/alerts_candidate.pt
+          retention-days: 60
+          if-no-files-found: error
+      - name: Append-only outcome-unknown regional probability research (NOT safety alert)
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch="janus/ocean-public-alert-research-ledger"
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            git fetch origin "$branch"
+            git switch -C "$branch" "origin/$branch"
+          else
+            git switch -c "$branch"
+          fi
+          git config user.name "janus-public-alert-research[bot]"
+          git config user.email "janus-public-alert-research[bot]@users.noreply.github.com"
+          dest="experiments/ocean_transformer/ledger/public-alerts/${{ github.run_id }}"
+          mkdir -p "$dest"
+          test ! -e "$dest/forecast.json" || { echo "::error::Refuse duplicate precommit"; exit 1; }
+          cp ocean/alerts_precommit.json "$dest/forecast.json"
+          cp ocean/alerts_result.json "$dest/backtest.json"
+          git add -f "$dest/forecast.json" "$dest/backtest.json"
+          git commit -m "alert-research: bounded oblast/day study ${{ github.run_id }} - not safety warning"
+          git push origin "HEAD:$branch"
+          echo "Research-only forecast archived at $(git rev-parse HEAD). Never use for safety alerts." >> "$GITHUB_STEP_SUMMARY"
