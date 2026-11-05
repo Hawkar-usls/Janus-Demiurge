@@ -25,6 +25,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Ensure CPU PyTorch for loader module
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check --retries 3 \
+              'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
+          fi
       - name: Freeze real external source data before the worker stage
         run: |
           set -euo pipefail
