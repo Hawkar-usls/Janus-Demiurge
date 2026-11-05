@@ -1,0 +1,180 @@
+name: JANUS Ocean / Meta Registry Next-JSON Forecast
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/janus-ocean-meta-next.yml'
+  schedule:
+    - cron: '17 03 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-ocean-meta-next-daily
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    name: Meta Registry JSON-addition chronology, source HEAD pinned
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU torch only when needed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check --retries 3 \
+              'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - name: Gather real JSON-addition commits from public meta registry
+        env:
+          GIT_TERMINAL_PROMPT: '0'
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python experiments/ocean_transformer/meta_next_train.py snapshot \
+            --checkout /tmp/janus_meta_registry_git \
+            --output data/janus_meta_additions_snapshot.json
+          sha256sum data/janus_meta_additions_snapshot.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-meta-next-snapshot
+          path: data/janus_meta_additions_snapshot.json
+          retention-days: 30
+          if-no-files-found: error
+
+  river:
+    name: Meta River ${{ matrix.worker }}
+    needs: [snapshot]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        worker: [0, 1, 2, 3]
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ensure CPU torch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check --retries 3 \
+              'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-meta-next-snapshot
+          path: data
+      - name: Train micro-Transformer on independent JSON-addition events
+        env:
+          PYTHONPATH: .
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/meta_next_train.py worker \
+            --snapshot data/janus_meta_additions_snapshot.json \
+            --workers 4 --worker ${{ matrix.worker }} \
+            --steps 240 --batch 64 --budget 33 \
+            --output out/meta-river-${{ matrix.worker }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-meta-next-river-${{ matrix.worker }}
+          path: |
+            out/meta-river-${{ matrix.worker }}/river.json
+            out/meta-river-${{ matrix.worker }}/weights.pt
+          retention-days: 30
+          if-no-files-found: error
+
+  ocean:
+    name: Meta Ocean / FedAvg + next JSON category prediction
+    needs: [snapshot, river]
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: write
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      PYTHONPATH: .
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ensure CPU torch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check --retries 3 \
+              'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-meta-next-snapshot
+          path: data
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: janus-meta-next-river-*
+          path: rivers
+          merge-multiple: false
+      - name: Aggregate, test on chronology holdout, make candidate forecast
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/meta_next_train.py aggregate \
+            --snapshot data/janus_meta_additions_snapshot.json \
+            --workers 4 --input rivers --output ocean
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-meta-next-result-${{ github.run_id }}
+          path: |
+            ocean/meta_report.json
+            ocean/meta_next_precommit.json
+            ocean/meta_next_candidate.pt
+          retention-days: 60
+          if-no-files-found: error
+      - name: Append-only research report and forecast on dedicated branch, no production writes
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch="janus/ocean-meta-forecast-ledger"
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            git fetch origin "$branch"
+            git switch -C "$branch" "origin/$branch"
+          else
+            git switch -c "$branch"
+          fi
+          git config user.name "janus-meta-next[bot]"
+          git config user.email "janus-meta-next[bot]@users.noreply.github.com"
+          ledger="experiments/ocean_transformer/ledger/meta-next"
+          mkdir -p "$ledger"
+          dest="$ledger/run-${{ github.run_id }}-prediction.json"
+          test ! -e "$dest" || { echo "::error::Duplicate run; refusing overwrite"; exit 1; }
+          cp ocean/meta_next_precommit.json "$dest"
+          cp ocean/meta_report.json "$ledger/run-${{ github.run_id }}-report.json"
+          git add -f "$dest" "$ledger/run-${{ github.run_id }}-report.json"
+          git commit -m "meta-next: append bounded chronological forecast from run ${{ github.run_id }}"
+          git push origin "HEAD:$branch"
+          echo "Append-only forecast commit: $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
