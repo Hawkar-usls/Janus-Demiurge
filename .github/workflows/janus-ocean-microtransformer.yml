@@ -1,0 +1,135 @@
+name: JANUS Ocean Server / 20 Rivers MicroTransformer
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/janus-ocean-microtransformer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-ocean-microtransformer-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  river:
+    name: River node ${{ matrix.worker }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        worker: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+    env:
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - name: Checkout JANUS Demiurge source (read-only)
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Python for JANUS native Transformer
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Ensure reproducible CPU PyTorch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          try:
+              import torch
+              print("torch preinstalled:", torch.__version__)
+          except ImportError:
+              print("CPU torch not preinstalled; installing pinned wheel")
+          PY
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check --retries 3 \
+              'torch==2.6.0+cpu' \
+              --index-url https://download.pytorch.org/whl/cpu
+          fi
+          python -c 'import torch; print("torch runtime", torch.__version__)'
+
+      - name: Train actual JanusTinyTransformer on distinct River samples
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/ocean_microtransformer.py worker \
+            --worker ${{ matrix.worker }} \
+            --steps 300 \
+            --train-seconds 55 \
+            --batch-size 96 \
+            --output out/river-${{ matrix.worker }}
+
+      - name: Upload River weights and signed-by-hash report
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-ocean-river-${{ matrix.worker }}
+          path: |
+            out/river-${{ matrix.worker }}/river.json
+            out/river-${{ matrix.worker }}/weights.pt
+          retention-days: 7
+          if-no-files-found: error
+
+  ocean:
+    name: Ocean / FedAvg + holdout + AURA-style calibration
+    needs: [river]
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    env:
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - name: Checkout JANUS Demiurge source (read-only)
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Python for JANUS native Transformer
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Ensure CPU PyTorch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check --retries 3 \
+              'torch==2.6.0+cpu' \
+              --index-url https://download.pytorch.org/whl/cpu
+          fi
+
+      - name: Download every River artifact
+        uses: actions/download-artifact@v4
+        with:
+          pattern: janus-ocean-river-*
+          path: rivers
+          merge-multiple: false
+
+      - name: Fail-closed aggregate and test on independent holdout
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/ocean_microtransformer.py aggregate \
+            --expected-workers 20 \
+            --input rivers \
+            --output ocean
+
+      - name: Upload Ocean checkpoint and metrics (not production)
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-ocean-aggregated-${{ github.run_id }}
+          path: |
+            ocean/ocean_candidate.pt
+            ocean/ocean_result.json
+          retention-days: 30
+          if-no-files-found: error
