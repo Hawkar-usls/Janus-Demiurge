@@ -1,0 +1,90 @@
+name: JANUS Alert Research / Aggregate Existing 8 Rivers (Repair)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/janus-ocean-public-alerts-aggregation-repair-42127964805.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  aggregate-previous-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      PYTHONPATH: .
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ensure CPU PyTorch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check --retries 3 \
+              'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-alerts-four-years-snapshot
+          run-id: '42127964805'
+          repository: ${{ github.repository }}
+          github-token: ${{ github.token }}
+          path: data
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: janus-public-alert-river-*
+          run-id: '42127964805'
+          repository: ${{ github.repository }}
+          github-token: ${{ github.token }}
+          path: rivers
+          merge-multiple: false
+      - name: Verify every old River artifact, merge and test on historic time holdout
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/ukraine_alert_research.py aggregate \
+            --snapshot data/janus_ukraine_alert_snapshot.json \
+            --workers 8 --input rivers --output ocean
+      - name: Preserve repaired aggregation, no production promotion
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-public-alert-repaired-result-42127964805
+          path: |
+            ocean/alerts_result.json
+            ocean/alerts_precommit.json
+            ocean/alerts_candidate.pt
+          retention-days: 60
+          if-no-files-found: error
+      - name: Archive research-only forecast and scoring in isolated branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch="janus/ocean-public-alert-research-ledger"
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            git fetch origin "$branch"
+            git switch -C "$branch" "origin/$branch"
+          else
+            git switch -c "$branch"
+          fi
+          git config user.name "janus-public-alert-research[bot]"
+          git config user.email "janus-public-alert-research[bot]@users.noreply.github.com"
+          dest="experiments/ocean_transformer/ledger/public-alerts/42127964805"
+          mkdir -p "$dest"
+          test ! -e "$dest/forecast.json" || { echo "::error::Refuse overwrite"; exit 1; }
+          cp ocean/alerts_precommit.json "$dest/forecast.json"
+          cp ocean/alerts_result.json "$dest/backtest.json"
+          git add -f "$dest/forecast.json" "$dest/backtest.json"
+          git commit -m "alert-research: append original 8-river model results (aggregate repair)"
+          git push origin "HEAD:$branch"
+          echo "Forecast and result saved; research only and NOT a safety alert." >> "$GITHUB_STEP_SUMMARY"
