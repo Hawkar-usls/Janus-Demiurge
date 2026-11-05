@@ -49,6 +49,10 @@ jobs:
           cd ledger-worktree
           git config user.name "janus-ocean-weather[bot]"
           git config user.email "janus-ocean-weather[bot]@users.noreply.github.com"
+          if ! compgen -G 'experiments/ocean_transformer/ledger/resolved/*.json' >/dev/null; then
+            echo "No forecasts are mature for ERA5 resolution yet."
+            exit 0
+          fi
           git add -f experiments/ocean_transformer/ledger/resolved/*.json
           if git diff --cached --quiet; then
             echo "No new mature outcomes."
