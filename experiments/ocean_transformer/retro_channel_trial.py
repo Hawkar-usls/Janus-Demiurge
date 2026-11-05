@@ -78,6 +78,23 @@ def prediction(args):
             classes = torch.softmax(logits[:, -1, :61].float(), dim=-1)
             probs.extend(float(x) for x in classes[:, 1::2].sum(dim=-1))
     early_bits = "".join("1" if p >= .5 else "0" for p in probs)
+    # Only completed PREVIOUS trials may update a calibration head.
+    # The primary early bit string remains the raw pretrained model output.
+    cal = load(args.calibration) if args.calibration else {
+        "status": "NO_PRIOR_HISTORY_AVAILABLE", "activated": False,
+        "previous_completed_trials": 0,
+    }
+    if cal.get("activated", False):
+        slope, bias = cal["slope"], cal["bias"]
+        def calibrate(q):
+            q = min(.999999, max(.000001, float(q)))
+            z = slope * math.log(q / (1-q)) + bias
+            return 1/(1+math.exp(-max(-50, min(50, z))))
+        probs_calibrated = [calibrate(p) for p in probs]
+        secondary_bits = "".join("1" if q >= .5 else "0" for q in probs_calibrated)
+    else:
+        probs_calibrated = probs
+        secondary_bits = None
     epoch = time.time()
     record = {
         "schema": "janus.retro.lab.model_precommit.v1",
@@ -88,6 +105,15 @@ def prediction(args):
         "predicted_bits": early_bits,
         "predicted_256_bits_sha256": hashlib.sha256(early_bits.encode()).hexdigest(),
         "p1_model_probs": [round(x, 7) for x in probs],
+        "raw_model_p1_probs": [round(x, 7) for x in probs],
+        "secondary_calibrated_predicted_bits": secondary_bits,
+        "secondary_calibrated_p1_probs": [round(x,7) for x in probs_calibrated] if secondary_bits else None,
+        "prior_only_calibration": {
+            "status": cal.get("status"),
+            "activated": bool(cal.get("activated",False)),
+            "past_completed_trials": cal.get("previous_completed_trials",0),
+            "source_sha256": filehash(args.calibration) if args.calibration else None,
+        },
         "source_trained_JANUS_run": PRIOR_RUN,
         "model": "JanusTinyTransformer actual trained 40-river v3 checkpoint",
         "model_parameters": parameter_count(model),
@@ -180,6 +206,22 @@ def compare(args):
         "all_records_unconditional_accuracy":round(ncorrect/N_BITS,6),
         "note":"Perfect conditional agreement is selection bias, not receipt of information at the earlier time."
     }
+    secondary = None
+    if early.get("secondary_calibrated_predicted_bits") is not None:
+        adjusted = early["secondary_calibrated_predicted_bits"]
+        if len(adjusted) != N_BITS or set(adjusted)-{"0","1"}:
+            raise RuntimeError("BAD_SECONDARY_CALIBRATED_PREDICTIONS")
+        sc = sum(a==b for a,b in zip(adjusted,b))
+        ps = early["secondary_calibrated_p1_probs"]
+        if len(ps)!=N_BITS: raise RuntimeError("BAD_SECONDARY_PROBABILITIES")
+        secondary={
+            "role":"SECONDARY_EXPLORATORY_NOT_PRIMARY_PVALUE",
+            "correct_bits":sc,
+            "accuracy":round(sc/N_BITS,7),
+            "one_sided_binomial_pvalue":binomial_upper_tail(N_BITS,sc),
+            "brier":round(sum((float(p)-int(bit))**2 for p,bit in zip(ps,b))/N_BITS,8),
+            "prior_history_only_head":early.get("prior_only_calibration"),
+        }
     result={
         "schema":"janus.retro.lab.result.v1",
         "trial_id":early["trial_id"],
@@ -197,6 +239,8 @@ def compare(args):
         "uniform_prior_baseline_brier":0.25,
         "seconds_between_commit_confirmation_and_future_generation":round(future_epoch-confirmed,6),
         "postselection_control":selection,
+        "secondary_history_calibrated_performance":secondary,
+        "history_calibration_gate":early.get("prior_only_calibration"),
         "null_hypothesis":"OS cryptographic random future target is independent of early model prediction",
         "physical_retrocausality_proven":False,
         "physical_channel_connected":False,
@@ -213,6 +257,7 @@ def main():
     a=sub.add_parser("predict")
     a.add_argument("--trial-id",required=True);a.add_argument("--model",required=True)
     a.add_argument("--snapshot",required=True);a.add_argument("--output",required=True)
+    a.add_argument("--calibration",required=False,default=None)
     b=sub.add_parser("future")
     b.add_argument("--trial-id",required=True)
     b.add_argument("--receiver-commit-confirmed-epoch",type=float,required=True)
