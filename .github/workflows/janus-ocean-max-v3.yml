@@ -1,0 +1,179 @@
+name: JANUS Ocean v3 - 40 River Real-Data Retrain
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/janus-ocean-max-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-ocean-max-v3-one-bounded-run
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    name: Freeze 900 days real weather at two cities
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ensure CPU PyTorch, pinned version
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check --retries 3 \
+              'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
+          fi
+          python -c 'import torch; print("PyTorch", torch.__version__)'
+      - name: Freeze Kyiv history, independent Lviv transfer series and future-only inputs
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/ocean_max_v3.py fetch \
+            --output data/ocean_v3_snapshot.json
+          sha256sum data/ocean_v3_snapshot.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-ocean-v3-snapshot
+          path: data/ocean_v3_snapshot.json
+          retention-days: 60
+          if-no-files-found: error
+
+  river:
+    name: River ${{ matrix.worker }} / JANUS micro-Transformer
+    needs: [snapshot]
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      max-parallel: 40
+      matrix:
+        worker: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39]
+    env:
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ensure CPU PyTorch, pinned version
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check --retries 3 \
+              'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-ocean-v3-snapshot
+          path: data
+      - name: Retrain new real-data residual model on a separate time-shard
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/ocean_max_v3.py worker \
+            --snapshot data/ocean_v3_snapshot.json \
+            --workers 40 --worker ${{ matrix.worker }} \
+            --steps 650 --seconds 40 --batch-size 64 --lr 0.003 \
+            --output out/river-${{ matrix.worker }}
+      - name: Preserve weights, SHA and individual train receipts
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-ocean-v3-river-${{ matrix.worker }}
+          path: |
+            out/river-${{ matrix.worker }}/weights.pt
+            out/river-${{ matrix.worker }}/river.json
+          retention-days: 30
+          if-no-files-found: error
+
+  ocean:
+    name: Ocean / 40-river FedAvg + chronological and geographic holdout
+    needs: [snapshot, river]
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    permissions:
+      contents: write
+    env:
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ensure CPU PyTorch, pinned version
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check --retries 3 \
+              'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-ocean-v3-snapshot
+          path: data
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: janus-ocean-v3-river-*
+          merge-multiple: false
+          path: rivers
+      - name: Fail closed if even one river missing; evaluate against persistence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/ocean_max_v3.py aggregate \
+            --snapshot data/ocean_v3_snapshot.json \
+            --workers 40 --input rivers --output ocean
+      - name: Archive exact candidate weights and raw report (no production promotion)
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-ocean-v3-retrain-result-${{ github.run_id }}
+          path: |
+            ocean/ocean_result.json
+            ocean/future_precommit.json
+            ocean/ocean_candidate.pt
+          retention-days: 90
+          if-no-files-found: error
+      - name: Append-only future forecast before event in isolated ledger branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch="janus/ocean-weather-ledger"
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            git fetch origin "$branch"
+            git switch -C "$branch" "origin/$branch"
+          else
+            git switch -c "$branch"
+          fi
+          git config user.name "janus-ocean-weather[bot]"
+          git config user.email "janus-ocean-weather[bot]@users.noreply.github.com"
+          trial=$(python - <<'PY'
+          import json
+          print(json.load(open("ocean/future_precommit.json"))["trial_id"])
+          PY
+          )
+          dest="experiments/ocean_transformer/ledger/predictions/$trial.json"
+          test ! -e "$dest" || { echo "::error::Duplicate future forecast"; exit 1; }
+          mkdir -p "$(dirname "$dest")"
+          cp ocean/future_precommit.json "$dest"
+          git add -f "$dest"
+          git commit -m "ocean-v3: preregistered new real-weather forecast $trial"
+          git push origin "HEAD:$branch"
+          echo "Model forecast precommitted at commit $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
