@@ -1,0 +1,199 @@
+name: JANUS Retro Lab - Precommitted Transformer vs Future Randomness
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/janus-retro-quantum-lab.yml'
+  schedule:
+    - cron: '13 01 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: janus-retro-quantum-lab-single-trial
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  receive:
+    name: A / lock actual trained Transformer prediction before B exists
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    permissions:
+      contents: write
+      actions: read
+    outputs:
+      trial_id: ${{ steps.publish.outputs.trial_id }}
+      received_commit_confirmed_epoch: ${{ steps.publish.outputs.commit_confirmed_epoch }}
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      PYTHONPATH: .
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU torch for the real previously trained JANUS model
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check --retries 3 \
+              'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - name: Download only the verified previous 40-river model artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: janus-ocean-v3-retrain-result-42125238873
+          run-id: '42125238873'
+          repository: ${{ github.repository }}
+          github-token: ${{ github.token }}
+          path: model_artifact
+      - name: Download only the frozen historical weather snapshot
+        uses: actions/download-artifact@v4
+        with:
+          name: janus-ocean-v3-snapshot
+          run-id: '42125238873'
+          repository: ${{ github.repository }}
+          github-token: ${{ github.token }}
+          path: snapshot_artifact
+      - name: Predict 256 not-yet-generated future bits using real JANUS model
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/retro_channel_trial.py predict \
+            --trial-id "janus-retro-${{ github.run_id }}" \
+            --model model_artifact/ocean_candidate.pt \
+            --snapshot snapshot_artifact/ocean_v3_snapshot.json \
+            --output out/early.json
+          sha256sum out/early.json
+      - name: Publish immutable A in separate Git branch before B is generated
+        id: publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch="janus/retro-quantum-lab-ledger"
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            git fetch origin "$branch"
+            git switch -C "$branch" "origin/$branch"
+          else
+            git switch -c "$branch"
+          fi
+          trial="janus-retro-${{ github.run_id }}"
+          dest="experiments/ocean_transformer/ledger/retro-lab/$trial/early.json"
+          if [[ -e "$dest" ]]; then
+            echo "::error::Duplicate trial precommit; refusing overwrite"
+            exit 1
+          fi
+          mkdir -p "$(dirname "$dest")"
+          cp out/early.json "$dest"
+          git config user.name 'janus-retro-audit[bot]'
+          git config user.email 'janus-retro-audit[bot]@users.noreply.github.com'
+          git add -f "$dest"
+          git commit -m "retro-lab: immutable early predictor $trial before future target"
+          git push origin "HEAD:$branch"
+          epoch=$(python - <<'PY'
+          import time
+          print(f"{time.time():.6f}")
+          PY
+          )
+          echo "trial_id=$trial" >> "$GITHUB_OUTPUT"
+          echo "commit_confirmed_epoch=$epoch" >> "$GITHUB_OUTPUT"
+          echo "## JANUS Retro Lab - early prediction fixed" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Trial $trial; Git SHA $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Future target does not yet exist." >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload early precommit evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-retro-lab-early-${{ github.run_id }}
+          path: out/early.json
+          retention-days: 90
+          if-no-files-found: error
+
+  send:
+    name: B / independently generate future random bits after sealed A and 120 seconds
+    needs: [receive]
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: write
+      actions: read
+    env:
+      PYTHONPATH: .
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Wait for t0 plus 120s, generate B BEFORE reading A
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/retro_channel_trial.py future \
+            --trial-id "${{ needs.receive.outputs.trial_id }}" \
+            --receiver-commit-confirmed-epoch "${{ needs.receive.outputs.received_commit_confirmed_epoch }}" \
+            --output out/future.json
+          sha256sum out/future.json
+      - name: Only AFTER independent B exists, read A and compare all trials
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch="janus/retro-quantum-lab-ledger"
+          git fetch origin "$branch"
+          trial="${{ needs.receive.outputs.trial_id }}"
+          git show "origin/$branch:experiments/ocean_transformer/ledger/retro-lab/$trial/early.json" > out/early.json
+          python experiments/ocean_transformer/retro_channel_trial.py compare \
+            --early out/early.json --later out/future.json --output out/comparison.json
+          sha256sum out/early.json out/future.json out/comparison.json
+      - name: Append unfiltered future bits and result to immutable source ledger
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch="janus/retro-quantum-lab-ledger"
+          git switch -C "$branch" "origin/$branch"
+          trial="${{ needs.receive.outputs.trial_id }}"
+          dir="experiments/ocean_transformer/ledger/retro-lab/$trial"
+          test -f "$dir/early.json"
+          test ! -e "$dir/comparison.json" || { echo "::error::Refuse overwrite"; exit 1; }
+          cp out/future.json "$dir/future.json"
+          cp out/comparison.json "$dir/comparison.json"
+          git config user.name 'janus-retro-audit[bot]'
+          git config user.email 'janus-retro-audit[bot]@users.noreply.github.com'
+          git add -f "$dir/future.json" "$dir/comparison.json"
+          git commit -m "retro-lab: independent future B and unselected comparison for $trial"
+          git push origin "HEAD:$branch"
+          python - <<'PY'
+          import json,os
+          result=json.load(open("out/comparison.json"))
+          lines=[
+            "## JANUS Retro Lab - all-bit results",
+            f"- Correct bits {result['unconditional_matching_bits']}/{result['total_bits']}",
+            f"- Exact one-sided binomial p-value {result['exact_one_sided_binomial_pvalue']:.5g}",
+            f"- Full 256-bit exact match {result['full_256_bit_exact_match']}",
+            f"- Future target produced {result['seconds_between_commit_confirmation_and_future_generation']:.3f}s AFTER early-commit confirmation",
+            "- PCTC-inspired postselection is a classical toy only; selected correlations are NOT evidence of backward communication.",
+            "- No physical backwards channel was connected."
+          ]
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as f:
+            f.write("\n".join(lines)+"\n")
+          PY
+      - name: Preserve all noncherrypicked evidence for inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-retro-lab-completed-${{ github.run_id }}
+          path: |
+            out/early.json
+            out/future.json
+            out/comparison.json
+          retention-days: 90
+          if-no-files-found: error
