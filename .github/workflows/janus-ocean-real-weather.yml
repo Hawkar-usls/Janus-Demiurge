@@ -1,0 +1,167 @@
+name: JANUS Ocean v2 - Real Weather + All Star Features
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/janus-ocean-real-weather.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-ocean-real-weather-finite
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Freeze real external source data before the worker stage
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/real_weather_forecast.py fetch
+          sha256sum data/weather_snapshot.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-ocean-v2-real-snapshot
+          path: data/weather_snapshot.json
+          retention-days: 30
+          if-no-files-found: error
+
+  river:
+    needs: [snapshot]
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        worker: [0, 1, 2, 3, 4, 5, 6, 7]
+    env:
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ensure CPU PyTorch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check --retries 3 \
+              'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-ocean-v2-real-snapshot
+          path: data
+      - name: Train a disjoint chronological River shard
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/real_weather_forecast.py worker \
+            --worker ${{ matrix.worker }} --workers 8 \
+            --steps 280 --batch 64 --budget-seconds 45 \
+            --snapshot data/weather_snapshot.json \
+            --output out/river-${{ matrix.worker }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-ocean-v2-river-${{ matrix.worker }}
+          path: |
+            out/river-${{ matrix.worker }}/weights.pt
+            out/river-${{ matrix.worker }}/river.json
+          retention-days: 14
+          if-no-files-found: error
+
+  ocean:
+    needs: [snapshot, river]
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    permissions:
+      contents: write
+    env:
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ensure CPU PyTorch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check --retries 3 \
+              'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-ocean-v2-real-snapshot
+          path: data
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: janus-ocean-v2-river-*
+          merge-multiple: false
+          path: rivers
+      - name: Merge real-data River models, audit holdout, create future precommit
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/real_weather_forecast.py aggregate \
+            --snapshot data/weather_snapshot.json \
+            --workers 8 --input rivers --output ocean
+      - name: Save real training result and candidate model
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-ocean-v2-real-result-${{ github.run_id }}
+          path: |
+            ocean/training_result.json
+            ocean/future_precommit.json
+            ocean/ocean_candidate.pt
+          retention-days: 90
+          if-no-files-found: error
+      - name: Persist future-only forecast in append-only isolated branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch="janus/ocean-weather-ledger"
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            git fetch origin "$branch"
+            git switch -C "$branch" "origin/$branch"
+          else
+            git switch -c "$branch"
+          fi
+          git config user.name "janus-ocean-weather[bot]"
+          git config user.email "janus-ocean-weather[bot]@users.noreply.github.com"
+          trial=$(python - <<'PY'
+          import json
+          print(json.load(open("ocean/future_precommit.json"))["trial_id"])
+          PY
+          )
+          dest="experiments/ocean_transformer/ledger/predictions/$trial.json"
+          if [[ -e "$dest" ]]; then
+            echo "::error::Duplicate forecast ID; refusing overwrite of precommit"
+            exit 1
+          fi
+          mkdir -p "$(dirname "$dest")"
+          cp ocean/future_precommit.json "$dest"
+          git add "$dest"
+          git commit -m "ocean: sealed real-weather forecast $trial (pre-outcome)"
+          git push origin "HEAD:$branch"
+          echo "Pre-registered forecast commit on $branch: $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Immutable forecast file: $dest" >> "$GITHUB_STEP_SUMMARY"
