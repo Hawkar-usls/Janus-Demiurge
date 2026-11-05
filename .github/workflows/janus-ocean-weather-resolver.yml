@@ -1,0 +1,59 @@
+name: JANUS Ocean v2 - Delayed ERA5 Forecast Resolver
+
+on:
+  schedule:
+    - cron: '23 13 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: janus-ocean-weather-ledger-resolver
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout bounded forecasting code (main)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Prepare Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ensure CPU torch (script module dependency)
+        run: |
+          set -euo pipefail
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check --retries 3 \
+              'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - name: Resolve only independently matured forecasts
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch="janus/ocean-weather-ledger"
+          if ! git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            echo "No forecasts have been committed; nothing to resolve."
+            exit 0
+          fi
+          git fetch origin "$branch"
+          git worktree add --detach ledger-worktree "origin/$branch"
+          python experiments/ocean_transformer/real_weather_forecast.py resolve \
+            --ledger ledger-worktree/experiments/ocean_transformer/ledger/predictions \
+            --resolved ledger-worktree/experiments/ocean_transformer/ledger/resolved
+          cd ledger-worktree
+          git config user.name "janus-ocean-weather[bot]"
+          git config user.email "janus-ocean-weather[bot]@users.noreply.github.com"
+          git add experiments/ocean_transformer/ledger/resolved
+          if git diff --cached --quiet; then
+            echo "No new mature outcomes."
+            exit 0
+          fi
+          git commit -m "ocean: independent ERA5 forecast outcome resolution"
+          git push origin "HEAD:$branch"
+          echo "Resolved outcomes committed to dedicated ledger branch." >> "$GITHUB_STEP_SUMMARY"
