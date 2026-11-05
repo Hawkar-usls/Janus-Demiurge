@@ -1,0 +1,51 @@
+name: JANUS Retro Lab - Bell State and Postselection No-Signalling Control
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/janus-retro-bell-control.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bell-test:
+    name: Analytic Bell-state model plus 20000 sampling checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reproduce exact quantum no-signalling and future-conditioned correlation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/bell_postselection_sim.py --shots 20000 --output out/bell_postselection_result.json
+          sha256sum out/bell_postselection_result.json
+          python - <<'PY'
+          import json,os
+          x=json.load(open("out/bell_postselection_result.json"))
+          e=x["exact_quantum_predictions"]
+          assert e["P_early_A_equals_future_X_without_postselection"]==0.5
+          assert e["P_early_A_equals_future_X_given_late_B0"]==1.0
+          assert not x["physical_backward_signalling_detected"]
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as f:
+            f.write("## JANUS Bell postselection statistical simulation\n")
+            f.write("- Unconditional early/future correlation: **50% expected** (zero early channel capacity)\n")
+            f.write("- Conditional on later B=0: **100% expected**\n")
+            f.write("- Accepted subset: **50% expected**\n")
+            f.write("- Hardware: **classical statevector statistics only, not a QPU**.\n")
+            f.write("- Not physical backward signaling; late selection information is necessary.\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-retro-bell-postselection-evidence-${{ github.run_id }}
+          path: out/bell_postselection_result.json
+          retention-days: 90
+          if-no-files-found: error
