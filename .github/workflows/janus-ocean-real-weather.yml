@@ -1,10 +1,6 @@
 name: JANUS Ocean v2 - Real Weather + All Star Features
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/janus-ocean-real-weather.yml'
   workflow_dispatch:
 
 permissions:
@@ -168,7 +164,7 @@ jobs:
           fi
           mkdir -p "$(dirname "$dest")"
           cp ocean/future_precommit.json "$dest"
-          git add "$dest"
+          git add -f "$dest"
           git commit -m "ocean: sealed real-weather forecast $trial (pre-outcome)"
           git push origin "HEAD:$branch"
           echo "Pre-registered forecast commit on $branch: $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
