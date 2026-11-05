@@ -117,7 +117,7 @@ def fetch(args):
     for name,day in events:
         if name in reg_index:
             vectors[reg_index[name]][(day-first).days]=1
-    if len(vectors)>30 or len(vectors)+WIN+12>64:
+    if len(vectors)>30 or len(vectors)+21>CFG.vocab_size:
         raise RuntimeError("TOKEN_VOCAB_SIZE_EXCEEDED")
     snapshot={
         "schema":"janus.public_ukraine_alerts.daily_2022plus.v1",
