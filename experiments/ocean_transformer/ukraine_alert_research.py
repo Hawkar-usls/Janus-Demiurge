@@ -181,7 +181,11 @@ def batch(s,ids):
         # Token ranges: 0/1 alert flags, 2+ region IDs, 2+R day-of-week, 9+R month
         tokens=[2+reg]+known+[2+nregs+day.weekday(),2+nregs+7+day.month-1]
         if len(tokens)!=CONTEXT:raise RuntimeError("CONTEXT_LENGTH")
-        rows.append(tokens);targets.append(series[reg][d+LEAD])
+        rows.append(tokens)
+        # Future inference does not have a label yet. A dummy value is returned
+        # only for API shape; probs_for() explicitly discards it. Historical
+        # evaluation labels MUST exist, and those checks stay in score().
+        targets.append(series[reg][d+LEAD] if d+LEAD<len(series[reg]) else 0)
     return torch.tensor(rows,dtype=torch.long),torch.tensor(targets,dtype=torch.long)
 
 
