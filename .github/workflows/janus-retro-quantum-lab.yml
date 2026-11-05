@@ -64,6 +64,16 @@ jobs:
           repository: ${{ github.repository }}
           github-token: ${{ github.token }}
           path: snapshot_artifact
+      - name: Calibrate from only PREVIOUS completed Retro Lab trials
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch="janus/retro-quantum-lab-ledger"
+          git fetch origin "$branch"
+          git worktree add --detach .completed-prior-trials "origin/$branch"
+          python experiments/ocean_transformer/retro_calibrator.py \
+            --history-root .completed-prior-trials/experiments/ocean_transformer/ledger/retro-lab \
+            --output out/history_calibration.json
       - name: Predict 256 not-yet-generated future bits using real JANUS model
         shell: bash
         run: |
@@ -72,6 +82,7 @@ jobs:
             --trial-id "janus-retro-${{ github.run_id }}" \
             --model model_artifact/ocean_candidate.pt \
             --snapshot snapshot_artifact/ocean_v3_snapshot.json \
+            --calibration out/history_calibration.json \
             --output out/early.json
           sha256sum out/early.json
       - name: Publish immutable A in separate Git branch before B is generated
@@ -94,9 +105,10 @@ jobs:
           fi
           mkdir -p "$(dirname "$dest")"
           cp out/early.json "$dest"
+          cp out/history_calibration.json "$(dirname "$dest")/calibration.json"
           git config user.name 'janus-retro-audit[bot]'
           git config user.email 'janus-retro-audit[bot]@users.noreply.github.com'
-          git add -f "$dest"
+          git add -f "$dest" "$(dirname "$dest")/calibration.json"
           git commit -m "retro-lab: immutable early predictor $trial before future target"
           git push origin "HEAD:$branch"
           epoch=$(python - <<'PY'
@@ -113,7 +125,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: janus-retro-lab-early-${{ github.run_id }}
-          path: out/early.json
+          path: |
+            out/early.json
+            out/history_calibration.json
           retention-days: 90
           if-no-files-found: error
 
