@@ -33,8 +33,12 @@ HORIZON_HOURS = 24
 WINDOW = 24
 BUCKETS = 81
 OFFSET = 30
+DIFF_BUCKETS = 41
+DIFF_OFFSET = 20
 SEED = 20261106
-CFG = JanusModelConfig(vocab_size=BUCKETS, context_length=WINDOW, d_model=32,
+# All Star solar lineage: (level, first difference) is encoded in each hour.
+# Weather temperature may be negative; do NOT apply solar log10 transformation.
+CFG = JanusModelConfig(vocab_size=BUCKETS + DIFF_BUCKETS, context_length=WINDOW * 2, d_model=32,
                        n_heads=4, n_layers=1, ff_mult=2, dropout=0.0)
 LEVELS = torch.arange(BUCKETS).float() - OFFSET
 
@@ -143,6 +147,21 @@ def temps_to_tokens(t):
     return (torch.round(t).long() + OFFSET).clamp_(0, BUCKETS-1)
 
 
+def allstar_weather_features(window_values):
+    """Encode 24 causal temperature readings plus first differences.
+
+    The inspiration is All_starsGPT's log-flux / delta-flux solar window,
+    adapted for signed air temperatures and without double normalization.
+    Every delta depends only on the current and previous hour.
+    """
+    levels = temps_to_tokens(window_values)
+    delta = torch.zeros_like(window_values)
+    delta[1:] = window_values[1:] - window_values[:-1]
+    delta_tokens = torch.round(delta).long().clamp(-DIFF_OFFSET, DIFF_OFFSET)
+    delta_tokens = delta_tokens + BUCKETS + DIFF_OFFSET
+    return torch.stack((levels, delta_tokens), dim=1).reshape(-1)
+
+
 def to_arrays(snapshot):
     values = torch.tensor(snapshot["hourly_era5"]["temperature_2m"], dtype=torch.float32)
     n = len(values)
@@ -163,18 +182,18 @@ def make_model():
 
 
 def minibatch(tokens, values, anchors):
-    x = torch.stack([tokens[k-WINDOW+1:k+1] for k in anchors])
+    x = torch.stack([allstar_weather_features(values[k-WINDOW+1:k+1]) for k in anchors])
     y_cls = tokens[torch.tensor(anchors, dtype=torch.long) + HORIZON_HOURS]
     y_temp = values[torch.tensor(anchors, dtype=torch.long) + HORIZON_HOURS]
     return x, y_cls, y_temp
 
 
 @torch.no_grad()
-def inferred_logits(model, tokens, anchors, batch_size=256):
+def inferred_logits(model, values, anchors, batch_size=256):
     model.eval()
     pieces = []
     for i in range(0,len(anchors),batch_size):
-        x = torch.stack([tokens[k-WINDOW+1:k+1] for k in anchors[i:i+batch_size]])
+        x = torch.stack([allstar_weather_features(values[k-WINDOW+1:k+1]) for k in anchors[i:i+batch_size]])
         pieces.append(model(x)[0][:,-1,:BUCKETS].float())
     return torch.cat(pieces)
 
@@ -281,18 +300,18 @@ def aggregate(args):
     model=make_model()
     model.load_state_dict(merged,strict=True)
     # Evaluate validation only to tune one scalar, never optimize on test labels.
-    val_logits=inferred_logits(model,tokens,val)
+    val_logits=inferred_logits(model,values,val)
     val_labels=tokens[torch.tensor(val)+HORIZON_HOURS]
     temperatures=[0.6,0.75,0.9,1.0,1.15,1.35,1.6,2.0,2.5]
     t_star=min(temperatures,key=lambda t:float(F.cross_entropy(val_logits/t,val_labels)))
-    test_logits=inferred_logits(model,tokens,test)
-    initial_logits=inferred_logits(init,tokens,test)
+    test_logits=inferred_logits(model,values,test)
+    initial_logits=inferred_logits(init,values,test)
     test_metric=regression_metrics(test_logits,values,test,t_star)
     initial_metric=regression_metrics(initial_logits,values,test,1.0)
     official=snapshot["live_input"]
     live=torch.tensor(official["past_24h_model_estimated_temperatures"],dtype=torch.float32)
     with torch.no_grad():
-        pred_logits=model(temps_to_tokens(live).unsqueeze(0))[0][:,-1,:BUCKETS]
+        pred_logits=model(allstar_weather_features(live).unsqueeze(0))[0][:,-1,:BUCKETS]
         probs=torch.softmax(pred_logits/t_star,dim=-1)[0]
     predicted=float(probs@LEVELS)
     valid=official["valid_target_utc"]
@@ -335,8 +354,9 @@ def aggregate(args):
         "weather_snapshot_sha256":snap_hash,
         "train":len(train),"validation":len(val),"historical_holdout":len(test),
         "n_workers_verified":len(files),"workers":sorted(reports,key=lambda v:v["worker_id"]),
-        "architecture":"JanusTinyTransformer existing class; new small weather-config",
+        "architecture":"JanusTinyTransformer existing class; new small weather-config with All Star temporal-delta features",
         "parameters":parameter_count(model),"aggregation":"FedAvg over distinct train-anchor shards",
+        "all_star_solar_lineage":"All_starsGPT(20261105-223030).py: real data, rolling windows, level plus first derivative, best-only memory; signed-weather adaptation uses interleaved tokens and no double normalization; original code/checkpoints not published",
         "temperature_calibrated_on_validation":t_star,
         "untrained_holdout":initial_metric,
         "trained_holdout":test_metric,
