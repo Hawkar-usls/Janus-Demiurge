@@ -1,0 +1,32 @@
+name: JANUS Retro Exact-Byte Accounting Regression
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/janus-retro-byte-metrics-regression.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify full-byte accounting, nonmatches, chance tail
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f experiments/ocean_transformer/test_retro_byte_metrics.py
+          python -m unittest discover -v \
+            -s experiments/ocean_transformer \
+            -p 'test_retro_byte_metrics.py'
+          echo 'Synthetic regression only; no causal channel or production change.' >> "$GITHUB_STEP_SUMMARY"
