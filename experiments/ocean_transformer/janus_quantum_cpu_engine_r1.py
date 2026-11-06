@@ -247,7 +247,7 @@ def standard_report():
     hard = [gate("H",0), gate("T",0), gate("H",0), gate("CX",0,1)]
     nonclifford = run(16,hard,[0,1,15])
     check(nonclifford["backend"]=="numpy", "NONCLIFFORD_ROUTING_FAILED")
-    check(abs(nonclifford["bloch"]["0"][2] +
+    check(abs(nonclifford["bloch"]["0"][2] -
               1 / math.sqrt(2)) < 1e-10,
           "NONCLIFFORD_PROBABILITY_CHECK_FAILED")
     bell=[gate("H",0),gate("CX",0,1)]
