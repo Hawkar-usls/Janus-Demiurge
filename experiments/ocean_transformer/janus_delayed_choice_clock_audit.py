@@ -74,11 +74,17 @@ def audit(manifest, early, late):
         earlier[i] = e
     require(len(earlier) == n, "INCOMPLETE_EARLY_INDEX")
     later = {}
+    # Validate all trial identities before comparing clocks. A duplicate must
+    # never masquerade as an isolated timing failure on another trial.
     for l in late:
         require(type(l) is dict and set(l) == LATE_KEYS, "UNEXPECTED_LATE_FIELD")
         i = l["trial_id"]
         require(type(i) is int and 0 <= i < n and i not in later,
                 "LATE_TRIAL_DUPLICATE_OR_OUT_OF_RANGE")
+        later[i] = l
+    require(len(later) == n, "INCOMPLETE_LATE_INDEX")
+    for i in range(n):
+        l = later[i]
         require(l["status"] in ("OK", "INFRA_ABORT"), "INVALID_LATE_STATUS")
         if l["status"] == "OK":
             require(is_bit(l["late_b"]), "INVALID_LATE_BIT")
@@ -89,8 +95,6 @@ def audit(manifest, early, late):
         else:
             require(l["late_b"] is None and l["late_qrng_ns"] is None,
                     "ABORT_MUST_NOT_HAVE_OUTCOME")
-        later[i] = l
-    require(len(later) == n, "INCOMPLETE_LATE_INDEX")
     counts = {str(a): [0, 0] for a in A_VALUES}
     matched = 0
     completed = 0
