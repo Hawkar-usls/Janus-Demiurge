@@ -1,0 +1,71 @@
+name: JANUS Retro - 8-Bit Physical Channel Candidate Gate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/janus-retro-byte-channel-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-retro-byte-probe
+  cancel-in-progress: false
+
+jobs:
+  simulated-physics:
+    name: Test byte-level postselection, noise, quantum switch and leakage controls
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run 7 mathematical/sampling regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v -s experiments/ocean_transformer -p 'test_retro_byte_channel_probe.py'
+      - name: 8-bit candidate channel, 65536 shots per noise level
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/retro_byte_channel_probe.py \
+            --shots 65536 --seed 2026110611 --output out/retro_byte_probe.json
+          sha256sum out/retro_byte_probe.json
+      - name: Explain every selected and unconditional result
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,os
+          j=json.load(open('out/retro_byte_probe.json'))
+          assert not j['observed_actual_physical_backward_bit_channel']
+          assert not j['janus_production_promoted']
+          noiseless=j['noise_experiments'][0]
+          assert noiseless['selected_early_equals_future_byte_rate']==1.0
+          assert not noiseless['operational_future_byte_decoded_before_sender_chose_byte']
+          assert all(not v['promote'] for v in j['gates'].values())
+          lines=[
+            '## JANUS Retro Byte channel audit — verified statistics',
+            f"- Before any late filtering: raw one-byte agreement {noiseless['raw_early_equals_future_full_byte_rate']:.6f}; theory 1/256",
+            f"- After LATE filtering: one-byte agreement {noiseless['selected_early_equals_future_byte_rate']:.6f}",
+            f"- Acceptance fraction: {noiseless['postselection_acceptance_rate']:.6f}; theory 1/256",
+            '- Exact coherent quantum-switch relative-phase witness: mathematically verified, no time-reversed message',
+            '- Physical backward interface: **NOT AVAILABLE**; no cloud QPU was used.',
+            '- Production and JANUS champion: **UNMODIFIED**.'
+          ]
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f: f.write('\n'.join(lines)+'\n')
+          PY
+      - name: Preserve full unselected and selected evidence (no PR promotion)
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-retro-byte-probe-${{ github.run_id }}
+          path: out/retro_byte_probe.json
+          retention-days: 90
+          if-no-files-found: error
