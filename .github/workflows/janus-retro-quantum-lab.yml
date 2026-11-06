@@ -64,15 +64,24 @@ jobs:
           repository: ${{ github.repository }}
           github-token: ${{ github.token }}
           path: snapshot_artifact
+      - name: Run strict history-only calibration regression gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v -s experiments/ocean_transformer -p 'test_retro_calibrator.py'
       - name: Calibrate from only PREVIOUS completed Retro Lab trials
         shell: bash
         run: |
           set -euo pipefail
+          # Freeze the cutoff before pulling history. Future trial data cannot
+          # be used, even if it appears in the ledger during the fetch.
+          calibration_cutoff="$(date -u +%s)"
           branch="janus/retro-quantum-lab-ledger"
           git fetch origin "$branch"
           git worktree add --detach .completed-prior-trials "origin/$branch"
           python experiments/ocean_transformer/retro_calibrator.py \
             --history-root .completed-prior-trials/experiments/ocean_transformer/ledger/retro-lab \
+            --as-of-epoch "$calibration_cutoff" \
             --output out/history_calibration.json
       - name: Predict 256 not-yet-generated future bits using real JANUS model
         shell: bash
