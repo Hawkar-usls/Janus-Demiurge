@@ -1,0 +1,80 @@
+name: JANUS Retro - Hypothetical Deutsch CTC SWAP Boundary Check
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/janus-deutsch-ctc-swap-boundary.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  theoretical-ctc:
+    name: Exact ideal fixed point vs physically forward CPU control
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify D-CTC fixed point and anti-leakage gating
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v -s experiments/ocean_transformer \
+            -p 'test_janus_deutsch_ctc_swap_probe.py'
+      - name: Compute conditional hypothetical D-CTC and independent forward blind
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/janus_deutsch_ctc_swap_probe.py \
+            --shots 20000 --seed 20261106 \
+            --out out/dctc_swap_report.json
+          python - <<'PY'
+          import json,os
+          j=json.load(open('out/dctc_swap_report.json'))
+          assert j['hypothetical_early_state_trace_distance_by_late_choice']==1.
+          assert j['actual_CPU_requires_later_bit_to_be_supplied_before_solver_runs']
+          assert not j['early_blind_message_receiver_operational']
+          assert not j['physical_CTC_created'] and not j['promotion_allowed']
+          assert abs(j['actual_forward_ordered_control']['accuracy']-.5)<.02
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as f:
+            f.write("## Hypothetical Deutsch-CTC boundary check\n")
+            f.write("- Ideal fixed point: mathematical early-state D=1, conditional on possessing an actual time loop\n")
+            f.write(f"- **Actual CPU, early before later random bit**: {j['actual_forward_ordered_control']['accuracy']:.4%} matches (chance 50%)\n")
+            f.write("- No experimental time machine, no operational past message, no production changes.\n")
+          PY
+          sha256sum out/dctc_swap_report.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-dctc-swap-boundary-${{ github.run_id }}
+          path: out/dctc_swap_report.json
+          retention-days: 90
+          if-no-files-found: error
+      - name: Append immutable theoretical boundary record in research branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch=janus/dctc-swap-boundary-ledger
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            git fetch origin "$branch"
+            git switch -C "$branch" "origin/$branch"
+          else
+            git switch -c "$branch"
+          fi
+          path="experiments/ocean_transformer/ledger/dctc-swap/run-${{ github.run_id }}/report.json"
+          test ! -e "$path"
+          mkdir -p "$(dirname "$path")"
+          cp out/dctc_swap_report.json "$path"
+          git config user.name 'janus-quantum-audit[bot]'
+          git config user.email 'janus-quantum-audit[bot]@users.noreply.github.com'
+          git add -f "$path"
+          git commit -m 'dctc: append hypothetical fixed point and actual CPU timeline negative control'
+          git push origin "HEAD:$branch"
