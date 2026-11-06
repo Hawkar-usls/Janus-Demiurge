@@ -1,0 +1,100 @@
+name: JANUS CPU Quantum Retro Emulator - Exact + Blinded No-Signalling Audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/janus-cpu-quantum-retro-emulator.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-cpu-quantum-retro-emulator
+  cancel-in-progress: false
+
+jobs:
+  emulator:
+    name: 16-qubit exact CPU simulation and conditioned vs unconditional audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Regression gate for Born probabilities and postselection
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s experiments/ocean_transformer \
+            -p 'test_janus_cpu_quantum_emulator.py'
+      - name: Run precise CPU statevector and all-attempts eight-bit checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/janus_cpu_quantum_emulator.py \
+            --shots 65536 \
+            --seed 20261106 \
+            --out artifacts/quantum_emulator_report.json
+          sha256sum artifacts/quantum_emulator_report.json
+      - name: Independent scientific no-signalling and postselection gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,os
+          r=json.load(open("artifacts/quantum_emulator_report.json"))
+          assert r["verdict"]=="SIMULATION_VERIFIED__LATE_POSTSELECTION_CORRELATION__NO_EARLY_MESSAGE"
+          assert not r["real_future_to_past_channel"]
+          assert not r["physical_channel_safety_gate"]["promote_to_JANUS"]
+          for p in r["pair_exact"]:
+              assert abs(p["early_marginal_after_late_choice"][0]-.5)<1e-10
+          for p in r["eight_pair_exact"]:
+              assert abs(p["late_herald_all_zero_probability"]-1/256)<1e-10
+              assert p["conditional_decoding_correct"]
+              assert not p["operational_early_decoding_available"]
+          lines=["## JANUS CPU Quantum Emulator evidence","",
+            "- 16-qubit exact CPU statevector (8 entangled Bell pairs)",
+            "- Late postselection: conditional byte decode 100%, success 1/256",
+            "- Earlier usable byte: **NO**; marginals independent of future message",
+            "- Simulated P-CTC K=Tr(U)/2 projector: exact but NOT a physical CTC",
+            "- GPU, QPU, NAS or local PC: not used; GitHub standard CPU only",
+            "- Production: unchanged. Backwards communication: **NOT DEMONSTRATED**.",
+            "- 65,536 all-attempt shots per noise level; 3 levels"]
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as f:f.write("\n".join(lines)+"\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-cpu-quantum-emulator-${{ github.run_id }}
+          path: artifacts/quantum_emulator_report.json
+          retention-days: 90
+          if-no-files-found: error
+      - name: Append exact report to isolated quantum research ledger
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch=janus/quantum-cpu-retro-ledger
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            git fetch origin "$branch"
+            git switch -C "$branch" "origin/$branch"
+          else
+            git switch -c "$branch"
+          fi
+          dest="experiments/ocean_transformer/ledger/quantum-cpu/run-${{ github.run_id }}/report.json"
+          test ! -e "$dest"
+          mkdir -p "$(dirname "$dest")"
+          cp artifacts/quantum_emulator_report.json "$dest"
+          git config user.name 'janus-quantum-cpu[bot]'
+          git config user.email 'janus-quantum-cpu[bot]@users.noreply.github.com'
+          git add -f "$dest"
+          git commit -m "quantum-cpu: append exact 16-qubit postselection and no-signalling audit"
+          git push origin "HEAD:$branch"
+          echo "Immutable report commit: $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
