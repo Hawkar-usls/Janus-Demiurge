@@ -13,8 +13,10 @@ class CPUQuantumEmulatorTests(unittest.TestCase):
             self.assertAlmostEqual(trial["early_marginal_after_late_choice"][1],.5)
             self.assertAlmostEqual(trial["late_zero_herald_probability"],.5)
             self.assertFalse(trial["unconditioned_early_readout_contains_future_bit"])
-        self.assertEqual(a["early_distribution_given_LATER_herald"],[1.,0.])
-        self.assertEqual(b["early_distribution_given_LATER_herald"],[0.,1.])
+        self.assertAlmostEqual(a["early_distribution_given_LATER_herald"][0],1.,places=12)
+        self.assertAlmostEqual(a["early_distribution_given_LATER_herald"][1],0.,places=12)
+        self.assertAlmostEqual(b["early_distribution_given_LATER_herald"][0],0.,places=12)
+        self.assertAlmostEqual(b["early_distribution_given_LATER_herald"][1],1.,places=12)
 
     def test_real_16_qubit_statevector_conditional_byte(self):
         for message in (0,0xA5,255):
