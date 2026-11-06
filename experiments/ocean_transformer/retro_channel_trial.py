@@ -193,6 +193,18 @@ def compare(args):
     if len(p1)!=N_BITS or any(not 0<=p<=1 for p in p1):
         raise RuntimeError("INVALID_EARLY_CONFIDENCE")
     brier=sum((float(p)-int(y))**2 for p,y in zip(p1,b))/N_BITS
+    # A complete eight-bit match is much rarer than a bit match, but expected
+    # to occur randomly once per 256 independent guesses. This statistic is
+    # always computed over ALL 32 precommitted bytes, never selected successes.
+    byte_count=N_BITS//8
+    matching_byte_indices=[i for i in range(byte_count)
+                           if a[8*i:8*(i+1)]==b[8*i:8*(i+1)]]
+    matching_byte_hex=[f"{int(a[8*i:8*(i+1)],2):02x}"
+                       for i in matching_byte_indices]
+    byte_hits=len(matching_byte_indices)
+    byte_right_tail=sum(math.comb(byte_count,j)
+                        * (1/256)**j * (255/256)**(byte_count-j)
+                        for j in range(byte_hits,byte_count+1))
     # Postselection-inspired classical statistical control:
     # early A and future choice X are unrelated; final B=A XOR X.
     # If we keep only B=0, conditional agreement A=X is 100%.
@@ -231,6 +243,18 @@ def compare(args):
         "predicted_bits_sha256":early["predicted_256_bits_sha256"],
         "late_random_sha256":later["target_sha256"],
         "full_256_bit_exact_match":a==b,
+        "unconditional_full_byte_matches":{
+            "count":byte_hits,
+            "total_bytes":byte_count,
+            "indices_zero_based":matching_byte_indices,
+            "matched_byte_hex":matching_byte_hex,
+            "expected_random_matches":byte_count/256,
+            "null_exact_byte_match_probability":1/256,
+            "exact_binomial_one_sided_pvalue":byte_right_tail,
+            "full_population_included":True,
+            "operational_retrocausal_byte_message_proven":False,
+            "note":"A matched byte from 32 independent guesses can occur by chance and cannot be selected retroactively as a channel."
+        },
         "unconditional_matching_bits":ncorrect,
         "total_bits":N_BITS,
         "unconditional_accuracy":round(ncorrect/N_BITS,7),
