@@ -28,5 +28,7 @@ jobs:
           test -f experiments/ocean_transformer/test_retro_byte_metrics.py
           python -m unittest discover -v \
             -s experiments/ocean_transformer \
-            -p 'test_retro_byte_metrics.py'
+            -p 'test_retro_byte_metrics.py' 2>&1 | tee /tmp/retro-byte-tests.log
+          grep -F 'Ran 3 tests' /tmp/retro-byte-tests.log
+          grep -F 'OK' /tmp/retro-byte-tests.log
           echo 'Synthetic regression only; no causal channel or production change.' >> "$GITHUB_STEP_SUMMARY"
