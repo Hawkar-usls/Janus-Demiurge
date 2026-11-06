@@ -18,11 +18,14 @@ jobs:
   simulated-physics:
     name: Test byte-level postselection, noise, quantum switch and leakage controls
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
         with:
-          persist-credentials: false
+          persist-credentials: true
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -69,3 +72,25 @@ jobs:
           path: out/retro_byte_probe.json
           retention-days: 90
           if-no-files-found: error
+
+      - name: Save immutable complete simulated candidate data in isolated research ledger branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch="janus/retro-byte-channel-evidence"
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            git fetch origin "$branch"
+            git switch -C "$branch" "origin/$branch"
+          else
+            git switch -c "$branch"
+          fi
+          git config user.name 'janus-retro-lab[bot]'
+          git config user.email 'janus-retro-lab[bot]@users.noreply.github.com'
+          dest="experiments/ocean_transformer/ledger/retro-byte-probe/run-${{ github.run_id }}.json"
+          test ! -e "$dest" || { echo "::error::Duplicate evidence; no overwrites"; exit 1; }
+          mkdir -p "$(dirname "$dest")"
+          cp out/retro_byte_probe.json "$dest"
+          git add -f "$dest"
+          git commit -m "retro-byte: append unselected and postselected 8-bit evidence for run ${{ github.run_id }}"
+          git push origin HEAD:"$branch"
+          echo "Append-only simulated evidence commit $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
