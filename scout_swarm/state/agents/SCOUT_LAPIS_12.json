@@ -2,7 +2,7 @@
   "schema": "janus.demiurge.scout_agent.report.v2.spiral",
   "agent_id": "SCOUT_LAPIS_12",
   "role": "MATERIAL_SYMBOL_RECON",
-  "created_at_utc": "2026-11-06T07:20:59Z",
+  "created_at_utc": "2026-11-06T14:37:22Z",
   "status": "DEGRADED_MODEL_POLICY_HOLD",
   "target": {
     "repository": "Hawkar-usls/janus-lapis",
@@ -12,7 +12,7 @@
   "repository_snapshot": {
     "target_repo": "Hawkar-usls/janus-lapis",
     "target_ref": "main",
-    "target_commit": "7b986a1238d5d3b27016d9361e132f688c191e33",
+    "target_commit": "fe2a5d4b4e6441accb78cf9bc752349906f10ca5",
     "file_count": 88,
     "top_level": [
       ".github",
@@ -36,6 +36,7 @@
       "tools"
     ],
     "recent_commits": [
+      "fe2a5d4b4e6441accb78cf9bc752349906f10ca5\t2026-11-06T10:20:48+02:00\tfix(watchdog): distinguish scheduled observer liveness from delivery alerts",
       "7b986a1238d5d3b27016d9361e132f688c191e33\t2026-11-05T16:01:41+02:00\tfix(beetle): reconcile aged public PENDING with live SHA-bound ACK",
       "de38acb884729ae9a50b8debd8b269f2c1d57ed1\t2026-11-05T12:22:33+02:00\tfix(beetle): recover local receiver and refresh HOME high-water safely",
       "2fd95a07b07bbe6a251180d31118da180b96fce0\t2026-11-04T23:13:19+02:00\tJANUS P0.3: preserve ACK integrity evidence ahead of backlog gate",
@@ -44,8 +45,7 @@
       "d5fe2b2b00284a0940bfd0165aa53f1893969078\t2026-10-30T17:54:14+02:00\tMerge pull request #40 from Hawkar-usls/codex/bounded-beetle-durable-push-retry",
       "539ad8e569850df900d73bab6a52a1efd62bdd00\t2026-10-30T17:53:21+02:00\tbeetle: retry transient durable push failures without relaxing conflict checks",
       "4958fcf4dd23e78ff8d45b946491482ca8a95cf0\t2026-10-30T10:53:27+02:00\ttest(beetle): freeze synthetic ACK clock for normal producer regression (#39)",
-      "dc86b07de8c3f3b893054e6913881a2ec633b7a7\t2026-10-28T19:33:07+02:00\tfix(beetle): ignore workflow_run for independent silence streaks",
-      "22ada3b1394db6c3130deecc996c476db3a1d1ed\t2026-10-28T17:00:54+02:00\tfix(beetle): backpressure for the normal Universal Beetle producer (#37)"
+      "dc86b07de8c3f3b893054e6913881a2ec633b7a7\t2026-10-28T19:33:07+02:00\tfix(beetle): ignore workflow_run for independent silence streaks"
     ],
     "selected_sources": [
       {
@@ -78,11 +78,11 @@
       },
       {
         "path": "tests/test_beetle_watchdog_receipt.py",
-        "excerpt": "\"\"\"A missing or corrupt watcher result must never be labeled healthy.\"\"\"\nfrom __future__ import annotations\n\nimport json\nimport pathlib\nimport sys\nimport tempfile\nimport unittest\n\nsys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / 'tools'))\nfrom beetle_watchdog_receipt import normalize_receipt\nfrom beetle_incident_issues import parse_report\n\n\nclass WatchdogReceiptTests(unittest.TestCase):\n    def test_missing_file_is_normalized_to_unknown(self):\n        with tempfile.TemporaryDirectory() as directory:\n            path = pathlib.Path(directory) / 'missing.txt'\n            self.assertEqual(normalize_receipt(path), 'UNKNOWN')\n            self.assertEqual(parse_report(path)['status'], 'UNKNOWN')\n            self.assertEqual(parse_report(path)['scientific_authority_delta'], 0)\n\n    def test_invalid_or_forged_result_becomes_unknown(self):\n        with tempfile.TemporaryDirectory() as directory:\n            path = pathlib.Path(directory) / 'receipt.txt'\n            for data in ['garbage\\n', json.dumps({\n                    'schema': 'janus.beetle_home_watchdog.v1',\n                    'status': 'PASS', 'alerts': [], 'scientific_authority_delta': 1})]:\n                with self.subTest(data=data):\n                    path.write_text(data)\n                    self.assertEqual(normalize_receipt(path), 'UNKNOWN')\n                    self.assertEqual(parse_report(path)['status'], 'UNKNOWN')\n\n    def test_valid_receipt_keeps_first_line_and_summary(self):\n        with tempfile.TemporaryDirectory() as directory:\n            path = pathlib.Path(directory) / 'receipt.txt'\n            content = json.dumps({'schema': 'janus.beetle_home_watchdog.v1',\n                                  'status': 'ALERT', 'alerts': ['GENESIS_HOME_CHECKPOINT_STALE'],\n                                  'scientific_authority_delta': 0}) + '\\n### Human summary\\n'\n            path.write_text(content)\n            self.assertEqual(normalize_receipt(path), 'ALERT')\n            self.assertEqual(path.read_text(), content)\n\n\nif __name__ == '__main__':\n    unittest.main()\n"
+        "excerpt": "\"\"\"A missing or corrupt watcher result must never be labeled healthy.\"\"\"\nfrom __future__ import annotations\n\nimport json\nimport pathlib\nimport sys\nimport tempfile\nimport unittest\n\nsys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / 'tools'))\nfrom beetle_watchdog_receipt import normalize_receipt, verify_observer_exit\nfrom beetle_incident_issues import parse_report\n\n\nclass WatchdogReceiptTests(unittest.TestCase):\n    def test_missing_file_is_normalized_to_unknown(self):\n        with tempfile.TemporaryDirectory() as directory:\n            path = pathlib.Path(directory) / 'missing.txt'\n            self.assertEqual(normalize_receipt(path), 'UNKNOWN')\n            self.assertEqual(parse_report(path)['status'], 'UNKNOWN')\n            self.assertEqual(parse_report(path)['scientific_authority_delta'], 0)\n\n    def test_invalid_or_forged_result_becomes_unknown(self):\n        with tempfile.TemporaryDirectory() as directory:\n            path = pathlib.Path(directory) / 'receipt.txt'\n            for data in ['garbage\\n', json.dumps({\n                    'schema': 'janus.beetle_home_watchdog.v1',\n                    'status': 'PASS', 'alerts': [], 'scientific_authority_delta': 1})]:\n                with self.subTest(data=data):\n                    path.write_text(data)\n                    self.assertEqual(normalize_receipt(path), 'UNKNOWN')\n                    self.assertEqual(parse_report(path)['status'], 'UNKNOWN')\n\n    def test_valid_receipt_keeps_first_line_and_summary(self):\n        with tempfile.TemporaryDirectory() as directory:\n            path = pathlib.Path(directory) / 'receipt.txt'\n            content = json.dumps({'schema': 'janus.beetle_home_watchdog.v1',\n                                  'status': 'ALERT', 'alerts': ['GENESIS_HOME_CHECKPOINT_STALE'],\n                                  'scientific_authority_delta': 0}) + '\\n### Human summary\\n'\n            path.write_text(content)\n            self.assertEqual(normalize_receipt(path), 'ALERT')\n            self.assertEqual(path.read_text(), content)\n\n\n    def test_observed_alert_counts_as_completed_schedule_not_healthy_delivery(self):\n        with tempfile.TemporaryDirectory() as directory:\n            path = pathlib.Path(directory) / 'receipt.txt'\n            exit_file = pathlib.Path(directory) / 'exit.txt'\n            path.write_text(json.dumps({\n                'schema': 'janus.beetle_home_watchdog.v1',\n                'status': 'ALERT',\n                'alerts': ['Hawkar-usls/AIFC: STALE'],\n                'scientific_authority_delta': 0,\n            }) + '\\n', encoding='utf-8')\n            exit_file.write_text('1\\n', encoding='utf-8')\n            self.assertEqual(verify_observer_exit(path, exit_file), 'ALERT')\n            self.assertEqual(parse_report(path)['alerts'],\n                             ['Hawkar-usls/AIFC: STALE'])\n\n    def test_known_observation_exit_codes_require_matching_receipts(self):\n        with tempfile.TemporaryDirectory() as directory:\n            path = pathlib.Path(directory) / 'receipt.txt'\n            exit_file = pathlib.Path(directory) / 'exit.txt'\n            for status, code, alerts in [\n                ('PASS', '0', []), ('WARN', '0', []),\n                ('ALERT', '1', ['GENESIS_HOME_CHECKPOINT_STALE']),\n                ('UNKNOWN', '2', []),\n            ]:\n                with self.subTest(status=status):\n                    body = {'schema': 'janus.beetle_home_watchdog.v1',\n                            'status': status, 'alerts': alerts,\n                            'scientific_authority_delta': 0}\n                    if status == 'UNKNOWN':\n                        body['reason'] = 'OSError'\n                    path.write_text(json.dumps(body) + '\\n', encoding='utf-8')\n                    exit_file.write_text(code + '\\n', encoding='utf-8')\n                    self.assertEqual(verify_observer_exit(path, exit_file), status)\n                    wrong_code = '1' if code != '1' else '0'\n                    exit_file.write_text(wrong_code + '\\n', encoding='utf-8')\n                    with self.assertRaisesRegex(ValueError, 'disagree'):\n                        verify_observer_exit(path, exit_file)\n\n    def test_synthetic_unknown_missing_output_never_proves_schedule_success(self):\n        with tempfile.TemporaryDirectory() as directory:\n            path = pathlib.Path(directory) / 'receipt.txt'\n            exit_file = pathlib.Path(directory) / 'exit.txt'\n            self.assertEqual(normalize_receipt(path), 'UNKNOWN')\n            exit_file.write_text('2\\n', encoding='utf-8')\n            with self.assertRaisesRegex(ValueError, 'cannot prove liveness'):\n                verify_observer_exit(path, exit_file)\n\n    def test_missing_exit_code_and_unknown_process_failure_fail_closed(self):\n        with tempfile.TemporaryDirectory() as directory:\n            path = pathlib.Path(directory) / 'receipt.txt'\n            exit_file = pathlib.Path(directory) / 'exit.txt'\n            path.write_text(json.dumps({\n                'schema': 'janus.beetle_home_watchdog.v1',\n                'status': 'PASS', 'alerts': [],\n                'scientific_authority_delta': 0,\n            }) + '\\n', encoding='utf-8')\n            with self.assertRaises(OSError):\n                verify_observer_exit(path, exit_file)\n            exit_file.write_text('137\\n', encoding='utf-8')\n            with self.assertRaisesRegex(ValueError, 'disagree'):\n                verify_observer_exit(path, exit_file)\n\n\nif __name__ == '__main__':\n    unittest.main()\n"
       },
       {
         "path": "tools/beetle_watchdog_receipt.py",
-        "excerpt": "#!/usr/bin/env python3\n\"\"\"Emit an honest UNKNOWN receipt if the read-only watchdog produced none.\n\nUsed by an always() step after the observer, before uploading a status-named\nartifact.  A malformed or absent receipt must never be labeled PASS/ALERT.\n\"\"\"\nfrom __future__ import annotations\n\nimport argparse\nimport json\nfrom pathlib import Path\n\nfrom beetle_incident_issues import REPORT_SCHEMA, parse_report\n\n\ndef normalize_receipt(path: Path) -> str:\n    try:\n        return parse_report(path)['status']\n    except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError):\n        # The observer did not provide trustworthy telemetry. A synthesized\n        # receipt reports only that fact, not any delivery or HOME failure.\n        path.write_text(json.dumps({\n            'schema': REPORT_SCHEMA,\n            'status': 'UNKNOWN',\n            'reason': 'MISSING_OR_INVALID_WATCHDOG_RECEIPT',\n            'scientific_authority_delta': 0,\n        }, sort_keys=True) + '\\n', encoding='utf-8')\n        return 'UNKNOWN'\n\n\ndef main() -> int:\n    parser = argparse.ArgumentParser()\n    parser.add_argument('--report', required=True, type=Path)\n    args = parser.parse_args()\n    print(normalize_receipt(args.report))\n    return 0\n\n\nif __name__ == '__main__':\n    raise SystemExit(main())\n"
+        "excerpt": "#!/usr/bin/env python3\n\"\"\"Emit an honest UNKNOWN receipt if the read-only watchdog produced none.\n\nUsed by an always() step after the observer, before uploading a status-named\nartifact.  A malformed or absent receipt must never be labeled PASS/ALERT.\n\"\"\"\nfrom __future__ import annotations\n\nimport argparse\nimport json\nfrom pathlib import Path\n\nfrom beetle_incident_issues import REPORT_SCHEMA, parse_report\n\n\ndef normalize_receipt(path: Path) -> str:\n    try:\n        return parse_report(path)['status']\n    except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError):\n        # The observer did not provide trustworthy telemetry. A synthesized\n        # receipt reports only that fact, not any delivery or HOME failure.\n        path.write_text(json.dumps({\n            'schema': REPORT_SCHEMA,\n            'status': 'UNKNOWN',\n            'reason': 'MISSING_OR_INVALID_WATCHDOG_RECEIPT',\n            'scientific_authority_delta': 0,\n        }, sort_keys=True) + '\\n', encoding='utf-8')\n        return 'UNKNOWN'\n\n\ndef verify_observer_exit(report_path: Path, exit_code_path: Path) -> str:\n    \"\"\"Verify a complete observation without confusing ALERT with runner failure.\n\n    The watchdog exits 0 for PASS/WARN, 1 for an observed SLO ALERT, and\n    2 for source/transport UNKNOWN. All three are legitimate completed\n    observations, but only when a trustworthy JSON receipt matches the\n    captured exit code. A synthetic UNKNOWN from a missing/corrupt receipt\n    must fail closed rather than falsely prove schedule liveness.\n    \"\"\"\n    report = parse_report(report_path)\n    if report.get('reason') == 'MISSING_OR_INVALID_WATCHDOG_RECEIPT':\n        raise ValueError('missing or corrupt watchdog receipt cannot prove liveness')\n    raw_code = exit_code_path.read_text(encoding='utf-8').strip()\n    expected = {\n        '0': {'PASS', 'WARN'},\n        '1': {'ALERT'},\n        '2': {'UNKNOWN'},\n    }\n    if raw_code not in expected or report['status'] not in expected[raw_code]:\n        raise ValueError('observer exit code and trusted receipt status disagree')\n    return report['status']\n\n\ndef main() -> int:\n    parser = argparse.ArgumentParser()\n    parser.add_argument('--report', required=True, type=Path)\n    parser.add_argument('--exit-code-file', type=Path)\n    args = parser.parse_args()\n    if args.exit_code_file is not None:\n        print(verify_observer_exit(args.report, args.exit_code_file))\n    else:\n        print(normalize_receipt(args.report))\n    return 0\n\n\nif __name__ == '__main__':\n    raise SystemExit(main())\n"
       }
     ],
     "snapshot_policy": "READ_ONLY_METADATA_AND_BOUNDED_TEXT_EXCERPTS"
@@ -99,8 +99,8 @@
     "oracle_guidance": null
   },
   "spiral": {
-    "turn": 280,
-    "parent_report_sha256": "ffa6d0fe938e84ab670e8150960e27a5d3a3e3401e7c6f4cb2be622474c29f62",
+    "turn": 281,
+    "parent_report_sha256": "fc22df675bc0bb38253eb893e8fdb9ed480be33649ab1ce4b01292836c60adec",
     "previous_target_commit": "7b986a1238d5d3b27016d9361e132f688c191e33",
     "identity_persistent": true,
     "previous_report_is_evidence": false,
@@ -151,7 +151,7 @@
     "new_lessons": [
       "Shared model preflight blocked synthesis without erasing repository evidence or Scout identity."
     ],
-    "ascent_status": "NO_ASCENT",
+    "ascent_status": "ASCENDED_NEW_EVIDENCE",
     "logical_ring": false
   },
   "model_error": "MODEL_PREFLIGHT:SKIPPED_POLICY",
@@ -165,7 +165,7 @@
   },
   "janus_agent_token": {
     "scope": "EPHEMERAL_GITHUB_RUN_AGENT",
-    "fingerprint": "37ddf54f7282fac2",
+    "fingerprint": "8581aaf67056678b",
     "raw_token_persisted": false
   },
   "evidence_gate": {
