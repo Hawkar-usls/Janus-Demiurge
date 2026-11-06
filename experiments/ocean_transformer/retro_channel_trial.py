@@ -202,9 +202,10 @@ def compare(args):
     matching_byte_hex=[f"{int(a[8*i:8*(i+1)],2):02x}"
                        for i in matching_byte_indices]
     byte_hits=len(matching_byte_indices)
-    byte_right_tail=sum(math.comb(byte_count,j)
-                        * (1/256)**j * (255/256)**(byte_count-j)
-                        for j in range(byte_hits,byte_count+1))
+    byte_right_tail=(1.0 if byte_hits==0 else
+                     sum(math.comb(byte_count,j)
+                         * (1/256)**j * (255/256)**(byte_count-j)
+                         for j in range(byte_hits,byte_count+1)))
     # Postselection-inspired classical statistical control:
     # early A and future choice X are unrelated; final B=A XOR X.
     # If we keep only B=0, conditional agreement A=X is 100%.
