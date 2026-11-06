@@ -1,0 +1,231 @@
+name: JANUS Principle - 40 River Dual Phase Calibrator
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/janus-principle-jdtc-40-river.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-principle-jdtc-bounded-training
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    name: Freeze actual JSON-addition chronology
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ensure CPU PyTorch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check --retries 3 \
+              'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - name: Freeze source-head and historical JSON additions
+        shell: bash
+        env:
+          PYTHONPATH: .
+          GIT_TERMINAL_PROMPT: '0'
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/meta_next_train.py snapshot \
+            --checkout /tmp/janus_jdtc_git \
+            --output data/jdtc_meta_snapshot.json
+          sha256sum data/jdtc_meta_snapshot.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-jdtc-historical-snapshot
+          path: data/jdtc_meta_snapshot.json
+          retention-days: 45
+          if-no-files-found: error
+
+  river:
+    needs: [snapshot]
+    name: River ${{ matrix.worker }} - denoise and next JSON
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      max-parallel: 40
+      matrix:
+        worker: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39]
+    env:
+      PYTHONPATH: .
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ensure CPU PyTorch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check --retries 3 \
+              'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-jdtc-historical-snapshot
+          path: data
+      - name: Fit both phases with independently seeded noise
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/janus_principle_jdtc.py worker \
+            --snapshot data/jdtc_meta_snapshot.json \
+            --workers 40 --worker ${{ matrix.worker }} \
+            --steps 240 --budget 38 --batch 32 \
+            --output out/river-${{ matrix.worker }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-jdtc-river-${{ matrix.worker }}
+          path: |
+            out/river-${{ matrix.worker }}/weights.pt
+            out/river-${{ matrix.worker }}/river.json
+          retention-days: 30
+          if-no-files-found: error
+
+  retro-history:
+    needs: [snapshot]
+    name: Independent history-only retro calibration
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Fail-closed regression controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v -s experiments/ocean_transformer -p 'test_retro_calibrator.py'
+      - name: Evaluate only prior completed A/B triplets
+        shell: bash
+        env:
+          GIT_TERMINAL_PROMPT: '0'
+        run: |
+          set -euo pipefail
+          cutoff="$(date -u +%s)"
+          git fetch origin janus/retro-quantum-lab-ledger
+          git worktree add --detach .retro-prior origin/janus/retro-quantum-lab-ledger
+          python experiments/ocean_transformer/retro_calibrator.py \
+            --history-root .retro-prior/experiments/ocean_transformer/ledger/retro-lab \
+            --as-of-epoch "$cutoff" \
+            --output out/retro_history_gate.json
+          python - <<'PY'
+          import json, os
+          r=json.load(open('out/retro_history_gate.json'))
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+            f.write(f"## Completed A/B trials: {r['previous_completed_trials']}\n")
+            f.write(f"- Calibration gate: **{r['status']}**\n")
+            f.write(f"- Active: **{r['activated']}**\n")
+            f.write("- No physical backward channel connected.\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-jdtc-retro-history-gate
+          path: out/retro_history_gate.json
+          retention-days: 45
+          if-no-files-found: error
+
+  ocean:
+    needs: [snapshot, river, retro-history]
+    name: Ocean - 40-river FedAvg, chronological holdout, prior A/B gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    permissions:
+      contents: write
+    env:
+      PYTHONPATH: .
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ensure CPU PyTorch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check --retries 3 \
+              'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-jdtc-historical-snapshot
+          path: data
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: janus-jdtc-river-*
+          path: rivers
+          merge-multiple: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-jdtc-retro-history-gate
+          path: retro
+      - name: Fail closed on missing/corrupt workers; assess both phases
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/janus_principle_jdtc.py aggregate \
+            --snapshot data/jdtc_meta_snapshot.json \
+            --workers 40 --input rivers --output ocean
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-jdtc-ocean-result-${{ github.run_id }}
+          path: |
+            ocean/jdtc_report.json
+            ocean/next_meta_precommit.json
+            ocean/jdtc_candidate.pt
+            retro/retro_history_gate.json
+          retention-days: 90
+          if-no-files-found: error
+      - name: Append evidence only to isolated research branch, never production
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch="janus/jdtc-research-ledger"
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            git fetch origin "$branch"
+            git switch -C "$branch" "origin/$branch"
+          else
+            git switch -c "$branch"
+          fi
+          dir="experiments/ocean_transformer/ledger/jdtc/run-${{ github.run_id }}"
+          test ! -e "$dir/report.json"
+          mkdir -p "$dir"
+          cp ocean/jdtc_report.json "$dir/report.json"
+          cp ocean/next_meta_precommit.json "$dir/next_meta_precommit.json"
+          cp retro/retro_history_gate.json "$dir/retro_calibration_gate.json"
+          git config user.name 'janus-jdtc-research[bot]'
+          git config user.email 'janus-jdtc-research[bot]@users.noreply.github.com'
+          git add -f "$dir/report.json" "$dir/next_meta_precommit.json" "$dir/retro_calibration_gate.json"
+          git commit -m "janus: append 40-river dual-phase training and retro calibration evidence"
+          git push origin "HEAD:$branch"
+          echo "Research evidence committed at $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
