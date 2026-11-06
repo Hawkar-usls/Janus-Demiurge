@@ -6,7 +6,7 @@ on:
     paths:
       - '.github/workflows/janus-retro-quantum-lab.yml'
   schedule:
-    - cron: '13 01 * * *'
+    - cron: '13 01,07,13,19 * * *'
   workflow_dispatch:
 
 concurrency:
@@ -18,7 +18,29 @@ permissions:
   actions: read
 
 jobs:
+  campaign-gate:
+    name: Bounded campaign and quota guard (6–20 November 2026)
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      allowed: ${{ steps.window.outputs.allowed }}
+    steps:
+      - id: window
+        shell: bash
+        run: |
+          set -euo pipefail
+          now=$(date -u +%Y-%m-%d)
+          if [[ "${{ github.event_name }}" != 'schedule' || "$now" < '2026-11-21' ]]; then
+            echo 'allowed=true' >> "$GITHUB_OUTPUT"
+            echo "JANUS research campaign permitted: $now" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'allowed=false' >> "$GITHUB_OUTPUT"
+            echo "Campaign ended: refusing further scheduled trials after 2026-11-20" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
   receive:
+    needs: [campaign-gate]
+    if: needs.campaign-gate.outputs.allowed == 'true'
     name: A / lock actual trained Transformer prediction before B exists
     runs-on: ubuntu-latest
     timeout-minutes: 14
@@ -69,6 +91,11 @@ jobs:
         run: |
           set -euo pipefail
           python -m unittest discover -v -s experiments/ocean_transformer -p 'test_retro_calibrator.py'
+      - name: Regression-test exact full-byte significance and no-cherrypicking
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v -s experiments/ocean_transformer -p 'test_retro_byte_metrics.py'
       - name: Calibrate from only PREVIOUS completed Retro Lab trials
         shell: bash
         run: |
@@ -202,6 +229,8 @@ jobs:
             "## JANUS Retro Lab - all-bit results",
             f"- Correct bits {result['unconditional_matching_bits']}/{result['total_bits']}",
             f"- Exact one-sided binomial p-value {result['exact_one_sided_binomial_pvalue']:.5g}",
+            f"- All 32 bytes: {result['unconditional_full_byte_matches']['count']} fully matched, chance expected {result['unconditional_full_byte_matches']['expected_random_matches']:.3f} (p={result['unconditional_full_byte_matches']['exact_binomial_one_sided_pvalue']:.5g})",
+            "- Random full-byte matches are NOT an operational backward-message channel or a basis for selecting only successes.",
             f"- Full 256-bit exact match {result['full_256_bit_exact_match']}",
             f"- Future target produced {result['seconds_between_commit_confirmation_and_future_generation']:.3f}s AFTER early-commit confirmation",
             "- PCTC-inspired postselection is a classical toy only; selected correlations are NOT evidence of backward communication.",
