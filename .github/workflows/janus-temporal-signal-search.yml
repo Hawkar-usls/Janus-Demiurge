@@ -1,0 +1,157 @@
+name: JANUS Retro - Unconditional Future Choice Signal Search 77 Circuits
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/janus-temporal-signal-search.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-temporal-signal-search
+  cancel-in-progress: false
+
+jobs:
+  independent-audit:
+    name: Independent CPU audit seed ${{ matrix.seed }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [20261106, 20261107]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify exact density matrix and statevector methods independently
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s experiments/ocean_transformer \
+            -p 'test_janus_temporal_signal_search.py'
+      - name: Search all 77 candidate circuits without late-outcome filtering
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/janus_temporal_signal_search.py \
+            --seed ${{ matrix.seed }} --shots 20000 \
+            --out out/temporal_signal_${{ matrix.seed }}.json
+          sha256sum out/temporal_signal_${{ matrix.seed }}.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-temporal-candidates-${{ matrix.seed }}
+          path: out/temporal_signal_${{ matrix.seed }}.json
+          retention-days: 90
+          if-no-files-found: error
+
+  independent-consensus:
+    name: Compare independent CPU runners and archive all 77 outcomes
+    needs: [independent-audit]
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: janus-temporal-candidates-*
+          path: audited
+          merge-multiple: true
+      - name: Independent batch consistency and no-leakage review
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,hashlib,os,pathlib
+          files=sorted(pathlib.Path("audited").glob("temporal_signal_*.json"))
+          if len(files)!=2:
+              raise RuntimeError("REQUIRE_TWO_INDEPENDENT_CPU_RUNNERS")
+          data=[json.loads(f.read_text()) for f in files]
+          a,b=data
+          assert a["candidate_spec_sha256"]==b["candidate_spec_sha256"]
+          assert a["all_candidates"]==b["all_candidates"]
+          assert a["candidate_count"]==b["candidate_count"]==77
+          assert a["maximum_unconditional_early_trace_distance"]<1e-10
+          assert b["maximum_unconditional_early_trace_distance"]<1e-10
+          assert a["maximum_later_postselected_trace_distance"]>=.999
+          assert all(x["unconditional_trace_distance"]<1e-10 for x in a["all_candidates"])
+          assert all(x["max_independent_backend_abs_difference"]<1e-10 for x in a["all_candidates"])
+          assert a["intentional_forbidden_leakage_positive_control"]["unconditional_trace_distance"]==1.
+          assert not a["intentional_forbidden_leakage_positive_control"]["accepted_as_physical_channel"]
+          for x in data:
+              assert x["promotion_to_production"]=="REFUSED_NO_OPERATIONAL_SIGNAL"
+              assert not x["operational_early_message_observed"]
+          report={
+            "schema":"janus.temporal.independent_consensus.v1",
+            "run_id":os.environ["GITHUB_RUN_ID"],
+            "candidate_count":77,
+            "cpu_workers_confirmed":2,
+            "two_distinct_independent_implementations_per_worker":True,
+            "candidate_spec_sha256":a["candidate_spec_sha256"],
+            "max_early_trace_distance":max(a["maximum_unconditional_early_trace_distance"],
+                                            b["maximum_unconditional_early_trace_distance"]),
+            "max_late_conditioned_distance":a["maximum_later_postselected_trace_distance"],
+            "independent_late_choice_samples":[{
+                 "seed":x["simulation_random_control"]["seed"],
+                 "matched":x["simulation_random_control"]["matched"],
+                 "shots":x["simulation_random_control"]["shots"],
+                 "accuracy":x["simulation_random_control"]["accuracy"],
+                 "raw_sha256":hashlib.sha256(f.read_bytes()).hexdigest()
+               } for f,x in zip(files,data)],
+            "real_qpu_used":False,
+            "operational_backwards_signal_found":False,
+            "production_promotion":False,
+            "interpretation":"No-signalling confirmed for tested ordinary quantum CPTP channels. Late-conditioned associations cannot be used at early time."
+          }
+          p=pathlib.Path("audited/consensus.json")
+          p.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as out:
+              out.write("## JANUS independent future-choice no-signalling audit\n")
+              out.write("- All **77 CPTP candidates** evaluated, both density and statevector backends\n")
+              out.write("- Two separate hosted CPU runners agreed on all exact results\n")
+              out.write(f"- Max unconditioned early trace distance: **{report['max_early_trace_distance']}**\n")
+              out.write(f"- Max late-conditioned difference: **{report['max_late_conditioned_distance']}**\n")
+              out.write("- **No operational backward signal**; nothing promoted to JANUS production\n")
+          print(json.dumps(report,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-temporal-consensus-${{ github.run_id }}
+          path: audited/
+          retention-days: 90
+          if-no-files-found: error
+      - name: Archive append-only in independent research branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch=janus/temporal-signal-search-ledger
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            git fetch origin "$branch"
+            git switch -C "$branch" "origin/$branch"
+          else
+            git switch -c "$branch"
+          fi
+          dir="experiments/ocean_transformer/ledger/temporal-signals/run-${{ github.run_id }}"
+          test ! -e "$dir/consensus.json"
+          mkdir -p "$dir"
+          cp audited/consensus.json "$dir/consensus.json"
+          cp audited/temporal_signal_20261106.json "$dir/method1.json"
+          cp audited/temporal_signal_20261107.json "$dir/method2.json"
+          git config user.name 'janus-temporal-research[bot]'
+          git config user.email 'janus-temporal-research[bot]@users.noreply.github.com'
+          git add -f "$dir"
+          git commit -m 'research: archive 77 physical channel hypotheses and two independent no-signalling audits'
+          git push origin "HEAD:$branch"
+          echo "Archived research evidence at $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
