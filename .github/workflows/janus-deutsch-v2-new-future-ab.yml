@@ -1,0 +1,189 @@
+name: JANUS Deutsch V2 - NEW Future Random Blinded Before vs After
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/janus-deutsch-v2-new-future-ab.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: janus-deutsch-v2-single-blind-future-trial
+  cancel-in-progress: false
+
+jobs:
+  receive:
+    name: A / seal both previously-trained models before future target exists
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    permissions:
+      contents: write
+      actions: read
+    outputs:
+      commit_epoch: ${{ steps.seal.outputs.commit_epoch }}
+    env:
+      PYTHONPATH: .
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ensure PyTorch CPU
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check --retries 3 \
+              'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-jdtc-historical-snapshot
+          run-id: '42137543171'
+          repository: ${{ github.repository }}
+          github-token: ${{ github.token }}
+          path: data
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-jdtc-ocean-result-42137543171
+          run-id: '42137543171'
+          repository: ${{ github.repository }}
+          github-token: ${{ github.token }}
+          path: old
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-deutsch-v2-ocean-result-42139830473
+          run-id: '42139830473'
+          repository: ${{ github.repository }}
+          github-token: ${{ github.token }}
+          path: new
+      - name: Fixed old and new model predict SAME not-yet-created 256-bit target
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(find old -name jdtc_candidate.pt -type f | wc -l)" -eq 1
+          test "$(find new -name jdtc_candidate.pt -type f | wc -l)" -eq 1
+          before="$(find old -name jdtc_candidate.pt -type f -print -quit)"
+          after="$(find new -name jdtc_candidate.pt -type f -print -quit)"
+          echo 'b2ba4f2e810107f6cbf9c2d75c0a0df5d62136c31ac8c3901b5d93e329813766  data/jdtc_meta_snapshot.json' | sha256sum -c -
+          echo 'e74599f2343539d21ee8e22c877177d5e8d5f04ff647318db31276283d8b31e5  '"$before" | sha256sum -c -
+          echo '10d66d68580f512365563dd30d3e788694601ef67ea865c65f30b8e2502fdb7b  '"$after" | sha256sum -c -
+          python experiments/ocean_transformer/janus_deutsch_new_ab_trial.py predict \
+            --trial-id "janus-deutsch-v2-${{ github.run_id }}" \
+            --before "$before" --after "$after" \
+            --snapshot data/jdtc_meta_snapshot.json \
+            --output out/early.json
+          sha256sum out/early.json
+      - name: Commit A before any future random bit is sampled
+        shell: bash
+        id: seal
+        run: |
+          set -euo pipefail
+          branch='janus/deutsch-v2-retro-ledger'
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            git fetch origin "$branch"
+            git switch -C "$branch" "origin/$branch"
+          else
+            git switch -c "$branch"
+          fi
+          dest="experiments/ocean_transformer/ledger/deutsch-v2/retro-${{ github.run_id }}/early.json"
+          test ! -e "$dest"
+          mkdir -p "$(dirname "$dest")"
+          cp out/early.json "$dest"
+          git config user.name 'janus-quantum-ab[bot]'
+          git config user.email 'janus-quantum-ab[bot]@users.noreply.github.com'
+          git add -f "$dest"
+          git commit -m 'retro: freeze old and Deutsch V2 early 256-bit guesses before future RNG'
+          git push origin "HEAD:$branch"
+          echo "commit_epoch=$(date -u +%s)" >> "$GITHUB_OUTPUT"
+          echo "Early A sealed: $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-deutsch-v2-early-${{ github.run_id }}
+          path: out/early.json
+          retention-days: 90
+          if-no-files-found: error
+
+  send:
+    name: B / 120 sec later generate fresh OS randomness and compare all bits
+    needs: [receive]
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: write
+    env:
+      PYTHONPATH: .
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Sample future OS CSPRNG target WITHOUT fetching early ledger
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/retro_channel_trial.py future \
+            --trial-id "janus-deutsch-v2-${{ github.run_id }}" \
+            --receiver-commit-confirmed-epoch "${{ needs.receive.outputs.commit_epoch }}" \
+            --output out/future.json
+          sha256sum out/future.json
+      - name: Read immutable A only AFTER generation of B, compare both models
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='janus/deutsch-v2-retro-ledger'
+          git fetch origin "$branch"
+          source="experiments/ocean_transformer/ledger/deutsch-v2/retro-${{ github.run_id }}/early.json"
+          git show "origin/$branch:$source" > out/early.json
+          python experiments/ocean_transformer/janus_deutsch_new_ab_trial.py compare \
+            --early out/early.json --late out/future.json --output out/comparison.json
+      - name: Publish all future bytes, both unselected scores and paired comparison
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='janus/deutsch-v2-retro-ledger'
+          git switch -C "$branch" "origin/$branch"
+          dest="experiments/ocean_transformer/ledger/deutsch-v2/retro-${{ github.run_id }}"
+          test -f "$dest/early.json"
+          test ! -e "$dest/comparison.json"
+          cp out/future.json "$dest/future.json"
+          cp out/comparison.json "$dest/comparison.json"
+          git config user.name 'janus-quantum-ab[bot]'
+          git config user.email 'janus-quantum-ab[bot]@users.noreply.github.com'
+          git add -f "$dest/future.json" "$dest/comparison.json"
+          git commit -m 'retro: archive unbiased later CSPRNG and old vs Deutsch V2 exact scores'
+          git push origin "HEAD:$branch"
+          python - <<'PY'
+          import json,os
+          r=json.load(open('out/comparison.json'))
+          b=r['models']['model_before']
+          a=r['models']['model_after']
+          f=r['difference']
+          lines=['## New future-bit test (no postselection)',
+                 f"- Before: {b['correct_bits']}/256, Brier {b['brier']}",
+                 f"- After: {a['correct_bits']}/256, Brier {a['brier']}",
+                 f"- Paired McNemar p-value: {f['mcnemar_exact_one_sided_pvalue']:.7g}",
+                 f"- Future generated after {r['seconds_after_committed_early_A']}s",
+                 '- Physical backward channel: none. This result cannot prove retrocausality.']
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as h:h.write('\n'.join(lines)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-deutsch-v2-new-future-result-${{ github.run_id }}
+          path: |
+            out/early.json
+            out/future.json
+            out/comparison.json
+          retention-days: 90
+          if-no-files-found: error
