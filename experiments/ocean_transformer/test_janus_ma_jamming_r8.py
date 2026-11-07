@@ -141,6 +141,15 @@ class FullAttemptAuditTests(unittest.TestCase):
         self.assertEqual(result["complete_early_attempts"],2048)
         self.assertFalse(result["fourfold_or_late_herald_postselection_in_primary"])
         self.assertFalse(result["actual_physical_retrocausal_signal_proven"])
+        extra=result["late_heralded_secondary_exploratory"]
+        self.assertGreater(extra["accepted_heralded_events"],0)
+        self.assertEqual(extra["parity_equal_among_heralded"],1.)
+        self.assertTrue(extra["excluded_from_primary_statistic"])
+        self.assertTrue(extra["only_available_after_late_outcome"])
+        normal_early,normal_late,normal_manifest=audit.synthetic(20261107,"normal")
+        self.assertIsNone(audit.score(normal_early,normal_late,normal_manifest,
+                                      permutations=199)
+                          ["late_heralded_secondary_exploratory"])
 
 
 if __name__=="__main__":
