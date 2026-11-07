@@ -15,7 +15,6 @@ B balance fixed and avoids pooling unrelated run drifts).
 from __future__ import annotations
 
 import argparse
-from collections import defaultdict
 import json
 from pathlib import Path
 import random
@@ -42,10 +41,16 @@ def total_variation(categories, bits, size=4):
 
 
 def score(a,c,b):
+    marginal_a=total_variation(a,b,2)
+    marginal_c=total_variation(c,b,2)
+    joint=total_variation([2*x+y for x,y in zip(a,c)],b,4)
+    # A refined partition has >= the TV of either marginal. The excess is
+    # an interaction witness, not itself an operational future message.
     return {
-        "A_marginal_tv":total_variation(a,b,2),
-        "C_marginal_tv":total_variation(c,b,2),
-        "A_C_joint_tv":total_variation([2*x+y for x,y in zip(a,c)],b,4),
+        "A_marginal_tv":marginal_a,
+        "C_marginal_tv":marginal_c,
+        "A_C_joint_tv":joint,
+        "joint_excess_over_largest_marginal":max(0.,joint-max(marginal_a,marginal_c)),
     }
 
 
@@ -59,7 +64,8 @@ def permutation_pvalue(groups, iterations=999, seed=20261107):
     require(0<len(b_all)<=MAX_BITS, "INVALID_ARCHIVE_COUNT")
     observed=score(a_all,c_all,b_all)
     randomizer=random.Random(seed)
-    exceed=0
+    exceed_joint=0
+    exceed_excess=0
     for _ in range(iterations):
         permuted=[]
         for _,_,b in arr:
@@ -67,12 +73,24 @@ def permutation_pvalue(groups, iterations=999, seed=20261107):
             randomizer.shuffle(x)
             permuted+=x
         test=score(a_all,c_all,permuted)
-        exceed += test["A_C_joint_tv"] >= observed["A_C_joint_tv"]-1e-15
+        exceed_joint += test["A_C_joint_tv"] >= observed["A_C_joint_tv"]-1e-15
+        exceed_excess += (
+            test["joint_excess_over_largest_marginal"] >=
+            observed["joint_excess_over_largest_marginal"]-1e-15
+        )
+    p_joint=(exceed_joint+1)/(iterations+1)
+    p_excess=(exceed_excess+1)/(iterations+1)
     return {
         **observed,
-        "permutation_p_joint_tv_within_trial":(exceed+1)/(iterations+1),
+        "permutation_p_joint_tv_within_trial":p_joint,
+        "permutation_p_joint_interaction_within_trial":p_excess,
+        # Two exploratory views were queried; Bonferroni is conservative.
+        # Neither p-value is confirmatory on this retrospective sample.
+        "bonferroni_adjusted_min_p_two_views":min(1.,2*min(p_joint,p_excess)),
         "permutations":iterations,
         "permutation_seed":seed,
+        "shuffle_scheme":"permute target bits within each completed 256-bit trial",
+        "conditional_exchangeability_not_externally_verified":True,
         "exploratory_not_prospective":True
     }
 
