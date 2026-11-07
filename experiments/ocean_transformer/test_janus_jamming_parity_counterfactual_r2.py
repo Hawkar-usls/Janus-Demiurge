@@ -49,7 +49,7 @@ class CounterfactualJammingTests(unittest.TestCase):
 
     def test_report_fail_closed_no_physical_claim(self):
         r=q.report()
-        self.assertFalse(r["no_backward_in_time_classical_bit_implemented"])
+        self.assertTrue(r["no_backward_in_time_classical_bit_implemented"])
         self.assertTrue(r["no_external_physical_implementation"])
         self.assertTrue(r["no_postselection_for_primary_proof"])
         self.assertTrue(r["no_production_promotion"])
