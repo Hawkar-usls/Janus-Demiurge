@@ -165,7 +165,7 @@ def score(early,plan,future,original_raw):
     expected,t0=validate_model_early(original,tid)
     guesses=early.get("frozen_predictors")
     demand(type(guesses) is dict and
-           tuple(guesses.keys())==IDS and expected==guesses and
+           set(guesses.keys())==set(IDS) and expected==guesses and
            early.get("prediction_family")==list(IDS) and
            plan.get("precommitted_decoder_family")==list(IDS) and
            early.get("all_four_guesses_created_before_future") is True and
