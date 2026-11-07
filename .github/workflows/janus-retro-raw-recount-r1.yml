@@ -1,0 +1,72 @@
+name: JANUS Retro Raw Recount R1 - Independent Historical Evidence Gate
+
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/janus_retro_raw_recount_r1.py'
+      - 'experiments/ocean_transformer/test_janus_retro_raw_recount_r1.py'
+      - '.github/workflows/janus-retro-raw-recount-r1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-retro-recount-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  raw-independent-audit:
+    name: Audit raw A/B archived evidence Python ${{ matrix.python }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11','3.12']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          path: code
+      - uses: actions/checkout@v4
+        with:
+          ref: janus/retro-quantum-lab-ledger
+          persist-credentials: false
+          path: evidence
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Test exact recomputation and deliberate tampering controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s code/experiments/ocean_transformer \
+            -p test_janus_retro_raw_recount_r1.py
+      - name: Recompute every historical 256-bit target from original early and future JSONs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python code/experiments/ocean_transformer/janus_retro_raw_recount_r1.py \
+            --ledger evidence/experiments/ocean_transformer/ledger/retro-lab \
+            --out out/retro-raw-audit-py${{ matrix.python }}.json
+          python - <<'PY'
+          import glob,json
+          x=json.load(open(glob.glob('out/retro-raw-audit-py*.json')[0]))
+          assert x['trial_count'] >= 7
+          assert x['read_all_available_archived_trials']
+          assert not x['postselection']
+          assert not x['physical_retrocausal_signal_demonstrated']
+          assert not x['externally_attested_physical_time_order']
+          assert x['production_promotion']=='REFUSED_NO_PHYSICAL_CAUSAL_PROOF'
+          print('All archived records independently recounted; no physical channel claimed.')
+          PY
+          sha256sum out/retro-raw-audit-py${{ matrix.python }}.json
+          echo "Independent raw-bit recount from entire unmodified historical ledger; physical retrocausality NOT demonstrated." >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-retro-raw-recount-r1-py${{ matrix.python }}
+          path: out/retro-raw-audit-py${{ matrix.python }}.json
+          retention-days: 90
+          if-no-files-found: error
