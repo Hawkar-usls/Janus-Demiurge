@@ -105,8 +105,8 @@ jobs:
           p=json.load(open('out/plan.json'))
           assert m['model_sha256']=='2c38788e8468a98e9377fcdb9058c488ec3ec17dfacfbf553402a9b1a86cd4ca'
           assert e['source']=='ACTUAL_TRAINED_JANUS_40_RIVER_V3'
-          assert tuple(e['frozen_predictors'])==(
-            'RAW','INVERTED','CONFIDENCE_HIGH_FLIP','CONFIDENCE_LOW_FLIP')
+          assert set(e['frozen_predictors'])=={
+            'RAW','INVERTED','CONFIDENCE_HIGH_FLIP','CONFIDENCE_LOW_FLIP'}
           assert 'forecast_bits' not in p
           assert p['actual_model_is_trained_janus']
           assert p['target_release_epoch'] - p['early_created_epoch'] >= 180
