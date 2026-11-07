@@ -41,11 +41,11 @@ async function verifiedBeacon(round){
   const options={
     disableBeaconVerification:false,
     noCache:true,
-    apiVersion:'v2',
+    apiVersion:'v1',
     chainVerificationParams:{chainHash:CHAIN_HASH,publicKey:PUBLIC_KEY}
   };
   const chain=new HttpCachingChain(
-    'https://api.drand.sh/v2/chains/'+CHAIN_HASH,options
+    'https://api.drand.sh/'+CHAIN_HASH,options
   );
   const info=await chain.info();
   check(info.hash===CHAIN_HASH && info.public_key===PUBLIC_KEY &&
