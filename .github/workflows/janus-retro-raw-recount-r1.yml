@@ -7,6 +7,9 @@ on:
       - 'experiments/ocean_transformer/test_janus_retro_raw_recount_r1.py'
       - 'experiments/ocean_transformer/janus_retro_early_joint_witness_r1.py'
       - 'experiments/ocean_transformer/test_janus_retro_early_joint_witness_r1.py'
+      - 'experiments/ocean_transformer/janus_retro_prospective_joint_r1.py'
+      - 'experiments/ocean_transformer/test_janus_retro_prospective_joint_r1.py'
+      - 'experiments/ocean_transformer/janus_retro_prospective_joint_r1.json'
       - '.github/workflows/janus-retro-raw-recount-r1.yml'
   workflow_dispatch:
 
@@ -127,5 +130,67 @@ jobs:
         with:
           name: janus-early-joint-witness-r1-py${{ matrix.python }}
           path: out/joint-early-witness-py${{ matrix.python }}.json
+          retention-days: 90
+          if-no-files-found: error
+
+  prospective-fixed-n:
+    name: Frozen future 24-trial gate Python ${{ matrix.python }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11','3.12']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          path: code
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: janus/retro-quantum-lab-ledger
+          path: evidence
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Test frozen future cutoff, no selection by outcome, and integrity guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s code/experiments/ocean_transformer \
+            -p 'test_janus_retro_prospective_joint_r1.py'
+      - name: Apply precommitted 24-future-run rule only (no historical retrofitting)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python code/experiments/ocean_transformer/janus_retro_prospective_joint_r1.py \
+            --ledger evidence/experiments/ocean_transformer/ledger/retro-lab \
+            --protocol code/experiments/ocean_transformer/janus_retro_prospective_joint_r1.json \
+            --out out/prospective-joint-py${{ matrix.python }}.json
+          python - <<'PY'
+          import glob,json
+          x=json.load(open(glob.glob('out/prospective-joint-*.json')[0]))
+          assert not x['physical_retrocausality_proven']
+          assert not x['production_promotion']
+          assert x['postselection'] is False
+          if x['primary_exact_p'] is None:
+              assert x['status'] in (
+                  'PENDING_MORE_PRECOMMITTED_TRIALS',
+                  'HOLD_INCOMPLETE_PRESELECTED_TRIALS'
+              )
+          else:
+              assert x['trial_count']==24
+              assert x['bits']==24*256
+              assert x['early_sample_selected_without_late_data']
+          print('Prospective gate:',x['status'])
+          PY
+          sha256sum out/prospective-joint-py${{ matrix.python }}.json
+          echo 'JANUS prospective 24-trial cutoff: no result before eligible trials, no late-outcome selection, no physical channel claim.' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-prospective-joint-r1-py${{ matrix.python }}
+          path: out/prospective-joint-py${{ matrix.python }}.json
           retention-days: 90
           if-no-files-found: error
