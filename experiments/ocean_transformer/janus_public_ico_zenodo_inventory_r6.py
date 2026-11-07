@@ -93,6 +93,7 @@ def main():
     print(json.dumps({k:v[k] for k in ("file_count","archive_bytes",
         "data_candidate_files_by_extension","code_files_by_extension",
         "physical_future_to_past_message_demonstrated")}))
+    print("DATA_ARCHIVE_MEMBER_MANIFEST="+json.dumps(v["complete_members"],sort_keys=True))
 
 
 if __name__=="__main__":
