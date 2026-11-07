@@ -1,0 +1,155 @@
+name: JANUS Research - Blinded Addressed Handshake CPU R2
+
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/janus_addressed_handshake_cpu_r2.py'
+      - 'experiments/ocean_transformer/test_janus_addressed_handshake_cpu_r2.py'
+      - '.github/workflows/janus-addressed-handshake-cpu-r2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-addressed-handshake-r2-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  contract-tests:
+    name: Isolated 2x2 precommit protocol tests Python ${{ matrix.python }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11','3.12']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Verify leak traps, chronology, full sample and 2x2 interaction
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s experiments/ocean_transformer \
+            -p 'test_janus_addressed_handshake_cpu_r2.py'
+
+  freeze-early:
+    needs: [contract-tests]
+    name: Freeze both early guesses and request hashes without future target
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build 64 precommitted requests and two early-only guesses each
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/janus_addressed_handshake_cpu_r2.py \
+            early --trial-id ${{ github.run_id }} --out evidence/early.json
+          sha256sum evidence/early.json
+          python - <<'PY'
+          import json
+          x=json.load(open('evidence/early.json'))
+          assert x['trial_count']==64
+          assert x['future_target_not_generated']
+          assert all('future_target_bit' not in r for r in x['records'])
+          PY
+          echo 'Early artifact was frozen before the future job began. This is NOT an externally attested physical past-clock measurement.' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-addressed-r2-early-${{ github.run_id }}
+          path: evidence/early.json
+          retention-days: 90
+          if-no-files-found: error
+
+  generate-late:
+    needs: [freeze-early]
+    name: Generate later independent OS RNG bits and routing modes WITHOUT early artifact
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Generate B only after early job completed; do not download early artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/janus_addressed_handshake_cpu_r2.py \
+            future --trial-id ${{ github.run_id }} --out evidence/future.json
+          sha256sum evidence/future.json
+          python - <<'PY'
+          import json
+          x=json.load(open('evidence/future.json'))
+          assert x['trial_count']==64
+          assert not x['early_predictions_or_request_keys_loaded']
+          assert all('guess_addressed' not in r for r in x['records'])
+          PY
+          echo 'Late OS randomness and route intention generated on a separate forward-time runner, not an externally certified entropy source.' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-addressed-r2-future-${{ github.run_id }}
+          path: evidence/future.json
+          retention-days: 90
+          if-no-files-found: error
+
+  score-after-both:
+    needs: [generate-late]
+    name: Unfiltered matched 2x2 blinded scoring only AFTER B exists
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-addressed-r2-early-${{ github.run_id }}
+          path: evidence/early
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-addressed-r2-future-${{ github.run_id }}
+          path: evidence/future
+      - name: Verify both ledgers and report interaction/permutation null
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/janus_addressed_handshake_cpu_r2.py \
+            score --early evidence/early/early.json \
+            --future evidence/future/future.json \
+            --out evidence/score.json
+          python - <<'PY'
+          import json,os
+          x=json.load(open('evidence/score.json'))
+          assert x['trials']==64
+          assert x['all_64_trials_included']
+          assert len(x['four_cells_n'])==4
+          assert all(v==16 for v in x['four_cells_n'].values())
+          assert x['no_postselection']
+          assert x['late_bits_generated_without_early_file']
+          assert not x['external_early_timestamp_attested']
+          assert not x['external_late_entropy_attested']
+          assert not x['physical_retrocausal_signal_proven']
+          assert not x['production_promote']
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+              f.write('## JANUS Blinded Addressed Handshake R2 — Research only\n')
+              f.write(f'- 2x2 interaction Δ = {x["addressing_interaction_difference_in_differences"]:.6f}\n')
+              f.write(f'- Restricted permutation p = {x["routing_label_permutation_p"]:.6f}\n')
+              f.write(f'- Paired McNemar exact one-sided p = {x["paired_exact_one_sided_p"]:.6f}\n')
+              f.write('- Full 64/64 attempts counted; late routing metadata does not create a physically retrocausal channel.\n')
+          PY
+          sha256sum evidence/early/early.json evidence/future/future.json evidence/score.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-addressed-r2-comparison-${{ github.run_id }}
+          path: evidence/score.json
+          retention-days: 90
+          if-no-files-found: error
