@@ -1,0 +1,98 @@
+name: JANUS R6 - Independent Public Photonic Quantum-Switch Data Audit
+
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/janus_public_ico_dryad_audit_r6.py'
+      - 'experiments/ocean_transformer/test_janus_public_ico_dryad_audit_r6.py'
+      - '.github/workflows/janus-retro-public-photon-data-r6.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-photonic-r6-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  parser-tests:
+    name: Fail-closed 16 setting dataset integrity tests Python ${{ matrix.python }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11','3.12']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Verify all 16 settings required and reject malformed or renormalized data
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s experiments/ocean_transformer \
+            -p 'test_janus_public_ico_dryad_audit_r6.py'
+
+  public-photon-data:
+    name: Read and audit genuine Dryad 2026 Fig 4 experimental tables
+    needs: [parser-tests]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Download DOI pinned publicly published Dataset (never execute third-party code)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p incoming
+          curl --fail --location --show-error --silent \
+            --retry 3 --connect-timeout 15 --max-time 90 \
+            'https://datadryad.org/api/v2/datasets/doi%3A10.5061%2Fdryad.8kprr4z24/download' \
+            --output incoming/qu-et-al-2026.zip
+          python - <<'PY'
+          import zipfile,os
+          p='incoming/qu-et-al-2026.zip'
+          assert os.path.getsize(p)<4_000_000, 'Dataset package exceeds resource cap'
+          assert zipfile.is_zipfile(p), 'Source did not return expected ZIP; REFUSE interpretation'
+          print('Original Dryad source ZIP bytes:',os.path.getsize(p))
+          PY
+          sha256sum incoming/qu-et-al-2026.zip
+      - name: Inspect 16 distinct conditional-probability CSV settings without postselection
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/janus_public_ico_dryad_audit_r6.py \
+            --zip incoming/qu-et-al-2026.zip \
+            --out out/independent-public-photon-aggregate-audit.json
+          python - <<'PY'
+          import json,os
+          r=json.load(open('out/independent-public-photon-aggregate-audit.json'))
+          assert r['settings_verified']==16
+          assert r['original_data_are_aggregated_fig4_conditional_probabilities']
+          assert not r['original_trial_level_detector_time_tags_in_these_16_csv']
+          assert r['no_events_dropped_or_renormalized_by_this_audit']
+          assert r['published_inequality_reference']['raw_csv_to_inequality_term_mapping_reproduced'] is False
+          assert not r['physical_retrocausality_proven']
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+            f.write('## JANUS · Independent public Qu et al 2026 data integrity audit\n')
+            f.write(f'- CSV input settings: {r["settings_verified"]}/16\n')
+            f.write(f'- Probability sum range: [{r["sum_probability_min"]:.5f}, {r["sum_probability_max"]:.5f}]\n')
+            f.write('- These are aggregate conditional probabilities, **NOT** individual photon time-tag logs.\n')
+            f.write('- Published 1.8090 ± 0.0024 inequality is cited, not falsely rederived here from CSV without a certified term mapping/covariance.\n')
+            f.write('- Physical retrocausal message to earlier receiver: NOT DEMONSTRATED.\n')
+          PY
+          sha256sum out/independent-public-photon-aggregate-audit.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-r6-public-photon-dryad-2026-verified
+          path: out/independent-public-photon-aggregate-audit.json
+          retention-days: 90
+          if-no-files-found: error
