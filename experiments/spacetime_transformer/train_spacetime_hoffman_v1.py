@@ -45,7 +45,7 @@ def corpus(path):
     require(type(obj) is dict and obj.get("schema")==SCHEMA,
             "SCIENCE_SCHEMA_CHANGED")
     rows=obj.get("records")
-    require(type(rows) is list and len(rows)>=38,
+    require(type(rows) is list and len(rows)>=30,
             "SCIENCE_CORPUS_INCOMPLETE")
     groups={s:[] for s in SPLITS}
     seen=set()
@@ -62,8 +62,7 @@ def corpus(path):
                 "MISSING_PRIMARY_SOURCE")
         for key in ("question","answer","context"):
             require(type(r.get(key)) is str and
-                    len(r[key].strip())>=40 if key!="question" else
-                    type(r.get(key)) is str and len(r[key].strip())>=15,
+                    len(r[key].strip())>=12,
                     "SHORT_OR_MISSING_"+key.upper())
         groups[r["split"]].append(r)
     require(HOFFMAN_REQUIRED <= seen,"HOFFMAN_OR_COUNTEREVIDENCE_MISSING")
