@@ -5,6 +5,8 @@ on:
     paths:
       - 'experiments/ocean_transformer/janus_retro_raw_recount_r1.py'
       - 'experiments/ocean_transformer/test_janus_retro_raw_recount_r1.py'
+      - 'experiments/ocean_transformer/janus_retro_early_joint_witness_r1.py'
+      - 'experiments/ocean_transformer/test_janus_retro_early_joint_witness_r1.py'
       - '.github/workflows/janus-retro-raw-recount-r1.yml'
   workflow_dispatch:
 
@@ -68,5 +70,62 @@ jobs:
         with:
           name: janus-retro-raw-recount-r1-py${{ matrix.python }}
           path: out/retro-raw-audit-py${{ matrix.python }}.json
+          retention-days: 90
+          if-no-files-found: error
+
+  joint-early-witness-audit:
+    name: Exploratory early joint signal on independent CPU Python ${{ matrix.python }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11','3.12']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          path: code
+      - uses: actions/checkout@v4
+        with:
+          ref: janus/retro-quantum-lab-ledger
+          persist-credentials: false
+          path: evidence
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Independently test planted XOR-only interaction, null controls and deterministic permutations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s code/experiments/ocean_transformer \
+            -p 'test_janus_retro_early_joint_witness_r1.py'
+      - name: Run preexisting-early-register joint witness on unfiltered retrospective ledger
+        shell: bash
+        run: |
+          set -euo pipefail
+          python code/experiments/ocean_transformer/janus_retro_early_joint_witness_r1.py \
+            --ledger evidence/experiments/ocean_transformer/ledger/retro-lab \
+            --permutations 1999 \
+            --out out/joint-early-witness-py${{ matrix.python }}.json
+          python - <<'PY'
+          import glob,json
+          result=json.load(open(glob.glob('out/joint-early-witness-*.json')[0]))
+          assert result['trial_count'] >= 7
+          assert result['all_early_and_late_positions_used']
+          assert result['no_late_herald_postselection']
+          assert result['historical_research_question_chosen_after_outcomes_existed']
+          assert result['permutation_test_is_exploratory']
+          assert not result['physical_backward_signal_detected']
+          assert not result['promotion_to_production']
+          print('Retrospective joint-only witness; no pre-registered physical signal claim.')
+          PY
+          sha256sum out/joint-early-witness-py${{ matrix.python }}.json
+          echo 'Early joint-witness interaction evaluated as EXPLORATORY ONLY; no physical time channel established.' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-early-joint-witness-r1-py${{ matrix.python }}
+          path: out/joint-early-witness-py${{ matrix.python }}.json
           retention-days: 90
           if-no-files-found: error
