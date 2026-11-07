@@ -5,6 +5,8 @@ on:
     paths:
       - 'experiments/ocean_transformer/janus_addressed_handshake_cpu_r2.py'
       - 'experiments/ocean_transformer/test_janus_addressed_handshake_cpu_r2.py'
+      - 'experiments/ocean_transformer/janus_jamming_parity_counterfactual_r2.py'
+      - 'experiments/ocean_transformer/test_janus_jamming_parity_counterfactual_r2.py'
       - '.github/workflows/janus-addressed-handshake-cpu-r2.yml'
   workflow_dispatch:
 
@@ -38,6 +40,9 @@ jobs:
           python -m unittest discover -v \
             -s experiments/ocean_transformer \
             -p 'test_janus_addressed_handshake_cpu_r2.py'
+          python -m unittest discover -v \
+            -s experiments/ocean_transformer \
+            -p 'test_janus_jamming_parity_counterfactual_r2.py'
 
   freeze-early:
     needs: [contract-tests]
@@ -146,10 +151,28 @@ jobs:
               f.write(f'- Paired McNemar exact one-sided p = {x["paired_exact_one_sided_p"]:.6f}\n')
               f.write('- Full 64/64 attempts counted; late routing metadata does not create a physically retrocausal channel.\n')
           PY
-          sha256sum evidence/early/early.json evidence/future/future.json evidence/score.json
+          python experiments/ocean_transformer/janus_jamming_parity_counterfactual_r2.py --out evidence/jamming.json
+          python - <<'PY'
+          import json,os
+          x=json.load(open("evidence/jamming.json"))
+          models=x["comparative_models"]
+          assert models["normal"]["joint_XZ_TV_between_B_choices"]==0
+          assert models["normal"]["parity_predicts_B_if_scored_on_distribution"]=="1/2"
+          assert models["ideal_jamming_requires_future_parameter"]["joint_XZ_TV_between_B_choices"]==1
+          assert models["ideal_jamming_requires_future_parameter"]["future_B_needed_to_sample_prior_XZ"]
+          assert models["late_selected_normal"]["fraction_of_all_original_attempts_retained"]=="1/2"
+          assert models["late_selected_normal"]["late_herald_required"]
+          assert x["no_external_physical_implementation"]
+          assert x["no_backward_in_time_classical_bit_implemented"]
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as f:
+              f.write("- Exact rational jamming toy: mathematical joint-dependence D=1 requires B as an earlier input; late-selected normal data also D=1 but retain only 1/2 of attempts. Neither is physical retrocommunication.\n")
+          PY
+          sha256sum evidence/early/early.json evidence/future/future.json evidence/score.json evidence/jamming.json
       - uses: actions/upload-artifact@v4
         with:
           name: janus-addressed-r2-comparison-${{ github.run_id }}
-          path: evidence/score.json
+          path: |
+            evidence/score.json
+            evidence/jamming.json
           retention-days: 90
           if-no-files-found: error
