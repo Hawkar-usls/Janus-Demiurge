@@ -142,7 +142,9 @@ def freeze(model_path,trial_id,now=None):
 
 
 def score(early,plan,future,original_raw):
-    demand(all(type(x) is dict for x in (early,plan,future,original_raw)),
+    demand(all(type(x) is dict for x in (early,plan,future)) and
+           type(original_raw) is tuple and len(original_raw)==2 and
+           type(original_raw[0]) is dict and type(original_raw[1]) is bytes,
            "INVALID_SCORE_RECORDS")
     demand(early.get("schema")=="janus.external_beacon.trained_early.r5" and
            plan.get("schema")=="janus.external_beacon.plan.r4" and
