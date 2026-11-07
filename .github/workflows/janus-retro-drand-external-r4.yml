@@ -1,0 +1,183 @@
+name: JANUS R4 - External Signed Future Beacon Blind Challenge
+
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/janus_retro_drand_external_r4.py'
+      - 'experiments/ocean_transformer/janus_retro_drand_external_r4.mjs'
+      - 'experiments/ocean_transformer/test_janus_retro_drand_external_r4.py'
+      - '.github/workflows/janus-retro-drand-external-r4.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-retro-drand-r4-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify-protocol:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11','3.12']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Test early time, tamper detection and no-physical-claim metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s experiments/ocean_transformer \
+            -p test_janus_retro_drand_external_r4.py
+
+  freeze-early:
+    needs: [verify-protocol]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Generate and freeze early 256 bits and FUTURE public beacon round
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/janus_retro_drand_external_r4.py \
+            early --trial-id ${{ github.run_id }} \
+            --early-out out/early.json --plan-out out/plan.json
+          python - <<'PY'
+          import json,hashlib
+          e=json.load(open('out/early.json'))
+          p=json.load(open('out/plan.json'))
+          assert len(e['forecast_bits'])==256
+          assert 'forecast_bits' not in p
+          assert p['target_release_epoch'] - p['early_created_epoch'] >= 180
+          assert hashlib.sha256(e['forecast_bits'].encode()).hexdigest()==p['forecast_sha256']
+          assert not p['actual_model_is_trained_janus']
+          PY
+          sha256sum out/early.json out/plan.json
+          echo 'Control forecast and exact future drand round frozen; SHA256 CONTROL not trained JANUS. GitHub artifact is not an independent physical clock.' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-r4-early-${{ github.run_id }}
+          path: out/early.json
+          retention-days: 90
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-r4-plan-${{ github.run_id }}
+          path: out/plan.json
+          retention-days: 90
+          if-no-files-found: error
+
+  fetch-external-future:
+    needs: [freeze-early]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-r4-plan-${{ github.run_id }}
+          path: evidence/plan
+      - name: Install official signature-validating drand client (no secrets, no write-back)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save --ignore-scripts --no-audit --no-fund 'drand-client@1.4.2'
+          npm ls drand-client --depth=0
+      - name: Fetch *future* exact round and verify pinned threshold BLS signature
+        shell: bash
+        run: |
+          set -euo pipefail
+          node experiments/ocean_transformer/janus_retro_drand_external_r4.mjs \
+            future evidence/plan/plan.json evidence/future.json
+          sha256sum evidence/future.json
+          echo 'Future 256 bits from externally signed public drand Quicknet, NOT GitHub-local RNG. External precommit physical timestamp remains unverified.' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-r4-future-${{ github.run_id }}
+          path: evidence/future.json
+          retention-days: 90
+          if-no-files-found: error
+
+  independently-reverify-and-score:
+    needs: [fetch-external-future]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-r4-early-${{ github.run_id }}
+          path: evidence/early
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-r4-plan-${{ github.run_id }}
+          path: evidence/plan
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-r4-future-${{ github.run_id }}
+          path: evidence/future
+      - name: Install pinned official drand client for independent second BLS check
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save --ignore-scripts --no-audit --no-fund 'drand-client@1.4.2'
+      - name: Reverify exact pinned round, then score EVERY future bit
+        shell: bash
+        run: |
+          set -euo pipefail
+          node experiments/ocean_transformer/janus_retro_drand_external_r4.mjs \
+            verify-existing evidence/plan/plan.json evidence/future/future.json \
+            out/beacon-independent-verification.json
+          python experiments/ocean_transformer/janus_retro_drand_external_r4.py \
+            score --early evidence/early/early.json --plan evidence/plan/plan.json \
+            --future evidence/future/future.json --out out/result.json
+          python - <<'PY'
+          import json,os
+          a=json.load(open("out/result.json"))
+          v=json.load(open("out/beacon-independent-verification.json"))
+          assert a['all_256_bits_scored']
+          assert a['no_postselection']
+          assert a['source']=='SHA256_CONTROL_NOT_TRAINED_JANUS'
+          assert v['independent_second_fetch_and_BLS_verification_pass']
+          assert not a['independent_physical_clock_and_outcome_attested']
+          assert not a['externally_independent_hardware_entropy_certified']
+          assert not a['physical_retrocausality_proven']
+          assert not a['production_promotion']
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+            f.write('## JANUS External Beacon R4 (SHA256 control only)\n')
+            f.write(f'- Round: {a["target_round"]}\n')
+            f.write(f'- Correct bits: {a["correct_bits"]}/{a["total_bits"]}\n')
+            f.write(f'- Exact fair-bit p: {a["one_sided_exact_fair_bit_p"]:.6g}\n')
+            f.write(f'- Independent second BLS verification: {v["independent_second_fetch_and_BLS_verification_pass"]}\n')
+            f.write('- This is **not** a trained JANUS predictor or physical backward-in-time channel.\n')
+          PY
+          sha256sum evidence/early/early.json evidence/plan/plan.json \
+            evidence/future/future.json out/result.json out/beacon-independent-verification.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-r4-verified-score-${{ github.run_id }}
+          path: out/
+          retention-days: 90
+          if-no-files-found: error
