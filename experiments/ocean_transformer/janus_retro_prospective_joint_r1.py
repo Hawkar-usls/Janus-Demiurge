@@ -19,6 +19,7 @@ from pathlib import Path
 
 from janus_retro_raw_recount_r1 import examine, load, require, tail_fair_bits, validate_bits
 from janus_retro_early_joint_witness_r1 import permutation_pvalue
+from janus_retro_decoder_challengers_r1 import score_challengers
 
 EXPECTED_SCHEMA = "janus.retro.prospective_joint_probe.precommit.v1"
 EXPECTED_MODEL = "2c38788e8468a98e9377fcdb9058c488ec3ec17dfacfbf553402a9b1a86cd4ca"
@@ -71,6 +72,7 @@ def null_report(status, first, selected, eligible, protocol):
         "missing_or_incomplete_trial_ids": first,
         "primary_exact_p": None,
         "secondary_joint_permutation": None,
+        "precommitted_challenger_suite": None,
         "all_selected_attempts_kept": True,
         "postselection": False,
         "statistical_claim_eligible": False,
@@ -138,6 +140,8 @@ def audit(root, protocol, permutations=MIN_PERMUTATIONS):
     n=BITS*EXPECTED_COUNT
     primary_p=tail_fair_bits(n,total_hits)
     witness=permutation_pvalue(groups,permutations,seed=20261107)
+    challenger_spec=load(Path(__file__).with_name("janus_retro_decoder_challengers_r1.json"))
+    challengers=score_challengers(groups,challenger_spec)
     # Substituting a lower permutation budget for a unit test is explicitly
     # forbidden from creating a scientific significance report.
     full_budget=permutations==MIN_PERMUTATIONS
@@ -155,6 +159,7 @@ def audit(root, protocol, permutations=MIN_PERMUTATIONS):
         "primary_alpha":ALPHA,
         "primary_statistical_anomaly":full_budget and primary_p<ALPHA,
         "secondary_joint_permutation":witness,
+        "precommitted_challenger_suite":challengers,
         "secondary_familywise_threshold":0.001,
         "secondary_exploratory_anomaly":full_budget and
             witness["bonferroni_adjusted_min_p_two_views"]<0.001,
