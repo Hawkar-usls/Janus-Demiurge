@@ -52,8 +52,14 @@ def inspect(path):
             ext=Path(name).suffix.lower()
             extensions[ext]+=1
             # Archive member is never executed or extracted to disk.
-            files.append({"path":name,"bytes":entry.file_size,
-                          "extension":ext})
+            item={"path":name,"bytes":entry.file_size,
+                  "extension":ext}
+            if ext==".txt" and entry.file_size<=10_000:
+                payload=z.read(entry)
+                header=payload.decode("utf-8",errors="replace").splitlines()[:3]
+                item["first_three_lines_safe_preview"]=[x[:180] for x in header]
+                item["text_line_count"]=len(payload.splitlines())
+            files.append(item)
     files.sort(key=lambda f:f["path"])
     number_data=sum(extensions[e] for e in DATA_EXTS)
     number_code=sum(extensions[e] for e in CODE_EXTS)
@@ -94,6 +100,7 @@ def main():
         "data_candidate_files_by_extension","code_files_by_extension",
         "physical_future_to_past_message_demonstrated")}))
     print("DATA_ARCHIVE_MEMBER_MANIFEST="+json.dumps(v["complete_members"],sort_keys=True))
+    print("DATA_TEXT_PREVIEW="+json.dumps([x for x in v["complete_members"] if x["extension"]==".txt"],sort_keys=True))
 
 
 if __name__=="__main__":
