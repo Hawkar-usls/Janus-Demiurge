@@ -10,6 +10,9 @@ on:
       - 'experiments/ocean_transformer/janus_retro_prospective_joint_r1.py'
       - 'experiments/ocean_transformer/test_janus_retro_prospective_joint_r1.py'
       - 'experiments/ocean_transformer/janus_retro_prospective_joint_r1.json'
+      - 'experiments/ocean_transformer/janus_retro_decoder_challengers_r1.py'
+      - 'experiments/ocean_transformer/test_janus_retro_decoder_challengers_r1.py'
+      - 'experiments/ocean_transformer/janus_retro_decoder_challengers_r1.json'
       - '.github/workflows/janus-retro-raw-recount-r1.yml'
   workflow_dispatch:
 
@@ -161,6 +164,9 @@ jobs:
           python -m unittest discover -v \
             -s code/experiments/ocean_transformer \
             -p 'test_janus_retro_prospective_joint_r1.py'
+          python -m unittest discover -v \
+            -s code/experiments/ocean_transformer \
+            -p 'test_janus_retro_decoder_challengers_r1.py'
       - name: Apply precommitted 24-future-run rule only (no historical retrofitting)
         shell: bash
         run: |
@@ -184,6 +190,8 @@ jobs:
               assert x['trial_count']==24
               assert x['bits']==24*256
               assert x['early_sample_selected_without_late_data']
+              assert x['precommitted_challenger_suite']['all_24_x_256_bits_scored']
+              assert not x['precommitted_challenger_suite']['physical_retrocausality_proven']
           print('Prospective gate:',x['status'])
           PY
           sha256sum out/prospective-joint-py${{ matrix.python }}.json
