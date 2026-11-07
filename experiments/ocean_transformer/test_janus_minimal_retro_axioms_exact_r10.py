@@ -85,6 +85,20 @@ class MinimalAxiomExactTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,"ETA_OUT_OF_RANGE_OR_NOT_EXACT"):
                 j.joint(e)
 
+    def test_symbolic_Q_eta_all_eight_cells_not_just_grid(self):
+        result=j.symbolic_all_real_eta_proof()
+        self.assertTrue(result[
+            "observational_equivalence_all_real_eta_in_closed_interval"])
+        self.assertTrue(result[
+            "all_eight_joint_cells_verified_as_polynomial_identities"])
+        self.assertEqual(len(result["eight_exact_polynomial_coefficients"]),8)
+        self.assertEqual(result["backward_doB_total_variation_exact"],"eta")
+        self.assertEqual(result["forward_doB_total_variation_exact"],"0")
+        self.assertFalse(result["physical_retrocausal_resource_derived"])
+        self.assertEqual({v["joint_eta_coeff"] for v in
+                          result["eight_exact_polynomial_coefficients"]},
+                         {"1/8","-1/8"})
+
     def test_deduction_does_not_claim_physical_retrocausality(self):
         r=j.report()
         self.assertTrue(r["cpu_only"])
