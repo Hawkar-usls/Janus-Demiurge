@@ -76,7 +76,10 @@ def synthetic(seed,mode="normal"):
         late_rng.getrandbits(1) for _ in range(N)]
     late=[]
     for i,(r,b) in enumerate(zip(rows,bits)):
-        if NOC in (r["x"],r["z"]):
+        if mode=="normal":
+            # Pure forward-i.i.d. control: do not manufacture a quantum herald.
+            v="NO_FOURFOLD" if NOC in (r["x"],r["z"]) else "UNMODELED_LATE"
+        elif NOC in (r["x"],r["z"]):
             v="NO_FOURFOLD"
         elif b==0:
             v=f"SSM_{r['x']}{r['z']}"
@@ -102,7 +105,7 @@ def synthetic(seed,mode="normal"):
         "independent_external_early_timestamp_seal_verified":False,
         "all_trials_preselected_before_late_outcome":True,
         "late_B_preloaded_for_early_generation":mode=="leak_injected",
-        "quantum_late_outcome_sampled_using_early_record":True,
+        "quantum_late_outcome_sampled_using_early_record":mode!="normal",
         "all_attempts_included":True,
         "not_an_operational_retrocausal_resource":True
     }
@@ -182,6 +185,22 @@ def score(early,late,manifest,permutations=PERMUTATIONS):
         value,*_=tv_from_counts(categories,pool)
         exceed += value>=tv-1e-12
     p=(exceed+1)/(permutations+1)
+    # Descriptive SECONDARY sorting: a later phi herald selects already
+    # written X=Z records. It never enters the fixed-N primary p-value.
+    heralded=None
+    if manifest.get("control_mode")=="quantum_heralded":
+        phi=[a for a,l in zip(early["records"],late["records"])
+             if l["late_outcome"].startswith("BSM_PHI_")]
+        heralded={
+            "late_herald":"BSM_PHI",
+            "accepted_heralded_events":len(phi),
+            "all_scheduled_attempts":N,
+            "parity_equal_among_heralded":(
+                sum(a["x"]==a["z"] for a in phi)/len(phi) if phi else None),
+            "only_available_after_late_outcome":True,
+            "excluded_from_primary_statistic":True,
+            "is_not_past_directed_signalling":True
+        }
     result={
        "schema":"janus.ma_jamming.joint_early_permutation_report.r8",
        "source_type":manifest["source_type"],
@@ -199,6 +218,7 @@ def score(early,late,manifest,permutations=PERMUTATIONS):
        "all_trials_included_in_primary_endpoint":True,
        "fourfold_or_late_herald_postselection_in_primary":False,
        "source_preloaded_late_B":manifest.get("late_B_preloaded_for_early_generation") is True,
+       "late_heralded_secondary_exploratory":heralded,
        "independent_hardware_QRNG_verified":False,
        "independent_external_timestamp_seal_verified":False,
        "physical_causal_intervention_replicated":False,
