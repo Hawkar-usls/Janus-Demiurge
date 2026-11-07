@@ -1,0 +1,140 @@
+name: JANUS R8 - Ma Delayed Choice vs Hypothetical Jamming Physical Gate
+
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/janus_ma_jamming_exact_r8.py'
+      - 'experiments/ocean_transformer/janus_ma_jamming_full_attempt_audit_r8.py'
+      - 'experiments/ocean_transformer/test_janus_ma_jamming_r8.py'
+      - 'experiments/ocean_transformer/janus_ma_jamming_hardware_prereg_r8.json'
+      - '.github/workflows/janus-ma-jamming-physical-gate-r8.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-ma-jamming-r8-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  regression:
+    name: Quantum chronology and complete-ledger tests Python ${{ matrix.python }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11','3.12']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Test 4-photon exact no-signalling, 2048 trials and planted future-bit detection
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v -s experiments/ocean_transformer \
+            -p 'test_janus_ma_jamming_r8.py'
+
+  exact-quantum:
+    name: Exact rational four-photon Born rule vs impossible jamming / selection
+    runs-on: ubuntu-24.04
+    needs: [regression]
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Compute exact SSM/BSM conditional and unconditional early distributions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/janus_ma_jamming_exact_r8.py \
+            --out evidence/janus-ma-quantum-exact.json
+          python - <<'PY'
+          import json,os
+          x=json.load(open('evidence/janus-ma-quantum-exact.json'))
+          assert x['standard_early_joint_TV_between_late_settings']==0
+          assert x['hypothetical_nonphysical_late_jamming_parity']['joint_early_TV_between_future_choices']==1
+          assert x['heralded_early_difference_is_not_unconditional_retrocausality']
+          assert x['postselection_trap']['unconditional_original_attempts_kept']=='1/2'
+          assert x['hypothetical_nonphysical_late_jamming_parity']['cpu_sample_requires_future_bit_as_input_before_early_sample']
+          assert not x['physical_experiment_performed']
+          assert not x['physical_retrocausal_signal_observed']
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+              f.write('## JANUS Ma/Jamming R8 exact four-photon control\n')
+              f.write('- Standard ideal Born-rule P(X,Z|do(B)) is independent of late choice: TV=0.\n')
+              f.write('- Conditioning on a *late* BSM herald changes P(X,Z|B,V) without sending information into the past.\n')
+              f.write('- Ideal XOR jamming is a hypothetical future-dependent resource: joint TV=1 while individual marginals unchanged.\n')
+              f.write('- Ordinary late postselection can fake the same conditional with just 50% of attempts; forbidden as a primary signal.\n')
+              f.write('- No physical data or retrocausal channel was generated.\n')
+          PY
+          sha256sum evidence/janus-ma-quantum-exact.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-r8-exact-quantum-not-physical
+          path: evidence/janus-ma-quantum-exact.json
+          retention-days: 90
+          if-no-files-found: error
+
+  synthetic-ledgers:
+    name: Complete early / late 2048 trials ${{ matrix.mode }}
+    runs-on: ubuntu-24.04
+    needs: [regression]
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        mode: [normal, quantum_heralded, leak_injected]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Generate full fixed-N synthetic ledgers with explicit NO_CLICK states
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/janus_ma_jamming_full_attempt_audit_r8.py \
+            simulate --seed 20261107 --model ${{ matrix.mode }} \
+            --output-dir evidence
+          python experiments/ocean_transformer/janus_ma_jamming_full_attempt_audit_r8.py \
+            score --early evidence/early.json --late evidence/late.json \
+            --manifest evidence/manifest.json --out evidence/result.json
+          python - <<'PY'
+          import json,os
+          m=json.load(open('evidence/manifest.json'))
+          x=json.load(open('evidence/result.json'))
+          assert m['trial_count']==2048
+          assert x['complete_early_attempts']==2048
+          assert x['all_trials_included_in_primary_endpoint']
+          assert not x['fourfold_or_late_herald_postselection_in_primary']
+          assert x['no_click_attempts']>0
+          assert x['source_type']=='SYNTHETIC_CPU'
+          assert not x['independent_external_timestamp_seal_verified']
+          assert not x['actual_physical_retrocausal_signal_proven']
+          if m['control_mode']=='leak_injected':
+              assert m['late_B_preloaded_for_early_generation']
+              assert x['pass_statistical_gate']
+              assert x['observed_joint_early_TV_between_late_choices']>.80
+          else:
+              assert not m['late_B_preloaded_for_early_generation']
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+              f.write(f'## JANUS R8 synthetic {m["control_mode"]}\n')
+              f.write(f'- TV early joint P(X,Z|later B): {x["observed_joint_early_TV_between_late_choices"]:.6f}\n')
+              f.write(f'- TV local X: {x["observed_single_X_TV"]:.6f}; TV local Z: {x["observed_single_Z_TV"]:.6f}\n')
+              f.write(f'- Unfiltered 2048 attempts, NO_CLICK: {x["no_click_attempts"]}\n')
+              f.write(f'- Fixed 4999-permutation p: {x["p_label_permutation_one_sided"]:.6g}\n')
+              f.write('- Synthetic CPU control only; future bit injected in positive control BEFORE early records. No hardware retrocausality.\n')
+          PY
+          sha256sum evidence/early.json evidence/late.json evidence/manifest.json evidence/result.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-r8-2048-full-attempt-${{ matrix.mode }}
+          path: evidence/
+          retention-days: 90
+          if-no-files-found: error
