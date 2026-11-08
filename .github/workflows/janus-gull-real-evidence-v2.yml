@@ -1,0 +1,221 @@
+name: JANUS Gull R12 - Independent Genuine Bird Data & DOI Acquisition
+
+on:
+  pull_request:
+    paths:
+      - 'experiments/gull_space_models/real_gull_source_manifest_v2.json'
+      - 'experiments/gull_space_models/janus_gull_real_data_audit_v2.py'
+      - 'experiments/gull_space_models/test_janus_gull_real_data_audit_v2.py'
+      - 'experiments/gull_space_models/janus_gull_human_gps_holdout_v2.py'
+      - 'experiments/gull_space_models/test_janus_gull_human_gps_holdout_v2.py'
+      - 'experiments/gull_space_models/janus_lbbg_real_human_holdout_v3.py'
+      - 'experiments/gull_space_models/test_janus_lbbg_real_human_holdout_v3.py'
+      - '.github/workflows/janus-gull-real-evidence-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-gull-real-evidence-v2-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  source-parser-tests:
+    name: Original DOCX source parsing and non-join provenance tests Python ${{ matrix.python }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Inspect 10 exact source/parser constraints
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s experiments/gull_space_models \
+            -p 'test_janus_gull_real_data_audit_v2.py'
+          python -m unittest discover -v \
+            -s experiments/gull_space_models \
+            -p 'test_janus_gull_human_gps_holdout_v2.py'
+          python -m unittest discover -v \
+            -s experiments/gull_space_models \
+            -p 'test_janus_lbbg_real_human_holdout_v3.py'
+
+  retrieve-public-evidence:
+    name: Official gull supplementary eyes plus 2019/2020 behavioral data and 2026 GPS annotation archive
+    needs: [source-parser-tests]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Retrieve and SHA/MD5 audit original scientific data without inventing samples
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/gull_space_models/janus_gull_real_data_audit_v2.py \
+            --manifest experiments/gull_space_models/real_gull_source_manifest_v2.json \
+            --output out/
+      - name: Gate real-data acquisition separately from mathematical hypothesis
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          x=json.loads(Path("out/source-audit.json").read_text())
+          assert x['schema']=='janus.gull.real_sources.audit.v2'
+          assert not x['real_same_birds_have_both_eye_fields_and_behavior']
+          assert not x['actual_cross_bird_geometry_vs_utility_theory_test_valid']
+          assert not x['full_public_gps_or_sensitive_nesting_coordinates_exported']
+          z=x['zenodo_texel']
+          verified=[r for r in z if r['status']=='VERIFIED_ORIGINAL_BYTES']
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+              f.write('## JANUS R12 · ORIGINAL INDIVIDUAL GULL DATA PROVENANCE\n')
+              f.write(f'- Source DOI count: {len(x["source_set"])}\n')
+              f.write(f'- Zenodo original files verified with publisher MD5: {len(verified)}/{len(z)}\n')
+              for r in z:
+                  audit=r.get('schema_audit',{})
+                  f.write(f'- {r["name"]}: {r["status"]}, scanned {audit.get("rows_scanned","N/A")} rows, unique birds {audit.get("distinct_individuals_in_scanned_rows","N/A")}\n')
+              f.write(f'- Cantlay original gull-eye DOCX: {x["wiley_individual_visual_fields"][-1]["status"]}\n')
+              f.write(f'- Goumas 2019 raw behavior metadata: {x["dryad_gaze_2019"].get("metadata_status")}\n')
+              f.write(f'- Goumas 2020 raw behavior metadata: {x["dryad_cue_2020"].get("metadata_status")}\n')
+              f.write('- Different individuals; DO NOT join eye and behavior datasets. No model superiority claim.\n')
+          if not verified:
+              raise SystemExit('NO_ORIGINAL_ZENODO_BYTES_AVAILABLE; source audit artifact retained but real ingestion NOT PASS')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: janus-r12-gull-real-data-provenance-${{ github.run_id }}
+          path: |
+            out/source-audit.json
+            out/wiley-raw-tables.json
+          retention-days: 90
+          if-no-files-found: warn
+
+  real-human-holdout:
+    name: Actual human-labeled gull behavior from 2016 vs PRECEDING GPS (LOBO)
+    needs: [source-parser-tests]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Independently match real human observations to past GPS and withhold entire birds
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/gull_space_models/janus_gull_human_gps_holdout_v2.py \
+            --out out/real-2016-human-gps-leave-bird-out.json
+      - name: Scientific fail-closed label-split and provenance gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          p=Path('out/real-2016-human-gps-leave-bird-out.json')
+          x=json.loads(p.read_text())
+          assert x["schema"]=="janus.gull.real_human_behavior_holdout.v2"
+          assert x["publisher_md5_checks_verified_both"]
+          assert x["all_machine_annotations_excluded_from_validation"]
+          assert not x["exact_animal_ids_or_nest_gps_coordinates_published"]
+          assert x["different_2024_eye-field_individuals_never_joined"] is True
+          assert not x["JANUS_transformer_or_production_modified"]
+          status=x["real_holdout_result"]["status"]
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as f:
+            f.write('## JANUS R12b · REAL human gull annotations vs earlier GPS\n')
+            h=x["human_annotation_counts"]
+            a=x["earlier_gps_alignment"]
+            f.write(f'- Original human labels: {h["human_labels_total"]}; scored binary labels {h["human_scored_binary_labels"]}, machine labels removed {h["machine_labels_excluded"]}\n')
+            f.write(f'- Matched to strictly earlier GPS (<=120s): {a["human_labels_with_past_gps_match"]}, across {a["matched_distinct_birds"]} birds\n')
+            f.write(f'- Actual held-out-bird status: {status}\n')
+            if 'models' in x["real_holdout_result"]:
+              for name,metrics in x["real_holdout_result"]["models"].items():
+                f.write(f'- {name}: balanced accuracy {metrics["balanced_accuracy"]}, accuracy {metrics["accuracy"]}\n')
+            f.write('- ONLY measured human activity labels are scored. No retina data, no bird decisions/payoffs, no proof of Hoffman theory or physical spacetime ontology.\n')
+          PY
+          sha256sum out/real-2016-human-gps-leave-bird-out.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: janus-r12b-real-human-gull-behavior-holdout-${{ github.run_id }}
+          path: out/real-2016-human-gps-leave-bird-out.json
+          retention-days: 90
+          if-no-files-found: warn
+
+  real-lbbg-crossbird:
+    name: 3503 published human LBBG gull labels 2012-14 — independently withheld birds
+    needs: [source-parser-tests]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Fetch six MD5-pinned original source files and evaluate human expert labels, not classifier-derived labels
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/gull_space_models/janus_lbbg_real_human_holdout_v3.py \
+            --years 2012,2013,2014 \
+            --out out/lbbg-2012-2014-human-behavior-crossbird-v3.json
+      - name: Check disjoint bird holdouts and transparent scientific limits
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          path=Path('out/lbbg-2012-2014-human-behavior-crossbird-v3.json')
+          result=json.loads(path.read_text())
+          assert result['schema']=='janus.gull.lbbg_human_label_cross_bird_evaluation.v3'
+          assert result['published_doi']=='10.5281/zenodo.23942209'
+          assert result['all_source_md5_verified']
+          assert result['all_GULLIVER_machine_labels_excluded']
+          assert result['strict_late_GPS_exclusion']
+          assert result['different_2024_eye_measurement_individuals_never_joined']
+          assert not result['space_perception_vs_Hoffman_empirically_distinguished']
+          assert not result['raw_IDs_GPS_locations_and_nests_not_exported'] is False
+          assert not result['model_checkpoint_or_NAS_modified']
+          m=result['leave_one_individual_out']
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+            f.write('## JANUS R12c — original LBBG human-gull behavior / cross-individual evaluation\n')
+            f.write(f'- Original human annotations (3 years): {result["total_expert_human_rows"]}, expert-annotated birds {result["expert_bird_count_across_years"]}\n')
+            f.write(f'- Human annotations with same-bird earlier GPS: {result["total_preceding_gps_matches"]}, matched birds {result["matched_bird_count"]}\n')
+            f.write(f'- Leave-one-bird-out scientific status: {m["status"]}\n')
+            if 'models' in m:
+              for name,metrics in m['models'].items():
+                f.write(f'- {name}: balanced acc={metrics["balanced_accuracy"]}, acc={metrics["accuracy"]}, n={metrics["n"]}\n')
+            f.write('- Same one-bit GPS speed input, different frozen training loss, all machine class labels excluded from ground truth.\n')
+            f.write('- No individual retinal map, no direct fitness reward, no proof of Hoffman theory or fundamental nature of space.\n')
+          PY
+          sha256sum out/lbbg-2012-2014-human-behavior-crossbird-v3.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: janus-r12c-lbbg-human-crossbird-${{ github.run_id }}
+          path: out/lbbg-2012-2014-human-behavior-crossbird-v3.json
+          retention-days: 90
+          if-no-files-found: warn
