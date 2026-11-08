@@ -35,12 +35,12 @@ class RealLBBGGroupedControls(unittest.TestCase):
     def test_four_bird_realistic_grouped_holdout(self):
         data=[{"bird":f"bird_{bird}","speed":float(s),
                "label":int(s>8)}
-              for bird in range(4) for s in (1,3,11,12,14,20)]
+              for bird in range(4) for s in (1,2,3,4,5,6,11,12,13,14,15,20)]
         r=v.leave_bird_out(data)
         self.assertEqual(r["status"],
                          "REAL_HUMAN_BEHAVIOR_CROSS_BIRD_HOLDOUT_COMPLETE")
         self.assertEqual(r["complete_held_out_birds"],4)
-        self.assertEqual(r["evaluated_rows"],24)
+        self.assertEqual(r["evaluated_rows"],48)
         self.assertEqual(r["models"]["task"]["balanced_accuracy"],1)
         self.assertFalse(r["Hoffman_theory_proven"])
 
