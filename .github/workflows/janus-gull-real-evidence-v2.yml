@@ -8,6 +8,8 @@ on:
       - 'experiments/gull_space_models/test_janus_gull_real_data_audit_v2.py'
       - 'experiments/gull_space_models/janus_gull_human_gps_holdout_v2.py'
       - 'experiments/gull_space_models/test_janus_gull_human_gps_holdout_v2.py'
+      - 'experiments/gull_space_models/janus_lbbg_real_human_holdout_v3.py'
+      - 'experiments/gull_space_models/test_janus_lbbg_real_human_holdout_v3.py'
       - '.github/workflows/janus-gull-real-evidence-v2.yml'
   workflow_dispatch:
 
@@ -44,6 +46,9 @@ jobs:
           python -m unittest discover -v \
             -s experiments/gull_space_models \
             -p 'test_janus_gull_human_gps_holdout_v2.py'
+          python -m unittest discover -v \
+            -s experiments/gull_space_models \
+            -p 'test_janus_lbbg_real_human_holdout_v3.py'
 
   retrieve-public-evidence:
     name: Official gull supplementary eyes plus 2019/2020 behavioral data and 2026 GPS annotation archive
@@ -154,5 +159,63 @@ jobs:
         with:
           name: janus-r12b-real-human-gull-behavior-holdout-${{ github.run_id }}
           path: out/real-2016-human-gps-leave-bird-out.json
+          retention-days: 90
+          if-no-files-found: warn
+
+  real-lbbg-crossbird:
+    name: 3503 published human LBBG gull labels 2012-14 — independently withheld birds
+    needs: [source-parser-tests]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Fetch six MD5-pinned original source files and evaluate human expert labels, not classifier-derived labels
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/gull_space_models/janus_lbbg_real_human_holdout_v3.py \
+            --years 2012,2013,2014 \
+            --out out/lbbg-2012-2014-human-behavior-crossbird-v3.json
+      - name: Check disjoint bird holdouts and transparent scientific limits
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          path=Path('out/lbbg-2012-2014-human-behavior-crossbird-v3.json')
+          result=json.loads(path.read_text())
+          assert result['schema']=='janus.gull.lbbg_human_label_cross_bird_evaluation.v3'
+          assert result['published_doi']=='10.5281/zenodo.23942209'
+          assert result['all_source_md5_verified']
+          assert result['all_GULLIVER_machine_labels_excluded']
+          assert result['strict_late_GPS_exclusion']
+          assert result['different_2024_eye_measurement_individuals_never_joined']
+          assert not result['space_perception_vs_Hoffman_empirically_distinguished']
+          assert not result['raw_IDs_GPS_locations_and_nests_not_exported'] is False
+          assert not result['model_checkpoint_or_NAS_modified']
+          m=result['leave_one_individual_out']
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+            f.write('## JANUS R12c — original LBBG human-gull behavior / cross-individual evaluation\n')
+            f.write(f'- Original human annotations (3 years): {result["total_expert_human_rows"]}, expert-annotated birds {result["expert_bird_count_across_years"]}\n')
+            f.write(f'- Human annotations with same-bird earlier GPS: {result["total_preceding_gps_matches"]}, matched birds {result["matched_bird_count"]}\n')
+            f.write(f'- Leave-one-bird-out scientific status: {m["status"]}\n')
+            if 'models' in m:
+              for name,metrics in m['models'].items():
+                f.write(f'- {name}: balanced acc={metrics["balanced_accuracy"]}, acc={metrics["accuracy"]}, n={metrics["n"]}\n')
+            f.write('- Same one-bit GPS speed input, different frozen training loss, all machine class labels excluded from ground truth.\n')
+            f.write('- No individual retinal map, no direct fitness reward, no proof of Hoffman theory or fundamental nature of space.\n')
+          PY
+          sha256sum out/lbbg-2012-2014-human-behavior-crossbird-v3.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: janus-r12c-lbbg-human-crossbird-${{ github.run_id }}
+          path: out/lbbg-2012-2014-human-behavior-crossbird-v3.json
           retention-days: 90
           if-no-files-found: warn
