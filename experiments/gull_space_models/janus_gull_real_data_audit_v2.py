@@ -130,7 +130,9 @@ def inspect_csv_bytes(content,max_rows=4000000):
         gzip.GzipFile(fileobj=io.BytesIO(content)) if
         content[:2]==b"\x1f\x8b" else io.BytesIO(content),
         encoding="utf-8-sig",errors="replace",newline="")
-    rd=csv.DictReader(text)
+    first=text.readline()
+    delimiter="\t" if first.count("\t")>first.count(",") else ","
+    rd=csv.DictReader(__import__("itertools").chain([first],text),delimiter=delimiter)
     header=rd.fieldnames or []
     assert_source(1<=len(header)<=200,"CSV_EMPTY_OR_TOO_MANY_FIELDS")
     identity_fields=[name for name in header if name.lower().strip() in
@@ -220,56 +222,100 @@ def wiley_probe(output):
 
 
 def dryad_probe(doi):
-    # API docs explicitly allow anonymous GET on published metadata,
-    # but file download may return 401 or 403 without credentials.
+    """Only published anonymous Dryad API paths; do not infer raw results.
+
+    Dryad's /datasets/{doi} returns an id that may be a version id.
+    Also look up /versions and nested links. Each candidate must resolve
+    through an actual file catalog before attempting public file streams.
+    """
     encoded="doi%3A"+doi.replace("/","%2F")
     report={"doi":doi,"files_checked":[]}
     try:
-        data=download(DRYAD_API+"datasets/"+encoded,max_bytes=500_000)
-        metadata=json.loads(data)
+        raw=download(DRYAD_API+"datasets/"+encoded,500_000)
+        metadata=json.loads(raw)
         report["metadata_status"]="FETCHED"
-        report["metadata_sha256"]=sha(data)
+        report["metadata_sha256"]=sha(raw)
         report["metadata_top_level_keys"]=sorted(metadata.keys())
-        versions=download(DRYAD_API+"datasets/"+encoded+"/versions",500_000)
-        obj=json.loads(versions)
-        candidates=obj.get("_embedded",{}).get("stash:versions",[])
-        if isinstance(obj,dict) and not candidates:
-            candidates=obj.get("versions",[]) or obj.get("items",[])
-        if isinstance(obj,list):
-            candidates=obj
-        ids=[int(z.get("id") or z.get("versionID") or z.get("versionId"))
-             for z in candidates if isinstance(z,dict)
-             and (z.get("id") or z.get("versionID") or z.get("versionId"))]
-        if not ids:
-            report["file_status"]="VERSION_ID_UNAVAILABLE"
+        report["metadata_id_type"]=type(metadata.get("id")).__name__
+        links=metadata.get("_links") or {}
+        report["metadata_link_types"]=sorted(links)
+        ids=[]
+        for key in ("id","versionID","versionId"):
+            v=metadata.get(key)
+            if type(v) in (str,int) and str(v).isdigit():
+                ids.append(int(v))
+        try:
+            vraw=download(DRYAD_API+"datasets/"+encoded+"/versions",500_000)
+            versions=json.loads(vraw)
+            report["versions_type"]=type(versions).__name__
+            if isinstance(versions,dict):
+                report["versions_keys"]=sorted(versions)
+                val=versions.get("_embedded") or {}
+                list_candidate=(val.get("stash:versions") or
+                                versions.get("versions") or
+                                versions.get("items") or [])
+            else:
+                list_candidate=versions
+            if isinstance(list_candidate,list):
+                ids.extend(int(x.get("id") or x.get("versionID") or x.get("versionId"))
+                           for x in list_candidate if isinstance(x,dict)
+                           and str(x.get("id") or x.get("versionID") or
+                                   x.get("versionId") or "").isdigit())
+        except Exception as e:
+            report["version_list_status"]="NOT_INGESTED_"+status_reason(e)
+        ids=sorted(set(ids),reverse=True)
+        report["version_candidates_count"]=len(ids)
+        catalog=[]
+        for vid in ids[:4]:
+            try:
+                catalog_raw=download(DRYAD_API+"versions/"+str(vid)+"/files",500_000)
+                listing=json.loads(catalog_raw)
+                if isinstance(listing,list):
+                    files=listing
+                elif isinstance(listing,dict):
+                    nested=listing.get("_embedded") or {}
+                    files=(nested.get("stash:files") or listing.get("files") or
+                           listing.get("items") or [])
+                    if isinstance(files,dict):
+                        files=list(files.values())
+                else:
+                    files=[]
+                if isinstance(files,list) and files:
+                    catalog=files
+                    report["source_version_id"]=vid
+                    break
+            except Exception as e:
+                report.setdefault("catalog_failures",[]).append({
+                    "version_candidate_index":ids.index(vid),
+                    "status":"NOT_INGESTED_"+status_reason(e)})
+        if not catalog:
+            report["file_status"]="NO_PUBLIC_FILE_CATALOG"
             return report
-        listed=download(DRYAD_API+"versions/"+str(max(ids))+"/files",500_000)
-        listing=json.loads(listed)
-        files=listing.get("_embedded",{}).get("stash:files",[]) or listing.get("files",[]) or listing.get("items",[])
-        if isinstance(listing,list):
-            files=listing
-        for f in files:
+        report["file_catalog_count"]=len(catalog)
+        for f in catalog:
             if not isinstance(f,dict):
                 continue
-            name=f.get("path") or f.get("name") or f.get("fileName") or ""
-            if not str(name).lower().endswith((".txt",".csv")):
+            fname=f.get("path") or f.get("name") or f.get("fileName") or ""
+            if not str(fname).lower().endswith((".txt",".csv")):
                 continue
             file_id=f.get("id") or f.get("fileId")
             if not file_id:
                 continue
-            entry={"filename":name,"file_id":file_id}
+            entry={"filename":fname,"file_id":file_id}
             try:
-                raw=download("https://datadryad.org/downloads/file_stream/"+str(file_id),100_000)
+                content=download(
+                    "https://datadryad.org/downloads/file_stream/"+str(file_id),
+                    max_bytes=100_000)
                 entry["raw_status"]="FETCHED_PUBLIC_FILE"
-                entry["sha256"]=sha(raw)
-                entry["source_schema"]=inspect_csv_bytes(raw,5000)
-            except Exception as exc:
-                entry["raw_status"]="NOT_INGESTED_"+status_reason(exc)
+                entry["sha256"]=sha(content)
+                entry["schema_audit"]=inspect_csv_bytes(content,5000)
+            except Exception as e:
+                entry["raw_status"]="NOT_INGESTED_"+status_reason(e)
             report["files_checked"].append(entry)
-        report["file_status"]="FILE_CATALOG_READ"
-    except Exception as exc:
-        report["metadata_status"]="NOT_INGESTED_"+status_reason(exc)
-        report["error_class"]=type(exc).__name__
+        report["file_status"]="PUBLIC_FILE_CATALOG_READ"
+    except Exception as e:
+        report["metadata_status"]="NOT_INGESTED_"+status_reason(e)
+        report["error_class"]=type(e).__name__
     return report
 
 
