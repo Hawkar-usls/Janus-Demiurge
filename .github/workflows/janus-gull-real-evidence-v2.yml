@@ -6,6 +6,8 @@ on:
       - 'experiments/gull_space_models/real_gull_source_manifest_v2.json'
       - 'experiments/gull_space_models/janus_gull_real_data_audit_v2.py'
       - 'experiments/gull_space_models/test_janus_gull_real_data_audit_v2.py'
+      - 'experiments/gull_space_models/janus_gull_human_gps_holdout_v2.py'
+      - 'experiments/gull_space_models/test_janus_gull_human_gps_holdout_v2.py'
       - '.github/workflows/janus-gull-real-evidence-v2.yml'
   workflow_dispatch:
 
@@ -39,6 +41,9 @@ jobs:
           python -m unittest discover -v \
             -s experiments/gull_space_models \
             -p 'test_janus_gull_real_data_audit_v2.py'
+          python -m unittest discover -v \
+            -s experiments/gull_space_models \
+            -p 'test_janus_gull_human_gps_holdout_v2.py'
 
   retrieve-public-evidence:
     name: Official gull supplementary eyes plus 2019/2020 behavioral data and 2026 GPS annotation archive
@@ -94,5 +99,60 @@ jobs:
           path: |
             out/source-audit.json
             out/wiley-raw-tables.json
+          retention-days: 90
+          if-no-files-found: warn
+
+  real-human-holdout:
+    name: Actual human-labeled gull behavior from 2016 vs PRECEDING GPS (LOBO)
+    needs: [source-parser-tests]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Independently match real human observations to past GPS and withhold entire birds
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/gull_space_models/janus_gull_human_gps_holdout_v2.py \
+            --out out/real-2016-human-gps-leave-bird-out.json
+      - name: Scientific fail-closed label-split and provenance gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          p=Path('out/real-2016-human-gps-leave-bird-out.json')
+          x=json.loads(p.read_text())
+          assert x["schema"]=="janus.gull.real_human_behavior_holdout.v2"
+          assert x["publisher_md5_checks_verified_both"]
+          assert x["all_machine_annotations_excluded_from_validation"]
+          assert not x["exact_animal_ids_or_nest_gps_coordinates_published"]
+          assert not x["different_2024_eye_field_individuals_never_joined"] is False
+          assert not x["JANUS_transformer_or_production_modified"]
+          status=x["real_holdout_result"]["status"]
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as f:
+            f.write('## JANUS R12b · REAL human gull annotations vs earlier GPS\n')
+            h=x["human_annotation_counts"]
+            a=x["earlier_gps_alignment"]
+            f.write(f'- Original human labels: {h["human_labels_total"]}; scored binary labels {h["human_scored_binary_labels"]}, machine labels removed {h["machine_labels_excluded"]}\n')
+            f.write(f'- Matched to strictly earlier GPS (<=120s): {a["human_labels_with_past_gps_match"]}, across {a["matched_distinct_birds"]} birds\n')
+            f.write(f'- Actual held-out-bird status: {status}\n')
+            if 'models' in x["real_holdout_result"]:
+              for name,metrics in x["real_holdout_result"]["models"].items():
+                f.write(f'- {name}: balanced accuracy {metrics["balanced_accuracy"]}, accuracy {metrics["accuracy"]}\n')
+            f.write('- ONLY measured human activity labels are scored. No retina data, no bird decisions/payoffs, no proof of Hoffman theory or physical spacetime ontology.\n')
+          PY
+          sha256sum out/real-2016-human-gps-leave-bird-out.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: janus-r12b-real-human-gull-behavior-holdout-${{ github.run_id }}
+          path: out/real-2016-human-gps-leave-bird-out.json
           retention-days: 90
           if-no-files-found: warn
