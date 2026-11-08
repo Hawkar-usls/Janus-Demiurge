@@ -1,0 +1,98 @@
+name: JANUS Gull R12 - Independent Genuine Bird Data & DOI Acquisition
+
+on:
+  pull_request:
+    paths:
+      - 'experiments/gull_space_models/real_gull_source_manifest_v2.json'
+      - 'experiments/gull_space_models/janus_gull_real_data_audit_v2.py'
+      - 'experiments/gull_space_models/test_janus_gull_real_data_audit_v2.py'
+      - '.github/workflows/janus-gull-real-evidence-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-gull-real-evidence-v2-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  source-parser-tests:
+    name: Original DOCX source parsing and non-join provenance tests Python ${{ matrix.python }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Inspect 10 exact source/parser constraints
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s experiments/gull_space_models \
+            -p 'test_janus_gull_real_data_audit_v2.py'
+
+  retrieve-public-evidence:
+    name: Official gull supplementary eyes plus 2019/2020 behavioral data and 2026 GPS annotation archive
+    needs: [source-parser-tests]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Retrieve and SHA/MD5 audit original scientific data without inventing samples
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/gull_space_models/janus_gull_real_data_audit_v2.py \
+            --manifest experiments/gull_space_models/real_gull_source_manifest_v2.json \
+            --output out/
+      - name: Gate real-data acquisition separately from mathematical hypothesis
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          x=json.loads(Path("out/source-audit.json").read_text())
+          assert x['schema']=='janus.gull.real_sources.audit.v2'
+          assert not x['real_same_birds_have_both_eye_fields_and_behavior']
+          assert not x['actual_cross_bird_geometry_vs_utility_theory_test_valid']
+          assert not x['full_public_gps_or_sensitive_nesting_coordinates_exported']
+          z=x['zenodo_texel']
+          verified=[r for r in z if r['status']=='VERIFIED_ORIGINAL_BYTES']
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+              f.write('## JANUS R12 · ORIGINAL INDIVIDUAL GULL DATA PROVENANCE\n')
+              f.write(f'- Source DOI count: {len(x["source_set"])}\n')
+              f.write(f'- Zenodo original files verified with publisher MD5: {len(verified)}/{len(z)}\n')
+              for r in z:
+                  audit=r.get('schema_audit',{})
+                  f.write(f'- {r["name"]}: {r["status"]}, scanned {audit.get("rows_scanned","N/A")} rows, unique birds {audit.get("distinct_individuals_in_scanned_rows","N/A")}\n')
+              f.write(f'- Cantlay original gull-eye DOCX: {x["wiley_individual_visual_fields"][-1]["status"]}\n')
+              f.write(f'- Goumas 2019 raw behavior metadata: {x["dryad_gaze_2019"].get("metadata_status")}\n')
+              f.write(f'- Goumas 2020 raw behavior metadata: {x["dryad_cue_2020"].get("metadata_status")}\n')
+              f.write('- Different individuals; DO NOT join eye and behavior datasets. No model superiority claim.\n')
+          if not verified:
+              raise SystemExit('NO_ORIGINAL_ZENODO_BYTES_AVAILABLE; source audit artifact retained but real ingestion NOT PASS')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: janus-r12-gull-real-data-provenance-${{ github.run_id }}
+          path: |
+            out/source-audit.json
+            out/wiley-raw-tables.json
+          retention-days: 90
+          if-no-files-found: warn
