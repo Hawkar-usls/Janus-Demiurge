@@ -123,7 +123,7 @@ def extract_docx_tables(payload):
                                "NR never interpreted as numeric zero"]}
 
 
-def inspect_csv_bytes(content,max_rows=1000000):
+def inspect_csv_bytes(content,max_rows=4000000):
     rows=0; names=set(); labels=Counter()
     # Strict utf8/UTF8-BOM fallback; CSV quote parsing. Source header only
     text=io.TextIOWrapper(
@@ -318,13 +318,15 @@ def run(source,output):
     print(json.dumps({
        "stage":"PUBLIC_REAL_GULL_SOURCE_AUDIT_COMPLETED",
        "wiley_status":[r["status"] for r in report["wiley_individual_visual_fields"]],
-       "dryad_2019":report["dryad_gaze_2019"].get("metadata_status"),
-       "dryad_2020":report["dryad_cue_2020"].get("metadata_status"),
+       "dryad_2019":report["dryad_gaze_2019"],
+       "dryad_2020":report["dryad_cue_2020"],
        "zenodo":[{"name":r["name"],"status":r["status"],
                   "columns":r.get("schema_audit",{}).get("columns",[])[:14],
                   "rows":r.get("schema_audit",{}).get("rows_scanned"),
                   "human_annotation_candidates":r.get("schema_audit",{}).get(
-                      "top_behavior_values_in_scanned_rows",[])[:8]}
+                      "top_behavior_values_in_scanned_rows",[])[:14],
+                  "unique_individuals":r.get("schema_audit",{}).get(
+                      "distinct_individuals_in_scanned_rows")}
                  for r in report["zenodo_texel"]],
        "real_joint_theory_test_possible":False
     },ensure_ascii=False,sort_keys=True))
