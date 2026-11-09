@@ -64,6 +64,20 @@ class VideoCalibrationTests(unittest.TestCase):
         self.assertTrue(result["test_calibrated"]["nll"] >= 0.0)
         self.assertAlmostEqual(result["test_analytic_born"]["brier"], .25)
 
+    def test_delayed_choice_reduces_to_no_signalling_in_raw_records(self):
+        # The transactional picture discussed at 25:37 must not be
+        # mistaken for a usable early classical bit.
+        from janus_cpu_quantum_emulator import bell_late_message
+        cases = [bell_late_message(bit) for bit in (0, 1)]
+        self.assertEqual(cases[0]["early_marginal_before_late_choice"],
+                         cases[1]["early_marginal_before_late_choice"])
+        self.assertEqual(cases[0]["early_marginal_after_late_choice"],
+                         cases[1]["early_marginal_after_late_choice"])
+        self.assertNotEqual(cases[0]["early_distribution_given_LATER_herald"],
+                            cases[1]["early_distribution_given_LATER_herald"])
+        for case in cases:
+            self.assertFalse(case["unconditioned_early_readout_contains_future_bit"])
+
     def test_fail_closed_for_invalid_inputs(self):
         with self.assertRaises(ValueError):
             m.calibrate([.5], [0], [.5]*2048, [0]*2048, [.5]*2048)
