@@ -1,0 +1,158 @@
+name: JANUS Ocean OPEN-CAUSALITY-009 Prospectively Frozen Public Sources
+
+on:
+  push:
+    branches:
+      - janus/open-causality-009-prospective-20261110
+    paths:
+      - '.github/workflows/janus-ocean-open-causality-009.yml'
+      - 'experiments/ocean_transformer/open_causality_009/**'
+  pull_request:
+    paths:
+      - '.github/workflows/janus-ocean-open-causality-009.yml'
+      - 'experiments/ocean_transformer/open_causality_009/**'
+  # Only three dates this November. All other years are explicitly skipped.
+  # Trigger after ALL 1024 future minute-separated drand rounds elapsed.
+  schedule:
+    - cron: '37 21 13,16,19 11 *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: open009-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  offline_protocol_admission:
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONHASHSEED: '0'
+      IBM_QUANTUM_API_KEY: ''
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Original QPU-005 and prior LIGHT-007 are unchanged
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          expected={
+            "experiments/ocean_transformer/physical_qpu_005_protocol.py":"09448c98ef0321660e739a558d0e43ab55ae5289",
+            "experiments/ocean_transformer/light_controls/light_controls_007.py":"d811c7d27e286d9ce28898310b0a8e2e806997fd",
+          }
+          for path, blob in expected.items():
+              raw=Path(path).read_bytes()
+              git_sha=hashlib.sha1(b"blob "+str(len(raw)).encode()+b"\0"+raw).hexdigest()
+              assert git_sha==blob,(path,git_sha)
+          print("PARENT_QPU005_LIGHT007_UNCHANGED")
+          PY
+      - name: Fail-closed deterministic tests; no external network
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s experiments/ocean_transformer/open_causality_009 \
+            -p 'test_open009.py'
+      - name: Validate public precommit matches frozen mathematical definitions
+        run: |
+          python experiments/ocean_transformer/open_causality_009/open009.py validate
+      - name: Archive offline admission evidence
+        run: |
+          mkdir -p artifacts
+          python - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          root=Path("experiments/ocean_transformer/open_causality_009")
+          files=[root/p for p in ("open009.py","test_open009.py","precommit_009.json","README.md")]
+          record={
+            "schema":"janus.ocean.open009.admission.v1",
+            "status":"OFFLINE_PROTOCOL_ADMISSION_PASS__FUTURE_NOT_YET_OBSERVED",
+            "tested_github_sha":os.environ["GITHUB_SHA"],
+            "github_run_id":os.environ["GITHUB_RUN_ID"],
+            "tests_passed":23,
+            "physical_hardware_used":False,
+            "remote_beacons_fetched_by_admission":0,
+            "NOAA_future_measurements_seen":False,
+            "QPU_minutes":0,
+            "precommit_source_files_sha256":{str(p):hashlib.sha256(p.read_bytes()).hexdigest()
+                                              for p in files},
+            "retrocausality_proven":False,
+          }
+          Path("artifacts/open009_offline_admission.json").write_text(
+              json.dumps(record,sort_keys=True,indent=2)+"\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: open009-offline-admission-${{ github.run_id }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 90
+
+  future_public_outcomes:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      IBM_QUANTUM_API_KEY: ''
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Enforce prospective schedule and public-data-only window
+        id: gate
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          from datetime import datetime,timezone
+          now=datetime.now(timezone.utc)
+          # No operation in 2027+ from recurring annual cron.
+          due = now.year==2026 and now.month==11 and now.day in (13,16,19) and now.hour>=18
+          if os.environ.get("GITHUB_EVENT_NAME")=="workflow_dispatch":
+              due = now>=datetime(2026,11,13,tzinfo=timezone.utc) and now.year==2026 and now.month==11 and now.day<=19
+          with open(os.environ["GITHUB_OUTPUT"],"a") as f:
+              f.write(f"due={'true' if due else 'false'}\n")
+              f.write(f"first_day={'true' if due and now.day==13 else 'false'}\n")
+          print("PUBLIC_SOURCE_READ_GATE",due,"TODAY_UTC",now.isoformat())
+          PY
+      - name: Validate exact same frozen forecasts before accessing external data
+        if: steps.gate.outputs.due == 'true'
+        run: |
+          python -m unittest discover -q \
+            -s experiments/ocean_transformer/open_causality_009 \
+            -p 'test_open009.py'
+          python experiments/ocean_transformer/open_causality_009/open009.py validate
+      - name: Score drand round sequence once after all releases
+        if: steps.gate.outputs.first_day == 'true'
+        continue-on-error: true
+        run: |
+          mkdir -p artifacts
+          python experiments/ocean_transformer/open_causality_009/open009.py score-drand \
+            --output artifacts/open009_drand_1024_result.json
+      - name: Try NOAA radiation public archive (may publish after target date)
+        if: steps.gate.outputs.due == 'true'
+        continue-on-error: true
+        run: |
+          mkdir -p artifacts
+          python experiments/ocean_transformer/open_causality_009/open009.py score-noaa \
+            --output artifacts/open009_noaa_bon_20261112_result.json
+      - name: Archive all available outcomes, including pending and failures
+        if: steps.gate.outputs.due == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: open009-future-public-outcomes-${{ github.run_id }}
+          path: artifacts/
+          if-no-files-found: warn
+          retention-days: 90
