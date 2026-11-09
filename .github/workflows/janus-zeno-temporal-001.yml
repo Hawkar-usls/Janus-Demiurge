@@ -13,6 +13,8 @@ on:
       - 'experiments/ocean_transformer/test_beetle_wolfram_readonly_gate.py'
       - 'experiments/ocean_transformer/wolfram_v2_registry_gate.py'
       - 'experiments/ocean_transformer/test_wolfram_v2_registry_gate.py'
+      - 'experiments/ocean_transformer/zeno_science_council_v3.py'
+      - 'experiments/ocean_transformer/test_zeno_science_council_v3.py'
   workflow_dispatch:
     inputs:
       live_wolfram:
@@ -48,12 +50,18 @@ jobs:
           python -m unittest discover -s experiments/ocean_transformer -p 'test_zeno_temporal_001.py' -v
           python -m unittest discover -s experiments/ocean_transformer -p 'test_beetle_wolfram_readonly_gate.py' -v
           python -m unittest discover -s experiments/ocean_transformer -p 'test_wolfram_v2_registry_gate.py' -v
+          python -m unittest discover -s experiments/ocean_transformer -p 'test_zeno_science_council_v3.py' -v
       - name: Freeze CPU Zeno probabilities and SVG curve
         run: |
           set -euo pipefail
           python experiments/ocean_transformer/zeno_temporal_001.py \
             --output artifacts/zeno_probabilities.json \
             --chart artifacts/zeno_survival_curve.svg
+      - name: Freeze three different quantum observables and basis-choice no-signalling control
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/zeno_science_council_v3.py \
+            --output artifacts/zeno_science_council_v3.json
       - name: Commit synthetic early receiver output before generating late choice
         run: |
           set -euo pipefail
@@ -109,6 +117,7 @@ jobs:
           files = sorted(path for path in root.iterdir() if path.is_file())
           digests = {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in files}
           z = json.loads((root/"zeno_probabilities.json").read_text())
+          science_v3 = json.loads((root/"zeno_science_council_v3.json").read_text())
           retro = json.loads((root/"retro_negative_control.json").read_text())
           beetle = json.loads((root/"beetle_wolfram_math_gate.json").read_text())
           wolfram_v2 = json.loads((root/"wolfram_mcp_registry_v2_gate.json").read_text())
@@ -117,6 +126,9 @@ jobs:
           if live_path.exists():
               wolfram = json.loads(live_path.read_text())
           assert z["status"] == "STANDARD_QM_CPU_REFERENCE_ONLY"
+          assert science_v3["logic"]["no_signalling"] == "PASS_UNCONDITIONAL_EQUAL_0_5"
+          assert science_v3["wolfram"]["new_cases_remote_checked"] == 0
+          assert science_v3["claims"]["physical_retrocausality_proven"] is False
           assert retro["n"] == 2048
           assert beetle["physical_retrocausal_channel_proven"] is False
           assert beetle["wolfram_provider_called_by_this_job"] is False
@@ -137,6 +149,10 @@ jobs:
               "stage": "DEVELOPMENT_ONLY",
               "evidence_sha256": digests,
               "cpu_zeno": "PASS_ANALYTIC_REFERENCE",
+              "cpu_no_signalling_v3": science_v3["logic"]["no_signalling"],
+              "cpu_postselection_trap": science_v3["logic"]["postselection_trap"],
+              "new_math_reference_cases": len(science_v3["analytic_crosschecks"]),
+              "new_wolfram_live_calls": 0,
               "retro_control": "SAME_RUNNER_NEGATIVE_CONTROL_ONLY",
               "retrosignal_confirmed": False,
               "wolfram_alpha": wolfram["status"],
@@ -152,6 +168,9 @@ jobs:
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
               f.write("## JANUS-ZENO-TEMPORAL-001\n\n")
               f.write("- CPU Zeno: **analytical reference PASS**\n")
+              f.write("- Bell no-signalling v3: **"+science_v3["logic"]["no_signalling"]+"**\n")
+              f.write("- Postselection artifact: **NOT A SIGNAL**\n")
+              f.write("- New formulas: **3 offline analytic cases; 0 provider calls**\n")
               f.write("- Wolfram Alpha direct API: **"+wolfram["status"]+"**\n")
               f.write("- Beetle keyless MCP v1: **"+beetle["status"]+"**\n")
               f.write("- Wolfram MCP verified V2 Meta Registry record: **"+wolfram_v2["status"]+"**\n")

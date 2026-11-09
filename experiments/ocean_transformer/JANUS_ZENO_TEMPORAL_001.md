@@ -110,3 +110,33 @@ from GitHub artifacts, including the full numerical provider result.
 The Ocean workflow writes `artifacts/beetle_wolfram_math_gate.json`
 and binds its status into the existing run summary. No additional
 cron or third-party calls are introduced by the Ocean reader.
+
+## V3: multi-observable CPU reference and late-choice illusion
+
+The earlier keyless Wolfram Cloud MCP check of `cos(pi/4)^4` is archived as a
+single arithmetic match, not as independent verification of the full physics model.
+The new `zeno_science_council_v3.py` freezes three different quantities:
+
+| Case ID | Expression | Physical event |
+|---|---|---|
+| `zeno_n4_unconditional` | `(1+cos(pi/4)^4)/2` | Final Z=0, preceding measurements unread |
+| `zeno_n4_all_zero` | `cos(pi/8)^8` | All four Z outcomes equal zero |
+| `bell_early_marginal` | `1/2` | Early A=0 in a Bell pair, whatever later basis B uses |
+
+These first two probabilities are different events. They MUST NOT be conflated.
+
+For the Bell pair (|00>+|11>)/sqrt(2), the independently calculated
+unconditional marginal is P(A=0)=1/2 for all later basis rotations theta,
+while the heralded subset has P(A=0 | B=0, theta)=cos(theta)^2.
+Thus a postselected correlation can depend on the later choice even though
+no usable raw earlier message has changed. A 513-angle independent CPU test
+checks this distinction. The source code computes all four joint outcomes.
+
+Artifacts: `artifacts/zeno_science_council_v3.json` plus the existing immutable
+per-run hash manifest. This is a standard quantum theory synthetic reference:
+no physical experiment, no retraining of production weights, and zero new
+Wolfram provider calls in automated CI.
+
+Future Wolfram Cloud MCP queries must be explicitly approved fixed cases
+and small-scale, per the provider's limited personal-use terms. A positive
+provider result establishes one arithmetic equality, not retrocausal physics.
