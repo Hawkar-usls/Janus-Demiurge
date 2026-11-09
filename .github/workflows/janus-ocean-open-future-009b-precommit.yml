@@ -33,12 +33,18 @@ jobs:
         run: |
           set -euo pipefail
           TARGET="$(date -u -d '+2 days' +%F)"
+          if [[ "$TARGET" < "2026-11-12" || "$TARGET" > "2026-11-19" ]]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "PREDECLARED_009B_EIGHT_COHORT_WINDOW_COMPLETE"; exit 0
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
           NAME="janus-open-future-009b-$TARGET"
           echo "target=$TARGET" >> "$GITHUB_OUTPUT"
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
           COUNT="$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=$NAME&per_page=100" --jq "[.artifacts[] | select(.name==\"$NAME\")] | length")"
           test "$COUNT" -eq 0 || { echo "DUPLICATE_FUTURE_TRIAL_REFUSED"; exit 1; }
       - name: Retrieve exact frozen JanusTinyTransformer research checkpoint
+        if: steps.cohort.outputs.enabled == 'true'
         run: |
           set -euo pipefail
           test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/13663149173" --jq .digest)" = "sha256:45c8b063b08973b06b88ec843e9a5d16976c983a8e35b39ef33e9304201e5515"
@@ -51,6 +57,7 @@ jobs:
           python -c 'import torch' || python -m pip install --disable-pip-version-check 'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
           npm install --prefix experiments/ocean_transformer/drand_pilot --ignore-scripts --no-audit --no-fund --package-lock=false
       - name: Freeze 128 probabilities for distinct future rounds
+        if: steps.cohort.outputs.enabled == 'true'
         run: |
           set -euo pipefail
           node experiments/ocean_transformer/drand_pilot/signed_quicknet.mjs latest - artifacts/latest_signed_quicknet.json
@@ -61,6 +68,7 @@ jobs:
             --training-report frozen_source/training/report.json \
             --output artifacts/early_009b_128_bit_model_forecast.json
       - uses: actions/upload-artifact@v4
+        if: steps.cohort.outputs.enabled == 'true'
         with:
           name: ${{ steps.cohort.outputs.name }}
           path: artifacts/early_009b_128_bit_model_forecast.json
