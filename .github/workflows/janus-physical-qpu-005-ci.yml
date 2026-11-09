@@ -1,0 +1,68 @@
+name: JANUS Ocean / Physical QPU 005 Offline Admission
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/janus-physical-qpu-005-ci.yml"
+      - ".github/workflows/janus-physical-qpu-005-manual.yml"
+      - "experiments/ocean_transformer/physical_qpu_005_protocol.py"
+      - "experiments/ocean_transformer/physical_qpu_005_ibm.py"
+      - "experiments/ocean_transformer/test_physical_qpu_005.py"
+      - "experiments/ocean_transformer/JANUS_PHYSICAL_QPU_005.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  safety-and-structure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Qiskit circuit builder ONLY; no external IBM credentials
+        run: |
+          python -m pip install --disable-pip-version-check \
+            'qiskit~=2.6.1'
+      - name: Offline tests: random later-setting program, 4096 raw shots, fail closed
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s experiments/ocean_transformer \
+            -p 'test_physical_qpu_005.py'
+      - name: Freeze readable preregistration with SHA-256 without hardware call
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/physical_qpu_005_protocol.py \
+            plan --output artifacts/qpu_005_plan.json
+          python experiments/ocean_transformer/physical_qpu_005_ibm.py \
+            structure --output artifacts/qpu_005_qiskit_structure.json
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          plan=json.loads(Path('artifacts/qpu_005_plan.json').read_text())
+          circuit=json.loads(Path('artifacts/qpu_005_qiskit_structure.json').read_text())
+          assert plan['hardware_job_submitted_by_this_plan'] is False
+          assert plan['physical_retrocausality_proven'] is False
+          assert circuit['actual_physical_circuit_executed'] is False
+          assert circuit['gates_in_program_order'][-2:] == ['if_else','measure']
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+              f.write('### JANUS physical QPU protocol — offline admission\n\n')
+              f.write('Frozen preregistered SHA-256: '+plan['preregistered_sha256']+'\n\n')
+              f.write('Qiskit dynamic circuit structure: PASS\n\n')
+              f.write('Real IBM QPU used by this workflow: **NO**\n\n')
+              f.write('Physical retrocausality established: **NO**\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-physical-qpu-005-offline-readiness
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 60
