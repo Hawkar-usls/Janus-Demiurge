@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /** JANUS blind drand pilot: only official signed Quicknet public randomness.
- * Uses drand-client@1.4.2, which cryptographically verifies every beacon
+ * Uses pinned drand-client@1.4.2 v1 HTTP endpoint and verifies every beacon
  * against the pinned Quicknet public key and chain hash.
  * No secrets, no dynamic endpoints, no signature-verification bypasses.
  */
 import fs from "node:fs";
 import {createHash} from "node:crypto";
-import {quicknetClientV2,fetchBeacon} from "drand-client";
+import {quicknetClient,fetchBeacon} from "drand-client";
 
 const HASH="52db9ba70e0cc0f6eaf7803dd07447a1f5477735fd3f661792ba94600c84e971";
 const PUBLIC_KEY="83cf0f2896adee7eb8b5f01fcad3912212c437e0073e911fb90022d3e760183c8c4b450b6a0a6c3ac6a5776a2d1064510d1fec758c921cc22b0e17e63aaf4bcb5ed66304de9cf809bd274ca73bab4af5a6e9c76a4bc09e76eae8991ef5ece45a";
@@ -22,7 +22,7 @@ function writeOnce(path,obj) {
 async function main() {
   const [mode,arg,path]=process.argv.slice(2);
   if (!["latest","target"].includes(mode)||!path) throw Error("INVALID_MODE");
-  const client=quicknetClientV2(); // built-in pinned public key; verification ON
+  const client=quicknetClient(); // built-in pinned public key; verification ON
   const info=await client.chain().info();
   if(info.hash!==HASH||info.public_key!==PUBLIC_KEY
       ||info.genesis_time!==GENESIS||info.period!==PERIOD
@@ -57,7 +57,7 @@ async function main() {
     signature:beacon.signature,
     signature_verified_by_pinned_client:true,
     drand_client_version:"1.4.2",
-    direct_beacon_http_source:"https://api.drand.sh/v2/chains/"+HASH,
+    direct_beacon_http_source:"https://api.drand.sh/"+HASH,
     recorded_at_unix_ms:Date.now(),
   };
   writeOnce(path,result);
