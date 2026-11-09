@@ -1,0 +1,58 @@
+name: JANUS Ocean GLOW-010 Open Loadingcurve ZIP Inspection
+on:
+  push:
+    branches:
+      - janus/glow010-published-afterglow-data-audit-20261110
+    paths:
+      - .github/workflows/janus-ocean-glow010-loadingcurve-zip-inventory.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect-zenodo-6991932:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify original downloadable CC BY 4.0 loading-curve data ZIP
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          python - <<'PY'
+          import json,hashlib,io,zipfile,urllib.request
+          from pathlib import Path
+          url='https://zenodo.org/api/records/6991932/files/loadingcurve.zip/content'
+          with urllib.request.urlopen(urllib.request.Request(url,headers={'User-Agent':'JANUS-GLOW-010/1.0 public lab dataset format audit'}),timeout=30) as f:
+              blob=f.read(2_000_000)
+          assert hashlib.md5(blob).hexdigest()=='423e3e457d3458a0aac0b20365ebfd4b'
+          with zipfile.ZipFile(io.BytesIO(blob)) as z:
+              files=[]
+              for member in z.infolist():
+                  if member.is_dir():continue
+                  if '..' in member.filename or member.file_size>50_000_000:raise ValueError('UNSAFE_ARCHIVE')
+                  sample=z.read(member)[:120]
+                  files.append({'path':member.filename,'size':member.file_size,
+                                'header_hex':sample[:16].hex(),
+                                'content_preview_ascii':''.join(chr(v) if 32<=v<127 else '.' for v in sample[:80])})
+          report={'schema':'janus.glow010.original_B_codoped_loadingcurve.v1',
+                  'source_record':'https://zenodo.org/records/6991932',
+                  'license':'CC-BY-4.0',
+                  'source_zip_md5':hashlib.md5(blob).hexdigest(),
+                  'source_zip_sha256':hashlib.sha256(blob).hexdigest(),
+                  'contents':files,
+                  'actual_time_intensity_columns_extracted':False,
+                  'SUNLU_PLA_Glow_measured':False}
+          Path('artifacts/glow010_alt_2022_loadingcurve_file_inventory.json').write_text(json.dumps(report,indent=2))
+          print(json.dumps({'n_files':len(files),'paths':[x['path'] for x in files]},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-glow010-2022-loadingcurve-inventory-${{ github.run_id }}
+          path: artifacts/
+          retention-days: 90
+          if-no-files-found: error
