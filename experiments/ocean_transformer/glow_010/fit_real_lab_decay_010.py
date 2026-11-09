@@ -27,11 +27,11 @@ import math
 from pathlib import Path
 import sys
 import zipfile
+import urllib.request
 
 import numpy as np
 from scipy.optimize import least_squares
 import scipy
-import published_data_audit_010 as audit
 
 SCHEMA="janus.ocean.glow010.real_fast_photoluminescence_decay_fit.v1"
 SAMPLES={1:"Eu_only",2:"Eu_plus_B",3:"Eu_plus_Dy"}
@@ -198,11 +198,21 @@ def run(original_zip):
       ]
     }
 
+def fetch_ccby_2022_source():
+    url="https://zenodo.org/api/records/6991932/files/loadingcurve.zip/content"
+    req=urllib.request.Request(url,headers={"User-Agent":"JANUS-GLOW-010/1.0 research source read-only"})
+    with urllib.request.urlopen(req,timeout=40) as f:
+        blob=f.read(2_000_000)
+    if hashlib.md5(blob).hexdigest()!="423e3e457d3458a0aac0b20365ebfd4b":
+        raise ValueError("REAL_SOURCE_ZENODO_ZIP_MD5_MISMATCH")
+    return blob
+
+
 def main():
     p=argparse.ArgumentParser()
     p.add_argument("--output",required=True)
     args=p.parse_args()
-    results=run(audit.fetch() if hasattr(audit,"fetch") else None)
+    results=run(fetch_ccby_2022_source())
     out=Path(args.output);out.parent.mkdir(parents=True,exist_ok=True)
     with out.open("x",encoding="utf8") as f:
         f.write(json.dumps(results,indent=2,sort_keys=True)+"\n")
