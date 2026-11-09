@@ -37,6 +37,17 @@ class NoRedirect(HTTPRedirectHandler):
 def source_decision(source):
     if not isinstance(source, dict):
         return "REJECTED_MALFORMED_SOURCE"
+    allowed_keys = {
+        "schema", "experiment_id", "query_id", "research_query",
+        "independent_reference", "verified_arithmetic_match",
+        "verification_status", "mcp_provider_response_sha256",
+        "beetle_receipt_sha256", "beetle_candidate_id", "created_utc",
+        "provider_endpoint", "provider_raw_result_retained",
+        "future_outcomes_transmitted", "live_external_arithmetic_only",
+        "physical_retrocausality_proven", "production_model_promoted",
+    }
+    if set(source) != allowed_keys:
+        return "REJECTED_UNEXPECTED_OR_MISSING_FIELDS"
     required = {
         "schema": SOURCE_SCHEMA,
         "experiment_id": quantum.EXPERIMENT_ID,
