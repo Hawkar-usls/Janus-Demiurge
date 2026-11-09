@@ -26,11 +26,11 @@ jobs:
           import sys,json
           sys.path.insert(0,'experiments/ocean_transformer/open_causality_009')
           import noaa_009a as n
-          date=dt.date(2026,10,20)
-          day=n.fetch(date)
-          print(json.dumps({'source_url':day['url'],
-                            'date':day['date'],'sha256':day['raw_sha256'],
-                            'valid_hour_count':sum(v is not None for v in day['hourly_ghi']),
-                            'daylight_peak_Wm2':max(x for x in day['hourly_ghi'] if x is not None),
-                            'not_target_date':True},sort_keys=True))
+          for date in [dt.date(2026,11,d) for d in (2,3,4,5)]:
+              day=n.fetch(date)
+              print(json.dumps({'source_url':day['url'],
+                                'date':day['date'],'sha256':day['raw_sha256'],
+                                'valid_hour_count':sum(v is not None for v in day['hourly_ghi']),
+                                'daylight_peak_Wm2':max(x for x in day['hourly_ghi'] if x is not None),
+                                'not_target_date':True},sort_keys=True))
           PY
