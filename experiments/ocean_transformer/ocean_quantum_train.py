@@ -69,12 +69,32 @@ def evaluate(model, data):
         }
 
 
-def train(steps: int, batch: int, output: str):
+def train(steps: int, batch: int, output: str, wolfram_receipt: str | None = None):
     if not 1 <= steps <= 300 or not 8 <= batch <= 512:
         raise ValueError("OUT_OF_BOUNDS_TRAINING_BUDGET")
     out = Path(output)
     if out.exists():
         raise RuntimeError("REFUSE_OVERWRITE_EXISTING_RESEARCH_RUN")
+    wolfram_attachment = {
+        "status": "NOT_PROVIDED",
+        "physical_retrocausality_proven": False,
+        "used_as_training_labels": False,
+    }
+    if wolfram_receipt is not None:
+        # Receipt can annotate research evidence but cannot provide targets.
+        # The upstream response is numerically verified, not provider-signed.
+        import wolfram_alpha_bridge as wolfram
+        raw = Path(wolfram_receipt).read_bytes()
+        upstream = json.loads(raw.decode("utf-8"))
+        wolfram.verify_live_math_receipt(upstream)
+        wolfram_attachment = {
+            "status": "LIVE_MATH_RECEIPT_VALIDATED_RESEARCH_ONLY",
+            "sha256": hashlib.sha256(raw).hexdigest(),
+            "cases": len(upstream["queries"]),
+            "provider_signature_verified": False,
+            "physical_retrocausality_proven": False,
+            "used_as_training_labels": False,
+        }
     torch.manual_seed(SEED)
     model = JanusTinyTransformer(CONFIG)
     initial = JanusTinyTransformer(CONFIG)
@@ -137,6 +157,7 @@ def train(steps: int, batch: int, output: str):
         "proven_tachyons_or_retrocausal_communication": False,
         "production_checkpoint_changed": False,
         "wolfram_source_class": "PUBLIC_MATHEMATICS_OPTIONAL_NOT_TRAINING_LABELS",
+        "wolfram_advisory_receipt": wolfram_attachment,
     }
     (out / "report.json").write_text(
         json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -155,8 +176,9 @@ def main():
     parser.add_argument("--steps", type=int, default=160)
     parser.add_argument("--batch", type=int, default=128)
     parser.add_argument("--output", required=True)
+    parser.add_argument("--wolfram-receipt", help="Optional validated live math receipt (cannot be offline fixture)")
     args = parser.parse_args()
-    train(args.steps, args.batch, args.output)
+    train(args.steps, args.batch, args.output, wolfram_receipt=args.wolfram_receipt)
 
 
 if __name__ == "__main__":
