@@ -140,3 +140,21 @@ Wolfram provider calls in automated CI.
 Future Wolfram Cloud MCP queries must be explicitly approved fixed cases
 and small-scale, per the provider's limited personal-use terms. A positive
 provider result establishes one arithmetic equality, not retrocausal physics.
+
+## New V3 source-bound Wolfram N4 arithmetic attestation
+
+The Beetle recorded one *live* keyless Wolfram Cloud MCP match for the
+predeclared unconditional N=4 Zeno formula `(1+cos(pi/4)^4)/2` = 0.625.
+The earlier all-zero event at N=4 has a different probability
+`cos(pi/8)^8` = approximately 0.53079.
+
+The read-only verifier `zeno_n4_wolfram_v3_gate.py` pins the source
+`beetle-state/wolfram_math/zeno_n4_unconditional_v3.json` to its original
+response SHA-256 and Beetle receipt SHA-256, checks the expected case
+and physical event, and rejects any attempt to promote arithmetic evidence
+into a proof of physical retrocausality. No provider result text, credential,
+or new Wolfram request is used by the Ocean CI.
+
+Live originating Beetle run:
+https://github.com/Hawkar-usls/janus-lapis/actions/runs/42623569598.
+Previous N2 V1 unresolved and N2 V2 verified records remain untouched.
