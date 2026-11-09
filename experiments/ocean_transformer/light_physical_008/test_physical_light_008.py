@@ -174,7 +174,7 @@ class PrecommitAndScoreTests(unittest.TestCase):
             m.score(self.s, self.train, broken, self.test)
 
     def test_unfrozen_future_data_cannot_be_passed_to_prepare(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaisesRegex(ValueError, "UTC_TIMESTAMP_WITH_Z_REQUIRED"):
             m.make_precommit(self.s, self.train, self.test)
 
     def test_wrong_chronology_rejected(self):
