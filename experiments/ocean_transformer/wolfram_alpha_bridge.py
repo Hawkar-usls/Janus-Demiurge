@@ -148,6 +148,52 @@ def check(*, live: bool, appid: str = "", opener=urlopen) -> dict:
     }
 
 
+def verify_live_math_receipt(report: dict) -> None:
+    """Validate recorded public math evidence before binding it to Ocean training.
+
+    This verifies a *local receipt's* structure and numeric consistency,
+    not a provider cryptographic signature or a real quantum experiment.
+    """
+    if not isinstance(report, dict):
+        raise WolframHold("INVALID_WOLFRAM_RECEIPT")
+    if (report.get("schema") != SCHEMA
+            or report.get("mode") != "LIVE_READ_ONLY_WOLFRAM_ALPHA"
+            or report.get("status") != "EXTERNAL_ARITHMETIC_CHECK_PASS"
+            or report.get("evidence_of_retrocausality") is not False
+            or report.get("model_weights_updated") is not False
+            or report.get("secret_emitted") is not False):
+        raise WolframHold("NON_LIVE_OR_UNSAFE_WOLFRAM_RECEIPT")
+    upstream = report.get("upstream")
+    if not isinstance(upstream, dict) or upstream.get("service") != "Wolfram|Alpha Full Results API" or upstream.get("authenticated") is not True:
+        raise WolframHold("MISSING_PROVIDER_SOURCE_LABEL")
+    expected = measurement_priors.report()
+    expected_digest = hashlib.sha256(json.dumps(
+        expected, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")).hexdigest()
+    binding = report.get("source_binding")
+    if not isinstance(binding, dict) or (
+        binding.get("dataset_schema") != expected["schema"]
+        or binding.get("canonical_dataset_sha256") != expected_digest
+    ):
+        raise WolframHold("MISMATCHED_MEASUREMENT_PRIOR_SHA")
+    rows = report.get("queries")
+    if not isinstance(rows, list) or len(rows) != len(CASES):
+        raise WolframHold("MISMATCHED_MATH_QUERY_COUNT")
+    for (name, expression, target_value), row in zip(CASES, rows):
+        if not isinstance(row, dict) or (
+            row.get("id") != name or row.get("public_expression") != expression
+            or row.get("external_checked") is not True
+            or row.get("agrees_with_standard_arithmetic") is not True
+            or row.get("analytical_expected") != target_value
+        ):
+            raise WolframHold("MATH_RECEIPT_CASE_DRIFT")
+        raw_value = row.get("wolfram_numeric_result")
+        if type(raw_value) not in (int, float) or not math.isfinite(raw_value):
+            raise WolframHold("INVALID_WOLFRAM_NUMERIC_VALUE")
+        if abs(float(raw_value) - target_value) > 1e-9:
+            raise WolframHold("WOLFRAM_RECEIPT_NUMERIC_MISMATCH")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=("offline", "live"), default="offline")
