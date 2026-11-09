@@ -1,0 +1,132 @@
+name: JANUS Ocean / Physical QPU 005 MANUAL Provider Experiment
+
+# Explicitly manual ONLY: do not add schedule/push/PR provider execution.
+on:
+  workflow_dispatch:
+    inputs:
+      phase:
+        description: "Submit ONE 4096-shot Open Plan QPU job or retrieve its result"
+        required: true
+        type: choice
+        options:
+          - submit
+          - retrieve
+      submission_run_id:
+        description: "For retrieve only: original successful submit workflow RUN ID"
+        required: false
+        type: string
+        default: ""
+      approve_provider_run:
+        description: "I authorize this physical QPU access under my IBM Quantum plan"
+        required: true
+        type: boolean
+        default: false
+      confirm_open_plan:
+        description: "I checked IBM_QUANTUM_OPEN_INSTANCE is an Open Plan CRN"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: janus-physical-qpu-005-one-job
+  cancel-in-progress: false
+
+jobs:
+  physical-qpu-by-explicit-approval:
+    if: inputs.approve_provider_run == true && inputs.confirm_open_plan == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      IBM_QUANTUM_API_KEY: ${{ secrets.IBM_QUANTUM_API_KEY }}
+      IBM_QUANTUM_OPEN_INSTANCE: ${{ secrets.IBM_QUANTUM_OPEN_INSTANCE }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Fail closed unless credentials are provided privately
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$IBM_QUANTUM_API_KEY" || { echo "MISSING_IBM_QUANTUM_API_KEY_SECRET"; exit 1; }
+          test -n "$IBM_QUANTUM_OPEN_INSTANCE" || { echo "MISSING_OPEN_PLAN_CRN_SECRET"; exit 1; }
+      - name: Install official IBM Quantum SDK only; no simulator substitute
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check \
+            'qiskit~=2.6.1' 'qiskit-ibm-runtime~=0.50.0'
+      - name: Recheck frozen preregistration and structural gates
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v -s experiments/ocean_transformer \
+            -p 'test_physical_qpu_005.py'
+          python experiments/ocean_transformer/physical_qpu_005_protocol.py plan \
+            --output artifacts/physical_qpu_005_frozen_plan.json
+      - name: Submit exactly ONE real IBM QPU workload; return job ID, not queued results
+        if: inputs.phase == 'submit'
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/physical_qpu_005_ibm.py submit \
+            --output artifacts/qpu_005_single_submission.json
+      - name: Retrieve original submission, never create a replacement job
+        if: inputs.phase == 'retrieve'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SUBMISSION_RUN_ID: ${{ inputs.submission_run_id }}
+        run: |
+          set -euo pipefail
+          [[ "$SUBMISSION_RUN_ID" =~ ^[0-9]+$ ]] || {
+            echo "VALID_ORIGINAL_SUBMISSION_RUN_ID_REQUIRED"; exit 1;
+          }
+          gh run download "$SUBMISSION_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name janus-physical-qpu-005-submit \
+            --dir original_submission
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          import sys
+          sys.path.insert(0,"experiments/ocean_transformer")
+          import physical_qpu_005_protocol as p
+          original=json.loads(Path("original_submission/physical_qpu_005_frozen_plan.json").read_text())
+          assert p.verify_plan(original)==p.plan()["preregistered_sha256"]
+          record=json.loads(Path("original_submission/qpu_005_single_submission.json").read_text())
+          assert record["precommit_sha256"]==p.plan()["preregistered_sha256"]
+          assert record["submitted_one_fixed_4096_shot_qpu_job"] is True
+          assert record["phase"]=="REAL_QPU_JOB_SUBMITTED"
+          print("PREDECLARED_ORIGINAL_PROVIDER_JOB_ONLY")
+          PY
+      - name: Score ALL original QPU shots, primary early marginal not selected pairs
+        if: inputs.phase == 'retrieve'
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/physical_qpu_005_ibm.py retrieve \
+            --submission original_submission/qpu_005_single_submission.json \
+            --output artifacts/qpu_005_all_4096_unselected_shots.json
+      - name: Summarize hard scientific boundary
+        if: always()
+        run: |
+          {
+            echo "## JANUS physical QPU 005";
+            echo "";
+            echo "Explicit provider authorization: **yes**";
+            echo "Phase: **${{ inputs.phase }}**";
+            echo "Predeclared alpha: **0.001**, exploratory only";
+            echo "One-chip dynamic choice is NOT independent spacelike optical choice.";
+            echo "No real retrocausal channel or physical time reversal is presumed.";
+            echo "Any significance requires device-timing/leakage audit and independent replication.";
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: janus-physical-qpu-005-${{ inputs.phase }}
+          path: artifacts/
+          retention-days: 90
+          if-no-files-found: warn
