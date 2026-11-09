@@ -1,0 +1,68 @@
+name: JANUS Ocean GLOW-010 Real Luminescence Curve Model Comparison
+on:
+  push:
+    branches:
+      - janus/glow010-published-afterglow-data-audit-20261110
+    paths:
+      - .github/workflows/janus-ocean-glow010-real-decay-fit.yml
+      - experiments/ocean_transformer/glow_010/fit_real_lab_decay_010.py
+      - experiments/ocean_transformer/glow_010/test_fit_real_lab_decay_010.py
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  retrospective-CCBY-fast-luminescence-curve-fit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      IBM_QUANTUM_API_KEY: ''
+      OPENAI_API_KEY: ''
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pin numpy/scipy pure mathematical fitting environment
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --only-binary=:all: \
+            'numpy==2.2.6' 'scipy==1.15.3'
+      - name: Verify chronological train/test split cannot observe future labels
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s experiments/ocean_transformer/glow_010 \
+            -p test_fit_real_lab_decay_010.py
+      - name: Retrieve independent original dataset and fit actual raw laboratory curves
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/glow_010/fit_real_lab_decay_010.py \
+            --output artifacts/glow010_actual_lab_fast_decay_comparison.json
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          f=Path('artifacts/glow010_actual_lab_fast_decay_comparison.json')
+          x=json.loads(f.read_text())
+          assert x['status']=='ACTUAL_PUBLIC_FAST_NANOSECOND_PHOTOLUMINESCENCE_FITS_COMPLETED'
+          assert len(x['samples'])==3
+          assert all(s['train_rows']==264 and s['test_rows']==177 for s in x['samples'])
+          assert x['actual_afterglow_in_seconds_fitted'] is False
+          assert x['millisecond_to_multihour_trap_memory_parameters_identified'] is False
+          assert x['retrocausality_proven'] is False
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as summary:
+            summary.write('## GLOW-010 real laboratory fast PL curve fits\n\n')
+            summary.write('Three distinct compositions, 441 **real** nanosecond observations each.\n\n')
+            for sample in x['samples']:
+              a={v['kind']:v['holdout_mae_original_units'] for v in sample['family_fit_scores']}
+              summary.write(f"Sample {sample['sample']} ({sample['material']}): held-out MAE {a}; best {sample['winner_on_this_exploratory_historical_holdout']}\n\n")
+            summary.write('IMPORTANT: These are fast nanosecond photoluminescence decays, **not** minutes-long persistent afterglow or SUNLU filament measurement.\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-glow010-3real-sample-fast-PL-fit-${{ github.run_id }}
+          path: artifacts/
+          retention-days: 90
+          if-no-files-found: error
