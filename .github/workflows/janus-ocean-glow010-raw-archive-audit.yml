@@ -23,6 +23,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Reproduce published laboratory fit summary from the original 2017 Table 1
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s experiments/ocean_transformer/glow_010 \
+            -p 'test_published_lifetimes_010.py'
+          python experiments/ocean_transformer/glow_010/published_lifetimes_010.py \
+            --output artifacts/glow010_real_published_lifetime_constraints.json
       - name: Fetch and verify original CC BY 4.0 archive; inventory time-series format only
         run: |
           set -euo pipefail
