@@ -64,7 +64,7 @@ jobs:
           test -n "$WOLFRAM_ALPHA_APPID" || { echo 'WOLFRAM_ALPHA_APPID_REQUIRED_IN_REPO_SECRETS'; exit 1; }
           python experiments/ocean_transformer/wolfram_alpha_bridge.py --mode live --output artifacts/wolfram_live.json
       - name: Install native CPU Torch only when training is requested
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.train_ocean }}
+        if: ${{ github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.train_ocean) }}
         shell: bash
         run: |
           set -euo pipefail
@@ -72,7 +72,7 @@ jobs:
             python -m pip install --disable-pip-version-check --retries 3 'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
           fi
       - name: Train bounded research-only Ocean candidate on quantum measurement samples
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.train_ocean }}
+        if: ${{ github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.train_ocean) }}
         shell: bash
         run: |
           set -euo pipefail
