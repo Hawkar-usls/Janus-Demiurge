@@ -1,0 +1,82 @@
+name: JANUS Measurement Lens / Born Rule vs Retrocausal Claims
+
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/janus_measurement_temporal_lens.py'
+      - 'experiments/ocean_transformer/test_janus_measurement_temporal_lens.py'
+      - '.github/workflows/janus-measurement-temporal-lens.yml'
+      - 'docs/JANUS_MEASUREMENT_RETRO_TEMPORAL_LENS.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-measurement-lens
+  cancel-in-progress: false
+
+jobs:
+  measurement-lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check analytic Born rules, decoherence and no-signalling without PyTorch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s experiments/ocean_transformer \
+            -p 'test_janus_measurement_temporal_lens.py'
+          python experiments/ocean_transformer/janus_measurement_temporal_lens.py --physics-only
+      - name: Ensure CPU-only torch for existing JANUS native Transformer
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! python -c "import torch" >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check --retries 3 \
+              'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - name: Train the JANUS native Transformer on disjoint measurement-setting splits
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/janus_measurement_temporal_lens.py \
+            --steps 160 \
+            --out artifacts/measurement_lens
+      - name: Fail closed on scientific claim and artifact integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, hashlib
+          from pathlib import Path
+          root = Path('artifacts/measurement_lens')
+          r = json.loads((root / 'measurement_lens_report.json').read_text())
+          c = root / r['checkpoint_name']
+          assert r['claim'] == 'SIMULATED_BORN_RULE_ONLY__NO_EARLY_MESSAGE__NO_PRODUCTION_PROMOTION'
+          assert not r['production_checkpoint_changed']
+          assert not r['admission_to_production']
+          assert not r['physics']['physical_retrocausality_demonstrated']
+          assert not r['physics']['early_operational_bit_from_late_free_choice']
+          assert not r['physics']['objective_dynamical_collapse_implemented']
+          assert r['training']['test_after']['settings_count'] >= 10
+          assert r['training']['independent_setting_splits']['train'] >= 10
+          assert not r['training']['uses_postselected_examples']
+          assert not r['training']['has_future_choice_available_before_choice']
+          assert hashlib.sha256(c.read_bytes()).hexdigest() == r['checkpoint_sha256']
+          print("MEASUREMENT_LENS_RESEARCH_ONLY_GATE_PASS")
+          PY
+      - name: Preserve experimental report and checkpoint as short-lived CI artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-measurement-lens-research
+          path: artifacts/measurement_lens/
+          retention-days: 14
+          if-no-files-found: error
