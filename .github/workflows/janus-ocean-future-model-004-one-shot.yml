@@ -1,0 +1,200 @@
+name: JANUS Ocean / ONE Frozen Transformer Future Forecast 004
+
+# Exactly one prospective forecast trial, triggered only when this workflow
+# is first committed to its named research branch. No schedule or dispatch.
+on:
+  push:
+    branches:
+      - janus/ocean-frozen-transformer-future-drand-20261109
+    paths:
+      - ".github/workflows/janus-ocean-future-model-004-one-shot.yml"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: janus-ocean-frozen-transformer-one-prospective-trial-004
+  cancel-in-progress: false
+
+jobs:
+  first-publish-model-probabilities:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Validate the predeclared no-leakage contract BEFORE source retrieval
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s experiments/ocean_transformer \
+            -p 'test_ocean_future_model_prediction.py' -v
+      - name: Pin EXISTING trained research checkpoint to GitHub artifact digest
+        run: |
+          set -euo pipefail
+          test "$(gh api 'repos/Hawkar-usls/Janus-Demiurge/actions/artifacts/13663149173' --jq .digest)" \
+            = "sha256:45c8b063b08973b06b88ec843e9a5d16976c983a8e35b39ef33e9304201e5515"
+          gh run download 42596763409 --repo Hawkar-usls/Janus-Demiurge \
+            --name janus-ocean-wolfram-measurement --dir frozen_source
+          test -f frozen_source/training/ocean_measurement_candidate.pt
+          test -f frozen_source/training/report.json
+          echo "FROZEN_HISTORIC_TRANSFORMER_CHECKPOINT_FOUND"
+      - name: Install same CPU-only Torch used for archived training
+        run: |
+          set -euo pipefail
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check --retries 3 \
+              'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - name: Install pinned drand verifier (verification ON)
+        run: |
+          set -euo pipefail
+          npm install --prefix experiments/ocean_transformer/drand_pilot \
+            --ignore-scripts --no-audit --no-fund --package-lock=false
+      - name: Fetch latest already-published SIGNATURE-VERIFIED drand round
+        run: |
+          set -euo pipefail
+          node experiments/ocean_transformer/drand_pilot/signed_quicknet.mjs \
+            latest - artifacts/latest_signed_quicknet.json
+      - name: Run ACTUAL frozen JanusTinyTransformer on 256 future bit positions
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/ocean_future_model_prediction.py forecast \
+            --checkpoint frozen_source/training/ocean_measurement_candidate.pt \
+            --training-report frozen_source/training/report.json \
+            --latest artifacts/latest_signed_quicknet.json \
+            --output artifacts/frozen_model_256_probability_forecast.json
+      - name: Publish immutable model forecast BEFORE future target round
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-ocean-frozen-transformer-forecast-004
+          path: artifacts/frozen_model_256_probability_forecast.json
+          retention-days: 60
+          if-no-files-found: error
+
+  later-independent-beacon-verification:
+    needs: first-publish-model-probabilities
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Retrieve frozen early forecast EXACTLY from previous signed run artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: janus-ocean-frozen-transformer-forecast-004
+          path: artifacts
+      - name: Require independent GitHub artifact timestamp BEFORE future beacon
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" \
+            --jq '.artifacts[] | select(.name=="janus-ocean-frozen-transformer-forecast-004") | .created_at' \
+            > artifacts/early_forecast_artifact_created_at.txt
+          test "$(wc -l < artifacts/early_forecast_artifact_created_at.txt)" -eq 1
+          test -n "$(cat artifacts/early_forecast_artifact_created_at.txt)"
+      - name: WAIT until only the PREDECLARED future beacon round releases
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,time
+          record=json.load(open("artifacts/frozen_model_256_probability_forecast.json"))
+          release=record["predeclared_future_round_publication_unix_ms"]/1000
+          remaining=release+6-time.time()
+          if remaining>330: raise SystemExit("FUTURE_TARGET_OUTSIDE_BOUNDED_WAIT")
+          if remaining>0: time.sleep(remaining)
+          if time.time()<release: raise SystemExit("FUTURE_BEACON_NOT_RELEASED")
+          print("PREDECLARED_FUTURE_ROUND_RELEASED",record["predeclared_future_round"])
+          PY
+      - name: Install pinned drand client (cryptographic BLS verification mandatory)
+        run: |
+          set -euo pipefail
+          npm install --prefix experiments/ocean_transformer/drand_pilot \
+            --ignore-scripts --no-audit --no-fund --package-lock=false
+      - name: Fetch ONLY target drand beacon and verify signed chain and round
+        run: |
+          set -euo pipefail
+          node experiments/ocean_transformer/drand_pilot/signed_quicknet.mjs \
+            target artifacts/frozen_model_256_probability_forecast.json \
+            artifacts/future_signed_quicknet_beacon.json
+      - name: Score ALL 256 model predictions against new independent late bits
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/ocean_future_model_prediction.py assess \
+            --early artifacts/frozen_model_256_probability_forecast.json \
+            --beacon artifacts/future_signed_quicknet_beacon.json \
+            --artifact-created-at "$(cat artifacts/early_forecast_artifact_created_at.txt)" \
+            --output artifacts/actual_frozen_transformer_future_score.json
+      - name: Reject physics claim and output evidence digest
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          root=Path("artifacts")
+          e=json.loads((root/"frozen_model_256_probability_forecast.json").read_text())
+          score=json.loads((root/"actual_frozen_transformer_future_score.json").read_text())
+          assert e["phase"]=="EARLY_PRECOMMIT"
+          assert e["trained_checkpoint_github_run"]==42596763409
+          assert score["n_all_bits"]==256 and score["all_256_bits_scored"] is True
+          assert score["early_model_prediction_receipt_sha256"]==e["early_receipt_sha256"]
+          assert score["physical_retrocausal_signal_proven"] is False
+          assert score["postselection_used"] is False
+          out={
+            "schema":"janus.ocean.frozen_real_transformer_future_beacon_witness.v1",
+            "status":"FROZEN_JANUS_TRANSFORMER_SCORED_PROSPECTIVELY",
+            "run_id":os.environ["GITHUB_RUN_ID"],
+            "trained_checkpoint_sha256":e["trained_checkpoint_sha256"],
+            "forecast_precommit_sha256":e["early_receipt_sha256"],
+            "target_round":score["target_beacon_round"],
+            "n":256,
+            "accuracy":score["accuracy"],
+            "matches":score["matches"],
+            "brier":score["brier_score_frozen_transformer"],
+            "uniform_brier":0.25,
+            "brier_improvement":score["brier_improvement_relative_uniform"],
+            "two_sided_bit_accuracy_null_p":score["exact_two_sided_binomial_p_h0_fair_independent_beacon"],
+            "late_assessment_source_sha256":hashlib.sha256(
+                (root/"actual_frozen_transformer_future_score.json").read_bytes()).hexdigest(),
+            "provider_wolfram_queries":0,
+            "physical_retrocausality_proven":False,
+            "production_model_changed":False
+          }
+          (root/"frozen_transformer_future_witness.json").write_text(json.dumps(out,sort_keys=True,indent=2)+"\n")
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as f:
+              f.write("## JANUS · ACTUAL pretrained transformer early vs future drand\n\n")
+              f.write(f'Model: **JanusTinyTransformer**, frozen checkpoint {e["trained_checkpoint_sha256"][:16]}...\n')
+              f.write(f'Target signed future round: **{score["target_beacon_round"]}**\n')
+              f.write(f'Accuracy: **{score["matches"]}/256 ({score["accuracy"]:.3%})**\n')
+              f.write(f'Brier: **{score["brier_score_frozen_transformer"]:.6f}** versus 0.25 fair baseline\n')
+              f.write(f'Exact two-sided bit-match p: **{score["exact_two_sided_binomial_p_h0_fair_independent_beacon"]:.6f}**\n')
+              f.write("**No physical retrocausal mechanism or independent laboratory receiver tested.**\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-ocean-frozen-transformer-scored-004
+          path: artifacts/
+          retention-days: 60
+          if-no-files-found: error
