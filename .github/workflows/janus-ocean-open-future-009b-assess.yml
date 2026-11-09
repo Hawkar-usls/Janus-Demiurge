@@ -32,6 +32,11 @@ jobs:
         run: |
           set -euo pipefail
           TARGET="$(date -u +%F)"
+          if [[ "$TARGET" < "2026-11-12" || "$TARGET" > "2026-11-19" ]]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "NO_PREDECLARED_009B_TARGET_TO_ASSESS"; exit 0
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
           NAME="janus-open-future-009b-$TARGET"
           echo "target=$TARGET" >> "$GITHUB_OUTPUT"
           gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=$NAME&per_page=100" > prior.json
@@ -46,10 +51,12 @@ jobs:
           mkdir -p artifacts
           gh run download "$(sed -n '1p' prior.txt)" --repo "$GITHUB_REPOSITORY" --name "$NAME" --dir artifacts
       - name: Install pinned drand official cryptographic BLS verifier
+        if: steps.target.outputs.enabled == 'true'
         run: |
           set -euo pipefail
           npm install --prefix experiments/ocean_transformer/drand_pilot --ignore-scripts --no-audit --no-fund --package-lock=false
       - name: Obtain all exact 128 BLS-verified future round receipts and score
+        if: steps.target.outputs.enabled == 'true'
         run: |
           set -euo pipefail
           node experiments/ocean_transformer/drand_pilot/signed_rounds_009.mjs \
@@ -73,6 +80,7 @@ jobs:
               f.write("No physical retrocausal receiver or channel tested.\n")
           PY
       - uses: actions/upload-artifact@v4
+        if: steps.target.outputs.enabled == 'true'
         with:
           name: janus-open-future-009b-scored-${{ steps.target.outputs.target }}
           path: artifacts/
