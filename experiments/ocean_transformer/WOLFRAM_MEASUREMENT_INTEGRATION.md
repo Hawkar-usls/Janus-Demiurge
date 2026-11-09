@@ -65,6 +65,26 @@ The API secret is never printed or written to artifacts; transport failure is
 replaced by a fixed error code. A URL containing credentials is never put in
 the evidence report. The network mode is never enabled on pull requests.
 
+## Verified mathematical receipt → Ocean model evidence
+
+The canonical Wolfram adapter now exposes `verify_live_math_receipt()`. It checks
+the exact fixed-query IDs, expression strings, numerical answers, prior-grid hash,
+provider-mode indicator, and absence of promotion or retrocausal claims.
+
+When both `live_wolfram=true` and `train_ocean=true` are explicitly selected,
+the workflow passes `artifacts/wolfram_live.json` to
+`ocean_quantum_train.py --wolfram-receipt ...`. The research report then
+contains a SHA-256 binding to that exact JSON and a
+`LIVE_MATH_RECEIPT_VALIDATED_RESEARCH_ONLY` label. No samples or target bits
+are sourced from Wolfram; the mathematical receipt is **not part of training
+labels**, and the provider does not cryptographically sign it.
+
+Offline runs record `wolfram_advisory_receipt.status=NOT_PROVIDED`. A mocked
+or offline receipt is explicitly refused at the training intake boundary.
+
+This avoids maintaining a second Wolfram adapter alongside the canonical
+`wolfram_alpha_bridge.py`, and reuses the existing Rowan-style read-only gate.
+
 ## Rowan-like boundary
 
 This design borrows the important **research-governance** property of the
