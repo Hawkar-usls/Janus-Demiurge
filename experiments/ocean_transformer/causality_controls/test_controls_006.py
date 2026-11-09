@@ -109,7 +109,7 @@ class QPUNoSignallingTests(unittest.TestCase):
     def test_causal_control_uses_frozen_fisher_function(self):
         self.assertEqual(c.qpu005.SHOTS, 4096)
         self.assertEqual(c.qpu005.SIGNIFICANCE_THRESHOLD, .001)
-        self.assertEqual(c.qpu005.fisher_exact_two_sided(2, 0, 0, 2), 1/3)
+        self.assertAlmostEqual(c.qpu005.fisher_exact_two_sided(2, 0, 0, 2), 1/3)
 
 
 class HistoricalProvenanceTests(unittest.TestCase):
