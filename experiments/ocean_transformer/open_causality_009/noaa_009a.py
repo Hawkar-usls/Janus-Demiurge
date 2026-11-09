@@ -172,7 +172,9 @@ def assess(early, target, artifact_created_at, now):
     if not isinstance(p,dict) or early.get("sha256")!=sha(p) or p.get("lane")!="OPEN-LIGHT-009A":
         raise ValueError("FORECAST_COMMIT_HASH_WRONG")
     t=as_date(p["target_date_utc"])
-    if target["date"]!=p["target_date_utc"] or target.get("latitude") is None:
+    if (target["date"]!=p["target_date_utc"] or target.get("latitude") is None
+            or not 35.0<float(target["latitude"])<45.0
+            or not -95.0<float(target["longitude"])< -80.0):
         raise ValueError("NOAA_TARGET_DATE_OR_STATION_MISMATCH")
     attested=parse_utc(artifact_created_at)
     if attested >= dt.datetime.fromtimestamp(p["target_first_unix"],dt.timezone.utc):
@@ -180,7 +182,7 @@ def assess(early, target, artifact_created_at, now):
     if now < dt.datetime.combine(t+dt.timedelta(days=3),dt.time.min,tzinfo=dt.timezone.utc):
         raise ValueError("TARGET_NOAA_RELEASE_EMBARGO")
     readings=target["hourly_ghi"]
-    if len(readings)!=24 or any(v is None for v in readings):
+    if len(readings)!=24 or any(v is None or not isinstance(v,(int,float)) or not math.isfinite(v) for v in readings):
         raise ValueError("NOAA_TARGET_INCOMPLETE_KEEP_UNKNOWN_NOT_ZERO")
     scores={}
     for name,vals in [("JANUS_PHYSICS_HEURISTIC",p["predictions_w_m2"]),*p["baselines_w_m2"].items()]:
@@ -203,12 +205,15 @@ def main():
     ap.add_argument("--early")
     ap.add_argument("--artifact-created-at")
     ap.add_argument("--output",required=True)
+    ap.add_argument("--target-output")
     a=ap.parse_args()
     if a.phase=="prepare":
         out=prepare(as_date(a.target),now_utc())
     else:
         if not a.early or not a.artifact_created_at: ap.error("assessment needs --early and --artifact-created-at")
-        out=assess(json.loads(Path(a.early).read_text()),fetch(as_date(a.target)),a.artifact_created_at,now_utc())
+        target=fetch(as_date(a.target))
+        out=assess(json.loads(Path(a.early).read_text()),target,a.artifact_created_at,now_utc())
+        if a.target_output:store(a.target_output,target)
     store(a.output,out)
     print(json.dumps({"status":out.get("status","PRECOMMITTED"),
                       "target":a.target,"sha256":sha(out),"retrocausality_proven":False}))
