@@ -117,7 +117,6 @@ def check(*, live: bool, appid: str = "", opener=urlopen) -> dict:
         }
         if live:
             actual = remote_number(appid, expression, opener=opener)
-            row["wolfram_numeric_result"] = actual
             row["agrees_with_standard_arithmetic"] = abs(actual-expected) <= 1e-9
             if not row["agrees_with_standard_arithmetic"]:
                 raise WolframHold("WOLFRAM_ANALYTICAL_MISMATCH")
@@ -144,6 +143,8 @@ def check(*, live: bool, appid: str = "", opener=urlopen) -> dict:
         "evidence_of_retrocausality": False,
         "model_weights_updated": False,
         "secret_emitted": False,
+        "provider_raw_output_cached": False,
+        "provider_usage": "FOUR_USER_OPT_IN_CALLS_MAXIMUM_PER_EXECUTION",
         "rowan_style": "bounded read-only evidence council; separate scientific authority",
     }
 
@@ -161,7 +162,8 @@ def verify_live_math_receipt(report: dict) -> None:
             or report.get("status") != "EXTERNAL_ARITHMETIC_CHECK_PASS"
             or report.get("evidence_of_retrocausality") is not False
             or report.get("model_weights_updated") is not False
-            or report.get("secret_emitted") is not False):
+            or report.get("secret_emitted") is not False
+            or report.get("provider_raw_output_cached") is not False):
         raise WolframHold("NON_LIVE_OR_UNSAFE_WOLFRAM_RECEIPT")
     upstream = report.get("upstream")
     if not isinstance(upstream, dict) or upstream.get("service") != "Wolfram|Alpha Full Results API" or upstream.get("authenticated") is not True:
@@ -187,11 +189,6 @@ def verify_live_math_receipt(report: dict) -> None:
             or row.get("analytical_expected") != target_value
         ):
             raise WolframHold("MATH_RECEIPT_CASE_DRIFT")
-        raw_value = row.get("wolfram_numeric_result")
-        if type(raw_value) not in (int, float) or not math.isfinite(raw_value):
-            raise WolframHold("INVALID_WOLFRAM_NUMERIC_VALUE")
-        if abs(float(raw_value) - target_value) > 1e-9:
-            raise WolframHold("WOLFRAM_RECEIPT_NUMERIC_MISMATCH")
 
 
 def main() -> None:
