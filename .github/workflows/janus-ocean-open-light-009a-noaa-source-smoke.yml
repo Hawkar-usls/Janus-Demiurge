@@ -1,0 +1,36 @@
+name: JANUS Ocean / 009A NOAA Historical Source Smoke
+on:
+  push:
+    branches: [janus/open-causality-009-noaa-drand-20261109]
+    paths:
+      - '.github/workflows/janus-ocean-open-light-009a-noaa-source-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-external-public-noaa-history-readonly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Read exactly one prior public day, do not fetch future labels
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import datetime as dt
+          import sys,json
+          sys.path.insert(0,'experiments/ocean_transformer/open_causality_009')
+          import noaa_009a as n
+          date=dt.date(2026,10,20)
+          day=n.fetch(date)
+          print(json.dumps({'source_url':day['url'],
+                            'date':day['date'],'sha256':day['raw_sha256'],
+                            'valid_hour_count':sum(v is not None for v in day['hourly_ghi']),
+                            'daylight_peak_Wm2':max(x for x in day['hourly_ghi'] if x is not None),
+                            'not_target_date':True},sort_keys=True))
+          PY
