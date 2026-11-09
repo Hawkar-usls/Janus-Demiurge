@@ -89,3 +89,31 @@ It neither invokes Rowan nor changes Rowan allocation/scheduling.
   independent external replication.
 - If the research benchmark improves, its gain is **synthetic statistical
   learning only**; production weights stay unchanged.
+
+## Rowan-style Ocean/Wolfram council (additional integration)
+
+`ocean_wolfram_council.py` consumes **the exact emitted** measurement-priors
+JSON, a bound Wolfram arithmetic verification receipt, and, when present,
+the native `JanusTinyTransformer` benchmark JSON. It is run in the same
+GitHub Actions job **after** training, then writes
+`artifacts/ocean_wolfram_council.json` with source hashes, comparative
+synthetic Brier gain, science status, and explicit non-promotion restrictions.
+Each class of input is separately checked; a missing or tampered source
+fails closed instead of being treated as a successful provider result.
+
+The workflow provides two equivalent-to-Rowan boundaries:
+- **Offline**: all calculations and tests run directly on GitHub CPU.
+  The council reports `OFFLINE_MATH_ONLY`, not external verification.
+- **Live, opt-in only**: after `WOLFRAM_ALPHA_APPID` is configured as a GitHub
+  Actions secret and `live_wolfram=true` is selected manually, exactly four
+  fixed public expressions can be independently checked. The science council
+  sees only the verification flags and never raw Wolfram output.
+
+No Wolfram provider content is persisted: the API terms prohibit result
+caching without separate written authorization. The audit receipt records
+our own formula, our expected scalar and a pass/fail check, not Wolfram's
+textual or numerical results.
+
+This is not an autonomous paid research agent and cannot reprogram JANUS's
+production model. Even if the native Ocean benchmark improves, the gain is
+only learning a synthetic Born-rule dataset, and no physical result is implied.

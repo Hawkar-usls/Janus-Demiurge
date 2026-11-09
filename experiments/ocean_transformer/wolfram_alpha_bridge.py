@@ -117,7 +117,8 @@ def check(*, live: bool, appid: str = "", opener=urlopen) -> dict:
         }
         if live:
             actual = remote_number(appid, expression, opener=opener)
-            row["wolfram_numeric_result"] = actual
+            # Do not cache/reproduce Wolfram output: retain only a local
+            # pass/fail verification decision for our own analytical constant.
             row["agrees_with_standard_arithmetic"] = abs(actual-expected) <= 1e-9
             if not row["agrees_with_standard_arithmetic"]:
                 raise WolframHold("WOLFRAM_ANALYTICAL_MISMATCH")
@@ -144,6 +145,8 @@ def check(*, live: bool, appid: str = "", opener=urlopen) -> dict:
         "evidence_of_retrocausality": False,
         "model_weights_updated": False,
         "secret_emitted": False,
+        "provider_raw_output_cached": False,
+        "provider_usage": "FOUR_USER_OPT_IN_CALLS_MAXIMUM_PER_EXECUTION",
         "rowan_style": "bounded read-only evidence council; separate scientific authority",
     }
 

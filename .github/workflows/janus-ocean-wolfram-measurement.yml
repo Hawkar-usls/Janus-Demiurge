@@ -8,6 +8,8 @@ on:
       - 'experiments/ocean_transformer/wolfram_alpha_bridge.py'
       - 'experiments/ocean_transformer/ocean_quantum_train.py'
       - 'experiments/ocean_transformer/test_measurement_wolfram_bridge.py'
+      - 'experiments/ocean_transformer/ocean_wolfram_council.py'
+      - 'experiments/ocean_transformer/test_ocean_wolfram_council.py'
   workflow_dispatch:
     inputs:
       live_wolfram:
@@ -48,6 +50,11 @@ jobs:
         run: |
           set -euo pipefail
           python -m unittest discover -v -s experiments/ocean_transformer -p 'test_measurement_wolfram_bridge.py'
+      - name: Verify source-bound Ocean/Wolfram council regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v -s experiments/ocean_transformer -p 'test_ocean_wolfram_council.py'
       - name: Freeze independent analytical measurement prior and OFFLINE provider receipt
         shell: bash
         run: |
@@ -85,6 +92,34 @@ jobs:
           assert p["proven_tachyons_or_retrocausal_communication"] is False
           assert p["future_labels_seen_at_training"] is False
           print("Training measurement gate:",p["assessment"])
+          PY
+      - name: Produce Rowan-style source-bound council from exact Ocean run
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=(
+            --priors artifacts/measurement_priors.json
+            --wolfram artifacts/wolfram_offline.json
+            --output artifacts/ocean_wolfram_council.json
+          )
+          if [ -f artifacts/wolfram_live.json ]; then
+            args=(--priors artifacts/measurement_priors.json --wolfram artifacts/wolfram_live.json --output artifacts/ocean_wolfram_council.json)
+          fi
+          if [ -f artifacts/training/report.json ]; then
+            args+=(--training artifacts/training/report.json)
+          fi
+          python experiments/ocean_transformer/ocean_wolfram_council.py "${args[@]}"
+          python - <<'PY'
+          import json,os
+          result=json.load(open("artifacts/ocean_wolfram_council.json"))
+          assert not result["claims"]["physical_retrocausal_communication_proven"]
+          assert not result["authority"]["edit_production_weights"]
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as f:
+              f.write("## JANUS Ocean / Wolfram verification council\n\n")
+              f.write("- Research admission: **"+result["research_admission"]+"**\n")
+              f.write("- Native Ocean training: **"+result["training_assessment"]+"**\n")
+              f.write("- Physical retrocausality confirmed: **NO**\n")
+              f.write("- Source-bound sha256: "+result["source_binding"]["prior_grid_sha256"]+"\n")
           PY
       - uses: actions/upload-artifact@v4
         with:
