@@ -2,7 +2,7 @@
   "schema": "janus.demiurge.scout_agent.report.v2.spiral",
   "agent_id": "SCOUT_LAPIS_12",
   "role": "MATERIAL_SYMBOL_RECON",
-  "created_at_utc": "2026-11-09T07:07:32Z",
+  "created_at_utc": "2026-11-09T16:51:43Z",
   "status": "DEGRADED_MODEL_POLICY_HOLD",
   "target": {
     "repository": "Hawkar-usls/janus-lapis",
@@ -12,8 +12,8 @@
   "repository_snapshot": {
     "target_repo": "Hawkar-usls/janus-lapis",
     "target_ref": "main",
-    "target_commit": "fe2a5d4b4e6441accb78cf9bc752349906f10ca5",
-    "file_count": 88,
+    "target_commit": "5c1de680e605abdf71b1d34130455d49b67b5060",
+    "file_count": 105,
     "top_level": [
       ".github",
       ".gitignore",
@@ -36,16 +36,16 @@
       "tools"
     ],
     "recent_commits": [
+      "5c1de680e605abdf71b1d34130455d49b67b5060\t2026-11-09T15:13:21+02:00\tresearch(beetle): one bounded Wolfram N4 Zeno math check with V3 proof ledger",
+      "abcb6b7b18828fe8e74e326e7300497cef418bda\t2026-11-09T14:56:35+02:00\tresearch(beetle): Wolfram MCP numeric format V2 verified by one live query",
+      "34c3579a459f23b097faefba39282c52f4a3ed8a\t2026-11-09T14:24:55+02:00\tresearch(beetle): bounded Wolfram MCP numerical attestation for JANUS Ocean",
+      "40cd9aef7fcd4acb9f32910a7b5467bf570c5eaf\t2026-11-09T13:37:26+02:00\tci(beetle): add read-only Wolfram MCP result receipt witness",
+      "0987fc496e3065b900f74fbc6bb695adeb1a5b30\t2026-11-09T13:33:49+02:00\tfix(beetle): negotiate official Wolfram Cloud MCP protocol before calling WolframAlpha",
+      "6630c4acc68f1e91a6d4018746fac8cedb5577b7\t2026-11-09T13:23:13+02:00\tresearch(beetle): autonomous official Wolfram open data and no-AppID Cloud MCP one-shot",
       "fe2a5d4b4e6441accb78cf9bc752349906f10ca5\t2026-11-06T10:20:48+02:00\tfix(watchdog): distinguish scheduled observer liveness from delivery alerts",
       "7b986a1238d5d3b27016d9361e132f688c191e33\t2026-11-05T16:01:41+02:00\tfix(beetle): reconcile aged public PENDING with live SHA-bound ACK",
       "de38acb884729ae9a50b8debd8b269f2c1d57ed1\t2026-11-05T12:22:33+02:00\tfix(beetle): recover local receiver and refresh HOME high-water safely",
-      "2fd95a07b07bbe6a251180d31118da180b96fce0\t2026-11-04T23:13:19+02:00\tJANUS P0.3: preserve ACK integrity evidence ahead of backlog gate",
-      "e365c54d76fe52ab21000a3cf1c39e06c02b8005\t2026-11-04T14:58:29+02:00\tfix(beetle): allow scoped read-only private ACK verification",
-      "3801698f93704091e9fd9b91bfb3c4d9962cff43\t2026-10-30T19:16:32+02:00\tBeetle: trusted receiver-driven bounded producer recovery",
-      "d5fe2b2b00284a0940bfd0165aa53f1893969078\t2026-10-30T17:54:14+02:00\tMerge pull request #40 from Hawkar-usls/codex/bounded-beetle-durable-push-retry",
-      "539ad8e569850df900d73bab6a52a1efd62bdd00\t2026-10-30T17:53:21+02:00\tbeetle: retry transient durable push failures without relaxing conflict checks",
-      "4958fcf4dd23e78ff8d45b946491482ca8a95cf0\t2026-10-30T10:53:27+02:00\ttest(beetle): freeze synthetic ACK clock for normal producer regression (#39)",
-      "dc86b07de8c3f3b893054e6913881a2ec633b7a7\t2026-10-28T19:33:07+02:00\tfix(beetle): ignore workflow_run for independent silence streaks"
+      "2fd95a07b07bbe6a251180d31118da180b96fce0\t2026-11-04T23:13:19+02:00\tJANUS P0.3: preserve ACK integrity evidence ahead of backlog gate"
     ],
     "selected_sources": [
       {
@@ -63,6 +63,10 @@
       {
         "path": ".github/workflows/beetle-durable-push-contract.yml",
         "excerpt": "name: JANUS Beetle durable push contract\n\non:\n  pull_request:\n    branches: [main]\n    paths:\n      - 'tools/beetle_git_push.py'\n      - 'tools/beetle_partial_checkpoint.py'\n      - 'tests/test_beetle_git_push.py'\n      - 'tests/test_beetle_partial_checkpoint.py'\n      - '.github/workflows/universal-beetle-hourly.yml'\n      - '.github/workflows/beetle-durable-push-contract.yml'\n  push:\n    branches: [main]\n    paths:\n      - 'tools/beetle_git_push.py'\n      - 'tools/beetle_partial_checkpoint.py'\n      - 'tests/test_beetle_git_push.py'\n      - '.github/workflows/beetle-durable-push-contract.yml'\n  workflow_dispatch:\n\npermissions:\n  contents: read\n\njobs:\n  offline:\n    runs-on: ubuntu-24.04\n    timeout-minutes: 10\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          persist-credentials: false\n      - uses: actions/setup-python@v5\n        with:\n          python-version: '3.12'\n      - name: Inject transient failure, conflict, exhaustion and interrupted worker\n        run: |\n          python -m unittest discover -s tests -p 'test_beetle_git_push.py' -v\n          python -m unittest discover -s tests -p 'test_beetle_partial_checkpoint.py' -v\n\n"
+      },
+      {
+        "path": ".github/workflows/beetle-wolfram-receipt-audit.yml",
+        "excerpt": "name: JANUS Beetle / Wolfram MCP Receipt Audit\n# Recheck after keyless MCP protocol negotiation repair in PR #49.\n\non:\n  pull_request:\n    paths:\n      - '.github/workflows/beetle-wolfram-receipt-audit.yml'\n  push:\n    branches: [main]\n    paths:\n      - '.github/workflows/beetle-wolfram-receipt-audit.yml'\n  workflow_dispatch:\n\npermissions:\n  contents: read\n\njobs:\n  independent-readonly-audit:\n    runs-on: ubuntu-latest\n    timeout-minutes: 4\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: beetle-state\n          persist-credentials: false\n          path: memory\n      - name: Inspect durable receipts without rerunning external queries\n        env:\n          GITHUB_AUDIT_RUN: ${{ github.run_id }}\n        run: |\n          set -euo pipefail\n          python - <<'PY'\n          import json, os\n          from pathlib import Path\n          root=Path('memory/data/beetle-state/receipts.parts')\n          idx=json.loads((root/'index.json').read_text())\n          interesting={\"WOLFRAM_MCP_KEYLESS_RECEIVED\",\"WOLFRAM_MCP_ONE_SHOT_HOLD\"}\n          events=[]\n          for part in idx['parts'][-2:]:\n              with (root/part['name']).open(encoding='utf-8') as f:\n                  for line in f:\n                      if '\"WOLFRAM_MCP_' not in line:\n                          continue\n                      try:\n                          row=json.loads(line)\n                          if row.get('event') in interesting:\n                              events.append({\n                                  \"event\":row[\"event\"], \"at\":row.get(\"at\"),\n                                  \"query_id\":row.get(\"payload\",{}).get(\"query_id\"),\n                                  \"reason\":row.get(\"payload\",{}).get(\"reason\"),\n                                  \"receipt_sha256\":row.get(\"receipt_sha256\"),\n                              })\n                      except (ValueError,KeyError,TypeError):\n                          raise SystemExit(\"INVALID_RECEIPT_ROW\")\n          summary={\n              \"schema\":\"janus.beetle.wolfram_keyless_receipt_audit.v1\",\n              \"audit_run_id\":os.environ[\"GITHUB_AUDIT_RUN\"],\n              \"status\":\"LIVE_MCP_RECEIPT_SEEN\" if any(x[\"event\"]==\"WOLFRAM_MCP_KEYLESS_RECEIVED\" for x in events)\n                  else \"MCP_HOLD_SEEN\" if events else \"NO_MCP_RECEIPT_YET\",\n              \"events\":events[-8:],\n              \"raw_provider_output_included\":False,\n              \"external_credential_used\":False,\n          }\n          p=Path('wolfram_mcp_receipt_audit.json')\n          p.write_text(json.dumps(summary,indent=2,sort_keys=True)+'\\n')\n          print(json.dumps(summary,sort_keys=True))\n          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:\n              f.write('## Wolfram Cloud MCP · durable Beetle receipt\\n\\n')\n              f.write('Status: **'+summary['status']+'**\\n\\n')\n              f.write('Events: '+str(len(summary['events']))+'\\n')\n          PY\n      - uses: actions/upload-artifact@v4\n        with:\n          name: wolfram-beetle-source-receipt\n          path: wolfram_mcp_receipt_audit.json\n          retention-days: 14\n"
       },
       {
         "path": ".janus/JANUS_ORGANISM_LINK.json",
@@ -99,8 +103,8 @@
     "oracle_guidance": null
   },
   "spiral": {
-    "turn": 289,
-    "parent_report_sha256": "0e44dad06642b95bc6ab89a8c4485e0a58859de56e0c7d5b7d2767f05a1059ee",
+    "turn": 290,
+    "parent_report_sha256": "6b72a2d985bcd81c01288259be11e94e5dbdbc824fa28f7a3e12d4338864e3ca",
     "previous_target_commit": "fe2a5d4b4e6441accb78cf9bc752349906f10ca5",
     "identity_persistent": true,
     "previous_report_is_evidence": false,
@@ -151,7 +155,7 @@
     "new_lessons": [
       "Shared model preflight blocked synthesis without erasing repository evidence or Scout identity."
     ],
-    "ascent_status": "NO_ASCENT",
+    "ascent_status": "ASCENDED_NEW_EVIDENCE",
     "logical_ring": false
   },
   "model_error": "MODEL_PREFLIGHT:SKIPPED_POLICY",
@@ -165,7 +169,7 @@
   },
   "janus_agent_token": {
     "scope": "EPHEMERAL_GITHUB_RUN_AGENT",
-    "fingerprint": "1974976cc61c377f",
+    "fingerprint": "084a14de79f60e31",
     "raw_token_persisted": false
   },
   "evidence_gate": {
