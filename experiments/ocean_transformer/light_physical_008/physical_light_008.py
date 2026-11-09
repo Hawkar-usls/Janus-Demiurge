@@ -137,6 +137,7 @@ def validate_capture(capture, schedule, phase, source_class=None):
         raise ValueError("ALL_256_UNFILTERED_SAMPLES_REQUIRED")
     last_monotonic = -1
     last_elapsed = -1
+    last_switch = -1
     last_utc = None
     for i, row in enumerate(rows):
         if not isinstance(row, dict):
@@ -152,7 +153,13 @@ def validate_capture(capture, schedule, phase, source_class=None):
                 elapsed < 0 or monotonic <= last_monotonic or
                 elapsed <= last_elapsed):
             raise ValueError("NONMONOTONIC_DEVICE_OR_HOST_CLOCK")
-        last_elapsed, last_monotonic = elapsed, monotonic
+        switched = row.get("led_switch_elapsed_us")
+        if (type(switched) is not int or switched <= last_switch
+                or switched > elapsed or elapsed - switched > 30000):
+            raise ValueError("DEVICE_LED_TO_ADC_TIMING_INVALID")
+        if i > 0 and elapsed - last_elapsed > 3 * PERIOD_MS * 1000:
+            raise ValueError("DEVICE_CAPTURE_GAP_TOO_LARGE")
+        last_elapsed, last_monotonic, last_switch = elapsed, monotonic, switched
         stamp = parse_utc(row.get("host_received_utc"))
         if last_utc is not None and stamp < last_utc:
             raise ValueError("UTC_CLOCK_MOVED_BACKWARDS")
@@ -235,9 +242,10 @@ def score(schedule, train, precommit, test):
                               timestamp=precommit["prepared_utc_self_reported"])
     if expected != precommit:
         raise ValueError("PRECOMMIT_CHANGED_AFTER_CALIBRATION")
-    if train_rows[-1]["host_received_utc"] >= precommit["prepared_utc_self_reported"]:
+    prepared = parse_utc(precommit["prepared_utc_self_reported"])
+    if parse_utc(train_rows[-1]["host_received_utc"]) >= prepared:
         raise ValueError("FORECAST_WAS_NOT_AFTER_CALIBRATION")
-    if test_rows[0]["host_received_utc"] <= precommit["prepared_utc_self_reported"]:
+    if parse_utc(test_rows[0]["host_received_utc"]) <= prepared:
         raise ValueError("FORECAST_WAS_NOT_BEFORE_TEST_CAPTURE")
     predictions = precommit["payload"]["predictions"]
     mae = math.fsum(abs(row["adc_prediction"] - observed["adc_u16"])
