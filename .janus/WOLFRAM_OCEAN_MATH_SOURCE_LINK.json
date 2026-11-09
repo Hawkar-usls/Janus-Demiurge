@@ -1,0 +1,52 @@
+{
+  "schema": "janus.ocean.wolfram_math_source_link.v1",
+  "purpose": "Bounded mathematical source link for JANUS Ocean MicroTransformer, inspired by Rowan's read-only evidence contract",
+  "provider": {
+    "name": "Wolfram|Alpha Full Results API",
+    "endpoint": "https://api.wolframalpha.com/v2/query",
+    "documentation": "https://products.wolframalpha.com/api/documentation/",
+    "credential": "GitHub Actions secret WOLFRAM_ALPHA_APPID; never committed",
+    "subscription": "Owner must provision AppID with provider and accept applicable terms"
+  },
+  "mode": "READ_ONLY_ADVISORY",
+  "boundary": {
+    "queries": "six predeclared public scalar formulas; no dynamic model-generated input",
+    "max_calls_per_live_run": 6,
+    "auto_live_off_by_default": true,
+    "pr_secrets_disabled": true,
+    "independent_validation": "compare parsed finite numeric result with pinned exact Fraction; fail closed on error/ambiguity",
+    "offline_fixture_claim": "MOCK_ONLY_NOT_PROVIDER_VERIFIED",
+    "claim_classes": [
+      "MATHEMATICAL_IDENTITY_CHECK",
+      "BORN_RULE_SIMULATION",
+      "QUANTUM_INTERPRETATION_HYPOTHESIS"
+    ],
+    "not_claimed": [
+      "PHYSICAL_WAVEFUNCTION_COLLAPSE",
+      "RETROCAUSAL_MESSAGING",
+      "TACHYON_ELECTRON",
+      "EVIDENCE_OF_FTL",
+      "INDEPENDENT_QUANTUM_EXPERIMENT"
+    ]
+  },
+  "integration": {
+    "module": "experiments/ocean_transformer/wolfram_ocean_bridge.py",
+    "training": "experiments/ocean_transformer/janus_measurement_temporal_lens.py",
+    "model": "janus_model/model.py::JanusTinyTransformer",
+    "workflow": ".github/workflows/janus-ocean-wolfram-measurement.yml",
+    "existing_retro_controls": [
+      "experiments/ocean_transformer/retro_calibrator.py",
+      "experiments/ocean_transformer/janus_cpu_quantum_emulator.py"
+    ]
+  },
+  "authority": {
+    "submit_unapproved_math_queries": false,
+    "receive_private_training_data": false,
+    "spend_without_explicit_live_dispatch": false,
+    "alter_production_weights": false,
+    "promote_scientific_claim": false,
+    "modify_rowan_or_oracle": false,
+    "decode_future_random_bits": false
+  },
+  "status": "CANDIDATE_SOURCE_LINK_PENDING_SECRET_AND_LIVE_VALIDATION"
+}
