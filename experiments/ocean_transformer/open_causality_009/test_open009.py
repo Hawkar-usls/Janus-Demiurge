@@ -136,7 +136,7 @@ class BeaconsTest(unittest.TestCase):
 
     def test_16_wrong_relay_signature_refused(self):
         with patch.object(m,"fetch_http",return_value=b'{"round":123,"signature":"zz"}'):
-            with self.assertRaisesRegex(ValueError,"WRONG_BEACON_ROUND"):
+            with self.assertRaisesRegex(ValueError,"MALFORMED_SIGNATURE"):
                 m.fetch_drand_single(m.RELAY_BASES[0],123)
         sig="00"*48
         blob={"round":123,"signature":sig,"randomness":"ff"*32}
