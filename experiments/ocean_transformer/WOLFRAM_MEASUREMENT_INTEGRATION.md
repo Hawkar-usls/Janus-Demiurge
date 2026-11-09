@@ -117,3 +117,37 @@ textual or numerical results.
 This is not an autonomous paid research agent and cannot reprogram JANUS's
 production model. Even if the native Ocean benchmark improves, the gain is
 only learning a synthetic Born-rule dataset, and no physical result is implied.
+
+## Video-grounded calibration (9 November 2026)
+
+Video used: https://youtu.be/KkKMZLvlmKA (Russian transcript).
+The **video is not a training dataset or independent physical observation**.
+JANUS annotates its timestamped claims in
+`experiments/ocean_transformer/ocean_video_calibration.py` and the emitted
+`artifacts/video_hypotheses.json`:
+
+- 22:35: Wheeler's single-electron speculation — **not accepted as a measured physical claim**.
+- 23:21: Feynman/Stueckelberg positron time-reversal picture — **QFT mathematical interpretation, not a tachyon**.
+- 25:05: Cramer's transactional interpretation — **interpretation**, standard Born statistics still apply.
+- 25:37: "offer/confirmation waves" — **interpretive picture**, no unconditioned earlier signal.
+- 26:25: two-slit measurement/which-path interaction — **established measurement effects**, modelled as unread dephasing.
+- 27:44: future changing past — **unproven operational claim**, independently testable only with a future-blind experimental protocol.
+
+### Calibration and physical meaning
+
+`ocean_video_calibration.py` chooses a **single temperature** from a frozen,
+predeclared list using exactly **2,048 validation samples** generated from a
+separate seeded stream. It then evaluates once on a different **2,048-row
+holdout** while comparing the raw model, calibrated model and the exact Born
+probability oracle with Brier, negative log-likelihood and ECE metrics.
+The source video never supplies the target labels. The model checkpoint is
+research-only, not deployed.
+
+This is a *statistical* calibration of a *classical model* which predicts
+simulated projective readouts. The GPU/QPU is not needed. A CPU calculation
+cannot create a physical detector interaction, make a selected stochastic
+measurement outcome occur, or cause physical backward-in-time signalling.
+
+The source-bound `ocean_wolfram_council.py` checks the video-card digest,
+validation/test disjoint seeds, temperature grid, calibrated/un-calibrated
+holdout consistency, and no-claim flags. Findings remain **development-only**.
