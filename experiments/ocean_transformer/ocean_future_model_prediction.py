@@ -64,6 +64,9 @@ def tokens_for_public_round(target, position):
 
 def validate_source_checkpoint(ckpt_path, report_path):
     import torch
+    repo_root=str(Path(__file__).resolve().parents[2])
+    if repo_root not in sys.path:
+        sys.path.insert(0,repo_root)
     from janus_model.model import JanusModelConfig,JanusTinyTransformer
     from ocean_quantum_train import CONFIG
     p=Path(ckpt_path)
