@@ -1,0 +1,55 @@
+name: JANUS Ocean GLOW-010 Published Source Inventory
+on:
+  push:
+    branches:
+      - janus/glow010-published-afterglow-data-audit-20261110
+    paths:
+      - .github/workflows/janus-ocean-glow010-raw-archive-audit.yml
+      - experiments/ocean_transformer/glow_010/**
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  licensed-zenodo-archive-inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      IBM_QUANTUM_API_KEY: ''
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reproduce published laboratory fit summary from the original 2017 Table 1
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s experiments/ocean_transformer/glow_010 \
+            -p 'test_published_lifetimes_010.py'
+          python experiments/ocean_transformer/glow_010/published_lifetimes_010.py \
+            --output artifacts/glow010_real_published_lifetime_constraints.json
+      - name: Fetch and verify original CC BY 4.0 archive; inventory time-series format only
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/glow_010/published_data_audit_010.py \
+            --output artifacts/glow010_zenodo_archived_raw_inventory.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('artifacts/glow010_zenodo_archived_raw_inventory.json').read_text())
+          assert x['zip_md5']=='3a11f363c6ce6cb3d465611682577662'
+          assert x['n_entries']>0 and not x['retrocausality_proven']
+          with open(__import__('os').environ['GITHUB_STEP_SUMMARY'],'a') as f:
+            f.write('## GLOW-010 original published source inventory\n\n')
+            f.write(str(x['extension_counts'])+'\n\n')
+            f.write('Licenced CC BY 4.0 archival data, no physical SUNLU measurements.\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-glow010-zenodo-source-inventory-${{ github.run_id }}
+          path: artifacts/
+          retention-days: 90
+          if-no-files-found: error

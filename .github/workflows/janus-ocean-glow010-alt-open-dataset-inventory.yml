@@ -1,0 +1,59 @@
+name: JANUS Ocean GLOW-010 Alternate Zenodo Raw Data Manifest
+on:
+  push:
+    branches:
+      - janus/glow010-published-afterglow-data-audit-20261110
+    paths:
+      - .github/workflows/janus-ocean-glow010-alt-open-dataset-inventory.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  alternate-source-manifest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Query public Zenodo records for source-file extensions and license
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          python - <<'PY'
+          import json,urllib.request
+          from pathlib import Path
+          records=[6991932,18859353]
+          out=[]
+          for record in records:
+            url=f"https://zenodo.org/api/records/{record}"
+            try:
+              req=urllib.request.Request(url,headers={"User-Agent":"JANUS-GLOW-010/1.0 public archive format audit"})
+              with urllib.request.urlopen(req,timeout=25) as f:d=json.load(f)
+              files=d.get('files',[])
+              out.append({'zenodo_id':record,'status':'METADATA_FETCHED',
+                          'doi':d.get('doi'),
+                          'license':d.get('metadata',{}).get('license',{}),
+                          'files':[{'name':x.get('key'),'size':x.get('size'),
+                                    'checksum':x.get('checksum'),
+                                    'link':x.get('links',{}).get('self')} for x in files]})
+            except Exception as e:
+              out.append({'zenodo_id':record,'status':'METADATA_NOT_AVAILABLE',
+                          'error_type':type(e).__name__,'error_message':str(e)[:190]})
+          Path('artifacts/glow010_alt_zenodo_record_manifest.json').write_text(json.dumps({
+             'experiment':'GLOW-010',
+             'search_for_machine_readable_raw_decay_data':True,
+             'no_original_photometric_data_fabricated':True,
+             'no_retrocausality_claim':True,
+             'records':out},indent=2))
+          print(json.dumps(out,sort_keys=True)[:4500])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-glow010-alternative-record-index-${{ github.run_id }}
+          path: artifacts/
+          retention-days: 90
+          if-no-files-found: error

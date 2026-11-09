@@ -1,0 +1,87 @@
+name: JANUS Ocean GLOW-010 Open Origin Data Decoder Audit
+on:
+  push:
+    branches:
+      - janus/glow010-published-afterglow-data-audit-20261110
+    paths:
+      - .github/workflows/janus-ocean-glow010-origin-decoder-smoke.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  read-published-origin-projects:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      IBM_QUANTUM_API_KEY: ''
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Retrieve exact licensed Zenodo files and selected Origin projects
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts data
+          python - <<'PY'
+          import sys,zipfile,io
+          from pathlib import Path
+          sys.path.insert(0,"experiments/ocean_transformer/glow_010")
+          import published_data_audit_010 as audit
+          blob=audit.fetch()
+          selected=['Fig. 2a.opju','Fig. 2g2.opju','Fig. S8.opju']
+          with zipfile.ZipFile(io.BytesIO(blob)) as z:
+            for name in selected:
+              binary=z.read('metadata/'+name)
+              Path('data/'+name).write_bytes(binary)
+              print(name,len(binary))
+          PY
+      - name: Build standalone open source liborigin read-only decoder from PINNED Git SHA
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libboost-dev cmake >/dev/null
+          git clone -q https://github.com/gerlachs/liborigin.git /tmp/liborigin
+          git -C /tmp/liborigin checkout -q b053b99c56cc33d87866d31c4ebbd10e1066a043
+          cmake -S /tmp/liborigin -B /tmp/liborigin_build -DBUILD_SHARED_LIBS=off -DBUILD_STATIC_LIBS=on -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/liborigin_build -j 2
+          find /tmp/liborigin_build -type f -name opj2dat
+      - name: Inspect binary Origin project compatibility without selective fabrication
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import subprocess,json,os
+          from pathlib import Path
+          exe=next(Path('/tmp/liborigin_build').rglob('opj2dat'))
+          results=[]
+          for path in sorted(Path('data').glob('*.opju')):
+            outcome=subprocess.run([str(exe),'--check-only',str(path)],
+                                    capture_output=True,text=True,timeout=60)
+            results.append({
+               'project':path.name,
+               'exit_code':outcome.returncode,
+               'first_output_lines':outcome.stdout.splitlines()[:30],
+               'stderr_tail':outcome.stderr[-350:],
+               'decoded':outcome.returncode==0 and 'Parsing status = 1' in outcome.stdout,
+            })
+          report={
+            'schema':'janus.ocean.glow010_origin_decode_probe.v1',
+            'source':'https://zenodo.org/records/18862107',
+            'original_source_zip_md5':'3a11f363c6ce6cb3d465611682577662',
+            'decoder':'gerlachs/liborigin pinned b053b99c56cc33d87866d31c4ebbd10e1066a043',
+            'projects':results,
+            'total_decoded':sum(x['decoded'] for x in results),
+            'no_experimental_fit_or_model_comparison_claim':True,
+          }
+          Path('artifacts/glow010_origin_decode_probe.json').write_text(json.dumps(report,indent=2))
+          print(json.dumps({'total_decoded':report['total_decoded'],'projects':[(x['project'],x['exit_code']) for x in results]},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-glow010-origin-decoder-audit-${{ github.run_id }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 90
