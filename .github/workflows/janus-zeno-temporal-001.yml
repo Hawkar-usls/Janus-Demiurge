@@ -15,6 +15,8 @@ on:
       - 'experiments/ocean_transformer/test_wolfram_v2_registry_gate.py'
       - 'experiments/ocean_transformer/zeno_science_council_v3.py'
       - 'experiments/ocean_transformer/test_zeno_science_council_v3.py'
+      - 'experiments/ocean_transformer/zeno_n4_wolfram_v3_gate.py'
+      - 'experiments/ocean_transformer/test_zeno_n4_wolfram_v3_gate.py'
   workflow_dispatch:
     inputs:
       live_wolfram:
@@ -51,6 +53,7 @@ jobs:
           python -m unittest discover -s experiments/ocean_transformer -p 'test_beetle_wolfram_readonly_gate.py' -v
           python -m unittest discover -s experiments/ocean_transformer -p 'test_wolfram_v2_registry_gate.py' -v
           python -m unittest discover -s experiments/ocean_transformer -p 'test_zeno_science_council_v3.py' -v
+          python -m unittest discover -s experiments/ocean_transformer -p 'test_zeno_n4_wolfram_v3_gate.py' -v
       - name: Freeze CPU Zeno probabilities and SVG curve
         run: |
           set -euo pipefail
@@ -95,6 +98,11 @@ jobs:
           set -euo pipefail
           python experiments/ocean_transformer/wolfram_v2_registry_gate.py \
             --output artifacts/wolfram_mcp_registry_v2_gate.json
+      - name: Verify independent N4 Wolfram MCP V3 receipt (read only)
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/zeno_n4_wolfram_v3_gate.py \
+            --output artifacts/zeno_n4_wolfram_v3_gate.json
       - name: Optional four LIVE Wolfram Alpha checks (manual dispatch only)
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.live_wolfram }}
         env:
@@ -118,6 +126,7 @@ jobs:
           digests = {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in files}
           z = json.loads((root/"zeno_probabilities.json").read_text())
           science_v3 = json.loads((root/"zeno_science_council_v3.json").read_text())
+          n4_external_v3 = json.loads((root/"zeno_n4_wolfram_v3_gate.json").read_text())
           retro = json.loads((root/"retro_negative_control.json").read_text())
           beetle = json.loads((root/"beetle_wolfram_math_gate.json").read_text())
           wolfram_v2 = json.loads((root/"wolfram_mcp_registry_v2_gate.json").read_text())
@@ -129,6 +138,9 @@ jobs:
           assert science_v3["logic"]["no_signalling"] == "PASS_UNCONDITIONAL_EQUAL_0_5"
           assert science_v3["wolfram"]["new_cases_remote_checked"] == 0
           assert science_v3["claims"]["physical_retrocausality_proven"] is False
+          assert n4_external_v3["physical_retrocausal_channel_proven"] is False
+          assert n4_external_v3["provider_calls_by_ocean"] == 0
+          assert n4_external_v3["production_model_weights_modified"] is False
           assert retro["n"] == 2048
           assert beetle["physical_retrocausal_channel_proven"] is False
           assert beetle["wolfram_provider_called_by_this_job"] is False
@@ -153,6 +165,8 @@ jobs:
               "cpu_postselection_trap": science_v3["logic"]["postselection_trap"],
               "new_math_reference_cases": len(science_v3["analytic_crosschecks"]),
               "new_wolfram_live_calls": 0,
+              "beetle_n4_external_math": n4_external_v3["status"],
+              "beetle_n4_is_physics_proof": False,
               "retro_control": "SAME_RUNNER_NEGATIVE_CONTROL_ONLY",
               "retrosignal_confirmed": False,
               "wolfram_alpha": wolfram["status"],
@@ -171,6 +185,7 @@ jobs:
               f.write("- Bell no-signalling v3: **"+science_v3["logic"]["no_signalling"]+"**\n")
               f.write("- Postselection artifact: **NOT A SIGNAL**\n")
               f.write("- New formulas: **3 offline analytic cases; 0 provider calls**\n")
+              f.write("- Verified external N4 math: **"+n4_external_v3["status"]+"**\n")
               f.write("- Wolfram Alpha direct API: **"+wolfram["status"]+"**\n")
               f.write("- Beetle keyless MCP v1: **"+beetle["status"]+"**\n")
               f.write("- Wolfram MCP verified V2 Meta Registry record: **"+wolfram_v2["status"]+"**\n")
