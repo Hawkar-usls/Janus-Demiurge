@@ -1,0 +1,64 @@
+name: JANUS Ocean / 009 Historical Public NOAA Four-Day Backtest
+
+on:
+  push:
+    branches: [janus/open009-retrospective-noaa-nov2-nov5-20261110]
+    paths:
+      - .github/workflows/janus-ocean-009-historical-noaa-backtest.yml
+      - experiments/ocean_transformer/open_causality_009/retrospective_noaa_009_exploratory.py
+      - experiments/ocean_transformer/open_causality_009/test_retrospective_noaa_009.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  actual-noaa-history-four-days:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      IBM_QUANTUM_API_KEY: ''
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: No-future-feature and no-physical-glow unit tests
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s experiments/ocean_transformer/open_causality_009 \
+            -p test_retrospective_noaa_009.py
+      - name: Fetch 11 historical official NOAA days and evaluate all 96 actual hourly targets
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/open_causality_009/retrospective_noaa_009_exploratory.py \
+            --output artifacts/009_exploratory_real_noaa_nov02_nov05.json
+          python - <<'PY'
+          import json,os,hashlib
+          from pathlib import Path
+          p=Path('artifacts/009_exploratory_real_noaa_nov02_nov05.json')
+          x=json.loads(p.read_text())
+          assert x['n_hours']==96 and len(x['per_date'])==4
+          assert x['noaa_source_fetches']==11
+          assert x['independent_early_forecast_commitment'] is False
+          assert x['real_phosphor_measurements_collected']==0
+          assert all(r['n_hours']==24 for r in x['per_date'])
+          assert all(not r['glow_observed_by_real_sensor'] for r in x['per_date'])
+          assert x['no_causal_retrocausality_inference'] is True
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+              f.write('### JANUS 009 retrospective real NOAA (not prospective)\n\n')
+              f.write('4 original dates, 96 genuine NOAA hourly means, 11 unique historic files.\n\n')
+              f.write('MAE W/m²: '+str(x['mean_mae_w_m2'])+'\n\n')
+              f.write('Virtual GLOW MAE: '+str(x['virtual_glow_mae_microwatt_mean'])+' µW (UNMEASURED).\n\n')
+              f.write('No independent forecast-before-target witness. No retrocausality claim.\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-ocean-009-noaa-4day-historical-${{ github.run_id }}
+          path: artifacts/
+          retention-days: 90
+          if-no-files-found: error
