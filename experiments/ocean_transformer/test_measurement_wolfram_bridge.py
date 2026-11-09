@@ -85,6 +85,39 @@ class Tests(unittest.TestCase):
         self.assertNotIn("SYNTHETIC_FAKE_SECRET", json.dumps(result))
         self.assertTrue(all(q["agrees_with_standard_arithmetic"] for q in result["queries"]))
 
+    def test_live_receipt_can_be_bound_but_not_offline_or_forged(self):
+        expected = {expression: value for _, expression, value in w.CASES}
+
+        def fake(request, timeout):
+            expression = parse_qs(urlsplit(request.full_url).query)["input"][0]
+            body = {"queryresult": {"success": True, "error": False, "pods": [
+                {"id": "Result", "subpods": [{"plaintext": str(expected[expression])}]}
+            ]}}
+            return FakeResponse(json.dumps(body).encode("utf-8"))
+
+        good = w.check(live=True, appid="MOCK_KEY_NOT_LIVE_PROVIDER", opener=fake)
+        w.verify_live_math_receipt(good)
+
+        for bad in [
+            w.check(live=False),
+            {**good, "status": "NO_EXTERNAL_QUERY_PERFORMED"},
+            {**good, "source_binding": {"canonical_dataset_sha256": "wrong"}},
+            {**good, "queries": list(good["queries"])[:-1]},
+            {**good, "evidence_of_retrocausality": True},
+        ]:
+            with self.assertRaises(w.WolframHold):
+                w.verify_live_math_receipt(bad)
+
+        changed = json.loads(json.dumps(good))
+        changed["queries"][0]["wolfram_numeric_result"] = 0.13
+        with self.assertRaises(w.WolframHold):
+            w.verify_live_math_receipt(changed)
+
+        changed = json.loads(json.dumps(good))
+        changed["queries"][0]["public_expression"] = "future-target-payload"
+        with self.assertRaises(w.WolframHold):
+            w.verify_live_math_receipt(changed)
+
     def test_reject_free_text_query_and_bad_response(self):
         with self.assertRaisesRegex(w.WolframHold, "UNAPPROVED_QUERY"):
             w.remote_number("FAKE", "predict the future")
