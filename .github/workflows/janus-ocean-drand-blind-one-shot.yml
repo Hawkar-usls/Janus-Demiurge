@@ -1,0 +1,163 @@
+name: JANUS Ocean / ONE Blind Future drand Pilot 003
+
+# Exactly one trigger: the original creation of this YAML on the PR branch.
+# No schedule, no workflow_dispatch, no re-trigger on updates to other files.
+on:
+  push:
+    branches:
+      - janus/ocean-itano-1990-lab-and-drand-blind-pilot-20261109
+    paths:
+      - ".github/workflows/janus-ocean-drand-blind-one-shot.yml"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: janus-ocean-zeno-003-one-blind-beacon-trial
+  cancel-in-progress: false
+
+jobs:
+  early-commitment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install pinned audited cryptographic drand client, no postinstall
+        run: |
+          set -euo pipefail
+          npm install --prefix experiments/ocean_transformer/drand_pilot \
+            --ignore-scripts --no-audit --no-fund --package-lock=false
+      - name: Check chain and validate already issued round BLS signature
+        run: |
+          set -euo pipefail
+          node experiments/ocean_transformer/drand_pilot/signed_quicknet.mjs \
+            latest - artifacts/latest_signed_quicknet.json
+      - name: Freeze 256 early bits, SHA-256 and one strictly FUTURE round
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/blind_drand_pilot.py prepare \
+            --latest artifacts/latest_signed_quicknet.json \
+            --output artifacts/early_precommitted_bits.json
+      - name: Publish SHA-bound early bits to externally timestamped GitHub artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-ocean-early-precommit-003
+          path: artifacts/early_precommitted_bits.json
+          if-no-files-found: error
+          retention-days: 45
+
+  later-independent-choice:
+    needs: early-commitment
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Read frozen first-job receipt; future target must come from it
+        uses: actions/download-artifact@v4
+        with:
+          name: janus-ocean-early-precommit-003
+          path: artifacts
+      - name: Fetch GitHub-created timestamp, not user-supplied wallclock
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" \
+            --jq '.artifacts[] | select(.name=="janus-ocean-early-precommit-003") | .created_at' \
+            > artifacts/github_artifact_timestamp.txt
+          test "$(wc -l < artifacts/github_artifact_timestamp.txt)" -eq 1
+          test -n "$(cat artifacts/github_artifact_timestamp.txt)"
+      - name: WAIT for the PREDECLARED signed future round only (max 3 minutes)
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,time
+          p=json.load(open("artifacts/early_precommitted_bits.json"))
+          release=p["predeclared_future_round_publication_unix_ms"]/1000
+          remaining=(release+6)-time.time()
+          if remaining>180:
+              raise SystemExit("FUTURE_ROUND_OUTSIDE_BOUNDED_WAIT")
+          if remaining>0:
+              time.sleep(remaining)
+          if time.time()<release:
+              raise SystemExit("BEACON_NOT_YET_PUBLISHED")
+          print("FUTURE_RELEASE_TIME_REACHED",p["predeclared_future_round"])
+          PY
+      - name: Install pinned drand library with mandatory BLS verification
+        run: |
+          set -euo pipefail
+          npm install --prefix experiments/ocean_transformer/drand_pilot \
+            --ignore-scripts --no-audit --no-fund --package-lock=false
+      - name: Fetch exactly the committed LATE round and verify BLS signature
+        run: |
+          set -euo pipefail
+          node experiments/ocean_transformer/drand_pilot/signed_quicknet.mjs \
+            target artifacts/early_precommitted_bits.json artifacts/later_signed_quicknet.json
+      - name: Compare ALL raw 256 bits only after validated GitHub precommit timestamp
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/blind_drand_pilot.py assess \
+            --receiver artifacts/early_precommitted_bits.json \
+            --beacon artifacts/later_signed_quicknet.json \
+            --artifact-created-at "$(cat artifacts/github_artifact_timestamp.txt)" \
+            --output artifacts/blind_future_beacon_negative_control.json
+      - name: Write bounded null-pilot result, never announce physical effect
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,hashlib
+          from pathlib import Path
+          root=Path("artifacts")
+          r=json.loads((root/"blind_future_beacon_negative_control.json").read_text())
+          assert r["n_all_raw_bits"]==256 and r["no_postselection_or_early_retraining"] is True
+          assert r["independent_external_randomness_source"] is True
+          assert r["independent_physical_early_receiver"] is False
+          assert r["physical_retrocausal_signal_proven"] is False
+          out={
+              "schema":"janus.ocean.one_signed_future_beacon_pilot_v1",
+              "status":"SOFTWARE_NEGATIVE_CONTROL_ONLY",
+              "run_id":__import__("os").environ["GITHUB_RUN_ID"],
+              "early_receipt_sha256":r["early_precommit_sha256"],
+              "target_round":r["predeclared_target_round"],
+              "n_bits":r["n_all_raw_bits"],
+              "matches":r["matches"],
+              "raw_accuracy":r["raw_accuracy"],
+              "two_sided_null_p":r["exact_two_sided_binomial_p_under_independent_fair_bit_null"],
+              "outlier_is_not_physical_proof":True,
+              "separate_physical_receiver_was_used":False,
+              "retrocausal_signal_proven":False,
+              "source_sha256":hashlib.sha256((root/"blind_future_beacon_negative_control.json").read_bytes()).hexdigest(),
+          }
+          (root/"blind_future_gate_summary.json").write_text(json.dumps(out,sort_keys=True,indent=2)+"\n")
+          with open(__import__("os").environ["GITHUB_STEP_SUMMARY"],"a") as f:
+              f.write("## JANUS · one future drand round null control\n\n")
+              f.write("Independent signed future random beacon: **VERIFIED**\n")
+              f.write("All 256 early bits committed before future round: **CHECKED**\n")
+              f.write(f'Raw matches: **{r["matches"]} / 256**\n')
+              f.write(f'Exact two-sided null p: **{r["exact_two_sided_binomial_p_under_independent_fair_bit_null"]:.5g}**\n')
+              f.write("Physical retrocausal signal: **NOT TESTED; NOT PROVEN**\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-ocean-one-blind-future-drand-003
+          path: artifacts/
+          retention-days: 45
+          if-no-files-found: error
