@@ -34,6 +34,7 @@ def inspect_archive(blob):
         raise ValueError("PUBLISHED_ZENODO_MD5_MISMATCH")
     with zipfile.ZipFile(io.BytesIO(blob)) as z:
         members=[]
+        nested=[]
         for i in z.infolist():
             if i.is_dir():
                 continue
@@ -43,6 +44,15 @@ def inspect_archive(blob):
             members.append({"name":i.filename,"uncompressed_bytes":i.file_size,
                             "crc32":f"{i.CRC:08x}",
                             "suffix":name.suffix.lower()})
+            if name.suffix.lower()==".opju":
+                inner=z.read(i.filename)
+                sample={"name":i.filename,"is_zip_based":zipfile.is_zipfile(io.BytesIO(inner)),
+                        "header_magic_hex":inner[:16].hex()}
+                if sample["is_zip_based"]:
+                    with zipfile.ZipFile(io.BytesIO(inner)) as child:
+                        sample["inner_count"]=len(child.namelist())
+                        sample["inner_paths"]=child.namelist()[:25]
+                nested.append(sample)
     extensions=dict(sorted(Counter(x["suffix"] for x in members).items()))
     return {
       "schema":"janus.ocean.glow010.published_dataset_inventory.v1",
@@ -53,6 +63,7 @@ def inspect_archive(blob):
       "zip_md5":MD5,"zip_sha256":hashlib.sha256(blob).hexdigest(),
       "n_entries":len(members),"extension_counts":extensions,
       "members":members[:300],
+      "opju_nested_metadata":nested,
       "members_truncated":len(members)>300,
       "physical_raw_decay_curve_parsed":False,
       "phosphor_lifetimes_reestimated":False,
