@@ -121,7 +121,7 @@ class Tests(unittest.TestCase):
         priors, bridge = fixtures()
         training = synthetic_training()
         training["trained_holdout"]["brier"] = .252
-        with self.assertRaisesRegex(c.CouncilHold, "SYNTHETIC_GAIN_NOT_SUPPORTED"):
+        with self.assertRaisesRegex(c.CouncilHold, "VIDEO_CALIBRATION_NOT_BOUND_TO_OCEAN_TEST"):
             c.council(priors, bridge, training)
 
     def test_video_calibration_claim_escalation_fails(self):
