@@ -16,6 +16,7 @@ from pathlib import Path
 
 import measurement_priors as physics
 import wolfram_alpha_bridge as wolfram
+import ocean_video_calibration as video
 
 SCHEMA = "janus.ocean.wolfram_source_bound_council.v1"
 MEASUREMENT_SCHEMA = physics.SCHEMA
@@ -106,6 +107,40 @@ def validate_training(train):
             raise CouncilHold("TRAINING_SAFETY_BOUNDARY_VIOLATION_" + key)
     if train.get("dataset_type") != "SYNTHETIC_STANDARD_QUANTUM_MEASUREMENT":
         raise CouncilHold("TRANSFORMER_DATASET_CLASS_DRIFT")
+    # Every video-linked calibration claim is checked against this
+    # repository's fixed source card. No video narration may become a target.
+    if train.get("video_source") != video.VIDEO_URL:
+        raise CouncilHold("VIDEO_PROVENANCE_CHANGED")
+    if train.get("video_hypothesis_card_sha256") != video.card_sha256():
+        raise CouncilHold("VIDEO_HYPOTHESIS_CARD_DRIFT")
+    if train.get("calibration_training_test_seeds_disjoint") is not True:
+        raise CouncilHold("TRAIN_VAL_TEST_SPLIT_ASSERTION_MISSING")
+    seeds = [train.get("independent_validation_seed"),
+             train.get("independent_test_seed")]
+    if not all(type(s) is int for s in seeds) or seeds[0] == seeds[1]:
+        raise CouncilHold("CALIBRATION_TEST_SEED_COLLISION")
+    card = train.get("video_measurement_calibration")
+    if not isinstance(card, dict) or card.get("schema") != video.SCHEMA:
+        raise CouncilHold("VIDEO_CALIBRATION_SCHEMA_MISSING")
+    if card.get("video_card_sha256") != video.card_sha256():
+        raise CouncilHold("VIDEO_CALIBRATION_SOURCE_CHANGED")
+    if card.get("allowed_temperatures") != list(video.TEMPERATURES) or (
+        card.get("chosen_temperature") not in video.TEMPERATURES
+    ):
+        raise CouncilHold("TEMPERATURE_GRID_FROZEN_SELECTION_DRIFT")
+    if (card.get("calibration_selection_used_test_labels") is not False or
+        card.get("hypothesis_training_labels_from_video") is not False or
+        card.get("future_signal_or_quantum_collapse_proven") is not False):
+        raise CouncilHold("VIDEO_CALIBRATION_AUTHORITY_ESCALATION")
+    if (card.get("calibration_rows", 0) < 1024 or
+        card.get("test_rows", 0) < 1024):
+        raise CouncilHold("CALIBRATION_NOT_ENOUGH_DATA")
+    if card.get("source") != "SYNTHETIC_BORN_RULE_WITH_INDEPENDENT_SPLITS":
+        raise CouncilHold("CALIBRATION_INPUT_CLASS_CHANGED")
+    if card.get("validation_nll_calibrated", float("inf")) > (
+        card.get("validation_nll_raw", float("-inf")) + 1e-6
+    ):
+        raise CouncilHold("CALIBRATION_VALIDATION_DETERIORATED")
     before, after = train.get("untrained_holdout"), train.get("trained_holdout")
     if not isinstance(before, dict) or not isinstance(after, dict):
         raise CouncilHold("TRAINING_HOLDOUT_MISSING")
@@ -118,6 +153,25 @@ def validate_training(train):
                 raise CouncilHold("TRAINING_NONFINITE_METRIC")
             if key.endswith("brier") and not 0 <= value <= 1:
                 raise CouncilHold("TRAINING_BRIER_OUTSIDE_RANGE")
+    raw = card.get("test_raw", {})
+    calibrated = card.get("test_calibrated", {})
+    born = card.get("test_analytic_born", {})
+    if any(item.get("n") != after["cases"] for item in (raw, calibrated, born)):
+        raise CouncilHold("VIDEO_TEST_ROW_ALIGNMENT_FAILED")
+    if (abs(raw.get("brier", -10)-after["brier"]) > 5e-6 or
+        abs(born.get("brier", -10)-after["analytic_born_oracle_brier"]) > 5e-6):
+        raise CouncilHold("VIDEO_CALIBRATION_NOT_BOUND_TO_OCEAN_TEST")
+    if (not all(math.isfinite(v) for v in (
+        calibrated.get("nll", float("nan")),
+        calibrated.get("brier", float("nan")),
+        raw.get("nll", float("nan")),
+    )) or not 0 <= calibrated["brier"] <= 1):
+        raise CouncilHold("VIDEO_CALIBRATION_INVALID_METRICS")
+    expected_status = ("TEMPERATURE_CALIBRATION_IMPROVED_HELDOUT_NLL_ONLY"
+                       if calibrated["nll"] < raw["nll"]
+                       else "HOLD_NO_HELDOUT_CALIBRATION_NLL_GAIN")
+    if card.get("status") != expected_status:
+        raise CouncilHold("VIDEO_CALIBRATION_OUTCOME_CONTRADICTS_METRICS")
     control = train.get("independent_future_random_negative_control")
     if not isinstance(control, dict) or control.get("cases") != after["cases"]:
         raise CouncilHold("FUTURE_RANDOM_CONTROL_MISSING")
@@ -155,6 +209,15 @@ def council(priors, bridge, training=None):
         },
         "research_admission": research_admission,
         "training_assessment": train_status,
+        "video_research_source": video.VIDEO_URL,
+        "video_hypothesis_card_sha256": video.card_sha256(),
+        "video_calibration_status": (
+            training["video_measurement_calibration"]["status"] if training else "NOT_RUN"
+        ),
+        "video_calibrated_holdout": (
+            training["video_measurement_calibration"]["test_calibrated"]
+            if training else None
+        ),
         "measured_synthetic_brier_gain": round(gain, 6) if gain is not None else None,
         "verified_external_provider": remote,
         "raw_future_signal_deductible": False,
