@@ -32,7 +32,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Run 20 LIGHT-007 tests without external dependencies
+      - name: Run 23 LIGHT-007 tests without external dependencies
         shell: bash
         run: |
           set -euo pipefail
@@ -53,6 +53,8 @@ jobs:
         run: |
           set -euo pipefail
           python experiments/ocean_transformer/light_controls/light_controls_007.py \
+            spectrum --output artifacts/light007_spectral_energy.json
+          python experiments/ocean_transformer/light_controls/light_controls_007.py \
             counts --output artifacts/light007_counting_noise.json
           python experiments/ocean_transformer/light_controls/light_controls_007.py \
             selection --output artifacts/light007_selection_bias.json
@@ -71,7 +73,7 @@ jobs:
           report=json.loads((p/'light007_complete_report.json').read_text())
           assert report['status']=='OFFLINE_SYNTHETIC_LIGHT_CONTROLS_PASS'
           assert report['all_controls_pass'] is True
-          assert len(report['controls'])==4
+          assert len(report['controls'])==5
           assert report['actual_photon_measurements']==0
           assert report['IBM_provider_called'] is False
           assert report['QPU_time_used_minutes']==0
@@ -79,7 +81,7 @@ jobs:
           assert report['original_qpu005_modified'] is False
           assert report['original_ctrl006_modified'] is False
           artifact_files=sorted(p.glob('light007_*.json'))
-          assert len(artifact_files)==6
+          assert len(artifact_files)==7
           manifest={
             'schema':'janus.ocean.light007_artifact_manifest.v1',
             'evidence_class':'SEEDED_SYNTHETIC_NOT_PHYSICAL',
@@ -92,6 +94,7 @@ jobs:
               json.dumps(manifest, indent=2, sort_keys=True)+'\n',encoding='utf-8')
           with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
               f.write('## JANUS Ocean LIGHT-007\n\n')
+              f.write('Spectral E=hc/lambda formula: PASS (analytic)\n\n')
               f.write('Poisson counting noise control: PASS (synthetic)\n\n')
               f.write('Positive light delay / anti-lookahead: PASS (synthetic)\n\n')
               f.write('No-postselection / collider bias: PASS (synthetic)\n\n')
