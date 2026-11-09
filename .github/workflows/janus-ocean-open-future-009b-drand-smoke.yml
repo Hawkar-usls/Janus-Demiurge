@@ -1,0 +1,34 @@
+name: JANUS Ocean / 009B BLS Quicknet Source Smoke
+on:
+  push:
+    branches: [janus/open-causality-009-noaa-drand-20261109]
+    paths: ['.github/workflows/janus-ocean-open-future-009b-drand-smoke.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-already-released-beacon-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install official version-pinned drand-client
+        run: |
+          set -euo pipefail
+          npm install --prefix experiments/ocean_transformer/drand_pilot --ignore-scripts --no-audit --no-fund --package-lock=false
+      - name: Check a public already-released Quicknet BLS signature and chain hash
+        run: |
+          set -euo pipefail
+          node experiments/ocean_transformer/drand_pilot/signed_quicknet.mjs latest - artifacts/drand_latest_smoke.json
+          node - <<'JS'
+          const f=require('fs')
+          const b=JSON.parse(f.readFileSync('artifacts/drand_latest_smoke.json'))
+          if(!b.signature_verified_by_pinned_client||b.round<1||b.chain_hash.length!==64)process.exit(1)
+          console.log(JSON.stringify({status:'BLS_VERIFIED_QUICKNET_PUBLIC',round:b.round,
+                                       no_future_targets_fetched:true,no_retrocausal_claim:true}))
+          JS
