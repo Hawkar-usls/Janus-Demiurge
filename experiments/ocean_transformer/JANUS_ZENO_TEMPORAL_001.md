@@ -85,3 +85,28 @@ This experiment tests established Zeno mathematics and temporal data
 integrity. It does **not** train native Ocean weights on genuine quantum lab
 observations, prove retrocausality, or generate a physical tachyon channel.
 Those steps require new independent evidence.
+
+## Beetle keyless Wolfram evidence (read-only bridge)
+
+JANUS Ocean now has a **separate source-bound reader**:
+`beetle_wolfram_readonly_gate.py`. It looks only at
+`Hawkar-usls/janus-lapis`'s public `beetle-state` branch, at
+`data/beetle-state/wolfram_math/zeno_n2_verified_v1.json`.
+
+Only the small attestation is accepted; the reader never calls Wolfram
+Cloud, sends a credential, or downloads the provider's answer. It checks
+the *exact* query ID, expression, expected (1/4), receipt digests,
+safety flags and status from the Beetle. A missing attestation yields
+`NO_RECEIPT_YET`. An invalid or negative one yields a non-passing
+decision; there is **no synthetic fallback to success**.
+
+A positive result is labelled `BEETLE_WOLFRAM_MATH_REPORTED_MATCH`,
+meaning the **separate Beetle client reported an arithmetic match**.
+It does not mean an independent laboratory verified a quantum phenomenon,
+that physical retrocausality was observed, or that JANUS is allowed to
+change production weights. All official provider content remains excluded
+from GitHub artifacts, including the full numerical provider result.
+
+The Ocean workflow writes `artifacts/beetle_wolfram_math_gate.json`
+and binds its status into the existing run summary. No additional
+cron or third-party calls are introduced by the Ocean reader.
