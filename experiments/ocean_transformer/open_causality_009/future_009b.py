@@ -121,7 +121,8 @@ def assess(precommit,signed_beacons,github_timestamp,now):
         raise ValueError("ALL_FUTURE_ROUNDS_NOT_YET_PUBLISHED")
     if (signed_beacons.get("chain_hash")!=CHAIN or
         signed_beacons.get("signature_verification")!="DRAND_CLIENT_BLS_PINNED" or
-        signed_beacons.get("target_rounds")!=rounds):
+        signed_beacons.get("target_rounds")!=rounds or
+        signed_beacons.get("verifier_package")!="drand-client@1.4.2"):
         raise ValueError("UNVERIFIED_FUTURE_BEACON_RECEIPT")
     signed=signed_beacons.get("beacons")
     if not isinstance(signed,list) or len(signed)!=COUNT:
@@ -131,6 +132,13 @@ def assess(precommit,signed_beacons,github_timestamp,now):
         if (beacon.get("round")!=r or beacon.get("signature_verified_by_pinned_client") is not True
              or not isinstance(beacon.get("randomness"),str) or len(beacon["randomness"])!=64):
             raise ValueError("INVALID_OR_WRONG_FUTURE_ROUND")
+        sig=beacon.get("signature")
+        try:
+            derived=hashlib.sha256(bytes.fromhex(sig)).hexdigest()
+        except (TypeError,ValueError):
+            raise ValueError("INVALID_SIGNED_BEACON_SIGNATURE_FORMAT") from None
+        if derived!=beacon["randomness"]:
+            raise ValueError("DRAND_SIGNATURE_RANDOMNESS_DIGEST_MISMATCH")
         labels.append(int(beacon["randomness"][0],16)>>3)  # Most-significant bit of SHA-256(signature)
     predictions=p.get("bits")
     probs=p.get("probability_1")
@@ -147,7 +155,7 @@ def assess(precommit,signed_beacons,github_timestamp,now):
         "status":"ALL_SIGNED_INDEPENDENT_DRAND_ROUNDS_SCORED",
         "precommitted_sha256":precommit["sha256"],
         "github_server_artifact_timestamp":github_timestamp,
-        "n_distinct_rounds":COUNT,
+        "n_distinct_rounds":COUNT,"target_date":p["target_date"],
         "beacon_receipt_sha256":digest(signed_beacons),
         "matches":correct,"accuracy":round(correct/COUNT,8),
         "exact_two_sided_binomial_p":pval,
