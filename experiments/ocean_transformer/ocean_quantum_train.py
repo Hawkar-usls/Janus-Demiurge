@@ -24,6 +24,7 @@ import torch.nn.functional as F
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from janus_model.model import JanusModelConfig, JanusTinyTransformer, parameter_count
 import measurement_priors as priors
+import ocean_video_calibration as video_cal
 
 torch.set_num_threads(1)
 SEED = 20261109
@@ -69,6 +70,13 @@ def evaluate(model, data):
         }
 
 
+@torch.no_grad()
+def model_probabilities(model, data):
+    model.eval()
+    logits, _ = model(data[0])
+    return F.softmax(logits[:, -1, :2], -1)[:, 1].tolist()
+
+
 def train(steps: int, batch: int, output: str):
     if not 1 <= steps <= 300 or not 8 <= batch <= 512:
         raise ValueError("OUT_OF_BOUNDS_TRAINING_BUDGET")
@@ -83,6 +91,9 @@ def train(steps: int, batch: int, output: str):
     optim = torch.optim.AdamW(model.parameters(), lr=0.004, weight_decay=0.0005)
     rng = random.Random(SEED + 17)
     train_x, train_y, _ = draw(8192, SEED + 100)
+    # This split selects a single temperature. It is independent of both the
+    # training samples and the final read-only, previously frozen test set.
+    validation = draw(2048, SEED + 8001)
     test = draw(2048, SEED + 9001)
     before = evaluate(initial, test)
     model.train()
@@ -96,6 +107,17 @@ def train(steps: int, batch: int, output: str):
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         optim.step()
+    # Calibrate ONLY against validation outcomes. The test labels cannot
+    # influence temperature selection; all numerical evaluation below is
+    # performed with a frozen temperature.
+    validated_probabilities = model_probabilities(model, validation)
+    test_probabilities = model_probabilities(model, test)
+    video_calibration = video_cal.calibrate(
+        validated_probabilities, validation[1].tolist(),
+        test_probabilities, test[1].tolist(), test[2].tolist(),
+    )
+    if video_calibration["video_card_sha256"] != video_cal.card_sha256():
+        raise RuntimeError("VIDEO_HYPOTHESIS_SOURCE_CHANGED")
     after = evaluate(model, test)
     # Fresh, label-independent random future control. Not a proposed
     # algorithm for detecting future messages or a validation target.
@@ -125,6 +147,11 @@ def train(steps: int, batch: int, output: str):
         "training_steps": steps,
         "test_rows": len(test[1]),
         "independent_test_seed": SEED+9001,
+        "independent_validation_seed": SEED+8001,
+        "video_source": video_cal.VIDEO_URL,
+        "video_hypothesis_card_sha256": video_cal.card_sha256(),
+        "video_measurement_calibration": video_calibration,
+        "calibration_training_test_seeds_disjoint": True,
         "untrained_holdout": before,
         "trained_holdout": after,
         "independent_future_random_negative_control": control,
@@ -146,6 +173,8 @@ def train(steps: int, batch: int, output: str):
         "oracle_brier": after["analytic_born_oracle_brier"],
         "future_random_control_accuracy": control["accuracy"],
         "production_changed": False,
+        "calibrated_test_brier": video_calibration["test_calibrated"]["brier"],
+        "calibration_status": video_calibration["status"],
     }, sort_keys=True))
     return report
 
