@@ -10,6 +10,8 @@ on:
       - 'experiments/ocean_transformer/test_measurement_wolfram_bridge.py'
       - 'experiments/ocean_transformer/ocean_wolfram_council.py'
       - 'experiments/ocean_transformer/test_ocean_wolfram_council.py'
+      - 'experiments/ocean_transformer/ocean_video_calibration.py'
+      - 'experiments/ocean_transformer/test_ocean_video_calibration.py'
   workflow_dispatch:
     inputs:
       live_wolfram:
@@ -55,11 +57,13 @@ jobs:
         run: |
           set -euo pipefail
           python -m unittest discover -v -s experiments/ocean_transformer -p 'test_ocean_wolfram_council.py'
+          python -m unittest discover -v -s experiments/ocean_transformer -p 'test_ocean_video_calibration.py'
       - name: Freeze independent analytical measurement prior and OFFLINE provider receipt
         shell: bash
         run: |
           set -euo pipefail
           python experiments/ocean_transformer/measurement_priors.py --output artifacts/measurement_priors.json
+          python experiments/ocean_transformer/ocean_video_calibration.py --card artifacts/video_hypotheses.json
           python experiments/ocean_transformer/wolfram_alpha_bridge.py --mode offline --output artifacts/wolfram_offline.json
       - name: Optional live Wolfram Alpha arithmetic check (never from PR)
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.live_wolfram }}
@@ -91,6 +95,16 @@ jobs:
           assert p["production_checkpoint_changed"] is False
           assert p["proven_tachyons_or_retrocausal_communication"] is False
           assert p["future_labels_seen_at_training"] is False
+          import sys
+          sys.path.insert(0,"experiments/ocean_transformer")
+          import ocean_video_calibration as video
+          card=json.loads(Path("artifacts/video_hypotheses.json").read_text())
+          assert p["video_hypothesis_card_sha256"] == video.card_sha256()
+          assert card == video.video_card()
+          assert p["video_measurement_calibration"]["calibration_selection_used_test_labels"] is False
+          assert p["calibration_training_test_seeds_disjoint"] is True
+          print("Video calibration:",p["video_measurement_calibration"]["status"])
+          print("Video calibrated heldout NLL:",p["video_measurement_calibration"]["test_calibrated"]["nll"])
           print("Training measurement gate:",p["assessment"])
           PY
       - name: Produce Rowan-style source-bound council from exact Ocean run
@@ -114,6 +128,7 @@ jobs:
           result=json.load(open("artifacts/ocean_wolfram_council.json"))
           assert not result["claims"]["physical_retrocausal_communication_proven"]
           assert not result["authority"]["edit_production_weights"]
+          assert result["video_hypothesis_card_sha256"] is not None
           with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as f:
               f.write("## JANUS Ocean / Wolfram verification council\n\n")
               f.write("- Research admission: **"+result["research_admission"]+"**\n")
