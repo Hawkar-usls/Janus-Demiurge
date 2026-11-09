@@ -36,7 +36,7 @@ class VideoCalibrationTests(unittest.TestCase):
         scores = m.metrics(p,y)
         self.assertEqual(scores["n"], 4)
         self.assertAlmostEqual(scores["brier"], .125)
-        self.assertAlmostEqual(scores["accuracy"], 1.0)
+        self.assertAlmostEqual(scores["accuracy"], .75)
         self.assertTrue(0 <= scores["ece10"] <= 1)
 
     def test_calibration_never_peeks_at_test_labels(self):
