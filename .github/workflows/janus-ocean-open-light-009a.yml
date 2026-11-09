@@ -1,0 +1,161 @@
+name: JANUS Ocean / 009A NOAA Real Solar Prospective Forecast
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: janus-open-light-009a-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish-early-solar-and-virtual-glow-forecasts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONDONTWRITEBYTECODE: '1'
+      IBM_QUANTUM_API_KEY: ''
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Choose fixed target 2 days ahead; refuse duplicate precommit
+        id: target
+        shell: bash
+        run: |
+          set -euo pipefail
+          TARGET="$(date -u -d '+2 days' +%F)"
+          if [[ "$TARGET" < "2026-11-12" || "$TARGET" > "2026-11-19" ]]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "NO_FURTHER_PREDECLARED_009A_COHORTS"; exit 0
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+          NAME="janus-open-light-009a-$TARGET"
+          echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          COUNT="$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=$NAME&per_page=100" \
+            --jq "[.artifacts[] | select(.name==\"$NAME\")] | length")"
+          if test "$COUNT" -ne 0; then
+            echo "DUPLICATE_TARGET_FORBIDDEN $TARGET"; exit 1
+          fi
+      - name: Fetch only already historical NOAA Bondville records; train and seal
+        if: steps.target.outputs.enabled == 'true'
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/open_causality_009/noaa_009a.py \
+            prepare --target "${{ steps.target.outputs.target }}" \
+            --output artifacts/noaa009a_early.json
+          python experiments/ocean_transformer/open_causality_009/glow_009c.py \
+            prepare --noaa-early artifacts/noaa009a_early.json \
+            --output artifacts/glow009c_early.json
+          python experiments/ocean_transformer/open_causality_009/glow_009c.py \
+            bench --output artifacts/glow009c_bench_illustrative.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          a=json.loads(Path('artifacts/noaa009a_early.json').read_text())
+          b=json.loads(Path('artifacts/glow009c_early.json').read_text())
+          assert a['payload']['target_data_seen'] is False
+          assert b['payload']['actual_glow_measurements_available'] is False
+          assert b['payload']['noaa_009a_forecast_sha256']==a['sha256']
+          assert len(a['payload']['predictions_w_m2'])==24
+          assert len(b['payload']['expected_520nm_emission_microwatt'])==24
+          PY
+      - name: Externally timestamp early predictions using GitHub artifact
+        if: steps.target.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.target.outputs.name }}
+          path: artifacts/
+          retention-days: 90
+          if-no-files-found: error
+
+  verify-old-frozen-solar-forecast-only-after-NOAA-delay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 13
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONDONTWRITEBYTECODE: '1'
+      IBM_QUANTUM_API_KEY: ''
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Retrieve uniquely frozen artifact from earlier run
+        id: old
+        shell: bash
+        run: |
+          set -euo pipefail
+          TARGET="$(date -u -d '-3 days' +%F)"
+          if [[ "$TARGET" < "2026-11-12" || "$TARGET" > "2026-11-19" ]]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "NO_PENDING_PREDECLARED_009A_TARGET"; exit 0
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+          NAME="janus-open-light-009a-$TARGET"
+          echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=$NAME&per_page=100" > artifacts_index.json
+          python - "$NAME" <<'PY'
+          import json,sys
+          d=json.load(open('artifacts_index.json'))
+          a=[x for x in d['artifacts'] if x['name']==sys.argv[1] and not x['expired']]
+          if len(a)!=1:raise SystemExit('NO_UNIQUE_FROZEN_HISTORICAL_SOLAR_PRECOMMIT')
+          x=a[0]
+          with open('old.txt','w') as f:
+              f.write(str(x['workflow_run']['id'])+'\n'+x['created_at']+'\n')
+          print('EARLY_SOLAR_ARTIFACT_ID',x['id'])
+          PY
+          mkdir -p artifacts/early
+          gh run download "$(sed -n '1p' old.txt)" --repo "$GITHUB_REPOSITORY" \
+            --name "$NAME" --dir artifacts/early
+      - name: Score physical NOAA target and propagate hypothetical glow model
+        if: steps.old.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          CREATED="$(sed -n '2p' old.txt)"
+          TARGET="${{ steps.old.outputs.target }}"
+          python experiments/ocean_transformer/open_causality_009/noaa_009a.py \
+            assess --target "$TARGET" --early artifacts/early/noaa009a_early.json \
+            --artifact-created-at "$CREATED" \
+            --target-output artifacts/noaa009a_target_hourly_observations.json \
+            --output artifacts/noaa009a_real_score.json
+          python experiments/ocean_transformer/open_causality_009/glow_009c.py \
+            assess --noaa-early artifacts/early/noaa009a_early.json \
+            --glow-early artifacts/early/glow009c_early.json \
+            --noaa-observed artifacts/noaa009a_target_hourly_observations.json \
+            --output artifacts/glow009c_virtual_phosphor_score.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('artifacts/noaa009a_real_score.json').read_text())
+          g=json.loads(Path('artifacts/glow009c_virtual_phosphor_score.json').read_text())
+          assert x['status']=='PUBLIC_REAL_NOAA_OBSERVATION_SCORED'
+          assert x['n_hours']==24 and len(x['mae_w_m2'])==4
+          assert g['actual_glow_phosphor_measurements']==0
+          assert x['retrocausality_proven'] is False and g['retrocausality_proven'] is False
+          with open(__import__('os').environ['GITHUB_STEP_SUMMARY'],'a') as out:
+              out.write('## OPEN-LIGHT-009A prospective NOAA\n\n')
+              out.write(f"Actual NOAA GHI MAE (W/m²): {x['mae_w_m2']}\n\n")
+              out.write('009C GLOW is hypothetical phosphor response, not measured glow.\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: steps.old.outputs.enabled == 'true'
+        with:
+          name: janus-open-light-009a-scored-${{ steps.old.outputs.target }}
+          path: artifacts/
+          retention-days: 90
+          if-no-files-found: error

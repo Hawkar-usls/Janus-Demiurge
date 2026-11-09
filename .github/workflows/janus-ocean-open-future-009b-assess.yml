@@ -1,0 +1,88 @@
+name: JANUS Ocean / 009B Future drand 128bit Late Score
+on:
+  schedule:
+    - cron: '48 12 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: janus-open-future-009b-assess
+  cancel-in-progress: false
+jobs:
+  verify-future-only-after-independent-signature:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONDONTWRITEBYTECODE: '1'
+      IBM_QUANTUM_API_KEY: ''
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Read exactly one original GitHub-timestamped forecast
+        id: target
+        run: |
+          set -euo pipefail
+          TARGET="$(date -u +%F)"
+          if [[ "$TARGET" < "2026-11-12" || "$TARGET" > "2026-11-19" ]]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "NO_PREDECLARED_009B_TARGET_TO_ASSESS"; exit 0
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+          NAME="janus-open-future-009b-$TARGET"
+          echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=$NAME&per_page=100" > prior.json
+          python - "$NAME" <<'PY'
+          import json,sys
+          d=json.load(open("prior.json"))
+          x=[v for v in d["artifacts"] if v["name"]==sys.argv[1] and not v["expired"]]
+          if len(x)!=1:raise SystemExit("NO_UNIQUE_GITHUB_EARLY_WITNESS_FOR_THIS_DATE")
+          with open("prior.txt","w") as f:
+              f.write(str(x[0]["workflow_run"]["id"])+"\n"+x[0]["created_at"]+"\n")
+          PY
+          mkdir -p artifacts
+          gh run download "$(sed -n '1p' prior.txt)" --repo "$GITHUB_REPOSITORY" --name "$NAME" --dir artifacts
+      - name: Install pinned drand official cryptographic BLS verifier
+        if: steps.target.outputs.enabled == 'true'
+        run: |
+          set -euo pipefail
+          npm install --prefix experiments/ocean_transformer/drand_pilot --ignore-scripts --no-audit --no-fund --package-lock=false
+      - name: Obtain all exact 128 BLS-verified future round receipts and score
+        if: steps.target.outputs.enabled == 'true'
+        run: |
+          set -euo pipefail
+          node experiments/ocean_transformer/drand_pilot/signed_rounds_009.mjs \
+            artifacts/early_009b_128_bit_model_forecast.json artifacts/signed_128_future_rounds.json
+          python experiments/ocean_transformer/open_causality_009/future_009b.py \
+            assess --date "${{ steps.target.outputs.target }}" \
+            --precommit artifacts/early_009b_128_bit_model_forecast.json \
+            --beacons artifacts/signed_128_future_rounds.json \
+            --artifact-created-at "$(sed -n '2p' prior.txt)" \
+            --output artifacts/009b_128_verified_bit_score.json
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          s=json.loads(Path('artifacts/009b_128_verified_bit_score.json').read_text())
+          assert s['n_distinct_rounds']==128 and s['no_late_outcomes_filtered']
+          assert s['randomness_bls_verified'] and not s['retrocausality_proven']
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as f:
+              f.write("## JANUS Open Future 009B\n\n")
+              f.write("All 128 independently signed future bits scored; no postselection.\n\n")
+              f.write(f"Matches: {s['matches']}/128, p={s['exact_two_sided_binomial_p']}, Brier={s['brier']} vs 0.25\n\n")
+              f.write("No physical retrocausal receiver or channel tested.\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: steps.target.outputs.enabled == 'true'
+        with:
+          name: janus-open-future-009b-scored-${{ steps.target.outputs.target }}
+          path: artifacts/
+          retention-days: 90
+          if-no-files-found: error

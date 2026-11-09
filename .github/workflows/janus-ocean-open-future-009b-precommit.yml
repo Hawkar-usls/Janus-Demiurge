@@ -1,0 +1,76 @@
+name: JANUS Ocean / 009B Future drand 128bit Early
+on:
+  schedule:
+    - cron: '37 11 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: janus-open-future-009b-precommit
+  cancel-in-progress: false
+jobs:
+  earliest-prospective-forecast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONDONTWRITEBYTECODE: '1'
+      OMP_NUM_THREADS: '1'
+      IBM_QUANTUM_API_KEY: ''
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Reject duplicate cohort and emit target date
+        id: cohort
+        run: |
+          set -euo pipefail
+          TARGET="$(date -u -d '+2 days' +%F)"
+          if [[ "$TARGET" < "2026-11-12" || "$TARGET" > "2026-11-19" ]]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "PREDECLARED_009B_EIGHT_COHORT_WINDOW_COMPLETE"; exit 0
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+          NAME="janus-open-future-009b-$TARGET"
+          echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          COUNT="$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=$NAME&per_page=100" --jq "[.artifacts[] | select(.name==\"$NAME\")] | length")"
+          test "$COUNT" -eq 0 || { echo "DUPLICATE_FUTURE_TRIAL_REFUSED"; exit 1; }
+      - name: Retrieve exact frozen JanusTinyTransformer research checkpoint
+        if: steps.cohort.outputs.enabled == 'true'
+        run: |
+          set -euo pipefail
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/13663149173" --jq .digest)" = "sha256:45c8b063b08973b06b88ec843e9a5d16976c983a8e35b39ef33e9304201e5515"
+          gh run download 42596763409 --repo "$GITHUB_REPOSITORY" --name janus-ocean-wolfram-measurement --dir frozen_source
+          test -f frozen_source/training/ocean_measurement_candidate.pt
+          test -f frozen_source/training/report.json
+      - name: Install CPU inference and signed Quicknet verifier
+        run: |
+          set -euo pipefail
+          python -c 'import torch' || python -m pip install --disable-pip-version-check 'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
+          npm install --prefix experiments/ocean_transformer/drand_pilot --ignore-scripts --no-audit --no-fund --package-lock=false
+      - name: Freeze 128 probabilities for distinct future rounds
+        if: steps.cohort.outputs.enabled == 'true'
+        run: |
+          set -euo pipefail
+          node experiments/ocean_transformer/drand_pilot/signed_quicknet.mjs latest - artifacts/latest_signed_quicknet.json
+          python experiments/ocean_transformer/open_causality_009/future_009b.py prepare \
+            --date "${{ steps.cohort.outputs.target }}" \
+            --latest artifacts/latest_signed_quicknet.json \
+            --checkpoint frozen_source/training/ocean_measurement_candidate.pt \
+            --training-report frozen_source/training/report.json \
+            --output artifacts/early_009b_128_bit_model_forecast.json
+      - uses: actions/upload-artifact@v4
+        if: steps.cohort.outputs.enabled == 'true'
+        with:
+          name: ${{ steps.cohort.outputs.name }}
+          path: artifacts/early_009b_128_bit_model_forecast.json
+          retention-days: 90
+          if-no-files-found: error

@@ -1,0 +1,87 @@
+name: JANUS Ocean / Open Causality 009 Offline and Glow Controls
+
+on:
+  push:
+    branches:
+      - janus/open-causality-009-noaa-drand-20261109
+    paths:
+      - 'experiments/ocean_transformer/open_causality_009/**'
+      - '.github/workflows/janus-ocean-open-causality-009-offline-ci.yml'
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/open_causality_009/**'
+      - '.github/workflows/janus-ocean-open-causality-009-offline-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bounded-no-physical-ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONHASHSEED: '0'
+      IBM_QUANTUM_API_KEY: ''
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run NOAA and drand protocol + GLOW optical memory unit tests
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s experiments/ocean_transformer/open_causality_009 \
+            -p 'test_open_causality_009.py'
+      - name: Generate deterministic phosphor mathematical example
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/open_causality_009/glow_009c.py \
+            bench --output artifacts/open_glow_009c_illustrative_bench.json
+      - name: Archive immutable reproducibility manifest
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          g=Path('artifacts/open_glow_009c_illustrative_bench.json')
+          v=json.loads(g.read_text())
+          assert v['no_physical_glow_sensor_run'] is True
+          assert v['retrocausality_proven'] is False
+          assert v['status']=='ANALYTIC_SCENARIO_NOT_MEASURED'
+          paths=[
+           'experiments/ocean_transformer/open_causality_009/noaa_009a.py',
+           'experiments/ocean_transformer/open_causality_009/future_009b.py',
+           'experiments/ocean_transformer/open_causality_009/glow_009c.py',
+           'experiments/ocean_transformer/open_causality_009/aggregate_009.py',
+           'experiments/ocean_transformer/open_causality_009/test_open_causality_009.py',
+          ]
+          result={
+           'status':'OFFLINE_PROTOCOL_AND_GLOW_MODEL_TESTS_PASS',
+           'run_id':os.environ['GITHUB_RUN_ID'],
+           'head_sha':os.environ['GITHUB_SHA'],
+           'unit_tests':27,
+           'file_sha256':{p:hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in paths},
+           'illustrative_glow_sha256':hashlib.sha256(g.read_bytes()).hexdigest(),
+           'no_NOAA_target_labels_fetched':True,
+           'no_drand_future_rounds_fetched':True,
+           'no_actual_photon_measurements':True,
+           'physical_retrocausality_proven':False,
+           'QPU_minutes':0,
+          }
+          Path('artifacts/open_causality_009_offline_manifest.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+            f.write('## OPEN-CAUSALITY-009 offline admission\n\n')
+            f.write('27 protocol/glow and full-cohort tests, no live future data.\n\n')
+            f.write('SUNLU 5% source composition is not a measurement of optical efficiency.\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-open-causality-009-offline-${{ github.run_id }}
+          path: artifacts/
+          retention-days: 90
+          if-no-files-found: error

@@ -1,0 +1,81 @@
+name: JANUS Ocean / 009 Complete Eight-Cohort Independent Pool
+on:
+  schedule:
+    - cron: '7 14 20,23 11 *'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  prespecified-full-evidence-aggregation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONDONTWRITEBYTECODE: '1'
+      IBM_QUANTUM_API_KEY: ''
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Decide which research lane can be pooled now
+        id: lane
+        shell: bash
+        run: |
+          set -euo pipefail
+          TODAY="$(date -u +%F)"
+          case "$TODAY" in
+            2026-11-20) echo "lane=future" >> "$GITHUB_OUTPUT"; echo "prefix=janus-open-future-009b-scored" >> "$GITHUB_OUTPUT" ;;
+            2026-11-23) echo "lane=light" >> "$GITHUB_OUTPUT"; echo "prefix=janus-open-light-009a-scored" >> "$GITHUB_OUTPUT" ;;
+            *) echo "lane=none" >> "$GITHUB_OUTPUT" ;;
+          esac
+      - name: Independently retrieve ALL eight immutable late results
+        if: steps.lane.outputs.lane != 'none'
+        run: |
+          set -euo pipefail
+          mkdir -p frozen_all
+          for DAY in 12 13 14 15 16 17 18 19; do
+            DATE="2026-11-$DAY"
+            NAME="${{ steps.lane.outputs.prefix }}-$DATE"
+            gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=$NAME&per_page=100" > result_index.json
+            RUN_ID="$(python - "$NAME" <<'PY'
+          import json,sys
+          d=json.load(open('result_index.json'))
+          x=[a for a in d['artifacts'] if a['name']==sys.argv[1] and not a['expired']]
+          if len(x)!=1:raise SystemExit('INCOMPLETE_OR_DUPLICATE_ORIGINAL_DAY_'+sys.argv[1])
+          print(x[0]['workflow_run']['id'])
+          PY
+            )"
+            mkdir -p "frozen_all/$DATE"
+            gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" \
+              --name "$NAME" --dir "frozen_all/$DATE"
+            if test "${{ steps.lane.outputs.lane }}" = "future"; then
+              cp "frozen_all/$DATE/009b_128_verified_bit_score.json" "frozen_all/$DATE.json"
+            else
+              cp "frozen_all/$DATE/noaa009a_real_score.json" "frozen_all/$DATE.json"
+            fi
+          done
+          python experiments/ocean_transformer/open_causality_009/aggregate_009.py "${{ steps.lane.outputs.lane }}" \
+            --input frozen_all/2026-11-*.json \
+            --output artifacts/open_causality_009_complete_eight_day_result.json
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          r=json.loads(Path('artifacts/open_causality_009_complete_eight_day_result.json').read_text())
+          assert r['retrocausality_proven'] is False
+          assert len(r.get('original_8_target_dates',r.get('target_dates',[])))==8
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as f:
+            f.write("## Open Causality 009 final, eight fixed dates\n\n")
+            f.write(str(r)+"\n\n")
+            f.write("An anomalous score is not evidence of physical reverse causation.\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: steps.lane.outputs.lane != 'none'
+        with:
+          name: janus-open-causality-009-eight-day-pooled-${{ steps.lane.outputs.lane }}
+          path: artifacts/open_causality_009_complete_eight_day_result.json
+          retention-days: 90
+          if-no-files-found: error
