@@ -13,6 +13,7 @@ from unittest.mock import patch
 import noaa_009a as a
 import future_009b as b
 import glow_009c as c
+import aggregate_009 as agg
 
 UTC=dt.timezone.utc
 TODAY=dt.datetime(2026,11,9,4,15,tzinfo=UTC)
@@ -212,5 +213,50 @@ class GlowTests(TestCase):
             c.sun_drive([100.0]*23)
         with self.assertRaisesRegex(ValueError,"GLOW_EXPECTS_24_NONNEGATIVE_GHI"):
             c.sun_drive([100.0]*23+[-1.0])
+
+
+class FixedEightCohortTests(TestCase):
+    def future_examples(self, matches=70):
+        return [{"lane":"OPEN-FUTURE-009B",
+                 "status":"ALL_SIGNED_INDEPENDENT_DRAND_ROUNDS_SCORED",
+                 "n_distinct_rounds":128,
+                 "randomness_bls_verified":True,
+                 "no_late_outcomes_filtered":True,
+                 "retrocausality_proven":False,
+                 "target_date":day,
+                 "matches":matches,"brier":.25}
+                 for day in agg.DATES]
+
+    def light_examples(self):
+        return [{"lane":"OPEN-LIGHT-009A",
+                 "status":"PUBLIC_REAL_NOAA_OBSERVATION_SCORED",
+                 "n_hours":24,
+                 "target_all_24_hours":True,
+                 "retrocausality_proven":False,
+                 "target_date":day,
+                 "mae_w_m2":{"JANUS_PHYSICS_HEURISTIC":2.0,
+                            "persistence":3.0,"diurnal":4.0,"clear_sky":5.0}}
+                for day in agg.DATES]
+
+    def test_exact_1024_threshold_is_predeclared(self):
+        self.assertGreater(agg.one_sided_binomial_tail(561,1024),.001)
+        self.assertLess(agg.one_sided_binomial_tail(562,1024),.001)
+
+    def test_complete_eight_cohorts_scores_without_best_of_selection(self):
+        result=agg.pool_future(self.future_examples(matches=70))
+        self.assertEqual(result["n"],1024)
+        self.assertEqual(result["matches"],560)
+        self.assertFalse(result["directional_threshold_reached"])
+        self.assertFalse(result["retrocausality_proven"])
+
+    def test_missing_one_future_cohort_fails_closed(self):
+        with self.assertRaisesRegex(ValueError,"INCOMPLETE_EIGHT_COHORT"):
+            agg.pool_future(self.future_examples()[:-1])
+
+    def test_all_fixed_noaa_days_scored_with_each_baseline(self):
+        result=agg.pool_light(self.light_examples())
+        self.assertEqual(result["n_hourly_observations"],192)
+        self.assertTrue(result["fixed_hybrid_beats_each_baseline"])
+        self.assertFalse(result["retrocausality_proven"])
 
 if __name__=="__main__":main(verbosity=2)
