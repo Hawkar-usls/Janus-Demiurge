@@ -1,0 +1,51 @@
+name: JANUS Ocean / Frozen Transformer Future Forecast 004 CI
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/janus-ocean-future-model-004-ci.yml"
+      - ".github/workflows/janus-ocean-future-model-004-one-shot.yml"
+      - "experiments/ocean_transformer/ocean_future_model_prediction.py"
+      - "experiments/ocean_transformer/test_ocean_future_model_prediction.py"
+      - "experiments/ocean_transformer/JANUS_FUTURE_TRANSFORMER_004.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-ocean-frozen-model-004-ci-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  offline-frozen-model-guards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run fixed-target negative tests, without torch or drand requests
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          set -euo pipefail
+          python -m py_compile experiments/ocean_transformer/ocean_future_model_prediction.py
+          python -m unittest discover -s experiments/ocean_transformer \
+            -p 'test_ocean_future_model_prediction.py' -v
+      - name: Check no secret or future-target training path
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s=Path("experiments/ocean_transformer/ocean_future_model_prediction.py").read_text()
+          assert 'torch.load(p,map_location="cpu",weights_only=True)' in s
+          assert 'SOURCE_RUN = 42596763409' in s
+          assert 'FUTURE_OFFSET = 80' in s
+          assert '"postselection_used":False' in s
+          assert '"automatic_model_promotion":False' in s
+          print("PASS frozen checkpoint, fixed public target features and no postselection")
+          PY
