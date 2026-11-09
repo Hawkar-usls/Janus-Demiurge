@@ -1,0 +1,98 @@
+name: JANUS Ocean / Published Zeno Laboratory Benchmark 003
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/janus-ocean-itano-lab-003.yml"
+      - ".github/workflows/janus-ocean-drand-blind-one-shot.yml"
+      - "experiments/ocean_transformer/data/itano1990_pra_table1.json"
+      - "experiments/ocean_transformer/itano_lab_benchmark.py"
+      - "experiments/ocean_transformer/test_itano_lab_benchmark.py"
+      - "experiments/ocean_transformer/blind_drand_pilot.py"
+      - "experiments/ocean_transformer/test_blind_drand_pilot.py"
+      - "experiments/ocean_transformer/drand_pilot/**"
+      - "experiments/ocean_transformer/JANUS_ZENO_TEMPORAL_003.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-itano-lab-003-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  published-lab-and-protocol-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify publication data, ideal physical model, blind beacon protocol
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s experiments/ocean_transformer -p 'test_itano_lab_benchmark.py' -v
+          python -m unittest discover -s experiments/ocean_transformer -p 'test_blind_drand_pilot.py' -v
+      - name: Compare published 14 laboratory measurements without tuning
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/itano_lab_benchmark.py \
+            --input experiments/ocean_transformer/data/itano1990_pra_table1.json \
+            --output artifacts/itano1990_external_lab_benchmark.json
+      - name: Freeze source and SHA-linked comparison outcome
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+          SOURCE_RUN: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          root=Path("artifacts")
+          data=json.loads((root/"itano1990_external_lab_benchmark.json").read_text())
+          assert data["source"]["observed_values_count"]==14
+          assert data["interpretation"]["observed_minus_0_006_preserved"] is True
+          assert data["interpretation"]["paper_apparatus_model_has_smaller_rmse_both_directions"] is True
+          assert data["interpretation"]["formal_pvalue_computed"] is False
+          assert data["model"]["fitted_using_published_observations"] is False
+          assert data["interpretation"]["physical_retrocausality_established"] is False
+          output={
+            "schema":"janus.ocean.itano1990_external_lab_gate.v1",
+            "status":"ORIGINAL_LAB_MEASUREMENTS_COMPARED_WITH_FROZEN_BASELINE",
+            "run_id":os.environ["SOURCE_RUN"],
+            "git_commit_sha":os.environ["SOURCE_SHA"],
+            "lab_source_doi":"10.1103/PhysRevA.41.2295",
+            "data_file_sha256":data["source"]["source_table_sha256"],
+            "output_file_sha256":hashlib.sha256(
+                (root/"itano1990_external_lab_benchmark.json").read_bytes()).hexdigest(),
+            "lab_measured_observations":14,
+            "physical_retrocausal_signal_established":False,
+            "independent_hidden_test_data_claimed":False,
+            "production_weights_modified":False,
+          }
+          (root/"itano_lab_gate_summary.json").write_text(json.dumps(output,indent=2,sort_keys=True)+"\n")
+          m=data["metrics"]
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as f:
+              f.write("## JANUS Ocean · Itano 1990 real lab data\n\n")
+              f.write("DOI 10.1103/PhysRevA.41.2295, Table I\n\n")
+              f.write("| Direction | Frozen ideal RMSE | Paper apparatus RMSE |\n|---|---:|---:|\n")
+              for key in ("level_1_to_2","level_2_to_1"):
+                  f.write(f'| {key} | {m[key]["observed_vs_frozen_ideal"]["rmse"]:.5f} | '
+                          f'{m[key]["observed_vs_original_paper_apparatus_prediction"]["rmse"]:.5f} |\n')
+              f.write("\n14 published measurements, 0 fitted parameters, 0 new hardware measurements.\n")
+              f.write("Negative observed estimate -0.006 preserved; ~0.02 uncertainty is approximate.\n")
+              f.write("Physical retrocausal signal: NOT TESTED.\n")
+          print(json.dumps(output,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-ocean-itano-1990-lab-003
+          path: artifacts/
+          retention-days: 60
+          if-no-files-found: error
