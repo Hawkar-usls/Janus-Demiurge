@@ -10,12 +10,13 @@
 - The January hypothesis, "Light is a noisy, multi-user API", describes a useful engineering analogy for the roles of photons, absorption, photobiological responses, external variations and time jitter.
 - The historical use of "decoherence" for moving leaves/shadows mixes distinct concepts; classical jitter/occlusion, quantum decoherence and photosynthesis have different mechanisms. This protocol does not treat them as equivalent.
 
-## Four separate reproducible tests
+## Five separate reproducible tests
 
-1. **LIGHT-CTRL-01 photon-counting noise** — 2048 seeded synthetic Poisson count bins at rates 4 and 12 counts/bin; a Fano-factor and mean-rate sanity check. This is one idealized independent-arrival model, *not* a universal law for coherent, thermal or quantum light and not a physical photon detector.
-2. **LIGHT-CTRL-02 forward light delay** — a seeded classical pulse source drives a simulated detector with delay 3 bins, weak delayed spillover, and additive jitter. Train lag/levels only on t=16..511, keep t=512..639 unused, freeze a SHA-tagged prediction for t=640..1023, then compare held-out MAE to a constant baseline. Future input time or misaligned source must be rejected. No real independent timestamp, no physical speed-of-light measurement.
-3. **LIGHT-CTRL-03 late-choice selection trap** — exactly 4096 seeded synthetic [A,C,B] bits. A is independent of C in *all original shots*, while late-B-based filtering generates a highly significant false association. Reuse original CTRL-006 QPU-005 Fisher test to show why postselection is forbidden. This is a demonstration of selection/collider bias, not an executed delayed-choice experiment.
-4. **LIGHT-CTRL-04 historical provenance** — compare exact Git blob hashes of the original Markdown-fenced LIGHT and later JSON-normalized LIGHT; validate semantic equality. Also run the unchanged CTRL-006 historical banana/bridge/QPU-005 provenance check to preserve linkage.
+1. **LIGHT-CTRL-00 spectral energy** — exact analytic relation E = hc/lambda for 450, 660 and 730 nm from the historical record. Verify blue photons have higher energy than red and far-red. This does not demonstrate any biological photoreceptor response or encode software commands.
+2. **LIGHT-CTRL-01 photon-counting noise** — 2048 seeded synthetic Poisson count bins at rates 4 and 12 counts/bin; a Fano-factor and mean-rate sanity check. This is one idealized independent-arrival model, *not* a universal law for coherent, thermal or quantum light and not a physical photon detector.
+3. **LIGHT-CTRL-02 forward light delay** — a seeded classical pulse source drives a simulated detector with delay 3 bins, weak delayed spillover, and additive jitter. Train lag/levels only on t=16..511, keep t=512..639 unused, freeze a SHA-tagged prediction for t=640..1023, then compare held-out MAE to a constant baseline. Future input time or misaligned source must be rejected. No real independent timestamp, no physical speed-of-light measurement.
+4. **LIGHT-CTRL-03 late-choice selection trap** — exactly 4096 seeded synthetic [A,C,B] bits. A is independent of C in *all original shots*, while late-B-based filtering generates a highly significant false association. Reuse original CTRL-006 QPU-005 Fisher test to show why postselection is forbidden. This is a demonstration of selection/collider bias, not an executed delayed-choice experiment.
+5. **LIGHT-CTRL-04 historical provenance** — compare exact Git blob hashes of the original Markdown-fenced LIGHT and later JSON-normalized LIGHT; validate semantic equality. Also run the unchanged CTRL-006 historical banana/bridge/QPU-005 provenance check to preserve linkage.
 
 ## Reproduction (Python 3.11, stdlib only)
 
