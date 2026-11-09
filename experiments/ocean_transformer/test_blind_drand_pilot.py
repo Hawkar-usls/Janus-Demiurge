@@ -38,9 +38,10 @@ class BlindDrandTests(unittest.TestCase):
         result=p.assess(early,beacon,artifact,after)
         self.assertEqual(result["status"],"BLIND_PUBLIC_BEACON_NEGATIVE_CONTROL_COMPLETE")
         self.assertEqual(result["n_all_raw_bits"],256)
-        self.assertEqual(result["matches"],256)
-        self.assertEqual(result["raw_accuracy"],1)
-        self.assertLess(result["exact_two_sided_binomial_p_under_independent_fair_bit_null"],1e-40)
+        # Synthetic fixture is strictly 128/256, not a fabricated perfect hit.
+        self.assertEqual(result["matches"],128)
+        self.assertEqual(result["raw_accuracy"],.5)
+        self.assertEqual(result["exact_two_sided_binomial_p_under_independent_fair_bit_null"],1.0)
         self.assertFalse(result["physical_retrocausal_signal_proven"])
         self.assertTrue(result["outlier_is_not_physical_retrocausality"])
         self.assertFalse(result["independent_physical_early_receiver"])
