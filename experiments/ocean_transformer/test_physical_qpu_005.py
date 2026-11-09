@@ -95,7 +95,7 @@ class QPUProtocolTests(unittest.TestCase):
     def test_fisher_small_exact_case(self):
         # [[2,0],[0,2]] has two equally unlikely extreme cases out of 6.
         self.assertAlmostEqual(p.fisher_exact_two_sided(2,0,0,2),1/3)
-        self.assertEqual(p.fisher_exact_two_sided(1,1,1,1),1)
+        self.assertAlmostEqual(p.fisher_exact_two_sided(1,1,1,1),1)
 
     def test_immutable_plan_and_result(self):
         with tempfile.TemporaryDirectory() as root:
