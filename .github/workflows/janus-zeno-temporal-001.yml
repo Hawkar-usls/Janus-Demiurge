@@ -1,0 +1,139 @@
+name: JANUS Ocean / Zeno Temporal 001
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/janus-zeno-temporal-001.yml'
+      - 'experiments/ocean_transformer/zeno_temporal_001.py'
+      - 'experiments/ocean_transformer/zeno_retro_control.py'
+      - 'experiments/ocean_transformer/zeno_wolfram_bridge.py'
+      - 'experiments/ocean_transformer/test_zeno_temporal_001.py'
+      - 'experiments/ocean_transformer/JANUS_ZENO_TEMPORAL_001.md'
+  workflow_dispatch:
+    inputs:
+      live_wolfram:
+        description: 'Opt-in: four Zeno formula checks with Wolfram Alpha AppID, if configured'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-zeno-temporal-001-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  bounded-cpu-research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify analytic Zeno, source-bound receipts and provider boundary
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s experiments/ocean_transformer -p 'test_zeno_temporal_001.py' -v
+      - name: Freeze CPU Zeno probabilities and SVG curve
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/zeno_temporal_001.py \
+            --output artifacts/zeno_probabilities.json \
+            --chart artifacts/zeno_survival_curve.svg
+      - name: Commit synthetic early receiver output before generating late choice
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/zeno_retro_control.py receiver \
+            --output artifacts/early_receiver_precommit.json
+      - name: Generate independent later random-choice control
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/zeno_retro_control.py sender \
+            --receiver artifacts/early_receiver_precommit.json \
+            --output artifacts/late_choice_precommit.json
+      - name: Assess full raw data without postselection
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/zeno_retro_control.py assess \
+            --receiver artifacts/early_receiver_precommit.json \
+            --sender artifacts/late_choice_precommit.json \
+            --output artifacts/retro_negative_control.json
+      - name: Offline-first Wolfram Alpha formula attestation
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/zeno_wolfram_bridge.py \
+            --mode offline --output artifacts/wolfram_zeno_offline.json
+      - name: Optional four LIVE Wolfram Alpha checks (manual dispatch only)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.live_wolfram }}
+        env:
+          WOLFRAM_ALPHA_APPID: ${{ secrets.WOLFRAM_ALPHA_APPID }}
+        run: |
+          set -euo pipefail
+          test -n "$WOLFRAM_ALPHA_APPID" || { echo 'WOLFRAM_ALPHA_APPID_REQUIRED_IN_ACTIONS_SECRETS'; exit 1; }
+          python experiments/ocean_transformer/zeno_wolfram_bridge.py \
+            --mode live --output artifacts/wolfram_zeno_live.json
+      - name: Link immutable evidence and source commit to bounded science verdict
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+          ACTIONS_RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          root = Path("artifacts")
+          files = sorted(path for path in root.iterdir() if path.is_file())
+          digests = {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in files}
+          z = json.loads((root/"zeno_probabilities.json").read_text())
+          retro = json.loads((root/"retro_negative_control.json").read_text())
+          wolfram = json.loads((root/"wolfram_zeno_offline.json").read_text())
+          live_path = root/"wolfram_zeno_live.json"
+          if live_path.exists():
+              wolfram = json.loads(live_path.read_text())
+          assert z["status"] == "STANDARD_QM_CPU_REFERENCE_ONLY"
+          assert retro["n"] == 2048
+          assert retro["sampling"]["same_runner_not_independent_external_sender"] is True
+          assert retro["negative_control"]["postselection_allowed_for_primary_test"] is False
+          assert wolfram["proof_of_retrocausality"] is False
+          assert all(not z["scope"][k] for k in (
+              "real_physical_measurement_performed",
+              "physical_retrocausality_proven",
+              "forced_collapse_outcome"))
+          report = {
+              "experiment_id": "JANUS-ZENO-TEMPORAL-001",
+              "schema": "janus.ocean.zeno_gate_summary.v1",
+              "git_source_sha": os.environ["SOURCE_SHA"],
+              "github_actions_run_id": os.environ["ACTIONS_RUN_ID"],
+              "stage": "DEVELOPMENT_ONLY",
+              "evidence_sha256": digests,
+              "cpu_zeno": "PASS_ANALYTIC_REFERENCE",
+              "retro_control": "SAME_RUNNER_NEGATIVE_CONTROL_ONLY",
+              "retrosignal_confirmed": False,
+              "wolfram_alpha": wolfram["status"],
+              "external_sender_verified": False,
+              "production_model_promoted": False,
+          }
+          (root/"zeno_gate_summary.json").write_text(
+              json.dumps(report, indent=2, sort_keys=True)+"\n")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
+              f.write("## JANUS-ZENO-TEMPORAL-001\n\n")
+              f.write("- CPU Zeno: **analytical reference PASS**\n")
+              f.write("- Wolfram Alpha: **"+wolfram["status"]+"**\n")
+              f.write("- Raw late-choice match rate: **"+
+                      str(round(100*retro["raw_accuracy"],3))+"%**\n")
+              f.write("- Independent physical retrocausality: **NOT TESTED**\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-zeno-temporal-001
+          path: artifacts/
+          retention-days: 30
+          if-no-files-found: error
