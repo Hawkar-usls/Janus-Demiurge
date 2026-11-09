@@ -1,0 +1,148 @@
+name: JANUS Ocean / Wolfram Alpha Read-Only Measurement Lens
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/janus-ocean-wolfram-measurement.yml'
+      - '.janus/WOLFRAM_OCEAN_MATH_SOURCE_LINK.json'
+      - 'docs/JANUS_OCEAN_WOLFRAM_MEASUREMENT.md'
+      - 'experiments/ocean_transformer/wolfram_ocean_bridge.py'
+      - 'experiments/ocean_transformer/janus_measurement_temporal_lens.py'
+      - 'experiments/ocean_transformer/test_wolfram_ocean_bridge.py'
+      - 'experiments/ocean_transformer/test_janus_measurement_temporal_lens.py'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/janus-ocean-wolfram-measurement.yml'
+      - 'experiments/ocean_transformer/wolfram_ocean_bridge.py'
+      - 'experiments/ocean_transformer/janus_measurement_temporal_lens.py'
+      - 'experiments/ocean_transformer/test_wolfram_ocean_bridge.py'
+      - 'experiments/ocean_transformer/test_janus_measurement_temporal_lens.py'
+  workflow_dispatch:
+    inputs:
+      live_wolfram:
+        description: 'Opt in to up to six real Wolfram|Alpha queries (requires repository AppID secret)'
+        type: boolean
+        required: true
+        default: false
+      train_experimental:
+        description: 'Train only a research JanusTinyTransformer checkpoint'
+        type: boolean
+        required: true
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-ocean-wolfram-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  offline-contract:
+    name: Provider-mock refusal, quantum controls, source contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Test no-signalling physics and Wolfram credential boundary
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v -s experiments/ocean_transformer -p 'test_wolfram_ocean_bridge.py'
+          python -m unittest discover -v -s experiments/ocean_transformer -p 'test_janus_measurement_temporal_lens.py'
+      - name: Offline fixtures only - no API calls and no retrocausal claims
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/wolfram_ocean_bridge.py \
+            --out artifacts/wolfram/offline_fixture_only.json
+          python experiments/ocean_transformer/janus_measurement_temporal_lens.py \
+            --physics-only > artifacts/wolfram/measurement_physics.json
+          python - <<'PY'
+          import json
+          s=json.load(open("artifacts/wolfram/offline_fixture_only.json"))
+          p=json.load(open("artifacts/wolfram/measurement_physics.json"))
+          assert s["status"] == "OFFLINE_FIXTURES_ONLY" and s["request_count"] == 0
+          assert not p["physics"]["early_operational_bit_from_late_free_choice"]
+          assert not p["physics"]["physical_retrocausality_demonstrated"]
+          assert not s["model_promotion_allowed"]
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-wolfram-offline-scientific-contract
+          path: artifacts/wolfram/
+          retention-days: 14
+
+  experimental-training:
+    name: Optional real Wolfram source and sandbox model training
+    if: github.event_name == 'workflow_dispatch' && inputs.train_experimental
+    needs: offline-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ensure CPU PyTorch for existing JanusTinyTransformer
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check --retries 2 \
+              'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
+          fi
+          python -c 'import torch; print("CPU PyTorch",torch.__version__)'
+      - name: Explicit Wolfram opt-in (fail closed if missing AppID)
+        if: inputs.live_wolfram
+        env:
+          WOLFRAM_ALPHA_APPID: ${{ secrets.WOLFRAM_ALPHA_APPID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${WOLFRAM_ALPHA_APPID:-}" ]]; then
+            echo 'LIVE_WOLFRAM_BLOCKED: configure repository secret WOLFRAM_ALPHA_APPID'
+            exit 1
+          fi
+          python experiments/ocean_transformer/wolfram_ocean_bridge.py \
+            --live --out artifacts/wolfram/live_math_receipt.json
+      - name: Isolated JanusTinyTransformer measurement task, with optional live receipt
+        shell: bash
+        env:
+          LIVE_WOLFRAM: ${{ inputs.live_wolfram }}
+        run: |
+          set -euo pipefail
+          if [[ "$LIVE_WOLFRAM" == "true" ]]; then
+            python experiments/ocean_transformer/janus_measurement_temporal_lens.py \
+              --steps 160 --out artifacts/wolfram/ocean_research \
+              --wolfram-evidence artifacts/wolfram/live_math_receipt.json
+          else
+            python experiments/ocean_transformer/janus_measurement_temporal_lens.py \
+              --steps 160 --out artifacts/wolfram/ocean_research
+          fi
+          python - <<'PY'
+          import json
+          r=json.load(open("artifacts/wolfram/ocean_research/measurement_lens_report.json"))
+          assert r["production_checkpoint_changed"] is False
+          assert r["admission_to_production"] is False
+          assert r["physics"]["early_operational_bit_from_late_free_choice"] is False
+          assert r["claim"].endswith("NO_PRODUCTION_PROMOTION")
+          print("TRAINING_RESEARCH_ONLY:",r["training"]["test_after"])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-ocean-wolfram-measurement-research
+          path: artifacts/wolfram/
+          retention-days: 30
+          if-no-files-found: error
