@@ -96,6 +96,7 @@ class Tests(unittest.TestCase):
             return FakeResponse(json.dumps(body).encode("utf-8"))
 
         good = w.check(live=True, appid="MOCK_KEY_NOT_LIVE_PROVIDER", opener=fake)
+        self.assertTrue(all(type(row.get("wolfram_numeric_result")) in (int, float) for row in good["queries"]), str([(row["id"], type(row.get("wolfram_numeric_result")).__name__) for row in good["queries"]]))
         w.verify_live_math_receipt(good)
 
         for bad in [
