@@ -9,6 +9,23 @@ from unittest.mock import patch
 import light_controls_007 as c
 
 
+class SpectralEnergyTests(unittest.TestCase):
+    def test_energy_inversely_proportional_to_wavelength(self):
+        score = c.spectral_energy_control()
+        self.assertEqual(score["status"], "PASS_ANALYTICAL_FORMULA_ONLY")
+        self.assertGreater(score["photon_energy_eV"]["blue"], score["photon_energy_eV"]["red"])
+        self.assertGreater(score["photon_energy_eV"]["red"], score["photon_energy_eV"]["far_red"])
+
+    def test_energy_ratio_from_planck_relation(self):
+        self.assertAlmostEqual(c.photon_energy_eV(450) / c.photon_energy_eV(660), 660 / 450)
+
+    def test_bad_wavelength_and_physical_claim_refused(self):
+        for wavelength in (0, -1, 20000):
+            with self.assertRaisesRegex(ValueError, "INVALID_LIGHT_WAVELENGTH_NM"):
+                c.photon_energy_eV(wavelength)
+        self.assertFalse(c.spectral_energy_control()["detector_or_plant_data_used"])
+
+
 class PhotonCountingTests(unittest.TestCase):
     def test_count_streams_deterministic(self):
         self.assertEqual(c.count_streams(), c.count_streams())
@@ -141,8 +158,9 @@ class HistoricalLightProvenanceTests(unittest.TestCase):
     def test_combined_report_no_physical_claims(self):
         report = c.combined_report()
         self.assertTrue(report["all_controls_pass"])
-        self.assertEqual(len(report["controls"]), 4)
+        self.assertEqual(len(report["controls"]), 5)
         self.assertEqual([x["control"] for x in report["controls"]], [
+            "LIGHT-CTRL-00-SPECTRAL-ENERGY",
             "LIGHT-CTRL-01-COUNTING-NOISE",
             "LIGHT-CTRL-02-FORWARD-DELAYS",
             "LIGHT-CTRL-03-NO-POSTSELECTION",
