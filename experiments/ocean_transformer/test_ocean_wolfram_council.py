@@ -29,7 +29,30 @@ def synthetic_training():
             "cases": 2048, "brier": 0.155, "analytic_born_oracle_brier": 0.154, "logloss": 0.48
         },
         "independent_future_random_negative_control": {"cases": 2048, "accuracy": .50},
-        "assessment": "SYNTHETIC_BORN_RULE_LEARNING_GAIN_ONLY"
+        "assessment": "SYNTHETIC_BORN_RULE_LEARNING_GAIN_ONLY",
+        "video_source": c.video.VIDEO_URL,
+        "video_hypothesis_card_sha256": c.video.card_sha256(),
+        "independent_validation_seed": 20269110,
+        "independent_test_seed": 20270110,
+        "calibration_training_test_seeds_disjoint": True,
+        "video_measurement_calibration": {
+            "schema": c.video.SCHEMA,
+            "video_card_sha256": c.video.card_sha256(),
+            "chosen_temperature": 1.25,
+            "allowed_temperatures": list(c.video.TEMPERATURES),
+            "calibration_rows": 2048,
+            "test_rows": 2048,
+            "validation_nll_raw": .49,
+            "validation_nll_calibrated": .47,
+            "test_raw": {"n":2048,"brier":.155,"nll":.48},
+            "test_calibrated": {"n":2048,"brier":.15,"nll":.47},
+            "test_analytic_born": {"n":2048,"brier":.154,"nll":.46},
+            "calibration_selection_used_test_labels": False,
+            "hypothesis_training_labels_from_video": False,
+            "future_signal_or_quantum_collapse_proven": False,
+            "source":"SYNTHETIC_BORN_RULE_WITH_INDEPENDENT_SPLITS",
+            "status":"TEMPERATURE_CALIBRATION_IMPROVED_HELDOUT_NLL_ONLY"
+        }
     }
 
 
@@ -99,6 +122,20 @@ class Tests(unittest.TestCase):
         training = synthetic_training()
         training["trained_holdout"]["brier"] = .252
         with self.assertRaisesRegex(c.CouncilHold, "SYNTHETIC_GAIN_NOT_SUPPORTED"):
+            c.council(priors, bridge, training)
+
+    def test_video_calibration_claim_escalation_fails(self):
+        priors, bridge = fixtures()
+        training = synthetic_training()
+        training["video_measurement_calibration"]["future_signal_or_quantum_collapse_proven"] = True
+        with self.assertRaisesRegex(c.CouncilHold, "VIDEO_CALIBRATION_AUTHORITY_ESCALATION"):
+            c.council(priors, bridge, training)
+
+    def test_video_card_sha_tamper_fails(self):
+        priors, bridge = fixtures()
+        training = synthetic_training()
+        training["video_hypothesis_card_sha256"] = "0"*64
+        with self.assertRaisesRegex(c.CouncilHold, "VIDEO_HYPOTHESIS_CARD_DRIFT"):
             c.council(priors, bridge, training)
 
     def test_outside_query_in_research_packet_fails(self):
