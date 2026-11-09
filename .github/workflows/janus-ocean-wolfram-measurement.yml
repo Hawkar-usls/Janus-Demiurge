@@ -76,7 +76,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python experiments/ocean_transformer/ocean_quantum_train.py --steps 160 --batch 128 --output artifacts/training
+          # Late Wolfram math receipt is advisory and is never a training label.
+          # Never accept offline fixtures as a real provider result.
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.live_wolfram }}" == "true" ]]; then
+            test -f artifacts/wolfram_live.json
+            python experiments/ocean_transformer/ocean_quantum_train.py \
+              --steps 160 --batch 128 --output artifacts/training \
+              --wolfram-receipt artifacts/wolfram_live.json
+          else
+            python experiments/ocean_transformer/ocean_quantum_train.py \
+              --steps 160 --batch 128 --output artifacts/training
+          fi
           python - <<'PY'
           import json
           from pathlib import Path
@@ -84,6 +94,7 @@ jobs:
           assert p["production_checkpoint_changed"] is False
           assert p["proven_tachyons_or_retrocausal_communication"] is False
           assert p["future_labels_seen_at_training"] is False
+          assert p["wolfram_advisory_receipt"]["used_as_training_labels"] is False
           print("Training measurement gate:",p["assessment"])
           PY
       - uses: actions/upload-artifact@v4
