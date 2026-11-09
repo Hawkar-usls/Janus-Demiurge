@@ -1,0 +1,99 @@
+name: JANUS Ocean / Banana Causality Controls 006 Offline
+
+on:
+  push:
+    branches:
+      - janus/ocean-banana-causality-controls-006-20261109
+    paths:
+      - '.github/workflows/janus-ocean-causality-controls-006.yml'
+      - 'experiments/ocean_transformer/causality_controls/**'
+  pull_request:
+    paths:
+      - '.github/workflows/janus-ocean-causality-controls-006.yml'
+      - 'experiments/ocean_transformer/causality_controls/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  synthetic-causal-and-provenance-controls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      IBM_QUANTUM_API_KEY: ''
+      IBM_QUANTUM_OPEN_INSTANCE: ''
+      PYTHONHASHSEED: '0'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pure stdlib unit tests; no Qiskit, IBM, network or cloud credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s experiments/ocean_transformer/causality_controls \
+            -p 'test_controls_006.py'
+      - name: Commit synthetic forecasts BEFORE synthetic score
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/causality_controls/controls_006.py \
+            prepare --output artifacts/ctrl006_forecast_precommit.json
+          python experiments/ocean_transformer/causality_controls/controls_006.py \
+            score --input artifacts/ctrl006_forecast_precommit.json \
+            --output artifacts/ctrl006_forecast_score.json
+      - name: Independent QPU null/false-positive and historical provenance checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/causality_controls/controls_006.py \
+            qpu --output artifacts/ctrl006_qpu_synthetic_null_and_injected.json
+          python experiments/ocean_transformer/causality_controls/controls_006.py \
+            provenance --output artifacts/ctrl006_provenance.json
+          python experiments/ocean_transformer/causality_controls/controls_006.py \
+            all --output artifacts/ctrl006_complete_report.json
+      - name: Enforce scientific claims and hash all offline artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          p=Path('artifacts')
+          report=json.loads((p/'ctrl006_complete_report.json').read_text())
+          assert report['status'] == 'OFFLINE_CONTROLS_PASS__SYNTHETIC_ONLY'
+          assert len(report['controls']) == 3
+          assert all(c['status'].startswith('PASS') for c in report['controls'])
+          assert report['new_physical_qpu_results'] is False
+          assert report['hardware_provider_called'] is False
+          assert report['qpu_time_used_minutes'] == 0
+          assert report['retrocausality_proven'] is False
+          manifest={'schema':'janus.ocean.controls_006_artifact_manifest.v1',
+                    'evidence_class':'SYNTHETIC_AND_OFFLINE_ONLY',
+                    'github_run_id':os.environ['GITHUB_RUN_ID'],
+                    'head_sha':os.environ['GITHUB_SHA'],
+                    'files':{}}
+          for f in sorted(p.glob('ctrl006_*.json')):
+              manifest['files'][f.name]=hashlib.sha256(f.read_bytes()).hexdigest()
+          (p/'ctrl006_sha256_manifest.json').write_text(
+              json.dumps(manifest,indent=2,sort_keys=True)+'\n')
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as out:
+              out.write('## JANUS Ocean causality controls 006\n\n')
+              out.write('Synthetic banana forward forecast: **PASS**\n\n')
+              out.write('Synthetic QPU A/C null and injected check: **PASS**\n\n')
+              out.write('Pinned historical source provenance: **PASS**\n\n')
+              out.write('No IBM requests, QPU time 0, no physical evidence.\n\n')
+              out.write('All fixtures explicitly synthetic, separate from frozen QPU-005.\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-ocean-causality-controls-006-${{ github.run_id }}
+          path: artifacts/
+          retention-days: 90
+          if-no-files-found: error
