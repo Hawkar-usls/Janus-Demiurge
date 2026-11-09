@@ -221,10 +221,12 @@ def make_precommit(schedule, train, timestamp=None):
         "n_predictions": N,
         "real_test_measurements_accessed": False,
     }
+    prepared_timestamp = timestamp if timestamp is not None else utc_now()
+    parse_utc(prepared_timestamp)
     return {
         "payload": payload,
         "payload_sha256": sha(payload),
-        "prepared_utc_self_reported": timestamp if timestamp else utc_now(),
+        "prepared_utc_self_reported": prepared_timestamp,
         "external_precommit_witness_verified": False,
     }
 
