@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 import noaa_009a as a
 import future_009b as b
+import glow_009c as c
 
 UTC=dt.timezone.utc
 TODAY=dt.datetime(2026,11,9,4,15,tzinfo=UTC)
@@ -154,5 +155,51 @@ class FutureTests(TestCase):
         x=self.early()
         with self.assertRaisesRegex(ValueError,"ALL_FUTURE_ROUNDS_NOT_YET_PUBLISHED"):
             b.assess(x,self.signed(x),"2026-11-09T04:23:00Z",TODAY)
+
+
+class GlowTests(TestCase):
+    def test_one_milliwatt_five_minutes_bench(self):
+        x=c.benchtop()
+        self.assertEqual(x["status"],"ANALYTIC_SCENARIO_NOT_MEASURED")
+        self.assertAlmostEqual(x["afterglow_power_microwatt_at_seconds"]["0"],.99486607,places=6)
+        self.assertLess(x["afterglow_power_microwatt_at_seconds"]["600"],x["afterglow_power_microwatt_at_seconds"]["0"])
+        self.assertEqual(c.scenario()["strontium_aluminate_mass_mg"],6.15)
+        self.assertFalse(x["retrocausality_proven"])
+
+    def test_afterglow_emits_only_from_past_illumination(self):
+        p0=c.step(0,.001,300)
+        p1=c.step(p0,0,60)
+        self.assertLess(p1,p0)
+        self.assertAlmostEqual(p1/p0,math.exp(-60/900),places=10)
+        self.assertEqual(c.step(0,0,60),0)
+
+    def test_glow_uses_frozen_noaa_prediction_not_real_future(self):
+        early=a.prepare(TODAY.date()+dt.timedelta(days=2),TODAY,history())
+        glow=c.precommit(early)
+        self.assertTrue(glow["payload"]["future_noaa_ghi_used"] is False)
+        self.assertFalse(glow["payload"]["actual_glow_measurements_available"])
+        self.assertEqual(len(glow["payload"]["expected_520nm_emission_microwatt"]),24)
+
+    def test_real_noaa_glow_is_virtual_not_measured(self):
+        early=a.prepare(TODAY.date()+dt.timedelta(days=2),TODAY,history())
+        glow=c.precommit(early)
+        target=fixture_day(TODAY.date()+dt.timedelta(days=2))
+        result=c.assess(early,glow,target)
+        self.assertTrue(result["synthetic_glow_derived_from_real_solar_ghi"])
+        self.assertEqual(result["actual_glow_phosphor_measurements"],0)
+        self.assertFalse(result["retrocausality_proven"])
+
+    def test_glow_invalid_or_changed_precommit_rejected(self):
+        early=a.prepare(TODAY.date()+dt.timedelta(days=2),TODAY,history())
+        glow=c.precommit(early)
+        glow["payload"]["expected_520nm_emission_microwatt"][1]+=2
+        with self.assertRaisesRegex(ValueError,"GLOW_HYPOTHETICAL_FORECAST_MUTATED"):
+            c.assess(early,glow,fixture_day(TODAY.date()+dt.timedelta(days=2)))
+
+    def test_glow_requires_24_valid_nonnegative_solar_hours(self):
+        with self.assertRaisesRegex(ValueError,"GLOW_EXPECTS_24_NONNEGATIVE_GHI"):
+            c.sun_drive([100.0]*23)
+        with self.assertRaisesRegex(ValueError,"GLOW_EXPECTS_24_NONNEGATIVE_GHI"):
+            c.sun_drive([100.0]*23+[-1.0])
 
 if __name__=="__main__":main(verbosity=2)
