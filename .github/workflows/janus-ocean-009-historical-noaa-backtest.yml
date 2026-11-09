@@ -42,16 +42,20 @@ jobs:
           from pathlib import Path
           p=Path('artifacts/009_exploratory_real_noaa_nov02_nov05.json')
           x=json.loads(p.read_text())
-          assert x['n_hours']==96 and len(x['per_date'])==4
+          assert x['planned_n_hours']==96 and len(x['per_date'])==4
           assert x['noaa_source_fetches']==11
           assert x['independent_early_forecast_commitment'] is False
           assert x['real_phosphor_measurements_collected']==0
-          assert all(r['n_hours']==24 for r in x['per_date'])
-          assert all(not r['glow_observed_by_real_sensor'] for r in x['per_date'])
+          assert x['n_valid_days']+x['n_qc_failed_days']==4
+          assert x['valid_n_hours']==24*x['n_valid_days']
+          assert all(r['status'] in ('VALID_EXPLORATORY_DAY','NOT_SCORABLE_QC_FAIL')
+                     for r in x['per_date'])
+          assert all(not r['glow_observed_by_real_sensor'] for r in x['per_date']
+                     if r['status']=='VALID_EXPLORATORY_DAY')
           assert x['no_causal_retrocausality_inference'] is True
           with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
               f.write('### JANUS 009 retrospective real NOAA (not prospective)\n\n')
-              f.write('4 original dates, 96 genuine NOAA hourly means, 11 unique historic files.\n\n')
+              f.write(f"4 original dates, 96 planned NOAA hourly means, {x['valid_n_hours']} valid hours, {x['n_qc_failed_days']} failed days; 11 source files.\n\n")
               f.write('MAE W/m²: '+str(x['mean_mae_w_m2'])+'\n\n')
               f.write('Virtual GLOW MAE: '+str(x['virtual_glow_mae_microwatt_mean'])+' µW (UNMEASURED).\n\n')
               f.write('No independent forecast-before-target witness. No retrocausality claim.\n')
