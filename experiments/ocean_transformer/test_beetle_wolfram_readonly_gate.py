@@ -47,7 +47,7 @@ class TestOceanBeetleWolfram(unittest.TestCase):
         self.assertTrue(obj["remote_mcp_math_verified_reported"])
         self.assertFalse(obj["physical_retrocausal_channel_proven"])
         self.assertFalse(obj["wolfram_provider_called_by_this_job"])
-        self.assertEqual(obj["standard_zeno_analytic_reference"],.25)
+        self.assertAlmostEqual(obj["standard_zeno_analytic_reference"],.25,places=12)
         self.assertNotIn("provider_raw_output",json.dumps(obj))
 
     def test_unparseable_provider_is_not_math_proof(self):
