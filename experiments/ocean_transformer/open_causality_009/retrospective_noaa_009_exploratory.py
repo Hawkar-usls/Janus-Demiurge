@@ -78,14 +78,37 @@ def run():
     outcomes=[]
     for day in DATES:
         hist=[sources[day-dt.timedelta(days=i)] for i in (9,8,7,6)]
-        outcomes.append(assess_day(hist,sources[day]))
-    mean={model:round(sum(r["mae_w_m2"][model] for r in outcomes)/len(outcomes),7)
-          for model in MODELS}
+        missing_training={
+          h["date"]:[i for i,point in enumerate(h["hourly_ghi"]) if point is None]
+          for h in hist if any(point is None for point in h["hourly_ghi"])
+        }
+        missing_target=[i for i,v in enumerate(sources[day]["hourly_ghi"]) if v is None]
+        if missing_training or missing_target:
+            outcomes.append({
+               "date":day.isoformat(),
+               "status":"NOT_SCORABLE_QC_FAIL",
+               "missing_training_hours_utc":missing_training,
+               "missing_target_hours_utc":missing_target,
+               "training_source_sha256":{h["date"]:h["raw_sha256"] for h in hist},
+               "target_source_sha256":sources[day]["raw_sha256"],
+               "reason":"NOAA_QC_HOURLY_INCOMPLETE_NO_IMPUTATION",
+            })
+        else:
+            result=assess_day(hist,sources[day])
+            result["status"]="VALID_EXPLORATORY_DAY"
+            outcomes.append(result)
+    valid=[x for x in outcomes if x["status"]=="VALID_EXPLORATORY_DAY"]
+    mean={model:round(sum(r["mae_w_m2"][model] for r in valid)/len(valid),7)
+          for model in MODELS} if valid else None
     return {
       "schema":SCHEMA,
       "record_type":"RETROSPECTIVE_REAL_PUBLIC_NOAA_EXPLORATORY",
       "dates":[x.isoformat() for x in DATES],
-      "n_hours":96,
+      "planned_n_hours":96,
+      "valid_n_hours":24*len(valid),
+      "n_fixed_days":4,
+      "n_valid_days":len(valid),
+      "n_qc_failed_days":4-len(valid),
       "dataset_conditions":"bondville SURFRAD minute GHI with QC==0 and 45/60 per hour",
       "chronological_no_future_feature_check":"PASS_IN_SOFTWARE",
       "independent_early_forecast_commitment":False,
@@ -94,19 +117,23 @@ def run():
       "real_solar_observations_used":True,
       "real_phosphor_measurements_collected":0,
       "mean_mae_w_m2":mean,
-      "model_beats_each_baseline_on_this_retrospective_set":all(
-         mean["JANUS_PHYSICS_HEURISTIC"]<mean[k] for k in MODELS
-         if k!="JANUS_PHYSICS_HEURISTIC"),
-      "virtual_glow_mae_microwatt_mean":round(
-         sum(x["virtual_glow_mae_microwatt"] for x in outcomes)/len(outcomes),8),
-      "status":"RETROSPECTIVE_PUBLIC_LIGHT_EVALUATION_ONLY",
+      "model_beats_each_baseline_on_valid_subset_only":(
+         all(mean["JANUS_PHYSICS_HEURISTIC"]<mean[k] for k in MODELS
+             if k!="JANUS_PHYSICS_HEURISTIC") if valid else None),
+      "virtual_glow_mae_microwatt_mean":(
+         round(sum(x["virtual_glow_mae_microwatt"] for x in valid)/len(valid),8)
+         if valid else None),
+      "status":("ALL_FOUR_RETROSPECTIVE_DAYS_SCORED" if len(valid)==4
+                else "PARTIAL_RETROSPECTIVE_QC_FAILURES_RETAINED"),
       "no_causal_retrocausality_inference":True,
       "per_date":outcomes,
+      "cohort_scientifically_complete":len(valid)==4,
       "limitations":[
         "Historical target labels already existed when this exploratory code ran.",
         "The 009A fixed hybrid is not a trained JanusTinyTransformer.",
         "GLOW virtual outputs are transformations of actual NOAA sunlight through unmeasured material parameters, not measured afterglow.",
         "Four selected historical dates and small sample cannot support confirmatory external generalization claims.",
+        "Any QC-failing dates remain in the ledger as missing, not dropped or replaced.",
         "Prespecified prospective 009A target dates Nov12-19 are reserved and analyzed separately."
       ]
     }
@@ -121,7 +148,8 @@ def main():
     p=Path(args.output);p.parent.mkdir(parents=True,exist_ok=True)
     with p.open("x",encoding="utf-8") as f:
         f.write(json.dumps(data,ensure_ascii=False,sort_keys=True,indent=2)+"\n")
-    print(json.dumps({"status":data["status"],"n_hours":data["n_hours"],
+    print(json.dumps({"status":data["status"],"planned_n_hours":data["planned_n_hours"],
+      "valid_n_hours":data["valid_n_hours"],"qc_failed_days":data["n_qc_failed_days"],
       "mae_w_m2":data["mean_mae_w_m2"],
       "virtual_glow_mae_microwatt_mean":data["virtual_glow_mae_microwatt_mean"],
       "sha256":hashlib.sha256(p.read_bytes()).hexdigest()},
