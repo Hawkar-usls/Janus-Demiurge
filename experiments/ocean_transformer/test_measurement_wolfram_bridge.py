@@ -96,7 +96,7 @@ class Tests(unittest.TestCase):
             return FakeResponse(json.dumps(body).encode("utf-8"))
 
         good = w.check(live=True, appid="MOCK_KEY_NOT_LIVE_PROVIDER", opener=fake)
-        self.assertTrue(all(type(row.get("wolfram_numeric_result")) in (int, float) for row in good["queries"]), str([(row["id"], type(row.get("wolfram_numeric_result")).__name__) for row in good["queries"]]))
+        self.assertTrue(all("wolfram_numeric_result" not in row for row in good["queries"]))
         w.verify_live_math_receipt(good)
 
         for bad in [
@@ -110,7 +110,7 @@ class Tests(unittest.TestCase):
                 w.verify_live_math_receipt(bad)
 
         changed = json.loads(json.dumps(good))
-        changed["queries"][0]["wolfram_numeric_result"] = 0.13
+        changed["queries"][0]["agrees_with_standard_arithmetic"] = False
         with self.assertRaises(w.WolframHold):
             w.verify_live_math_receipt(changed)
 
