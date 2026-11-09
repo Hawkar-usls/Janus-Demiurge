@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Offline no-network unit tests for public-data 009A and 009B."""
 import datetime as dt
+import hashlib
 import json
 import math
 import random
@@ -117,9 +118,12 @@ class FutureTests(TestCase):
 
     def signed(self,early):
         rounds=early["payload"]["target_rounds"]
+        signature="00"*96
+        randomness=hashlib.sha256(bytes.fromhex(signature)).hexdigest()
         return {"chain_hash":b.CHAIN,"signature_verification":"DRAND_CLIENT_BLS_PINNED",
+                "verifier_package":"drand-client@1.4.2",
                 "target_rounds":rounds,
-                "beacons":[{"round":r,"randomness":"0"*64,
+                "beacons":[{"round":r,"signature":signature,"randomness":randomness,
                            "signature_verified_by_pinned_client":True} for r in rounds]}
 
     def test_distinct_rounds_scored_no_selection(self):
@@ -130,6 +134,13 @@ class FutureTests(TestCase):
         self.assertEqual(score["matches"],64)
         self.assertTrue(score["no_late_outcomes_filtered"])
         self.assertFalse(score["retrocausality_proven"])
+
+    def test_signature_payload_digest_changed_refused(self):
+        x=self.early()
+        fake=self.signed(x)
+        fake["beacons"][0]["randomness"]="0"*64
+        with self.assertRaisesRegex(ValueError,"DRAND_SIGNATURE_RANDOMNESS_DIGEST_MISMATCH"):
+            b.assess(x,fake,"2026-11-09T04:23:00Z",dt.datetime(2026,11,13,tzinfo=UTC))
 
     def test_wrong_or_missing_round_fails(self):
         x=self.early()
