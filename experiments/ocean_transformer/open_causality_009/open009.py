@@ -275,7 +275,7 @@ def noaa_url():
 def parse_surfrad(raw):
     text=raw.decode("utf-8")
     lines=text.splitlines()
-    if len(lines)<62:
+    if len(lines)<3:
         raise ValueError("SURFRAD_FILE_TOO_SHORT")
     # First two SURFRAD lines are site name and station metadata.
     result={}
