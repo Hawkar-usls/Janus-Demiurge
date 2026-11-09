@@ -1,0 +1,110 @@
+name: JANUS Ocean / LIGHT 007 Offline Causality Controls
+
+on:
+  push:
+    branches:
+      - janus/ocean-light-causality-controls-007-20261109
+    paths:
+      - '.github/workflows/janus-ocean-light-controls-007.yml'
+      - 'experiments/ocean_transformer/light_controls/**'
+  pull_request:
+    paths:
+      - '.github/workflows/janus-ocean-light-controls-007.yml'
+      - 'experiments/ocean_transformer/light_controls/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  light-physics-metaphor-offline-admission:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONHASHSEED: '0'
+      IBM_QUANTUM_API_KEY: ''
+      IBM_QUANTUM_OPEN_INSTANCE: ''
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run 23 LIGHT-007 tests without external dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s experiments/ocean_transformer/light_controls \
+            -p 'test_light_controls_007.py'
+      - name: Precommit deterministic classical delay forecasts BEFORE scoring
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/light_controls/light_controls_007.py \
+            prepare --output artifacts/light007_precommit.json
+          python experiments/ocean_transformer/light_controls/light_controls_007.py \
+            score --input artifacts/light007_precommit.json \
+            --output artifacts/light007_forward_delay_score.json
+      - name: Score independent synthetic noise postselection and provenance controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/light_controls/light_controls_007.py \
+            spectrum --output artifacts/light007_spectral_energy.json
+          python experiments/ocean_transformer/light_controls/light_controls_007.py \
+            counts --output artifacts/light007_counting_noise.json
+          python experiments/ocean_transformer/light_controls/light_controls_007.py \
+            selection --output artifacts/light007_selection_bias.json
+          python experiments/ocean_transformer/light_controls/light_controls_007.py \
+            provenance --output artifacts/light007_provenance.json
+          python experiments/ocean_transformer/light_controls/light_controls_007.py \
+            all --output artifacts/light007_complete_report.json
+      - name: Fail closed on missing results misleading physical claims or untracked outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          p=Path('artifacts')
+          report=json.loads((p/'light007_complete_report.json').read_text())
+          assert report['status']=='OFFLINE_SYNTHETIC_LIGHT_CONTROLS_PASS'
+          assert report['all_controls_pass'] is True
+          assert len(report['controls'])==5
+          assert report['actual_photon_measurements']==0
+          assert report['IBM_provider_called'] is False
+          assert report['QPU_time_used_minutes']==0
+          assert report['retrocausality_proven'] is False
+          assert report['original_qpu005_modified'] is False
+          assert report['original_ctrl006_modified'] is False
+          artifact_files=sorted(p.glob('light007_*.json'))
+          assert len(artifact_files)==7
+          manifest={
+            'schema':'janus.ocean.light007_artifact_manifest.v1',
+            'evidence_class':'SEEDED_SYNTHETIC_NOT_PHYSICAL',
+            'head_sha':os.environ['GITHUB_SHA'],
+            'run_id':os.environ['GITHUB_RUN_ID'],
+            'files':{f.name:hashlib.sha256(f.read_bytes()).hexdigest()
+                     for f in artifact_files},
+          }
+          (p/'light007_sha256_manifest.json').write_text(
+              json.dumps(manifest, indent=2, sort_keys=True)+'\n',encoding='utf-8')
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+              f.write('## JANUS Ocean LIGHT-007\n\n')
+              f.write('Spectral E=hc/lambda formula: PASS (analytic)\n\n')
+              f.write('Poisson counting noise control: PASS (synthetic)\n\n')
+              f.write('Positive light delay / anti-lookahead: PASS (synthetic)\n\n')
+              f.write('No-postselection / collider bias: PASS (synthetic)\n\n')
+              f.write('January LIGHT source provenance and CTRL-006: PASS\n\n')
+              f.write('Zero photon observations; zero IBM Quantum calls; zero QPU time.\n\n')
+              f.write('Metaphors are not physical measurement results.\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-ocean-light-controls-007-${{ github.run_id }}
+          path: artifacts/
+          retention-days: 90
+          if-no-files-found: error
