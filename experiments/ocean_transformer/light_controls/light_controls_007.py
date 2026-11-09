@@ -64,6 +64,38 @@ def poisson(lambda_value, rng):
     return k - 1
 
 
+def photon_energy_eV(wavelength_nm):
+    """E=hc/lambda using exact SI constants; model arithmetic, not a detector."""
+    if not isinstance(wavelength_nm, (int, float)) or not 100 <= wavelength_nm <= 10000:
+        raise ValueError("INVALID_LIGHT_WAVELENGTH_NM")
+    h = 6.62607015e-34
+    c = 299792458
+    elementary_charge = 1.602176634e-19
+    return h * c / (wavelength_nm * 1e-9) / elementary_charge
+
+
+def spectral_energy_control():
+    # Named wavelengths from the original historical LIGHT JSON.
+    wavelengths = {"blue": 450, "red": 660, "far_red": 730}
+    energies = {name: photon_energy_eV(wl) for name, wl in wavelengths.items()}
+    if not energies["blue"] > energies["red"] > energies["far_red"]:
+        raise AssertionError("LIGHT_ENERGY_WAVELENGTH_ORDER_WRONG")
+    ratio = energies["blue"] / energies["red"]
+    if not abs(ratio - (660 / 450)) < 1e-12:
+        raise AssertionError("LIGHT_PLANCK_FORMULA_RATIO_WRONG")
+    return {
+        "control": "LIGHT-CTRL-00-SPECTRAL-ENERGY",
+        "status": "PASS_ANALYTICAL_FORMULA_ONLY",
+        "model": "E=h*c/lambda",
+        "wavelength_nm": wavelengths,
+        "photon_energy_eV": {k: round(v, 8) for k, v in energies.items()},
+        "blue_to_red_energy_ratio": round(ratio, 10),
+        "source_photobiological_claims_experimentally_verified": False,
+        "detector_or_plant_data_used": False,
+        "note": "Wavelength is a measurable optical property, not literally a software opcode.",
+    }
+
+
 def count_streams():
     rng = random.Random(SEED + 7)
     return {
@@ -320,6 +352,7 @@ def provenance_control():
 def combined_report():
     forecast = prepare_forecasts()
     controls = [
+        spectral_energy_control(),
         shot_noise_control(),
         score_forecasts(forecast),
         postselection_control(),
@@ -346,7 +379,7 @@ def combined_report():
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("mode", choices=("prepare", "score", "counts", "selection", "provenance", "all"))
+    ap.add_argument("mode", choices=("prepare", "score", "spectrum", "counts", "selection", "provenance", "all"))
     ap.add_argument("--input")
     ap.add_argument("--output", required=True)
     args = ap.parse_args()
@@ -356,6 +389,8 @@ def main():
         if not args.input:
             ap.error("--input forecast precommit is required")
         output = score_forecasts(json.loads(Path(args.input).read_text()))
+    elif args.mode == "spectrum":
+        output = spectral_energy_control()
     elif args.mode == "counts":
         output = shot_noise_control()
     elif args.mode == "selection":
