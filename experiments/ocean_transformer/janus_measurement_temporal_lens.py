@@ -175,9 +175,30 @@ def evaluate(model, split):
     }
 
 
-def train(steps: int, out: Path, learning_rate: float = 0.005):
+def train(steps: int, out: Path, learning_rate: float = 0.005, wolfram_evidence: Path | None = None):
     if not 1 <= steps <= 800:
         raise ValueError("Bounded steps required: 1..800")
+    # Wolfram is a mathematical check, not a quantum detector or a future oracle.
+    # Only verified LIVE certificates are admissible; offline mocks never pass.
+    if wolfram_evidence is not None:
+        import wolfram_ocean_bridge as source
+        certificate_bytes = wolfram_evidence.read_bytes()
+        certificate = json.loads(certificate_bytes.decode("utf-8"))
+        source.validate_certificate(certificate)
+        external_advisory = {
+            "status": "LIVE_NUMERIC_MATH_CROSSCHECK_ONLY",
+            "source_sha256": hashlib.sha256(certificate_bytes).hexdigest(),
+            "cases_verified": len(certificate["cases"]),
+            "provider_signed": False,
+            "used_to_train_on_future_labels": False,
+        }
+    else:
+        external_advisory = {
+            "status": "NO_LIVE_WOLFRAM_EVIDENCE",
+            "provider_signed": False,
+            "used_to_train_on_future_labels": False,
+        }
+
     import torch
     import torch.nn.functional as F
 
@@ -224,6 +245,7 @@ def train(steps: int, out: Path, learning_rate: float = 0.005):
             "segments": ["22:35-23:53 Wheeler-Feynman", "25:05-28:46 Cramer / detector"],
         },
         "model": "existing JanusTinyTransformer + experimental Born-rule calibration task",
+        "wolfram_advisory_evidence": external_advisory,
         "model_parameters": parameter_count(model),
         "training": {
             "steps": steps, "seed": SEED, "independent_setting_splits": {
@@ -252,12 +274,13 @@ def main():
     parser.add_argument("--steps", type=int, default=160)
     parser.add_argument("--out", type=Path, default=Path("artifacts/measurement_lens"))
     parser.add_argument("--physics-only", action="store_true")
+    parser.add_argument("--wolfram-evidence", type=Path, help="Optional strictly validated LIVE Wolfram math receipt")
     args = parser.parse_args()
     if args.physics_only:
         print(json.dumps({"schema": SCHEMA, "physics": physics_report(), "claim": VETO},
                          indent=2, sort_keys=True))
         return
-    print(json.dumps(train(args.steps, args.out), indent=2, sort_keys=True))
+    print(json.dumps(train(args.steps, args.out, wolfram_evidence=args.wolfram_evidence), indent=2, sort_keys=True))
 
 
 if __name__ == "__main__":
