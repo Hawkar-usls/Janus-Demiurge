@@ -1,0 +1,116 @@
+name: JANUS Ocean / LIGHT 008 Real Capture Protocol Offline Admission
+
+on:
+  push:
+    branches:
+      - janus/light008-physical-capture-precommit-20261109
+    paths:
+      - '.github/workflows/janus-ocean-light-physical-008-offline-ci.yml'
+      - 'experiments/ocean_transformer/light_physical_008/**'
+  pull_request:
+    paths:
+      - '.github/workflows/janus-ocean-light-physical-008-offline-ci.yml'
+      - 'experiments/ocean_transformer/light_physical_008/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  no-hardware-precommit-and-raw-capture-admission:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    env:
+      IBM_QUANTUM_API_KEY: ''
+      IBM_QUANTUM_OPEN_INSTANCE: ''
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONHASHSEED: '0'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Inspect fixed protocol and historical scientific lineage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          checks={
+            "experiments/ocean_transformer/physical_qpu_005_protocol.py":
+               "09448c98ef0321660e739a558d0e43ab55ae5289",
+            "experiments/ocean_transformer/light_controls/light_controls_007.py":
+               "d811c7d27e286d9ce28898310b0a8e2e806997fd",
+            "experiments/ocean_transformer/causality_controls/controls_006.py":
+               "14c3b556abfe1166ff9b67fbfc93bc20775fbb41",
+          }
+          for filename, expected in checks.items():
+              raw=Path(filename).read_bytes()
+              observed=hashlib.sha1(
+                  b"blob "+str(len(raw)).encode()+b"\0"+raw).hexdigest()
+              assert observed==expected,(filename,observed)
+          print("PINNED_QPU005_LIGHT007_BANANA006_SOURCE_UNCHANGED")
+          PY
+      - name: Run adversarial prospective and capture checks (stdlib only, no USB)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s experiments/ocean_transformer/light_physical_008 \
+            -p 'test_physical_light_008.py'
+      - name: Archive offline protocol-admission report with SHA provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          python - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          sources=[
+            "experiments/ocean_transformer/light_physical_008/physical_light_008.py",
+            "experiments/ocean_transformer/light_physical_008/capture_host_008.py",
+            "experiments/ocean_transformer/light_physical_008/esp32_led_photodetector_008.py",
+            "experiments/ocean_transformer/light_physical_008/test_physical_light_008.py",
+            "experiments/ocean_transformer/light_physical_008/README.md",
+          ]
+          report={
+            "schema":"janus.ocean.light008_offline_admission.v1",
+            "experiment_id":"JANUS-LIGHT-PHYSICAL-008",
+            "status":"PHYSICAL_DATA_INGESTION_READY__NO_REAL_MEASUREMENTS",
+            "github_run_id":os.environ["GITHUB_RUN_ID"],
+            "tested_commit_sha":os.environ["GITHUB_SHA"],
+            "unit_tests":24,
+            "source_sha256":{p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
+                            for p in sources},
+            "physical_esp32_capture_performed":False,
+            "real_photodiode_samples":0,
+            "forecast_externally_witnessed":False,
+            "original_qpu005_modified":False,
+            "IBM_provider_called":False,
+            "qpu_minutes_used":0,
+            "retrocausality_proven":False,
+            "next_gate":"Manual physical rig and independent precommit publication needed",
+          }
+          out=Path("artifacts/light008_offline_admission.json")
+          out.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          manifest={
+            "payload_sha256":hashlib.sha256(out.read_bytes()).hexdigest(),
+            "evidence":"NO_MEASUREMENTS_OFFLINE",
+          }
+          Path("artifacts/light008_sha256_manifest.json").write_text(
+              json.dumps(manifest,indent=2,sort_keys=True)+"\n")
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as f:
+              f.write("### JANUS LIGHT-008 offline admission\n\n")
+              f.write("Source hashes + adversarial protocol tests PASS.\n\n")
+              f.write("Real sensor / LED samples: **0**. QPU time: **0**.\n\n")
+              f.write("No independent time witness. Hardware collection NOT attempted.\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-light008-offline-admission-${{ github.run_id }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 90
