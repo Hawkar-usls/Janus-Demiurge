@@ -34,6 +34,11 @@ jobs:
         run: |
           set -euo pipefail
           TARGET="$(date -u -d '+2 days' +%F)"
+          if [[ "$TARGET" < "2026-11-12" || "$TARGET" > "2026-11-19" ]]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "NO_FURTHER_PREDECLARED_009A_COHORTS"; exit 0
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
           NAME="janus-open-light-009a-$TARGET"
           echo "target=$TARGET" >> "$GITHUB_OUTPUT"
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
@@ -43,6 +48,7 @@ jobs:
             echo "DUPLICATE_TARGET_FORBIDDEN $TARGET"; exit 1
           fi
       - name: Fetch only already historical NOAA Bondville records; train and seal
+        if: steps.target.outputs.enabled == 'true'
         run: |
           set -euo pipefail
           python experiments/ocean_transformer/open_causality_009/noaa_009a.py \
@@ -65,6 +71,7 @@ jobs:
           assert len(b['payload']['expected_520nm_emission_microwatt'])==24
           PY
       - name: Externally timestamp early predictions using GitHub artifact
+        if: steps.target.outputs.enabled == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.target.outputs.name }}
@@ -92,6 +99,11 @@ jobs:
         run: |
           set -euo pipefail
           TARGET="$(date -u -d '-3 days' +%F)"
+          if [[ "$TARGET" < "2026-11-12" || "$TARGET" > "2026-11-19" ]]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "NO_PENDING_PREDECLARED_009A_TARGET"; exit 0
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
           NAME="janus-open-light-009a-$TARGET"
           echo "target=$TARGET" >> "$GITHUB_OUTPUT"
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
@@ -110,6 +122,7 @@ jobs:
           gh run download "$(sed -n '1p' old.txt)" --repo "$GITHUB_REPOSITORY" \
             --name "$NAME" --dir artifacts/early
       - name: Score physical NOAA target and propagate hypothetical glow model
+        if: steps.old.outputs.enabled == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -140,6 +153,7 @@ jobs:
               out.write('009C GLOW is hypothetical phosphor response, not measured glow.\n')
           PY
       - uses: actions/upload-artifact@v4
+        if: steps.old.outputs.enabled == 'true'
         with:
           name: janus-open-light-009a-scored-${{ steps.old.outputs.target }}
           path: artifacts/
