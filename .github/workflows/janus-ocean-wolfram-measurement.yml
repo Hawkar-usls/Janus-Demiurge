@@ -1,0 +1,94 @@
+name: JANUS Ocean / Wolfram Alpha Measurement Research
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/janus-ocean-wolfram-measurement.yml'
+      - 'experiments/ocean_transformer/measurement_priors.py'
+      - 'experiments/ocean_transformer/wolfram_alpha_bridge.py'
+      - 'experiments/ocean_transformer/ocean_quantum_train.py'
+      - 'experiments/ocean_transformer/test_measurement_wolfram_bridge.py'
+  workflow_dispatch:
+    inputs:
+      live_wolfram:
+        description: 'Spend Wolfram Alpha API queries (four public arithmetic checks)'
+        type: boolean
+        default: false
+        required: false
+      train_ocean:
+        description: 'Train a research-only JanusTinyTransformer candidate on synthetic Born samples'
+        type: boolean
+        default: false
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-ocean-wolfram-measurement
+  cancel-in-progress: false
+
+jobs:
+  bounded-research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify quantum Born-rule physics, no signalling and provider boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v -s experiments/ocean_transformer -p 'test_measurement_wolfram_bridge.py'
+      - name: Freeze independent analytical measurement prior and OFFLINE provider receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/measurement_priors.py --output artifacts/measurement_priors.json
+          python experiments/ocean_transformer/wolfram_alpha_bridge.py --mode offline --output artifacts/wolfram_offline.json
+      - name: Optional live Wolfram Alpha arithmetic check (never from PR)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.live_wolfram }}
+        env:
+          WOLFRAM_ALPHA_APPID: ${{ secrets.WOLFRAM_ALPHA_APPID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$WOLFRAM_ALPHA_APPID" || { echo 'WOLFRAM_ALPHA_APPID_REQUIRED_IN_REPO_SECRETS'; exit 1; }
+          python experiments/ocean_transformer/wolfram_alpha_bridge.py --mode live --output artifacts/wolfram_live.json
+      - name: Install native CPU Torch only when training is requested
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.train_ocean }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check --retries 3 'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - name: Train bounded research-only Ocean candidate on quantum measurement samples
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.train_ocean }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/ocean_quantum_train.py --steps 160 --batch 128 --output artifacts/training
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path("artifacts/training/report.json").read_text())
+          assert p["production_checkpoint_changed"] is False
+          assert p["proven_tachyons_or_retrocausal_communication"] is False
+          assert p["future_labels_seen_at_training"] is False
+          print("Training measurement gate:",p["assessment"])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-ocean-wolfram-measurement
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 30
