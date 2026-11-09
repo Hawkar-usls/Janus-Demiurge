@@ -57,13 +57,14 @@ jobs:
            'experiments/ocean_transformer/open_causality_009/noaa_009a.py',
            'experiments/ocean_transformer/open_causality_009/future_009b.py',
            'experiments/ocean_transformer/open_causality_009/glow_009c.py',
+           'experiments/ocean_transformer/open_causality_009/aggregate_009.py',
            'experiments/ocean_transformer/open_causality_009/test_open_causality_009.py',
           ]
           result={
            'status':'OFFLINE_PROTOCOL_AND_GLOW_MODEL_TESTS_PASS',
            'run_id':os.environ['GITHUB_RUN_ID'],
            'head_sha':os.environ['GITHUB_SHA'],
-           'unit_tests':22,
+           'unit_tests':27,
            'file_sha256':{p:hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in paths},
            'illustrative_glow_sha256':hashlib.sha256(g.read_bytes()).hexdigest(),
            'no_NOAA_target_labels_fetched':True,
@@ -75,7 +76,7 @@ jobs:
           Path('artifacts/open_causality_009_offline_manifest.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
           with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
             f.write('## OPEN-CAUSALITY-009 offline admission\n\n')
-            f.write('22 protocol/glow negative-control tests, no live future data.\n\n')
+            f.write('27 protocol/glow and full-cohort tests, no live future data.\n\n')
             f.write('SUNLU 5% source composition is not a measurement of optical efficiency.\n')
           PY
       - uses: actions/upload-artifact@v4
