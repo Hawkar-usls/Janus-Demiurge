@@ -52,7 +52,7 @@ class RealDataFalsificationContracts(unittest.TestCase):
             q.parse(toy(136),expected_n=128,block_size=16)
 
     def test_source_format_refusal(self):
-        s=toy(128).decode().replace("0,-1,0,-1","0,0,0,-1",1)
+        s=toy(128).decode().replace("0,-1,0,1","0,0,0,1",1)
         with self.assertRaisesRegex(ValueError,"INVALID_QUBIT_SETTING_OR_OUTCOME"):
             q.parse(s.encode(),expected_n=128,block_size=16)
 
