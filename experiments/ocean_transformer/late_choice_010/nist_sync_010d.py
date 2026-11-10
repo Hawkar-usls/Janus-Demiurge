@@ -69,6 +69,7 @@ def fetch(run,wing,filename):
 def parse_events(raw):
     if len(raw)%REC.size:raise ValueError("UNALIGNED_24_BYTE_EVENT_RECORD")
     counts=collections.Counter()
+    unclassified=collections.Counter()
     first={}
     last={}
     transfer_min=None
@@ -80,7 +81,9 @@ def parse_events(raw):
     n=0
     for channel,tick,transfer in REC.iter_unpack(raw):
         if channel not in CHANNELS:
-            raise ValueError(f"UNKNOWN_CHANNEL_{channel}_CHECK_ENDIAN_OR_FORMAT")
+            if channel>255:raise ValueError(f"IMPLAUSIBLE_CHANNEL_{channel}_CHECK_ENDIAN_OR_FORMAT")
+            unclassified[channel]+=1
+            if len(unclassified)>16:raise ValueError("TOO_MANY_UNCLASSIFIED_CHANNEL_CODES")
         n+=1
         counts[channel]+=1
         if channel not in first:first[channel]=tick
@@ -104,7 +107,9 @@ def parse_events(raw):
       "per_channel":{str(ch):{"name":CHANNELS[ch],"count":counts[ch],
                              "first_tick":first.get(ch),"last_tick":last.get(ch)}
                      for ch in CHANNELS},
-      "unknown_channel_count":0,
+      "unclassified_channel_count":sum(unclassified.values()),
+      "unclassified_channel_codes":{str(k):v for k,v in sorted(unclassified.items())},
+      "unclassified_channel_interpretation":"UNRESOLVED_FORMAT_MARKERS_NOT_CLASSIFIED_AS_PHYSICAL_EVENTS",
       "globally_descending_timetag_pairs":inversions,
       "transfer_counter_min":transfer_min,"transfer_counter_max":transfer_max,
       "GPS_PPS_count":len(gps_ticks),
@@ -157,6 +162,7 @@ def run(dest):
            "Clock-calibration find_sync files have no guaranteed usable Bell trials",
            "Nominal 78.125 ps resolution is not clock accuracy or detector latency",
            "Raw source endian assumed little-endian until independently corroborated",
+           "Code 64 observed in official calibration sample; unclassified channel codes retained as unresolved instrument markers and excluded from physical channel calculations",
            "PPS channel may be absent in very short runs; null is not inferred accuracy",
            "No independently signed physical early log or true late free-choice intervention",
            "Do not select apparent timestamp coincidences after inspecting outcome"
