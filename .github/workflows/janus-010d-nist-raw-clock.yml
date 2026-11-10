@@ -1,0 +1,44 @@
+name: JANUS-010D NIST Original Time Tag Calibration
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/late_choice_010/nist_sync_010d.py'
+      - 'experiments/ocean_transformer/late_choice_010/test_nist_sync_010d.py'
+      - '.github/workflows/janus-010d-nist-raw-clock.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-nist-010d-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  physical-timetag-source-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Raw-channel parser tests, no external data required
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v -s experiments/ocean_transformer/late_choice_010 -p 'test_nist_sync_010d.py'
+      - name: Fetch four bounded original NIST raw timetag calibration archives
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/nist010d"
+          python experiments/ocean_transformer/late_choice_010/nist_sync_010d.py --output "$RUNNER_TEMP/nist010d/nist_010d_result.json"
+      - name: Archive provenance and counts only, never original raw files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-nist-010d-calibration-${{ github.run_id }}
+          path: ${{ runner.temp }}/nist010d/nist_010d_result.json
+          retention-days: 60
+          if-no-files-found: warn
