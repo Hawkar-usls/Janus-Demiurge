@@ -183,9 +183,9 @@ def admit(registry: Path, verification: dict, packet: dict, context: dict,
         "source_text_grants_execution":False
     }
     first=packet["matches"][0] if packet["matches"] else None
-    # This short source label is appended to the *model inference prompt*.
+    # This seven-byte source fingerprint is appended to the *model inference prompt*.
     # The neural model has only a 128-byte context; do not claim full-source attention.
-    prompt_marker=f" M?:{packet['query']['text'][:12]}#{first['sha256'][:8]}" if first else ""
+    prompt_marker=f"|M{first['sha256'][:5]}" if first else ""
     receipt={
         "schema":SCHEMA,
         "status":"ADMITTED_TRAIN_SOURCE_CANDIDATES" if admitted else ("CONTEXT_ONLY_NO_NEW_TRAIN_SOURCE" if first else "EMPTY_SEARCH"),
