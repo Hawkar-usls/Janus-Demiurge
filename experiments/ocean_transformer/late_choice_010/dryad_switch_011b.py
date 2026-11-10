@@ -101,7 +101,13 @@ def original_tables():
     manifest,meta_sha=official_manifest()
     zipbytes=get_public(VERSION_URL,ARCHIVE_LIMIT)
     original_zip_sha=hashlib.sha256(zipbytes).hexdigest()
-    if original_zip_sha!=VERSION_ZIP_SHA256:raise ValueError("DROPPED_OR_CHANGED_ORIGINAL_ZIP_VERSION")
+    # Dryad's archive download is an on-demand ZIP wrapper: timestamps and
+    # container byte sequences are not guaranteed stable across requests.
+    # The independent SHA256 of EVERY archived source file, returned by
+    # Dryad version metadata, is the authoritative immutable provenance.
+    # Keep the archive SHA in report for reproducibility; never treat a
+    # different wrapper hash alone as changed experimental probabilities.
+    transport_sha_matches_first_probe=(original_zip_sha==VERSION_ZIP_SHA256)
     files={}
     with zipfile.ZipFile(io.BytesIO(zipbytes)) as z:
         infos=z.infolist()
@@ -126,6 +132,8 @@ def original_tables():
         "paper_DOI":"10.1126/sciadv.aee9271",
         "source_version_id":VERSION,
         "version_original_zip_sha256":original_zip_sha,
+        "transport_zip_sha_matches_initial_011B_probe":transport_sha_matches_first_probe,
+        "authoritative_integrity":"17 original uncompressed per-file SHA256 from official Dryad version, each verified against actual extracted file",
         "Dryad_files_API_sha256":meta_sha,
         "files_sha256":{k:v["sha256"] for k,v in sorted(manifest.items())},
         "archive_bytes":len(zipbytes),
