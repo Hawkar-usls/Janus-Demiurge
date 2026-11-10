@@ -93,6 +93,7 @@ jobs:
           python -m unittest -v tests/test_janus_native_model.py
           python -m unittest -v tests/test_janus_native_output_quality.py
           python -m unittest -v tests/test_janus_checkpoint_admission.py
+          python -m unittest -v tests/test_native_memory_admission.py
           python - <<'PY'
           from pathlib import Path
           forbidden = ('copilot', 'openai', 'anthropic', 'gemini', 'ollama')
@@ -187,6 +188,11 @@ jobs:
           },indent=2))
           PY
           echo 'JANUS_NATIVE_MODULAR_ORGANS=PASS'
+
+      - name: Admit verified Meta Registry memory to existing neural corpus
+        id: memory_admit
+        shell: bash
+        run: bash tools/run_memory_admission.sh
 
       - name: Decide train/run mode
         id: decide
@@ -505,6 +511,11 @@ jobs:
         run: |
           PROMPT='${{ github.event.inputs.prompt }}'
           [ -n "$PROMPT" ] || PROMPT='JANUS native checkpoint smoke test: '
+          if [ -f runtime/memory-v2/source-marker.txt ]; then
+            MEMORY_MARKER="$(cat runtime/memory-v2/source-marker.txt)"
+            PROMPT="$PROMPT$MEMORY_MARKER"
+            echo 'JANUS_NATIVE_MEMORY_REFERENCE_IN_PROMPT=TRUE'
+          fi
           CALIBRATION_ARGS=()
           if [ -f runtime/helios-calibration.json ]; then CALIBRATION_ARGS+=(--calibration runtime/helios-calibration.json); fi
           python -m janus_model.cli run "${CALIBRATION_ARGS[@]}" \
@@ -625,6 +636,10 @@ jobs:
           name: janus-native-model-${{ github.run_id }}
           path: |
             runtime/brain-base.json
+            runtime/memory-v2/verify.json
+            runtime/memory-v2/admission.json
+            runtime/memory-v2/hold.json
+            runtime/memory-v2/inference-binding.json
             runtime/corpus/corpus_manifest.json
             runtime/training-receipt.json
             runtime/training-persist-guard.json
