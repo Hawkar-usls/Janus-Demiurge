@@ -44,7 +44,7 @@ def inventory(blob):
             obj={"name":m.filename,"uncompressed_bytes":len(data),
                  "sha256":hashlib.sha256(data).hexdigest()}
             try:
-                lines=data.decode("utf8-sig").splitlines()
+                lines=data.decode("utf-8-sig").splitlines()
                 obj["utf8_text"]=True
                 obj["line_count"]=len(lines)
                 # Only calibration archive, plus at most four short lines for schema
