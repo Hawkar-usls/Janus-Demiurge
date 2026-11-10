@@ -22,7 +22,7 @@ class RealDataFalsificationContracts(unittest.TestCase):
         train,hold,post,blocks,n=q.parse(toy(),expected_n=128,block_size=16)
         self.assertEqual(n,128)
         self.assertEqual(len(blocks),4)
-        self.assertEqual(sum(q.sample(train,w,o,b)["n"] for o in q.OWN for b in q.REMOTE),64)
+        self.assertEqual(sum(q.sample(train,"Alice",o,b)["n"] for o in q.OWN for b in q.REMOTE),64)
         self.assertEqual(sum(q.sample(hold,"Alice",o,b)["n"] for o in q.OWN for b in q.REMOTE),64)
         self.assertEqual(sum(q.sample(hold,"Bob",o,b)["n"] for o in q.OWN for b in q.REMOTE),64)
 
