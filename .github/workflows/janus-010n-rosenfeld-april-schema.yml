@@ -1,0 +1,44 @@
+name: JANUS-010N April Atomic Bell Calibration Schema ONLY
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/late_choice_010/rosenfeld_010n_april_schema.py'
+      - 'experiments/ocean_transformer/late_choice_010/test_rosenfeld_010n_april_schema.py'
+      - '.github/workflows/janus-010n-rosenfeld-april-schema.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-010n-rosenfeld-schema-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  april-source-schema-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: April-only checksum and safe archive tests
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v -s experiments/ocean_transformer/late_choice_010 -p 'test_rosenfeld_010n_april_schema.py'
+      - name: Inspect April 2016 file format without opening June holdout
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/janus010n"
+          python -u experiments/ocean_transformer/late_choice_010/rosenfeld_010n_april_schema.py --output "$RUNNER_TEMP/janus010n/april_source_schema.json"
+      - name: Archive only original hashes and bounded calibration schema hints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-010n-april-schema-${{ github.run_id }}
+          path: ${{ runner.temp }}/janus010n/april_source_schema.json
+          retention-days: 60
+          if-no-files-found: warn
