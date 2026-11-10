@@ -1,0 +1,35 @@
+name: JANUS Autonomy Memory Admission safety
+on:
+  pull_request:
+    paths:
+      - 'janus_model/memory_admission.py'
+      - 'tests/test_native_memory_admission.py'
+      - '.github/workflows/janus-memory-admission-safety.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-admission:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test immutable source admission and split firewall
+        run: |
+          python -m unittest tests/test_native_memory_admission.py -v
+          python -m unittest tests/test_demiurge_unified_memory_v2_consumer.py -v
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('janus_model/memory_admission.py').read_text()
+          assert 'FROZEN_EVAL_GATE_STILL_REQUIRED' in s
+          assert 'HASH_HOLDOUT_PROTECTED' in s
+          assert 'SOURCE_BYTES_SHA_MISMATCH' in s
+          assert 'source_text_grants_execution' in s
+          assert 'promotion' not in s.lower() or 'candidate_promoted' in s
+          print('MEMORY_ADMISSION_FIREWALL_PASS')
+          PY
