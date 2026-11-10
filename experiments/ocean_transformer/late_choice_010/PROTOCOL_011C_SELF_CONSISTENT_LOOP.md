@@ -30,6 +30,22 @@ Let `u0=q/2, v0=(1-q)/2`, `u1=(1-q)/2, v1=q/2`, for any `0<q<1`. All rows remain
 
 This freedom is the key falsification result: a model chosen solely to satisfy normalization, fixed-point self-consistency and a nonzero early/future statistical contrast does not select real world physics. A new, independently motivated physical field/dynamical equation would need to specify q or a specific transition kernel with additional testable consequences. Hand-selecting the kernel after observing a desired retro effect is not evidence.
 
+## Genuine completely positive trace-preserving quantum extension (still only a toy)
+
+The 2-state transition matrix can be embedded in an ordinary quantum *entanglement-breaking* CPTP map by using four Kraus operators:
+\[
+K_{j,i}=\sqrt{T_C[i,j]}\, |j\rangle\langle i|,
+\qquad
+\mathcal E_C(\rho)=\sum_{i,j} K_{j,i}\rho K_{j,i}^{\dagger}.
+\]
+Since each row of T_C sums to one, \(\sum_{i,j}K_{j,i}^{\dagger}K_{j,i}=I\). The map is completely positive because it has an explicit Kraus decomposition. It destroys off-diagonal coherence but preserves trace and **all** outcome contributions.
+
+For the SAME past state \(\rho_{early}=I/2\), an ordinary later application of \(\mathcal E_0\) produces a final \(P(1)=0.45\), while \(\mathcal E_1\) produces final \(P(1)=0.55\). This 10-percentage-point difference is a permissible **later output response to a later input**, not backwards signalling: the shared previously committed early probability remains 0.5 under both settings.
+
+Only by imposing the *additional global retro boundary* \(\rho_{early,C}=\mathcal E_C(\rho_{early,C})\), before C is physically generated, does the early probability become 0.4 versus 0.6. Therefore a completely legitimate local quantum channel does not by itself cause backwards information transfer. The entire retrocausal assumption is in the nonstandard boundary condition linking the late map to the earlier input state.
+
+This is a **Kraus-lift of a classical Markov loop**, not an experimentally realized Deutsch quantum CTC circuit; the physical global boundary was not independently derived or observed.
+
 ## Forward-time control / no-go within ordinary dynamics
 
 If there is no future-to-past causal edge, A is committed at t1 as `A=f(U)` from pre-existing variables U; C is genuinely freely generated at t2>t1 with independent source V and does not feed into A. For any intervention `do(C=c)`,
