@@ -1,0 +1,129 @@
+name: JANUS Demiurge - search unified memory v2 (read-only)
+on:
+  workflow_dispatch:
+    inputs:
+      query:
+        description: "Public Meta Registry search terms (do not enter private data)"
+        required: true
+        default: "SCOBY"
+        type: string
+  pull_request:
+    paths:
+      - '.github/workflows/demiurge-unified-memory-v2-query.yml'
+permissions:
+  contents: read
+concurrency:
+  group: demiurge-umv2-query-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  read-public-memory:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      MEMORY_QUERY: ${{ github.event_name == 'workflow_dispatch' && inputs.query || 'SCOBY' }}
+    steps:
+      - name: Checkout Demiurge with no persisted token
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Checkout public Meta Registry at pinned current commit
+        uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: main
+          path: _sources/meta
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Checkout DemiHead read-only query provider
+        uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/Demi_Head
+          ref: main
+          path: _sources/demihead
+          sparse-checkout: |
+            tools
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Rebuild verified index, query through DemiHead and project in Demiurge
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/demiurge-umv2"
+          mkdir -p "$OUT"
+          ENGINE="_sources/meta/experiments/unified-memory-v2/janus_unified_memory.py"
+          python "$ENGINE" build --registry-root "_sources/meta" --db "$OUT/index.sqlite" > "$OUT/build.json"
+          python "$ENGINE" verify --registry-root "_sources/meta" --db "$OUT/index.sqlite" > "$OUT/verify.json"
+          SOURCE_COMMIT="$(python -c 'import json,sys;print(json.load(open(sys.argv[1]))["source_commit"])' "$OUT/verify.json")"
+          MANIFEST_SHA="$(python -c 'import json,sys;print(json.load(open(sys.argv[1]))["source_manifest_sha256"])' "$OUT/verify.json")"
+          python _sources/demihead/tools/unified_memory_v2_bridge.py \
+            --index "$OUT/index.sqlite" --query "$MEMORY_QUERY" --limit 8 \
+            --expected-source-commit "$SOURCE_COMMIT" \
+            --expected-manifest-sha256 "$MANIFEST_SHA" \
+            --output "$OUT/demihead-packet.json"
+          python tools/demiurge_unified_memory_v2_consumer.py \
+            --packet "$OUT/demihead-packet.json" \
+            --expect-source-commit "$SOURCE_COMMIT" \
+            --expect-manifest-sha256 "$MANIFEST_SHA" \
+            --output "$OUT/demiurge-context.json"
+          python - <<'PY'
+          import hashlib, importlib.util, json, os
+          from pathlib import Path
+          home=Path(os.environ['RUNNER_TEMP'])/'demiurge-umv2'
+          b=json.loads((home/'build.json').read_text(encoding='utf-8'))
+          v=json.loads((home/'verify.json').read_text(encoding='utf-8'))
+          p=json.loads((home/'demihead-packet.json').read_text(encoding='utf-8'))
+          c=json.loads((home/'demiurge-context.json').read_text(encoding='utf-8'))
+          assert b['coverage_complete'] and b['read_only'] and b['scientific_authority_granted'] is False
+          assert b['indexed_json'] == v['fts_rows']
+          assert v['sha256_integrity']=='PASS' and v['sqlite_integrity']=='PASS'
+          assert p['origin']['source_commit'] == v['source_commit']
+          assert p['origin']['source_manifest_sha256'] == v['source_manifest_sha256']
+          assert c['input_receipt_sha256'] == p['packet_sha256']
+          assert c['source_commit'] == v['source_commit']
+          assert c['routing']['graph_mutation_authorized'] is False
+          assert c['routing']['network_dispatch_authorized'] is False
+          assert c['routing']['module_admission_authorized'] is False
+          assert c['routing']['self_training_authorized'] is False
+          assert c['claim_ceiling']['scientific_truth_established'] is False
+          unhashed={k:x for k,x in c.items() if k!='receipt_sha256'}
+          cdigest=hashlib.sha256(json.dumps(unhashed,sort_keys=True,separators=(',',':'),ensure_ascii=False,allow_nan=False).encode('utf-8')).hexdigest()
+          assert cdigest==c['receipt_sha256']
+          from restored.memory_graph_query import related_subgraph
+          if p['matches']:
+              selected=p['matches'][0]['path']
+              part=related_subgraph(c['graph'],selected,depth=1)
+              assert part['found'] and part['authority']['mutates_graph'] is False
+          elif os.environ['GITHUB_EVENT_NAME']=='pull_request':
+              raise AssertionError('PR_SMOKE_QUERY_EXPECTED_SCOBY_RESULTS')
+          report={
+              'schema':'janus.demiurge.unified_memory_v2_query_receipt.v1',
+              'status':'PASS' if p['matches'] else 'NO_MATCHES',
+              'query':p['query']['text'],'source_commit':v['source_commit'],
+              'source_manifest_sha256':v['source_manifest_sha256'],
+              'indexed_json':b['indexed_json'],'malformed_json':b['malformed_json'],
+              'explicit_relations':b['explicit_relations'],
+              'match_count':len(p['matches']),
+              'context_nodes':len(c['graph']['nodes']),
+              'context_edges':len(c['graph']['edges']),
+              'packet_sha256':p['packet_sha256'],
+              'context_sha256':c['receipt_sha256'],
+              'read_only':True,'private_nas_touched':False,
+              'writes_to_source_repositories':False,'agent_training_started':False,
+              'evidence_promoted':False
+          }
+          (home/'query-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2,sort_keys=True)+'\n',encoding='utf-8')
+          print('DEMIURGE_UNIFIED_MEMORY_QUERY',json.dumps(report,sort_keys=True))
+          PY
+      - name: Save public source-only context and receipts (never database or source text)
+        uses: actions/upload-artifact@v4
+        with:
+          name: demiurge-unified-memory-v2-query
+          path: |
+            ${{ runner.temp }}/demiurge-umv2/build.json
+            ${{ runner.temp }}/demiurge-umv2/verify.json
+            ${{ runner.temp }}/demiurge-umv2/query-report.json
+            ${{ runner.temp }}/demiurge-umv2/demiurge-context.json
+          retention-days: 7
+          if-no-files-found: error
