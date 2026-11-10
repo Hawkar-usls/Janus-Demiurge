@@ -85,7 +85,7 @@ def obtain(repo,commit,path):
         raw=f.read(MAX_SINGLE_SOURCE+1)
     if len(raw)>MAX_SINGLE_SOURCE:
         raise ValueError("SOURCE_EXCEEDS_FETCH_CAP")
-    return url,raw.decode("utf8-sig"),hashlib.sha256(raw).hexdigest()
+    return url,raw.decode("utf-8-sig"),hashlib.sha256(raw).hexdigest()
 
 def run(destination):
     examined=[]
