@@ -26,7 +26,8 @@ MAX_RESULT_FILES=125
 MAX_MATCHES_PER_FILE=25
 MAX_TOTAL_MATCHES=350
 SOURCE_EXT={".py",".m",".txt",".yaml",".yml",".md",".r",".sh",".jl",".rst",".cfg",".ini"}
-RE=re.compile(r"badSyncInfo|bitoffset|first.*GPS|common.*GPS|skip.*sync|clock.*misalign|time.?tag.*align|offset|align|sync",re.I)
+TARGET_RE=re.compile(r"badSyncInfo|bitoffset|first.*GPS|common.*GPS|skip.*sync|clock.*misalign|time.?tag.*align|build.*hdf5",re.I)
+RE=re.compile(r"gps|offset|align|sync",re.I)
 
 
 def acquire(path):
@@ -65,11 +66,17 @@ def analyze_archive(path):
             if len(raw)>MAX_SINGLE_FILE:continue
             content=raw.decode("utf8","replace")
             found=[]
-            for line_no,line in enumerate(content.splitlines(),1):
-                if RE.search(line):
-                    found.append({"line":line_no,"snippet":line.strip()[:220]})
-                    total_matches+=1
-                    if len(found)>=MAX_MATCHES_PER_FILE or total_matches>=MAX_TOTAL_MATCHES:break
+            lines=content.splitlines()
+            prioritized=[(j,line) for j,line in enumerate(lines,1) if TARGET_RE.search(line)]
+            if prioritized:
+                selected=prioritized
+            else:
+                selected=[(j,line) for j,line in enumerate(lines,1) if RE.search(line)][:3]
+            for line_no,line in selected[:MAX_MATCHES_PER_FILE]:
+                found.append({"line":line_no,"snippet":line.strip()[:220],
+                              "high_specificity":bool(TARGET_RE.search(line))})
+                total_matches+=1
+                if total_matches>=MAX_TOTAL_MATCHES:break
             if found:
                 matching.append({"path":info.filename,
                    "original_file_sha256":hashlib.sha256(raw).hexdigest(),
