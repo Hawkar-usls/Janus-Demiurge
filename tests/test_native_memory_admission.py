@@ -86,10 +86,8 @@ class MemoryAdmissionTests(unittest.TestCase):
         self.assertEqual(r["admitted_count"],0)
     def test_tampered_source_refused_not_promoted(self):
         (self.root/self.path).write_bytes(b'{"injected":"fake"}')
-        r,train,m=self.run_admit()
-        self.assertEqual(r["admitted_count"],0)
-        self.assertEqual(m["memory_v2_admission"]["refused"][0]["reason"],"SOURCE_BYTES_SHA_MISMATCH")
-        self.assertEqual(train,self.train_text)
+        with self.assertRaisesRegex(ValueError,"SOURCE_BYTES_SHA_MISMATCH"):
+            self.run_admit()
     def test_origin_drift_or_context_tamper_fails_closed(self):
         self.verification["source_commit"]="f"*40
         with self.assertRaisesRegex(ValueError,"REGISTRY_GIT_COMMIT_DRIFT"):
