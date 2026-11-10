@@ -18,6 +18,7 @@ URL="https://s3.amazonaws.com/nist-belltestdata/belldata/code/analysis/bell_anal
 EXPECTED_SHA="80b452b55ce44bb46e37ffbcd1f1684ba3293aaf0b6445c36743da4a5d37c52d"
 MAX_DOWNLOAD=850_000_000
 PATHS=(
+ "bell_analysis_code/build_file_txt.py",
  "bell_analysis_code/sync_hdf5.py",
  "bell_analysis_code/check_syncs.py",
  "bell_analysis_code/build_file_hdf5.py",
