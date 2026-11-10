@@ -53,7 +53,7 @@ def audit_rows(data):
     counts={(a,b):{(A,B):0 for A in (-1,1) for B in (-1,1)}
             for a in (0,1) for b in (0,1)}
     n=0
-    for index,row in enumerate(csv.reader(io.StringIO(data.decode("utf8-sig")))):
+    for index,row in enumerate(csv.reader(io.StringIO(data.decode("utf-8-sig")))):
         if index<2:continue  # original repository contains exactly two headers
         if not row:continue
         if len(row)!=4:raise ValueError("NON_FOUR_COLUMN_ROW_"+str(index+1))
