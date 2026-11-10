@@ -46,6 +46,14 @@ class DemiurgeMemoryConsumerTests(unittest.TestCase):
         self.assertEqual((len(result["graph"]["nodes"]),len(result["graph"]["edges"])),(2,1))
         self.assertFalse(result["routing"]["module_admission_authorized"])
         self.assertFalse(result["claim_ceiling"]["scientific_truth_established"])
+    def test_existing_memory_graph_query_accepts_projection(self):
+        from restored.memory_graph_query import related_subgraph
+        output=self.check(fixture())
+        graph=related_subgraph(output["graph"],"research/scoby.json",depth=1)
+        self.assertTrue(graph["found"])
+        self.assertEqual((len(graph["nodes"]),len(graph["edges"])),(2,1))
+        self.assertFalse(graph["authority"]["mutates_graph"])
+        self.assertFalse(graph["authority"]["declares_semantic_truth"])
     def test_detects_hash_tampering(self):
         packet=fixture();packet["matches"][0]["title"]="forged"
         with self.assertRaisesRegex(ValueError,"PACKET_INTEGRITY_HOLD"):
