@@ -1,0 +1,100 @@
+name: JANUS Native Memory v2 real-source admission canary
+on:
+  pull_request:
+    paths:
+      - 'janus_model/memory_admission.py'
+      - 'janus_model/memory_prompt.py'
+      - 'tools/run_memory_admission.sh'
+      - '.github/workflows/janus-native-model.yml'
+      - '.github/workflows/janus-native-memory-e2e.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-source-admission:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: main
+          path: _sources/meta
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/Demi_Head
+          ref: main
+          path: _sources/demihead
+          sparse-checkout: |
+            tools
+          persist-credentials: false
+      - name: Build pinned full Meta Registry index and select real SCOBY sources
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/autonomy-admission"
+          mkdir -p "$OUT/corpus"
+          python _sources/meta/experiments/unified-memory-v2/janus_unified_memory.py build --registry-root _sources/meta --db "$OUT/index.sqlite" > "$OUT/build.json"
+          python _sources/meta/experiments/unified-memory-v2/janus_unified_memory.py verify --registry-root _sources/meta --db "$OUT/index.sqlite" > "$OUT/verify.json"
+          SOURCE_COMMIT=$(python -c 'import json,sys;print(json.load(open(sys.argv[1]))["source_commit"])' "$OUT/verify.json")
+          MANIFEST_SHA=$(python -c 'import json,sys;print(json.load(open(sys.argv[1]))["source_manifest_sha256"])' "$OUT/verify.json")
+          python _sources/demihead/tools/unified_memory_v2_bridge.py --index "$OUT/index.sqlite" --query SCOBY \
+            --expected-source-commit "$SOURCE_COMMIT" --expected-manifest-sha256 "$MANIFEST_SHA" \
+            --limit 8 --output "$OUT/packet.json"
+          python tools/demiurge_unified_memory_v2_consumer.py --packet "$OUT/packet.json" \
+            --expect-source-commit "$SOURCE_COMMIT" --expect-manifest-sha256 "$MANIFEST_SHA" \
+            --output "$OUT/context.json"
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          out=Path(os.environ["RUNNER_TEMP"])/"autonomy-admission"
+          v=json.loads((out/"verify.json").read_text())
+          (out/"corpus/train.txt").write_text("BASELINE JANUS SOURCE DATA\n"*2048)
+          (out/"corpus/corpus_manifest.json").write_text(json.dumps({
+            "source_repository":"Hawkar-usls/janus-meta-registry",
+            "source_commit":v["source_commit"],
+            "source_digest":"c"*64,
+            "train_bytes":len(("BASELINE JANUS SOURCE DATA\n"*2048).encode()),
+            "records":[]
+          }))
+          PY
+          python -m janus_model.memory_admission --registry _sources/meta \
+            --verification "$OUT/verify.json" --packet "$OUT/packet.json" \
+            --context "$OUT/context.json" --corpus-dir "$OUT/corpus" \
+            --run-id 12 --event pull_request --output "$OUT/admission.json"
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          out=Path(os.environ["RUNNER_TEMP"])/"autonomy-admission"
+          receipt=json.loads((out/"admission.json").read_text())
+          manifest=json.loads((out/"corpus/corpus_manifest.json").read_text())
+          packet=json.loads((out/"packet.json").read_text())
+          assert receipt["source_bytes_checked"] and receipt["topic"]=="SCOBY"
+          assert receipt["packet_sha256"] == packet["packet_sha256"]
+          assert receipt["training_authority"] == "CANDIDATE_ONLY_FROZEN_EVAL_GATE_STILL_REQUIRED"
+          assert receipt["safeguards"]["preserve_holdout"] and not receipt["safeguards"]["checkpoint_admission_bypassed"]
+          assert manifest["memory_v2_admission"]["frozen_anchor_inclusion"] is False
+          assert receipt["status"] in ("ADMITTED_TRAIN_SOURCE_CANDIDATES","CONTEXT_ONLY_NO_NEW_TRAIN_SOURCE","EMPTY_SEARCH")
+          print("JANUS_NATIVE_MEMORY_REAL_SOURCE_CANARY",json.dumps({
+            "status":receipt["status"],"match_count":receipt["match_count"],
+            "admitted_count":receipt["admitted_count"],
+            "supplement_bytes":receipt["supplement_bytes"],
+            "source_commit":receipt["source_commit"]
+          },sort_keys=True))
+          PY
+          test -z "$(git -C _sources/meta status --porcelain)"
+      - name: Upload bounded metadata proof, not training text
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-native-memory-v2-real-source-admission
+          path: |
+            ${{ runner.temp }}/autonomy-admission/verify.json
+            ${{ runner.temp }}/autonomy-admission/admission.json
+          if-no-files-found: error
+          retention-days: 7
