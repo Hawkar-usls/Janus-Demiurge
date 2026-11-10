@@ -1,0 +1,45 @@
+name: JANUS-010C Independent Real ETH Bell Replay
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/late_choice_010/eth_bell_010c.py'
+      - 'experiments/ocean_transformer/late_choice_010/test_eth_bell_010c.py'
+      - '.github/workflows/janus-010c-eth-real-bell.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-010c-eth-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  audited-real-physical-records:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Independent parser unit tests
+        run: |
+          set -euo pipefail
+          python -m py_compile experiments/ocean_transformer/late_choice_010/eth_bell_010c.py
+          python -m unittest discover -v -s experiments/ocean_transformer/late_choice_010 -p 'test_eth_bell_010c.py'
+      - name: Read original ETH real quantum measurements (all 1048576)
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/eth010c"
+          python experiments/ocean_transformer/late_choice_010/eth_bell_010c.py --output "$RUNNER_TEMP/eth010c/eth010c_result.json"
+      - name: Archive small aggregated report; do not redistribute original measurements
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-010c-eth-real-${{ github.run_id }}
+          path: ${{ runner.temp }}/eth010c/eth010c_result.json
+          retention-days: 60
+          if-no-files-found: warn
