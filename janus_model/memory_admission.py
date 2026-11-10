@@ -113,6 +113,7 @@ def admit(registry: Path, verification: dict, packet: dict, context: dict,
         raise ValueError("EYE_EXCLUSIONS_REQUIRED")
     admitted=[]
     refused=[]
+    verified_hits=[]
     parts=[]
     used=0
     for hit in packet["matches"]:
@@ -120,6 +121,16 @@ def admit(registry: Path, verification: dict, packet: dict, context: dict,
         if rel in excluded_exact or any(rel.startswith(p) for p in excluded_prefixes):
             refused.append({"path":rel,"reason":"EYE_GENERATED_SOURCE_EXCLUDED"})
             continue
+        # Resolve every eligible source before deciding its training split.
+        # A forged SHA halts the entire admission instead of silently skipping.
+        try:
+            raw = _source(registry,rel,hit["sha256"])
+        except ValueError as exc:
+            if str(exc) == "SOURCE_SIZE_OR_MISSING_HOLD":
+                refused.append({"path":rel,"reason":str(exc)})
+                continue
+            raise
+        verified_hits.append(hit)
         if assigned.get(rel)=="holdout" or int(hit["sha256"][:8],16)%10 == 0:
             refused.append({"path":rel,"reason":"HASH_HOLDOUT_PROTECTED"})
             continue
@@ -128,11 +139,6 @@ def admit(registry: Path, verification: dict, packet: dict, context: dict,
             continue
         if len(admitted)>=MAX_DOCS or used>=MAX_SUPPLEMENT_BYTES:
             refused.append({"path":rel,"reason":"ADMISSION_BYTE_OR_DOC_BUDGET"})
-            continue
-        try:
-            raw = _source(registry,rel,hit["sha256"])
-        except ValueError as exc:
-            refused.append({"path":rel,"reason":str(exc)})
             continue
         try:
             parsed=json.loads(raw.decode("utf-8"))
@@ -182,7 +188,7 @@ def admit(registry: Path, verification: dict, packet: dict, context: dict,
         "source_text_grants_truth":False,
         "source_text_grants_execution":False
     }
-    first=packet["matches"][0] if packet["matches"] else None
+    first=verified_hits[0] if verified_hits else None
     # This seven-byte source fingerprint is appended to the *model inference prompt*.
     # The neural model has only a 128-byte context; do not claim full-source attention.
     prompt_marker=f"|M{first['sha256'][:5]}" if first else ""
@@ -198,7 +204,7 @@ def admit(registry: Path, verification: dict, packet: dict, context: dict,
         "before_source_digest":old_digest,"candidate_source_digest":new_digest,
         "prompt_marker":prompt_marker,"source_bytes_checked":True,
         "training_authority":"CANDIDATE_ONLY_FROZEN_EVAL_GATE_STILL_REQUIRED",
-        "model_consumption":"BOUND_PROMPT_MARKER_AND_SOURCE_TRAIN_BYTES",
+        "model_consumption":"VERIFIED_PROVENANCE_MARKER_AND_POSSIBLE_SOURCE_TRAIN_BYTES",
         "actual_gradient_update_observed":False,
         "candidate_promoted":False,
         "safeguards":{"preserve_holdout":True,"preserve_original_registry":True,
