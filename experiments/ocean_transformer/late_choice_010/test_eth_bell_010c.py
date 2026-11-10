@@ -31,8 +31,11 @@ class ETHBellReplayTests(unittest.TestCase):
                  for a in (0,1) for b in (0,1)}
         for a in (0,1):
             for b in (0,1):
-                c[(a,b)][(1,-1 if (a,b)==(1,1) else 1)]=25
-        s=q.summarize(c,100)
+                # Idealized PR-box control: strong CHSH, unbiased marginals.
+                sign=-1 if (a,b)==(1,1) else 1
+                for A in (-1,1):
+                    c[(a,b)][(A,A*sign)]=25
+        s=q.summarize(c,200)
         self.assertEqual(s["CHSH_S_max_four_orientations"],4.0)
 
     def test_unconditional_no_signalling_control(self):
