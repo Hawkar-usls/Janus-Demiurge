@@ -1,0 +1,46 @@
+name: JANUS-011E Advanced-Retarded Physical Boundary Falsification
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/late_choice_010/green_boundary_011e.py'
+      - 'experiments/ocean_transformer/late_choice_010/test_green_boundary_011e.py'
+      - 'experiments/ocean_transformer/late_choice_010/PROTOCOL_011E_WAVE_BOUNDARY_FROZEN.md'
+      - '.github/workflows/janus-011e-wave-boundary-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-011e-wave-boundary-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deterministic-noncausal-boundary-controls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact wave envelopes, causal filter, clock bias, no-go tests
+        run: |
+          set -euo pipefail
+          python -m py_compile experiments/ocean_transformer/late_choice_010/green_boundary_011e.py
+          python -m unittest discover -v -s experiments/ocean_transformer/late_choice_010 -p 'test_green_boundary_011e.py'
+      - name: Emit source-independent mathematical boundary diagnostics
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/janus011e"
+          python -u experiments/ocean_transformer/late_choice_010/green_boundary_011e.py --output "$RUNNER_TEMP/janus011e/wave_boundary_011e_theory.json"
+      - name: Archive theory result and explicit failed physical gate only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-011e-wave-boundary-theory-${{ github.run_id }}
+          path: ${{ runner.temp }}/janus011e/wave_boundary_011e_theory.json
+          retention-days: 60
+          if-no-files-found: warn
