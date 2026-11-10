@@ -33,9 +33,15 @@ class NISTTimestamperContract(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"UNALIGNED_24_BYTE"):
             n.parse_events(b"123")
 
-    def test_unrecognized_channel_refused(self):
-        with self.assertRaisesRegex(ValueError,"UNKNOWN_CHANNEL"):
-            n.parse_events(n.REC.pack(100,1,0))
+    def test_unclassified_channel_not_mislabeled_as_physical_event(self):
+        stat=n.parse_events(n.REC.pack(64,1234567,0))
+        self.assertEqual(stat["unclassified_channel_codes"],{"64":1})
+        self.assertEqual(stat["per_channel"]["0"]["count"],0)
+        self.assertEqual(stat["GPS_PPS_count"],0)
+
+    def test_implausible_channel_refused(self):
+        with self.assertRaisesRegex(ValueError,"IMPLAUSIBLE_CHANNEL"):
+            n.parse_events(n.REC.pack(999999,1,0))
 
     def test_nonincreasing_gps_rejected(self):
         with self.assertRaisesRegex(ValueError,"NONINCREASING_GPS"):
