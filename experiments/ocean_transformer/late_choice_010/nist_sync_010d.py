@@ -121,6 +121,12 @@ def run(dest):
     rows=[]
     for run_name,wing,filename in SAMPLES:
         uri,zipped,raw,native=fetch(run_name,wing,filename)
+        print("NIST_010D_RAW_PROBE "+json.dumps({"run_name":run_name,"wing":wing,
+              "zip_sha256":hashlib.sha256(zipped).hexdigest(),
+              "raw_sha256":hashlib.sha256(raw).hexdigest(),
+              "raw_filename":native,"raw_bytes":len(raw),
+              "raw_hex_first_96_bytes":raw[:96].hex(),
+              "raw_prefix_repr":repr(raw[:48])}),flush=True)
         stats=parse_events(raw)
         row={"run_name":run_name,"wing":wing,"official_s3_uri":uri,
              "original_zip_bytes":len(zipped),
