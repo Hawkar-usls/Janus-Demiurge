@@ -47,6 +47,8 @@ def inventory(blob):
                 lines=data.decode("utf-8-sig").splitlines()
                 obj["utf8_text"]=True
                 obj["line_count"]=len(lines)
+                if m.filename.lower().endswith("readme.txt") and len(data)<8000:
+                    obj["original_readme_full_text"]="\\n".join(lines)
                 # Only calibration archive, plus at most four short lines for schema
                 obj["first_four_original_text_lines"]=[s[:220] for s in lines[:4]]
                 obj["last_line_char_length"]=len(lines[-1]) if lines else 0
@@ -79,7 +81,7 @@ def main():
         f.write("\n");f.flush();os.fsync(f.fileno())
     print("JANUS_010N_SCHEMA "+json.dumps({"zip_sha256":report["source_zip_sha256"],"n_entries":len(report["entries"]),
       "entries":[{"name":e["name"],"size":e["uncompressed_bytes"],
-                  "utf8":e["utf8_text"],"first_lines":e.get("first_four_original_text_lines")} for e in report["entries"]][:18],
+                  "utf8":e["utf8_text"],"first_lines":e.get("first_four_original_text_lines"),"readme":e.get("original_readme_full_text")} for e in report["entries"]][:18],
       "June_archive_untouched":True},sort_keys=True),flush=True)
 
 if __name__=="__main__":main()
