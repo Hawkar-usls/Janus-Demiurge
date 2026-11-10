@@ -1,0 +1,32 @@
+name: Demiurge Unified Memory v2 read-only packet consumer
+on:
+  pull_request:
+    paths:
+      - 'tools/demiurge_unified_memory_v2_consumer.py'
+      - 'tests/test_demiurge_unified_memory_v2_consumer.py'
+      - 'docs/UNIFIED_MEMORY_V2_DEMIHEAD_CONSUMER.md'
+      - '.github/workflows/demiurge-unified-memory-v2-consumer-isolated.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-consumer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify DemiHead packet receiver does not own side effects
+        run: |
+          python -m unittest discover -s tests -p test_demiurge_unified_memory_v2_consumer.py -v
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('tools/demiurge_unified_memory_v2_consumer.py').read_text(encoding='utf-8')
+          for x in ['SOURCE_PIN_MISMATCH','PACKET_INTEGRITY_HOLD','AUTHORITY_DELTA_HOLD','network_dispatch_authorized":False','module_admission_authorized":False']:
+              assert x in s,x
+          print('DEMIURGE_UNIFIED_MEMORY_V2_RECEIVER_PASS')
+          PY
