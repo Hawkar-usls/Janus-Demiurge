@@ -23,6 +23,11 @@ URLS=[
  BASE+"/downloads/file_stream/4817730",
  BASE+"/api/v2/files/4817730/download",
  BASE+"/downloads/doi:10.5061/dryad.8kprr4z24",
+ BASE+"/api/v2/versions/448155",
+ BASE+"/api/v2/versions/448155/files",
+ BASE+"/api/v2/datasets/doi%3A10.5061%2Fdryad.8kprr4z24/download",
+ BASE+"/api/v2/files/4817730",
+ BASE+"/api/v2/versions/448155/download",
 ]
 def probe(url):
     try:
@@ -40,6 +45,7 @@ def probe(url):
                     data=json.loads(raw)
                     out["top_keys"]=sorted(data.keys()) if isinstance(data,dict) else []
                     out["dataset_keys"]=data.get("_links") if isinstance(data,dict) else None
+                    out["first_file_metadata"]=data.get("_embedded",{}) if isinstance(data,dict) else None
                 except ValueError:out["parse_error"]="INVALID_JSON"
             elif "csv" in typ or b"," in raw[:400]:
                 lines=raw.decode("utf-8-sig","replace").splitlines()
