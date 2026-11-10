@@ -80,7 +80,7 @@ class MemoryAdmissionTests(unittest.TestCase):
         self.assertEqual(r["admitted_count"],0)
         self.assertEqual(train,self.train_text)
         self.assertEqual(m["source_digest"],self.corpus["source_digest"])
-        self.assertEqual(r["refused"][0]["reason"],"HASH_HOLDOUT_PROTECTED")
+        self.assertEqual(m["memory_v2_admission"]["refused"][0]["reason"],"HASH_HOLDOUT_PROTECTED")
         self.corpus["records"]=[{"path":self.path,"split":"train"}]
         r,train,m=self.run_admit()
         self.assertEqual(r["admitted_count"],0)
@@ -88,7 +88,7 @@ class MemoryAdmissionTests(unittest.TestCase):
         (self.root/self.path).write_bytes(b'{"injected":"fake"}')
         r,train,m=self.run_admit()
         self.assertEqual(r["admitted_count"],0)
-        self.assertEqual(r["refused"][0]["reason"],"SOURCE_BYTES_SHA_MISMATCH")
+        self.assertEqual(m["memory_v2_admission"]["refused"][0]["reason"],"SOURCE_BYTES_SHA_MISMATCH")
         self.assertEqual(train,self.train_text)
     def test_origin_drift_or_context_tamper_fails_closed(self):
         self.verification["source_commit"]="f"*40
