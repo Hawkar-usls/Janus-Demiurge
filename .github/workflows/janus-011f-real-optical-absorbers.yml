@@ -1,0 +1,46 @@
+name: JANUS-011F Measured Optical Absorbers and Causal Timing Audit
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/late_choice_010/measured_absorber_011f.py'
+      - 'experiments/ocean_transformer/late_choice_010/test_measured_absorber_011f.py'
+      - 'experiments/ocean_transformer/late_choice_010/PROTOCOL_011F_MEASURED_ABSORBERS_FROZEN.md'
+      - '.github/workflows/janus-011f-real-optical-absorbers.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-011f-optical-absorption-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  original-optical-constants-with-no-timelike-claim:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Passive-slab energy conservation and false precursor regression
+        run: |
+          set -euo pipefail
+          python -m py_compile experiments/ocean_transformer/late_choice_010/measured_absorber_011f.py
+          python -m unittest discover -v -s experiments/ocean_transformer/late_choice_010 -p 'test_measured_absorber_011f.py'
+      - name: Replay original immutable Johnson Christy Au Ag optical measurements
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/janus011f"
+          python -u experiments/ocean_transformer/late_choice_010/measured_absorber_011f.py --output "$RUNNER_TEMP/janus011f/optical_absorbers_011f.json"
+      - name: Archive original SHA256 and only derived physical-model statistics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-011f-optics-${{ github.run_id }}
+          path: ${{ runner.temp }}/janus011f/optical_absorbers_011f.json
+          retention-days: 60
+          if-no-files-found: warn
