@@ -118,6 +118,58 @@ def unconstrained_capacity():
       "no_experiment_could_select_kernels_without_independent_physics":True
     }
 
+def quantum_CPTP_lift():
+    """Legitimate quantum measure/prepare channels vs imposed past fixed-point.
+
+    The CP/TP quantum map uses the four Kraus operators
+       K_{j,i}=sqrt(T_C[i,j]) |j><i| for input i and output j.
+    For any density rho, E_C(rho)=sum K rho K^dag; sum K^dag K=I.
+    On a diagonal state, p_output=p_input T_C and coherence is erased.
+
+    Standard forward evolution starts with SAME past rho=I/2 for both
+    future choices: early stats are P(A1)=1/2, final output differs.
+    Only the added backwards fixed-point boundary sigma_C=E_C(sigma_C)
+    makes the assumed EARLIER state depend on future C.
+    """
+    cases=[]
+    for c,(u,v) in sorted(BASE.items()):
+        T=transition(u,v)
+        # CPTP verified by Kraus effects:
+        # for each input basis i, sum_j ||K_{j,i}|i>||^2 = sum_j T[i,j] = 1
+        assert all(sum(row)==1 for row in T)
+        assert all(val>=0 for row in T for val in row)
+        prior=(F(1,2),F(1,2))
+        final=(prior[0]*T[0][0]+prior[1]*T[1][0],
+               prior[0]*T[0][1]+prior[1]*T[1][1])
+        stat=fixed_point(u,v)
+        cases.append({
+            "C":c,
+            "Kraus_squared_coefficients_by_input":[
+                [fstr(vv) for vv in row] for row in T],
+            "Kraus_form":"K_(output,input) = sqrt(T_C[input,output]) |output><input|",
+            "CPTP":True,
+            "same_past_rho_before_late_C":"I/2",
+            "same_past_P_A1":fstr(prior[1]),
+            "ordinary_late_output_P1":fstr(final[1]),
+            "extra_global_boundary_prior_fixed_point_P1":fstr(stat[1]),
+            "physical_backwards_time_channel_established":False
+        })
+    assert cases[0]["ordinary_late_output_P1"]=="9/20"
+    assert cases[1]["ordinary_late_output_P1"]=="11/20"
+    return {
+        "channel_family":"Entanglement-breaking quantum CPTP measure-and-reprepare in Z, conditioned on late C",
+        "operator_sum_trace_preservation_proof":"Sum_(j,i) K_(j,i)^dagger K_(j,i) = Sum_i(Sum_j T[i,j]) |i><i| = I",
+        "complete_positivity_proof":"Explicit Kraus operator sum E(rho)=Sum_(i,j) K_(j,i) rho K_(j,i)^dagger",
+        "two_future_choice_cases":cases,
+        "standard_forward_past_A_probability_delta":F(0).numerator,
+        "ordinary_future_output_delta":str(F(1,10)),
+        "assumed_global_boundary_prior_delta":str(F(1,5)),
+        "logic":"Future-dependent early probabilities arise ONLY when demanding a C-selected fixed point at an earlier time; standard CPTP application on the same early rho cannot retroactively alter an earlier recorded A.",
+        "DCTC_exact_quantum_unitary_realization_proven":False,
+        "all_outcomes_included":True
+    }
+
+
 def forward_no_go():
     # Earliest accessible A determined by preexisting exogenous U. Later C
     # generated without any path to A. Intervening on C changes no already
@@ -179,6 +231,7 @@ def result():
       "noise_robustness":curve,
       "capacity_unidentifiability":unconstrained_capacity(),
       "chronological_forward_control":forward_no_go(),
+      "quantum_CPTP_lift_and_boundary_condition":quantum_CPTP_lift(),
       "chronology_audit":chronology_audit(),
       "approximate_hypothetical_test_size":sample_size(),
       "citations":[
@@ -207,7 +260,7 @@ def main():
     print("JANUS_011C_RESULT "+json.dumps({
       "early_P1_c0":float(fixed_point(*BASE[0])[1]),
       "early_P1_c1":float(fixed_point(*BASE[1])[1]),
-      "mathematical_delta":curve if False else data["noise_robustness"][0]["operational_delta_with_ASSUMED_future_loop"],
+      "mathematical_delta":data["noise_robustness"][0]["operational_delta_with_ASSUMED_future_loop"],
       "capacity_bits":data["noise_robustness"][0]["SHANNON_capacity_bits_per_use_UNREALIZED_PHYSICALLY"],
       "capacity_at_flip_half":data["noise_robustness"][-1]["SHANNON_capacity_bits_per_use_UNREALIZED_PHYSICALLY"],
       "near_one_bit_toy":data["capacity_unidentifiability"]["near_one_bit_symmetric_loop"]["capacity_bits_per_use_in_toy"],
