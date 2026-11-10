@@ -39,6 +39,11 @@ set +e
     --corpus-dir runtime/corpus \
     --run-id "$GITHUB_RUN_ID" --event "$GITHUB_EVENT_NAME" \
     --output runtime/memory-v2/admission.json
+  python -m janus_model.memory_prompt \
+    --admission runtime/memory-v2/admission.json \
+    --organ-context runtime/organ-context.json \
+    --model-state janus_model/state/JANUS_MODEL_STATE.json \
+    --report runtime/memory-v2/inference-binding.json > runtime/memory-v2/source-marker.txt
 ) > runtime/memory-v2/phase.log 2>&1
 RC=$?
 set -e
@@ -47,7 +52,7 @@ if [ "$RC" -ne 0 ]; then
   cp runtime/memory-v2/baseline-train.txt runtime/corpus/train.txt
   cp runtime/memory-v2/baseline-manifest.json runtime/corpus/corpus_manifest.json
   # A failed proof is not a pass; the existing brain may still run on baseline.
-  rm -f runtime/memory-v2/admission.json
+  rm -f runtime/memory-v2/admission.json runtime/memory-v2/inference-binding.json runtime/memory-v2/source-marker.txt
   python - <<'PY'
 import json
 from pathlib import Path
