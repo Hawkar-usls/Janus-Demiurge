@@ -70,6 +70,27 @@ class LoopAndChronologyTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"CHOICE_MUST_BE_BINARY"):
             q.future_control(2)
 
+    def test_quantum_CPTP_kraus_lift_is_complete(self):
+        p=q.quantum_CPTP_lift()
+        self.assertTrue(p["all_outcomes_included"])
+        self.assertEqual(p["standard_forward_past_A_probability_delta"],0)
+        self.assertEqual(p["ordinary_future_output_delta"],"1/10")
+        self.assertEqual(p["assumed_global_boundary_prior_delta"],"1/5")
+        a,b=p["two_future_choice_cases"]
+        self.assertEqual(a["same_past_P_A1"],"1/2")
+        self.assertEqual(b["same_past_P_A1"],"1/2")
+        self.assertEqual(a["ordinary_late_output_P1"],"9/20")
+        self.assertEqual(b["ordinary_late_output_P1"],"11/20")
+        self.assertTrue(a["CPTP"] and b["CPTP"])
+
+    def test_backwards_boundary_is_not_quantum_map_evidence(self):
+        p=q.quantum_CPTP_lift()
+        self.assertIn("ONLY",p["logic"])
+        self.assertFalse(p["DCTC_exact_quantum_unitary_realization_proven"])
+        for s in p["two_future_choice_cases"]:
+            self.assertFalse(s["physical_backwards_time_channel_established"])
+
+
     def test_no_physical_retrocausality_claim(self):
         r=q.result()
         self.assertFalse(r["operational_retrocausal_signal_proven"])
