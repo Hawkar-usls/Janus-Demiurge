@@ -1,0 +1,44 @@
+name: JANUS-010A Real Delft Bell Data Replay
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/late_choice_010/public_bell_010a.py'
+      - 'experiments/ocean_transformer/late_choice_010/test_public_bell_010a.py'
+      - '.github/workflows/janus-010a-real-bell-replay.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-real-bell-010a-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  reproducible-historical-physics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: No-dependency scientific parser tests
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v -s experiments/ocean_transformer/late_choice_010 -p 'test_public_bell_010a.py'
+      - name: Verify original 4TU physical data and reproduce Bell and no-signalling checks
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/real-bell-010a"
+          python experiments/ocean_transformer/late_choice_010/public_bell_010a.py --output "$RUNNER_TEMP/real-bell-010a/replay_010a.json"
+      - name: Archive aggregated evidence only; never republish original data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-real-bell-010a-${{ github.run_id }}
+          path: ${{ runner.temp }}/real-bell-010a/replay_010a.json
+          retention-days: 60
+          if-no-files-found: warn
