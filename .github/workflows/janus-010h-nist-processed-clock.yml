@@ -1,0 +1,52 @@
+name: JANUS-010H NIST Original Processed Clock Metadata
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/late_choice_010/nist_hdf5_clock_010h.py'
+      - 'experiments/ocean_transformer/late_choice_010/test_nist_hdf5_clock_010h.py'
+      - '.github/workflows/janus-010h-nist-processed-clock.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-nist-010h-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  read-original-laboratory-processed-sync-metadata:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install standard HDF5 read-only parser
+        run: |
+          set -euo pipefail
+          python -m pip install 'h5py==3.15.1' 'numpy==2.3.4'
+      - name: Prove bounded metadata-only reader safety and abstention
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v -s experiments/ocean_transformer/late_choice_010 -p 'test_nist_hdf5_clock_010h.py'
+      - name: Read original NIST bad-modelock training HDF5 schema
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/nist010h"
+          python -u experiments/ocean_transformer/late_choice_010/nist_hdf5_clock_010h.py --source training --output "$RUNNER_TEMP/nist010h/training_010h_metadata.json"
+      - name: Read original NIST corrected-timing 03_43 physical run HDF5 schema
+        run: |
+          set -euo pipefail
+          python -u experiments/ocean_transformer/late_choice_010/nist_hdf5_clock_010h.py --source corrected --output "$RUNNER_TEMP/nist010h/corrected_010h_metadata.json"
+      - name: Archive only source hashes and small metadata, never photon arrays
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-nist-010h-author-clock-meta-${{ github.run_id }}
+          path: ${{ runner.temp }}/nist010h/*.json
+          retention-days: 60
+          if-no-files-found: warn
