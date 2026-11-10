@@ -16,7 +16,7 @@ class RealMaterialSpectraAndCausalControls(unittest.TestCase):
             r=q.slab(wl,1,0,.04)
             self.assertAlmostEqual(r["R_model"],0,places=14)
             self.assertAlmostEqual(r["T_model"],1,places=14)
-            self.assertEqual(r["A_model"],0)
+            self.assertAlmostEqual(r["A_model"],0,places=14)
 
     def test_finite_slab_zero_thickness_is_transparent(self):
         for n,k in ((.43,2.455),(1.44,0),(1.1,5.2)):
