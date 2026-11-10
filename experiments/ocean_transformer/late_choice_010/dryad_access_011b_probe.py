@@ -42,7 +42,7 @@ def probe(url):
                     out["dataset_keys"]=data.get("_links") if isinstance(data,dict) else None
                 except ValueError:out["parse_error"]="INVALID_JSON"
             elif "csv" in typ or b"," in raw[:400]:
-                lines=raw.decode("utf8-sig","replace").splitlines()
+                lines=raw.decode("utf-8-sig","replace").splitlines()
                 out["first_two_lines"]=[x[:250] for x in lines[:2]]
             return out
     except (HTTPError,URLError,TimeoutError) as e:
