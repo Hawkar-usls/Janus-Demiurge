@@ -21,6 +21,7 @@ import time
 import torch
 import torch.nn.functional as F
 from janus_model.model import JanusTinyTransformer, JanusModelConfig, parameter_count
+from experiments.ocean_transformer.ocean_r3_registry_bridge import chronology_allowed, QUARANTINE, QUALITY
 
 torch.set_num_threads(1)
 CONTEXT=16
@@ -86,7 +87,7 @@ def collect(args):
         commit, timestamp=header
         paths=sorted(set(s.strip() for s in rows[1:] if s.strip().lower().endswith(".json")))
         # Explicitly exclude our own model feedback from prospective targets.
-        paths=[p for p in paths if not Path(p).name.upper().startswith(SKIP_PREFIXES)]
+        paths=[p for p in paths if chronology_allowed(p)]
         if not paths:continue
         cats=sorted({classify(p) for p in paths})
         events.append({"commit":commit, "timestamp":timestamp, "first_path":paths[0],
@@ -107,7 +108,7 @@ def collect(args):
         "source_repository":"Hawkar-usls/janus-meta-registry",
         "source_head":head,"collection":"bounded last 5000 first-parent commits",
         "event_definition":"each commit that added JSON; first lexicographic newly added file; category from directory + salient filename prefix",
-        "excludes_generated_experiment_records":list(SKIP_PREFIXES),
+        "excludes_generated_experiment_records":list(SKIP_PREFIXES)+[QUARANTINE,QUALITY],
         "events_count":len(events),"unique_observed_categories":len(unique),
         "train_cutoff_idx":train_stop,"labels":classes,
         "sequence":sample,"events":events,
