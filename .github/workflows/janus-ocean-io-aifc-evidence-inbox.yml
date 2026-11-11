@@ -1,0 +1,76 @@
+name: JANUS Ocean imports Tachyon IO/AIFC evidence gate
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/tachyon_io_aifc_consumer.py'
+      - 'tests/test_ocean_io_aifc_consumer.py'
+      - 'tests/fixtures/tachyon_io_aifc_verified_20261111.json'
+      - 'docs/OCEAN_IO_AIFC_EVIDENCE_BRIDGE.md'
+      - '.github/workflows/janus-ocean-io-aifc-evidence-inbox.yml'
+  workflow_dispatch:
+    inputs:
+      verify_original_artifact:
+        description: 'Re-fetch exact verified DemiHead GitHub run artifact (until expiry)'
+        required: false
+        default: false
+        type: boolean
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: ocean-tachyon-io-aifc-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  import-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - name: Checkout Ocean source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Fail-closed adversarial tests and archived source fixture
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p 'test_ocean_io_aifc_consumer.py' -v
+          python experiments/ocean_transformer/tachyon_io_aifc_consumer.py \
+            --tachyon-io-aifc-gate tests/fixtures/tachyon_io_aifc_verified_20261111.json \
+            --out artifacts/ocean-tachyon-aifc/context.json
+      - name: Optionally re-verify originating GitHub artifact (no future values)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.verify_original_artifact }}
+        run: |
+          set -euo pipefail
+          gh api 'repos/Hawkar-usls/Demi_Head/actions/runs/43003126296' > artifacts/ocean-tachyon-aifc/source-run.json
+          gh api 'repos/Hawkar-usls/Demi_Head/actions/runs/43003126296/artifacts?per_page=100' > artifacts/ocean-tachyon-aifc/source-artifacts.json
+          python - <<'PY'
+          import json
+          run=json.load(open('artifacts/ocean-tachyon-aifc/source-run.json'))
+          items=json.load(open('artifacts/ocean-tachyon-aifc/source-artifacts.json'))['artifacts']
+          assert run['id']==43003126296 and run['conclusion']=='success'
+          a=[x for x in items if x['id']==13846159504 and x['name']=='tachyon-io-aifc-gate-receipt' and not x['expired']]
+          assert len(a)==1 and a[0]['digest']=='sha256:6cf99f4c1cdc63ee522d6848537409f5d62b9cd040336443e6926110f7cb759d'
+          PY
+          mkdir -p artifacts/ocean-tachyon-aifc/original
+          gh run download 43003126296 --repo Hawkar-usls/Demi_Head \
+            --name tachyon-io-aifc-gate-receipt --dir artifacts/ocean-tachyon-aifc/original
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          a=json.loads(Path('artifacts/ocean-tachyon-aifc/original/eligibility.json').read_text())
+          b=json.loads(Path('tests/fixtures/tachyon_io_aifc_verified_20261111.json').read_text())
+          assert a==b, 'ORIGINAL_AIFC_RECEIPT_DIFFERS_FROM_PINNED_ARCHIVE'
+          PY
+      - name: Preserve independent research-only intake (not a model signal)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-ocean-tachyon-io-aifc-intake
+          path: artifacts/ocean-tachyon-aifc/context.json
+          retention-days: 30
+          if-no-files-found: warn
