@@ -6,7 +6,7 @@ on:
     paths:
       - '.github/workflows/janus-ocean-meta-next.yml'
   schedule:
-    - cron: '17 03 * * *'
+    - cron: '17 07 * * *' # after R3 intake 06:27 UTC; GitHub scheduling is best-effort
   workflow_dispatch:
 
 permissions:
@@ -28,6 +28,26 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Mount public Meta Registry receipts, read-only
+        uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: main
+          path: external/meta_registry
+          persist-credentials: false
+          sparse-checkout: |
+            data/observations/public_source_quarantine
+            data/observations/public_source_quality
+      - name: Verify R3 source and quality metadata / no gradient authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p 'test_ocean_r3_registry_bridge.py' -v
+          META_HEAD="$(git -C external/meta_registry rev-parse HEAD)"
+          python -m experiments.ocean_transformer.ocean_r3_registry_bridge witness \
+            --registry external/meta_registry \
+            --head "$META_HEAD" \
+            --out data/ocean_r3_witness.json
       - name: Install CPU torch only when needed
         shell: bash
         run: |
@@ -48,7 +68,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: janus-meta-next-snapshot
-          path: data/janus_meta_additions_snapshot.json
+          path: |
+            data/janus_meta_additions_snapshot.json
+            data/ocean_r3_witness.json
           retention-days: 30
           if-no-files-found: error
 
@@ -146,6 +168,14 @@ jobs:
           python experiments/ocean_transformer/meta_next_train.py aggregate \
             --snapshot data/janus_meta_additions_snapshot.json \
             --workers 4 --input rivers --output ocean
+      - name: Link real Ocean model test metrics to verified R3 registry receipt (read-only)
+        run: |
+          set -euo pipefail
+          python -m experiments.ocean_transformer.ocean_r3_registry_bridge combine \
+            --witness data/ocean_r3_witness.json \
+            --model-report ocean/meta_report.json \
+            --out ocean/ocean_r3_evaluation.json
+          echo 'OCEAN_R3_CONNECTED_RESEARCH_ONLY_NO_AUTO_TRAIN_FROM_QUARANTINE' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
           name: janus-meta-next-result-${{ github.run_id }}
@@ -153,6 +183,8 @@ jobs:
             ocean/meta_report.json
             ocean/meta_next_precommit.json
             ocean/meta_next_candidate.pt
+            ocean/ocean_r3_evaluation.json
+            data/ocean_r3_witness.json
           retention-days: 60
           if-no-files-found: error
       - name: Append-only research report and forecast on dedicated branch, no production writes
@@ -174,7 +206,8 @@ jobs:
           test ! -e "$dest" || { echo "::error::Duplicate run; refusing overwrite"; exit 1; }
           cp ocean/meta_next_precommit.json "$dest"
           cp ocean/meta_report.json "$ledger/run-${{ github.run_id }}-report.json"
-          git add -f "$dest" "$ledger/run-${{ github.run_id }}-report.json"
+          cp ocean/ocean_r3_evaluation.json "$ledger/run-${{ github.run_id }}-r3.json"
+          git add -f "$dest" "$ledger/run-${{ github.run_id }}-report.json" "$ledger/run-${{ github.run_id }}-r3.json"
           git commit -m "meta-next: append bounded chronological forecast from run ${{ github.run_id }}"
           git push origin "HEAD:$branch"
           echo "Append-only forecast commit: $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
