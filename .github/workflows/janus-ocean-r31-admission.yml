@@ -1,0 +1,79 @@
+name: JANUS Ocean R3.1 - pinned real chronology and candidate admission audit
+
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/ocean_r31_admission.py'
+      - 'tests/test_ocean_r31_admission.py'
+      - '.github/workflows/janus-ocean-r31-admission.yml'
+      - 'docs/JANUS_OCEAN_R31_ADMISSION.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: ocean-r31-pinned-audit-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  evaluate-frozen-real-ocean:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Local negative controls on chrono and SHA trust boundaries
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p test_ocean_r31_admission.py -v
+          python -m py_compile experiments/ocean_transformer/ocean_r31_admission.py
+      - name: Fetch exact prior four-river real research snapshot, read-only
+        uses: actions/download-artifact@v4
+        with:
+          name: janus-meta-next-snapshot
+          run-id: 43052765103
+          github-token: ${{ github.token }}
+          path: frozen/snapshot
+      - name: Fetch exact real model candidate and heldout metrics, read-only
+        uses: actions/download-artifact@v4
+        with:
+          name: janus-meta-next-result-43052765103
+          run-id: 43052765103
+          github-token: ${{ github.token }}
+          path: frozen/result
+      - name: Separate TRAIN chronological events and evaluate frozen Ocean checkpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          SNAPSHOT="$(find frozen/snapshot -type f -name 'janus_meta_additions_snapshot.json' -print -quit)"
+          REPORT="$(find frozen/result -type f -name 'meta_report.json' -print -quit)"
+          CHECKPOINT="$(find frozen/result -type f -name 'meta_next_candidate.pt' -print -quit)"
+          test -n "$SNAPSHOT" && test -n "$REPORT" && test -n "$CHECKPOINT"
+          python -m experiments.ocean_transformer.ocean_r31_admission \
+            --snapshot "$SNAPSHOT" --report "$REPORT" --checkpoint "$CHECKPOINT" \
+            --train-out out/ocean-r31-train-only-chronology.json \
+            --out out/ocean-r31-real-frozen-baseline-gate.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from experiments.ocean_transformer.ocean_r31_admission import digest
+          result=json.loads(Path('out/ocean-r31-real-frozen-baseline-gate.json').read_text())
+          assert result['scientific_admission']=='HOLD'
+          assert result['production_model_promotion'] is False
+          assert result['source_head_sha']=='c6c17f9fba57672ea705c0928967301a0bb423cd'
+          assert result['receipt_sha256']==digest({k:v for k,v in result.items() if k!='receipt_sha256'})
+          assert result['test_count']>=20
+          print('OCEAN_R31_REAL_FROZEN_EVALUATION',result['status'])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-ocean-r31-real-heldout-no-promotion
+          path: out/*.json
+          retention-days: 30
+          if-no-files-found: error
