@@ -1,0 +1,79 @@
+name: JANUS Ocean R3 read-only knowledge bridge checks
+
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/ocean_r3_registry_bridge.py'
+      - 'experiments/ocean_transformer/meta_next_train.py'
+      - 'tests/test_ocean_r3_registry_bridge.py'
+      - '.github/workflows/janus-ocean-meta-next.yml'
+      - '.github/workflows/janus-ocean-r3-bridge-ci.yml'
+      - 'docs/JANUS_OCEAN_R3_READONLY_BRIDGE.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-ocean-r3-readonly-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify-ocean-r3-provenance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate Ocean R3 metadata guardrails offline
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p 'test_ocean_r3_registry_bridge.py' -v
+          python -m py_compile experiments/ocean_transformer/ocean_r3_registry_bridge.py
+          python - <<'PY'
+          from pathlib import Path
+          text=Path('experiments/ocean_transformer/meta_next_train.py').read_text()
+          assert 'chronology_allowed(p)' in text
+          assert 'from experiments.ocean_transformer.ocean_r3_registry_bridge import' in text
+          workflow=Path('.github/workflows/janus-ocean-meta-next.yml').read_text()
+          assert "cron: '17 07 * * *'" in workflow
+          assert 'data/ocean_r3_witness.json' in workflow
+          assert 'ocean/ocean_r3_evaluation.json' in workflow
+          print('OCEAN_R3_META_QUARANTINE_NEVER_NEURAL_TRAINING_PASS')
+          PY
+      - name: Read current reviewed Meta Registry (public only)
+        uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: main
+          path: external/meta_registry
+          sparse-checkout: |
+            data/observations/public_source_quarantine
+            data/observations/public_source_quality
+          persist-credentials: false
+      - name: Generate real head-pinned R3 witness without model or network training
+        run: |
+          set -euo pipefail
+          HEAD_SHA="$(git -C external/meta_registry rev-parse HEAD)"
+          python -m experiments.ocean_transformer.ocean_r3_registry_bridge witness \
+            --registry external/meta_registry --head "$HEAD_SHA" \
+            --out artifacts/ocean_r3_readonly_witness.json
+          python - <<'PY'
+          import json
+          x=json.load(open('artifacts/ocean_r3_readonly_witness.json'))
+          assert x['scientific_admission']=='HOLD'
+          assert x['quality_metadata_used_as_gradient_labels'] is False
+          assert x['raw_news_used_for_training'] is False
+          assert x['ocean_production_promotion'] is False
+          print('OCEAN_R3_WITNESS_STATUS',x['status'],x['meta_registry_source_head'])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-ocean-r3-readonly-provenance-not-trained
+          path: artifacts/ocean_r3_readonly_witness.json
+          retention-days: 14
+          if-no-files-found: error
