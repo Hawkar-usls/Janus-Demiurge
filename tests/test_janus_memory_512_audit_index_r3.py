@@ -1,13 +1,14 @@
 """Synthetic source/manifest fixtures; no real registry or frozen holdout."""
 import hashlib
 import json
+import sqlite3
 from pathlib import Path
 import subprocess
 import tempfile
 import unittest
 
 from janus_model.memory_512_audit_index_r3 import (
-    TARGET_BYTES, Hold, _chunks, audit_catalog, build_index,
+    TARGET_BYTES, Hold, _chunks, _run_ids, audit_catalog, build_index,
     multi_hop, search_index,
 )
 
@@ -29,10 +30,11 @@ class Memory512R3Tests(unittest.TestCase):
             "data/rowan/a.json": json.dumps({
                 "title":"Alpha Rowan observation",
                 "related_paths":["data/rowan/b.json"],
+                "latest_completed_source_run":"42969641041",
                 "status":"HYPOTHESIS_ONLY",
             }).encode(),
-            "data/rowan/b.json": b'{"title":"Beta Rowan followup","verified":false}',
-            "data/rowan/copy.json": b'{"title":"Beta Rowan followup","verified":false}',
+            "data/rowan/b.json": b'{"title":"Beta Rowan followup","verified":false,"source_run_id":42969641041}',
+            "data/rowan/copy.json": b'{"title":"Beta Rowan followup","verified":false,"source_run_id":42969641041}',
             "data/rowan/bad.json": b'{"broken"',
             "data/rowan/holdout/protected.json": b'{"title":"secret blind research"}',
             "assets/demo.png": b"\x89PNG\r\nnot text",
@@ -156,6 +158,21 @@ class Memory512R3Tests(unittest.TestCase):
         self.assertEqual(two["second"][0]["path"],"data/rowan/b.json")
         self.assertEqual(multi_hop(db,"nonsense-unseen-999")["status"],"NO_SUPPORTED_FIRST_HOP")
         self.assertFalse(rec["model_weights_changed"])
+
+    def test_source_run_association_is_a_labeled_second_hop_not_proof(self):
+        _,docs=audit_catalog(self.idx,self.src)
+        db=Path(self.temp.name)/"index.sqlite"
+        build_index(db,self.src,docs,focus="rowan",max_index_bytes=4096)
+        with sqlite3.connect(db) as conn:
+            conn.execute("DELETE FROM relations")
+            conn.commit()
+        two=multi_hop(db,"alpha")
+        self.assertEqual(two["status"],"SHARED_RUN_ID_ASSOCIATIVE_HOP")
+        self.assertEqual(two["second"][0]["path"],"data/rowan/b.json")
+        self.assertEqual(two["second"][0]["shared_run_id"],"42969641041")
+        self.assertEqual(two["second"][0]["relation"],
+                         "SHARED_RUN_ID_ASSOCIATION_NOT_EVIDENCE")
+        self.assertEqual(_run_ids('{"description":"42969641041"}'),[])
 
     def test_index_not_written_under_source_tree(self):
         _,docs=audit_catalog(self.idx,self.src)
