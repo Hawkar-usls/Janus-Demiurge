@@ -86,26 +86,37 @@ jobs:
           ref: c8e47bb54e954ab122e111c97198131f048bd5fd
           path: _pinned/source
           persist-credentials: false
-      - name: Reconstruct and independently verify the source index on demand
+      - name: Restore SHA-keyed verified index cache across workflow runs
+        id: r5_cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/janus-memory-r5-index-cache
+          key: janus-memory-r5-v1-${{ runner.os }}-c8e47bb54e954ab122e111c97198131f048bd5fd-${{ hashFiles('janus_model/memory_512_cache_r5.py', 'janus_model/memory_512_audit_index_r3.py') }}
+      - name: Verify every cached document and source chunk or build on cold miss
         shell: bash
         run: |
           set -euo pipefail
+          python -m janus_model.memory_512_cache_r5 \
+            --catalog-root _pinned/catalog --source-root _pinned/source \
+            --cache-dir "$RUNNER_TEMP/janus-memory-r5-index-cache" \
+            --report "$RUNNER_TEMP/JANUS_R4_CACHE_PROVENANCE.json"
           python - <<'PY'
-          import json,os
+          import json,os,shutil
           from pathlib import Path
-          from janus_model.memory_512_audit_index_r3 import audit_catalog,build_index
           root=Path(os.environ["RUNNER_TEMP"])
-          source=Path("_pinned/source")
-          receipt,eligible=audit_catalog(Path("_pinned/catalog"),source)
-          db=root/"JANUS_R4_VERIFIED_SOURCE.sqlite"
-          built=build_index(db,source,eligible,focus="",max_index_bytes=67108864)
-          assert receipt["manifest_shards_verified"]==43
-          assert built["indexed_docs"]==4712 and built["source_bytes_indexed"]==49460266
-          assert built["sqlite_integrity"]=="ok"
-          print("JANUS_R4_INDEX_REBUILT_AND_SOURCE_HASH_BOUND",
-                json.dumps({"docs":built["indexed_docs"],
-                "unique_source_bytes":built["source_bytes_indexed"],
-                "pinned_commit":receipt["source_commit"]},sort_keys=True))
+          receipt=json.loads((root/"JANUS_R4_CACHE_PROVENANCE.json").read_text())
+          assert receipt["status"] in (
+              "BUILT_NEW_INDEX_AND_VERIFIED",
+              "REUSED_INDEX_VERIFIED_AGAINST_PINNED_SOURCE")
+          assert receipt["docs"]==4712
+          assert receipt["verified_source_bytes"]==49460266
+          assert receipt["cache_is_permanent"] is False
+          assert receipt["model_weights_changed"] is False
+          db=root/"janus-memory-r5-index-cache/index.sqlite"
+          shutil.copyfile(db,root/"JANUS_R4_VERIFIED_SOURCE.sqlite")
+          print("JANUS_R4_SOURCE_INDEX_READY",json.dumps({
+              "status":receipt["status"],"docs":receipt["docs"],
+              "source_commit":receipt["source_commit"]},sort_keys=True))
           PY
       - name: Check visible development QA and no-source refusal against true JSON bytes
         shell: bash
@@ -180,5 +191,6 @@ jobs:
           path: |
             ${{ runner.temp }}/JANUS_R4_DEVELOPMENT_QA.json
             ${{ runner.temp }}/JANUS_R4_QUERY_RECEIPT.json
+            ${{ runner.temp }}/JANUS_R4_CACHE_PROVENANCE.json
           retention-days: 14
           if-no-files-found: error
