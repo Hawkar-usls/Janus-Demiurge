@@ -1,0 +1,131 @@
+name: JANUS Memory 512 R5 - cross-run cache and real native answer evaluation
+on:
+  pull_request:
+    paths:
+      - 'janus_model/memory_512_cache_r5.py'
+      - 'janus_model/memory_512_answer_eval_r5.py'
+      - 'janus_model/eval/JANUS_MEMORY_512_R5_NEW_QUESTIONS_V1.json'
+      - 'tests/test_janus_memory_512_cache_and_answer_r5.py'
+      - '.github/workflows/janus-memory-512-r5-cache-eval.yml'
+      - '.github/workflows/janus-memory-512m-r4-query.yml'
+      - 'docs/JANUS_MEMORY_512_R5_CACHE_EVAL.md'
+  push:
+    branches: [main]
+    paths:
+      - 'janus_model/memory_512_cache_r5.py'
+      - 'janus_model/memory_512_answer_eval_r5.py'
+      - '.github/workflows/janus-memory-512-r5-cache-eval.yml'
+      - '.github/workflows/janus-memory-512m-r4-query.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-memory-r5-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  source-cache-and-model:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: CPU-only PyTorch for real v1 checkpoint evaluation
+        run: python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+      - name: R5 synthetic fail-closed unit tests
+        run: python -m unittest discover -s tests -p 'test_janus_memory_512_cache_and_answer_r5.py' -v
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: 6c9259c43d89569b11351bf8579a3775025fa2f0
+          path: _r5/catalog
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: c8e47bb54e954ab122e111c97198131f048bd5fd
+          path: _r5/source
+          persist-credentials: false
+      - name: Try repo Actions cache keyed by immutable source and index-code digest
+        id: r5_cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/janus-memory-r5-index-cache
+          key: janus-memory-r5-v1-${{ runner.os }}-c8e47bb54e954ab122e111c97198131f048bd5fd-${{ hashFiles('janus_model/memory_512_cache_r5.py', 'janus_model/memory_512_audit_index_r3.py') }}
+      - name: Build on cold miss or verify cached chunks against pinned source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m janus_model.memory_512_cache_r5 \
+            --catalog-root _r5/catalog \
+            --source-root _r5/source \
+            --cache-dir "$RUNNER_TEMP/janus-memory-r5-index-cache" \
+            --report "$RUNNER_TEMP/JANUS_R5_CACHE_STATUS.json"
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          f=Path(os.environ["RUNNER_TEMP"])/"JANUS_R5_CACHE_STATUS.json"
+          r=json.loads(f.read_text())
+          assert r["status"] in ("BUILT_NEW_INDEX_AND_VERIFIED",
+                                  "REUSED_INDEX_VERIFIED_AGAINST_PINNED_SOURCE")
+          assert r["docs"]==4712 and r["verified_source_bytes"]==49460266
+          assert r["source_content_replayed"] is True
+          assert r["cache_is_permanent"] is False
+          assert r["model_weights_changed"] is False
+          print("JANUS_R5_VERIFIED_CACHE",json.dumps({
+            "status":r["status"],"documents":r["docs"],
+            "verified_bytes":r["verified_source_bytes"],
+            "cache_is_permanent":r["cache_is_permanent"]},sort_keys=True))
+          PY
+      - name: Run real promoted v1 on five NEW prospective engineering questions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m janus_model.memory_512_answer_eval_r5 \
+            --checkpoint janus_model/checkpoints/promoted.pt \
+            --catalog-root _r5/catalog --source-root _r5/source \
+            --fixture janus_model/eval/JANUS_MEMORY_512_R5_NEW_QUESTIONS_V1.json \
+            --db "$RUNNER_TEMP/janus-memory-r5-index-cache/index.sqlite" \
+            --cache-receipt "$RUNNER_TEMP/janus-memory-r5-index-cache/index-receipt.json" \
+            --out "$RUNNER_TEMP/JANUS_R5_NATIVE_NEW_QA.json"
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          r=json.loads((Path(os.environ["RUNNER_TEMP"])/"JANUS_R5_NATIVE_NEW_QA.json").read_text())
+          assert r["questions"]==5 and r["model_ran_real_checkpoint"] is True
+          assert r["checkpoint_sha256"]=="fc767adb812ac3bea54c44cbccfa9680941f95e2c8a77120559b41da044d9463"
+          assert r["independent_blind_holdout"] is False
+          assert r["generalization_established"] is False
+          assert r["model_checkpoint_modified"] is False
+          assert r["model_promoted"] is False and r["scientific_authority_delta"]==0
+          print("JANUS_R5_NATIVE_MEASURED_NOT_ASSUMED",json.dumps({
+            "questions":r["questions"],"baseline_exact":r["baseline_exact_count"],
+            "memory_exact":r["memory_exact_count"],
+            "baseline_target_nll":r["baseline_average_target_byte_nll"],
+            "memory_target_nll":r["memory_average_target_byte_nll"]},sort_keys=True))
+          PY
+          test -z "$(git -C _r5/source status --porcelain)"
+          test -z "$(git -C _r5/catalog status --porcelain)"
+          test -z "$(git status --porcelain --untracked-files=no)"
+      - name: Save reusable index only on protected main (expiring best-effort cache)
+        if: ${{ github.ref == 'refs/heads/main' && steps.r5_cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/janus-memory-r5-index-cache
+          key: janus-memory-r5-v1-${{ runner.os }}-c8e47bb54e954ab122e111c97198131f048bd5fd-${{ hashFiles('janus_model/memory_512_cache_r5.py', 'janus_model/memory_512_audit_index_r3.py') }}
+      - name: Upload metadata and score receipts only, never index or raw source
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-memory-r5-integrity-and-real-v1-eval-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/JANUS_R5_CACHE_STATUS.json
+            ${{ runner.temp }}/JANUS_R5_NATIVE_NEW_QA.json
+          if-no-files-found: ignore
+          retention-days: 14
