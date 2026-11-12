@@ -35,9 +35,9 @@ Canonical ancestry references:
 
 ## One organism, multiple independent microcores
 
-The R0 roles are `identity`, `sensing`, `memory`, `planning`,
+The thirteen R0/R1 roles are `identity`, `sensing`, `memory`, `planning`,
 `verification`, `recovery`, `learning`, `evolution`, `routing`,
-`resource`, `governance`, `transport`. Every local genome must retain
+`resource`, `governance`, `transport`, `coding`. Every local genome must retain
 identity, memory, verification, governance and resource. A child may specialize
 by *removing* optional roles; it cannot gain a new capability solely by being
 spawned. One immutable parent digest links each child to the ancestor.
@@ -100,3 +100,25 @@ read-only checkout, no credentials persistence, no network calls by the model.
 The production gates remain **HOLD**. Source archaeology is ongoing, and
 unknown model files are not treated as discovered just because a name appears
 in a JSON inventory.
+
+
+## Coexistence reconciliation (same-day R1)
+
+A separate read-only six-adapter ESSENCE scaffold was discovered in the same
+repositories after the first inheritance pilot, with files
+`.janus/essence/kernel.py`, `.janus/essence/manifest.json` and a
+fixture-only workflow. These are **not** a second independent ESSENCE organism.
+
+The canonical logical identity is `repository + inherited genome SHA`.
+The six adapter roles (sensing, memory, planning, verification, recovery,
+coding) are a **strict subset** of the expanded 13-role identity. The
+`unified_profile()` read-only compatibility check binds an existing
+manifest to the local inherited genome without importing or executing the
+older adapter, and rejects permission expansion, identity mismatch or
+unexpected roles. This is policy-level unification; integration of their
+actual runtime state or trained weights has **not** yet occurred.
+
+The policy-supervisor in `tools/janus_essence.py` and the deterministic
+fixture adapter in `.janus/essence/kernel.py` remain separate software
+modules within one *logical ESSENCE*. Do not schedule or promote two
+independent sovereign dispatch loops.
