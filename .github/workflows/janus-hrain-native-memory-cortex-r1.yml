@@ -1,0 +1,114 @@
+name: JANUS HRain Native Memory Cortex R1 (read-only canary)
+on:
+  pull_request:
+    paths:
+      - 'janus_model/hrain_memory_cortex.py'
+      - 'tests/test_janus_hrain_memory_cortex.py'
+      - 'docs/JANUS_HRAIN_NATIVE_MEMORY_CORTEX_R1.md'
+      - '.github/workflows/janus-hrain-native-memory-cortex-r1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-firewall:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test digest, source SHA, traversal, authority and budgets
+        run: python -m unittest discover -s tests -p 'test_janus_hrain_memory_cortex.py' -v
+
+  real-source-replay:
+    needs: offline-firewall
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/Hrain
+          ref: main
+          path: _read_only/hrain
+          persist-credentials: false
+      - name: Read public HRain projection and pin source Git SHA
+        id: pin
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,os,re,urllib.request
+          from pathlib import Path
+          url='https://raw.githubusercontent.com/Hawkar-usls/janus-meta-registry/main/assets/hrain-registry-index.json'
+          with urllib.request.urlopen(urllib.request.Request(url,headers={'User-Agent':'JANUS-HRAiN-Cortex-R1/1'}),timeout=30) as r:
+              raw=r.read(2000001)
+          if len(raw)>2000000: raise SystemExit('HRAIN_PROJECTION_TOO_LARGE')
+          obj=json.loads(raw)
+          commit=obj.get('sourceCommit','')
+          if (obj.get('repository')!='Hawkar-usls/janus-meta-registry' or
+              obj.get('schema')!='janus.hrain.registry_graph_index.v1_0' or
+              not re.fullmatch('[0-9a-f]{40}',commit) or
+              obj.get('mutationPolicy',{}).get('interfaceWriteAuthority') is not False or
+              obj.get('mutationPolicy',{}).get('interfaceDeleteAuthority') is not False):
+              raise SystemExit('HRAIN_SOURCE_PIN_HOLD')
+          p=Path(os.environ['RUNNER_TEMP'])/'hrain-projection.json'
+          p.write_bytes(raw)
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('source_commit='+commit+'\n')
+          print('HRAIN_SOURCE_COMMIT_PINNED',commit)
+          PY
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: ${{ steps.pin.outputs.source_commit }}
+          path: _read_only/registry
+          persist-credentials: false
+      - name: Build actual HRain graph context from pinned JSON
+        shell: bash
+        run: |
+          set -euo pipefail
+          python _read_only/hrain/tools/hrain_conversation_context.py \
+            --projection-file "$RUNNER_TEMP/hrain-projection.json" \
+            --registry-root _read_only/registry \
+            --query ROWAN --limit 2 --output "$RUNNER_TEMP/hrain-context.json"
+          python -m janus_model.hrain_memory_cortex \
+            --context "$RUNNER_TEMP/hrain-context.json" \
+            --registry-root _read_only/registry \
+            --max-text-bytes 4096 --max-memories 2 \
+            --text-output "$RUNNER_TEMP/hrain-memory.txt" \
+            --receipt-output "$RUNNER_TEMP/hrain-memory-receipt.json"
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          p=Path(os.environ['RUNNER_TEMP'])/'hrain-memory-receipt.json'
+          r=json.loads(p.read_text())
+          assert r['status']=='VERIFIED_CONTEXT_PACKET_READY'
+          assert r['selected_sources'] and all(x['raw_bytes_verified']>0 for x in r['selected_sources'])
+          assert r['candidate_text_bytes']<=4096
+          assert r['model_checkpoint_modified'] is False
+          assert r['native_v1_context_length_changed'] is False
+          assert r['scientific_authority_delta']==0
+          print('JANUS_HRAIN_NATIVE_R1_REAL_SOURCE_PASS',
+                json.dumps({'sources':len(r['selected_sources']),
+                'text_bytes':r['candidate_text_bytes'],
+                'registry_commit':r['registry_commit']},sort_keys=True))
+          PY
+          test -z "$(git -C _read_only/registry status --porcelain)"
+      - name: Upload receipt metadata only, not retrieved research data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-hrain-native-r1-proof-${{ github.run_id }}
+          path: ${{ runner.temp }}/hrain-memory-receipt.json
+          retention-days: 7
+          if-no-files-found: ignore
