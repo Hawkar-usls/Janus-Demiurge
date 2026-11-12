@@ -61,7 +61,7 @@ jobs:
             --source-root _sources/registry \
             --receipt "$RUNNER_TEMP/JANUS_MEMORY_512_R3_AUDIT.json" \
             --db "$RUNNER_TEMP/JANUS_MEMORY_512_R3_INDEX.sqlite" \
-            --focus rowan --index-budget 16777216 --query rowan
+            --focus "" --index-budget 67108864 --query rowan
           python - <<'PY'
           import json,os
           from pathlib import Path
@@ -75,10 +75,14 @@ jobs:
           assert r["unique_retrieval_candidate_objects"]>0
           assert r["remaining_gap_bytes"]>0
           assert r["index"]["sqlite_integrity"]=="ok"
-          assert r["index"]["source_bytes_indexed"]<=16777216
+          assert r["index"]["source_bytes_indexed"]==r["hash_verified_unique_candidate_text_bytes"]
+          assert r["index"]["source_bytes_indexed"]<=67108864
+          assert r["index"]["indexed_docs"]==r["unique_retrieval_candidate_objects"]
           assert r["readout"]["status"] in (
               "NO_SUPPORTED_FIRST_HOP","NO_VERIFIABLE_EXPLICIT_SECOND_HOP",
-              "EXPLICIT_REFERENCE_SECOND_HOP_FOUND")
+              "EXPLICIT_REFERENCE_SECOND_HOP_FOUND",
+              "SHARED_RUN_ID_ASSOCIATIVE_HOP",
+              "NO_VERIFIABLE_SECOND_HOP")
           assert not r["native_v1_modified"] and not r["consent_or_training_cleared"]
           assert not r["model_answer_quality_measured"]
           print("JANUS_MEMORY_512_R3_ACTUAL_AUDIT_PASS",json.dumps({
