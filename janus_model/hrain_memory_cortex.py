@@ -44,8 +44,9 @@ def safe_path(value: object) -> str:
     if not isinstance(value, str) or not value or "\\" in value:
         raise MemoryHold("PATH_INVALID")
     parts = value.split("/")
+    forbidden = re.compile(r"(?:holdout|sealed|blind|r3[._-]?9|secret|token|credential|private[_-]?key)", re.I)
     if (value.startswith("/") or len(value) > 500 or
-            any(p in ("", ".", "..", ".git") for p in parts) or
+            any(p in ("", ".", "..", ".git") or forbidden.search(p) for p in parts) or
             PurePosixPath(value).suffix.lower() != ".json"):
         raise MemoryHold("PATH_INVALID")
     return value
@@ -139,7 +140,11 @@ def build_packet(context: dict, registry_root: Path, *,
             raise MemoryHold("MEMORY_ROW_OBJECT_REQUIRED")
         path = safe_path(row.get("path"))
         claimed_sha = row.get("source_sha256")
-        if (row.get("commit_sha") != source_commit or
+        # HRain preserves the original indexing commit per node, which can
+        # predate the projection's sourceCommit. Verify bytes against the
+        # pinned full projection snapshot; retain the node commit as lineage.
+        node_commit = row.get("commit_sha")
+        if (not isinstance(node_commit, str) or not SHA40.fullmatch(node_commit) or
                 not isinstance(claimed_sha, str) or not SHA64.fullmatch(claimed_sha)):
             raise MemoryHold("SOURCE_PIN_OR_SHA_INVALID")
         if (row.get("claim_verified") is not False or
@@ -180,6 +185,7 @@ def build_packet(context: dict, registry_root: Path, *,
         remaining -= len(block.encode("utf-8"))
         sources.append({
             "path": path, "source_commit": source_commit,
+            "indexed_node_commit": node_commit,
             "source_sha256": claimed_sha, "rank": row.get("attention_rank"),
             "selection_reason": row.get("selection_reason"),
             "raw_bytes_verified": len(raw), "excerpt_bytes": len(excerpt.encode("utf-8")),
@@ -231,6 +237,10 @@ def main() -> None:
                                  max_memories=args.max_memories)
     if args.text_output.resolve() == args.receipt_output.resolve():
         raise MemoryHold("OUTPUT_PATHS_MUST_DIFFER")
+    root = args.registry_root.resolve(strict=True)
+    if any(path.resolve().is_relative_to(root) for path in
+           (args.text_output, args.receipt_output)):
+        raise MemoryHold("REGISTRY_OUTPUT_WRITE_FORBIDDEN")
     if args.text_output.exists() or args.receipt_output.exists():
         raise MemoryHold("APPEND_ONLY_OUTPUT_ALREADY_EXISTS")
     for path in (args.text_output, args.receipt_output):
