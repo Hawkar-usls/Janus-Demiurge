@@ -144,7 +144,8 @@ def audit_catalog(manifest_root: Path, source_root: Path, *,
             not 1 <= len(shards) <= 512):
         raise Hold("SHARD_SET_INCOMPLETE")
     seen_paths: set[str] = set()
-    seen_digests: set[str] = set()
+    metadata_candidate_digests: set[str] = set()
+    verified_candidate_digests: set[str] = set()
     eligible: list[dict] = []
     rejected = Counter()
     bytes_by_reason = Counter()
@@ -201,7 +202,9 @@ def audit_catalog(manifest_root: Path, source_root: Path, *,
             reason = classify(meta)
             if reason == "CANDIDATE_TEXT":
                 metadata_candidate_count += 1
-                unique_metadata_candidate_bytes += size if sha not in seen_digests else 0
+                if sha not in metadata_candidate_digests:
+                    unique_metadata_candidate_bytes += size
+                    metadata_candidate_digests.add(sha)
                 try:
                     data = raw_from_tree(source_root, path, MAX_SOURCE_BYTES)
                     if len(data) != size or digest(data) != sha:
@@ -221,8 +224,9 @@ def audit_catalog(manifest_root: Path, source_root: Path, *,
                 if reason == "CANDIDATE_TEXT":
                     validated_count += 1
                     validated_bytes += size
-                    if sha not in seen_digests:
+                    if sha not in verified_candidate_digests:
                         unique_verified_bytes += size
+                        verified_candidate_digests.add(sha)
                         eligible.append({
                             "path": path, "sha256": sha,
                             "size_bytes": size, "extension": meta["extension"],
@@ -232,7 +236,6 @@ def audit_catalog(manifest_root: Path, source_root: Path, *,
             if reason != "CANDIDATE_TEXT":
                 rejected[reason] += 1
                 bytes_by_reason[reason] += size
-            seen_digests.add(sha)
 
     if (count != manifest.get("coverage", {}).get("cataloged_blob_count") or
             count != manifest.get("coverage", {}).get("tracked_blob_count") -
