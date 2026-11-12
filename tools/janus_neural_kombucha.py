@@ -214,7 +214,12 @@ def verify_cell(folder, expected_index, observation_sha):
         report.get("real_github_observations_used_for_gradients") is not False or
         report.get("operational_decision_authority") is not False or
         report.get("production_promotion") is not False or
-        report.get("autonomous_module_installation") is not False):
+        report.get("autonomous_module_installation") is not False or
+        report.get("replay_source") != "ONLINE_TRAINING_BATCHES_ONLY" or
+        report.get("replay_capacity") != 64 or
+        type(report.get("replay_uses")) is not int or
+        not 0 <= report["replay_uses"] <= report.get("rounds", 0) * 8 or
+        report.get("frozen_holdout_never_replayed") is not True):
         raise ValueError("CELL_RECEIPT_REJECTED")
     weights = root / "weights.pt"
     if sha256(weights) != report.get("weights_sha256"):
