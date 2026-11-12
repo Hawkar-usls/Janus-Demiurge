@@ -96,8 +96,14 @@ class DynamicOrganAckTests(unittest.TestCase):
         self.assertFalse(r["full_issue_162_acceptance"])
 
     def test_reject_replayed_historical_source_run(self):
-        with self.assertRaisesRegex(DynamicAckHold,"GENESIS_CHECKPOINT_NOT_PINNED"):
+        with self.assertRaisesRegex(DynamicAckHold,"MISSING_OR_UNSAFE_SOURCE"):
             self.make(source_run="43275243138")
+
+    def test_same_path_forged_run_id_rejected(self):
+        self.checkpoint["run_id"]="43275243138"
+        self.refresh()
+        with self.assertRaisesRegex(DynamicAckHold,"GENESIS_CHECKPOINT_NOT_PINNED"):
+            self.make()
 
     def test_reject_changed_sender_sha(self):
         with self.assertRaisesRegex(DynamicAckHold,"GENESIS_CHECKPOINT_NOT_PINNED"):
