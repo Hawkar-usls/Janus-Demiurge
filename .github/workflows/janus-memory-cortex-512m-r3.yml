@@ -1,0 +1,104 @@
+name: JANUS Memory Cortex 512M R3 - verified catalog audit and bounded search
+on:
+  pull_request:
+    paths:
+      - 'janus_model/memory_512_audit_index_r3.py'
+      - 'tests/test_janus_memory_512_audit_index_r3.py'
+      - 'docs/JANUS_MEMORY_CORTEX_512M_R3.md'
+      - '.github/workflows/janus-memory-cortex-512m-r3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  synthetic-guards:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate manifests, SHA, exclusions, UTF-8 chunks, FTS and explicit second hop
+        run: python -m unittest discover -s tests -p 'test_janus_memory_512_audit_index_r3.py' -v
+
+  live-audit:
+    needs: synthetic-guards
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Checkout immutable full-memory catalog snapshot
+        uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: 6c9259c43d89569b11351bf8579a3775025fa2f0
+          path: _sources/catalog
+          persist-credentials: false
+      - name: Checkout exact immutable source snapshot declared by manifest
+        uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: c8e47bb54e954ab122e111c97198131f048bd5fd
+          path: _sources/registry
+          persist-credentials: false
+      - name: Audit every shard and every policy-candidate source by SHA and JSON parsing
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C _sources/catalog rev-parse HEAD)" = "6c9259c43d89569b11351bf8579a3775025fa2f0"
+          test "$(git -C _sources/registry rev-parse HEAD)" = "c8e47bb54e954ab122e111c97198131f048bd5fd"
+          python -m janus_model.memory_512_audit_index_r3 \
+            --manifest-root _sources/catalog \
+            --source-root _sources/registry \
+            --receipt "$RUNNER_TEMP/JANUS_MEMORY_512_R3_AUDIT.json" \
+            --db "$RUNNER_TEMP/JANUS_MEMORY_512_R3_INDEX.sqlite" \
+            --focus rowan --index-budget 16777216 --query rowan
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          r=json.loads((Path(os.environ["RUNNER_TEMP"])/"JANUS_MEMORY_512_R3_AUDIT.json").read_text())
+          assert r["manifest_shards_verified"]==43
+          assert r["catalog_files"]==8542
+          assert r["cataloged_mixed_bytes"]==293091756
+          assert r["source_commit"]=="c8e47bb54e954ab122e111c97198131f048bd5fd"
+          assert r["hash_verified_parsed_text_files"]>0
+          assert 0<r["hash_verified_unique_candidate_text_bytes"]<=293091756
+          assert r["unique_retrieval_candidate_objects"]>0
+          assert r["remaining_gap_bytes"]>0
+          assert r["index"]["sqlite_integrity"]=="ok"
+          assert r["index"]["source_bytes_indexed"]<=16777216
+          assert r["readout"]["status"] in (
+              "NO_SUPPORTED_FIRST_HOP","NO_VERIFIABLE_EXPLICIT_SECOND_HOP",
+              "EXPLICIT_REFERENCE_SECOND_HOP_FOUND")
+          assert not r["native_v1_modified"] and not r["consent_or_training_cleared"]
+          assert not r["model_answer_quality_measured"]
+          print("JANUS_MEMORY_512_R3_ACTUAL_AUDIT_PASS",json.dumps({
+              "mixed_catalog_bytes":r["cataloged_mixed_bytes"],
+              "candidate_verified_unique_text_bytes":r["hash_verified_unique_candidate_text_bytes"],
+              "remaining_to_512mib_bytes":r["remaining_gap_bytes"],
+              "verified_shards":r["manifest_shards_verified"],
+              "index_docs":r["index"]["indexed_docs"],
+              "index_bytes":r["index"]["source_bytes_indexed"],
+              "first_hops":len(r["readout"]["first"]),
+              "second_hops":len(r["readout"]["second"]),
+              "second_hop_status":r["readout"]["status"]},sort_keys=True))
+          PY
+          test -z "$(git -C _sources/catalog status --porcelain)"
+          test -z "$(git -C _sources/registry status --porcelain)"
+          test -z "$(git status --porcelain --untracked-files=no)"
+      - name: Upload metadata receipt only - no raw source text or index
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-memory-512m-r3-audit-${{ github.run_id }}
+          path: ${{ runner.temp }}/JANUS_MEMORY_512_R3_AUDIT.json
+          retention-days: 14
+          if-no-files-found: error
