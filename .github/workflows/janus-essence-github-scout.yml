@@ -1,0 +1,56 @@
+name: JANUS ESSENCE External GitHub Model Scout (Read-only)
+
+on:
+  push:
+    branches:
+      - janus/essence-gene-bank-json-legal-v02-20261112
+    paths:
+      - 'tools/janus_essence_github_scout.py'
+      - 'tests/test_janus_essence_github_scout.py'
+      - '.github/workflows/janus-essence-github-scout.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '13 3 * * 2'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-essence-external-scout-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  bounded-public-metadata-discovery:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Assert metadata-only external discovery contracts
+        run: |
+          python -m py_compile tools/janus_essence_github_scout.py
+          python -m unittest discover -s tests -p 'test_janus_essence_github_scout.py' -v
+      - name: Search fixed GitHub topics, inspect SPDX, without downloading code
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python tools/janus_essence_github_scout.py --out artifacts/essence/github-references.json
+          python tools/janus_essence_github_scout.py --verify artifacts/essence/github-references.json
+      - name: Publish source licensing caveats
+        run: |
+          {
+            echo '# ESSENCE GitHub Scout — advisory only'
+            echo 'Repositories were discovered from 3 fixed public GitHub queries.'
+            echo 'Licenses are GitHub repository metadata only; each file, dependency and model requires separate legal review.'
+            echo 'No third-party source was fetched, built, imported or executed. No automatic module promotion.'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-external-github-scout-${{ github.run_id }}
+          path: artifacts/essence/github-references.json
+          if-no-files-found: error
+          retention-days: 14
