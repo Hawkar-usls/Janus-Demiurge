@@ -255,8 +255,15 @@ def main():
     parser.add_argument("action", choices=("demo", "genome"))
     parser.add_argument("--repo", default="Hawkar-usls/Janus-Demiurge")
     parser.add_argument("--specialty", default="general")
+    parser.add_argument("--parent-repo", default="Hawkar-usls/Janus-Demiurge")
     args = parser.parse_args()
-    result = demo() if args.action == "demo" else genome(args.repo, specialty=args.specialty)
+    if args.action == "demo":
+        result = demo()
+    elif args.repo == args.parent_repo:
+        result = genome(args.repo, specialty=args.specialty)
+    else:
+        result = genome(args.repo, parent=genome(args.parent_repo),
+                        specialty=args.specialty)
     print(json.dumps(result, indent=2, sort_keys=True, ensure_ascii=False))
 
 
