@@ -31,15 +31,19 @@ The R3 audit:
    count/bytes, unique-source bytes, exclusion counts, gap to 512 MiB and SHA
    of audit receipt. Its eligibility count is technical/structural: a
    further privacy/rights/fitness audit may reduce the admissible total.
-6. Creates an ephemeral SQLite FTS5 index of at most **16 MiB** of verified
-   sources filtered to **Rowan paths**, with 4096-byte UTF-8-safe chunks. The
-   index is stored in the runner temporary directory, not written to GitHub
-   or to the immutable source checkout. It returns only source paths, SHAs
-   and source commits; no raw JSON is uploaded in CI artifacts.
-7. Exposes a two-hop readout: search an actual verified content chunk, then
-   traverse **explicit JSON reference paths** into separately indexed verified
-   documents. Missing first/second-hop evidence results in explicit refusal,
-   never fabricated cross-document knowledge.
+6. Creates an ephemeral SQLite FTS5 index of up to **64 MiB of unique
+   SHA-verified source text**, using 4096-byte UTF-8-safe chunks. The current
+   candidate corpus is below this cap, so the live CI now attempts to index
+   the full structurally eligible text corpus, **not just Rowan paths**.
+   The index is in runner temporary storage, never written into Git or the
+   source checkout. Only source paths, hashes and commits appear in the
+   metadata-only receipt; no full JSON is uploaded.
+7. Exposes a two-hop readout: search verified content, traverse a typed
+   **explicit JSON reference path**, or an exact **shared source-run ID**
+   carried by two separately SHA-verified JSON documents. Such a shared
+   identifier is labeled `SHARED_RUN_ID_ASSOCIATION_NOT_EVIDENCE` and
+   is not proof of causality, scientific independence or factual accuracy.
+   No supported association => explicit no-second-hop status.
 
 ## Local isolated test
 
@@ -49,7 +53,7 @@ python -m unittest discover -s tests -p 'test_janus_memory_512_audit_index_r3.py
 
 GitHub Actions entrypoint: \`.github/workflows/janus-memory-cortex-512m-r3.yml\`.
 GitHub-hosted runner checks out both pinned snapshots, audits full source tree,
-builds the 16-MiB cap SQLite index, tests direct/multihop search, verifies source
+builds the 64-MiB cap SQLite index, tests direct/multihop search, verifies source
 checkout is unchanged and uploads ONLY the summary receipt.
 
 ## 512 MiB acceptance boundary
