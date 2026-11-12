@@ -105,6 +105,23 @@ class HrainMemoryCortexR1Tests(unittest.TestCase):
         self.assertFalse(receipt["source_content_is_instruction"])
         self.assertEqual(receipt["scientific_authority_delta"], 0)
 
+    def test_index_node_commit_can_predate_projection_but_bytes_must_match(self):
+        c = copy.deepcopy(self.context)
+        c["selected_memories"][0]["commit_sha"] = "c" * 40
+        text, receipt = build_packet(self._seal(c), self.root)
+        self.assertIn("SCOBY bacterial cellulose", text)
+        self.assertEqual(receipt["selected_sources"][0]["indexed_node_commit"], "c" * 40)
+        self.assertEqual(receipt["selected_sources"][0]["source_commit"], self.commit)
+        c["selected_memories"][0]["source_sha256"] = "a" * 64
+        with self.assertRaisesRegex(MemoryHold, "SOURCE_BYTES_SHA_MISMATCH"):
+            build_packet(self._seal(c), self.root)
+
+    def test_sealed_science_paths_cannot_be_context_material(self):
+        c = copy.deepcopy(self.context)
+        c["selected_memories"][0]["path"] = "holdout/TACHYON-R3.9-sealed.json"
+        with self.assertRaisesRegex(MemoryHold, "PATH_INVALID"):
+            build_packet(self._seal(c), self.root)
+
     def test_no_results_returns_empty_and_no_hallucinated_sources(self):
         c = copy.deepcopy(self.context)
         c["selected_memories"] = []
