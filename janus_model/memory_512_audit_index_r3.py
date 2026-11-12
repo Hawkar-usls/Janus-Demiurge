@@ -338,6 +338,24 @@ def _run_ids(text: str) -> list[str]:
     return list(dict.fromkeys(found))[:8]
 
 
+def _sha_prefixes(text: str) -> list[str]:
+    """Parse explicit SHA references, never infer scientific veracity."""
+    try:
+        obj = json.loads(text)
+    except ValueError:
+        return []
+    if not isinstance(obj, dict):
+        return []
+    result = []
+    for key in ("archived_receipt_sha256_prefixes", "source_binding_sha256"):
+        value = obj.get(key)
+        values = value if isinstance(value, list) else [value]
+        for token in values[:MAX_RELATIONS_PER_DOC]:
+            if isinstance(token, str) and re.fullmatch(r"[0-9a-f]{16,64}", token):
+                result.append(token)
+    return list(dict.fromkeys(result))[:MAX_RELATIONS_PER_DOC]
+
+
 def build_index(db_path: Path, source_root: Path, eligible: list[dict], *,
                 focus: str = "", max_index_bytes: int = INDEX_CAP_BYTES) -> dict:
     if not 4096 <= max_index_bytes <= TARGET_BYTES:
@@ -356,6 +374,7 @@ def build_index(db_path: Path, source_root: Path, eligible: list[dict], *,
         conn.execute("CREATE TABLE relations(from_path TEXT NOT NULL, to_path TEXT NOT NULL, PRIMARY KEY(from_path,to_path))")
         conn.execute("CREATE TABLE run_refs(path TEXT NOT NULL, run_id TEXT NOT NULL, PRIMARY KEY(path,run_id))")
         conn.execute("CREATE INDEX run_ref_lookup ON run_refs(run_id)")
+        conn.execute("CREATE TABLE hash_refs(path TEXT NOT NULL, sha_prefix TEXT NOT NULL, PRIMARY KEY(path,sha_prefix))")
         total = 0
         indexed_docs = 0
         chunks = 0
@@ -380,6 +399,8 @@ def build_index(db_path: Path, source_root: Path, eligible: list[dict], *,
                     conn.execute("INSERT OR IGNORE INTO relations VALUES(?,?)", (path,target))
                 for run_id in _run_ids(text):
                     conn.execute("INSERT OR IGNORE INTO run_refs VALUES(?,?)", (path,run_id))
+                for prefix in _sha_prefixes(text):
+                    conn.execute("INSERT OR IGNORE INTO hash_refs VALUES(?,?)", (path,prefix))
             total += size
             indexed_docs += 1
         conn.commit()
@@ -454,7 +475,28 @@ def multi_hop(db_path: Path, query: str, *, limit: int = 5) -> dict:
                       "source_sha256":sha,"size_bytes":size,"source_commit":commit,
                       "relation":"EXPLICIT_JSON_REFERENCE_NOT_EVIDENCE"})
                     paths.add(path)
-        # If there is no explicit JSON path link, allow a *typed*
+        # SHA-prefix references name *actual* content-addressed receipts.
+        # Both sides are backed by exact full-source SHA-256 verified documents.
+        # This is trace navigation, not a scientific proof.
+        for item in first:
+            if len(second)>=limit:
+                break
+            matches=conn.execute("""
+                SELECT d.path,d.source_sha256,d.size_bytes,d.source_commit,
+                       r.sha_prefix
+                  FROM hash_refs r JOIN documents d
+                    ON substr(d.source_sha256,1,length(r.sha_prefix))=r.sha_prefix
+                 WHERE r.path=? AND d.path!=r.path
+                 ORDER BY d.path LIMIT ?
+            """,(item["path"],limit*5)).fetchall()
+            for path,sha,size,commit,prefix in matches:
+                if path not in paths and len(second)<limit:
+                    second.append({"source_path":item["path"],"path":path,
+                      "source_sha256":sha,"size_bytes":size,"source_commit":commit,
+                      "shared_sha_prefix":prefix,
+                      "relation":"EXPLICIT_SOURCE_SHA_PREFIX_LINK_NOT_INDEPENDENT_EVIDENCE"})
+                    paths.add(path)
+        # If there is no explicit JSON path or hash link, allow a *typed*
         # discovery hop through an exact source-run identifier recorded
         # in both SHA-verified documents. This is associative navigation,
         # not proof, causality, independent evidence, or a source citation.
@@ -479,9 +521,44 @@ def multi_hop(db_path: Path, query: str, *, limit: int = 5) -> dict:
                     paths.add(path)
         status = ("EXPLICIT_REFERENCE_SECOND_HOP_FOUND" if
                   any(x["relation"]=="EXPLICIT_JSON_REFERENCE_NOT_EVIDENCE" for x in second)
+                  else "CONTENT_SHA_REFERENCE_SECOND_HOP" if
+                  any(x["relation"]=="EXPLICIT_SOURCE_SHA_PREFIX_LINK_NOT_INDEPENDENT_EVIDENCE"
+                      for x in second)
                   else "SHARED_RUN_ID_ASSOCIATIVE_HOP" if second
                   else "NO_VERIFIABLE_SECOND_HOP")
         return {"status":status, "first":first,"second":second}
+    finally:
+        conn.close()
+
+
+def trace_source_sha_references(db_path: Path, path: str, *,
+                                limit: int = 5) -> dict:
+    """An exact selected document -> referenced, independently verified blob."""
+    secure_relative(path)
+    if not 1 <= limit <= 12:
+        raise Hold("TRACE_LIMIT_INVALID")
+    conn=sqlite3.connect(f"file:{db_path.resolve()}?mode=ro",uri=True)
+    try:
+        first=conn.execute(
+            "SELECT path,source_sha256,size_bytes,source_commit FROM documents WHERE path=?",
+            (path,)).fetchone()
+        if first is None:
+            return {"status":"SOURCE_NOT_INDEXED","source":path,"references":[]}
+        rows=conn.execute("""
+            SELECT d.path,d.source_sha256,d.size_bytes,d.source_commit,
+                   r.sha_prefix
+              FROM hash_refs r JOIN documents d
+                ON substr(d.source_sha256,1,length(r.sha_prefix))=r.sha_prefix
+             WHERE r.path=? AND d.path!=r.path ORDER BY d.path LIMIT ?
+        """,(path,limit)).fetchall()
+        targets=[{"path":p,"sha256":sha,"size_bytes":size,
+                  "source_commit":commit,"reference_prefix":prefix,
+                  "reference_kind":"EXPLICIT_SHA_PREFIX_REFERENCE_NOT_SCIENTIFIC_PROOF"}
+                 for p,sha,size,commit,prefix in rows]
+        return {"status":"SHA_BOUND_SECOND_HOP_FOUND" if targets
+                else "NO_VERIFIED_SHA_REFERENCE","source":path,
+                "source_sha256":first[1],"references":targets,
+                "claim_independence":False}
     finally:
         conn.close()
 
@@ -495,6 +572,7 @@ def main() -> None:
     ap.add_argument("--focus",default="rowan")
     ap.add_argument("--index-budget",type=int,default=INDEX_CAP_BYTES)
     ap.add_argument("--query",default="rowan")
+    ap.add_argument("--trace-source",default="")
     args=ap.parse_args()
     root=args.source_root.resolve(strict=True)
     if any(x.resolve().is_relative_to(root) for x in (args.receipt,args.db)):
@@ -505,6 +583,8 @@ def main() -> None:
     report["index"]=build_index(args.db,args.source_root,eligible,
                                 focus=args.focus,max_index_bytes=args.index_budget)
     report["readout"]=multi_hop(args.db,args.query)
+    if args.trace_source:
+        report["source_trace"]=trace_source_sha_references(args.db,args.trace_source)
     report["readout_is_model_answer"]=False
     report["receipt_sha256"]=digest(json.dumps(
         {k:v for k,v in report.items() if k!="receipt_sha256"},
@@ -521,6 +601,8 @@ def main() -> None:
         "readout_status":report["readout"]["status"],
         "first_hops":len(report["readout"]["first"]),
         "second_hops":len(report["readout"]["second"]),
+        "source_trace_status":report.get("source_trace",{}).get("status","NOT_REQUESTED"),
+        "source_trace_links":len(report.get("source_trace",{}).get("references",[])),
         "claim_of_model_improvement":False,
     },sort_keys=True))
 
