@@ -1,0 +1,55 @@
+{
+  "schema": "janus.native.memory_512_r4_development_qa.v1",
+  "status": "VISIBLE_PREREGISTERED_DEVELOPMENT_SMOKE_NOT_BLIND",
+  "source_repository": "Hawkar-usls/janus-meta-registry",
+  "source_commit": "c8e47bb54e954ab122e111c97198131f048bd5fd",
+  "cases": [
+    {
+      "id": "rowan_pipeline_run",
+      "query": "Rowan pipeline source run",
+      "source_path": "data/rowan/health/PIPELINE_STATE.json",
+      "field": "latest_completed_source_run",
+      "expect_status": "VERIFIED_JSON_SCALAR",
+      "expect_value": "42969641041"
+    },
+    {
+      "id": "rowan_pipeline_coordination",
+      "query": "Rowan pipeline coordination",
+      "source_path": "data/rowan/health/PIPELINE_STATE.json",
+      "field": "coordination_status",
+      "expect_status": "VERIFIED_JSON_SCALAR",
+      "expect_value": "COUNCIL_PENDING_WITHIN_GRACE"
+    },
+    {
+      "id": "rowan_canonical_run",
+      "query": "Rowan canonical run",
+      "source_path": "data/rowan/CANONICAL_STATE.json",
+      "field": "latest_durable_external_run",
+      "expect_status": "VERIFIED_JSON_SCALAR",
+      "expect_value": "42969641041"
+    },
+    {
+      "id": "missing_field",
+      "query": "Rowan canonical pilot",
+      "source_path": "data/rowan/CANONICAL_STATE.json",
+      "field": "pilot_status",
+      "expect_status": "VERIFIED_SOURCE_FIELD_NOT_PRESENT",
+      "expect_value": null
+    },
+    {
+      "id": "no_match",
+      "query": "zzxxquietlyunfindable987654321",
+      "source_path": "",
+      "field": "",
+      "expect_status": "NO_VERIFIED_SOURCE_MATCH",
+      "expect_value": null
+    }
+  ],
+  "safeguards": {
+    "derived_from_public_known_source": true,
+    "independently_sealed": false,
+    "allowed_for_model_training": false,
+    "replaces_science_holdouts": false,
+    "authority_delta": 0
+  }
+}
