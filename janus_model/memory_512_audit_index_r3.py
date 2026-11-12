@@ -280,7 +280,7 @@ def _chunks(text: str, limit: int = CHUNK_BYTES) -> list[tuple[int, int, str]]:
     i = 0
     while i < len(raw):
         j = min(i + limit, len(raw))
-        while j > i and (raw[j-1] & 0xC0) == 0x80:
+        while j < len(raw) and j > i and (raw[j] & 0xC0) == 0x80:
             j -= 1
         if j <= i:
             raise Hold("CHUNK_UTF8_BOUNDARY_INVALID")
@@ -380,20 +380,25 @@ def search_index(db_path: Path, query: str, *, limit: int = 5) -> list[dict]:
     match = " OR ".join('"' + x.replace('"',"") + '"' for x in tokens[:8])
     conn = sqlite3.connect(f"file:{db_path.resolve()}?mode=ro", uri=True)
     try:
-        q = """SELECT s.path,d.source_sha256,d.size_bytes,d.source_commit,MIN(bm25(snippets)) AS score
-                 FROM snippets AS s JOIN documents AS d ON d.path=s.path
-                 WHERE snippets MATCH ?
-                 GROUP BY s.path ORDER BY score,s.path LIMIT ?"""
-        # In FTS5 bm25 is scoped to the FTS table; use its own table
-        # identifier, not a CTE alias.
+        # BM25 cannot be nested inside SQL aggregates in FTS5. Rank
+        # individual chunks first and deduplicate source documents in Python.
         q = """SELECT snippets.path,d.source_sha256,d.size_bytes,d.source_commit,
-                      MIN(bm25(snippets)) AS score
+                      bm25(snippets) AS score
                  FROM snippets JOIN documents d ON d.path=snippets.path
                 WHERE snippets MATCH ?
-                GROUP BY snippets.path ORDER BY score,snippets.path LIMIT ?"""
-        rows=conn.execute(q,(match,limit)).fetchall()
-        return [{"path":p,"source_sha256":sha,"size_bytes":size,
-                 "source_commit":commit, "score":round(score,5)} for p,sha,size,commit,score in rows]
+                ORDER BY score,snippets.path LIMIT ?"""
+        rows=conn.execute(q,(match,min(1000,limit*100))).fetchall()
+        seen=set()
+        result=[]
+        for p,sha,size,commit,score in rows:
+            if p in seen:
+                continue
+            seen.add(p)
+            result.append({"path":p,"source_sha256":sha,"size_bytes":size,
+                           "source_commit":commit, "score":round(score,5)})
+            if len(result)>=limit:
+                break
+        return result
     finally:
         conn.close()
 
