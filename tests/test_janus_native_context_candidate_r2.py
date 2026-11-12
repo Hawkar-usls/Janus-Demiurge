@@ -44,9 +44,7 @@ class ExtendedContextR2Tests(unittest.TestCase):
         cls.base.eval()
 
     def test_expansion_to_256_and_512_is_separate_and_finite(self):
-        base_sha=hashlib.sha256(
-            b"".join(x.detach().cpu().numpy().tobytes() for x in self.base.parameters())
-        ).hexdigest()
+        baseline = {k: v.detach().clone() for k, v in self.base.state_dict().items()}
         for context in (256,512):
             with self.subTest(context=context):
                 m=clone_expanded(self.base,context)
@@ -59,10 +57,8 @@ class ExtendedContextR2Tests(unittest.TestCase):
                     logits,_=m(inp)
                 self.assertEqual(list(logits.shape),[1,context,258])
                 self.assertTrue(torch.isfinite(logits).all())
-        after=hashlib.sha256(
-            b"".join(x.detach().cpu().numpy().tobytes() for x in self.base.parameters())
-        ).hexdigest()
-        self.assertEqual(base_sha,after)
+        for key, value in baseline.items():
+            self.assertTrue(torch.equal(self.base.state_dict()[key], value))
 
     def test_actual_r1_bytes_pack_without_claiming_model_quality(self):
         text,receipt=packet()
