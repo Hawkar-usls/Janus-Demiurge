@@ -1,0 +1,180 @@
+name: JANUS ESSENCE R1 Dated Registry Six-Cell Training
+
+on:
+  pull_request:
+    paths:
+      - 'tools/janus_essence_real_json_train.py'
+      - 'tests/test_janus_essence_real_json_train.py'
+      - '.github/workflows/janus-essence-real-json-r1.yml'
+  push:
+    branches:
+      - main
+      - janus/essence-real-json-training-r1-20261113
+    paths:
+      - 'tools/janus_essence_real_json_train.py'
+      - 'tests/test_janus_essence_real_json_train.py'
+      - '.github/workflows/janus-essence-real-json-r1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-essence-real-registry-r1-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ensure CPU torch
+        shell: bash
+        run: |
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check 'torch==2.8.0' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - name: Independent contract tests, not model-quality claims
+        run: |
+          python -m py_compile tools/janus_essence_real_json_train.py
+          python -m unittest -v tests.test_janus_essence_real_json_train
+
+  source-snapshot:
+    needs: contract
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    outputs:
+      meta_sha: ${{ steps.record.outputs.meta_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: main
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Freeze exact history commit for all worker and verifier jobs
+        id: record
+        shell: bash
+        run: |
+          echo "meta_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  cell:
+    needs: [contract, source-snapshot]
+    if: github.event_name != 'pull_request'
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        cell: [0, 1, 2, 3, 4, 5]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ensure CPU torch
+        shell: bash
+        run: |
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check 'torch==2.8.0' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - name: Checkout historical public Meta Registry data read only
+        uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: ${{ needs.source-snapshot.outputs.meta_sha }}
+          path: dependencies/registry
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Run genuine gradient updates on historical JSON key structures
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE_SHA="$(git -C dependencies/registry rev-parse HEAD)"
+          python -m tools.janus_essence_real_json_train train \
+            --data-root dependencies/registry/data --source-commit "$SOURCE_SHA" \
+            --cell ${{ matrix.cell }} --steps 100 --out artifacts/cell-${{ matrix.cell }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: essence-real-cell-${{ matrix.cell }}
+          path: artifacts/cell-${{ matrix.cell }}/
+          if-no-files-found: warn
+          retention-days: 14
+
+  independent-holdout:
+    needs: [contract, source-snapshot, cell]
+    if: always() && needs.contract.result == 'success' && github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ensure CPU torch
+        shell: bash
+        run: |
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check 'torch==2.8.0' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: ${{ needs.source-snapshot.outputs.meta_sha }}
+          path: dependencies/registry
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: essence-real-cell-*
+          path: artifacts/candidates
+      - name: SHA, temporal holdout and baseline evaluation in independent job
+        shell: bash
+        run: |
+          set -euo pipefail
+          for cell in 0 1 2 3 4 5; do
+            if [ -d "artifacts/candidates/essence-real-cell-$cell" ]; then
+              ln -s "essence-real-cell-$cell" "artifacts/candidates/cell-$cell"
+            fi
+          done
+          SOURCE_SHA="$(git -C dependencies/registry rev-parse HEAD)"
+          python -m tools.janus_essence_real_json_train verify \
+            --data-root dependencies/registry/data --source-commit "$SOURCE_SHA" \
+            --input-dir artifacts/candidates --out artifacts/essence-real-holdout-report.json
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          r=json.loads(Path("artifacts/essence-real-holdout-report.json").read_text())
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as f:
+              print("# ESSENCE R1: real historical JSON",file=f)
+              print("Gate: **"+r["status"]+"**",file=f)
+              print("Verified cells: "+str(r["verified_cells"])+"/6",file=f)
+              print("Independent test records: "+str(r["dataset"]["split_sizes"]["test"]),file=f)
+              print("Task: JSON schema/document routing, NOT forecasting or operational autonomy",file=f)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: essence-real-holdout-verification-${{ github.run_id }}
+          path: artifacts/essence-real-holdout-report.json
+          if-no-files-found: warn
+          retention-days: 30
