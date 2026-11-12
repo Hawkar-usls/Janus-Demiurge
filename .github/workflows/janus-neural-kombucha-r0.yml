@@ -1,0 +1,166 @@
+name: JANUS Neural Kombucha Six Transformer Cells R0
+
+on:
+  pull_request:
+    paths:
+      - 'tools/janus_neural_kombucha.py'
+      - 'tests/test_janus_neural_kombucha.py'
+      - '.github/workflows/janus-neural-kombucha-r0.yml'
+  push:
+    branches:
+      - main
+      - janus/neural-kombucha-microtransformer-cells-20261112
+    paths:
+      - 'tools/janus_neural_kombucha.py'
+      - 'tests/test_janus_neural_kombucha.py'
+      - '.github/workflows/janus-neural-kombucha-r0.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: janus-neural-kombucha-r0-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pinned CPU torch and real model compatibility
+        shell: bash
+        run: |
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check 'torch==2.8.0' --index-url https://download.pytorch.org/whl/cpu
+          fi
+          python -c 'import torch; print(torch.__version__)'
+      - name: Test independence, training, immutable SHA, and missing-cell survival
+        run: |
+          python -m py_compile tools/janus_neural_kombucha.py
+          python -m unittest -v tests.test_janus_neural_kombucha
+
+  observation:
+    needs: contract
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Obtain real, bounded, read-only ecosystem source snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python -m tools.janus_cooling_tower_async --out artifacts/observation.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: neural-kombucha-source-observation
+          path: artifacts/observation.json
+          if-no-files-found: error
+          retention-days: 14
+
+  cell:
+    needs: observation
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        cell: [0, 1, 2, 3, 4, 5]
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ensure CPU PyTorch
+        shell: bash
+        run: |
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check 'torch==2.8.0' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: neural-kombucha-source-observation
+          path: artifacts
+      - name: Train distinct SHA-bound JanusTinyTransformer in isolated Actions job
+        run: |
+          python -m tools.janus_neural_kombucha worker \
+            --cell ${{ matrix.cell }} \
+            --observation artifacts/observation.json \
+            --steps 120 --batch 48 --budget 75 \
+            --out out/cell-${{ matrix.cell }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: neural-kombucha-cell-${{ matrix.cell }}
+          path: out/cell-${{ matrix.cell }}/
+          if-no-files-found: warn
+          retention-days: 14
+
+  verify:
+    needs: [observation, cell]
+    if: always() && needs.observation.result == 'success' && github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ensure CPU PyTorch
+        shell: bash
+        run: |
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check 'torch==2.8.0' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: neural-kombucha-source-observation
+          path: artifacts
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: neural-kombucha-cell-*
+          path: rivers
+          merge-multiple: false
+      - name: Assemble independently verified cell receipts, keep missing cells as HOLD
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          for child in Path('rivers').glob('neural-kombucha-cell-*'):
+              number=child.name.removeprefix('neural-kombucha-cell-')
+              if number.isdigit():
+                  (Path('rivers') / ('cell-'+number)).symlink_to(child.name)
+          PY
+          python -m tools.janus_neural_kombucha aggregate \
+            --observation artifacts/observation.json \
+            --input rivers --out artifacts/neural-kombucha-report.json
+          cat artifacts/neural-kombucha-report.json >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: neural-kombucha-verified-report-${{ github.run_id }}
+          path: artifacts/neural-kombucha-report.json
+          if-no-files-found: warn
+          retention-days: 30
