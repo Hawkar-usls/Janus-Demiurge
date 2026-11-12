@@ -123,19 +123,39 @@ def train_cell(cell, observation, out, *, steps=120, batch=48, budget=75):
     optimizer = torch.optim.AdamW(model.parameters(), lr=0.009, weight_decay=0.001)
     start = time.monotonic()
     completed = 0
+    # Yaksa-inspired bounded priority replay. Entries are TRAIN examples only;
+    # the frozen independent holdout is never inserted into this buffer.
+    replay = []
+    replay_uses = 0
     for _ in range(steps):
         if completed >= MIN_STEPS and time.monotonic() - start > budget:
             break
         x, y = draw(cell, batch, data_rng)
+        if replay and completed % 4 == 0:
+            # Detached, immutable samples; no unrelated tasks or outside data.
+            replay_batch = sorted(replay, key=lambda item: -item[0])[:min(8, len(replay))]
+            x = torch.cat([x, torch.stack([item[1] for item in replay_batch])], dim=0)
+            y = torch.cat([y, torch.stack([item[2] for item in replay_batch])], dim=0)
+            replay_uses += len(replay_batch)
         model.train()
         optimizer.zero_grad(set_to_none=True)
         logits, _ = model(x)
-        loss = F.cross_entropy(logits[:, -1, :2], y)
+        per_example = F.cross_entropy(logits[:, -1, :2], y, reduction="none")
+        loss = per_example.mean()
         if not torch.isfinite(loss).item():
             raise ValueError("NONFINITE_TRAIN_LOSS")
+        # Store only difficult NEW training samples, never replayed samples.
+        hardest = torch.topk(per_example[:batch].detach(), min(2, batch)).indices
+        replay.extend((float(per_example[index].detach()),
+                       x[index].detach().clone(), y[index].detach().clone())
+                      for index in hardest.tolist())
+        replay = sorted(replay, key=lambda item: -item[0])[:64]
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0, error_if_nonfinite=True)
         optimizer.step()
+        if any(not bool(torch.isfinite(weight).all())
+               for weight in model.parameters()):
+            raise ValueError("NONFINITE_CELL_PARAMETERS")
         completed += 1
     after_logits = logits_for(model, hold_x)
     after = score(after_logits, hold_y)
@@ -160,6 +180,10 @@ def train_cell(cell, observation, out, *, steps=120, batch=48, budget=75):
         "heldout_before": before, "heldout_after": after,
         "weights_sha256": sha256(weights),
         "source": header,
+        "replay_source": "ONLINE_TRAINING_BATCHES_ONLY",
+        "replay_capacity": 64,
+        "replay_uses": replay_uses,
+        "frozen_holdout_never_replayed": True,
         "dataset_class": "SYNTHETIC_CAUSAL_TEMPORAL_BIT_TASK",
         "uses_future_labels_for_training": False,
         "real_github_observations_used_for_gradients": False,
