@@ -8,8 +8,8 @@ import tempfile
 import unittest
 
 from janus_model.memory_512_audit_index_r3 import (
-    TARGET_BYTES, Hold, _chunks, _run_ids, audit_catalog, build_index,
-    multi_hop, search_index,
+    TARGET_BYTES, Hold, _chunks, _run_ids, _sha_prefixes, audit_catalog,
+    build_index, multi_hop, search_index, trace_source_sha_references,
 )
 
 
@@ -26,15 +26,17 @@ class Memory512R3Tests(unittest.TestCase):
         self.idx = root / "projection"
         self.src.mkdir()
         self.idx.mkdir()
+        beta = b'{"title":"Beta Rowan followup","verified":false,"source_run_id":42969641041}'
         data = {
             "data/rowan/a.json": json.dumps({
                 "title":"Alpha Rowan observation",
                 "related_paths":["data/rowan/b.json"],
+                "archived_receipt_sha256_prefixes":[sha(beta)[:20]],
                 "latest_completed_source_run":"42969641041",
                 "status":"HYPOTHESIS_ONLY",
             }).encode(),
-            "data/rowan/b.json": b'{"title":"Beta Rowan followup","verified":false,"source_run_id":42969641041}',
-            "data/rowan/copy.json": b'{"title":"Beta Rowan followup","verified":false,"source_run_id":42969641041}',
+            "data/rowan/b.json": beta,
+            "data/rowan/copy.json": beta,
             "data/rowan/bad.json": b'{"broken"',
             "data/rowan/holdout/protected.json": b'{"title":"secret blind research"}',
             "assets/demo.png": b"\x89PNG\r\nnot text",
@@ -165,6 +167,7 @@ class Memory512R3Tests(unittest.TestCase):
         build_index(db,self.src,docs,focus="rowan",max_index_bytes=4096)
         with sqlite3.connect(db) as conn:
             conn.execute("DELETE FROM relations")
+            conn.execute("DELETE FROM hash_refs")
             conn.commit()
         two=multi_hop(db,"alpha")
         self.assertEqual(two["status"],"SHARED_RUN_ID_ASSOCIATIVE_HOP")
@@ -173,6 +176,24 @@ class Memory512R3Tests(unittest.TestCase):
         self.assertEqual(two["second"][0]["relation"],
                          "SHARED_RUN_ID_ASSOCIATION_NOT_EVIDENCE")
         self.assertEqual(_run_ids('{"description":"42969641041"}'),[])
+
+    def test_exact_source_sha_reference_second_hop_without_invented_relation(self):
+        _,docs=audit_catalog(self.idx,self.src)
+        db=Path(self.temp.name)/"index.sqlite"
+        build_index(db,self.src,docs,focus="rowan",max_index_bytes=4096)
+        with sqlite3.connect(db) as conn:
+            conn.execute("DELETE FROM relations")
+            conn.commit()
+        result=multi_hop(db,"alpha")
+        self.assertEqual(result["status"],"CONTENT_SHA_REFERENCE_SECOND_HOP")
+        self.assertEqual(result["second"][0]["path"],"data/rowan/b.json")
+        self.assertEqual(result["second"][0]["relation"],
+                         "EXPLICIT_SOURCE_SHA_PREFIX_LINK_NOT_INDEPENDENT_EVIDENCE")
+        trace=trace_source_sha_references(db,"data/rowan/a.json")
+        self.assertEqual(trace["status"],"SHA_BOUND_SECOND_HOP_FOUND")
+        self.assertEqual(trace["references"][0]["path"],"data/rowan/b.json")
+        self.assertFalse(trace["claim_independence"])
+        self.assertEqual(_sha_prefixes('{"arbitrary":"f"*32}'),[])
 
     def test_index_not_written_under_source_tree(self):
         _,docs=audit_catalog(self.idx,self.src)
