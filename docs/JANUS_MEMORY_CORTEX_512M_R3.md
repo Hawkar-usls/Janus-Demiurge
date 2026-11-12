@@ -39,11 +39,17 @@ The R3 audit:
    source checkout. Only source paths, hashes and commits appear in the
    metadata-only receipt; no full JSON is uploaded.
 7. Exposes a two-hop readout: search verified content, traverse a typed
-   **explicit JSON reference path**, or an exact **shared source-run ID**
-   carried by two separately SHA-verified JSON documents. Such a shared
-   identifier is labeled `SHARED_RUN_ID_ASSOCIATION_NOT_EVIDENCE` and
-   is not proof of causality, scientific independence or factual accuracy.
-   No supported association => explicit no-second-hop status.
+   **explicit JSON reference path**, a truncated-but-bounded **SHA-256
+   content reference** (16–64 hex digits) matched against the target's full
+   checked SHA, or an exact **shared source-run ID** carried by two separately
+   SHA-verified JSON documents. Shared IDs are labeled
+   `SHARED_RUN_ID_ASSOCIATION_NOT_EVIDENCE`; SHA-prefix links are labeled
+   `EXPLICIT_SHA_PREFIX_REFERENCE_NOT_SCIENTIFIC_PROOF`. Neither proves
+   causality, independence or factual truth. Missing evidence produces
+   explicit no-second-hop status.
+8. The fixed real-source example follows a SHA-prefix stored in
+   `data/rowan/health/PIPELINE_STATE.json` to its pinned Rowan receipt.
+   This is a provenance navigation test, not a scientific confirmation.
 
 ## Local isolated test
 
