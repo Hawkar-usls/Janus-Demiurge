@@ -57,7 +57,18 @@ class NeuralKombuchaTests(unittest.TestCase):
             self.assertNotEqual(receipt["heldout_before"]["nll"], receipt["heldout_after"]["nll"])
             self.assertFalse(receipt["production_promotion"])
             self.assertFalse(receipt["real_github_observations_used_for_gradients"])
+            self.assertEqual(receipt["replay_source"], "ONLINE_TRAINING_BATCHES_ONLY")
+            self.assertTrue(receipt["frozen_holdout_never_replayed"])
+            self.assertGreater(receipt["replay_uses"], 0)
+            self.assertLessEqual(receipt["replay_uses"], receipt["rounds"] * 8)
             nk.verify_cell(folder, 0, nk.sha256(obs))
+            receipt_path = folder / "receipt.json"
+            forged = dict(receipt)
+            forged["frozen_holdout_never_replayed"] = False
+            nk.save_json(receipt_path, forged)
+            with self.assertRaisesRegex(ValueError, "CELL_RECEIPT_REJECTED"):
+                nk.verify_cell(folder, 0, nk.sha256(obs))
+            nk.save_json(receipt_path, receipt)
             with (folder / "weights.pt").open("ab") as stream:
                 stream.write(b"CORRUPTION")
             with self.assertRaisesRegex(ValueError, "CELL_WEIGHTS_DIGEST"):
