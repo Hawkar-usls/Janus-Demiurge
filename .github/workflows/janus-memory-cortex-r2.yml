@@ -1,0 +1,161 @@
+name: JANUS Memory Cortex R2 - fixed retrieval and 256/512 shadow
+on:
+  pull_request:
+    paths:
+      - 'janus_model/hrain_retrieval_eval_r2.py'
+      - 'janus_model/native_context_candidate_r2.py'
+      - 'janus_model/eval/JANUS_HRAIN_R2_DEVELOPMENT_SMOKE-v1.json'
+      - 'tests/test_janus_hrain_retrieval_eval_r2.py'
+      - 'tests/test_janus_native_context_candidate_r2.py'
+      - 'docs/JANUS_MEMORY_CORTEX_R2.md'
+      - '.github/workflows/janus-memory-cortex-r2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  retrieval-snapshot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run bounded synthetic retrieval and abstention tests
+        run: python -m unittest discover -s tests -p 'test_janus_hrain_retrieval_eval_r2.py' -v
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/Hrain
+          ref: e4ae91372babf8206b2dfed07ff8f1d85d2626d4
+          path: _snapshot/hrain
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: 6c9259c43d89569b11351bf8579a3775025fa2f0
+          path: _snapshot/projection
+          persist-credentials: false
+      - name: Verify pinned Git snapshots and score actual HRain against filename control
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C _snapshot/hrain rev-parse HEAD)" = "e4ae91372babf8206b2dfed07ff8f1d85d2626d4"
+          test "$(git -C _snapshot/projection rev-parse HEAD)" = "6c9259c43d89569b11351bf8579a3775025fa2f0"
+          python -m janus_model.hrain_retrieval_eval_r2 \
+            --projection _snapshot/projection/assets/hrain-registry-index.json \
+            --cases janus_model/eval/JANUS_HRAIN_R2_DEVELOPMENT_SMOKE-v1.json \
+            --hrain-source _snapshot/hrain/tools/hrain_conversation_context.py \
+            --receipt "$RUNNER_TEMP/JANUS_HRAIN_R2_DEV_RETRIEVAL.json"
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          r=json.loads((Path(os.environ["RUNNER_TEMP"])/"JANUS_HRAIN_R2_DEV_RETRIEVAL.json").read_text())
+          assert r['query_count']==7 and r['node_count']==210
+          assert r['model_answer_accuracy_measured'] is False
+          assert r['claim_of_independent_generalization'] is False
+          assert r['scientific_holdout_touched'] is False
+          assert r['source_write_authority'] is False
+          print('JANUS_R2_RETRIEVAL_METRICS',json.dumps({
+            'graph_correct':r['hrain_graph']['correct_cases'],
+            'baseline_correct':r['filename_only_baseline']['correct_cases'],
+            'graph_abstentions':r['hrain_graph']['no_match_correct_abstentions'],
+            'baseline_abstentions':r['filename_only_baseline']['no_match_correct_abstentions']},sort_keys=True))
+          PY
+          test -z "$(git -C _snapshot/projection status --porcelain)"
+      - name: Save receipt only (no raw research JSON)
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-r2-development-retrieval-${{ github.run_id }}
+          path: ${{ runner.temp }}/JANUS_HRAIN_R2_DEV_RETRIEVAL.json
+          retention-days: 7
+          if-no-files-found: error
+
+  native-shadow:
+    needs: retrieval-snapshot
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU PyTorch for isolated shadow inference
+        run: python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Test 256/512 byte input and unchanged original weights
+        run: python -m unittest discover -s tests -p 'test_janus_native_context_candidate_r2.py' -v
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/Hrain
+          ref: e4ae91372babf8206b2dfed07ff8f1d85d2626d4
+          path: _snapshot/hrain
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: 6c9259c43d89569b11351bf8579a3775025fa2f0
+          path: _snapshot/projection
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: 1800e8c9d35b13a6cf5be18156ddc0cd58e46ec8
+          path: _snapshot/source
+          persist-credentials: false
+      - name: Replay pinned HRain JSON then test actual extended forward passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python _snapshot/hrain/tools/hrain_conversation_context.py \
+            --projection-file _snapshot/projection/assets/hrain-registry-index.json \
+            --registry-root _snapshot/source --query ROWAN --limit 2 \
+            --output "$RUNNER_TEMP/JANUS_R2_CONTEXT.json"
+          python -m janus_model.hrain_memory_cortex \
+            --context "$RUNNER_TEMP/JANUS_R2_CONTEXT.json" \
+            --registry-root _snapshot/source --max-text-bytes 4096 --max-memories 2 \
+            --text-output "$RUNNER_TEMP/JANUS_R2_SOURCE.txt" \
+            --receipt-output "$RUNNER_TEMP/JANUS_R2_SOURCE.json"
+          python -m janus_model.native_context_candidate_r2 \
+            --context-length 256 --query "What does ROWAN record?" \
+            --r1-text "$RUNNER_TEMP/JANUS_R2_SOURCE.txt" \
+            --r1-receipt "$RUNNER_TEMP/JANUS_R2_SOURCE.json" \
+            --out "$RUNNER_TEMP/JANUS_R2_256.json"
+          python -m janus_model.native_context_candidate_r2 \
+            --context-length 512 --query "What does ROWAN record?" \
+            --r1-text "$RUNNER_TEMP/JANUS_R2_SOURCE.txt" \
+            --r1-receipt "$RUNNER_TEMP/JANUS_R2_SOURCE.json" \
+            --out "$RUNNER_TEMP/JANUS_R2_512.json"
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'])
+          small=json.loads((root/'JANUS_R2_256.json').read_text())
+          large=json.loads((root/'JANUS_R2_512.json').read_text())
+          assert small['model_input_bytes']<=255 and large['model_input_bytes']<=511
+          assert small['source_excerpt_bytes']>0 and large['source_excerpt_bytes']>small['source_excerpt_bytes']
+          assert small['logits_finite'] and large['logits_finite']
+          assert small['model_weights_promoted'] is False and large['model_weights_promoted'] is False
+          assert small['model_answer_quality_verified'] is False
+          print('JANUS_R2_SHADOW_FINITE_PASS',json.dumps({
+            'bytes_256':small['source_excerpt_bytes'],
+            'bytes_512':large['source_excerpt_bytes'],
+            'params_256':small['candidate_parameter_count'],
+            'params_512':large['candidate_parameter_count']},sort_keys=True))
+          PY
+          test -z "$(git -C _snapshot/source status --porcelain)"
+          test -z "$(git status --porcelain --untracked-files=no)"
+      - name: Upload source-safe proof metadata only
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-r2-shadow-verified-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/JANUS_R2_SOURCE.json
+            ${{ runner.temp }}/JANUS_R2_256.json
+            ${{ runner.temp }}/JANUS_R2_512.json
+          retention-days: 7
+          if-no-files-found: error
