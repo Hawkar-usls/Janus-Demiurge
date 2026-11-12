@@ -61,7 +61,8 @@ jobs:
             --source-root _sources/registry \
             --receipt "$RUNNER_TEMP/JANUS_MEMORY_512_R3_AUDIT.json" \
             --db "$RUNNER_TEMP/JANUS_MEMORY_512_R3_INDEX.sqlite" \
-            --focus "" --index-budget 67108864 --query rowan
+            --focus "" --index-budget 67108864 --query rowan \
+            --trace-source data/rowan/health/PIPELINE_STATE.json
           python - <<'PY'
           import json,os
           from pathlib import Path
@@ -79,10 +80,13 @@ jobs:
           assert r["index"]["source_bytes_indexed"]<=67108864
           assert r["index"]["indexed_docs"]==r["unique_retrieval_candidate_objects"]
           assert r["readout"]["status"] in (
-              "NO_SUPPORTED_FIRST_HOP","NO_VERIFIABLE_EXPLICIT_SECOND_HOP",
-              "EXPLICIT_REFERENCE_SECOND_HOP_FOUND",
-              "SHARED_RUN_ID_ASSOCIATIVE_HOP",
-              "NO_VERIFIABLE_SECOND_HOP")
+              "NO_SUPPORTED_FIRST_HOP","EXPLICIT_REFERENCE_SECOND_HOP_FOUND",
+              "CONTENT_SHA_REFERENCE_SECOND_HOP",
+              "SHARED_RUN_ID_ASSOCIATIVE_HOP","NO_VERIFIABLE_SECOND_HOP")
+          assert r["source_trace"]["status"]=="SHA_BOUND_SECOND_HOP_FOUND"
+          assert r["source_trace"]["references"]
+          assert all(x["reference_kind"]=="EXPLICIT_SHA_PREFIX_REFERENCE_NOT_SCIENTIFIC_PROOF"
+                     for x in r["source_trace"]["references"])
           assert not r["native_v1_modified"] and not r["consent_or_training_cleared"]
           assert not r["model_answer_quality_measured"]
           print("JANUS_MEMORY_512_R3_ACTUAL_AUDIT_PASS",json.dumps({
@@ -94,7 +98,9 @@ jobs:
               "index_bytes":r["index"]["source_bytes_indexed"],
               "first_hops":len(r["readout"]["first"]),
               "second_hops":len(r["readout"]["second"]),
-              "second_hop_status":r["readout"]["status"]},sort_keys=True))
+              "second_hop_status":r["readout"]["status"],
+              "source_trace_status":r["source_trace"]["status"],
+              "verified_sha_trace_links":len(r["source_trace"]["references"])},sort_keys=True))
           PY
           test -z "$(git -C _sources/catalog status --porcelain)"
           test -z "$(git -C _sources/registry status --porcelain)"
