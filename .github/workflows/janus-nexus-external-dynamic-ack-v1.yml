@@ -1,0 +1,234 @@
+name: JANUS Nexus Dynamic External Organ ACK v1
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/janus_nexus_external_dynamic_ack_v1.py'
+      - 'tests/test_janus_nexus_external_dynamic_ack_v1.py'
+      - '.github/workflows/janus-nexus-external-dynamic-ack-v1.yml'
+  workflow_dispatch:
+    inputs:
+      source_run:
+        description: Genesis root Actions run ID (must be the actual sender)
+        required: true
+        type: string
+      attempt:
+        description: Genesis root run attempt
+        required: true
+        default: '1'
+        type: string
+      source_sha:
+        description: Genesis exact source SHA
+        required: true
+        type: string
+      b_head:
+        description: Exact already-persisted Genesis Worker B Git commit SHA
+        required: true
+        type: string
+
+concurrency:
+  group: janus-nexus-external-dynamic-organ-independent
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  RECEIVER_SCRIPT: tools/janus_nexus_external_dynamic_ack_v1.py
+  MODEL_PIN: c8c890206f53591d6bfe444d103ed5dd07ec2296
+  ACK_BRANCH: janus/nexus-external-organ-ack-state
+  ACK_ROOT: data/nexus_external_acks/receipts
+
+jobs:
+  offline-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Independent dynamic source and no-authority negative controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile "$RECEIVER_SCRIPT"
+          python -m unittest discover -s tests -p 'test_janus_nexus_external_dynamic_ack_v1.py' -v
+          echo 'JANUS_DYNAMIC_ORGAN_OFFLINE_CONTRACT=PASS'
+
+  consume:
+    needs: offline-contract
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.repository == 'Hawkar-usls/Janus-Demiurge'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    permissions: {contents: read}
+    steps:
+      - name: Check bounded run/source inputs before Git checkout
+        shell: bash
+        env:
+          SOURCE_RUN: ${{ inputs.source_run }}
+          ATTEMPT: ${{ inputs.attempt }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          SOURCE_B: ${{ inputs.b_head }}
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_RUN" =~ ^[1-9][0-9]{3,23}$ ]]
+          [[ "$ATTEMPT" =~ ^[1-9][0-9]{0,2}$ ]]
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$SOURCE_B" =~ ^[0-9a-f]{40}$ ]]
+          echo 'JANUS_DYNAMIC_ORGAN_INPUTS=SCOPED'
+      - uses: actions/checkout@v4
+        with: {ref: "${{ github.sha }}", path: _code, persist-credentials: false}
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/Janus_Genesis
+          ref: "${{ inputs.b_head }}"
+          path: _source
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/Janus-Demiurge
+          ref: c8c890206f53591d6bfe444d103ed5dd07ec2296
+          path: _model
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Install public CPU native model runtime
+        run: python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Verify Git source and build bounded prompt from exact selected proposal
+        shell: bash
+        env:
+          SOURCE_RUN: ${{ inputs.source_run }}
+          ATTEMPT: ${{ inputs.attempt }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          SOURCE_B: ${{ inputs.b_head }}
+        run: |
+          set -euo pipefail
+          test "$(git -C _source rev-parse HEAD)" = "$SOURCE_B"
+          test "$(git -C _model rev-parse HEAD)" = "$MODEL_PIN"
+          python _code/"$RECEIVER_SCRIPT" prompt \
+            --source-root _source \
+            --source-run "$SOURCE_RUN" \
+            --attempt "$ATTEMPT" \
+            --source-sha "$SOURCE_SHA" \
+            --b-head "$SOURCE_B" \
+            --receiver-run "$GITHUB_RUN_ID" \
+            --receiver-sha "$GITHUB_SHA" \
+            --out "$RUNNER_TEMP/prompt.txt"
+      - name: Actual pinned CPU native Demiurge inference (not source command execution)
+        shell: bash
+        env:
+          SOURCE_RUN: ${{ inputs.source_run }}
+          ATTEMPT: ${{ inputs.attempt }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          SOURCE_B: ${{ inputs.b_head }}
+        run: |
+          set -euo pipefail
+          (
+            cd _model
+            python -m janus_model.cli run \
+              --checkpoint janus_model/checkpoints/promoted.pt \
+              --prompt "$(cat "$RUNNER_TEMP/prompt.txt")" \
+              --max-new-tokens 40 \
+              > "$RUNNER_TEMP/model-output.txt" 2> "$RUNNER_TEMP/model.err"
+          )
+          rm -f "$RUNNER_TEMP/model.err" "$RUNNER_TEMP/prompt.txt"
+          python _code/"$RECEIVER_SCRIPT" receipt \
+            --source-root _source \
+            --source-run "$SOURCE_RUN" \
+            --attempt "$ATTEMPT" \
+            --source-sha "$SOURCE_SHA" \
+            --b-head "$SOURCE_B" \
+            --receiver-run "$GITHUB_RUN_ID" \
+            --receiver-sha "$GITHUB_SHA" \
+            --model-checkpoint _model/janus_model/checkpoints/promoted.pt \
+            --raw-output "$RUNNER_TEMP/model-output.txt" \
+            --out "$RUNNER_TEMP/ack-candidate.json"
+          echo 'JANUS_DYNAMIC_ORGAN_NATIVE_MODEL_CALL=PASS_SCOPED'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-dynamic-organ-raw-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/model-output.txt
+            ${{ runner.temp }}/ack-candidate.json
+          if-no-files-found: error
+          retention-days: 1
+
+  independent-verdict:
+    needs: [offline-contract,consume]
+    if: needs.consume.result == 'success' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.repository == 'Hawkar-usls/Janus-Demiurge'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions: {contents: write}
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: "${{ github.sha }}", path: _code, fetch-depth: 0}
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/Janus_Genesis
+          ref: "${{ inputs.b_head }}"
+          path: _source
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/Janus-Demiurge
+          ref: c8c890206f53591d6bfe444d103ed5dd07ec2296
+          path: _model
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-dynamic-organ-raw-${{ github.run_id }}
+          path: ${{ runner.temp }}/evidence
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Independently rederive exact source, prompt and raw model digest
+        shell: bash
+        env:
+          SOURCE_RUN: ${{ inputs.source_run }}
+          ATTEMPT: ${{ inputs.attempt }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          SOURCE_B: ${{ inputs.b_head }}
+        run: |
+          set -euo pipefail
+          test "$(git -C _source rev-parse HEAD)" = "$SOURCE_B"
+          test "$(git -C _model rev-parse HEAD)" = "$MODEL_PIN"
+          python _code/"$RECEIVER_SCRIPT" verify \
+            --source-root _source \
+            --source-run "$SOURCE_RUN" \
+            --attempt "$ATTEMPT" \
+            --source-sha "$SOURCE_SHA" \
+            --b-head "$SOURCE_B" \
+            --receiver-run "$GITHUB_RUN_ID" \
+            --receiver-sha "$GITHUB_SHA" \
+            --model-checkpoint _model/janus_model/checkpoints/promoted.pt \
+            --raw-output "$RUNNER_TEMP/evidence/model-output.txt" \
+            --ack "$RUNNER_TEMP/evidence/ack-candidate.json"
+          echo 'JANUS_DYNAMIC_EXTERNAL_ACK_INDEPENDENT_REPLAY=PASS'
+      - name: Append only independently replayed ACK on separate Demiurge Git branch
+        shell: bash
+        working-directory: _code
+        env:
+          SOURCE_RUN: ${{ inputs.source_run }}
+          ATTEMPT: ${{ inputs.attempt }}
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --heads origin "$ACK_BRANCH" >/dev/null 2>&1; then
+            git fetch origin "refs/heads/$ACK_BRANCH"
+            git switch -C "$ACK_BRANCH" "origin/$ACK_BRANCH"
+          else
+            git switch -c "$ACK_BRANCH"
+          fi
+          dest="$ACK_ROOT/$SOURCE_RUN-$ATTEMPT-dynamic-external-$GITHUB_RUN_ID.json"
+          test ! -e "$dest"
+          mkdir -p "$(dirname "$dest")"
+          cp "$RUNNER_TEMP/evidence/ack-candidate.json" "$dest"
+          git add -f -- "$dest"
+          test "$(git diff --cached --name-only)" = "$dest"
+          git diff --cached --check
+          git config user.name 'janus-dynamic-external-organ[bot]'
+          git config user.email 'janus-dynamic-external-organ[bot]@users.noreply.github.com'
+          git commit -m "JANUS exact-source external organ ACK $SOURCE_RUN ($GITHUB_RUN_ID)"
+          git push origin HEAD:refs/heads/$ACK_BRANCH
+          echo 'JANUS_DYNAMIC_EXTERNAL_ACK=INDEPENDENT_GIT_DURABLE_PASS'
+          echo 'GENESIS_162_FULL_ACCEPTANCE=HOLD'
