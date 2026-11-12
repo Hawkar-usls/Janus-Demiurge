@@ -1,0 +1,207 @@
+name: JANUS Nexus External Native Organ Ack v1
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/janus_nexus_external_native_ack_v1.py'
+      - 'tests/test_janus_nexus_external_native_ack_v1.py'
+      - '.github/workflows/janus-nexus-external-native-ack-v1.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/janus_nexus_external_native_ack_v1.py'
+      - 'tests/test_janus_nexus_external_native_ack_v1.py'
+      - '.github/workflows/janus-nexus-external-native-ack-v1.yml'
+  workflow_dispatch:
+
+# One-shot pinned research consumption. No cron, no GENESIS repo writeback.
+concurrency:
+  group: janus-nexus-independent-organ-ack-v1
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  SOURCE_REPO: Hawkar-usls/Janus_Genesis
+  SOURCE_PIN: a29e90d4910ebde68ca4e73cc30701af0e484837
+  MODEL_PIN: c8c890206f53591d6bfe444d103ed5dd07ec2296
+  ACK_BRANCH: janus/nexus-external-organ-ack-state
+  ACK_CLI: tools/janus_nexus_external_native_ack_v1.py
+  ACK_ROOT: data/nexus_external_acks/receipts
+
+jobs:
+  offline-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Verify isolated external organ negative controls without model or secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile "$ACK_CLI"
+          python -m unittest discover -s tests -p 'test_janus_nexus_external_native_ack_v1.py' -v
+          echo 'JANUS_EXTERNAL_ORGAN_OFFLINE_CONTRACT=PASS'
+
+  consume:
+    needs: offline-contract
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && github.repository == 'Hawkar-usls/Janus-Demiurge'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    permissions: {contents: write}
+    outputs:
+      ack_head: ${{ steps.persist.outputs.ack_head }}
+      ack_path: ${{ steps.persist.outputs.ack_path }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: "${{ github.sha }}", path: _code, fetch-depth: 0}
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/Janus_Genesis
+          ref: a29e90d4910ebde68ca4e73cc30701af0e484837
+          path: _source
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/Janus-Demiurge
+          ref: c8c890206f53591d6bfe444d103ed5dd07ec2296
+          path: _model
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Install public CPU native model runtime
+        run: python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Validate precise Genesis source blobs and native model SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C _source rev-parse HEAD)" = "$SOURCE_PIN"
+          test "$(git -C _model rev-parse HEAD)" = "$MODEL_PIN"
+          test "$(git -C _source rev-parse HEAD:data/nexus_integrated_native_lab/runs/43275243138-1/variants.json)" = '85715c27257f546977f282cfd24736845cbd3ce0'
+          test "$(git -C _source rev-parse HEAD:data/nexus_integrated_native_lab/runs/43275243138-1/checkpoint.json)" = 'ef55b9b4412a19362e8293328516c9d75d78b7a9'
+          python _code/"$ACK_CLI" prompt --source-root _source --output "$RUNNER_TEMP/organ-prompt.txt"
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          p=Path('_model/janus_model/checkpoints/promoted.pt')
+          assert hashlib.sha256(p.read_bytes()).hexdigest()=='fc767adb812ac3bea54c44cbccfa9680941f95e2c8a77120559b41da044d9463'
+          PY
+      - name: ACTUAL independent Demiurge native model consumption
+        shell: bash
+        run: |
+          set -euo pipefail
+          (
+            cd _model
+            python -m janus_model.cli run \
+              --checkpoint janus_model/checkpoints/promoted.pt \
+              --prompt "$(cat "$RUNNER_TEMP/organ-prompt.txt")" \
+              --max-new-tokens 40 \
+              > "$RUNNER_TEMP/organ-output.txt" 2> "$RUNNER_TEMP/model.err"
+          )
+          rm -f "$RUNNER_TEMP/model.err" "$RUNNER_TEMP/organ-prompt.txt"
+          test -s "$RUNNER_TEMP/organ-output.txt"
+          python _code/"$ACK_CLI" receive --source-root _source \
+            --model-checkpoint _model/janus_model/checkpoints/promoted.pt \
+            --response "$RUNNER_TEMP/organ-output.txt" \
+            --run-id "$GITHUB_RUN_ID" --receiver-source-sha "$GITHUB_SHA" \
+            --output "$RUNNER_TEMP/ack.json"
+          echo 'JANUS_EXTERNAL_DEMIURGE_RUNTIME_CONSUMPTION=REAL_MODEL_CALL_PASS'
+      - name: Append external ACK in independent Demiurge Git-state branch
+        id: persist
+        working-directory: _code
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --heads origin "$ACK_BRANCH" >/dev/null 2>&1; then
+            git fetch origin "refs/heads/$ACK_BRANCH"
+            git switch -C "$ACK_BRANCH" "origin/$ACK_BRANCH"
+          else
+            git switch -c "$ACK_BRANCH"
+          fi
+          path="$ACK_ROOT/43275243138-1-external-$GITHUB_RUN_ID.json"
+          test ! -e "$path"
+          mkdir -p "$(dirname "$path")"
+          cp "$RUNNER_TEMP/ack.json" "$path"
+          git add -f -- "$path"
+          test "$(git diff --cached --name-only)" = "$path"
+          git diff --cached --check
+          git config user.name 'janus-external-organ-ack[bot]'
+          git config user.email 'janus-external-organ-ack[bot]@users.noreply.github.com'
+          git commit -m "JANUS native organ ACK for Genesis 43275243138"
+          git push origin HEAD:refs/heads/$ACK_BRANCH
+          echo "ack_head=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "ack_path=$path" >> "$GITHUB_OUTPUT"
+          echo 'JANUS_EXTERNAL_ORGAN_ACK_GIT_DURABLE=PASS'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-external-organ-private-replay-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/ack.json
+            ${{ runner.temp }}/organ-output.txt
+          if-no-files-found: error
+          retention-days: 1
+
+  independent-verdict:
+    needs: consume
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions: {contents: read}
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: "${{ github.sha }}", path: _code, persist-credentials: false}
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/Janus_Genesis
+          ref: a29e90d4910ebde68ca4e73cc30701af0e484837
+          path: _source
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/Janus-Demiurge
+          ref: c8c890206f53591d6bfe444d103ed5dd07ec2296
+          path: _model
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: "${{ needs.consume.outputs.ack_head }}"
+          path: _ack
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-external-organ-private-replay-${{ github.run_id }}
+          path: ${{ runner.temp }}/evidence
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Independently replay frozen input and exact raw model response
+        shell: bash
+        env:
+          ACK_HEAD: ${{ needs.consume.outputs.ack_head }}
+          ACK_PATH: ${{ needs.consume.outputs.ack_path }}
+        run: |
+          set -euo pipefail
+          test "$(git -C _ack rev-parse HEAD)" = "$ACK_HEAD"
+          test "$(git -C _ack ls-remote origin refs/heads/$ACK_BRANCH | cut -f1)" = "$ACK_HEAD"
+          test -f "_ack/$ACK_PATH"
+          cmp "_ack/$ACK_PATH" "$RUNNER_TEMP/evidence/ack.json"
+          python _code/"$ACK_CLI" verify --source-root _source \
+            --model-checkpoint _model/janus_model/checkpoints/promoted.pt \
+            --response "$RUNNER_TEMP/evidence/organ-output.txt" \
+            --ack "_ack/$ACK_PATH"
+          python - "$RUNNER_TEMP/evidence/ack.json" <<'PY'
+          import json,sys
+          row=json.load(open(sys.argv[1]))
+          assert row['status']=='PASS_EXTERNAL_DEMIURGE_NATIVE_MODEL_CONSUMED_PINNED_GENESIS_LAB_TEXT'
+          assert row['external_organ_is_separate_git_repository_and_runner'] is True
+          assert row['real_external_organ_readonly_consumption_proven'] is True
+          assert row['production_integration_consumption_proven'] is False
+          assert row['full_issue_162_acceptance'] is False
+          assert row['source_writeback'] is False
+          assert row['scientific_authority_delta']==0
+          PY
+          echo 'JANUS_EXTERNAL_INDEPENDENT_ORGAN_ACK=PASS_REPLAYED'
+          echo 'GENESIS_162_G1_G20=HOLD'
