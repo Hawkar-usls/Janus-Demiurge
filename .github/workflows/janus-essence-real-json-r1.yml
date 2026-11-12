@@ -45,8 +45,28 @@ jobs:
           python -m py_compile tools/janus_essence_real_json_train.py
           python -m unittest -v tests.test_janus_essence_real_json_train
 
-  cell:
+  source-snapshot:
     needs: contract
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    outputs:
+      meta_sha: ${{ steps.record.outputs.meta_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: main
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Freeze exact history commit for all worker and verifier jobs
+        id: record
+        shell: bash
+        run: |
+          echo "meta_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  cell:
+    needs: [contract, source-snapshot]
     if: github.event_name != 'pull_request'
     strategy:
       fail-fast: false
@@ -75,7 +95,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: Hawkar-usls/janus-meta-registry
-          ref: main
+          ref: ${{ needs.source-snapshot.outputs.meta_sha }}
           path: dependencies/registry
           fetch-depth: 1
           persist-credentials: false
@@ -96,7 +116,7 @@ jobs:
           retention-days: 14
 
   independent-holdout:
-    needs: [contract, cell]
+    needs: [contract, source-snapshot, cell]
     if: always() && needs.contract.result == 'success' && github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -119,7 +139,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: Hawkar-usls/janus-meta-registry
-          ref: main
+          ref: ${{ needs.source-snapshot.outputs.meta_sha }}
           path: dependencies/registry
           fetch-depth: 1
           persist-credentials: false
@@ -145,16 +165,11 @@ jobs:
           from pathlib import Path
           r=json.loads(Path("artifacts/essence-real-holdout-report.json").read_text())
           with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as f:
-              f.write("# ESSENCE R1: real historical JSON
-")
-              f.write("Gate: **"+r["status"]+"**
-")
-              f.write("Verified cells: "+str(r["verified_cells"])+"/6
-")
-              f.write("Independent test records: "+str(r["dataset"]["split_sizes"]["test"])+"
-")
-              f.write("Task: JSON schema/document routing, NOT forecasting or operational autonomy
-")
+              print("# ESSENCE R1: real historical JSON",file=f)
+              print("Gate: **"+r["status"]+"**",file=f)
+              print("Verified cells: "+str(r["verified_cells"])+"/6",file=f)
+              print("Independent test records: "+str(r["dataset"]["split_sizes"]["test"]),file=f)
+              print("Task: JSON schema/document routing, NOT forecasting or operational autonomy",file=f)
           PY
       - uses: actions/upload-artifact@v4
         if: always()
