@@ -1,0 +1,94 @@
+name: JANUS Cooling Tower Async Microkernel v1
+
+on:
+  pull_request:
+    paths:
+      - 'tools/janus_cooling_tower_async.py'
+      - 'tests/test_janus_cooling_tower_async.py'
+      - '.github/workflows/janus-cooling-tower-async.yml'
+  push:
+    branches:
+      - main
+      - janus/cooling-tower-async-microkernel-20261112
+    paths:
+      - 'tools/janus_cooling_tower_async.py'
+      - 'tests/test_janus_cooling_tower_async.py'
+      - '.github/workflows/janus-cooling-tower-async.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '19 */6 * * *'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: janus-cooling-tower-readonly-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  offline-fault-isolation-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify asynchronous microkernel invariants
+        run: |
+          python -m py_compile tools/janus_cooling_tower_async.py
+          python -m unittest -v tests.test_janus_cooling_tower_async
+
+  observe-public-constellation:
+    needs: offline-fault-isolation-contract
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Async circulation with bounded parallel read-only checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python tools/janus_cooling_tower_async.py --out runtime/cooling-tower/receipt.json
+      - name: Present honest independent health gate
+        if: always()
+        shell: bash
+        run: |
+          if [ ! -f runtime/cooling-tower/receipt.json ]; then
+            echo 'COOLING_TOWER_EXECUTION_FAILED' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          r=json.loads(Path('runtime/cooling-tower/receipt.json').read_text())
+          rows=[
+              '# JANUS Cooling Tower v1',
+              f"- Observation gate: **{r['gate']}**",
+              f"- Public repositories: {r['public_repositories']}",
+              f"- Circulation rounds: {r['bounded_rounds']}",
+              f"- Critical blockers: {r['critical_blocker_count']}",
+              f"- Isolated probe faults: {r['isolated_probe_failure_count']}",
+              '- **Not** full autonomy acceptance, a self-modifying core, or scientific evidence.',
+              '- No third-party code executed, no child workflows dispatched, no production writes.',
+          ]
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as stream:
+              stream.write('\n'.join(rows)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: janus-cooling-tower-async-${{ github.run_id }}
+          path: runtime/cooling-tower/receipt.json
+          if-no-files-found: warn
+          retention-days: 14
