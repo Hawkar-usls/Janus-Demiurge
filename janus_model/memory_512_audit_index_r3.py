@@ -314,6 +314,30 @@ def _relations(text: str) -> list[str]:
     return list(dict.fromkeys(out))[:MAX_RELATIONS_PER_DOC]
 
 
+def _run_ids(text: str) -> list[str]:
+    """Only explicit source-run fields are associative keys, never proof."""
+    try:
+        obj = json.loads(text)
+    except ValueError:
+        return []
+    if not isinstance(obj, dict):
+        return []
+    fields = {"source_run_id", "run_id", "latest_source_run",
+              "latest_archived_source_run", "latest_completed_source_run",
+              "latest_durable_external_run", "meta_canonical_run"}
+    found = []
+    for key, value in obj.items():
+        if key in fields and type(value) in (int, str):
+            value = str(value)
+            if re.fullmatch(r"[0-9]{7,20}", value):
+                found.append(value)
+        elif key == "latest_source_uri" and isinstance(value, str):
+            m = re.search(r"/actions/runs/([0-9]{7,20})(?:$|[/?#])", value)
+            if m:
+                found.append(m.group(1))
+    return list(dict.fromkeys(found))[:8]
+
+
 def build_index(db_path: Path, source_root: Path, eligible: list[dict], *,
                 focus: str = "", max_index_bytes: int = INDEX_CAP_BYTES) -> dict:
     if not 4096 <= max_index_bytes <= TARGET_BYTES:
@@ -330,6 +354,8 @@ def build_index(db_path: Path, source_root: Path, eligible: list[dict], *,
         conn.execute("CREATE TABLE documents(path TEXT PRIMARY KEY, source_sha256 TEXT NOT NULL, size_bytes INTEGER NOT NULL, source_commit TEXT NOT NULL)")
         conn.execute("CREATE VIRTUAL TABLE snippets USING fts5(path UNINDEXED, content, tokenize='unicode61')")
         conn.execute("CREATE TABLE relations(from_path TEXT NOT NULL, to_path TEXT NOT NULL, PRIMARY KEY(from_path,to_path))")
+        conn.execute("CREATE TABLE run_refs(path TEXT NOT NULL, run_id TEXT NOT NULL, PRIMARY KEY(path,run_id))")
+        conn.execute("CREATE INDEX run_ref_lookup ON run_refs(run_id)")
         total = 0
         indexed_docs = 0
         chunks = 0
@@ -352,6 +378,8 @@ def build_index(db_path: Path, source_root: Path, eligible: list[dict], *,
             if item["extension"] == ".json":
                 for target in _relations(text):
                     conn.execute("INSERT OR IGNORE INTO relations VALUES(?,?)", (path,target))
+                for run_id in _run_ids(text):
+                    conn.execute("INSERT OR IGNORE INTO run_refs VALUES(?,?)", (path,run_id))
             total += size
             indexed_docs += 1
         conn.commit()
@@ -426,9 +454,34 @@ def multi_hop(db_path: Path, query: str, *, limit: int = 5) -> dict:
                       "source_sha256":sha,"size_bytes":size,"source_commit":commit,
                       "relation":"EXPLICIT_JSON_REFERENCE_NOT_EVIDENCE"})
                     paths.add(path)
-        return {"status":("EXPLICIT_REFERENCE_SECOND_HOP_FOUND" if second
-                          else "NO_VERIFIABLE_EXPLICIT_SECOND_HOP"),
-                "first":first,"second":second}
+        # If there is no explicit JSON path link, allow a *typed*
+        # discovery hop through an exact source-run identifier recorded
+        # in both SHA-verified documents. This is associative navigation,
+        # not proof, causality, independent evidence, or a source citation.
+        for item in first:
+            if len(second)>=limit:
+                break
+            associations=conn.execute("""
+                SELECT d.path,d.source_sha256,d.size_bytes,d.source_commit,
+                       source.run_id
+                  FROM run_refs source JOIN run_refs target
+                    ON source.run_id=target.run_id
+                  JOIN documents d ON d.path=target.path
+                 WHERE source.path=? AND target.path!=?
+                 ORDER BY d.path LIMIT ?
+            """,(item["path"],item["path"],limit*5)).fetchall()
+            for path,sha,size,commit,run_id in associations:
+                if path not in paths and len(second)<limit:
+                    second.append({"source_path":item["path"],"path":path,
+                      "source_sha256":sha,"size_bytes":size,"source_commit":commit,
+                      "shared_run_id":run_id,
+                      "relation":"SHARED_RUN_ID_ASSOCIATION_NOT_EVIDENCE"})
+                    paths.add(path)
+        status = ("EXPLICIT_REFERENCE_SECOND_HOP_FOUND" if
+                  any(x["relation"]=="EXPLICIT_JSON_REFERENCE_NOT_EVIDENCE" for x in second)
+                  else "SHARED_RUN_ID_ASSOCIATIVE_HOP" if second
+                  else "NO_VERIFIABLE_SECOND_HOP")
+        return {"status":status, "first":first,"second":second}
     finally:
         conn.close()
 
