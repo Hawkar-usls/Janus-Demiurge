@@ -1,0 +1,184 @@
+name: JANUS Memory Cortex 512M R4 - controlled source-grounded query
+on:
+  workflow_call:
+    inputs:
+      query:
+        description: Public query; no sensitive user content
+        type: string
+        required: false
+        default: rowan
+      source_path:
+        description: Optional exact path of a public indexed source
+        type: string
+        required: false
+        default: ''
+      field:
+        description: Optional allowlisted public scalar JSON field
+        type: string
+        required: false
+        default: ''
+  workflow_dispatch:
+    inputs:
+      query:
+        description: Public memory search query (not a secret)
+        type: string
+        required: true
+        default: rowan
+      source_path:
+        description: Optional exact public source path for precise JSON answer
+        type: string
+        required: false
+        default: ''
+      field:
+        description: Optional allowlisted scalar field, requires source_path
+        type: string
+        required: false
+        default: ''
+  pull_request:
+    paths:
+      - 'janus_model/memory_512_query_r4.py'
+      - 'janus_model/eval/JANUS_MEMORY_512_R4_DEVELOPMENT_QA.json'
+      - 'tests/test_janus_memory_512_query_r4.py'
+      - '.github/workflows/janus-memory-512m-r4-query.yml'
+      - 'docs/JANUS_MEMORY_512M_R4_QUERY.md'
+
+permissions:
+  contents: read
+
+jobs:
+  source-read-guards:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Synthetic fail-closed tests for exact JSON answer and refusal
+        run: python -m unittest discover -s tests -p 'test_janus_memory_512_query_r4.py' -v
+
+  pinned-read:
+    needs: source-read-guards
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      R4_QUERY: ${{ inputs.query || 'rowan' }}
+      R4_PATH: ${{ inputs.source_path || '' }}
+      R4_FIELD: ${{ inputs.field || '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: 6c9259c43d89569b11351bf8579a3775025fa2f0
+          path: _pinned/catalog
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: c8e47bb54e954ab122e111c97198131f048bd5fd
+          path: _pinned/source
+          persist-credentials: false
+      - name: Reconstruct and independently verify the source index on demand
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          from janus_model.memory_512_audit_index_r3 import audit_catalog,build_index
+          root=Path(os.environ["RUNNER_TEMP"])
+          source=Path("_pinned/source")
+          receipt,eligible=audit_catalog(Path("_pinned/catalog"),source)
+          db=root/"JANUS_R4_VERIFIED_SOURCE.sqlite"
+          built=build_index(db,source,eligible,focus="",max_index_bytes=67108864)
+          assert receipt["manifest_shards_verified"]==43
+          assert built["indexed_docs"]==4712 and built["source_bytes_indexed"]==49460266
+          assert built["sqlite_integrity"]=="ok"
+          print("JANUS_R4_INDEX_REBUILT_AND_SOURCE_HASH_BOUND",
+                json.dumps({"docs":built["indexed_docs"],
+                "unique_source_bytes":built["source_bytes_indexed"],
+                "pinned_commit":receipt["source_commit"]},sort_keys=True))
+          PY
+      - name: Check visible development QA and no-source refusal against true JSON bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          from janus_model.memory_512_query_r4 import controlled_query
+          fixture=json.loads(Path("janus_model/eval/JANUS_MEMORY_512_R4_DEVELOPMENT_QA.json").read_text())
+          assert fixture["status"]=="VISIBLE_PREREGISTERED_DEVELOPMENT_SMOKE_NOT_BLIND"
+          assert fixture["source_commit"]=="c8e47bb54e954ab122e111c97198131f048bd5fd"
+          db=Path(os.environ["RUNNER_TEMP"])/"JANUS_R4_VERIFIED_SOURCE.sqlite"
+          success=0
+          results=[]
+          for case in fixture["cases"]:
+              receipt=controlled_query(db,Path("_pinned/source"),
+                  expected_commit=fixture["source_commit"],
+                  query=case["query"],source_path=case["source_path"],
+                  field=case["field"])
+              assert receipt["status"]==case["expect_status"],case["id"]
+              assert receipt["answer_scalar"]==case["expect_value"],case["id"]
+              assert receipt["native_model_inference_executed"] is False
+              assert receipt["scientific_authority_delta"]==0
+              success+=1
+              results.append({"case":case["id"],"status":receipt["status"],
+                              "source_count":receipt["source_count"]})
+          summary={
+              "schema":"janus.memory_512_r4_visible_dev_eval.v1",
+              "status":"DEVELOPMENT_QA_PASS_NOT_INDEPENDENT_BLIND",
+              "cases_passed":success,
+              "cases_total":len(fixture["cases"]),
+              "per_case":results,
+              "source_commit":fixture["source_commit"],
+              "native_model_answer_quality_tested":False,
+              "independent_generalization_demonstrated":False,
+              "source_write_authority":False}
+          (Path(os.environ["RUNNER_TEMP"])/"JANUS_R4_DEVELOPMENT_QA.json").write_text(
+              json.dumps(summary,indent=2,sort_keys=True)+"\n")
+          print("JANUS_R4_EXACT_SOURCE_QA",json.dumps(summary,sort_keys=True))
+          PY
+      - name: Serve controlled on-demand query using authoritative index
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m janus_model.memory_512_query_r4 \
+            --db "$RUNNER_TEMP/JANUS_R4_VERIFIED_SOURCE.sqlite" \
+            --source-root _pinned/source \
+            --expected-commit c8e47bb54e954ab122e111c97198131f048bd5fd \
+            --query "$R4_QUERY" --source-path "$R4_PATH" --field "$R4_FIELD" \
+            --limit 5 --output "$RUNNER_TEMP/JANUS_R4_QUERY_RECEIPT.json"
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          r=json.loads((Path(os.environ["RUNNER_TEMP"])/"JANUS_R4_QUERY_RECEIPT.json").read_text())
+          assert r["schema"]=="janus.native.memory_512_r4_controlled_read.v1"
+          assert r["source_count"]<=5
+          assert r["native_model_inference_executed"] is False
+          assert r["registry_modified"] is False and r["source_command_executed"] is False
+          assert r["training_authority_granted"] is False
+          print("JANUS_R4_CONTROLLED_MEMORY_READ",
+                json.dumps({"status":r["status"],"sources":r["source_count"],
+                "commit":r["source_commit"]},sort_keys=True))
+          PY
+          test -z "$(git -C _pinned/source status --porcelain)"
+          test -z "$(git -C _pinned/catalog status --porcelain)"
+          test -z "$(git status --porcelain --untracked-files=no)"
+      - name: Retain only audit and citation receipts, never raw source or SQLite index
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-memory-512-r4-query-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/JANUS_R4_DEVELOPMENT_QA.json
+            ${{ runner.temp }}/JANUS_R4_QUERY_RECEIPT.json
+          retention-days: 14
+          if-no-files-found: error
