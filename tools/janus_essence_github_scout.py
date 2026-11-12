@@ -35,7 +35,7 @@ def read_search(query, token=""):
     if query not in QUERIES:
         raise ValueError("QUERY_OUTSIDE_CURATED_SET")
     url = "https://api.github.com/search/repositories?" + urllib.parse.urlencode(
-        {"q": query, "per_page": 9, "sort": "stars", "order": "desc"})
+        {"q": query, "per_page": 5, "sort": "stars", "order": "desc"})
     headers = {
         "Accept": "application/vnd.github+json",
         "User-Agent": "JANUS-ESSENCE-legal-reference-scout/0.1",
@@ -45,8 +45,8 @@ def read_search(query, token=""):
         headers["Authorization"] = "Bearer " + token
     with urllib.request.urlopen(urllib.request.Request(url, headers=headers),
                                 timeout=12) as response:
-        data = response.read(750_001)
-    if len(data) > 750_000:
+        data = response.read(1_500_001)
+    if len(data) > 1_500_000:
         raise ValueError("RESPONSE_LIMIT")
     return json.loads(data)
 
