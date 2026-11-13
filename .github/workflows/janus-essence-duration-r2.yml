@@ -7,6 +7,8 @@ on:
       - tests/test_janus_essence_duration_r2.py
       - .github/workflows/janus-essence-duration-r2.yml
   workflow_dispatch:
+  schedule:
+    - cron: '41 3 * * 2'
 
 permissions:
   contents: read
@@ -34,9 +36,8 @@ jobs:
 
   collect:
     needs: offline-contracts
-    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
-    timeout-minutes: 18
+    timeout-minutes: 22
     steps:
       - uses: actions/checkout@v4
         with:
@@ -68,7 +69,6 @@ jobs:
 
   train:
     needs: collect
-    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 6
     steps:
@@ -98,7 +98,6 @@ jobs:
 
   independent-verify:
     needs: [collect, train]
-    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 6
     steps:
@@ -143,3 +142,8 @@ jobs:
           path: results/independent-r2.json
           if-no-files-found: error
           retention-days: 30
+
+# Research-only execution: PR checks collect real, public dated job metadata and
+# train in a separate job. The independent verifier exclusively receives sealed
+# holdout artifacts. Weekly runs start only after this workflow is reviewed and
+# merged into the default branch. No credential with repository write access.
