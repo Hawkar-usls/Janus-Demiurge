@@ -143,6 +143,93 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  prospective-verify:
+    needs: collect
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Locate previous successful default-branch research run
+        id: frozen
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_OUTPUT: ${{ github.output }}
+        run: |
+          python - <<'PY'
+          import json, os, urllib.request
+          repo=os.environ['GITHUB_REPOSITORY']
+          url=f'https://api.github.com/repos/{repo}/actions/workflows/janus-essence-duration-r2.yml/runs?status=success&per_page=40'
+          req=urllib.request.Request(url,headers={
+              'Accept':'application/vnd.github+json',
+              'Authorization':'Bearer '+os.environ['GH_TOKEN'],
+              'User-Agent':'JANUS-ESSENCE-R2-FrozenPredecessor/1'})
+          with urllib.request.urlopen(req, timeout=30) as resp:
+              data=json.load(resp)
+          previous=next((r for r in data['workflow_runs']
+              if r['head_branch']=='main' and r['event'] in ('schedule','workflow_dispatch')
+              and r['conclusion']=='success'), None)
+          with open(os.environ['GITHUB_OUTPUT'],'a') as output:
+              if previous:
+                  output.write('found=true\n')
+                  output.write(f"run_id={previous['id']}\n")
+                  output.write(f"freeze={previous['updated_at']}\n")
+              else:
+                  output.write('found=false\n')
+          PY
+      - name: Download current dated training/validation dataset (evaluation only)
+        if: steps.frozen.outputs.found == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: r2-train-validation-only
+          path: observed
+      - name: Download current dated holdout dataset (evaluation only)
+        if: steps.frozen.outputs.found == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: r2-independent-sealed-holdout
+          path: observed
+      - name: Retrieve previously frozen model artifacts from independent run
+        if: steps.frozen.outputs.found == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: r2-research-weights
+          path: frozen
+          run-id: ${{ steps.frozen.outputs.run_id }}
+          repository: ${{ github.repository }}
+          github-token: ${{ github.token }}
+      - name: Evaluate ONLY new jobs started after prior model was frozen
+        if: steps.frozen.outputs.found == 'true'
+        env:
+          FREEZE_AT: ${{ steps.frozen.outputs.freeze }}
+        run: |
+          python -m tools.janus_essence_duration_r2 future \
+            --checkpoint frozen/duration_microcores.json \
+            --freeze-at "$FREEZE_AT" \
+            --train observed/train.json \
+            --validation observed/validation.json \
+            --holdout observed/holdout.json \
+            --out results/strictly-future-r2.json
+      - name: Report first-round checkpoint availability
+        if: steps.frozen.outputs.found != 'true'
+        run: |
+          echo 'No prior successful default-branch checkpoint. This run freezes the first baseline; future validation begins at the next cycle.' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: steps.frozen.outputs.found == 'true'
+        with:
+          name: r2-preregistered-future-evidence-${{ github.run_id }}
+          path: results/strictly-future-r2.json
+          if-no-files-found: error
+          retention-days: 60
+
+# Freeze-first, evaluate-next cycle: never use same-run weights to score future jobs.
+
 # Research-only execution: PR checks collect real, public dated job metadata and
 # train in a separate job. The independent verifier exclusively receives sealed
 # holdout artifacts. Weekly runs start only after this workflow is reviewed and
