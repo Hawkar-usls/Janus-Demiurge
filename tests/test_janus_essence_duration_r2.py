@@ -1,0 +1,110 @@
+"""Adversarial offline contracts for ESSENCE R2 job-duration research."""
+import datetime as dt
+import math
+import tempfile
+from pathlib import Path
+import unittest
+from tools import janus_essence_duration_r2 as r2
+
+def make_jobs(n=105, overlap=False):
+    rows=[]
+    base=dt.datetime(2026,10,1,tzinfo=dt.timezone.utc)
+    for rid,repo in enumerate(r2.REPOS):
+        for i in range(n):
+            start=base+dt.timedelta(days=rid*25,minutes=i*(1 if overlap else 5))
+            duration=90 if overlap and i==0 else 10+(i%8)*4+rid*3
+            rows.append({
+                "repo":repo,"job_id":10_000_000+rid*1000+i,
+                "run_id":10_000+rid*1000+i, "workflow":"benchmark",
+                "job":"predict-duration",
+                "started_at":r2.iso(start),
+                "completed_at":r2.iso(start+dt.timedelta(seconds=duration)),
+                "duration_s":duration})
+    return rows
+
+class Contracts(unittest.TestCase):
+    def test_api_path_cannot_escape_allowlist(self):
+        with self.assertRaisesRegex(ValueError,"UNTRUSTED_API_PATH"):
+            r2.api("/users/someone", "")
+
+    def test_timestamp_requires_zone(self):
+        with self.assertRaisesRegex(ValueError,"NAIVE_TIMESTAMP"):
+            r2.stamp("2026-01-01T00:00:00")
+
+    def test_target_is_execution_not_queue_time(self):
+        j=make_jobs(1)[0]
+        row=r2.features([j])[0]
+        self.assertEqual(row["y_s"],j["duration_s"])
+
+    def test_overlapping_jobs_cannot_see_future_completion(self):
+        jobs=make_jobs(2,overlap=True)
+        rows=r2.features(jobs)
+        self.assertEqual(rows[0]["prior_repo_count"],0)
+        self.assertEqual(rows[1]["prior_repo_count"],0)
+
+    def test_later_label_mutation_cannot_change_earlier_features(self):
+        jobs=make_jobs(4)
+        original=r2.features(jobs)
+        jobs[-1]["duration_s"]=999
+        jobs[-1]["completed_at"]=r2.iso(r2.stamp(jobs[-1]["started_at"])+dt.timedelta(seconds=999))
+        changed=r2.features(jobs)
+        self.assertEqual(original[0]["x"],changed[0]["x"])
+
+    def test_bad_duration_must_fail(self):
+        jobs=make_jobs(1)
+        jobs[0]["duration_s"]=-10
+        with self.assertRaisesRegex(ValueError,"JOB_DURATION_INTEGRITY"):
+            r2.features(jobs)
+
+    def test_duplicate_id_must_fail(self):
+        jobs=make_jobs(2)
+        jobs[1]["job_id"]=jobs[0]["job_id"]
+        with self.assertRaisesRegex(ValueError,"DUPLICATE_JOB_ID"):
+            r2.features(jobs)
+
+    def test_split_with_embargo_is_disjoint(self):
+        parts,_=r2.split(r2.features(make_jobs()))
+        ids=[x["job_id"] for values in parts.values() for x in values]
+        self.assertEqual(len(ids),len(set(ids)))
+        self.assertGreaterEqual(len(parts["holdout"]),20)
+        for repo in r2.REPOS:
+            tr=[v for v in parts["train"] if v["repo"]==repo]
+            val=[v for v in parts["validation"] if v["repo"]==repo]
+            hol=[v for v in parts["holdout"] if v["repo"]==repo]
+            self.assertLess(tr[-1]["started_at"],val[0]["started_at"])
+            self.assertLess(val[-1]["started_at"],hol[0]["started_at"])
+
+    def test_train_and_independent_holdout_hard_hold(self):
+        parts,_=r2.split(r2.features(make_jobs()))
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp)
+            for name,rows in parts.items():
+                r2.save(root/(name+".json"),{
+                    "schema":r2.SCHEMA,"split":name,
+                    "provenance_sha256":"a"*64,"rows":rows})
+            r2.train(root/"train.json",root/"validation.json",root/"ck")
+            checkpoint=r2.load(root/"ck/duration_microcores.json")
+            self.assertFalse(checkpoint["holdout_seen_by_trainer"])
+            self.assertFalse(checkpoint["production_authority"])
+            r2.verify(root/"holdout.json",root/"ck/duration_microcores.json",root/"result.json")
+            report=r2.load(root/"result.json")
+            self.assertEqual(report["production_gate"],
+                             "HOLD_REQUIRES_EXTERNAL_PROSPECTIVE_REPLICATION")
+            self.assertTrue(report["no_automatic_offspring"])
+            self.assertTrue(math.isfinite(report["models"]["temporal_gene"]["mae_s"]))
+
+    def test_tampered_holdout_provenance_fails(self):
+        parts,_=r2.split(r2.features(make_jobs()))
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp)
+            for name,rows in parts.items():
+                r2.save(root/(name+".json"),{
+                    "schema":r2.SCHEMA,"split":name,
+                    "provenance_sha256":"b"*64 if name=="holdout" else "a"*64,
+                    "rows":rows})
+            r2.train(root/"train.json",root/"validation.json",root/"ck")
+            with self.assertRaisesRegex(ValueError,"PROVENANCE_MISMATCH"):
+                r2.verify(root/"holdout.json",root/"ck/duration_microcores.json",root/"result.json")
+
+if __name__=="__main__":
+    unittest.main()
