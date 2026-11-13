@@ -61,3 +61,19 @@ checkout of both source repositories, then emits
 `artifacts/essence/gene-bank.json` for audit. This artifact is a SHA-linked
 checksum receipt, **not a cryptographic attestation** or evidence of real-world
 model performance. ESSENCE remains disabled for autonomous actions.
+
+
+## Offline engineering extensions (2026-11-13)
+
+ESSENCE includes engineering_math.py (Decimal-50 SI dimension-aware calculator),
+turing_machine.py (finite deterministic bounded one-tape transition interpreter),
+and engineering_matrix.py (read-only integration with the unchanged six-cell kernel).
+An explicit --allow-readonly flag is required. These tools do not train model
+weights, import historical donor code or grant production action authority.
+Calculator trigonometric/logarithmic functions are approximate; unit arithmetic
+is Decimal. The Turing interpreter is bounded by memory and steps.
+
+Run locally: python -m unittest discover -s tests -p test_essence_engineering_matrix.py -v
+Run legacy tests: python -m unittest discover -s tests -p test_essence_kernel.py -v
+Cross-repository donor snapshots are pointers only, pinned by commit SHA in
+external_donors_20261113.json. Do not auto-fetch or execute donor source.
