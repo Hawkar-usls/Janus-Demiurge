@@ -176,14 +176,34 @@ def split(rows):
         seq.sort(key=lambda r: (r["started_at"], r["job_id"]))
         n = len(seq)
         a, b = int(n * 0.62), int(n * 0.82)
+        if not (0 < a+EMBARGO < b and b+EMBARGO < n):
+            raise ValueError("INSUFFICIENT_EMBARGO_SPACE_" + repo)
+        validation_start = stamp(seq[a + EMBARGO]["started_at"])
+        holdout_start = stamp(seq[b + EMBARGO]["started_at"])
+        purged = {"train": 0, "validation": 0}
         for i, r in enumerate(seq):
-            if i < a: label = "train"
+            finished = stamp(r["completed_at"])
+            if i < a:
+                # Late-finishing jobs are *not* training labels at the time
+                # of the first validation prediction.
+                if finished >= validation_start:
+                    purged["train"] += 1
+                    continue
+                label = "train"
             elif i < a + EMBARGO: continue
-            elif i < b: label = "validation"
+            elif i < b:
+                # Purge validation labels that finish after holdout starts.
+                if finished >= holdout_start:
+                    purged["validation"] += 1
+                    continue
+                label = "validation"
             elif i < b + EMBARGO: continue
             else: label = "holdout"
             parts[label].append(r)
         summaries.append({"repo": repo, "job_count": n,
+                          "purged_late_finishes": purged,
+                          "first_validation_start": iso(validation_start),
+                          "first_holdout_start": iso(holdout_start),
                           "train_last_start": seq[a-1]["started_at"],
                           "validation_last_start": seq[b-1]["started_at"]})
     if min(len(x) for x in parts.values()) < 20:
@@ -290,6 +310,11 @@ def train(train_path, valid_path, out_dir):
     a,b=t["rows"],v["rows"]
     if set(r["job_id"] for r in a) & set(r["job_id"] for r in b):
         raise ValueError("TRAIN_VALIDATION_LEAK")
+    for repo in REPOS:
+        train_ends=[stamp(r["completed_at"]) for r in a if r["repo"]==repo]
+        valid_starts=[stamp(r["started_at"]) for r in b if r["repo"]==repo]
+        if not train_ends or not valid_starts or max(train_ends)>=min(valid_starts):
+            raise ValueError("TRAIN_VALIDATION_TEMPORAL_LEAK_" + repo)
     # Two genuine independently fitted read-only duration microcore candidates.
     plain = fit(a,b,[0,1])
     gene = fit(a,b,list(range(9)))
@@ -300,6 +325,9 @@ def train(train_path, valid_path, out_dir):
           "train_median_duration_s":statistics.median(r["y_s"] for r in a),
           "train_repo_medians":{repo:statistics.median(
               r["y_s"] for r in a if r["repo"]==repo) for repo in REPOS},
+          "last_validation_completion_by_repo":{
+              repo:iso(max(stamp(r["completed_at"]) for r in b if r["repo"]==repo))
+              for repo in REPOS},
           "holdout_seen_by_trainer":False,
           "production_authority":False,"seed":SEED}
     save(Path(out_dir)/"duration_microcores.json",ckpt)
@@ -313,6 +341,13 @@ def verify(hold_path, ckpt_path, out_path):
         raise ValueError("CHECKPOINT_AUTHORITY")
     h = check_split(hold_path,"holdout",ck.get("provenance_sha256"))
     rows=h["rows"]
+    for repo in REPOS:
+        repo_rows=[r for r in rows if r["repo"]==repo]
+        if not repo_rows:
+            raise ValueError("MISSING_HOLDOUT_REPOSITORY_" + repo)
+        if min(stamp(r["started_at"]) for r in repo_rows) <= stamp(
+                ck["last_validation_completion_by_repo"][repo]):
+            raise ValueError("VALIDATION_HOLDOUT_TEMPORAL_LEAK_" + repo)
     real=[r["y_s"] for r in rows]
     for model in (ck["no_gene"],ck["temporal_gene"]):
         if not all(math.isfinite(v) for v in model["weights"]):
