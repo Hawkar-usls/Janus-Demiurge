@@ -1,0 +1,48 @@
+name: ESSENCE v1.0 independent signed model admission — review only
+
+on:
+  pull_request:
+    paths:
+      - 'tools/essence_model_admission_v10.py'
+      - 'tests/test_essence_model_admission_v10.py'
+      - 'research/essence/v10/locked_v07_protocol.json'
+      - '.github/workflows/essence-model-admission-v10.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: essence-admission-v10-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  admission-offline-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify model admission never changes working state
+        run: |
+          python -m py_compile tools/essence_model_admission_v10.py
+          python -m unittest -v tests.test_essence_model_admission_v10
+      - name: Check existing production checkpoint preflight is unchanged
+        run: |
+          test "$(git hash-object janus_model/checkpoint_admission.py)" = "cc791a884879cf14fc187d505e2f3d5ddabfb299"
+      - name: Record no independent trust roots provisioned by this workflow
+        run: |
+          python - <<'PY'
+          from tools.essence_model_admission_v10 import PRODUCTION_AUTHORITY,LOCKED_PROTOCOL_SHA256,load,frozen
+          p=load("research/essence/v10/locked_v07_protocol.json")
+          assert frozen(p)
+          assert PRODUCTION_AUTHORITY is False
+          print("ESSENCE_V10_ADMISSION_CONTRACT_PASS")
+          print("FROZEN_V07_PROTOCOL", LOCKED_PROTOCOL_SHA256)
+          print("HOLD: NO real external public keys or new prospective evidence")
+          print("HOLD: NO working model modification or checkpoint dispatch")
+          PY
