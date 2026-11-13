@@ -385,6 +385,76 @@ def verify(hold_path, ckpt_path, out_path):
     print(json.dumps({"research_gate":result["research_gate"],"holdout_count":len(rows),
                       "production_gate":result["production_gate"]},sort_keys=True))
 
+def verify_future(previous_checkpoint_path, freeze_at, current_paths, out_path):
+    """Out-of-time, frozen-weight comparison; strictly future job starts only.
+
+    Previous weights and all frozen baselines were committed in a *prior* run.
+    Features can use only histories completed before the respective job starts.
+    Later outcomes never enter model fitting in this function.
+    """
+    previous=load(previous_checkpoint_path)
+    if (previous.get("schema")!=SCHEMA or previous.get("production_authority") is not False
+            or previous.get("holdout_seen_by_trainer") is not False):
+        raise ValueError("BAD_FROZEN_CHECKPOINT")
+    freeze=stamp(freeze_at)
+    if freeze > dt.datetime.now(dt.timezone.utc) + dt.timedelta(minutes=5):
+        raise ValueError("FUTURE_FREEZE_TIMESTAMP")
+    datasets=[check_split(p,name) for p,name in zip(current_paths,
+                                                    ("train","validation","holdout"))]
+    if len(datasets)!=3:
+        raise ValueError("EXPECTED_THREE_NEW_SPLITS")
+    provenance={x["provenance_sha256"] for x in datasets}
+    if len(provenance)!=1:
+        raise ValueError("NEW_SNAPSHOT_PROVENANCE_MISMATCH")
+    rows=[r for dataset in datasets for r in dataset["rows"]
+          if stamp(r["started_at"])>freeze+dt.timedelta(hours=1)]
+    rows.sort(key=lambda r:(r["started_at"],r["job_id"]))
+    if len({r["job_id"] for r in rows})!=len(rows):
+        raise ValueError("FUTURE_DUPLICATE_JOB")
+    counts={repo:sum(r["repo"]==repo for r in rows) for repo in REPOS}
+    previous_hash=sha(previous)
+    base={"schema":SCHEMA,"method":"FROZEN_PRIOR_RUN_PROSPECTIVE",
+          "freeze_run_completed_at":iso(freeze),
+          "prior_checkpoint_sha256":previous_hash,
+          "new_dataset_provenance_sha256":next(iter(provenance)),
+          "future_job_count":len(rows),"future_by_repo":counts,
+          "baseline_frozen":True,"weights_updated":False,
+          "production_gate":"HOLD_REQUIRES_EXTERNAL_PROSPECTIVE_REPLICATION"}
+    if len(rows)<GATE_MIN_ROWS or min(counts.values())<10:
+        base.update({"prospective_gate":"PENDING_INSUFFICIENT_NEW_JOBS",
+                     "models":{},"by_repository":{}})
+    else:
+        actual=[r["y_s"] for r in rows]
+        preds={
+            "frozen_train_median":[previous["train_median_duration_s"]]*len(rows),
+            "frozen_repo_median":[previous["train_repo_medians"][r["repo"]] for r in rows],
+            "no_gene":[predict(previous["no_gene"],r) for r in rows],
+            "temporal_gene":[predict(previous["temporal_gene"],r) for r in rows],
+        }
+        base["models"]={k:score(x,actual) for k,x in preds.items()}
+        by_repo={}
+        for repo in REPOS:
+            idx=[i for i,r in enumerate(rows) if r["repo"]==repo]
+            by_repo[repo]={k:score([v[i] for i in idx],[actual[i] for i in idx])
+                           for k,v in preds.items()}
+        base["by_repository"]=by_repo
+        candidate=base["models"]["temporal_gene"]["mae_s"]
+        strongest=min(base["models"][k]["mae_s"] for k in preds if k!="temporal_gene")
+        per_repo_gain=all(
+            vals["temporal_gene"]["mae_s"] <
+              .95*min(vals[k]["mae_s"] for k in preds if k!="temporal_gene")
+            for vals in by_repo.values())
+        proof=(candidate < .95*strongest and per_repo_gain
+               and base["models"]["temporal_gene"]["log_mae"] <
+                   base["models"]["no_gene"]["log_mae"])
+        base["prospective_gate"]=("FUTURE_CANDIDATE_GAIN_NEEDS_REPLICATION" if proof
+                                  else "HOLD_NO_FUTURE_DURATION_GAIN")
+    base["report_sha256"]=sha(base)
+    save(out_path,base)
+    print(json.dumps({"future_jobs":len(rows),"gate":base["prospective_gate"],
+                      "production_gate":base["production_gate"]},sort_keys=True))
+    return base
+
 def main():
     ap=argparse.ArgumentParser()
     sub=ap.add_subparsers(dest="action",required=True)
@@ -393,8 +463,18 @@ def main():
     p.add_argument("--validation",required=True);p.add_argument("--out",required=True)
     p=sub.add_parser("verify");p.add_argument("--holdout",required=True)
     p.add_argument("--checkpoint",required=True);p.add_argument("--out",required=True)
+    x=sub.add_parser("future")
+    x.add_argument("--checkpoint",required=True)
+    x.add_argument("--freeze-at",required=True)
+    x.add_argument("--train",required=True)
+    x.add_argument("--validation",required=True)
+    x.add_argument("--holdout",required=True)
+    x.add_argument("--out",required=True)
     args=ap.parse_args()
-    if args.action=="prepare":prepare(args.out,os.getenv("GH_TOKEN",""))
+    if args.action=="future":
+        verify_future(args.checkpoint,args.freeze_at,
+                      [args.train,args.validation,args.holdout],args.out)
+    elif args.action=="prepare":prepare(args.out,os.getenv("GH_TOKEN",""))
     elif args.action=="train":train(args.train,args.validation,args.out)
     else:verify(args.holdout,args.checkpoint,args.out)
 
