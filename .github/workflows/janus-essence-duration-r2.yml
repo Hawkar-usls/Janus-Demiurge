@@ -1,0 +1,145 @@
+name: JANUS ESSENCE R2 Actual Job Duration Research
+
+on:
+  pull_request:
+    paths:
+      - tools/janus_essence_duration_r2.py
+      - tests/test_janus_essence_duration_r2.py
+      - .github/workflows/janus-essence-duration-r2.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: essence-r2-duration-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  offline-contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check reproducible CPU-only contracts and chronology
+        run: |
+          python -m py_compile tools/janus_essence_duration_r2.py
+          python -m unittest -v tests.test_janus_essence_duration_r2
+
+  collect:
+    needs: offline-contracts
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Collect read-only dated public GitHub jobs and partition with embargo
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python -m tools.janus_essence_duration_r2 prepare --out observed
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r2-train-validation-only
+          path: |
+            observed/train.json
+            observed/validation.json
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r2-independent-sealed-holdout
+          path: |
+            observed/holdout.json
+            observed/provenance.json
+          if-no-files-found: error
+          retention-days: 14
+
+  train:
+    needs: collect
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download train and validation only
+        uses: actions/download-artifact@v4
+        with:
+          name: r2-train-validation-only
+          path: observed
+      - name: Train two bounded temporal predictors without holdout access
+        run: |
+          python -m tools.janus_essence_duration_r2 train \
+            --train observed/train.json \
+            --validation observed/validation.json \
+            --out checkpoints
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r2-research-weights
+          path: checkpoints/duration_microcores.json
+          if-no-files-found: error
+          retention-days: 14
+
+  independent-verify:
+    needs: [collect, train]
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download sealed holdout (verifier only)
+        uses: actions/download-artifact@v4
+        with:
+          name: r2-independent-sealed-holdout
+          path: observed
+      - uses: actions/download-artifact@v4
+        with:
+          name: r2-research-weights
+          path: checkpoints
+      - name: Compare to frozen historical controls, never promote
+        run: |
+          python -m tools.janus_essence_duration_r2 verify \
+            --holdout observed/holdout.json \
+            --checkpoint checkpoints/duration_microcores.json \
+            --out results/independent-r2.json
+      - name: Record gate and research-only limits
+        run: |
+          python - <<'PY'
+          import json, os
+          r=json.load(open('results/independent-r2.json'))
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+              f.write('# ESSENCE R2 real job-duration pilot\n')
+              f.write(f"Holdout jobs: {r['holdout_count']}\n\n")
+              f.write(f"Research gate: {r['research_gate']}\n\n")
+              f.write(f"Production gate: {r['production_gate']}\n\n")
+              for name, m in r['models'].items():
+                  f.write(f"- {name}: MAE {m['mae_s']} s, log MAE {m['log_mae']}\n")
+              f.write('\nNo production weight authority, no self-replication or NAS changes.\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r2-independent-duration-report-${{ github.run_id }}
+          path: results/independent-r2.json
+          if-no-files-found: error
+          retention-days: 30
