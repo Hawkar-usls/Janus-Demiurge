@@ -114,6 +114,58 @@ class Contracts(unittest.TestCase):
             self.assertTrue(report["no_automatic_offspring"])
             self.assertTrue(math.isfinite(report["models"]["temporal_gene"]["mae_s"]))
 
+    def test_frozen_future_gate_never_trains_on_future_jobs(self):
+        historical=make_jobs()
+        # Historical model and labels predate a fixed prospective cutoff.
+        for j in historical:
+            start=r2.stamp(j["started_at"])-dt.timedelta(days=110)
+            j["started_at"]=r2.iso(start)
+            j["completed_at"]=r2.iso(start+dt.timedelta(seconds=j["duration_s"]))
+        previous,_=r2.split(r2.features(historical))
+        future=make_jobs()
+        base=dt.datetime(2026,11,5,tzinfo=dt.timezone.utc)
+        for j in future:
+            source_index=(j["job_id"]-10_000_000)//1000
+            seq_index=(j["job_id"]-10_000_000)%1000
+            start=base+dt.timedelta(days=source_index,minutes=seq_index*5)
+            j["job_id"]+=1_000_000
+            j["started_at"]=r2.iso(start)
+            j["completed_at"]=r2.iso(start+dt.timedelta(seconds=j["duration_s"]))
+        new_parts,_=r2.split(r2.features(future))
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp)
+            for name,rs in previous.items():
+                r2.save(root/(name+".json"),{
+                    "schema":r2.SCHEMA,"split":name,"provenance_sha256":"a"*64,"rows":rs})
+            r2.train(root/"train.json",root/"validation.json",root/"ck")
+            for name,rs in new_parts.items():
+                r2.save(root/(name+"-new.json"),{
+                    "schema":r2.SCHEMA,"split":name,"provenance_sha256":"b"*64,"rows":rs})
+            paths=[root/(name+"-new.json") for name in ("train","validation","holdout")]
+            report=r2.verify_future(root/"ck/duration_microcores.json",
+                      "2026-11-01T00:00:00+00:00",paths,root/"future.json")
+            self.assertGreaterEqual(report["future_job_count"],r2.GATE_MIN_ROWS)
+            self.assertFalse(report["weights_updated"])
+            self.assertEqual(report["production_gate"],
+                             "HOLD_REQUIRES_EXTERNAL_PROSPECTIVE_REPLICATION")
+            self.assertEqual(set(report["models"]),
+                             {"frozen_train_median","frozen_repo_median","no_gene","temporal_gene"})
+            self.assertEqual(report["method"],"FROZEN_PRIOR_RUN_PROSPECTIVE")
+
+    def test_future_verifier_rejects_postdated_training(self):
+        past,_=r2.split(r2.features(make_jobs()))
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp)
+            for name,rs in past.items():
+                r2.save(root/(name+".json"),{
+                    "schema":r2.SCHEMA,"split":name,"provenance_sha256":"c"*64,"rows":rs})
+            r2.train(root/"train.json",root/"validation.json",root/"ck")
+            with self.assertRaisesRegex(ValueError,"FROZEN_MODEL_TRAINED_AFTER_FUTURE_CUTOFF"):
+                r2.verify_future(root/"ck/duration_microcores.json",
+                    "2026-10-01T00:00:00+00:00",
+                    [root/"train.json",root/"validation.json",root/"holdout.json"],
+                    root/"bad_future.json")
+
     def test_tampered_holdout_provenance_fails(self):
         parts,_=r2.split(r2.features(make_jobs()))
         with tempfile.TemporaryDirectory() as temp:
