@@ -10,6 +10,7 @@ import unittest
 ROOT=Path(__file__).resolve().parents[1]
 ESS=ROOT/".janus"/"essence"
 sys.path.insert(0,str(ESS))
+sys.path.insert(0,str(ROOT/"tools"))
 import engineering_matrix as matrix
 import kernel
 import real_algorithm_gate_v12 as guard
