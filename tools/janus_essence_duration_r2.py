@@ -399,6 +399,9 @@ def verify_future(previous_checkpoint_path, freeze_at, current_paths, out_path):
     freeze=stamp(freeze_at)
     if freeze > dt.datetime.now(dt.timezone.utc) + dt.timedelta(minutes=5):
         raise ValueError("FUTURE_FREEZE_TIMESTAMP")
+    for repo in REPOS:
+        if stamp(previous["last_validation_completion_by_repo"][repo]) > freeze:
+            raise ValueError("FROZEN_MODEL_TRAINED_AFTER_FUTURE_CUTOFF_" + repo)
     datasets=[check_split(p,name) for p,name in zip(current_paths,
                                                     ("train","validation","holdout"))]
     if len(datasets)!=3:
