@@ -1,0 +1,91 @@
+name: ESSENCE v0.8 legacy living microcores — public read-only research
+
+on:
+  pull_request:
+    paths:
+      - 'tools/essence_heritage_v08.py'
+      - 'tests/test_essence_heritage_v08.py'
+      - 'research/essence/v08/heritage_sources.json'
+      - '.github/workflows/essence-heritage-v08.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '37 2 * * 4'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: essence-heritage-v08-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  heritage-contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify audited R0–R7 contracts and local Git blob ancestry
+        run: |
+          python -m py_compile tools/essence_heritage_v08.py
+          python -m unittest -v tests.test_essence_heritage_v08
+
+  live-donor-advisory:
+    needs: heritage-contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run locally pinned 13-role source archaeology (never import archives)
+        run: |
+          python -m tools.essence_heritage_v08 audit --out "$RUNNER_TEMP/essence-v08-audited-sources.json"
+      - name: Collect verified PUBLIC GitHub roots and child ideas (read only)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python .janus/essence/collective_seed.py collect \
+            --out "$RUNNER_TEMP/essence-v08-live-public-donors.json"
+      - name: Execute audited Trinity, Slime, Spiral on real R2 and live donor snapshot
+        run: |
+          python -m tools.essence_heritage_v08 run \
+            --snapshot "$RUNNER_TEMP/essence-v08-live-public-donors.json" \
+            --out "$RUNNER_TEMP/essence-v08-live-heritage-research.json"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          base=Path(os.environ["RUNNER_TEMP"])
+          r=json.loads((base/"essence-v08-live-heritage-research.json").read_text())
+          assert r["research_gate"] == "HOLD_UNVERIFIED_PERFORMANCE_AND_R2_NEGATIVE"
+          assert r["independent_external_authentication"] is False
+          assert r["automatic_offspring"] is False
+          assert r["model_weights_modified"] is False
+          assert r["production_authority"] is False
+          assert len(r["historical_roles"]) == 13
+          assert len(r["base_microcores"]) == 6
+          assert r["triadic_council"]["accepted"] is False
+          assert r["spiral_turns"][1]["promoted"] is False
+          print("ESSENCE_V08_LIVE_LEGACY_OPERATORS_AND_DONOR_HOLD_PASS")
+          print("sources:",r["historical_sources_in_gene_pool"])
+          print("repo_lineages:",r["source_repositories"])
+          print("donors:",r["verified_public_donors_reported_by_collector"])
+          print("rare ideas:",len(r["proposed_rare_ideas"]))
+          PY
+      - name: Save bounded reviewable research evidence (not weights)
+        uses: actions/upload-artifact@v4
+        with:
+          name: essence-v08-live-heritage-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/essence-v08-audited-sources.json
+            ${{ runner.temp }}/essence-v08-live-public-donors.json
+            ${{ runner.temp }}/essence-v08-live-heritage-research.json
+          retention-days: 14
+          if-no-files-found: error
