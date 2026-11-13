@@ -1,0 +1,181 @@
+name: JANUS ESSENCE R1 Prospective CI History Learning (Research)
+
+on:
+  pull_request:
+    paths:
+      - 'tools/janus_essence_real_history_r1.py'
+      - 'tests/test_janus_essence_real_history_r1.py'
+      - '.github/workflows/janus-essence-real-history-r1.yml'
+  push:
+    branches:
+      - janus/essence-real-history-r1-20261113
+      - main
+    paths:
+      - 'tools/janus_essence_real_history_r1.py'
+      - 'tests/test_janus_essence_real_history_r1.py'
+      - '.github/workflows/janus-essence-real-history-r1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: janus-essence-r1-real-data-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  offline-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Strict torch version on CPU, no external models
+        run: |
+          python -m pip install --disable-pip-version-check 'torch==2.8.0' --index-url https://download.pytorch.org/whl/cpu
+      - name: Verify training, chronology, sealed holdout, and numeric controls
+        run: |
+          python -m py_compile tools/janus_essence_real_history_r1.py
+          python -m unittest -v tests.test_janus_essence_real_history_r1
+
+  prepare:
+    needs: offline-test
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Acquire dated public GitHub Actions observations and seal three chronological partitions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python -m tools.janus_essence_real_history_r1 prepare --out observed
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for p in ("train","validation","holdout"):
+              j=json.loads((Path("observed")/(p+".json")).read_text())
+              print(p,len(j["rows"]))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-r1-training-input
+          path: |
+            observed/train.json
+            observed/validation.json
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-r1-sealed-holdout
+          path: |
+            observed/holdout.json
+            observed/provenance.json
+          if-no-files-found: error
+          retention-days: 14
+
+  train:
+    needs: prepare
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned CPU engine
+        run: |
+          python -m pip install --disable-pip-version-check 'torch==2.8.0' --index-url https://download.pytorch.org/whl/cpu
+      - name: Download training and validation ONLY (never sealed holdout)
+        uses: actions/download-artifact@v4
+        with:
+          name: essence-r1-training-input
+          path: observed
+      - name: Train two identical-seed TinyTransformers (no-replay and Yaksa-replay)
+        run: |
+          python -m tools.janus_essence_real_history_r1 train \
+            --train observed/train.json \
+            --validation observed/validation.json \
+            --out checkpoints
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-r1-research-checkpoints
+          path: checkpoints/
+          if-no-files-found: error
+          retention-days: 14
+
+  independent-verify:
+    needs: [prepare, train]
+    if: github.event_name != 'pull_request' && needs.prepare.result == 'success' && needs.train.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned CPU engine
+        run: |
+          python -m pip install --disable-pip-version-check 'torch==2.8.0' --index-url https://download.pytorch.org/whl/cpu
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-r1-sealed-holdout
+          path: observed
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-r1-research-checkpoints
+          path: checkpoints
+      - name: Evaluate against frozen no-replay, persistence and prior baselines
+        run: |
+          python -m tools.janus_essence_real_history_r1 verify \
+            --holdout observed/holdout.json \
+            --receipt checkpoints/train_receipt.json \
+            --weights checkpoints \
+            --out results/independent-report.json
+      - name: Mark training proof and operational HOLD separately
+        run: |
+          python - <<'PY'
+          import json,os
+          r=json.load(open('results/independent-report.json'))
+          lines=[
+            '# ESSENCE R1: actual dated GitHub CI run-history learning',
+            f"- Independent gate: **{r['gate']}**",
+            f"- Held-out observations: {r['heldout_rows']}",
+            f"- Holdout failures: {r['heldout_failures']}",
+            f"- No-replay Brier: {r['models']['baseline_no_replay']['brier']}",
+            f"- Yaksa-replay Brier: {r['models']['yaksa_bounded_replay']['brier']}",
+            f"- Frozen base-rate Brier: {r['baselines']['train_prior']['brier']}",
+            f"- Frozen persistence Brier: {r['baselines']['persistence']['brier']}",
+            "- This is only latest public Actions metadata for three repositories, **not** whole Meta Registry training.",
+            "- No production weight promotion, new module execution or autonomous rights.",
+          ]
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+              f.write('\n'.join(lines)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-r1-independent-real-history-report-${{ github.run_id }}
+          path: results/independent-report.json
+          if-no-files-found: error
+          retention-days: 30
