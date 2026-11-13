@@ -74,6 +74,27 @@ class Contracts(unittest.TestCase):
             self.assertLess(tr[-1]["started_at"],val[0]["started_at"])
             self.assertLess(val[-1]["started_at"],hol[0]["started_at"])
 
+    def test_embargo_purges_late_finished_labels_across_splits(self):
+        jobs=make_jobs()
+        for repo in r2.REPOS:
+            seq=[j for j in jobs if j["repo"]==repo]
+            for i in (int(len(seq)*.62)-1, int(len(seq)*.82)-1):
+                start=r2.stamp(seq[i]["started_at"])
+                seq[i]["duration_s"]=3600.0
+                seq[i]["completed_at"]=r2.iso(start+dt.timedelta(hours=1))
+        parts,summaries=r2.split(r2.features(jobs))
+        for record in summaries:
+            self.assertEqual(record["purged_late_finishes"],
+                             {"train":1,"validation":1})
+        for repo in r2.REPOS:
+            a=[r for r in parts["train"] if r["repo"]==repo]
+            b=[r for r in parts["validation"] if r["repo"]==repo]
+            c=[r for r in parts["holdout"] if r["repo"]==repo]
+            self.assertLess(max(r["completed_at"] for r in a),
+                            min(r["started_at"] for r in b))
+            self.assertLess(max(r["completed_at"] for r in b),
+                            min(r["started_at"] for r in c))
+
     def test_train_and_independent_holdout_hard_hold(self):
         parts,_=r2.split(r2.features(make_jobs()))
         with tempfile.TemporaryDirectory() as temp:
