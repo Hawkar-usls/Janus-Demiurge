@@ -22,12 +22,15 @@ import time
 
 from tools import essence_v40_physarum_bridge as phys
 from tools import essence_v38_inheritance as previous
+from tools import essence_v42_physarum_full_cost as costmatch
 
 SCHEMA="janus.essence.physarum_full_cost_replay/4.2"
 EXPECTED_WEIGHTS={
     "control":"a5c5924acccdf47bfb9c3b6bc5ca9a8ba455e0cad4ef6d928ff684624634e57b",
     "physarum":"dfbe1214f6e6f954b3f999d7d8802c89e2aa5fe45e75ffe9a68a73d76953683f",
 }
+EXPECTED_BUDGET14_SHA = "a0a8a878fd784235e390f441ec192d973e079714321b5d8a6b2cbb343d3bd174"
+EXPECTED_BUDGET14_MANIFEST = "49158892f8dc1674897465d84e45ecf02f19d96d79b72ae3aceb167599c61f5a"
 EXPECTED_MANIFESTS={
     "control":"563bcf05a97c67f5723c4f5414bf7621197105eae654a8133a439c91fe4575f0",
     "physarum":"a8397385b2703d5cca7b15b9b12626960d8105e976f10b628451fe330dbcf003",
@@ -85,6 +88,24 @@ def bench(root,g3_dir,freeze_path,out_dir,repetitions=1):
             start_wall=time.perf_counter_ns()
             target=out/("replay_"+str(repeat))
             receipt=phys.run(root,g3_dir,freeze_path,target)
+            # Fully budget-matched fixed 14-step baseline from sealed G3.
+            # Crucially this is a separate 14-step continuous trainer;
+            # original Physarum's per-call 8-step cap remains untouched.
+            freeze, g3_parent, _ = phys.load_g3(
+                g3_dir,freeze_path,torch)
+            train,_=previous.train_bytes(root,freeze)
+            budget=costmatch.clone(torch,g3_parent)
+            budget_start_cpu=time.process_time_ns()
+            budget_start_wall=time.perf_counter_ns()
+            rejects=costmatch.train_fixed_fourteen(
+                torch,budget,train,seed=costmatch.BASELINE_SEED)
+            budget_cpu=(time.process_time_ns()-budget_start_cpu)/1e9
+            budget_wall=(time.perf_counter_ns()-budget_start_wall)/1e9
+            budget_raw,_=previous.weight_bytes(torch,budget)
+            budget_hash=hashlib.sha256(budget_raw).hexdigest()
+            require(budget_hash==EXPECTED_BUDGET14_SHA,
+                    "COSTMATCHED_14_WEIGHT_HASH_MISMATCH")
+            require(rejects<14, "COSTMATCHED_14_NO_VALID_UPDATE")
             full_cpu=(time.process_time_ns()-start_cpu)/1e9
             full_wall=(time.perf_counter_ns()-start_wall)/1e9
             for label in EXPECTED_WEIGHTS:
@@ -98,7 +119,7 @@ def bench(root,g3_dir,freeze_path,out_dir,repetitions=1):
             require(receipt["measured_train_steps_including_probes"]==22,
                     "REPORTED_SEARCH_COST_OMITS_PROBES")
             cpu_train=sum(x["cpu_seconds"] for x in seen)
-            additional=full_cpu-cpu_train-timed_search["cpu_seconds"]
+            additional=full_cpu-cpu_train-timed_search["cpu_seconds"]-budget_cpu
             require(additional>=-0.1 and all(
                 math.isfinite(v) and v>=0 for v in (
                     full_cpu,full_wall,cpu_train,
@@ -109,6 +130,11 @@ def bench(root,g3_dir,freeze_path,out_dir,repetitions=1):
                 "source_receipt_sha256":receipt["receipt_sha256"],
                 "segments":seen,
                 "physarum_network_search":timed_search,
+                "budget14":{"train_steps":14,
+                            "training_cpu_seconds":budget_cpu,
+                            "training_wall_seconds":budget_wall,
+                            "weights_sha256":budget_hash,
+                            "manifest_sha256":EXPECTED_BUDGET14_MANIFEST},
                 "entire_trial_cpu_seconds":full_cpu,
                 "entire_trial_wall_seconds":full_wall,
                 "non_training_overhead_cpu_seconds":max(0.0,additional),
@@ -133,6 +159,8 @@ def bench(root,g3_dir,freeze_path,out_dir,repetitions=1):
         "g3_source_weight_sha256":phys.G3_WEIGHTS_SHA256,
         "g4_exact_weight_sha256":EXPECTED_WEIGHTS,
         "g4_exact_manifest_sha256":EXPECTED_MANIFESTS,
+        "costmatched_14_weights_sha256":EXPECTED_BUDGET14_SHA,
+        "costmatched_14_manifest_sha256":EXPECTED_BUDGET14_MANIFEST,
         "repetitions":repetitions,
         "mean_full_trial_cpu_seconds":mean("entire_trial_cpu_seconds"),
         "mean_full_trial_wall_seconds":mean("entire_trial_wall_seconds"),
@@ -140,8 +168,10 @@ def bench(root,g3_dir,freeze_path,out_dir,repetitions=1):
         "total_each_replay_training_steps":22,
         "probe_train_steps":6,
         "control_train_steps":8,
+        "costmatched_fixed_train_steps":14,
         "physarum_candidate_train_steps":8,
         "hidden_exam_inference_cpu_seconds":"MUST_MEASURE_AT_EXTERNAL_CUSTODIAN",
+        "costmatched_14_must_be_checked_against_physarum":True,
         "external_custodian_identity_verified":False,
         "external_hidden_source_exam_complete":False,
         "production_authority":False
