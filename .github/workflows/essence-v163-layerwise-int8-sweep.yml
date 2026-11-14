@@ -1,0 +1,62 @@
+name: ESSENCE v1.6.3 Layerwise Native CPU INT8 Sweep
+
+on:
+  pull_request:
+    paths:
+      - 'tools/essence_v163_layerwise_int8_sweep.py'
+      - 'tests/test_essence_v163_layerwise_int8_sweep.py'
+      - '.github/workflows/essence-v163-layerwise-int8-sweep.yml'
+      - 'research/essence/v163/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: essence-v163-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  fifteen-subset-real-checkpoint-adaptation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned CPU PyTorch without a GPU
+        run: |
+          python -m pip install --disable-pip-version-check 'torch==2.7.1+cpu' \
+            --index-url https://download.pytorch.org/whl/cpu
+      - name: Verify immutable trained checkpoint and actual quantized operators
+        run: |
+          python -m unittest -v tests/test_essence_v163_layerwise_int8_sweep.py
+          python -m unittest -v tests/test_janus_checkpoint_admission.py
+      - name: Freeze original FP32 forward outputs for exact paired comparison
+        run: |
+          python tools/essence_v163_layerwise_int8_sweep.py --baseline
+      - name: Evaluate all 15 subsets in independent Python processes
+        run: |
+          for mask in $(seq 1 15); do
+            python tools/essence_v163_layerwise_int8_sweep.py --mask "$mask"
+          done
+      - name: Select only evidence-bound development candidate, never production
+        run: |
+          python tools/essence_v163_layerwise_int8_sweep.py --summarize
+      - name: Verify original checkpoint stayed unchanged
+        run: |
+          python - <<'PY'
+          from tools.essence_v16_real_checkpoint_bench import require_source
+          _,_,actual=require_source()
+          assert actual['checkpoint_sha256']=='fc767adb812ac3bea54c44cbccfa9680941f95e2c8a77120559b41da044d9463'
+          print('ESSENCE_V163_ORIGINAL_CHECKPOINT_UNCHANGED=PASS')
+          PY
+      - name: Archive full 15 candidate receipts and original baseline
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: essence-v163-bounded-real-int8-layer-sweep
+          path: runtime/essence_v163/
+          if-no-files-found: warn
+          retention-days: 30
