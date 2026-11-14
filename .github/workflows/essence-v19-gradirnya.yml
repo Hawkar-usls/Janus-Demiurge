@@ -8,6 +8,8 @@ on:
       - 'tools/essence_v19_http_canary.py'
       - 'tools/essence_v20_ancestry.py'
       - 'tests/test_essence_v20_ancestry.py'
+      - 'tools/essence_v21_curriculum_sentinel.py'
+      - 'tests/test_essence_v21_curriculum_sentinel.py'
       - 'tests/test_essence_v19_http_canary.py'
       - '.github/workflows/essence-v19-gradirnya.yml'
   push:
@@ -48,7 +50,7 @@ jobs:
       - name: Verify two-generation gradient training and fail-closed guardrails
         run: |
           python -m py_compile tools/essence_v19_gradirnya.py
-          python -m unittest -v tests.test_essence_v19_gradirnya tests.test_essence_v19_http_canary
+          python -m unittest -v tests.test_essence_v19_gradirnya tests.test_essence_v19_http_canary tests.test_essence_v21_curriculum_sentinel
 
   source-snapshot:
     runs-on: ubuntu-24.04
@@ -109,8 +111,65 @@ jobs:
           retention-days: 14
           if-no-files-found: error
 
-  microcore-offspring:
+  curriculum-preflight:
     needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    outputs:
+      eligible: ${{ steps.audit.outputs.eligible }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Load CPU torch for readonly cohort validation
+        run: |
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check 'torch==2.8.0' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v19-train-only-${{ github.run_id }}
+          path: staging/splits
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v19-verifier-holdout-${{ github.run_id }}
+          path: staging/splits
+      - name: Reject class-degenerate or replayed historical cohorts before gradient jobs
+        id: audit
+        run: |
+          python -m tools.essence_v21_curriculum_sentinel \
+            --manifest staging/splits/manifest.json \
+            --train staging/splits/train.json \
+            --validation staging/splits/validation.json \
+            --holdout staging/splits/holdout.json \
+            --out artifacts/curriculum/preflight.json
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          result=json.loads(Path('artifacts/curriculum/preflight.json').read_text())
+          assert result['production_authority'] is False
+          allowed=result['eligible_for_research_training']
+          with open(os.environ["GITHUB_OUTPUT"],"a") as o:
+              o.write("eligible="+str(allowed).lower()+"\n")
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as o:
+              o.write("## ESSENCE early curriculum gate\n")
+              o.write("Result: "+result["status"]+"\n")
+              o.write("Reason codes: "+str(result["rejection_codes"])+"\n")
+              o.write("This is not an independent holdout or production admission.\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v21-pretraining-cohort-${{ github.run_id }}
+          path: artifacts/curriculum/preflight.json
+          if-no-files-found: error
+          retention-days: 30
+
+  microcore-offspring:
+    needs: [prepare, curriculum-preflight]
+    if: needs.curriculum-preflight.outputs.eligible == 'true'
     strategy:
       fail-fast: false
       max-parallel: 3
