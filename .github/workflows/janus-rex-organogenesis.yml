@@ -132,6 +132,38 @@ jobs:
           print('REX_HEALTH_REAL_LEDGER_FUNCTIONAL_GAIN=PASS')
           print('NEW_MODULE_NE_MAIN_MODEL_PROMOTION')
           PY
+      - name: Verify prospective generation-2 inheritance on postbirth Git evidence
+        shell: bash
+        env:
+          MODULE_ID: ${{ steps.spec.outputs.module_id }}
+          SPEC_PATH: ${{ steps.spec.outputs.path }}
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          from tools.rex_module_fitness_v25 import evaluate
+          spec=json.loads(Path(os.environ['SPEC_PATH']).read_text())
+          if spec['template'] != 'ledger_trend':
+              print('REX_GEN2=NOT_APPLICABLE_TO_OTHER_TEMPLATE')
+              raise SystemExit(0)
+          mid=os.environ['MODULE_ID']
+          if not mid.endswith('_ledger_trend'):
+              raise SystemExit('TREND_PARENT_NAME_MISMATCH')
+          parent=mid.removesuffix('_ledger_trend')+'_ledger_health'
+          folder=Path('rex/candidates')/mid
+          result=evaluate('.',folder,os.environ['SPEC_PATH'],
+              Path('rex/candidates')/parent,
+              Path('rex/specs/generated')/f'{parent}.json')
+          (folder/'fitness.json').write_text(
+              json.dumps(result,sort_keys=True,indent=2)+'\n')
+          if (result['status'] != 'GIT_POSTBIRTH_FUNCTIONAL_GAIN' or
+              result['generation_depth'] != 2 or
+              result['production_model_promotion'] is not False):
+              raise SystemExit('REX_GEN2_HOLD_NO_INDEPENDENT_COHORT_GAIN')
+          print('REX_GEN2_GIT_POSTBIRTH_LINEAGE=PASS')
+          print('REX_GEN2_NEW_EVIDENCE_ROWS='+str(result['used_postbirth_rows']))
+          print('NO_AUTOMATIC_MAIN_MODEL_PROMOTION')
+          PY
       - name: Validate external Nexus low-risk policy
         if: steps.spec.outputs.need_admission == 'true'
         id: nexus
