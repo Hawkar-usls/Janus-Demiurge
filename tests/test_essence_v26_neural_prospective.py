@@ -138,7 +138,7 @@ class ProspectiveNeuralContract(unittest.TestCase):
         observed=self.past+self.future
         result=n.future_decision(self.frozen["pending"],
             n.load_state(self.frozen["parent"]),observed,
-            self.freeze+timedelta(days=1),published_at=published)[0]
+            self.freeze+timedelta(days=1),published_at=published.isoformat())[0]
         self.assertEqual(result["sample_count"],60)
         self.assertTrue(result["future_records_created_after_weights_git_commit"])
         self.assertGreater(n.at(result["first_new_created_at"]),published)
@@ -148,7 +148,7 @@ class ProspectiveNeuralContract(unittest.TestCase):
             n.future_decision(self.frozen["pending"],
                 n.load_state(self.frozen["parent"]),self.past+self.future,
                 self.freeze+timedelta(minutes=1),
-                published_at=self.freeze+timedelta(hours=3))
+                published_at=(self.freeze+timedelta(hours=3)).isoformat())
 
     def test_no_synthetic_pass_can_claim_external_custodian(self):
         completed=self.past+self.future
