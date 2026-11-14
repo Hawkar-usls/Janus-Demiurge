@@ -19,8 +19,9 @@ grants production authority.
    anonymized per-document hashes, token counts, original/candidate
    cross-entropy and Top-1 agreement; it resamples at **whole-document**
    level for a 1,000-iteration lower confidence bound. On each cohort,
-   the lower bound must reach 97% and mean cross-entropy regression stay
-   within 0.5%. A statement that data are unseen must be independently
+   the lower bound must reach 97% and **token-weighted corpus cross-entropy**
+   regression stay within 0.5%. Weighting by token count prevents many short
+   documents from hiding a substantial regression on long documents. A statement that data are unseen must be independently
    attested: document hashes cannot prove this alone.
 2. **Real target hardware.** A designated device with the same runtime and
    compute architecture as the intended model service must supply at least
