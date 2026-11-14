@@ -101,6 +101,37 @@ jobs:
           a=json.load(open(p))
           assert a['status']=='PASS' and a['admission']=='NOT_GRANTED' and a['authority_delta']==0
           PY
+      - name: Compare new ledger-health module against existing parent on real additional records
+        shell: bash
+        env:
+          MODULE_ID: ${{ steps.spec.outputs.module_id }}
+          SPEC_PATH: ${{ steps.spec.outputs.path }}
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          from tools.rex_module_fitness_v24 import evaluate
+          spec=json.loads(Path(os.environ['SPEC_PATH']).read_text())
+          if spec['template'] != 'ledger_health':
+              print('REX_HEALTH_GAIN=NOT_APPLICABLE_TO_OTHER_TEMPLATE')
+              raise SystemExit(0)
+          mid=os.environ['MODULE_ID']
+          if not mid.endswith('_ledger_health'):
+              raise SystemExit('HEALTH_PARENT_NAME_MISMATCH')
+          parent=mid.removesuffix('_ledger_health')+'_ledger_summary'
+          folder=Path('rex/candidates')/mid
+          result=evaluate('.',folder,os.environ['SPEC_PATH'],
+              Path('rex/candidates')/parent,
+              Path('rex/specs/generated')/f'{parent}.json')
+          out=folder/'fitness.json'
+          out.write_text(json.dumps(result,sort_keys=True,indent=2)+'\\n')
+          if result['status'] != 'RESEARCH_FUNCTIONAL_GAIN':
+              raise SystemExit('REX_HEALTH_FUNCTIONAL_GAIN_HOLD')
+          assert result['production_authority'] is False
+          assert result['quality_on_external_future_tasks_proven'] is False
+          print('REX_HEALTH_REAL_LEDGER_FUNCTIONAL_GAIN=PASS')
+          print('NEW_MODULE_NE_MAIN_MODEL_PROMOTION')
+          PY
       - name: Validate external Nexus low-risk policy
         if: steps.spec.outputs.need_admission == 'true'
         id: nexus
