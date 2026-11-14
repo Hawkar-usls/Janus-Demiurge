@@ -1,0 +1,108 @@
+name: JANUS ESSENCE v3.0 active multi-core evolution ignition
+
+on:
+  pull_request:
+    paths:
+      - 'tools/essence_v30_active_evolution.py'
+      - 'tests/test_essence_v30_active_evolution.py'
+      - '.github/workflows/essence-v30-active-evolution.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/essence_v30_active_evolution.py'
+      - 'tests/test_essence_v30_active_evolution.py'
+      - '.github/workflows/essence-v30-active-evolution.yml'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: One-shot bootstrap of all idle bounded cores or periodic reconciliation
+        type: choice
+        options: [bootstrap, cycle]
+        default: bootstrap
+        required: true
+  schedule:
+    - cron: '17 */3 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: essence-v30-active-evolution-main
+  cancel-in-progress: false
+
+jobs:
+  verify-source-bound-ignition:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify bounded ignition code without executing arbitrary child code
+        run: |
+          python -m py_compile tools/essence_v30_active_evolution.py
+          python -m unittest -v tests.test_essence_v30_active_evolution
+
+  ignite-trusted-cores:
+    needs: verify-source-bound-ignition
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.ESSENCE_EVOLUTION_PAUSED != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Wake existing source-reviewed microcores through GitHub Actions
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MODE_FROM_DISPATCH: ${{ inputs.mode }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          MODE=cycle
+          if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then MODE=bootstrap; fi
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            if [[ -n "$MODE_FROM_DISPATCH" ]]; then MODE="$MODE_FROM_DISPATCH"; else MODE=bootstrap; fi
+          fi
+          python tools/essence_v30_active_evolution.py \
+            --mode "$MODE" \
+            --out runtime/essence/v30-active-evolution.json
+      - name: Verify action ceiling and write actual dispatch receipts
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          from tools.essence_v30_active_evolution import MAX_BOOTSTRAP,MAX_CYCLE,SCHEMA,sha
+          d=json.loads(Path("runtime/essence/v30-active-evolution.json").read_text())
+          assert d["schema"]==SCHEMA
+          assert d["receipt_sha256"]==sha({k:v for k,v in d.items() if k!="receipt_sha256"})
+          assert d["dispatches_accepted"]<=d["max_dispatched"]
+          assert d["max_dispatched"] in (MAX_BOOTSTRAP,MAX_CYCLE)
+          assert d["automatic_production_model_promotion"] is False
+          assert d["scientific_improvement_proven_by_dispatch"] is False
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as s:
+              s.write("### JANUS ESSENCE v3.0 true GitHub workflow ignition\n")
+              s.write("GitHub accepted "+str(d["dispatches_accepted"])+" workflow dispatch requests.\n")
+              for row in d["lanes"]:
+                  s.write("- "+row["lane"]+": "+row["status"]+"\n")
+              s.write("Improved neural weights: NOT established by launch alone.\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: essence-v30-real-active-evolution-${{ github.run_id }}
+          path: runtime/essence/v30-active-evolution.json
+          if-no-files-found: warn
+          retention-days: 30
