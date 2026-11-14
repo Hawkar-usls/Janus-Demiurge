@@ -136,7 +136,7 @@ def quant_shadow(torch, model, val):
         count += tensor.numel()
         max_error = max(max_error, float((tensor-recovered).abs().max()))
         dequant[key] = recovered
-        digest.update(key.encode("utf-8") + b"\0" + q.numpy().tobytes() +
+        digest.update(key.encode("utf-8") + b"\0" + bytes((v & 255) for v in q.reshape(-1).tolist()) +
                       scale.hex().encode("ascii"))
     shadow = new_model(torch)
     shadow.load_state_dict(dequant, strict=True)
