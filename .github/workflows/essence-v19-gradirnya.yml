@@ -38,7 +38,7 @@ jobs:
       - name: Verify two-generation gradient training and fail-closed guardrails
         run: |
           python -m py_compile tools/essence_v19_gradirnya.py
-          python -m unittest -v tests.test_essence_v19_gradirnya
+          python -m unittest -v tests.test_essence_v19_gradirnya tests.test_essence_v19_http_canary
 
   source-snapshot:
     runs-on: ubuntu-24.04
@@ -187,5 +187,74 @@ jobs:
         with:
           name: essence-v19-separated-heldout-${{ github.run_id }}
           path: artifacts/verify/
+          if-no-files-found: error
+          retention-days: 30
+
+  isolated-http-neural-canary:
+    needs: [prepare, microcore-offspring, separate-holdout-verifier]
+    if: needs.separate-holdout-verifier.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU PyTorch
+        run: |
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check 'torch==2.8.0' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v19-train-only-${{ github.run_id }}
+          path: staging/splits
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v19-child-0-${{ github.run_id }}
+          path: artifacts/cell-0
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v19-separated-heldout-${{ github.run_id }}
+          path: artifacts/verify
+      - name: Only validation-and-heldout-gaining research child gets ephemeral live canary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('artifacts/verify/cell-0.json').read_text())
+          l=json.loads(Path('artifacts/cell-0/lineage.json').read_text())
+          accept=r['gate']=='RESEARCH_HISTORICAL_DATE_HOLDOUT_GAIN' and l['accepted_generations']>0
+          Path('artifacts/research-canary').mkdir(parents=True,exist_ok=True)
+          Path('artifacts/research-canary/allowed.txt').write_text('yes' if accept else 'no')
+          if not accept:
+              Path('artifacts/research-canary/HOLD.json').write_text(json.dumps({
+                  'status':'HOLD_NO_HISTORICAL_DATE_HOLDOUT_GAIN',
+                  'ephemeral_service_started':False,
+                  'production_authority':False
+              }))
+          print('RESEARCH_CANARY_ELIGIBLE',accept)
+          PY
+      - name: Deploy neural descendant to isolated running HTTP service; trigger auto rollback
+        if: success()
+        run: |
+          if [ "$(cat artifacts/research-canary/allowed.txt)" = "yes" ]; then
+            python -m tools.essence_v19_http_canary \
+              --weights artifacts/cell-0/offspring.pt \
+              --lineage artifacts/cell-0/lineage.json \
+              --validation staging/splits/validation.json \
+              --out artifacts/research-canary/receipt.json
+          else
+            echo 'HOLD: real localhost service canary intentionally NOT activated' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v19-isolated-http-rollback-${{ github.run_id }}
+          path: artifacts/research-canary/
           if-no-files-found: error
           retention-days: 30
