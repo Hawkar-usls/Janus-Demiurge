@@ -51,7 +51,9 @@ must not be committed into JANUS or uploaded as CI artifacts.
 Each attestation body is canonical UTF-8 JSON with:
 `schema=janus.essence.real_model_role_attestation/1.7`,
 `role`, `candidate_id=native_dynamic_int8_ffn_mask7`,
-`payload_sha256`, `signed_at_utc`, and
+`candidate_sha256` (canonical digest of the complete locked candidate
+manifest), `payload_sha256` (of the signed role-specific evidence),
+`signed_at_utc`, and
 `scope=INDEPENDENT_REVIEW_NO_MODEL_DISPATCH`.
 Sign it using `ssh-keygen -Y sign` under namespace
 `janus-essence-v17-external-review`. The verifier independently
@@ -88,3 +90,13 @@ The unit suite constructs synthetic data and ephemeral keys **solely to test
 the verifier**; these are not actual independent evaluators, measurements
 or live-service proofs. No NAS, external service mutation or hidden
 production key is used in CI.
+
+## v1.7.1 anti-replay hardening
+
+All four external attestation bodies are additionally bound to the
+canonical SHA-256 of the entire candidate manifest. A valid, already signed
+holdout or device receipt cannot be transplanted onto a different model
+commit, candidate checkpoint, or selected layer mask. This is an additional
+negative-control requirement; older unsigned/non-cryptographically valid
+receipts are not promoted. The ordinary GitHub CI still lacks genuine
+out-of-band owner trust pins and must remain HOLD.
