@@ -1,4 +1,5 @@
 name: ESSENCE v1.9 GRADIRNYA two-generation closed loop (research only)
+run-name: ESSENCE dataset ${{ inputs.dataset_sha || 'routine' }}
 
 on:
   pull_request:
@@ -11,6 +12,8 @@ on:
       - 'tools/essence_v21_curriculum_sentinel.py'
       - 'tests/test_essence_v21_curriculum_sentinel.py'
       - 'tests/test_essence_v19_http_canary.py'
+      - 'tools/essence_v22_source_watch.py'
+      - 'tests/test_essence_v22_source_watch.py'
       - '.github/workflows/essence-v19-gradirnya.yml'
   push:
     branches: [main]
@@ -21,6 +24,15 @@ on:
       - 'tests/test_essence_v19_http_canary.py'
       - '.github/workflows/essence-v19-gradirnya.yml'
   workflow_dispatch:
+    inputs:
+      registry_sha:
+        description: 'Optional immutable Meta Registry commit SHA for v2.2 watcher'
+        required: false
+        type: string
+      dataset_sha:
+        description: 'Optional key-only dated dataset SHA; verified before gradients'
+        required: false
+        type: string
   schedule:
     - cron: '17 6 * * 3'
 
@@ -50,7 +62,7 @@ jobs:
       - name: Verify two-generation gradient training and fail-closed guardrails
         run: |
           python -m py_compile tools/essence_v19_gradirnya.py
-          python -m unittest -v tests.test_essence_v19_gradirnya tests.test_essence_v19_http_canary tests.test_essence_v21_curriculum_sentinel
+          ESSENCE_VERIFY_TORCH_PARITY=1 python -m unittest -v tests.test_essence_v19_gradirnya tests.test_essence_v19_http_canary tests.test_essence_v21_curriculum_sentinel tests.test_essence_v22_source_watch
 
   source-snapshot:
     runs-on: ubuntu-24.04
@@ -61,7 +73,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: Hawkar-usls/janus-meta-registry
-          ref: main
+          ref: ${{ inputs.registry_sha || 'main' }}
           persist-credentials: false
           fetch-depth: 1
       - name: Freeze public dated evidence version
@@ -95,6 +107,15 @@ jobs:
         run: |
           SRC="$(git -C dependencies/registry rev-parse HEAD)"
           python -m tools.essence_v19_gradirnya prepare --data-root dependencies/registry/data --source "$SRC" --out staging/splits
+          EXPECTED_DATASET_SHA="${{ inputs.dataset_sha }}" python - <<'PY'
+          import json,os,re
+          from pathlib import Path
+          expected=os.environ.get("EXPECTED_DATASET_SHA","")
+          actual=json.loads(Path("staging/splits/manifest.json").read_text())["dataset_sha256"]
+          if expected:
+              if not re.fullmatch("[0-9a-f]{64}",expected) or expected!=actual:
+                  raise ValueError("ESSENCE_V22_DATASET_SHA_MISMATCH")
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: essence-v19-train-only-${{ github.run_id }}
