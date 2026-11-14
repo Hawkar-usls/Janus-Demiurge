@@ -1,6 +1,11 @@
 name: ESSENCE v2.2 dataset readiness watcher (research only)
 
 on:
+  pull_request:
+    paths:
+      - 'tools/essence_v22_source_watch.py'
+      - 'tests/test_essence_v22_source_watch.py'
+      - '.github/workflows/essence-v22-source-watch.yml'
   workflow_dispatch:
   schedule:
     - cron: '19 5 * * *'
@@ -15,7 +20,6 @@ run-name: ESSENCE v2.2 prospective source check
 
 permissions:
   contents: read
-  actions: write
 
 concurrency:
   group: essence-v22-source-watcher
@@ -23,6 +27,10 @@ concurrency:
 
 jobs:
   scout:
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      actions: write
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     steps:
@@ -76,3 +84,50 @@ jobs:
               out.write("Gate: "+r["status"]+"\n")
               out.write("Production modification: DENIED; external scientific proof: NONE.\n")
           PY
+
+  pr-readonly-proof:
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Test watch/readiness/anti-replay without network dispatch
+        run: |
+          python -m py_compile tools/essence_v22_source_watch.py
+          python -m unittest -v tests.test_essence_v22_source_watch
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: main
+          path: dependencies/registry
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Inspect current real Meta Registry data without writes
+        run: |
+          set -euo pipefail
+          SOURCE="$(git -C dependencies/registry rev-parse HEAD)"
+          python -m tools.essence_v22_source_watch scan \
+            --root dependencies/registry/data \
+            --source "$SOURCE" \
+            --out artifacts/readiness/source.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("artifacts/readiness/source.json").read_text())
+          assert r["production_authority"] is False
+          assert r["automatic_promotion"] is False
+          print("READONLY_REAL_SOURCE_GATE", r["status"], r["rejection_codes"])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v22-pr-readiness-${{ github.run_id }}
+          path: artifacts/readiness/source.json
+          retention-days: 14
+          if-no-files-found: error
