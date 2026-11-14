@@ -1,0 +1,78 @@
+name: ESSENCE v2.2 dataset readiness watcher (research only)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '19 5 * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/essence_v22_source_watch.py'
+      - 'tests/test_essence_v22_source_watch.py'
+      - '.github/workflows/essence-v22-source-watch.yml'
+
+run-name: ESSENCE v2.2 prospective source check
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: essence-v22-source-watcher
+  cancel-in-progress: false
+
+jobs:
+  scout:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Lightweight source contract without Torch/GPU
+        run: |
+          python -m py_compile tools/essence_v22_source_watch.py
+          python -m unittest -v tests.test_essence_v22_source_watch
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: main
+          path: dependencies/registry
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Freeze actual Meta Registry commit and assess historical dates
+        run: |
+          set -euo pipefail
+          SOURCE="$(git -C dependencies/registry rev-parse HEAD)"
+          python -m tools.essence_v22_source_watch scan \
+            --root dependencies/registry/data \
+            --source "$SOURCE" \
+            --out artifacts/readiness/source.json
+      - name: Dispatch research-only v1.9 if suitable and dataset not already attempted
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python -m tools.essence_v22_source_watch dispatch \
+            --report artifacts/readiness/source.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v22-source-readiness-${{ github.run_id }}
+          path: artifacts/readiness/source.json
+          retention-days: 90
+          if-no-files-found: error
+      - name: Summarize nonproduction authority
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          r=json.loads(Path("artifacts/readiness/source.json").read_text())
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as out:
+              out.write("## ESSENCE v2.2 read-only readiness\n")
+              out.write("Source: `"+r["source_commit"]+"`\n")
+              out.write("Dataset SHA: `"+str(r["dataset_sha256"])+"`\n")
+              out.write("Gate: "+r["status"]+"\n")
+              out.write("Production modification: DENIED; external scientific proof: NONE.\n")
+          PY
