@@ -37,7 +37,7 @@ LANES = (
     ("dovod_temporal_witness", "essence-v31-dovod-temporal-witness.yml", {}),
     ("keymaster_memory", "essence-v32-keymaster-memory.yml", {}),
     ("epistemic_exchange", "essence-v33-epistemic-exchange.yml", {}),
-    ("memory_guided_microcore_trial", "essence-v34-memory-guided-prospective.yml", {}),
+    ("creation_first_microcore_trial", "essence-v35-creation-first-trial.yml", {}),
     ("cooling_tower", "janus-cooling-tower-async.yml", {}),
     ("bounded_autonomy_pulse", "essence-v23-continuous-pulse.yml", {}),
 )
