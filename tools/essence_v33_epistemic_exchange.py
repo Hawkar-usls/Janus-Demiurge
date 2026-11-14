@@ -136,7 +136,7 @@ def fetch_snapshot(token, current_main_sha):
             "repository": repo, "path": path, "source_commit": commit,
             "source_blob_sha1": response["sha"],
             "source_sha256": hashlib.sha256(raw).hexdigest(),
-            "payload": doc,
+            "canonical_sha256": seal(doc), "payload": doc,
         }
     return records
 
@@ -157,13 +157,14 @@ def check_sources(records):
                 and row.get("path") == path
                 and SHA40.fullmatch(str(row.get("source_commit", "")))
                 and SHA40.fullmatch(str(row.get("source_blob_sha1", "")))
-                and SHA64.fullmatch(str(row.get("source_sha256", ""))),
+                and SHA64.fullmatch(str(row.get("source_sha256", "")))
+                and SHA64.fullmatch(str(row.get("canonical_sha256", ""))),
                 "UNPINNED_SOURCE_PROVENANCE")
         p = row.get("payload")
         require(isinstance(p, dict), "INVALID_SOURCE_PAYLOAD")
         # Test fixtures and GitHub live responses share this byte/content seal.
         raw = canonical(p)
-        require(row.get("source_sha256") == seal(p),
+        require(row.get("canonical_sha256") == seal(p),
                 "SOURCE_CANONICAL_DIGEST_MISMATCH")
         require(len(raw) <= MAX_BYTES, "SOURCE_CANONICAL_SIZE_EXCEEDED")
         payload[role] = p
@@ -171,6 +172,7 @@ def check_sources(records):
             "repository": repo, "path": path,
             "source_commit": row["source_commit"],
             "source_sha256": row["source_sha256"],
+            "canonical_sha256": row["canonical_sha256"],
             "source_blob_sha1": row["source_blob_sha1"],
             "claim_ceiling": ALLOWED_CLAIMS[role],
         }
