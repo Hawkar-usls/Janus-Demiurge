@@ -136,7 +136,7 @@ jobs:
               assert pred.shape==(2,24,256) and bool(torch.isfinite(pred).all())
           print("Four cryptographically pinned models verified by separate loader.")
           PY
-      - name: Replay all 22 Physarum search and training steps and verify exact G4 weights
+      - name: Replay all 36 exact steps including the independent 14-step fixed baseline
         run: |
           python -m tools.essence_v42_cost_replay \
             --root . \
@@ -151,14 +151,17 @@ jobs:
           r=json.loads(Path('runtime/essence/v42/full-cost/full-cost-replay.json').read_text())
           assert r['receipt_sha256'] == sha({k:v for k,v in r.items() if k!='receipt_sha256'})
           assert r['probe_train_steps'] == 6
-          assert r['total_each_replay_training_steps'] == 22
+          assert r['total_each_replay_training_steps'] == 36
+          assert r['original_v40_physarum_and_control8_steps'] == 22
+          assert r['costmatched_fixed_train_steps'] == 14
+          assert r['costmatched_14_must_be_checked_against_physarum'] is True
           assert r['external_custodian_identity_verified'] is False
           assert r['production_authority'] is False
           with open(__import__('os').environ['GITHUB_STEP_SUMMARY'],'a') as f:
               f.write('### ESSENCE Physarum FULL CPU accounting (internal replay)\n')
               f.write('Original G4 checkpoints reproduced: YES\n')
               f.write('Total original development trial CPU seconds: '+str(r['mean_full_trial_cpu_seconds'])+'\n')
-              f.write('Training steps 6 probes + 8 control + 8 Physarum.\n')
+              f.write('Training steps 6 probes + 8 control + 8 Physarum + 14 cost-matched fixed = 36.\n')
               f.write('External hidden inference cost: NOT YET MEASURED.\n')
               f.write('This is internal reproduction, not independent laboratory verification.\n')
           PY
