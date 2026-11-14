@@ -370,6 +370,11 @@ def cli():
     c=sub.add_parser("fetch")
     c.add_argument("--out",required=True)
     c.add_argument("--run-id",type=int,required=True)
+    d=sub.add_parser("continue")
+    for arg in ("archive","manifest","train","validation","out"):
+        d.add_argument("--"+arg,required=True)
+    d.add_argument("--cell",type=int,required=True)
+    d.add_argument("--steps",type=int,default=40)
     opts=p.parse_args()
     if opts.mode=="pack":
         obj=pack_run(opts.manifest,opts.children,opts.verdicts,opts.out,
@@ -380,10 +385,23 @@ def cli():
         valid_for_new_history(load(opts.parent),load(opts.current_manifest))
         print(json.dumps({"status":"RESEARCH_PARENT_NEW_SOURCE_ELIGIBLE",
                           "production_authority":False}))
-    else:
+    elif opts.mode=="fetch":
         obj=fetch_trusted_research_ancestors(opts.out,token=os.environ.get("GH_TOKEN",""),
                                               current_run=opts.run_id)
         print(json.dumps({"status":obj["status"],"parent_cells":obj["parent_cells"],
+                          "production_authority":False}))
+    else:
+        manifest=load(opts.manifest)
+        inherited,meta=verified_parent_for_cell(opts.archive,opts.cell,manifest)
+        result=e.train(opts.cell,load(opts.train),load(opts.validation),
+                       manifest,opts.out,steps=opts.steps,
+                       inherited_state=inherited,inherited_metadata=meta)
+        if (result["cross_run_inheritance"]["parent_weights_sha256"]
+            !=result["initial_weights_sha256"]):
+            raise ValueError("INHERITED_WEIGHT_CHAIN_MISMATCH")
+        print(json.dumps({"cell":opts.cell,"status":"TWO_GENERATION_CONTINUATION_FROM_PAST_MAIN_RUN",
+                          "generation_depth":result["cross_run_inheritance"]["ancestry_depth"],
+                          "accepted_generations":result["accepted_generations"],
                           "production_authority":False}))
 
 if __name__=="__main__":cli()
