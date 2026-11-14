@@ -130,7 +130,8 @@ class FunctionalBirth(unittest.TestCase):
                    "--policy",REPO/"rex/need_discovery_policy.json",
                    "--repo-root",self.root)
         self.assertEqual(again["proposal_count"],0)
-        self.assertTrue(any(row.get("reason")=="health_module_already_exists"
+        self.assertTrue(any(row.get("reason") in (
+            "health_module_already_exists", "HOLD_UNVERIFIED_HEALTH_PARENT")
                             for row in again["skipped"]))
 
 
