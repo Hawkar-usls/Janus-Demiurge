@@ -14,10 +14,47 @@ import json
 import math
 from pathlib import Path
 import re
+import sys
 
 import torch
 import torch.nn.functional as F
 from tools import janus_essence_real_json_train as r
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]/".janus"/"essence"))
+import block_quantization_v18 as quant
+
+def research_tensor_precision(model):
+    """Pack real offspring tensor SLICES, not the operational neural network."""
+    selections={
+        "sensing":"token.weight",
+        "memory":"pos.weight",
+        "planning":"blocks.layers.0.linear1.weight",
+        "verification":"norm.weight",
+        "recovery":"norm.bias",
+        "coding":"blocks.layers.0.linear2.weight",
+        "essence_self":"blocks.layers.0.self_attn.in_proj_weight",
+    }
+    params=dict(model.named_parameters())
+    if not set(selections.values()).issubset(params):
+        raise ValueError("MISSING_ACTUAL_MICROCORE_TENSORS")
+    rows=[]
+    for role,name in selections.items():
+        values=params[name].detach().cpu().float().flatten()[:256].tolist()
+        result=quant.optimize(values,role)
+        rows.append({"role":role,"tensor":name,"sampled_elements":len(values),
+                     "v15_packed_bytes":result["parent_packet_bytes"],
+                     "v19_packed_bytes":len(result["packet"]),
+                     "max_abs_error":round(result["error"],9),
+                     "source_weight_slice_sha256":sha(result["exact"]),
+                     "packed_sha256":sha(result["packet"]),
+                     "operational_weights_changed":False})
+    return {"schema":"janus.essence.real_tensor_slice_quantization/1.9",
+            "source":"ACTUAL_RESEARCH_OFFSPRING_WEIGHTS_NOT_PRODUCTION_GPT",
+            "precision_operator":"ESSENCE_V18_BLOCK_SEARCH",
+            "seven_roles":rows,"sample_only":True,
+            "parent_bytes":sum(x["v15_packed_bytes"] for x in rows),
+            "candidate_bytes":sum(x["v19_packed_bytes"] for x in rows),
+            "runtime_mixed_precision_installed":False,"production_authority":False}
+
 
 torch.set_num_threads(1)
 SCHEMA="janus.essence.gradirnya/1.9"
@@ -182,6 +219,7 @@ def train(cell,train_packet,val_packet,manifest,out,steps=40):
             "initial_weights_sha256":initial_sha,"final_weights_sha256":incumbent_sha,
             "generations":generations,"accepted_generations":accepted,
             "initial_validation":parent_eval,"final_validation":r.evaluate(model,val_rows),
+            "real_tensor_precision":research_tensor_precision(model),
             "true_gradient_training":True,"model_weights_modified_in_memory":accepted>0,
             "training_saw_holdout":False,"external_independent_test":False,
             "release_permission":False,"production_authority":False}
@@ -230,7 +268,6 @@ def verify(cell,holdout,manifest,receipt,checkpoint):
     b=r.evaluate(baseline,test_rows)
     baseline.load_state_dict(final,strict=True)
     c=r.evaluate(baseline,test_rows)
-    label_baseline=r.baseline([],[]) if False else None  # No train labels ever supplied here.
     delta=round(b["nll"]-c["nll"],6)
     gate=("RESEARCH_HISTORICAL_DATE_HOLDOUT_GAIN" if delta>=0.02 and c["accuracy"]>=b["accuracy"]
           else "HOLD_HISTORICAL_DATE_HOLDOUT_NO_CONFIRMED_GAIN")
