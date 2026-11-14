@@ -167,6 +167,37 @@ class V20AncestryContract(unittest.TestCase):
             self.assertEqual(len(child["generations"]),2)
             self.assertFalse(child["production_authority"])
 
+    def test_preparation_uses_only_post_parent_heldout_dates(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp)
+            meta=v.validate_verified_parent(self.manifest,self.child,
+                                            self.synthetic_positive(),self.weight,0)
+            idx=dict(schema=v.SCHEMA,source_repository=v.OWNER_REPO,
+                     origin_run_id=200,origin_main_sha="c"*40,
+                     origin_workflow=v.WORKFLOW,source_commit=self.manifest["source_commit"],
+                     source_dataset_sha256=self.manifest["dataset_sha256"],
+                     accepted_cells=[0],rejected_cells=[],
+                     parent_meta_sha256={"0":meta["receipt_sha256"]},
+                     status="RESEARCH_PARENTS_STAGED",
+                     external_blind_quality_proven=False,target_device_proven=False,
+                     real_service_rollback_proven=False,production_authority=False,
+                     automatic_promotion=False)
+            idx["receipt_sha256"]=e.seal(idx)
+            e.atomic_json(root/"archive"/"index.json",idx)
+            e.atomic_json(root/"archive"/"cell-0"/"parent.json",meta)
+            v.write(root/"archive"/"cell-0"/"parent.pt",self.weight)
+            data=root/"future";data.mkdir()
+            for day in range(44):
+                date=(datetime.date(2026,9,1)+datetime.timedelta(days=day)).isoformat()
+                for j,tag in enumerate(("LINEAR","TRUMP","OSIRIS","CONNECTION","ECHO")):
+                    (data/f"JANUS-{tag}-{date}-CASE{day}-{j}.json").write_text(
+                        json.dumps({"schema":"new","date":date,f"feature_{j}":True}))
+            current=v.prepare_successor(data,"b"*40,root/"next",root/"archive")
+            self.assertEqual(current["cohort_protocol"],"FUTURE_ONLY_AFTER_PREVIOUS_HOLDOUT")
+            self.assertGreater(current["split_dates"]["validation"][0],meta["last_holdout_date"])
+            self.assertGreater(current["split_dates"]["holdout"][0],meta["last_holdout_date"])
+            self.assertTrue(v.valid_for_new_history(meta,current))
+
     def test_replay_and_same_source_cannot_inherit(self):
         meta=v.validate_verified_parent(self.manifest,self.child,
                                         self.synthetic_positive(),self.weight,0)
