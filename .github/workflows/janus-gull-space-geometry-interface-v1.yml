@@ -1,0 +1,93 @@
+name: JANUS Gull Space Perception - Measured Geometry vs Hoffman Interface
+
+on:
+  pull_request:
+    paths:
+      - 'experiments/gull_space_models/laridae_visual_measurements_v1.json'
+      - 'experiments/gull_space_models/janus_gull_geometry_interface_v1.py'
+      - 'experiments/gull_space_models/test_janus_gull_geometry_interface_v1.py'
+      - '.github/workflows/janus-gull-space-geometry-interface-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-gull-research-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  evidence-integrity:
+    name: Published Laridae evidence and fair-capacity synthetic benchmark Python ${{ matrix.python }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11','3.12']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Reproduce 12 no-fabrication and exact compression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s experiments/gull_space_models \
+            -p 'test_janus_gull_geometry_interface_v1.py'
+
+  compare-models:
+    needs: [evidence-integrity]
+    name: Independent exact full-enumeration optical/decision comparison
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Compare equal-capacity geometric and utility representations on same toy optical input
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/gull_space_models/janus_gull_geometry_interface_v1.py \
+            --source experiments/gull_space_models/laridae_visual_measurements_v1.json \
+            --out out/gull-spatial-models-comparison.json
+          python - <<'PY'
+          import json,os
+          x=json.load(open("out/gull-spatial-models-comparison.json"))
+          assert x["source_doi"]=="10.1111/ibi.13360"
+          assert x["real_birds_total"]==10
+          assert x["empirical_calibration"]["qualitative_source_pitched_blind_consistency_pass"]
+          assert not x["empirical_calibration"]["actual_gull_behavior_or_fitness_measured"]
+          assert not x["empirical_calibration"]["independent_species_holdout_available"]
+          assert x["physical_vision_theory_identification"]=="NOT_IDENTIFIABLE_FROM_VISUAL_FIELD_GEOMETRY_ONLY"
+          assert not x["model_is_real_seagull_neural_connectome"]
+          assert not x["trained_transformer_or_production_model_modified"]
+          sims=x["synthetic_exhaustive_worlds"]
+          assert len(sims)==2
+          assert all(s["possible_encoders_exhaustively_checked"]==127 for s in sims)
+          assert sims[0]["reward_environment"]=="hazard_costly"
+          assert sims[0]["interface_minus_geometry_reward_exact"]=="29/40"
+          assert sims[0]["geometry_angle_MSE_optimized"]["angle_mse_deg2_exact"]=="16"
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+              f.write('## JANUS gull visual space — evidence vs synthetic model comparison\n')
+              f.write('- Published Laridae: 3 species, n=4+3+3=10; max binocular 35.1±1.2°; dorsal forward blind onset 46±1.3°.\n')
+              f.write('- At an assumed 50° downward head pitch the frontal 1D proxy projects the blind sector along forward travel, consistent with paper qualitative observation; **not calibrated 3D retina**.\n')
+              f.write('- Two two-symbol encoders receive identical perfect toy input (bearing + prey/hazard). Exhaustive 127 partitions, exact rational utilities.\n')
+              f.write('- Geometry 1-bit encoding best angular MSE 16 deg², task reward 21/20. Reward-specific encoding task reward 71/40, angle error higher; difference 29/40 **TOY payoff units**, NOT gull measurements.\n')
+              f.write('- Uncompressed optimized geometry can imitate any interface action; no theoretical universal interface superiority.\n')
+              f.write('- Published optical geometry alone **cannot** distinguish Hoffman interface theory from geometric spatial reconstruction; no trial-wise behavior measured.\n')
+              f.write('- Existing JANUS Transformer and production remain unchanged; previous separate candidate failed promotion gate.\n')
+          PY
+          sha256sum out/gull-spatial-models-comparison.json \
+            experiments/gull_space_models/laridae_visual_measurements_v1.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-gull-space-evidence-and-exhaustive-comparison-${{ github.run_id }}
+          path: out/gull-spatial-models-comparison.json
+          retention-days: 90
+          if-no-files-found: error
