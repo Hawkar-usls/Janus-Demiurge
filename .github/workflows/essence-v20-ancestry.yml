@@ -8,6 +8,8 @@ on:
       - 'tests/test_essence_v20_ancestry.py'
       - 'tools/essence_v21_curriculum_sentinel.py'
       - 'tests/test_essence_v21_curriculum_sentinel.py'
+      - 'tools/essence_v20_staging_gate.py'
+      - 'tests/test_essence_v20_staging_gate.py'
       - '.github/workflows/essence-v20-ancestry.yml'
       - '.github/workflows/essence-v19-gradirnya.yml'
   workflow_run:
@@ -22,6 +24,8 @@ on:
       - 'tests/test_essence_v20_ancestry.py'
       - 'tools/essence_v21_curriculum_sentinel.py'
       - 'tests/test_essence_v21_curriculum_sentinel.py'
+      - 'tools/essence_v20_staging_gate.py'
+      - 'tests/test_essence_v20_staging_gate.py'
       - '.github/workflows/essence-v20-ancestry.yml'
   workflow_dispatch:
   schedule:
@@ -54,7 +58,7 @@ jobs:
       - name: Test true inherited gradients and malicious archive rejection
         run: |
           python -m py_compile tools/essence_v20_ancestry.py tools/essence_v19_gradirnya.py
-          python -m unittest -v tests.test_essence_v20_ancestry tests.test_essence_v19_gradirnya tests.test_essence_v19_http_canary tests.test_essence_v21_curriculum_sentinel
+          python -m unittest -v tests.test_essence_v20_ancestry tests.test_essence_v19_gradirnya tests.test_essence_v19_http_canary tests.test_essence_v21_curriculum_sentinel tests.test_essence_v20_staging_gate
 
   source-snapshot:
     needs: contract
@@ -322,9 +326,70 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
-  seal-successor-archive:
+  staged-successor-canary:
     needs: [prepare-future-only, continue-inherited-weights, new-holdout-verifier]
     if: needs.new-holdout-verifier.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Load CPU torch for isolated research service
+        run: |
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check 'torch==2.8.0' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v20-new-train-${{ github.run_id }}
+          path: staging/current
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v20-future-review-${{ github.run_id }}
+          path: artifacts/verification
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: essence-v20-offspring-*-${{ github.run_id }}
+          path: artifacts/children
+      - name: Only strong new cross-run survivors may get actual ephemeral neural HTTP canary
+        run: |
+          python -m tools.essence_v20_staging_gate \
+            --children artifacts/children \
+            --verdicts artifacts/verification \
+            --validation staging/current/validation.json \
+            --out artifacts/staged
+      - name: Stage result stays explicitly outside production
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          item=json.loads(Path('artifacts/staged/index.json').read_text())
+          assert item['production_authority'] is False
+          assert item['automatic_service_promotion'] is False
+          assert item['real_deployed_service_rollback'] is False
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as out:
+              out.write("### ESSENCE cross-run ephemeral neural service\n")
+              out.write("Stage: "+item['status']+"\n")
+              out.write("Canary-confirmed research roles: "+str([x['cell'] for x in item['staged']])+"\n")
+              out.write("Production deployment permission: NONE\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v20-ephemeral-http-canary-${{ github.run_id }}
+          path: artifacts/staged/
+          if-no-files-found: error
+          retention-days: 90
+
+  seal-successor-archive:
+    needs: [prepare-future-only, continue-inherited-weights, new-holdout-verifier, staged-successor-canary]
+    if: needs.staged-successor-canary.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
