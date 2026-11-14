@@ -185,6 +185,19 @@ class MemoryProspectiveTests(unittest.TestCase):
         self.assertFalse(report["model_weights_updated"])
         self.assertFalse(report["scientific_independence_claimed"])
 
+    def test_prefreeze_created_event_completed_after_publication_is_excluded(self):
+        packet, _ = self.packet()
+        older = run(999, 999, 0, future=True)
+        older["id"] = 999888777
+        older["created_at"] = "2026-11-14T23:58:00+00:00"
+        older["run_started_at"] = "2026-11-15T00:01:00+00:00"
+        older["updated_at"] = "2026-11-15T00:01:15+00:00"
+        report = m.evaluate(packet, [older] + self.future,
+                            observed_at=EXAM_TIME, published_at=PUBLISHED)
+        self.assertEqual(report["future_records_observed"], 64)
+        self.assertEqual(report["first_future_run_id"], self.future[0]["id"])
+        self.assertEqual(report["last_future_run_id"], self.future[-1]["id"])
+
     def test_no_future_events_returns_hold_without_fabricated_gain(self):
         packet, _ = self.packet()
         receipt = m.evaluate(packet, [], observed_at=EXAM_TIME,
