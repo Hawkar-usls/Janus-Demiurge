@@ -1,0 +1,132 @@
+name: ESSENCE v2.6 GitHub-only prospective neural self-improvement
+
+on:
+  pull_request:
+    paths:
+      - 'tools/essence_v26_neural_prospective.py'
+      - 'tests/test_essence_v26_neural_prospective.py'
+      - '.github/workflows/essence-v26-prospective-neural.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/essence_v26_neural_prospective.py'
+      - 'tests/test_essence_v26_neural_prospective.py'
+      - '.github/workflows/essence-v26-prospective-neural.yml'
+  workflow_dispatch:
+  schedule:
+    # GitHub hosted and best-effort; short resumable runs, no external hardware.
+    - cron: '13 */2 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: essence-v26-prospective-neural-main
+  cancel-in-progress: false
+
+jobs:
+  neural-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU tensor backend
+        run: |
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check 'torch==2.8.0' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - name: Verify prospective freeze, genuine gradient updates and contamination guards
+        run: |
+          python -m py_compile tools/essence_v26_neural_prospective.py
+          python -m unittest -v tests.test_essence_v26_neural_prospective
+
+  prospective-research:
+    needs: neural-contract
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.ESSENCE_NEURAL_PAUSED != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    permissions:
+      contents: write
+      actions: read
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: source
+          ref: main
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          path: state
+          ref: research/essence-neural-state
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU tensor backend
+        run: |
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check 'torch==2.8.0' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - name: Train candidate only from historical completed Actions or verify a frozen future cohort
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python source/tools/essence_v26_neural_prospective.py \
+            --state state/research/essence/neural_duration/state.json \
+            --receipt source/artifacts/essence-v26/receipt.json
+      - name: Persist only the SHA-sealed research weights to the dedicated GitHub branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C state config user.name 'janus-essence-neural-witness'
+          git -C state config user.email 'janus-essence-neural-witness@users.noreply.github.com'
+          FROZEN_COMMIT="$(git -C state rev-parse HEAD)"
+          test "$(git -C state branch --show-current)" = 'research/essence-neural-state'
+          if test -f state/research/essence/neural_duration/state.json; then
+            git -C state add research/essence/neural_duration/state.json
+          fi
+          if git -C state diff --cached --quiet; then
+            echo 'RESEARCH_NEURAL_STATE_UNCHANGED=HOLD'
+            exit 0
+          fi
+          CHANGED="$(git -C state diff --cached --name-only)"
+          test "$CHANGED" = 'research/essence/neural_duration/state.json'
+          git -C state commit -m "ESSENCE neural research: freeze or review weights from run ${{ github.run_id }}"
+          REMOTE_COMMIT="$(git -C state ls-remote origin refs/heads/research/essence-neural-state | cut -f1)"
+          test "$REMOTE_COMMIT" = "$FROZEN_COMMIT" || { echo 'RESEARCH_STATE_RACE_HOLD' >&2; exit 5; }
+          git -C state push origin HEAD:refs/heads/research/essence-neural-state
+      - name: Publish auditable receipt without exposing training labels to untrusted code
+        if: always()
+        shell: bash
+        run: |
+          if test -f source/artifacts/essence-v26/receipt.json; then
+            python - <<'PY'
+          import json,os
+          from pathlib import Path
+          r=json.loads(Path('source/artifacts/essence-v26/receipt.json').read_text())
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+              f.write("## JANUS ESSENCE v2.6 · neural research witness\n")
+              f.write("Decision: `"+r["decision"]["status"]+"`\n")
+              f.write("Inherited generations: `"+str(r["generation"])+"`\n")
+              f.write("Completed real GitHub runs inspected: `"+str(r["usable_completed_runs"])+"`\n")
+              f.write("Production model admission: **DENIED**\n")
+          PY
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: essence-v26-neural-future-witness-${{ github.run_id }}
+          path: source/artifacts/essence-v26/receipt.json
+          if-no-files-found: warn
+          retention-days: 90
