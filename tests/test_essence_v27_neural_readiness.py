@@ -60,6 +60,8 @@ class GitHubFutureReadiness(unittest.TestCase):
         self.assertEqual(outcome["status"],"READY_PROSPECTIVE_NEURAL_EXAM")
         self.assertTrue(outcome["eligible"])
         self.assertEqual(outcome["completed_after_frozen_git_commit"],49)
+        self.assertGreaterEqual(outcome["distinct_future_workflows"],8)
+        self.assertLessEqual(outcome["max_workflow_share"],0.40)
         self.assertNotIn("labels",outcome)
         self.assertFalse(outcome["production_authority"])
 
@@ -68,6 +70,17 @@ class GitHubFutureReadiness(unittest.TestCase):
                 for i in range(60)]
         outcome=self.report(raw=self.historical+future)
         self.assertEqual(outcome["status"],"HOLD_LOW_INFORMATION_FUTURE_COHORT")
+
+    def test_repeated_few_workflows_are_not_independent_evidence(self):
+        repeated=[]
+        for i in range(60):
+            x=self.one(i+3000,self.published+timedelta(minutes=i+1),i%3)
+            x["workflow_id"]=9000+i%3
+            repeated.append(x)
+        result=self.report(raw=self.historical+repeated)
+        self.assertEqual(result["status"],"HOLD_FUTURE_WORKFLOW_CLUSTER_INFORMATION")
+        self.assertEqual(result["distinct_future_workflows"],3)
+        self.assertFalse(result["eligible"])
 
     def test_precommit_rows_cannot_count_as_postfreeze(self):
         old=[self.one(i+5000,self.freeze+timedelta(seconds=i),i%3)
