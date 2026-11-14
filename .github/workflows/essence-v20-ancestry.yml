@@ -1,0 +1,362 @@
+name: ESSENCE v2.0 persistent cross-run research ancestry (fail closed)
+
+on:
+  pull_request:
+    paths:
+      - 'tools/essence_v19_gradirnya.py'
+      - 'tools/essence_v20_ancestry.py'
+      - 'tests/test_essence_v20_ancestry.py'
+      - '.github/workflows/essence-v20-ancestry.yml'
+      - '.github/workflows/essence-v19-gradirnya.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/essence_v19_gradirnya.py'
+      - 'tools/essence_v20_ancestry.py'
+      - 'tests/test_essence_v20_ancestry.py'
+      - '.github/workflows/essence-v20-ancestry.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '43 8 * * 4'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: essence-v20-main-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Load existing CPU torch or pinned wheel
+        run: |
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check 'torch==2.8.0' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - name: Test true inherited gradients and malicious archive rejection
+        run: |
+          python -m py_compile tools/essence_v20_ancestry.py tools/essence_v19_gradirnya.py
+          python -m unittest -v tests.test_essence_v20_ancestry
+
+  source-snapshot:
+    needs: contract
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      meta_sha: ${{ steps.freeze.outputs.meta_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: main
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Freeze next public source commit
+        id: freeze
+        run: echo "meta_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  restore-reviewed-parent:
+    needs: contract
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Load CPU torch
+        run: |
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check 'torch==2.8.0' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - name: Read-only select SHA-pinned parents from completed successful MAIN runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python -m tools.essence_v20_ancestry fetch \
+            --run-id ${{ github.run_id }} --out staging/previous
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v20-checked-source-${{ github.run_id }}
+          path: staging/previous/
+          if-no-files-found: error
+          retention-days: 14
+
+  prepare-future-only:
+    needs: [source-snapshot, restore-reviewed-parent]
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      cells: ${{ steps.gate.outputs.cells }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Load CPU torch
+        run: |
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check 'torch==2.8.0' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v20-checked-source-${{ github.run_id }}
+          path: staging/previous
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: ${{ needs.source-snapshot.outputs.meta_sha }}
+          path: dependencies/registry
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Freeze actual historical source with strict chronology and holdout separation
+        run: |
+          SOURCE="$(git -C dependencies/registry rev-parse HEAD)"
+          python -m tools.essence_v19_gradirnya prepare --data-root dependencies/registry/data \
+            --source "$SOURCE" --out staging/new-splits
+      - name: Check each parent against genuinely later heldout dates and new dataset SHA
+        id: gate
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          from tools import essence_v19_gradirnya as e
+          from tools import essence_v20_ancestry as a
+          current=e.read_json("staging/new-splits/manifest.json")
+          root=Path("staging/previous")
+          cells=[]
+          outcomes=[]
+          p=root/"index.json"
+          if p.is_file():
+              previous=e.read_json(p)
+              for cell in previous.get("accepted_cells",[]):
+                  try:
+                      meta=e.read_json(root/f"cell-{cell}/parent.json")
+                      a.valid_for_new_history(meta,current)
+                      state,_=a.verified_parent_for_cell(root,cell,current)
+                      cells.append(cell)
+                      outcomes.append({"cell":cell,"status":"NEW_DATES_VERIFIED_PARENT_READY"})
+                  except (OSError,TypeError,ValueError,KeyError,RuntimeError) as ex:
+                      outcomes.append({"cell":cell,"status":"HOLD","reason":str(ex)[:110]})
+          else:
+              outcomes.append({"status":"HOLD_NO_VERIFIED_RESEARCH_PARENT"})
+          Path("staging/status").mkdir(parents=True,exist_ok=True)
+          Path("staging/status/decision.json").write_text(json.dumps({
+             "schema":"janus.essence.ancestry_decision/2.0",
+             "current_source":current["source_commit"],
+             "current_holdout_dates":current["split_dates"]["holdout"],
+             "allowed_cells":cells,"outcomes":outcomes,"production_authority":False},indent=2))
+          with open(os.environ["GITHUB_OUTPUT"],"a") as out:
+              out.write("cells="+json.dumps(cells,separators=(",",":"))+"\n")
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as out:
+              out.write("# ESSENCE v2.0 cross-run ancestry\n")
+              out.write("Eligible research parents: "+str(cells)+"\n")
+              out.write("No external independent certification or live-service authority.\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v20-research-decision-${{ github.run_id }}
+          path: staging/status/decision.json
+          if-no-files-found: error
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v20-new-train-${{ github.run_id }}
+          path: |
+            staging/new-splits/train.json
+            staging/new-splits/validation.json
+            staging/new-splits/manifest.json
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v20-new-holdout-${{ github.run_id }}
+          path: staging/new-splits/holdout.json
+          if-no-files-found: error
+          retention-days: 14
+
+  continue-inherited-weights:
+    needs: prepare-future-only
+    if: needs.prepare-future-only.outputs.cells != '[]'
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        cell: ${{ fromJSON(needs.prepare-future-only.outputs.cells) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Load CPU torch
+        run: |
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check 'torch==2.8.0' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v20-checked-source-${{ github.run_id }}
+          path: staging/previous
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v20-new-train-${{ github.run_id }}
+          path: staging/current
+      - name: Actual gradient continuation from validated past-run tensor weights
+        run: |
+          python -m tools.essence_v20_ancestry continue \
+            --archive staging/previous --manifest staging/current/manifest.json \
+            --train staging/current/train.json \
+            --validation staging/current/validation.json \
+            --cell ${{ matrix.cell }} --steps 40 --out artifacts/offspring
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v20-offspring-${{ matrix.cell }}-${{ github.run_id }}
+          path: artifacts/offspring/
+          if-no-files-found: error
+          retention-days: 90
+
+  new-holdout-verifier:
+    needs: [prepare-future-only, continue-inherited-weights]
+    if: needs.continue-inherited-weights.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Load CPU torch
+        run: |
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check 'torch==2.8.0' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v20-new-train-${{ github.run_id }}
+          path: staging/current
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v20-new-holdout-${{ github.run_id }}
+          path: staging/current
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: essence-v20-offspring-*-${{ github.run_id }}
+          path: artifacts/children
+      - name: Independent CI job scores genuine later dates, strong train-majority baseline
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from tools import essence_v19_gradirnya as e
+          root=Path("artifacts/children")
+          manifest=e.read_json("staging/current/manifest.json")
+          held=e.read_json("staging/current/holdout.json")
+          folders=list(root.glob("essence-v20-offspring-*"))
+          if not 1<=len(folders)<=6:raise ValueError("NO_VALID_NEW_OFFSPRING")
+          resultdir=Path("artifacts/evaluations")
+          for folder in folders:
+              cell=int(folder.name.split("-")[3])
+              verdict=e.verify(cell,held,manifest,
+                  e.read_json(folder/"lineage.json"),folder/"offspring.pt")
+              e.atomic_json(resultdir/f"cell-{cell}.json",verdict)
+              print(json.dumps({"cell":cell,"gate":verdict["gate"],
+                                "heldout_rows":verdict["heldout_rows"],
+                                "prior_accuracy":verdict["frozen_train_prior"]["accuracy"],
+                                "descendant_accuracy":verdict["descendant"]["accuracy"],
+                                "production_authority":False}))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v20-future-review-${{ github.run_id }}
+          path: artifacts/evaluations/
+          if-no-files-found: error
+          retention-days: 90
+
+  seal-successor-archive:
+    needs: [prepare-future-only, continue-inherited-weights, new-holdout-verifier]
+    if: needs.new-holdout-verifier.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Load CPU torch
+        run: |
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check 'torch==2.8.0' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v20-new-train-${{ github.run_id }}
+          path: staging/current
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v20-checked-source-${{ github.run_id }}
+          path: staging/previous
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: essence-v20-offspring-*-${{ github.run_id }}
+          path: artifacts/children
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v20-future-review-${{ github.run_id }}
+          path: artifacts/verification
+      - name: Repack only new strongly evidenced research descendants
+        run: |
+          python - <<'PY'
+          import shutil
+          from pathlib import Path
+          source=Path("artifacts/children")
+          dest=Path("artifacts/normalized")
+          for folder in source.glob("essence-v20-offspring-*"):
+              cell=int(folder.name.split("-")[3])
+              if not 0<=cell<6:raise ValueError("FORBIDDEN_MICROKERNEL_ID")
+              shutil.copytree(folder,dest/f"cell-{cell}")
+          PY
+          python -m tools.essence_v20_ancestry pack \
+            --manifest staging/current/manifest.json \
+            --children artifacts/normalized \
+            --verdicts artifacts/verification \
+            --previous-archive staging/previous \
+            --origin-workflow .github/workflows/essence-v20-ancestry.yml \
+            --run-id ${{ github.run_id }} --run-sha ${{ github.sha }} \
+            --out artifacts/ancestor
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v20-reviewed-archive-${{ github.run_id }}
+          path: artifacts/ancestor/
+          if-no-files-found: error
+          retention-days: 90
