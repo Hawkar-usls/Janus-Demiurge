@@ -1,0 +1,174 @@
+name: ESSENCE v4.2 clean-room protocol and full-cost sealed replay
+
+on:
+  pull_request:
+    paths:
+      - 'tools/essence_v42_cleanroom_verifier.py'
+      - 'tools/essence_v42_cost_replay.py'
+      - 'tests/test_essence_v42_external_gate.py'
+      - 'research/essence/physarum_v42/**'
+      - '.github/workflows/essence-v42-independent-replication.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/essence_v42_cleanroom_verifier.py'
+      - 'tools/essence_v42_cost_replay.py'
+      - 'tests/test_essence_v42_external_gate.py'
+      - 'research/essence/physarum_v42/**'
+      - '.github/workflows/essence-v42-independent-replication.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: essence-v42-external-protocol-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  independent-protocol-self-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned CPU PyTorch and Ed25519 verifier
+        run: |
+          python -m pip install --disable-pip-version-check torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check cryptography==44.0.3
+      - name: Run synthetic negative controls only (NO external hidden test data)
+        run: |
+          python -m py_compile tools/essence_v42_cleanroom_verifier.py tools/essence_v42_cost_replay.py
+          python -m unittest -v \
+            tests.test_essence_v42_external_gate \
+            tests.test_essence_v40_physarum_bridge \
+            tests.test_essence_v41_physarum_external_exam
+      - name: Confirm no independent results are fabricated by our CI
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('research/essence/physarum_v42/external_replication_contract.json'))
+          assert d['scientific_evidence']['external_researcher_run_finished'] is False
+          assert d['scientific_evidence']['custodian_public_key_received'] is False
+          assert d['external_custodian_status'] == 'AWAITING_KEY_AND_SEALED_TASKS'
+          assert d['production_authority'] is False
+          print('INDEPENDENT_REPLICATION: AWAITING_EXTERNAL_CUSTODIAN')
+          PY
+
+  internal-full-cost-replay:
+    needs: independent-protocol-self-tests
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.ESSENCE_EVOLUTION_PAUSED != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v39-g3-checkpoint-43649912620
+          run-id: 43649912620
+          github-token: ${{ github.token }}
+          path: runtime/essence/v42/g3
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v38-freeze-43648008998
+          run-id: 43648008998
+          github-token: ${{ github.token }}
+          path: runtime/essence/v42
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v40-physarum-research-43650540561
+          run-id: 43650540561
+          github-token: ${{ github.token }}
+          path: runtime/essence/v42/g4
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v42-sealed-cost-checkpoints-43652825898
+          run-id: 43652825898
+          github-token: ${{ github.token }}
+          path: runtime/essence/v42/budget14
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install same pinned CPU PyTorch used in G3 and G4
+        run: |
+          python -m pip install --disable-pip-version-check torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+      - name: Independently reconstruct four unchanged FP32 models with clean-room loader
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          from tools.essence_v42_cleanroom_verifier import load_fixed_models
+          import torch
+          torch.set_num_threads(1)
+          base=Path("runtime/essence/v42")
+          inputs={
+            "g3":(base/"g3",["manifest.json","weights.f32"]),
+            "g4":(base/"g4",["control/manifest.json","control/weights.f32",
+                            "physarum/manifest.json","physarum/weights.f32",
+                            "physarum-development-trial.json"]),
+            "budget14":(base/"budget14",["baseline14/manifest.json",
+                                        "baseline14/weights.f32",
+                                        "full-cost-receipt.json"])
+          }
+          for key,(root,files) in inputs.items():
+              with ZipFile(base/f"{key}.zip","w") as z:
+                  for filename in files:
+                      assert (root/filename).is_file(),f"MISSING_SEALED_FILE: {filename}"
+                      z.write(root/filename,arcname=filename)
+          models=load_fixed_models(torch,base/"g3.zip",base/"g4.zip",
+                                   base/"budget14.zip")
+          assert set(models)=={"g3","control","physarum","baseline14"}
+          x=torch.ones((2,24),dtype=torch.long)
+          for key,model in models.items():
+              with torch.inference_mode():
+                  pred=model(x)
+              assert pred.shape==(2,24,256) and bool(torch.isfinite(pred).all())
+          print("Four cryptographically pinned models verified by separate loader.")
+          PY
+      - name: Replay all 36 exact steps including the independent 14-step fixed baseline
+        run: |
+          python -m tools.essence_v42_cost_replay \
+            --root . \
+            --g3-dir runtime/essence/v42/g3 \
+            --freeze runtime/essence/v42/freeze.json \
+            --repetitions 1 \
+            --out-dir runtime/essence/v42/full-cost
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          from tools.essence_v38_inheritance import sha
+          r=json.loads(Path('runtime/essence/v42/full-cost/full-cost-replay.json').read_text())
+          assert r['receipt_sha256'] == sha({k:v for k,v in r.items() if k!='receipt_sha256'})
+          assert r['probe_train_steps'] == 6
+          assert r['total_each_replay_training_steps'] == 36
+          assert r['original_v40_physarum_and_control8_steps'] == 22
+          assert r['costmatched_fixed_train_steps'] == 14
+          assert r['costmatched_14_must_be_checked_against_physarum'] is True
+          assert r['external_custodian_identity_verified'] is False
+          assert r['production_authority'] is False
+          with open(__import__('os').environ['GITHUB_STEP_SUMMARY'],'a') as f:
+              f.write('### ESSENCE Physarum FULL CPU accounting (internal replay)\n')
+              f.write('Original G4 checkpoints reproduced: YES\n')
+              f.write('Total original development trial CPU seconds: '+str(r['mean_full_trial_cpu_seconds'])+'\n')
+              f.write('Training steps 6 probes + 8 control + 8 Physarum + 14 cost-matched fixed = 36.\n')
+              f.write('External hidden inference cost: NOT YET MEASURED.\n')
+              f.write('This is internal reproduction, not independent laboratory verification.\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: essence-v42-internal-full-cost-replay-${{ github.run_id }}
+          path: runtime/essence/v42/full-cost/full-cost-replay.json
+          if-no-files-found: warn
+          retention-days: 90
