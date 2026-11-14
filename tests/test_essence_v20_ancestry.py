@@ -29,7 +29,7 @@ class V20AncestryContract(unittest.TestCase):
         cls.manifest=e.prepare(src,"a"*40,cls.root/"split")
         cls.child=e.train(0,e.read_json(cls.root/"split"/"train.json"),
                           e.read_json(cls.root/"split"/"validation.json"),
-                          cls.manifest,cls.root/"cell-0",steps=20)
+                          cls.manifest,cls.root/"cell-0",steps=40)
         cls.weight=(cls.root/"cell-0"/"offspring.pt").read_bytes()
         cls.verdict=e.verify(0,e.read_json(cls.root/"split"/"holdout.json"),
                              cls.manifest,cls.child,cls.root/"cell-0"/"offspring.pt")
@@ -119,6 +119,45 @@ class V20AncestryContract(unittest.TestCase):
             z.writestr("../escape.pt",self.weight)
         with self.assertRaisesRegex(ValueError,"UNSAFE_PARENT_ARCHIVE_STRUCTURE"):
             v.decode_archive(invalid.getvalue(),101,"c"*40)
+
+    def test_full_actual_cross_run_gradient_continuation_on_later_dates(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base=Path(tmp)
+            current_data=base/"future"
+            current_data.mkdir()
+            for day in range(44):
+                dt=(datetime.date(2026,9,1)+datetime.timedelta(days=day)).isoformat()
+                for j,tag in enumerate(("LINEAR","TRUMP","OSIRIS","CONNECTION","ECHO")):
+                    (current_data/f"JANUS-{tag}-{dt}-FUTURE{day}-{j}.json").write_text(
+                        json.dumps({"schema":"future","observation":j,
+                                    f"feature_{j}":"public","date":dt}))
+            current=e.prepare(current_data,"b"*40,base/"new_split")
+            meta=v.validate_verified_parent(self.manifest,self.child,
+                                            self.synthetic_positive(),self.weight,0)
+            idx={"schema":v.SCHEMA,"source_repository":v.OWNER_REPO,
+                 "origin_run_id":200,"origin_main_sha":"c"*40,
+                 "origin_workflow":v.WORKFLOW,"source_commit":self.manifest["source_commit"],
+                 "source_dataset_sha256":self.manifest["dataset_sha256"],
+                 "accepted_cells":[0],"rejected_cells":[],
+                 "parent_meta_sha256":{"0":meta["receipt_sha256"]},
+                 "status":"RESEARCH_PARENTS_STAGED",
+                 "external_blind_quality_proven":False,"target_device_proven":False,
+                 "real_service_rollback_proven":False,"production_authority":False,
+                 "automatic_promotion":False}
+            idx["receipt_sha256"]=e.seal(idx)
+            e.atomic_json(base/"archive"/"index.json",idx)
+            e.atomic_json(base/"archive"/"cell-0"/"parent.json",meta)
+            v.write(base/"archive"/"cell-0"/"parent.pt",self.weight)
+            inherited,read_meta=v.verified_parent_for_cell(base/"archive",0,current)
+            self.assertEqual(e.stable_state(inherited),meta["parent_weight_sha256"])
+            child=e.train(0,e.read_json(base/"new_split"/"train.json"),
+                          e.read_json(base/"new_split"/"validation.json"),
+                          current,base/"continued",steps=20,
+                          inherited_state=inherited,inherited_metadata=read_meta)
+            self.assertEqual(child["initial_weights_sha256"],meta["parent_weight_sha256"])
+            self.assertEqual(child["cross_run_inheritance"]["ancestry_depth"],1)
+            self.assertEqual(len(child["generations"]),2)
+            self.assertFalse(child["production_authority"])
 
     def test_replay_and_same_source_cannot_inherit(self):
         meta=v.validate_verified_parent(self.manifest,self.child,
