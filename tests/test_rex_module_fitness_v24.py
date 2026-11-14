@@ -12,9 +12,10 @@ import sys
 import tempfile
 import unittest
 
-from tools import rex_module_fitness_v24 as fitness
-
 REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO))
+
+from tools import rex_module_fitness_v24 as fitness
 
 
 def call(*args):
