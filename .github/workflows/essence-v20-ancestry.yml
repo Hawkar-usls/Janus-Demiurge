@@ -6,6 +6,8 @@ on:
       - 'tools/essence_v19_gradirnya.py'
       - 'tools/essence_v20_ancestry.py'
       - 'tests/test_essence_v20_ancestry.py'
+      - 'tools/essence_v21_curriculum_sentinel.py'
+      - 'tests/test_essence_v21_curriculum_sentinel.py'
       - '.github/workflows/essence-v20-ancestry.yml'
       - '.github/workflows/essence-v19-gradirnya.yml'
   workflow_run:
@@ -18,6 +20,8 @@ on:
       - 'tools/essence_v19_gradirnya.py'
       - 'tools/essence_v20_ancestry.py'
       - 'tests/test_essence_v20_ancestry.py'
+      - 'tools/essence_v21_curriculum_sentinel.py'
+      - 'tests/test_essence_v21_curriculum_sentinel.py'
       - '.github/workflows/essence-v20-ancestry.yml'
   workflow_dispatch:
   schedule:
@@ -50,7 +54,7 @@ jobs:
       - name: Test true inherited gradients and malicious archive rejection
         run: |
           python -m py_compile tools/essence_v20_ancestry.py tools/essence_v19_gradirnya.py
-          python -m unittest -v tests.test_essence_v20_ancestry tests.test_essence_v19_gradirnya tests.test_essence_v19_http_canary
+          python -m unittest -v tests.test_essence_v20_ancestry tests.test_essence_v19_gradirnya tests.test_essence_v19_http_canary tests.test_essence_v21_curriculum_sentinel
 
   source-snapshot:
     needs: contract
@@ -144,12 +148,16 @@ jobs:
           from pathlib import Path
           from tools import essence_v19_gradirnya as e
           from tools import essence_v20_ancestry as a
+          from tools import essence_v21_curriculum_sentinel as sentinel
           current=e.read_json("staging/new-splits/manifest.json")
+          curriculum=sentinel.assess(current,e.read_json("staging/new-splits/train.json"),
+                  e.read_json("staging/new-splits/validation.json"),
+                  e.read_json("staging/new-splits/holdout.json"))
           root=Path("staging/previous")
           cells=[]
           outcomes=[]
           p=root/"index.json"
-          if p.is_file():
+          if p.is_file() and curriculum["eligible_for_research_training"]:
               previous=e.read_json(p)
               for cell in previous.get("accepted_cells",[]):
                   try:
@@ -161,13 +169,19 @@ jobs:
                   except (OSError,TypeError,ValueError,KeyError,RuntimeError) as ex:
                       outcomes.append({"cell":cell,"status":"HOLD","reason":str(ex)[:110]})
           else:
-              outcomes.append({"status":"HOLD_NO_VERIFIED_RESEARCH_PARENT"})
+              outcomes.append({"status":"HOLD_CURRICULUM_NOT_ELIGIBLE" if not curriculum["eligible_for_research_training"]
+                               else "HOLD_NO_VERIFIED_RESEARCH_PARENT",
+                               "reasons":curriculum["rejection_codes"]})
           Path("staging/status").mkdir(parents=True,exist_ok=True)
           Path("staging/status/decision.json").write_text(json.dumps({
              "schema":"janus.essence.ancestry_decision/2.0",
              "current_source":current["source_commit"],
              "current_holdout_dates":current["split_dates"]["holdout"],
-             "allowed_cells":cells,"outcomes":outcomes,"production_authority":False},indent=2))
+             "allowed_cells":cells,"outcomes":outcomes,
+             "curriculum_sha256":curriculum["receipt_sha256"],
+             "curriculum_status":curriculum["status"],
+             "production_authority":False},indent=2))
+          Path("staging/status/curriculum.json").write_text(json.dumps(curriculum,indent=2))
           with open(os.environ["GITHUB_OUTPUT"],"a") as out:
               out.write("cells="+json.dumps(cells,separators=(",",":"))+"\n")
           with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as out:
@@ -178,7 +192,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: essence-v20-research-decision-${{ github.run_id }}
-          path: staging/status/decision.json
+          path: |
+            staging/status/decision.json
+            staging/status/curriculum.json
           if-no-files-found: error
           retention-days: 90
       - uses: actions/upload-artifact@v4
