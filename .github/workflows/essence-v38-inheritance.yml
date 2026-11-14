@@ -1,0 +1,207 @@
+name: ESSENCE v3.8 CODEX GPT parent-child frozen paired exam
+
+on:
+  pull_request:
+    paths:
+      - 'tools/essence_v38_inheritance.py'
+      - 'tests/test_essence_v38_inheritance.py'
+      - 'research/essence/codex_v38/frozen_cohort.json'
+      - '.github/workflows/essence-v38-inheritance.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/essence_v38_inheritance.py'
+      - 'tests/test_essence_v38_inheritance.py'
+      - 'research/essence/codex_v38/frozen_cohort.json'
+      - '.github/workflows/essence-v38-inheritance.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: essence-v38-frozen-pair-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  regression:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned CPU PyTorch
+        run: python -m pip install --disable-pip-version-check torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+      - name: Verify safe checkpoints, synthetic lineage and negative-control contracts
+        run: |
+          python -m py_compile tools/essence_v38_inheritance.py
+          python -m unittest -v tests.test_essence_v38_inheritance tests.test_essence_v37_codex_gpt tests.test_essence_v36_juxtapose_exact
+
+  freeze:
+    needs: regression
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.ESSENCE_EVOLUTION_PAUSED != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Verify exact immutable Git blob locks BEFORE any parent training
+        run: |
+          python -m tools.essence_v38_inheritance freeze --repo-root . --out runtime/v38/freeze.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v38-freeze-${{ github.run_id }}
+          path: runtime/v38/freeze.json
+          if-no-files-found: error
+          retention-days: 90
+
+  parent:
+    needs: freeze
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v38-freeze-${{ github.run_id }}
+          path: runtime/v38
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned CPU PyTorch
+        run: python -m pip install --disable-pip-version-check torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+      - name: Train parent and persist source-sealed actual FP32 weight tensors
+        run: |
+          python -m tools.essence_v38_inheritance parent \
+            --repo-root . --freeze runtime/v38/freeze.json \
+            --checkpoint-dir runtime/v38/parent --out runtime/v38/parent_receipt.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v38-parent-${{ github.run_id }}
+          path: runtime/v38/parent/
+          if-no-files-found: error
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v38-parent-receipt-${{ github.run_id }}
+          path: runtime/v38/parent_receipt.json
+          if-no-files-found: error
+          retention-days: 90
+
+  child:
+    needs: parent
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v38-freeze-${{ github.run_id }}
+          path: runtime/v38
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v38-parent-${{ github.run_id }}
+          path: runtime/v38/parent
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned CPU PyTorch
+        run: python -m pip install --disable-pip-version-check torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+      - name: Verify parent bytes and inherit real weights, then train child
+        run: |
+          python -m tools.essence_v38_inheritance child \
+            --repo-root . --freeze runtime/v38/freeze.json \
+            --parent-dir runtime/v38/parent --checkpoint-dir runtime/v38/child \
+            --out runtime/v38/child_receipt.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v38-child-${{ github.run_id }}
+          path: runtime/v38/child/
+          if-no-files-found: error
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v38-child-receipt-${{ github.run_id }}
+          path: runtime/v38/child_receipt.json
+          if-no-files-found: error
+          retention-days: 90
+
+  paired-exam:
+    needs: child
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v38-freeze-${{ github.run_id }}
+          path: runtime/v38
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v38-parent-${{ github.run_id }}
+          path: runtime/v38/parent
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v38-child-${{ github.run_id }}
+          path: runtime/v38/child
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned CPU PyTorch
+        run: python -m pip install --disable-pip-version-check torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+      - name: First and only locked holdout exam AFTER both checkpoints sealed
+        run: |
+          python -m tools.essence_v38_inheritance evaluate \
+            --repo-root . --freeze runtime/v38/freeze.json \
+            --parent-dir runtime/v38/parent --child-dir runtime/v38/child \
+            --out runtime/v38/paired-exam.json
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          from tools.essence_v38_inheritance import sha,EXAM
+          d=json.loads(Path('runtime/v38/paired-exam.json').read_text())
+          assert d['schema']==EXAM
+          assert d['receipt_sha256']==sha({k:v for k,v in d.items() if k!='receipt_sha256'})
+          assert d['child_initial_weights_equal_parent_final'] is True
+          assert d['evaluation_after_both_checkpoints_sealed'] is True
+          assert d['production_authority'] is False
+          assert d['automatic_working_model_replacement'] is False
+          assert d['status'] in ('PASS_INTERNAL_FROZEN_PAIRED_GAIN','NO_GAIN_FROZEN_HOLDOUT')
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+              f.write('## CODEX GPT true two-generation frozen exam\n')
+              f.write('Status: '+d['status']+'\n')
+              f.write('Parent holdout loss: '+str(d['parent_frozen_holdout_loss'])+'\n')
+              f.write('Child holdout loss: '+str(d['child_frozen_holdout_loss'])+'\n')
+              f.write('Only internal preregistered cohort. No external generalization or promotion.\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: essence-v38-paired-exam-${{ github.run_id }}
+          path: runtime/v38/paired-exam.json
+          if-no-files-found: warn
+          retention-days: 90
