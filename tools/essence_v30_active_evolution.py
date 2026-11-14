@@ -39,6 +39,7 @@ LANES = (
     ("epistemic_exchange", "essence-v33-epistemic-exchange.yml", {}),
     ("creation_first_microcore_trial", "essence-v35-creation-first-trial.yml", {}),
     ("juxtapose_exact", "essence-v36-juxtapose-exact.yml", {}),
+    ("codex_gpt_neural_donor", "essence-v37-codex-gpt.yml", {}),
     ("cooling_tower", "janus-cooling-tower-async.yml", {}),
     ("bounded_autonomy_pulse", "essence-v23-continuous-pulse.yml", {}),
 )
