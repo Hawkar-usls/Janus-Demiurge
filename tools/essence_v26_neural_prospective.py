@@ -352,6 +352,35 @@ def future_decision(pending,parent,observed,now,*,published_at=None):
     return result,child if passes else None
 
 
+def consecutive_accepted(history):
+    """Verify an uninterrupted *hash-linked* chain of prospective PASS verdicts."""
+    streak=0
+    successor_parent=None
+    for entry in reversed(history):
+        if not isinstance(entry,dict) or type(entry.get("accepted")) is not bool:
+            raise ValueError("INVALID_GENERATIONAL_HISTORY")
+        if not entry["accepted"]:
+            break
+        proof=entry.get("independent_future_verification") or {}
+        proof_seal=proof.get("receipt_sha256")
+        if (proof.get("status")!="PASS_PROSPECTIVE_PAIRED_NEURAL_GAIN"
+            or proof.get("improvement_proven_under_registered_internal_thresholds") is not True
+            or proof.get("future_records_created_after_weights_git_commit") is not True
+            or proof.get("training_saw_future_labels") is not False
+            or proof.get("production_authority") is not False
+            or not isinstance(proof_seal,str)
+            or proof_seal!=seal({k:v for k,v in proof.items()
+                                if k!="receipt_sha256"})
+            or proof.get("frozen_parent_sha256")!=entry.get("parent_sha256")
+            or proof.get("frozen_child_sha256")!=entry.get("child_sha256")
+            or (successor_parent is not None
+                and entry.get("child_sha256")!=successor_parent)):
+            raise ValueError("UNVERIFIED_ACCEPTED_NEURAL_GENERATION")
+        successor_parent=entry["parent_sha256"]
+        streak+=1
+    return streak
+
+
 def step(state,observed,now,*,history_exhaustive=True,state_published_at=None):
     check(state)
     if now.tzinfo is None:
@@ -363,6 +392,7 @@ def step(state,observed,now,*,history_exhaustive=True,state_published_at=None):
                       "available":len(observed)}
     next_state={k:v for k,v in state.items() if k!="state_sha256"}
     pending=state["pending"]
+    permit_next_training=True
     if pending is not None:
         frozen=at(pending["sealed_before"])
         cutoff=at(state_published_at) if state_published_at else frozen
@@ -379,29 +409,58 @@ def step(state,observed,now,*,history_exhaustive=True,state_published_at=None):
         if accepted:
             next_state["generation"]+=1
             next_state["parent"]=state_of(descendant)
+        streak=(consecutive_accepted(state["history"])+1) if accepted else 0
         next_state["history"]=(state["history"]+[{
             "sealed_before":pending["sealed_before"],
             "parent_sha256":pending["parent_sha256"],
             "child_sha256":pending["challenger_sha256"],
             "accepted":accepted,
+            "consecutive_accepted_generations":streak,
+            "two_consecutive_prospective_gains":streak>=2,
             "generation_after":next_state["generation"],
-            "independent_future_verification":verdict
+            "independent_future_verification":dict(verdict)
         }])[-(MAX_GENERATIONS+20):]
         next_state["pending"]=None
+        if not accepted:
+            # A failed prospective exam cannot launch another candidate on
+            # the same now-consumed cohort; require a later source increment.
+            permit_next_training=False
+            # The original future-verifier verdict stays hash-sealed without
+            # modification; the parent remains in research state as-is.
         next_state["status"]="RESEARCH_GEN"+str(next_state["generation"])+(
             "_ACCEPTED" if accepted else "_HOLD")
     else:
         verdict={"status":"INITIAL_NEURAL_PARENT"}
         if state["parent"] is None:
             next_state["parent"]=state_of(new_parent())
-    if next_state["generation"]<MAX_GENERATIONS:
+        elif state["history"]:
+            # Never repeatedly search for a lucky winner against an
+            # already-inspected prospective cohort. At least 24 further
+            # COMPLETED real jobs must appear after the last consumed trial.
+            previous=state["history"][-1]
+            examined=(previous.get("independent_future_verification") or {})
+            consumed=examined.get("last_new_created_at")
+            if not consumed:
+                raise ValueError("INCOMPLETE_PREVIOUS_NEURAL_EXAM_RECORD")
+            newly_seen=sum(at(row["created_at"])>at(consumed)
+                           for row in observed)
+            if newly_seen<24:
+                permit_next_training=False
+                verdict={"status":"HOLD_RETRAIN_REQUIRES_NEW_HISTORY",
+                         "new_runs_since_last_exam":newly_seen}
+            else:
+                verdict={"status":"RETRAIN_ALLOWED_AFTER_NEW_HISTORY",
+                         "new_runs_since_last_exam":newly_seen}
+    if permit_next_training and next_state["generation"]<MAX_GENERATIONS:
         try:
             original=load_state(next_state["parent"])
             next_state["pending"]=make_pending(original,observed,now)
             next_state["status"]="FROZEN_AWAITING_FUTURE_COHORT"
-            verdict["next_challenger_sha256"]=next_state["pending"]["challenger_sha256"]
+            if "receipt_sha256" not in verdict:
+                verdict["next_challenger_sha256"]=next_state["pending"]["challenger_sha256"]
         except ValueError as error:
-            verdict["next_training_hold"]=str(error)
+            if "receipt_sha256" not in verdict:
+                verdict["next_training_hold"]=str(error)
     next_state["state_sha256"]=seal(next_state)
     return next_state,verdict
 

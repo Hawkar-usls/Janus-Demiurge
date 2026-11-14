@@ -59,6 +59,9 @@ class ProspectiveNeuralContract(unittest.TestCase):
                                  self.freeze+timedelta(days=1))
         self.assertEqual(next_state["generation"],1)
         self.assertTrue(next_state["history"][-1]["accepted"])
+        proof=next_state["history"][-1]["independent_future_verification"]
+        self.assertEqual(proof["receipt_sha256"],n.seal({
+            k:v for k,v in proof.items() if k!="receipt_sha256"}))
         self.assertEqual(next_state["history"][-1]["parent_sha256"],
                          self.frozen["pending"]["parent_sha256"])
         self.assertEqual(n.seal(next_state["parent"]),
@@ -71,7 +74,9 @@ class ProspectiveNeuralContract(unittest.TestCase):
         else:
             # A near-perfect inherited model must not invent a gradient gain
             # merely to continue the cycle. The accepted weights are preserved.
-            self.assertIn("next_training_hold",receipt)
+            self.assertEqual(next_state["status"],"RESEARCH_GEN1_ACCEPTED")
+            self.assertEqual(receipt["receipt_sha256"],n.seal({
+                k:v for k,v in receipt.items() if k!="receipt_sha256"}))
 
     def test_mismatched_child_or_seal_fails_closed(self):
         for k in ("challenger_sha256","parent_sha256"):
@@ -149,6 +154,71 @@ class ProspectiveNeuralContract(unittest.TestCase):
                 n.load_state(self.frozen["parent"]),self.past+self.future,
                 self.freeze+timedelta(minutes=1),
                 published_at=(self.freeze+timedelta(hours=3)).isoformat())
+
+    def failed_state(self):
+        trial=copy.deepcopy(self.frozen)
+        # A deliberately non-improving challenger has exactly the same
+        # weights as the parent; do not claim it is a real improvement.
+        trial["pending"]["challenger"]=copy.deepcopy(trial["parent"])
+        trial["pending"]["challenger_sha256"]=n.seal(trial["parent"])
+        trial["state_sha256"]=n.seal({k:v for k,v in trial.items()
+                                      if k!="state_sha256"})
+        return trial
+
+    def test_failed_future_trial_cannot_automatically_retry_same_cohort(self):
+        trial=self.failed_state()
+        rows=sorted(self.past+self.future,key=lambda x:x["created_at"])
+        completed,decision=n.step(trial,rows,self.freeze+timedelta(days=1))
+        self.assertEqual(decision["status"],"HOLD_FUTURE_NEURAL_GAIN_NOT_PROVEN")
+        self.assertEqual(completed["generation"],0)
+        self.assertIsNone(completed["pending"])
+        self.assertFalse(completed["history"][-1]["accepted"])
+        self.assertEqual(completed["history"][-1]["consecutive_accepted_generations"],0)
+        v=completed["history"][-1]["independent_future_verification"]
+        self.assertEqual(v["receipt_sha256"],n.seal({k:x for k,x in v.items()
+                                                 if k!="receipt_sha256"}))
+        replay,why=n.step(completed,rows,self.freeze+timedelta(days=1,hours=1))
+        self.assertEqual(why["status"],"HOLD_RETRAIN_REQUIRES_NEW_HISTORY")
+        self.assertEqual(replay["state_sha256"],completed["state_sha256"])
+
+    def test_rejected_trial_requires_an_additional_24_new_complete_runs(self):
+        rows=sorted(self.past+self.future,key=lambda x:x["created_at"])
+        stopped,_=n.step(self.failed_state(),rows,
+                         self.freeze+timedelta(days=1))
+        additional=[row(900+i,self.freeze+timedelta(days=1,minutes=i+1),i%3)
+                    for i in range(24)]
+        _,verdict=n.step(stopped,sorted(rows+additional,
+            key=lambda x:x["created_at"]),self.freeze+timedelta(days=2))
+        self.assertEqual(verdict["status"],"RETRAIN_ALLOWED_AFTER_NEW_HISTORY")
+
+    def test_only_contiguous_hash_linked_future_gains_count_toward_two(self):
+        def accepted(parent,child):
+            proof={"status":"PASS_PROSPECTIVE_PAIRED_NEURAL_GAIN",
+                "improvement_proven_under_registered_internal_thresholds":True,
+                "future_records_created_after_weights_git_commit":True,
+                "training_saw_future_labels":False,
+                "production_authority":False,
+                "frozen_parent_sha256":parent,
+                "frozen_child_sha256":child}
+            proof["receipt_sha256"]=n.seal(proof)
+            return {"accepted":True,"parent_sha256":parent,
+                    "child_sha256":child,
+                    "independent_future_verification":proof}
+        a=accepted("a"*64,"b"*64)
+        b=accepted("b"*64,"c"*64)
+        failure={"accepted":False,"independent_future_verification":{
+            "status":"HOLD_FUTURE_NEURAL_GAIN_NOT_PROVEN"}}
+        self.assertEqual(n.consecutive_accepted([a,b]),2)
+        self.assertEqual(n.consecutive_accepted([a,failure,b]),1)
+        bogus=copy.deepcopy(b)
+        bogus["child_sha256"]="d"*64
+        with self.assertRaisesRegex(ValueError,
+                                    "UNVERIFIED_ACCEPTED_NEURAL_GENERATION"):
+            n.consecutive_accepted([a,bogus])
+        wrong_parent=accepted("e"*64,"f"*64)
+        with self.assertRaisesRegex(ValueError,
+                                    "UNVERIFIED_ACCEPTED_NEURAL_GENERATION"):
+            n.consecutive_accepted([a,wrong_parent])
 
     def test_no_synthetic_pass_can_claim_external_custodian(self):
         completed=self.past+self.future
