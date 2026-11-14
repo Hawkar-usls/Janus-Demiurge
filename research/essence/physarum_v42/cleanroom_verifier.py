@@ -211,17 +211,20 @@ def infer(model, raw, *, repeats=3):
     with torch.no_grad():
         for _ in range(repeats):
             a=perf_counter()
+            cpu_start=process_time()
             logits=model(x)
             loss=torch.nn.functional.cross_entropy(
                 logits.reshape(-1,256), y.reshape(-1))
             sample.append({"loss":float(loss.item()),
-                           "elapsed_seconds":perf_counter()-a})
+                           "elapsed_seconds":perf_counter()-a,
+                           "cpu_seconds":process_time()-cpu_start})
     require(all(math.isfinite(z["loss"]) for z in sample) and
             max(z["loss"] for z in sample) -
             min(z["loss"] for z in sample)<1e-5,
             "NONDETERMINISTIC_INFERENCE_LOSS")
     return {"loss": sample[0]["loss"],
             "mean_inference_seconds":sum(z["elapsed_seconds"] for z in sample)/repeats,
+            "mean_inference_cpu_seconds":sum(z["cpu_seconds"] for z in sample)/repeats,
             "tokens":384}
 
 
@@ -302,7 +305,9 @@ def evaluate(lock_file, cost_file, baseline14_dir, control8_dir,
                          for x in tasks) for name in models}
     # The actual inference cost is observed separately and counted for
     # both policies, not omitted from a favorable quality-only claim.
-    ratio=(phys_cpu+infer_cost["physarum"])/(fixed_cpu+infer_cost["baseline14"])
+    infer_cpu={name:sum(x["scores"][name]["mean_inference_cpu_seconds"]
+                        for x in tasks) for name in models}
+    ratio=(phys_cpu+infer_cpu["physarum"])/(fixed_cpu+infer_cpu["baseline14"])
     quality_gain = beats("baseline14") and beats("control8")
     # Conservative predeclared cost rule: no >25% CPU time increase
     # for a 14-step Physarum policy on the SAME runner.
@@ -329,6 +334,7 @@ def evaluate(lock_file, cost_file, baseline14_dir, control8_dir,
         "physarum_training_search_cpu_seconds":phys_cpu,
         "control14_training_cpu_seconds":fixed_cpu,
         "inference_elapsed_seconds_for_12_files":infer_cost,
+        "inference_cpu_seconds_for_12_files":infer_cpu,
         "physarum_to_fixed_full_cpu_cost_ratio":ratio,
         "cost_ratio_max_for_pass":1.25,
         "independent_implementation":True,
