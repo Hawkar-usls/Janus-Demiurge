@@ -399,6 +399,15 @@ def consecutive_accepted(history):
         if (proof.get("status")!="PASS_PROSPECTIVE_PAIRED_NEURAL_GAIN"
             or proof.get("improvement_proven_under_registered_internal_thresholds") is not True
             or proof.get("future_records_created_after_weights_git_commit") is not True
+            or proof.get("clustered_prospective_gate_version")!="2.8"
+            or type(proof.get("workflow_clusters")) is not int
+            or proof["workflow_clusters"]<MIN_DISTINCT_WORKFLOWS
+            or type(proof.get("largest_workflow_fraction")) not in (float,int)
+            or proof["largest_workflow_fraction"]>MAX_WORKFLOW_SHARE
+            or type(proof.get("cluster_conservative_lower_bound")) not in (float,int)
+            or proof["cluster_conservative_lower_bound"]<=0
+            or type(proof.get("positive_workflow_fraction")) not in (float,int)
+            or proof["positive_workflow_fraction"]<MIN_POSITIVE_WORKFLOW_FRACTION
             or proof.get("training_saw_future_labels") is not False
             or proof.get("production_authority") is not False
             or not isinstance(proof_seal,str)
