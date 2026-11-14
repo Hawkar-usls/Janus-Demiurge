@@ -196,8 +196,7 @@ def rollback_results(data,hardware):
         or not isinstance(data["service_id"],str) or len(data["service_id"])<8
         or data["baseline_checkpoint_sha256"]!=ORIGINAL_SHA
         or data["active_checkpoint_sha256_after"]!=ORIGINAL_SHA
-        or data["candidate_artifact_sha256"]!=hardware["candidate_artifact_sha256"]
-            if "candidate_artifact_sha256" in hardware else False):
+        or data["candidate_artifact_sha256"]!=hardware["candidate_artifact_sha256"]):
         raise ValueError("INCONSISTENT_REAL_SERVICE_IDENTITY")
     if (any(not hex64(data[k]) for k in
              ("candidate_artifact_sha256","monitoring_source_sha256","deployment_proof_sha256",
