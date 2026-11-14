@@ -63,6 +63,50 @@ def module_exists(root: pathlib.Path, module_id: str) -> bool:
     return any(p.exists() for p in direct)
 
 
+
+def verified_health_parent(root: pathlib.Path, module_id: str, observed: str) -> dict[str, Any] | None:
+    """Verify a previous living organ before allowing it to originate children.
+
+    A fitness receipt is evidence of a narrow capability, never permission
+    to rewrite governance, add arbitrary templates or deploy model weights.
+    """
+    try:
+        spec = load(root / "rex/specs/generated" / f"{module_id}.json")
+        fitness = load(root / "rex/candidates" / module_id / "fitness.json")
+        admitted = load(root / "rex/admissions" / f"{module_id}.json")
+        lifecycle = load(root / "rex/lifecycle" / f"{module_id}.json")
+        source = root / "rex/candidates" / module_id / "module.py"
+        if source.is_symlink():
+            return None
+        actual = sha256_file(source)
+        sealed = dict(fitness)
+        receipt = sealed.pop("receipt_sha256", None)
+        expected = hashlib.sha256(json.dumps(sealed, sort_keys=True,
+            separators=(",", ":")).encode()).hexdigest()
+        snapshot = (spec.get("nexus") or {}).get("input") or {}
+        if (spec.get("template") != "ledger_health" or
+            spec.get("module_id") != module_id or
+            snapshot.get("observed_path") != observed or
+            type(snapshot.get("observed_record_count")) is not int or
+            fitness.get("status") != "RESEARCH_FUNCTIONAL_GAIN" or
+            fitness.get("new_functional_capability_proven") is not True or
+            fitness.get("quality_on_external_future_tasks_proven") is not False or
+            fitness.get("production_authority") is not False or
+            fitness.get("candidate_module") != module_id or
+            fitness.get("candidate_source_sha256") != actual or
+            fitness.get("parent_module") != module_id.removesuffix("_ledger_health") + "_ledger_summary" or
+            not isinstance(receipt, str) or receipt != expected or
+            admitted.get("state") != "ADMITTED_EXACT_SHA" or
+            admitted.get("source_sha256") != actual or
+            lifecycle.get("state") != "LIFECYCLE_ADMITTED_EXACT_SHA" or
+            lifecycle.get("source_sha256") != actual):
+            return None
+        return {"source_sha256": actual, "fitness_receipt_sha256": receipt,
+                "observed_record_count": snapshot["observed_record_count"]}
+    except (OSError, ValueError, TypeError, KeyError):
+        return None
+
+
 def compact_row(obj: dict[str, Any]) -> dict[str, Any]:
     allowed = (
         "schema",
@@ -173,8 +217,26 @@ def main() -> int:
                 proposed_kind = "LEDGER_HEALTH_GAP"
                 proposed_template = "ledger_health"
                 if module_exists(root, module_id):
-                    skipped.append({"family": family_dir.relative_to(root).as_posix(), "reason": "health_module_already_exists", "module_id": module_id})
-                    continue
+                    parent_id = module_id
+                    lineage = verified_health_parent(root, parent_id,
+                         family_dir.relative_to(root).as_posix())
+                    if lineage is None:
+                        skipped.append({"family": family_dir.relative_to(root).as_posix(),
+                            "reason": "HOLD_UNVERIFIED_HEALTH_PARENT", "module_id": parent_id})
+                        continue
+                    if len(safe) - lineage["observed_record_count"] < 12:
+                        skipped.append({"family": family_dir.relative_to(root).as_posix(),
+                            "reason": "HOLD_NEXT_GENERATION_REQUIRES_NEW_RECORDS",
+                            "parent_module": parent_id,
+                            "new_records": len(safe)-lineage["observed_record_count"]})
+                        continue
+                    module_id = bounded_module_id(family_dir.name, "_ledger_trend")
+                    proposed_kind = "LEDGER_TREND_GAP"
+                    proposed_template = "ledger_trend"
+                    if module_exists(root, module_id):
+                        skipped.append({"family": family_dir.relative_to(root).as_posix(),
+                            "reason": "trend_module_already_exists", "module_id": module_id})
+                        continue
 
             observed_path = family_dir.relative_to(root).as_posix()
             need_material = f"{proposed_kind}|{observed_path}|{module_id}".encode()
@@ -202,6 +264,11 @@ def main() -> int:
                 "observed_record_count": len(safe),
                 "rows": birth_rows,
             }
+            if proposed_template == "ledger_trend":
+                snapshot_input["verified_parent_module"] = parent_id
+                snapshot_input["verified_parent_source_sha256"] = lineage["source_sha256"]
+                snapshot_input["verified_parent_fitness_sha256"] = lineage["fitness_receipt_sha256"]
+                snapshot_input["parent_observed_record_count"] = lineage["observed_record_count"]
             proposal = {
                 "schema": PROPOSAL_SCHEMA,
                 "proposal_id": proposal_id,
@@ -217,7 +284,9 @@ def main() -> int:
                     "desire_id": desire_id,
                     "status": "REQUESTED",
                     "module_id": module_id,
-                    "purpose": (f"Report status counts and detect regression in ledger family {family_dir.name} after {len(safe)} persisted receipts; independently compare with original summary."
+                    "purpose": (f"Compare earlier and later status distributions for {family_dir.name} using new post-parent evidence; retain verified health reporting."
+                                if proposed_template == "ledger_trend" else
+                                f"Report status counts and detect regression in ledger family {family_dir.name} after {len(safe)} persisted receipts; independently compare with original summary."
                                 if proposed_template == "ledger_health" else
                                 f"Summarize a bounded snapshot of the repeatedly accumulating ledger family {family_dir.name}; Rex detected {len(safe)} persisted receipts under {observed_path}."),
                     "template": proposed_template,
