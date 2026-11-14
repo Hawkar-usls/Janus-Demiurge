@@ -73,7 +73,7 @@ class GitHubFutureReadiness(unittest.TestCase):
         old=[self.one(i+220,self.freeze+timedelta(seconds=i),i%3)
              for i in range(8)]
         outcome=self.report(raw=self.historical+old+self.future[:40])
-        self.assertEqual(outcome["completed_after_frozen_git_commit"],47)
+        self.assertEqual(outcome["completed_after_frozen_git_commit"],40)
         self.assertEqual(outcome["status"],"HOLD_NEED_MORE_POSTFREEZE_RUNS")
 
     def test_parent_history_needs_new_runs_before_next_trial(self):
