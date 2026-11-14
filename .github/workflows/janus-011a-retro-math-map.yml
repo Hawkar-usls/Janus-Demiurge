@@ -1,0 +1,45 @@
+name: JANUS-011A Mathematical Retrocausality Falsification Map
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/late_choice_010/retro_math_011a.py'
+      - 'experiments/ocean_transformer/late_choice_010/test_retro_math_011a.py'
+      - 'experiments/ocean_transformer/late_choice_010/PROTOCOL_011A_MATH_MAP.md'
+      - '.github/workflows/janus-011a-retro-math-map.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-011a-math-conditions-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  exact-theorems-not-physical-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact Bell and collider calculations, latent and power tests
+        run: |
+          set -euo pipefail
+          python -m py_compile experiments/ocean_transformer/late_choice_010/retro_math_011a.py
+          python -m unittest discover -v -s experiments/ocean_transformer/late_choice_010 -p 'test_retro_math_011a.py'
+      - name: Calculate entire fixed mathematical candidate map, no dataset or physics
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/janus011a"
+          python experiments/ocean_transformer/late_choice_010/retro_math_011a.py --output "$RUNNER_TEMP/janus011a/retro_math_011a_results.json"
+      - name: Archive deterministic mathematics and no-physical-proof warning
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-011a-mathematical-map-${{ github.run_id }}
+          path: ${{ runner.temp }}/janus011a/retro_math_011a_results.json
+          retention-days: 60
+          if-no-files-found: error
