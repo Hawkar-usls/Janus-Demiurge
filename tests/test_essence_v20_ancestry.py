@@ -92,7 +92,7 @@ class V20AncestryContract(unittest.TestCase):
         runs={101:good,102:dict(good,head_branch="research"),
               103:dict(good,conclusion="failure")}
         selected=v.select_archive([art(101,1),art(102,2),art(103,3)],runs,110)
-        self.assertEqual(selected,[(101,1,"d"*40)])
+        self.assertEqual(selected,[(101,1,"d"*40,v.WORKFLOW)])
         self.assertEqual(v.select_archive([art(101,1)],runs,101),[])
         with self.assertRaisesRegex(ValueError,"FOREIGN_PARENT_REPOSITORY_DENIED"):
             v.select_archive([],{},100,repository="some-other/repo")
