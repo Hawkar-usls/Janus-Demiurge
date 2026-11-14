@@ -46,7 +46,7 @@ class GradirnyaTests(unittest.TestCase):
         verified=e.verify(0,self.hold,self.manifest,result,self.path/"child"/"offspring.pt")
         self.assertEqual(verified["heldout_rows"],len(self.hold["rows"]))
         self.assertIn(verified["gate"],("RESEARCH_HISTORICAL_DATE_HOLDOUT_GAIN",
-                                       "HOLD_HISTORICAL_DATE_HOLDOUT_NO_CONFIRMED_GAIN"))
+                                       "HOLD_NOT_BETTER_THAN_FROZEN_PRIOR_AND_PARENT"))
         self.assertFalse(verified["externally_custodied_test"])
 
     def test_replay_cannot_use_holdout_as_train(self):
@@ -83,6 +83,23 @@ class GradirnyaTests(unittest.TestCase):
         weights.write_bytes(weights.read_bytes()+b"forged")
         with self.assertRaisesRegex(ValueError,"OFFSPRING_SHA_MISMATCH"):
             e.verify(0,self.hold,self.manifest,result,weights)
+
+    def test_holdout_requires_strong_frozen_train_prior(self):
+        result=e.train(0,self.train,self.val,self.manifest,self.path/"child",steps=20)
+        v=e.verify(0,self.hold,self.manifest,result,self.path/"child"/"offspring.pt")
+        self.assertIn("frozen_train_prior",v)
+        if v["gate"]=="RESEARCH_HISTORICAL_DATE_HOLDOUT_GAIN":
+            self.assertGreaterEqual(v["nll_gain_vs_prior"],0.02)
+            self.assertGreater(v["accuracy_gain_vs_prior"],0)
+        self.assertFalse(v["automatic_production_promotion"])
+
+    def test_fake_train_prior_rejected_even_if_receipt_resigned(self):
+        altered=copy.deepcopy(self.manifest)
+        altered["train_label_counts"][0]+=1
+        altered["train_label_counts"][1]-=1
+        altered["receipt_sha256"]=e.seal({k:v for k,v in altered.items() if k!="receipt_sha256"})
+        with self.assertRaisesRegex(ValueError,"TRAIN_PRIOR_COUNT_MISMATCH"):
+            e.train(0,self.train,self.val,altered,self.path/"fake",steps=20)
 
     def test_no_automatic_research_overwrite(self):
         with self.assertRaises(FileExistsError):
