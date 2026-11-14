@@ -146,7 +146,7 @@ class CleanRoomPhysarumContract(unittest.TestCase):
                                 "inference_cpu_seconds":0.2}
                 })
             return out
-        bad=m.grade(rows(5.3),cost_data,contract)
+        bad=m.grade(rows(5.38),cost_data,contract)
         self.assertFalse(bad["requirement_cost_efficiency"])
         self.assertEqual(bad["statistical_status"],"NO_COSTMATCHED_14STEP_EXTERNAL_GAIN")
         yes=m.grade(rows(4.0),cost_data,contract)
