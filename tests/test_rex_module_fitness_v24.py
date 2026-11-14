@@ -116,7 +116,9 @@ class FunctionalBirth(unittest.TestCase):
                              self.summary_dir,self.summary_spec)
 
     def test_insufficient_extra_rows_rejected(self):
-        self.prepare_health(count=14)
+        self.prepare_health(count=44)
+        for path in sorted(self.family.glob("*.json"))[14:]:
+            path.unlink()
         with self.assertRaisesRegex(ValueError,"INSUFFICIENT_ADDITIONAL_REAL_RECORDS"):
             fitness.evaluate(self.root,self.health_dir,self.health_spec,
                              self.summary_dir,self.summary_spec)
