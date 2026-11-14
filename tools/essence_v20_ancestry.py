@@ -26,6 +26,8 @@ SCHEMA="janus.essence.cross_run_research_ancestry/2.0"
 PARENT_SCHEMA="janus.essence.research_parent/2.0"
 OWNER_REPO="Hawkar-usls/Janus-Demiurge"
 WORKFLOW=".github/workflows/essence-v19-gradirnya.yml"
+CONTINUITY_WORKFLOW=".github/workflows/essence-v20-ancestry.yml"
+ALLOWED_WORKFLOWS=(WORKFLOW,CONTINUITY_WORKFLOW)
 ARCHIVE_RE=re.compile(r"^essence-v20-reviewed-archive-([1-9][0-9]{0,12})$")
 MAX_ANCESTOR_DEPTH=12
 MAX_ZIP_BYTES=25_000_000
@@ -124,9 +126,10 @@ def validate_verified_parent(manifest,lineage,verdict,weights,cell,*,depth=0):
     meta["receipt_sha256"]=e.seal(meta)
     return meta
 
-def pack_run(manifest_path,child_dir,verdict_dir,out,*,run_id,run_sha,depths=None):
+def pack_run(manifest_path,child_dir,verdict_dir,out,*,run_id,run_sha,depths=None,origin_workflow=WORKFLOW):
     """One immutable archive per real run; HOLD also preserved as evidence."""
-    if type(run_id) is not int or run_id<=0 or not e.SHA.fullmatch(run_sha):
+    if (type(run_id) is not int or run_id<=0 or not e.SHA.fullmatch(run_sha)
+        or origin_workflow not in ALLOWED_WORKFLOWS):
         raise ValueError("INVALID_PARENT_SOURCE_RUN")
     manifest=load(manifest_path)
     e.validate_manifest(manifest,manifest.get("source_commit"))
@@ -142,8 +145,15 @@ def pack_run(manifest_path,child_dir,verdict_dir,out,*,run_id,run_sha,depths=Non
             rejected.append({"cell":cell,"reason":"MISSING_CELL_EVIDENCE"})
             continue
         try:
-            depth=(depths or {}).get(cell,0)
             lineage,verdict=load(lineage_path),load(verdict_path)
+            depth=(depths or {}).get(cell,0)
+            history=lineage.get("cross_run_inheritance")
+            if history is not None:
+                if (not isinstance(history,dict) or type(history.get("ancestry_depth")) is not int
+                    or history["ancestry_depth"]!=depth):
+                    raise ValueError("CROSS_RUN_ANCESTRY_DEPTH_MISMATCH")
+            elif depth!=0:
+                raise ValueError("UNPROVEN_ANCESTRY_DEPTH")
             weights=offspring_path.read_bytes()
             meta=validate_verified_parent(manifest,lineage,verdict,weights,cell,depth=depth)
         except (OSError,RuntimeError,ValueError,KeyError,TypeError) as error:
@@ -156,7 +166,7 @@ def pack_run(manifest_path,child_dir,verdict_dir,out,*,run_id,run_sha,depths=Non
     index={
         "schema":SCHEMA,"source_repository":OWNER_REPO,
         "origin_run_id":run_id,"origin_main_sha":run_sha,
-        "origin_workflow":WORKFLOW,"source_commit":manifest["source_commit"],
+        "origin_workflow":origin_workflow,"source_commit":manifest["source_commit"],
         "source_dataset_sha256":manifest["dataset_sha256"],
         "accepted_cells":accepted,"rejected_cells":rejected,
         "parent_meta_sha256":{str(m["cell"]):m["receipt_sha256"] for m in records},
@@ -193,13 +203,14 @@ def select_archive(api_artifacts,run_details,current_run,*,repository=OWNER_REPO
             or run.get("conclusion")!="success"
             or run.get("head_branch")!="main"
             or run.get("event") not in ("push","schedule","workflow_dispatch")
-            or not str(run.get("path","")).endswith(WORKFLOW)
+            or not any(str(run.get("path","")).endswith(p) for p in ALLOWED_WORKFLOWS)
             or not e.SHA.fullmatch(str(run.get("head_sha","")))):
             continue
-        filtered.append((rid,art["id"],run["head_sha"]))
+        wf=next(p for p in ALLOWED_WORKFLOWS if str(run["path"]).endswith(p))
+        filtered.append((rid,art["id"],run["head_sha"],wf))
     return sorted(filtered,reverse=True)
 
-def decode_archive(raw,expected_run,expected_sha):
+def decode_archive(raw,expected_run,expected_sha,expected_workflow=WORKFLOW):
     if not isinstance(raw,bytes) or not 0<len(raw)<=MAX_ZIP_BYTES:
         raise ValueError("UNTRUSTED_PARENT_ZIP")
     with zipfile.ZipFile(io.BytesIO(raw)) as z:
@@ -219,7 +230,8 @@ def decode_archive(raw,expected_run,expected_sha):
     if (index.get("schema")!=SCHEMA or index.get("source_repository")!=OWNER_REPO
         or index.get("origin_run_id")!=expected_run
         or index.get("origin_main_sha")!=expected_sha
-        or index.get("origin_workflow")!=WORKFLOW
+        or expected_workflow not in ALLOWED_WORKFLOWS
+        or index.get("origin_workflow")!=expected_workflow
         or index.get("receipt_sha256")!=e.seal({k:v for k,v in index.items() if k!="receipt_sha256"})
         or index.get("production_authority") is not False
         or index.get("automatic_promotion") is not False
@@ -293,7 +305,7 @@ def fetch_trusted_research_ancestors(out,*,token,current_run,opener=urllib.reque
             runs[rid]=_fetch_json(api+f"/actions/runs/{rid}",token,opener)
     possible=select_archive(candidates,runs,current_run)
     outcomes=[]
-    for rid,artifact_id,head_sha in possible:
+    for rid,artifact_id,head_sha,expected_workflow in possible:
         url=api+f"/actions/artifacts/{artifact_id}/zip"
         req=urllib.request.Request(url,headers={
             "Authorization":"Bearer "+token,"Accept":"application/vnd.github+json",
@@ -301,7 +313,7 @@ def fetch_trusted_research_ancestors(out,*,token,current_run,opener=urllib.reque
         try:
             with opener(req,timeout=25) as response:
                 raw=response.read(MAX_ZIP_BYTES+1)
-            idx,files=decode_archive(raw,rid,head_sha)
+            idx,files=decode_archive(raw,rid,head_sha,expected_workflow)
             if not idx["accepted_cells"]:
                 outcomes.append({"run":rid,"reason":"NO_ELIGIBLE_RESEARCH_PARENT"})
                 continue
@@ -365,6 +377,8 @@ def cli():
     a=sub.add_parser("pack")
     for key in ("manifest","children","verdicts","out","run-sha"):a.add_argument("--"+key,required=True)
     a.add_argument("--run-id",type=int,required=True)
+    a.add_argument("--origin-workflow",choices=ALLOWED_WORKFLOWS,default=WORKFLOW)
+    a.add_argument("--previous-archive")
     b=sub.add_parser("check")
     b.add_argument("--parent",required=True);b.add_argument("--current-manifest",required=True)
     c=sub.add_parser("fetch")
@@ -377,8 +391,18 @@ def cli():
     d.add_argument("--steps",type=int,default=40)
     opts=p.parse_args()
     if opts.mode=="pack":
+        depths=None
+        if opts.previous_archive:
+            prev=Path(opts.previous_archive)
+            index=load(prev/"index.json") if (prev/"index.json").is_file() else None
+            if index is not None:
+                depths={}
+                for cell in index.get("accepted_cells",[]):
+                    m=load(prev/f"cell-{cell}"/"parent.json")
+                    depths[cell]=m["ancestry_depth"]+1
         obj=pack_run(opts.manifest,opts.children,opts.verdicts,opts.out,
-                     run_id=opts.run_id,run_sha=opts.run_sha)
+                     run_id=opts.run_id,run_sha=opts.run_sha,
+                     depths=depths,origin_workflow=opts.origin_workflow)
         print(json.dumps({"status":obj["status"],"accepted":obj["accepted_cells"],
                           "rejected":len(obj["rejected_cells"]),"production_authority":False}))
     elif opts.mode=="check":
