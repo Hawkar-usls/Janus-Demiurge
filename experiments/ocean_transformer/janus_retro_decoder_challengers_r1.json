@@ -1,0 +1,37 @@
+{
+  "schema": "janus.retro.prospective_early_decoder_addendum.v1",
+  "protocol_id": "JANUS-JOINT-EARLY-DECODER-CHALLENGERS-2026-11-07-R1",
+  "parent": "JANUS-JOINT-EARLY-SIGNAL-PROSPECTIVE-2026-11-07-R1",
+  "applies_only_to": "First 24 complete preselected early A/B attempts issued >= 2026-11-08T00:00:00Z, as precommitted in parent; never reselect by late result",
+  "decision_locked_before_eligible_future_data": true,
+  "candidates": [
+    {
+      "id": "RAW",
+      "formula": "A"
+    },
+    {
+      "id": "INVERTED",
+      "formula": "1 XOR A"
+    },
+    {
+      "id": "CONFIDENCE_HIGH_FLIP",
+      "formula": "A XOR C"
+    },
+    {
+      "id": "CONFIDENCE_LOW_FLIP",
+      "formula": "A XOR (1 XOR C)"
+    }
+  ],
+  "A": "early.predicted_bits[i] (0 or 1), fixed by early commit before B",
+  "C": "1 if abs(early.p1_model_probs[i]-0.5)>=0.25 else 0",
+  "B": "future.future_bits[i], OS secrets.token_bytes generated later",
+  "score": "all 6144 bit positions, each precommitted decoder evaluated identically, no selected pairs",
+  "numerical_test": "exact one-sided fair-bit binomial upper tail for each candidate; Bonferroni adjusted minimum over 4 candidates",
+  "alpha_familywise": 0.0001,
+  "candidate_count": 4,
+  "retrospective_fit_or_best_candidate_selection": false,
+  "no_promotion_to_production": true,
+  "no_physical_retrocausality_claim": true,
+  "historical_7_trial_data_eligible": false,
+  "note": "Both inverted and confidence-conditional transformations can appear better on already observed finite data by chance. No result from historical samples may justify promotional model selection. This is an addendum frozen before eligible future trials, with a separate multiplicity budget, and does not change the original primary test."
+}

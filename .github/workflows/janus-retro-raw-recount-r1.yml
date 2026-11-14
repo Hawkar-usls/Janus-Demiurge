@@ -1,0 +1,204 @@
+name: JANUS Retro Raw Recount R1 - Independent Historical Evidence Gate
+
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/janus_retro_raw_recount_r1.py'
+      - 'experiments/ocean_transformer/test_janus_retro_raw_recount_r1.py'
+      - 'experiments/ocean_transformer/janus_retro_early_joint_witness_r1.py'
+      - 'experiments/ocean_transformer/test_janus_retro_early_joint_witness_r1.py'
+      - 'experiments/ocean_transformer/janus_retro_prospective_joint_r1.py'
+      - 'experiments/ocean_transformer/test_janus_retro_prospective_joint_r1.py'
+      - 'experiments/ocean_transformer/janus_retro_prospective_joint_r1.json'
+      - 'experiments/ocean_transformer/janus_retro_decoder_challengers_r1.py'
+      - 'experiments/ocean_transformer/test_janus_retro_decoder_challengers_r1.py'
+      - 'experiments/ocean_transformer/janus_retro_decoder_challengers_r1.json'
+      - '.github/workflows/janus-retro-raw-recount-r1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-retro-recount-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  raw-independent-audit:
+    name: Audit raw A/B archived evidence Python ${{ matrix.python }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11','3.12']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          path: code
+      - uses: actions/checkout@v4
+        with:
+          ref: janus/retro-quantum-lab-ledger
+          persist-credentials: false
+          path: evidence
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Test exact recomputation and deliberate tampering controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s code/experiments/ocean_transformer \
+            -p test_janus_retro_raw_recount_r1.py
+      - name: Recompute every historical 256-bit target from original early and future JSONs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python code/experiments/ocean_transformer/janus_retro_raw_recount_r1.py \
+            --ledger evidence/experiments/ocean_transformer/ledger/retro-lab \
+            --out out/retro-raw-audit-py${{ matrix.python }}.json
+          python - <<'PY'
+          import glob,json
+          x=json.load(open(glob.glob('out/retro-raw-audit-py*.json')[0]))
+          assert x['trial_count'] >= 7
+          assert x['read_all_available_archived_trials']
+          assert not x['postselection']
+          assert not x['physical_retrocausal_signal_demonstrated']
+          assert not x['externally_attested_physical_time_order']
+          assert x['production_promotion']=='REFUSED_NO_PHYSICAL_CAUSAL_PROOF'
+          print('All archived records independently recounted; no physical channel claimed.')
+          PY
+          sha256sum out/retro-raw-audit-py${{ matrix.python }}.json
+          echo "Independent raw-bit recount from entire unmodified historical ledger; physical retrocausality NOT demonstrated." >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-retro-raw-recount-r1-py${{ matrix.python }}
+          path: out/retro-raw-audit-py${{ matrix.python }}.json
+          retention-days: 90
+          if-no-files-found: error
+
+  joint-early-witness-audit:
+    name: Exploratory early joint signal on independent CPU Python ${{ matrix.python }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11','3.12']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          path: code
+      - uses: actions/checkout@v4
+        with:
+          ref: janus/retro-quantum-lab-ledger
+          persist-credentials: false
+          path: evidence
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Independently test planted XOR-only interaction, null controls and deterministic permutations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s code/experiments/ocean_transformer \
+            -p 'test_janus_retro_early_joint_witness_r1.py'
+      - name: Run preexisting-early-register joint witness on unfiltered retrospective ledger
+        shell: bash
+        run: |
+          set -euo pipefail
+          python code/experiments/ocean_transformer/janus_retro_early_joint_witness_r1.py \
+            --ledger evidence/experiments/ocean_transformer/ledger/retro-lab \
+            --permutations 1999 \
+            --out out/joint-early-witness-py${{ matrix.python }}.json
+          python - <<'PY'
+          import glob,json
+          result=json.load(open(glob.glob('out/joint-early-witness-*.json')[0]))
+          assert result['trial_count'] >= 7
+          assert result['all_early_and_late_positions_used']
+          assert result['no_late_herald_postselection']
+          assert result['historical_research_question_chosen_after_outcomes_existed']
+          assert result['permutation_test_is_exploratory']
+          assert not result['physical_backward_signal_detected']
+          assert not result['promotion_to_production']
+          print('Retrospective joint-only witness; no pre-registered physical signal claim.')
+          PY
+          sha256sum out/joint-early-witness-py${{ matrix.python }}.json
+          echo 'Early joint-witness interaction evaluated as EXPLORATORY ONLY; no physical time channel established.' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-early-joint-witness-r1-py${{ matrix.python }}
+          path: out/joint-early-witness-py${{ matrix.python }}.json
+          retention-days: 90
+          if-no-files-found: error
+
+  prospective-fixed-n:
+    name: Frozen future 24-trial gate Python ${{ matrix.python }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11','3.12']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          path: code
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: janus/retro-quantum-lab-ledger
+          path: evidence
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Test frozen future cutoff, no selection by outcome, and integrity guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s code/experiments/ocean_transformer \
+            -p 'test_janus_retro_prospective_joint_r1.py'
+          python -m unittest discover -v \
+            -s code/experiments/ocean_transformer \
+            -p 'test_janus_retro_decoder_challengers_r1.py'
+      - name: Apply precommitted 24-future-run rule only (no historical retrofitting)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python code/experiments/ocean_transformer/janus_retro_prospective_joint_r1.py \
+            --ledger evidence/experiments/ocean_transformer/ledger/retro-lab \
+            --protocol code/experiments/ocean_transformer/janus_retro_prospective_joint_r1.json \
+            --out out/prospective-joint-py${{ matrix.python }}.json
+          python - <<'PY'
+          import glob,json
+          x=json.load(open(glob.glob('out/prospective-joint-*.json')[0]))
+          assert not x['physical_retrocausality_proven']
+          assert not x['production_promotion']
+          assert x['postselection'] is False
+          if x['primary_exact_p'] is None:
+              assert x['status'] in (
+                  'PENDING_MORE_PRECOMMITTED_TRIALS',
+                  'HOLD_INCOMPLETE_PRESELECTED_TRIALS'
+              )
+          else:
+              assert x['trial_count']==24
+              assert x['bits']==24*256
+              assert x['early_sample_selected_without_late_data']
+              assert x['precommitted_challenger_suite']['all_24_x_256_bits_scored']
+              assert not x['precommitted_challenger_suite']['physical_retrocausality_proven']
+          print('Prospective gate:',x['status'])
+          PY
+          sha256sum out/prospective-joint-py${{ matrix.python }}.json
+          echo 'JANUS prospective 24-trial cutoff: no result before eligible trials, no late-outcome selection, no physical channel claim.' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-prospective-joint-r1-py${{ matrix.python }}
+          path: out/prospective-joint-py${{ matrix.python }}.json
+          retention-days: 90
+          if-no-files-found: error
