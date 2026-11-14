@@ -259,6 +259,12 @@ def evaluate(lock_file, cost_file, baseline14_dir, control8_dir,
         entries=[]
         for row in family["paths"]:
             content=source_fetch(family,row)
+            require(type(content) is bytes and 2048 <= len(content) <= 90000,
+                    "SOURCE_LENGTH_VETO")
+            actual_blob=hashlib.sha1(b"blob "+str(len(content)).encode()+
+                                     b"\0"+content).hexdigest()
+            require(actual_blob==row["git_blob_sha1"],
+                    "CLEANROOM_GIT_BLOB_SHA_VETO")
             sha=hashlib.sha256(content).hexdigest()
             require(sha not in seen,"DUPLICATED_SOURCE_CONTENT")
             seen.add(sha)
