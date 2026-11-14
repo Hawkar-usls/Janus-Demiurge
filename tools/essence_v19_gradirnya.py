@@ -131,6 +131,7 @@ def prepare(data_root,source_sha,out):
               "dataset_sha256":desc["dataset_sha256"],
               "split_sha256":{k:v["packet_sha256"] for k,v in packets.items()},
               "split_sizes":{k:len(v["rows"]) for k,v in packets.items()},
+              "train_label_counts":[sum(row["label"]==i for row in packets["train"]["rows"]) for i in range(len(r.LABELS))],
               "split_dates":{k:[min(row["date"] for row in v["rows"]),max(row["date"] for row in v["rows"])] for k,v in packets.items()},
               "test_data_in_training_artifact":False,"external_custodian":False,
               "training_task":"PUBLIC_META_REGISTRY_KEY_CLASSIFICATION",
@@ -150,6 +151,11 @@ def validate_manifest(m,source_sha):
         or m.get("test_data_in_training_artifact") is not False
         or m.get("external_custodian") is not False):
         raise ValueError("UNTRUSTED_SPLIT_MANIFEST")
+    counts=m.get("train_label_counts")
+    if (not isinstance(counts,list) or len(counts)!=len(r.LABELS)
+        or any(type(n) is not int or n<0 for n in counts)
+        or sum(counts)!=m.get("split_sizes",{}).get("train")):
+        raise ValueError("UNTRUSTED_FROZEN_TRAIN_PRIOR")
     return m
 
 def train(cell,train_packet,val_packet,manifest,out,steps=40):
@@ -159,6 +165,9 @@ def train(cell,train_packet,val_packet,manifest,out,steps=40):
     validate_manifest(manifest,source)
     train_rows=check_packet(train_packet,"train",source,manifest["dataset_sha256"])
     val_rows=check_packet(val_packet,"validation",source,manifest["dataset_sha256"])
+    if ([sum(row["label"]==i for row in train_rows) for i in range(len(r.LABELS))]
+        !=manifest["train_label_counts"]):
+        raise ValueError("TRAIN_PRIOR_COUNT_MISMATCH")
     if (train_packet["packet_sha256"]!=manifest["split_sha256"]["train"]
         or val_packet["packet_sha256"]!=manifest["split_sha256"]["validation"]
         or {x["identity"] for x in train_rows}&{x["identity"] for x in val_rows}
@@ -268,13 +277,30 @@ def verify(cell,holdout,manifest,receipt,checkpoint):
     b=r.evaluate(baseline,test_rows)
     baseline.load_state_dict(final,strict=True)
     c=r.evaluate(baseline,test_rows)
+    # A random untrained parent is a WEAK baseline. Lock the train-only
+    # Laplace-smoothed majority predictor before any heldout scoring.
+    counts=manifest["train_label_counts"]
+    smooth=[(n+1)/(sum(counts)+len(counts)) for n in counts]
+    most=max(range(len(counts)),key=lambda i:counts[i])
+    frozen_prior={
+        "nll":round(sum(-math.log(smooth[row["label"]]) for row in test_rows)/len(test_rows),6),
+        "accuracy":round(sum(row["label"]==most for row in test_rows)/len(test_rows),6),
+        "prior_majority_class":most,
+        "prior_train_counts_sha256":seal(counts)
+    }
     delta=round(b["nll"]-c["nll"],6)
-    gate=("RESEARCH_HISTORICAL_DATE_HOLDOUT_GAIN" if delta>=0.02 and c["accuracy"]>=b["accuracy"]
-          else "HOLD_HISTORICAL_DATE_HOLDOUT_NO_CONFIRMED_GAIN")
+    prior_gain=round(frozen_prior["nll"]-c["nll"],6)
+    prior_accuracy_gain=round(c["accuracy"]-frozen_prior["accuracy"],6)
+    improvement=(delta>=0.02 and c["accuracy"]>=b["accuracy"]
+                 and prior_gain>=0.02 and prior_accuracy_gain>0)
+    gate=("RESEARCH_HISTORICAL_DATE_HOLDOUT_GAIN" if improvement
+          else "HOLD_NOT_BETTER_THAN_FROZEN_PRIOR_AND_PARENT")
     result={"schema":"janus.essence.gradirnya_verifier/1.9","cell":cell,"role":r.CELL_ROLES[cell],
             "source_commit":source,"lineage_sha256":receipt["receipt_sha256"],
             "holdout_sha256":holdout["packet_sha256"],"heldout_rows":len(test_rows),
-            "initial":b,"descendant":c,"nll_reduction":delta,"gate":gate,
+            "initial":b,"descendant":c,"frozen_train_prior":frozen_prior,
+            "nll_reduction":delta,"nll_gain_vs_prior":prior_gain,
+            "accuracy_gain_vs_prior":prior_accuracy_gain,"gate":gate,
             "independent_ci_job":True,"externally_custodied_test":False,
             "truly_future_unseen_dataset":False,"statistically_replicated_hardware":False,
             "live_production_rollback":False,"automatic_production_promotion":False,
@@ -300,6 +326,6 @@ def cli():
         result=verify(opt.cell,read_json(opt.holdout),read_json(opt.manifest),
                       read_json(opt.lineage),opt.weights)
         atomic_json(opt.out,result)
-        print(json.dumps({"cell":opt.cell,"gate":result["gate"],"heldout_rows":result["heldout_rows"],"parent":result["initial"],"descendant":result["descendant"],"nll_reduction":result["nll_reduction"],"production_authority":False}))
+        print(json.dumps({"cell":opt.cell,"gate":result["gate"],"heldout_rows":result["heldout_rows"],"parent":result["initial"],"descendant":result["descendant"],"frozen_prior":result["frozen_train_prior"],"nll_reduction":result["nll_reduction"],"nll_gain_vs_prior":result["nll_gain_vs_prior"],"accuracy_gain_vs_prior":result["accuracy_gain_vs_prior"],"production_authority":False}))
 
 if __name__=="__main__":cli()
