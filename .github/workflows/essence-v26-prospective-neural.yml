@@ -93,7 +93,8 @@ jobs:
           git -C state config user.name 'janus-essence-neural-witness'
           git -C state config user.email 'janus-essence-neural-witness@users.noreply.github.com'
           FROZEN_COMMIT="$(git -C state rev-parse HEAD)"
-          test "$(git -C state branch --show-current)" = 'research/essence-neural-state'
+          # actions/checkout may legitimately use detached HEAD for an exact ref.
+          # A strict remote-HEAD compare below provides the actual no-race gate.
           if test -f state/research/essence/neural_duration/state.json; then
             git -C state add research/essence/neural_duration/state.json
           fi
