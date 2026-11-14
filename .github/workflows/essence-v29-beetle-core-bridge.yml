@@ -49,6 +49,7 @@ jobs:
     timeout-minutes: 7
     permissions:
       contents: write
+      actions: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -80,6 +81,7 @@ jobs:
           assert x['receipt_sha256']==core.sha({k:v for k,v in x.items() if k!='receipt_sha256'})
           PY
       - name: Commit only SHA-sealed core-source catalog for Demiurge priority bridge
+        id: persist
         shell: bash
         run: |
           set -euo pipefail
@@ -88,6 +90,7 @@ jobs:
           git add -f -- beetle/ESSENCE_CORE_BRIDGE.json
           if git diff --cached --quiet; then
             echo 'BEETLE_CORE_BRIDGE_SOURCES_UNCHANGED=HOLD'
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
             exit 0
           fi
           test "$(git diff --cached --name-only)" = 'beetle/ESSENCE_CORE_BRIDGE.json'
@@ -95,6 +98,16 @@ jobs:
           git commit -m 'ESSENCE: publish provenance-bound research intents for Universal Beetle'
           git pull --rebase origin main
           git push origin HEAD:main
+          echo 'changed=true' >> "$GITHUB_OUTPUT"
+      - name: Wake existing bounded Beetle Director after core catalog is published
+        if: steps.persist.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow run janus-beetle-director.yml --repo "$GITHUB_REPOSITORY" --ref main
+          echo 'ESSENCE_CORE_BRIDGE_DIRECTOR_DISPATCHED_FOR_PUBLISHED_CATALOG'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
