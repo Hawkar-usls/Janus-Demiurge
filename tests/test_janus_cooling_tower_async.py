@@ -3,8 +3,11 @@ import asyncio
 from pathlib import Path
 import sys
 import unittest
+import tempfile
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+import janus_cooling_tower_async as tower
 from janus_cooling_tower_async import circulation, check_one, get_json
 
 
@@ -66,6 +69,24 @@ class CoolingTowerTests(unittest.TestCase):
             check_one("../../etc/passwd", "")
         with self.assertRaises(ValueError):
             check_one("Janus-Demiurge", "", "../evil.yml")
+
+    def test_research_training_status_does_not_clear_or_poison_critical_gate(self):
+        names=["Janus-Demiurge"]+["research-repo-"+str(i) for i in range(30)]
+        async def fake_circulation(organs,probe):
+            rows=[{"organ":organ,
+                   "health":"FAIL" if organ==("Janus-Demiurge","essence-v19-gradirnya.yml") else "PASS"}
+                  for organ in organs]
+            return [{"cycle":i,"records":rows,"passed":sum(x["health"]=="PASS" for x in rows),
+                     "failed":sum(x["health"]=="FAIL" for x in rows),"unknown":0}
+                    for i in (1,2)]
+        with tempfile.TemporaryDirectory() as d,patch.object(tower,"discover",return_value=names),patch.object(tower,"circulation",new=fake_circulation):
+            result=asyncio.run(tower.live(Path(d)/"report.json",expected_min=30))
+        self.assertEqual(result["gate"],"PASS_OBSERVATION_ONLY")
+        self.assertEqual(result["critical_blocker_count"],0)
+        self.assertEqual(result["research_workflows_monitored"],1)
+        self.assertEqual(len(result["research_observations"]),2)
+        self.assertFalse(result["research_quality_proven_by_workflow_status"])
+        self.assertFalse(result["full_autonomy_accepted"])
 
     def test_source_keeps_autonomy_authority_at_zero(self):
         src = (Path(__file__).resolve().parents[1] / "tools/janus_cooling_tower_async.py").read_text()
