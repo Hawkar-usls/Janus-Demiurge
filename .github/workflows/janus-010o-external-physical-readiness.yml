@@ -1,0 +1,44 @@
+name: JANUS-010O Real Late Choice External Hardware Admission Gate
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/late_choice_010/timelike_lab_gate_010o.py'
+      - 'experiments/ocean_transformer/late_choice_010/test_timelike_lab_gate_010o.py'
+      - 'experiments/ocean_transformer/late_choice_010/PROTOCOL_010O_LAB_READINESS.md'
+      - '.github/workflows/janus-010o-external-physical-readiness.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-010o-lab-readiness-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  physical-authority-requires-real-lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate prospective physically late entropy timing and strict no-custody rules
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v -s experiments/ocean_transformer/late_choice_010 -p 'test_timelike_lab_gate_010o.py'
+      - name: Prove that GitHub synthetic run has zero physical late-choice authority
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/janus010o"
+          python experiments/ocean_transformer/late_choice_010/timelike_lab_gate_010o.py --output "$RUNNER_TEMP/janus010o/physical_readiness_not_executed.json"
+      - name: Preserve readiness control and unfulfilled physical hardware requirements
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-010o-no-hardware-authority-${{ github.run_id }}
+          path: ${{ runner.temp }}/janus010o/physical_readiness_not_executed.json
+          retention-days: 60
+          if-no-files-found: error
