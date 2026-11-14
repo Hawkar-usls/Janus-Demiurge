@@ -2,7 +2,10 @@
 from __future__ import annotations
 import argparse, datetime as dt, json, pathlib, re
 from typing import Any
-from essence_beetle_core_bridge import SOURCES as ESSENCE_CORE_SOURCES, QUESTIONS as ESSENCE_CORE_QUESTIONS, SCHEMA as ESSENCE_CORE_SCHEMA, sha as essence_sha
+if __package__:
+    from .essence_beetle_core_bridge import SOURCES as ESSENCE_CORE_SOURCES, QUESTIONS as ESSENCE_CORE_QUESTIONS, SCHEMA as ESSENCE_CORE_SCHEMA, sha as essence_sha
+else:
+    from essence_beetle_core_bridge import SOURCES as ESSENCE_CORE_SOURCES, QUESTIONS as ESSENCE_CORE_QUESTIONS, SCHEMA as ESSENCE_CORE_SCHEMA, sha as essence_sha
 
 
 def now() -> str:
