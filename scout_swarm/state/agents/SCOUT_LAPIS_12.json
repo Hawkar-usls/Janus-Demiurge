@@ -2,7 +2,7 @@
   "schema": "janus.demiurge.scout_agent.report.v2.spiral",
   "agent_id": "SCOUT_LAPIS_12",
   "role": "MATERIAL_SYMBOL_RECON",
-  "created_at_utc": "2026-11-14T13:48:35Z",
+  "created_at_utc": "2026-11-14T22:44:56Z",
   "status": "DEGRADED_MODEL_POLICY_HOLD",
   "target": {
     "repository": "Hawkar-usls/janus-lapis",
@@ -12,8 +12,8 @@
   "repository_snapshot": {
     "target_repo": "Hawkar-usls/janus-lapis",
     "target_ref": "main",
-    "target_commit": "b375d53382b4b62f1f6f6478108a6c6b90ab810c",
-    "file_count": 114,
+    "target_commit": "1d0ac3433b45296fa4d1636bf31ed25725663174",
+    "file_count": 117,
     "top_level": [
       ".github",
       ".gitignore",
@@ -36,6 +36,7 @@
       "tools"
     ],
     "recent_commits": [
+      "1d0ac3433b45296fa4d1636bf31ed25725663174\t2026-11-14T20:20:30+02:00\tUniversal Beetle: independent ESSENCE core receipt verification and four-lens research routing",
       "b375d53382b4b62f1f6f6478108a6c6b90ab810c\t2026-11-13T20:23:28+02:00\tfeat(ESSENCE v0.8): test inherited 13-role advisory in each heartbeat (#56)",
       "a5555e5564f73fc27ac88f660c752c084635f4aa\t2026-11-13T17:54:44+02:00\tci(ESSENCE): bounded private/public pulse v0.5 (#55)",
       "53f722acc7e54e215dabde08ea164bcaed8cbae5\t2026-11-13T15:42:50+02:00\tESSENCE: collective genealogy, innovation catalog and local microcore factory",
@@ -44,8 +45,7 @@
       "abcb6b7b18828fe8e74e326e7300497cef418bda\t2026-11-09T14:56:35+02:00\tresearch(beetle): Wolfram MCP numeric format V2 verified by one live query",
       "34c3579a459f23b097faefba39282c52f4a3ed8a\t2026-11-09T14:24:55+02:00\tresearch(beetle): bounded Wolfram MCP numerical attestation for JANUS Ocean",
       "40cd9aef7fcd4acb9f32910a7b5467bf570c5eaf\t2026-11-09T13:37:26+02:00\tci(beetle): add read-only Wolfram MCP result receipt witness",
-      "0987fc496e3065b900f74fbc6bb695adeb1a5b30\t2026-11-09T13:33:49+02:00\tfix(beetle): negotiate official Wolfram Cloud MCP protocol before calling WolframAlpha",
-      "6630c4acc68f1e91a6d4018746fac8cedb5577b7\t2026-11-09T13:23:13+02:00\tresearch(beetle): autonomous official Wolfram open data and no-AppID Cloud MCP one-shot"
+      "0987fc496e3065b900f74fbc6bb695adeb1a5b30\t2026-11-09T13:33:49+02:00\tfix(beetle): negotiate official Wolfram Cloud MCP protocol before calling WolframAlpha"
     ],
     "selected_sources": [
       {
@@ -73,6 +73,10 @@
         "excerpt": "name: JANUS Beetle / Wolfram MCP Receipt Audit\n# Recheck after keyless MCP protocol negotiation repair in PR #49.\n\non:\n  pull_request:\n    paths:\n      - '.github/workflows/beetle-wolfram-receipt-audit.yml'\n  push:\n    branches: [main]\n    paths:\n      - '.github/workflows/beetle-wolfram-receipt-audit.yml'\n  workflow_dispatch:\n\npermissions:\n  contents: read\n\njobs:\n  independent-readonly-audit:\n    runs-on: ubuntu-latest\n    timeout-minutes: 4\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: beetle-state\n          persist-credentials: false\n          path: memory\n      - name: Inspect durable receipts without rerunning external queries\n        env:\n          GITHUB_AUDIT_RUN: ${{ github.run_id }}\n        run: |\n          set -euo pipefail\n          python - <<'PY'\n          import json, os\n          from pathlib import Path\n          root=Path('memory/data/beetle-state/receipts.parts')\n          idx=json.loads((root/'index.json').read_text())\n          interesting={\"WOLFRAM_MCP_KEYLESS_RECEIVED\",\"WOLFRAM_MCP_ONE_SHOT_HOLD\"}\n          events=[]\n          for part in idx['parts'][-2:]:\n              with (root/part['name']).open(encoding='utf-8') as f:\n                  for line in f:\n                      if '\"WOLFRAM_MCP_' not in line:\n                          continue\n                      try:\n                          row=json.loads(line)\n                          if row.get('event') in interesting:\n                              events.append({\n                                  \"event\":row[\"event\"], \"at\":row.get(\"at\"),\n                                  \"query_id\":row.get(\"payload\",{}).get(\"query_id\"),\n                                  \"reason\":row.get(\"payload\",{}).get(\"reason\"),\n                                  \"receipt_sha256\":row.get(\"receipt_sha256\"),\n                              })\n                      except (ValueError,KeyError,TypeError):\n                          raise SystemExit(\"INVALID_RECEIPT_ROW\")\n          summary={\n              \"schema\":\"janus.beetle.wolfram_keyless_receipt_audit.v1\",\n              \"audit_run_id\":os.environ[\"GITHUB_AUDIT_RUN\"],\n              \"status\":\"LIVE_MCP_RECEIPT_SEEN\" if any(x[\"event\"]==\"WOLFRAM_MCP_KEYLESS_RECEIVED\" for x in events)\n                  else \"MCP_HOLD_SEEN\" if events else \"NO_MCP_RECEIPT_YET\",\n              \"events\":events[-8:],\n              \"raw_provider_output_included\":False,\n              \"external_credential_used\":False,\n          }\n          p=Path('wolfram_mcp_receipt_audit.json')\n          p.write_text(json.dumps(summary,indent=2,sort_keys=True)+'\\n')\n          print(json.dumps(summary,sort_keys=True))\n          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:\n              f.write('## Wolfram Cloud MCP · durable Beetle receipt\\n\\n')\n              f.write('Status: **'+summary['status']+'**\\n\\n')\n              f.write('Events: '+str(len(summary['events']))+'\\n')\n          PY\n      - uses: actions/upload-artifact@v4\n        with:\n          name: wolfram-beetle-source-receipt\n          path: wolfram_mcp_receipt_audit.json\n          retention-days: 14\n"
       },
       {
+        "path": ".github/workflows/essence-beetle-core-contract.yml",
+        "excerpt": "name: JANUS ESSENCE to Universal Beetle inbound contract\n\non:\n  pull_request:\n    paths:\n      - 'tools/beetle_essence_core_binding.py'\n      - 'tools/beetle_director_overlay.py'\n      - 'tests/test_beetle_essence_core_binding.py'\n      - '.github/workflows/essence-beetle-core-contract.yml'\n      - '.github/workflows/universal-beetle-hourly.yml'\n  push:\n    branches: [main]\n    paths:\n      - 'tools/beetle_essence_core_binding.py'\n      - 'tools/beetle_director_overlay.py'\n      - 'tests/test_beetle_essence_core_binding.py'\n      - '.github/workflows/essence-beetle-core-contract.yml'\n  workflow_dispatch:\n\npermissions:\n  contents: read\n\njobs:\n  verify:\n    runs-on: ubuntu-24.04\n    timeout-minutes: 5\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          persist-credentials: false\n      - uses: actions/setup-python@v5\n        with:\n          python-version: '3.12'\n      - name: Install only public read-only Beetle overlay dependency\n        run: python -m pip install --disable-pip-version-check requests\n      - name: Test direct SHA-bound six-way core handoff and retained Rowan firewall\n        run: |\n          python -m py_compile tools/beetle_essence_core_binding.py tools/beetle_director_overlay.py\n          python -m unittest discover -s tests -p 'test_beetle_essence_core_binding.py' -v\n          python -m unittest discover -s tests -p 'test_beetle_rowan_focus.py' -v\n"
+      },
+      {
         "path": ".github/workflows/janus-essence-readonly-contract.yml",
         "excerpt": "name: JANUS ESSENCE Read-only Repo Microkernel Contract\non:\n  pull_request:\n    paths:\n      - '.janus/essence/**'\n      - 'tests/test_essence_kernel.py'\n      - '.github/workflows/janus-essence-readonly-contract.yml'\n  workflow_dispatch:\npermissions:\n  contents: read\njobs:\n  independent-repo-pilot:\n    runs-on: ubuntu-24.04\n    timeout-minutes: 5\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          persist-credentials: false\n      - uses: actions/setup-python@v5\n        with:\n          python-version: '3.11'\n      - name: Assert inert-only six roles, source hash receipts, zero effects\n        run: |\n          python -m py_compile .janus/essence/kernel.py\n          python -m unittest discover -s tests -p 'test_essence_kernel.py' -v\n          python .janus/essence/kernel.py --manifest .janus/essence/manifest.json --fixture .janus/essence/fixture.json --allow-readonly --propose-child recovery --out artifacts/essence/receipt.json\n          python .janus/essence/kernel.py --verify artifacts/essence/receipt.json\n      - uses: actions/upload-artifact@v4\n        with:\n          name: essence-readonly-repo-contract\n          path: artifacts/essence/receipt.json\n          retention-days: 14\n"
       },
@@ -91,10 +95,6 @@
       {
         "path": ".janus/essence/fixture.json",
         "excerpt": "{\n  \"kind\": \"SYNTHETIC_FIXTURE\",\n  \"id\": \"essence-protocol-smoke-v01\",\n  \"metrics\": {\n    \"signal_quality\": 0.83,\n    \"memory_pressure\": 0.24,\n    \"test_coverage\": 0.92,\n    \"stability\": 0.97\n  }\n}\n"
-      },
-      {
-        "path": ".janus/essence/heritage_v08.py",
-        "excerpt": "#!/usr/bin/env python3\n\"\"\"ESSENCE v0.8 per-repository legacy inheritance observer (no runtime authority).\n\nRuns AFTER existing R0.5 local kernel verification. Preserves 13 historical R0\nrole identities as review-only overlays atop the six existing inert microcores.\nReads only this repository's disabled manifest, local innovations and the\nsynthetic heartbeat report. It NEVER imports foreign scripts or weights, opens\nnetwork connections, trains a model, writes to a repo or grants execution.\n\"\"\"\nfrom __future__ import annotations\nimport argparse\nimport copy\nimport hashlib\nimport json\nfrom pathlib import Path\nimport re\n\nSCHEMA = \"janus.essence.distributed_heritage_receipt/0.8\"\nROOT_SHA1 = \"de5199978fbafcbda836b77da370943f7ea2514e\"\nUPSTREAM_CATALOG_SHA1 = \"2727721de135f2f421f33bfd7919ab91174adb89\"\nSOURCE = \"Hawkar-usls/Janus-Demiurge\"\nSOURCE_PATH = \"research/essence/v08/heritage_sources.json\"\nBASE = (\"sensing\", \"memory\", \"planning\", \"verification\", \"recovery\", \"coding\")\nR0 = (\"identity\", \"sensing\", \"memory\", \"planning\", \"verification\", \"recovery\",\n      \"learning\", \"evolution\", \"routing\", \"resource\", \"governance\",\n      \"transport\", \"coding\")\nMAP = {\n    \"identity\": \"memory\",\n    \"learning\": \"memory\",\n    \"evolution\": \"planning\",\n    \"routing\": \"planning\",\n    \"resource\": \"recovery\",\n    \"governance\": \"verification\",\n    \"transport\": \"sensing\",\n}\nOWNER = re.compile(r\"^Hawkar-usls/[A-Za-z0-9_.-]{1,90}$\")\nHASH = re.compile(r\"^[0-9a-f]{64}$\")\nMAX_BYTES = 150_000\nMAX_IDEAS = 12\n\ndef encode(x):\n    return json.dumps(x, ensure_ascii=False, sort_keys=True,\n                      separators=(\",\", \":\"), allow_nan=False).encode()\n\ndef sha(x):\n    return hashlib.sha256(encode(x)).hexdigest()\n\ndef gitblob(data):\n    return hashlib.sha1(b\"blob \" + str(len(data)).encode() + b\"\\0\" + data).hexdigest()\n\ndef read(path):\n    p = Path(path)\n    if p.stat().st_size > MAX_BYTES:\n        raise ValueError(\"HERITAGE_LOCAL_INPUT_TOO_LARGE\")\n    return json.loads(p.read_text(encoding=\"utf-8\"))\n\ndef root_gate(manifest, repo, kernel_bytes):\n    if not isinstance(repo, str) or OWNER.fullmatch(repo) is None:\n        raise ValueError(\"INVALID_REPOSITORY\")\n    if (not isinstance(manifest, dict) or\n        manifest.get(\"schema\") != \"janus.essence.microkernel/0.1\" or\n        manifest.get(\"repository\") != repo or\n        manifest.get(\"enabled\") is not False or\n        manifest.get(\"activation\") != \"EXPLICIT_READONLY_TEST_ONLY\" or\n        manifest.get(\"birth_policy\") != \"PROPOSAL_ONLY\" or\n        any(manifest.get(\"capabilities\", {}).values())):\n        raise ValueError(\"UNSAFE_PARENT_MANIFEST\")\n    modules = manifest.get(\"microkernels\")\n    if (not isinstance(modules, list) or len(modules) != len(BASE) or\n        set(x.get(\"role\") for x in modules) != set(BASE) or\n        len({x.get(\"id\") for x in modules}) != len(BASE)):\n        raise ValueError(\"PARENT_MICROCORES_CHANGED\")\n    if gitblob(kernel_bytes) != ROOT_SHA1:\n        raise ValueError(\"BASE_ROOT_CODE_CHANGED\")\n    return True\n\ndef genes_gate(ideas, repo):\n    if (not isinstance(ideas, dict) or\n        ideas.get(\"schema\") != \"janus.essence.innovations/0.1\" or\n        ideas.get(\"repository\") != repo or\n        ideas.get(\"authority\") != \"RESEARCH_PROPOSAL_ONLY\"):\n        raise ValueError(\"WRONG_LOCAL_GENE_CATALOG\")\n    candidates = ideas.get(\"entries\")\n    if not isinstance(candidates, list) or len(candidates) > MAX_IDEAS:\n        raise ValueError(\"UNBOUNDED_LOCAL_GENES\")\n    seen=set()\n    for item in candidates:\n        if (not isinstance(item, dict) or\n            set(item) != {\"id\", \"role\", \"idea\", \"evidence_sha256\",\n                          \"precommit_sha256\", \"origin_receipt_sha256\"} or\n            not isinstance(item[\"id\"], str) or\n            not re.fullmatch(r\"[a-z][a-z0-9_-]{0,30}\", item[\"id\"]) or\n            item[\"id\"] in seen or\n            item[\"role\"] not in BASE or\n            not isinstance(item[\"idea\"], str) or\n            not 12 <= len(item[\"idea\"]) <= 240 or\n            any(not isinstance(item[k], str) or not HASH.fullmatch(item[k])\n                for k in (\"evidence_sha256\",\"precommit_sha256\",\n                          \"origin_receipt_sha256\"))):\n            raise ValueError(\"UNAUTHENTICATED_OR_DUPLICATE_LOCAL_GENE\")\n        seen.add(item[\"id\"])\n    return sorted(candidates,key=lambda x:x[\"id\"])\n\ndef heartbeat_gate(value, repo):\n    if (not isinstance(value, dict) or\n        value.get(\"schema\") != \"janus.essence.readonly_heartbeat/0.5\" or\n        value.get(\"repository\") != repo or\n        value.get(\"input_class\") != \"SYNTHETIC_FIXTURE_ONLY\" or\n        value.get(\"production_authority\") is not False or\n        value.get(\"automated_birth\") is not False):\n        raise ValueError(\"UNTRUSTED_HEARTBEAT\")\n    result=value.get(\"report\")\n    if (not isinstance(result, dict) or\n        result.get(\"status\") != \"PASS_WITH_OPERATIONAL_HOLD\" or\n        result.get(\"action_authority\") is not False or\n        any(x.get(\"activation_allowed\") is not False\n            for x in result.get(\"proposed_children\", []))):\n        raise ValueError(\"DANGEROUS_HEARTBEAT_RESULT\")\n    return True\n\ndef run(repo, manifest, ideas, heartbeat, kernel_bytes):\n    root_gate(manifest,repo,kernel_bytes)\n    local_ideas=genes_gate(ideas,repo)\n    heartbeat_gate(heartbeat,repo)\n    if set(MAP) != set(R0)-set(BASE):\n        raise ValueError(\"MISSING_R0_LEGACY_ROLE\")\n    role_map={role:{\n        \"origin\":\"R0_HISTORICAL_ROLE\",\n        \"base_microcore\":MAP.get(role,role),\n        \"execution\":\"ORIGINAL_R05_OFFLINE_KERNEL\" if role in BASE\n                    else \"ADVISORY_ROLE_NO_CODE_EXECUTION\",\n    } for role in R0}\n    # These are deterministic checks of provenance, fitness and permitted\n    # side-effects, not three independently trained or signed models.\n    lenses={\n        \"provenance\":\"SOURCE_IDENTITIES_PINNED_BUT_EXTERNAL_CATALOG_NOT_FETCHED\",\n        \"fitness\":\"HOLD_NO_INDEPENDENT_PROSPECTIVE_GAIN\",\n        \"authority\":\"NO_PRODUCTION_OR_EXTERNAL_EFFECTS\",\n    }\n    if not all(x[\"base_microcore\"] in BASE for x in role_map.values()):\n        raise ValueError(\"UNMAPPED_HISTORICAL_ROLE\")\n    candidates=[{\n        \"id\":x[\"id\"],\"role\":x[\"role\"],\n        \"evidence_sha256\":x[\"evidence_sha256\"],\n        \"origin_receipt_sha256\":x[\"origin_receipt_sha256\"],\n        \"selection\":\"PRESERVED_FOR_INDEPENDENT_EVALUATION\",\n        \"runtime_authority\":False,\n    } for x in local_ideas]\n    report={\n        \"schema\":SCHEMA,\"repository\":repo,\n        \"kernel_git_blob_sha1\":ROOT_SHA1,\n        \"upstream_heritage_repository\":SOURCE,\n        \"upstream_heritage_path\":SOURCE_PATH,\n        \"upstream_heritage_git_blob_sha1\":UPSTREAM_CATALOG_SHA1,\n        \"upstream_heritage_not_re_fetched_here\":True,\n        \"role_count\":len(R0),\"live_base_microcores\":len(BASE),\n        \"advisory_legacy_roles\":len(MAP),\"roles\":role_map,\n        \"advisory_lenses\":lenses,\"local_candidate_count\":len(candidates),\n        \"local_rare_genes\":candidates,\n        \"source_kind\":\"LOCAL_SYNTHETIC_HEARTBEAT_PLUS_ADVISORY_ONLY\",\n  "
       }
     ],
     "snapshot_policy": "READ_ONLY_METADATA_AND_BOUNDED_TEXT_EXCERPTS"
@@ -111,8 +111,8 @@
     "oracle_guidance": null
   },
   "spiral": {
-    "turn": 305,
-    "parent_report_sha256": "90d781836ef52c9e7c60726c248939a7629bb58f8f723646386d12ccccc0fe27",
+    "turn": 306,
+    "parent_report_sha256": "361ab10f2f508eb775ebbfb9a58462c088d257321649d013d54906ff80c5339b",
     "previous_target_commit": "b375d53382b4b62f1f6f6478108a6c6b90ab810c",
     "identity_persistent": true,
     "previous_report_is_evidence": false,
@@ -163,7 +163,7 @@
     "new_lessons": [
       "Shared model preflight blocked synthesis without erasing repository evidence or Scout identity."
     ],
-    "ascent_status": "NO_ASCENT",
+    "ascent_status": "ASCENDED_NEW_EVIDENCE",
     "logical_ring": false
   },
   "model_error": "MODEL_PREFLIGHT:SKIPPED_POLICY",
@@ -177,7 +177,7 @@
   },
   "janus_agent_token": {
     "scope": "EPHEMERAL_GITHUB_RUN_AGENT",
-    "fingerprint": "798283f4cb7df94e",
+    "fingerprint": "89c4e1f78ad7fd73",
     "raw_token_persisted": false
   },
   "evidence_gate": {
