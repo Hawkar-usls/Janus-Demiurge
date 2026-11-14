@@ -1,0 +1,164 @@
+"""Research-only prospective weight inheritance contract, no GH writes."""
+from __future__ import annotations
+from datetime import datetime,timedelta,timezone
+import copy
+import math
+import sys
+from pathlib import Path
+import unittest
+ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT))
+from tools import essence_v26_neural_prospective as n
+
+
+def row(i,when,label):
+    return {"id":100000+i,"workflow_id":1001+label,
+            "event":"schedule" if i%2 else "workflow_dispatch",
+            "created_at":when.isoformat(),"label":label,
+            "elapsed_seconds":12 if label==0 else 60 if label==1 else 180}
+
+
+class ProspectiveNeuralContract(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.t0=datetime(2026,11,10,tzinfo=timezone.utc)
+        cls.past=[row(i,cls.t0+timedelta(minutes=i),i%3) for i in range(240)]
+        cls.freeze=cls.t0+timedelta(days=2)
+        cls.future=[row(i+240,cls.freeze+timedelta(minutes=i+1),i%3)
+                    for i in range(75)]
+        cls.initial=n.empty()
+        cls.frozen,cls.first=n.step(cls.initial,cls.past,cls.freeze)
+        assert cls.frozen["pending"] is not None,cls.first
+
+    def test_torch_gradients_produce_frozen_distinct_tensor(self):
+        p=self.frozen["pending"]
+        self.assertNotEqual(p["parent_sha256"],p["challenger_sha256"])
+        self.assertEqual(p["parent_sha256"],n.seal(self.frozen["parent"]))
+        self.assertEqual(p["challenger_sha256"],n.seal(p["challenger"]))
+        self.assertEqual(p["training"]["true_gradient_updates"],45)
+        self.assertLess(p["training"]["historical_child_nll"],
+                        p["training"]["historical_parent_nll"])
+        self.assertFalse(self.frozen["production_authority"])
+
+    def test_future_wait_does_not_retrain_or_evaluate_old_history(self):
+        next_state,verdict=n.step(self.frozen,self.past,
+                                 self.freeze+timedelta(minutes=5))
+        self.assertEqual(verdict["status"],"HOLD_FUTURE_COHORT_NOT_YET_DIVERSE")
+        self.assertEqual(next_state["state_sha256"],self.frozen["state_sha256"])
+
+    def test_actual_frozen_weights_score_later_unseen_cohort(self):
+        completed=sorted(self.past+self.future,key=lambda x:x["created_at"])
+        result=n.future_decision(self.frozen["pending"],
+                                 n.load_state(self.frozen["parent"]),
+                                 completed,self.freeze+timedelta(days=1))[0]
+        self.assertEqual(result["status"],"PASS_PROSPECTIVE_PAIRED_NEURAL_GAIN")
+        self.assertEqual(result["sample_count"],75)
+        self.assertTrue(result["improvement_proven_under_registered_internal_thresholds"])
+        self.assertGreater(result["paired_one_sided_95pct_lower_bound"],0.0)
+        next_state,receipt=n.step(self.frozen,completed,
+                                 self.freeze+timedelta(days=1))
+        self.assertEqual(next_state["generation"],1)
+        self.assertTrue(next_state["history"][-1]["accepted"])
+        self.assertEqual(next_state["history"][-1]["parent_sha256"],
+                         self.frozen["pending"]["parent_sha256"])
+        self.assertEqual(n.seal(next_state["parent"]),
+                         self.frozen["pending"]["challenger_sha256"])
+        if next_state["pending"] is not None:
+            self.assertGreater(n.at(next_state["pending"]["sealed_before"]),
+                               n.at(self.frozen["pending"]["sealed_before"]))
+            self.assertEqual(next_state["pending"]["parent_sha256"],
+                             n.seal(next_state["parent"]))
+        else:
+            # A near-perfect inherited model must not invent a gradient gain
+            # merely to continue the cycle. The accepted weights are preserved.
+            self.assertIn("next_training_hold",receipt)
+
+    def test_mismatched_child_or_seal_fails_closed(self):
+        for k in ("challenger_sha256","parent_sha256"):
+            corrupted=copy.deepcopy(self.frozen)
+            corrupted["pending"][k]="b"*64
+            corrupted["state_sha256"]=n.seal({k:v for k,v in corrupted.items()
+                                              if k!="state_sha256"})
+            with self.assertRaisesRegex(ValueError,
+                                        "MUTATED_PARENT_CHILD_STATE_BINDING"):
+                n.check(corrupted)
+        corrupted=copy.deepcopy(self.frozen)
+        corrupted["parent"]["0.weight"]["values"][0]=float("nan")
+        corrupted["state_sha256"]="bad"
+        with self.assertRaises(ValueError):
+            n.check(corrupted)
+
+    def test_no_future_but_new_repo_history_rejected(self):
+        candidate=copy.deepcopy(self.frozen)
+        new_rows=[row(1000+i,self.freeze+timedelta(minutes=i+1),0)
+                  for i in range(80)]
+        result=n.future_decision(candidate["pending"],
+            n.load_state(candidate["parent"]),
+            self.past+new_rows,self.freeze+timedelta(days=1))[0]
+        self.assertEqual(result["status"],"HOLD_FUTURE_COHORT_NOT_YET_DIVERSE")
+
+    def test_future_window_truncated_fail_closed(self):
+        later=[row(800+i,self.freeze+timedelta(minutes=i+1),i%3)
+               for i in range(200)]
+        state,v=n.step(self.frozen,later,self.freeze+timedelta(days=1))
+        self.assertEqual(v["status"],"HOLD_FUTURE_HISTORY_WINDOW_EXPIRED")
+        self.assertEqual(state["state_sha256"],self.frozen["state_sha256"])
+
+    def test_source_does_not_expose_duration_or_outcome_to_features(self):
+        a=copy.deepcopy(self.past[0])
+        b=copy.deepcopy(a)
+        b["label"]=2
+        b["elapsed_seconds"]=2000
+        xa,ya=n.features([a])
+        xb,yb=n.features([b])
+        self.assertTrue((xa==xb).all().item())
+        self.assertNotEqual(ya.item(),yb.item())
+
+    def test_timestamps_and_labels_from_completed_successful_runs(self):
+        t=self.freeze
+        def sample(i,duration,conclusion="success",status="completed"):
+            started=t+timedelta(seconds=i*200)
+            return {"id":i+1,"workflow_id":1001,"event":"schedule",
+                    "run_attempt":1,"head_branch":"main","status":status,
+                    "conclusion":conclusion,
+                    "created_at":started.isoformat(),
+                    "run_started_at":started.isoformat(),
+                    "updated_at":(started+timedelta(seconds=duration)).isoformat()}
+        arr=n.source_rows([sample(1,15),sample(2,50),sample(3,400),
+                          sample(4,22,status="in_progress"),
+                          sample(5,20,conclusion="cancelled")],
+                          t+timedelta(days=1))
+        self.assertEqual([x["label"] for x in arr],[0,1,2])
+        self.assertTrue(all("conclusion" not in x for x in arr))
+
+    def test_only_post_publication_github_runs_are_scored(self):
+        # Weights were frozen in memory at freeze; Git did not publish them
+        # until 15 minutes later. These earlier jobs are NOT future evidence.
+        published=self.freeze+timedelta(minutes=15)
+        observed=self.past+self.future
+        result=n.future_decision(self.frozen["pending"],
+            n.load_state(self.frozen["parent"]),observed,
+            self.freeze+timedelta(days=1),published_at=published.isoformat())[0]
+        self.assertEqual(result["sample_count"],60)
+        self.assertTrue(result["future_records_created_after_weights_git_commit"])
+        self.assertGreater(n.at(result["first_new_created_at"]),published)
+
+    def test_unpublished_future_time_rejected(self):
+        with self.assertRaisesRegex(ValueError,"INVALID_PUBLISHED_STATE_TIME"):
+            n.future_decision(self.frozen["pending"],
+                n.load_state(self.frozen["parent"]),self.past+self.future,
+                self.freeze+timedelta(minutes=1),
+                published_at=(self.freeze+timedelta(hours=3)).isoformat())
+
+    def test_no_synthetic_pass_can_claim_external_custodian(self):
+        completed=self.past+self.future
+        result=n.future_decision(self.frozen["pending"],
+            n.load_state(self.frozen["parent"]),completed,
+            self.freeze+timedelta(days=1))[0]
+        self.assertFalse(result["external_custodian"])
+        self.assertFalse(result["production_authority"])
+        self.assertFalse(result["training_saw_future_labels"])
+
+
+if __name__=="__main__":
+    unittest.main()
