@@ -33,6 +33,28 @@ class DynamicINT8NativeResearchTests(unittest.TestCase):
         self.assertTrue(torch.isfinite(logits).all())
         self.assertTrue(torch.isfinite(loss).all())
 
+    def test_selective_ffn_quantization_preserves_output_head(self):
+        import torch.nn as nn
+        model,_=load_checkpoint(base.CHECKPOINT,expected_sha256=base.CHECKPOINT_SHA256)
+        model.eval()
+        trial,count=native.make_native_quantized(model,policy="ffn_only")
+        self.assertEqual(count,4)
+        self.assertIsInstance(trial.lm_head,nn.Linear)
+        self.assertEqual(trial.lm_head.weight.data_ptr(),trial.token.weight.data_ptr())
+        self.assertEqual(base.file_sha(base.CHECKPOINT),base.CHECKPOINT_SHA256)
+
+    def test_selective_ffn_real_tokens_forward(self):
+        model,_=load_checkpoint(base.CHECKPOINT,expected_sha256=base.CHECKPOINT_SHA256)
+        model.eval()
+        trial,count=native.make_native_quantized(model,policy="ffn_only")
+        frozen,_,_=base.require_source()
+        x,y=base.build_inputs(frozen)["public_fixed_probes"][0]
+        with torch.inference_mode():
+            logits,loss=trial(x,y)
+        self.assertEqual(tuple(logits.shape),(2,48,258))
+        self.assertTrue(torch.isfinite(logits).all())
+        self.assertTrue(torch.isfinite(loss).all())
+
     def test_original_checkpoint_is_byte_immutable(self):
         before=base.file_sha(base.CHECKPOINT)
         model,_=load_checkpoint(base.CHECKPOINT,expected_sha256=before)
