@@ -85,12 +85,57 @@ jobs:
           run-id: 43648008998
           github-token: ${{ github.token }}
           path: runtime/essence/v42
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v40-physarum-research-43650540561
+          run-id: 43650540561
+          github-token: ${{ github.token }}
+          path: runtime/essence/v42/g4
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v42-sealed-cost-checkpoints-43652825898
+          run-id: 43652825898
+          github-token: ${{ github.token }}
+          path: runtime/essence/v42/budget14
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: Install same pinned CPU PyTorch used in G3 and G4
         run: |
           python -m pip install --disable-pip-version-check torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+      - name: Independently reconstruct four unchanged FP32 models with clean-room loader
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          from tools.essence_v42_cleanroom_verifier import load_fixed_models
+          import torch
+          torch.set_num_threads(1)
+          base=Path("runtime/essence/v42")
+          inputs={
+            "g3":(base/"g3",["manifest.json","weights.f32"]),
+            "g4":(base/"g4",["control/manifest.json","control/weights.f32",
+                            "physarum/manifest.json","physarum/weights.f32",
+                            "physarum-development-trial.json"]),
+            "budget14":(base/"budget14",["baseline14/manifest.json",
+                                        "baseline14/weights.f32",
+                                        "full-cost-receipt.json"])
+          }
+          for key,(root,files) in inputs.items():
+              with ZipFile(base/f"{key}.zip","w") as z:
+                  for filename in files:
+                      assert (root/filename).is_file(),f"MISSING_SEALED_FILE: {filename}"
+                      z.write(root/filename,arcname=filename)
+          models=load_fixed_models(torch,base/"g3.zip",base/"g4.zip",
+                                   base/"budget14.zip")
+          assert set(models)=={"g3","control","physarum","baseline14"}
+          x=torch.ones((2,24),dtype=torch.long)
+          for key,model in models.items():
+              with torch.inference_mode():
+                  pred=model(x)
+              assert pred.shape==(2,24,256) and bool(torch.isfinite(pred).all())
+          print("Four cryptographically pinned models verified by separate loader.")
+          PY
       - name: Replay all 22 Physarum search and training steps and verify exact G4 weights
         run: |
           python -m tools.essence_v42_cost_replay \
