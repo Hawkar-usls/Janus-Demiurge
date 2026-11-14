@@ -1,0 +1,126 @@
+name: ESSENCE v3.2 Keymaster and verified EvolutionaryMemory
+
+on:
+  pull_request:
+    paths:
+      - 'tools/essence_v32_keymaster_memory.py'
+      - 'tests/test_essence_v32_keymaster_memory.py'
+      - '.github/workflows/essence-v32-keymaster-memory.yml'
+      - 'tools/essence_v30_active_evolution.py'
+      - 'tests/test_essence_v30_active_evolution.py'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/essence_v32_keymaster_memory.py'
+      - 'tests/test_essence_v32_keymaster_memory.py'
+      - '.github/workflows/essence-v32-keymaster-memory.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: essence-v32-keymaster-memory-main
+  cancel-in-progress: false
+
+jobs:
+  verify-source-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test source-bound Keymaster/Memory without importing legacy Python
+        run: |
+          python -m py_compile tools/essence_v32_keymaster_memory.py
+          python -m unittest -v tests.test_essence_v32_keymaster_memory
+
+  retain-verified-lessons:
+    needs: verify-source-contract
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.ESSENCE_EVOLUTION_PAUSED != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: source
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          path: research-state
+          ref: research/essence-keymaster-memory-state
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build research-only hash-linked memory on exact main source
+        run: |
+          python source/tools/essence_v32_keymaster_memory.py \
+            --source-root source \
+            --source-commit "$GITHUB_SHA" \
+            --previous research-state/research/essence/keymaster_memory/state.json \
+            --state-out research-state/research/essence/keymaster_memory/state.json \
+            --receipt source/artifacts/essence-v32/keymaster-memory.json
+      - name: Validate evidence and memory chain; commit only isolated state
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=source python - <<'PY'
+          import json,os
+          from pathlib import Path
+          from tools.essence_v32_keymaster_memory import seal,verify_state
+          path=Path("source/artifacts/essence-v32/keymaster-memory.json")
+          receipt=json.loads(path.read_text())
+          assert receipt["source_commit"]==os.environ["GITHUB_SHA"]
+          assert receipt["receipt_sha256"]==seal({k:v for k,v in receipt.items() if k!="receipt_sha256"})
+          assert receipt["neural_weights_changed"] is False
+          assert receipt["automatic_production_promotion"] is False
+          assert receipt["keymaster_can_touch_secrets"] is False
+          assert receipt["historical_python_executed"] is False
+          state=Path("research-state/research/essence/keymaster_memory/state.json")
+          if state.exists():
+              data=json.loads(state.read_text())
+              verify_state(data)
+              assert data["state_sha256"]==receipt["next_state_sha256"]
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as f:
+              f.write("### JANUS ESSENCE v3.2 verified keymaster memory\\n")
+              f.write("Source donors: 8 (not necessarily beneficial)\\n")
+              f.write("Verified local lessons: "+str(receipt["microkernels"][1]["lesson_count"])+"\\n")
+              f.write("Memory appended: "+str(receipt["memory_added_new_evidence"])+"\\n")
+              f.write("Neural model / production: UNCHANGED\\n")
+          PY
+          git -C research-state config user.name janus-essence-memory-witness
+          git -C research-state config user.email janus-essence-memory-witness@users.noreply.github.com
+          FROZEN_HEAD="$(git -C research-state rev-parse HEAD)"
+          if [ ! -f research-state/research/essence/keymaster_memory/state.json ]; then
+            echo "MISSING_MEMORY_STATE_HOLD" >&2
+            exit 5
+          fi
+          git -C research-state add -f -- research/essence/keymaster_memory/state.json
+          if git -C research-state diff --cached --quiet; then
+            echo 'KEYMASTER_MEMORY_ALREADY_OBSERVED_NO_REWRITE'
+            exit 0
+          fi
+          CHANGED="$(git -C research-state diff --cached --name-only)"
+          test "$CHANGED" = 'research/essence/keymaster_memory/state.json'
+          git -C research-state commit -m "ESSENCE keymaster memory: append source-verified lesson $GITHUB_RUN_ID"
+          REMOTE_HEAD="$(git -C research-state ls-remote origin refs/heads/research/essence-keymaster-memory-state | cut -f1)"
+          test "$REMOTE_HEAD" = "$FROZEN_HEAD" || { echo "MEMORY_STATE_CONCURRENT_UPDATE_HOLD" >&2; exit 6; }
+          git -C research-state push origin HEAD:refs/heads/research/essence-keymaster-memory-state
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: essence-v32-keymaster-memory-${{ github.run_id }}
+          path: source/artifacts/essence-v32/keymaster-memory.json
+          if-no-files-found: warn
+          retention-days: 90
