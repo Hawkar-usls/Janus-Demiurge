@@ -204,6 +204,8 @@ def plan(lane_inputs, *, now):
 
 
 def run(*, token, do_dispatch):
+    if not token or len(token) > 4096:
+        raise ValueError("MISSING_OR_INVALID_GITHUB_TOKEN")
     if do_dispatch and (
         os.environ.get("GITHUB_REF") != "refs/heads/main" or
         os.environ.get("GITHUB_EVENT_NAME") not in
