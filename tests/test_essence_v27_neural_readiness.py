@@ -70,7 +70,7 @@ class GitHubFutureReadiness(unittest.TestCase):
         self.assertEqual(outcome["status"],"HOLD_LOW_INFORMATION_FUTURE_COHORT")
 
     def test_precommit_rows_cannot_count_as_postfreeze(self):
-        old=[self.one(i+220,self.freeze+timedelta(seconds=i),i%3)
+        old=[self.one(i+5000,self.freeze+timedelta(seconds=i),i%3)
              for i in range(8)]
         outcome=self.report(raw=self.historical+old+self.future[:40])
         self.assertEqual(outcome["completed_after_frozen_git_commit"],40)
