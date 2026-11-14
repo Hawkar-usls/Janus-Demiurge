@@ -1,0 +1,77 @@
+name: JANUS R10 - Symbolic Minimal Retrocausal Axioms and Causal Identifiability
+
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/janus_minimal_retro_axioms_exact_r10.py'
+      - 'experiments/ocean_transformer/test_janus_minimal_retro_axioms_exact_r10.py'
+      - '.github/workflows/janus-minimal-retro-axioms-r10.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-r10-symbolic-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify-exact-math:
+    name: All-eta Q[eta] causal equivalence and intervention proof Python ${{ matrix.python }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11','3.12']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Run rational probability and symbolic polynomial theorem checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s experiments/ocean_transformer \
+            -p 'test_janus_minimal_retro_axioms_exact_r10.py'
+      - name: Produce fixed all-eta exact mathematical certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/janus_minimal_retro_axioms_exact_r10.py \
+            --out evidence/janus-r10-exact-minimal-axioms.json
+          python - <<'PY'
+          import json,os
+          x=json.load(open('evidence/janus-r10-exact-minimal-axioms.json'))
+          assert x['symbolic_all_eta_certificate']['observational_equivalence_all_real_eta_in_closed_interval']
+          assert x['symbolic_all_eta_certificate']['backward_doB_total_variation_exact']=='eta'
+          assert x['symbolic_all_eta_certificate']['forward_doB_total_variation_exact']=='0'
+          assert len(x['symbolic_all_eta_certificate']['eight_exact_polynomial_coefficients'])==8
+          assert all(c['forward_and_backward_observational_law_identical']
+                     for c in x['all_exact_eta_cases'])
+          assert len(x['all_exact_eta_cases'])==5
+          assert x['all_exact_eta_cases'][-1]['parity_guesses_B_success_under_observation']=='1'
+          assert x['all_exact_eta_cases'][-1]['formal_forward_doB_early_joint_TV']=='0'
+          assert x['all_exact_eta_cases'][-1]['formal_backward_doB_early_joint_TV']=='1'
+          assert not x['physical_retrocausality_deduced']
+          assert not x['novel_physical_mechanism_constructed']
+          assert not x['production_promotion']
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+            f.write('## JANUS R10 — exact symbolic minimal-axiom theorem\n')
+            f.write('- Every observational table P_eta(X,Z,B) equals both forward-causal and backward-formal models for ALL real 0<=eta<=1, checked coefficientwise over Q[eta].\n')
+            f.write('- Perfect parity prediction when eta=1 DOES NOT identify a past-directed causal arrow.\n')
+            f.write('- Under do(B), forward model joint TV=0; backward-formal TV=eta.\n')
+            f.write('- Global consistency postselection reproduces the same table but accepts only 1/2 of complete histories.\n')
+            f.write('- No future bit predicted without a causal resource, no physical retrocausality proven.\n')
+          PY
+          sha256sum evidence/janus-r10-exact-minimal-axioms.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-r10-minimal-axioms-exact-py${{ matrix.python }}
+          path: evidence/janus-r10-exact-minimal-axioms.json
+          retention-days: 90
+          if-no-files-found: error
