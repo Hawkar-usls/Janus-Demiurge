@@ -33,6 +33,11 @@ CLASSES = 3
 FETCH_PAGES = 8
 MIN_HISTORY = 180
 MIN_FUTURE = 48
+MIN_DISTINCT_WORKFLOWS = 8
+MAX_WORKFLOW_SHARE = 0.40
+MIN_POSITIVE_WORKFLOW_FRACTION = 0.625
+# Conservative for >=8 independent workflow families (one-sided t95 at 7df <2.0).
+CLUSTER_T_MULTIPLIER = 2.0
 MAX_HISTORY = FETCH_PAGES * 100
 MAX_GENERATIONS = 4
 SALT = "janus-research-duration-v1"
@@ -312,6 +317,16 @@ def future_decision(pending,parent,observed,now,*,published_at=None):
         return {"status":"HOLD_FUTURE_COHORT_NOT_YET_DIVERSE",
                 "observed_new":len(fresh),
                 "future_labels_visible_to_training":False},None
+    by_family={}
+    for index,row in enumerate(fresh):
+        by_family.setdefault(row["workflow_id"],[]).append(index)
+    largest=max(len(rows) for rows in by_family.values())/len(fresh)
+    if len(by_family)<MIN_DISTINCT_WORKFLOWS or largest>MAX_WORKFLOW_SHARE:
+        return {"status":"HOLD_FUTURE_WORKFLOW_CLUSTER_INFORMATION",
+                "observed_new":len(fresh),
+                "distinct_workflows":len(by_family),
+                "largest_workflow_fraction":largest,
+                "future_labels_visible_to_training":False},None
     child=load_state(pending["challenger"])
     a=measure(parent,fresh)
     b=measure(child,fresh)
@@ -319,11 +334,23 @@ def future_decision(pending,parent,observed,now,*,published_at=None):
     mean=sum(losses)/len(losses)
     sigma=math.sqrt(sum((v-mean)**2 for v in losses)/(len(losses)-1))
     lower=mean-1.645*sigma/math.sqrt(len(losses))
+    # Repeated runs of a single workflow are correlated observations.
+    # Compute a second, equally workflow-weighted paired test. A large
+    # number of near-identical runs must not manufacture significance.
+    family_means=[sum(losses[i] for i in indices)/len(indices)
+                  for _,indices in sorted(by_family.items())]
+    cluster_mean=sum(family_means)/len(family_means)
+    cluster_sigma=math.sqrt(sum((v-cluster_mean)**2 for v in family_means)/
+                            (len(family_means)-1))
+    cluster_lower=cluster_mean-CLUSTER_T_MULTIPLIER*cluster_sigma/math.sqrt(len(family_means))
+    positive_family_fraction=sum(v>0 for v in family_means)/len(family_means)
     frozen=pending["training"]["frozen_prior_distribution"]
     benchmark_nll=sum(-math.log(frozen[row["label"]]) for row in fresh)/len(fresh)
     benchmark_accuracy=sum(row["label"]==pending["training"]["frozen_prior_class"]
                            for row in fresh)/len(fresh)
     passes=(mean>=0.02 and lower>0.0 and
+            cluster_mean>=0.02 and cluster_lower>0.0 and
+            positive_family_fraction>=MIN_POSITIVE_WORKFLOW_FRACTION and
             b["accuracy"]>=a["accuracy"]-0.01 and
             b["nll"]<=benchmark_nll-0.005 and
             b["accuracy"]>=benchmark_accuracy-0.01)
@@ -344,6 +371,12 @@ def future_decision(pending,parent,observed,now,*,published_at=None):
         "frozen_train_prior_nll":benchmark_nll,
         "frozen_train_prior_accuracy":benchmark_accuracy,
         "paired_nll_gain":mean,"paired_one_sided_95pct_lower_bound":lower,
+        "workflow_clusters":len(by_family),
+        "largest_workflow_fraction":largest,
+        "cluster_weighted_paired_nll_gain":cluster_mean,
+        "cluster_conservative_lower_bound":cluster_lower,
+        "positive_workflow_fraction":positive_family_fraction,
+        "clustered_prospective_gate_version":"2.8",
         "improvement_proven_under_registered_internal_thresholds":passes,
         "external_custodian":False,"production_authority":False,
         "training_saw_future_labels":False
@@ -366,6 +399,15 @@ def consecutive_accepted(history):
         if (proof.get("status")!="PASS_PROSPECTIVE_PAIRED_NEURAL_GAIN"
             or proof.get("improvement_proven_under_registered_internal_thresholds") is not True
             or proof.get("future_records_created_after_weights_git_commit") is not True
+            or proof.get("clustered_prospective_gate_version")!="2.8"
+            or type(proof.get("workflow_clusters")) is not int
+            or proof["workflow_clusters"]<MIN_DISTINCT_WORKFLOWS
+            or type(proof.get("largest_workflow_fraction")) not in (float,int)
+            or proof["largest_workflow_fraction"]>MAX_WORKFLOW_SHARE
+            or type(proof.get("cluster_conservative_lower_bound")) not in (float,int)
+            or proof["cluster_conservative_lower_bound"]<=0
+            or type(proof.get("positive_workflow_fraction")) not in (float,int)
+            or proof["positive_workflow_fraction"]<MIN_POSITIVE_WORKFLOW_FRACTION
             or proof.get("training_saw_future_labels") is not False
             or proof.get("production_authority") is not False
             or not isinstance(proof_seal,str)
