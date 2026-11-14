@@ -256,6 +256,78 @@ def decode_archive(raw,expected_run,expected_sha,expected_workflow=WORKFLOW):
             raise ValueError("PARENT_CHECKPOINT_ATTESTATION_MISMATCH")
     return index,entries
 
+def prepare_successor(data_root,source_sha,out,previous_archive=None):
+    """Reserve validation/test exclusively after the previous holdout cutoff.
+
+    Previously evaluated public documents may be added to subsequent training,
+    but later verification must use newly dated distinct documents. When there
+    is no sufficient new cohort, the caller's inherited-parent gate still
+    blocks any reuse of the old holdout.
+    """
+    root=Path(previous_archive) if previous_archive else None
+    idx=root/"index.json" if root else None
+    if idx is None or not idx.is_file():return e.prepare(data_root,source_sha,out)
+    index=load(idx)
+    if (index.get("schema")!=SCHEMA or index.get("source_repository")!=OWNER_REPO
+        or index.get("receipt_sha256")!=e.seal({k:v for k,v in index.items() if k!="receipt_sha256"})
+        or index.get("production_authority") is not False):
+        raise ValueError("UNTRUSTED_PREVIOUS_COHORT_ARCHIVE")
+    cells=index.get("accepted_cells")
+    if not isinstance(cells,list) or not cells:
+        return e.prepare(data_root,source_sha,out)
+    parents=[load(root/f"cell-{cell}"/"parent.json") for cell in cells]
+    if any(m.get("receipt_sha256")!=index.get("parent_meta_sha256",{}).get(str(m.get("cell")))
+           or m.get("receipt_sha256")!=e.seal({k:v for k,v in m.items() if k!="receipt_sha256"})
+           or m.get("production_authority") is not False for m in parents):
+        raise ValueError("PREDECESSOR_METADATA_UNTRUSTED")
+    cutoffs={m["last_holdout_date"] for m in parents}
+    if len(cutoffs)!=1:raise ValueError("MIXED_PARENT_DATE_CUTOFF")
+    cutoff=next(iter(cutoffs))
+    if not e.SHA.fullmatch(source_sha):raise ValueError("UNPINNED_NEXT_SOURCE_COMMIT")
+    if any(m["source_commit"]==source_sha for m in parents):
+        return e.prepare(data_root,source_sha,out)
+    groups,desc=e.r.collect(data_root)
+    all_rows=sorted((row for group in groups.values() for row in group),
+                    key=lambda x:(x["date"],x["identity"]))
+    fresh=sorted({row["date"] for row in all_rows if row["date"]>cutoff})
+    if len(fresh)<8:return e.prepare(data_root,source_sha,out)
+    first=fresh[len(fresh)//2]
+    second=fresh[max(len(fresh)//2+1,3*len(fresh)//4)]
+    rows={
+      "train":[x for x in all_rows if x["date"]<first],
+      "validation":[x for x in all_rows if first<=x["date"]<second],
+      "holdout":[x for x in all_rows if x["date"]>=second]
+    }
+    if min(map(len,rows.values()))<12 or max(map(len,rows.values()))>4200:
+        return e.prepare(data_root,source_sha,out)
+    if (max(x["date"] for x in rows["train"])>=min(x["date"] for x in rows["validation"])
+        or max(x["date"] for x in rows["validation"])>=min(x["date"] for x in rows["holdout"])
+        or min(x["date"] for x in rows["validation"])<=cutoff
+        or min(x["date"] for x in rows["holdout"])<=cutoff):
+        raise ValueError("FUTURE_ONLY_COHORT_LEAKAGE")
+    sets=[{x["identity"] for x in group} for group in rows.values()]
+    if len(set.union(*sets))!=sum(map(len,sets)):
+        raise ValueError("FUTURE_COHORT_IDENTITY_DUPLICATE")
+    packets={k:e.split_packet(k,v,source_sha,desc["dataset_sha256"]) for k,v in rows.items()}
+    result={
+      "schema":e.SCHEMA,"source_commit":source_sha,
+      "dataset_sha256":desc["dataset_sha256"],
+      "split_sha256":{k:p["packet_sha256"] for k,p in packets.items()},
+      "split_sizes":{k:len(p["rows"]) for k,p in packets.items()},
+      "train_label_counts":[sum(x["label"]==i for x in rows["train"]) for i in range(len(e.r.LABELS))],
+      "split_dates":{k:[min(x["date"] for x in v),max(x["date"] for x in v)] for k,v in rows.items()},
+      "cohort_protocol":"FUTURE_ONLY_AFTER_PREVIOUS_HOLDOUT",
+      "previous_last_holdout_date":cutoff,"new_distinct_dates":len(fresh),
+      "test_data_in_training_artifact":False,"external_custodian":False,
+      "training_task":"PUBLIC_META_REGISTRY_KEY_CLASSIFICATION","production_authority":False
+    }
+    result["receipt_sha256"]=e.seal(result)
+    for k,p in packets.items():
+        e.check_packet(p,k,source_sha,desc["dataset_sha256"])
+        e.atomic_json(Path(out)/f"{k}.json",p)
+    e.atomic_json(Path(out)/"manifest.json",result)
+    return result
+
 def valid_for_new_history(metadata,current_manifest):
     """Hard temporal anti-replay gate before any descendant is trained."""
     e.validate_manifest(current_manifest,current_manifest.get("source_commit"))
@@ -384,6 +456,8 @@ def cli():
     c=sub.add_parser("fetch")
     c.add_argument("--out",required=True)
     c.add_argument("--run-id",type=int,required=True)
+    prep=sub.add_parser("prepare-next")
+    for opt in ("data-root","source","previous-archive","out"):prep.add_argument("--"+opt,required=True)
     d=sub.add_parser("continue")
     for arg in ("archive","manifest","train","validation","out"):
         d.add_argument("--"+arg,required=True)
@@ -413,6 +487,11 @@ def cli():
         obj=fetch_trusted_research_ancestors(opts.out,token=os.environ.get("GH_TOKEN",""),
                                               current_run=opts.run_id)
         print(json.dumps({"status":obj["status"],"parent_cells":obj["parent_cells"],
+                          "production_authority":False}))
+    elif opts.mode=="prepare-next":
+        obj=prepare_successor(opts.data_root,opts.source,opts.out,opts.previous_archive)
+        print(json.dumps({"status":obj.get("cohort_protocol","BASELINE_HOLD_FUTURE_COHORT_UNAVAILABLE"),
+                          "new_dates":obj.get("new_distinct_dates",0),
                           "production_authority":False}))
     else:
         manifest=load(opts.manifest)
