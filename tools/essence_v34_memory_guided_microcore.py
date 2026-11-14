@@ -337,6 +337,9 @@ def check_state(state):
         p = state.get("pending")
         require(isinstance(p, dict) and p.get("schema") == "janus.essence.memory_guided_candidate/3.4"
                 and p.get("config") == CONFIG
+                and SHA64.fullmatch(str(p.get("implementation_sha256", "")))
+                and p.get("implementation_sha256") == hashlib.sha256(
+                    Path(__file__).read_bytes()).hexdigest()
                 and SHA40.fullmatch(str(p.get("source_commit", "")))
                 and SHA40.fullmatch(str(p.get("v32_memory_commit", "")))
                 and SHA40.fullmatch(str(p.get("v33_memory_commit", "")))
@@ -364,6 +367,7 @@ def freeze(mem, rows, now, *, source_commit, v32_commit, v33_commit):
     prior = count_priors(rows)
     p = {
         "schema": "janus.essence.memory_guided_candidate/3.4",
+        "implementation_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "source_commit": source_commit,
         "v32_memory_commit": v32_commit,
         "v33_memory_commit": v33_commit,
