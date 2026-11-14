@@ -151,7 +151,7 @@ class JuxtaposeExactMicrocoreTests(unittest.TestCase):
 
     def test_exact_replay_catches_forged_transition(self):
         before=j.normalize([[1,2],[-1,3]])
-        wrong=j.normalize([[2,3]])
+        wrong=j.normalize([[2]])
         self.assertFalse(j.exact_exists_replay(before,wrong,1))
 
     def test_all_small_cnf_truth_tables_property(self):
