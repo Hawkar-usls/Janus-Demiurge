@@ -116,6 +116,22 @@ class ThreeGateRealModelReview(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"INDEPENDENT_HOLDOUT_QUALITY_HOLD"):
             a.holdout_results(e["holdout"])
 
+    def test_reject_token_weighted_ce_regression_hidden_by_short_docs(self):
+        # 99 short perfect documents must not hide one long 10% CE regression.
+        # Unweighted document means yield only 0.1% and would wrongly pass.
+        e=fixture()
+        docs=e["holdout"]["cohorts"][0]["documents"]
+        for d in docs:
+            d["n_tokens"]=8
+            d["argmax_matches"]=8
+            d["baseline_ce"]=1.0
+            d["candidate_ce"]=1.0
+        docs[0]["n_tokens"]=4096
+        docs[0]["argmax_matches"]=4096
+        docs[0]["candidate_ce"]=1.10
+        with self.assertRaisesRegex(ValueError,"INDEPENDENT_HOLDOUT_QUALITY_HOLD"):
+            a.holdout_results(e["holdout"])
+
     def test_reject_mixed_hardware(self):
         e=fixture()
         e["hardware"]["runs"][0]["device_id"]="different-device"
