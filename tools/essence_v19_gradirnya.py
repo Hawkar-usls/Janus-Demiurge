@@ -158,7 +158,7 @@ def validate_manifest(m,source_sha):
         raise ValueError("UNTRUSTED_FROZEN_TRAIN_PRIOR")
     return m
 
-def train(cell,train_packet,val_packet,manifest,out,steps=40):
+def train(cell,train_packet,val_packet,manifest,out,steps=40,*,inherited_state=None,inherited_metadata=None):
     if type(cell) is not int or not 0<=cell<6 or type(steps) is not int or not 20<=steps<=MAX_STEPS:
         raise ValueError("BOUNDED_MICROCORE_TRAINING_ONLY")
     source=manifest["source_commit"]
@@ -174,6 +174,26 @@ def train(cell,train_packet,val_packet,manifest,out,steps=40):
         or max(x["date"] for x in train_rows)>=min(x["date"] for x in val_rows)):
         raise ValueError("TRAIN_VALIDATION_LEAK")
     model=r.model_for(cell)
+    inherited=None
+    if inherited_state is not None or inherited_metadata is not None:
+        from tools import essence_v20_ancestry as v20
+        if not isinstance(inherited_state,dict) or not isinstance(inherited_metadata,dict):
+            raise ValueError("INCOMPLETE_CROSS_RUN_PARENT")
+        v20.valid_for_new_history(inherited_metadata,manifest)
+        reference=model.state_dict()
+        if (inherited_metadata.get("cell")!=cell or set(inherited_state)!=set(reference)
+            or any(not isinstance(inherited_state[k],torch.Tensor)
+                   or inherited_state[k].shape!=reference[k].shape
+                   or not bool(torch.isfinite(inherited_state[k]).all())
+                   for k in reference)
+            or stable_state(inherited_state)!=inherited_metadata.get("parent_weight_sha256")):
+            raise ValueError("INHERITED_WEIGHTS_NOT_FROM_PINNED_PARENT")
+        model.load_state_dict(inherited_state,strict=True)
+        inherited={"parent_lineage_sha256":inherited_metadata["last_lineage_sha256"],
+                   "parent_weights_sha256":inherited_metadata["parent_weight_sha256"],
+                   "parent_source_commit":inherited_metadata["source_commit"],
+                   "parent_last_heldout_date":inherited_metadata["last_holdout_date"],
+                   "ancestry_depth":inherited_metadata["ancestry_depth"]+1}
     initial=clone_state(model)
     initial_sha=stable_state(initial)
     parent_eval=r.evaluate(model,val_rows)
@@ -226,6 +246,7 @@ def train(cell,train_packet,val_packet,manifest,out,steps=40):
             "train_sha256":train_packet["packet_sha256"],"validation_sha256":val_packet["packet_sha256"],
             "holdout_sha256":manifest["split_sha256"]["holdout"],
             "initial_weights_sha256":initial_sha,"final_weights_sha256":incumbent_sha,
+            "cross_run_inheritance":inherited,
             "generations":generations,"accepted_generations":accepted,
             "initial_validation":parent_eval,"final_validation":r.evaluate(model,val_rows),
             "real_tensor_precision":research_tensor_precision(model),
