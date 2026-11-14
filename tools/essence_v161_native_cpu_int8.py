@@ -30,6 +30,10 @@ def byte_size_state_dict(model):
 
 def make_native_quantized(model):
     from torch.ao.quantization import quantize_dynamic
+    # TransformerEncoderLayer fastpath introspects .weight as a Tensor, while
+    # native dynamic QuantizedLinear exposes weight() as a method. Disable
+    # this incompatible optional fusion path for this *research process*.
+    torch.backends.mha.set_fastpath_enabled(False)
     qmodel=quantize_dynamic(model,{nn.Linear},dtype=torch.qint8,inplace=False)
     qtypes=(torch.ao.nn.quantized.dynamic.Linear,)
     count=sum(isinstance(module,qtypes) for module in qmodel.modules())
