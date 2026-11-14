@@ -1,0 +1,120 @@
+name: ESSENCE v3.3 Epistemic Spiral Exchange
+
+on:
+  pull_request:
+    paths:
+      - 'tools/essence_v33_epistemic_exchange.py'
+      - 'tests/test_essence_v33_epistemic_exchange.py'
+      - '.github/workflows/essence-v33-epistemic-exchange.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/essence_v33_epistemic_exchange.py'
+      - 'tests/test_essence_v33_epistemic_exchange.py'
+      - '.github/workflows/essence-v33-epistemic-exchange.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: essence-v33-epistemic-exchange-main
+  cancel-in-progress: false
+
+jobs:
+  verify-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify offline epistemic tests and actual Scout/spiral manifests
+        run: |
+          python -m py_compile tools/essence_v33_epistemic_exchange.py
+          python -m unittest -v tests.test_essence_v33_epistemic_exchange
+
+  live-exchange:
+    needs: verify-contract
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.ESSENCE_EVOLUTION_PAUSED != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      PYTHONPATH: source
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: source
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: research/essence-epistemic-state
+          path: research-state
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Consume exact SHA-pinned public JSON, preserve negative evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python source/tools/essence_v33_epistemic_exchange.py \
+            --main-sha "$GITHUB_SHA" \
+            --previous research-state/research/essence/epistemic/state.json \
+            --state-out research-state/research/essence/epistemic/state.json \
+            --receipt source/artifacts/essence-v33/epistemic-exchange.json
+      - name: Verify no authority transfer; append research-only state with CAS
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          from tools.essence_v33_epistemic_exchange import seal, verify_state
+          receipt = json.loads(Path('source/artifacts/essence-v33/epistemic-exchange.json').read_text())
+          assert receipt['receipt_sha256'] == seal({k: v for k, v in receipt.items() if k!='receipt_sha256'})
+          assert receipt['model_weights_updated'] is False
+          assert receipt['scientific_world_truth_promoted'] is False
+          assert receipt['independent_neural_gain_proven'] is False
+          assert receipt['automatic_merge'] is False
+          assert receipt['production_authority'] is False
+          assert receipt['scout_identity_count'] == 17
+          state = json.loads(Path('research-state/research/essence/epistemic/state.json').read_text())
+          verify_state(state)
+          assert receipt['memory_state_sha256'] == state['state_sha256']
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as stream:
+              stream.write('### ESSENCE v3.3 epistemic spiral exchange\n')
+              stream.write('Status: ' + receipt['status'] + '\n')
+              stream.write('Inherited Scouts: 17\n')
+              stream.write('Negative evidence records: ' + str(len(receipt['historical_negative_results'])) + '\n')
+              stream.write('Production/weight authority: DENIED\n')
+          PY
+          git -C research-state config user.name janus-essence-evidence-witness
+          git -C research-state config user.email janus-essence-evidence-witness@users.noreply.github.com
+          ORIGINAL="$(git -C research-state rev-parse HEAD)"
+          git -C research-state add -f -- research/essence/epistemic/state.json
+          if git -C research-state diff --cached --quiet; then
+            echo "NO_ASCENT_REPLAY_NO_NEW_INFORMATION"
+            exit 0
+          fi
+          test "$(git -C research-state diff --cached --name-only)" = 'research/essence/epistemic/state.json'
+          git -C research-state commit -m "ESSENCE epistemic memory: preserve vetted lesson $GITHUB_RUN_ID"
+          REMOTE="$(git -C research-state ls-remote origin refs/heads/research/essence-epistemic-state | cut -f1)"
+          test "$REMOTE" = "$ORIGINAL" || { echo "EPISTEMIC_STATE_CONCURRENT_UPDATE_HOLD" >&2; exit 6; }
+          git -C research-state push origin HEAD:refs/heads/research/essence-epistemic-state
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: essence-v33-epistemic-exchange-${{ github.run_id }}
+          path: source/artifacts/essence-v33/epistemic-exchange.json
+          retention-days: 90
+          if-no-files-found: warn
