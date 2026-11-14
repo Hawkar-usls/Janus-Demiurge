@@ -1,0 +1,260 @@
+name: ESSENCE v1.9 GRADIRNYA two-generation closed loop (research only)
+
+on:
+  pull_request:
+    paths:
+      - 'tools/essence_v19_gradirnya.py'
+      - 'tests/test_essence_v19_gradirnya.py'
+      - 'tools/essence_v19_http_canary.py'
+      - 'tests/test_essence_v19_http_canary.py'
+      - '.github/workflows/essence-v19-gradirnya.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '17 6 * * 3'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: essence-v19-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned CPU research backend
+        run: |
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check 'torch==2.8.0' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - name: Verify two-generation gradient training and fail-closed guardrails
+        run: |
+          python -m py_compile tools/essence_v19_gradirnya.py
+          python -m unittest -v tests.test_essence_v19_gradirnya tests.test_essence_v19_http_canary
+
+  source-snapshot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    outputs:
+      meta_sha: ${{ steps.freeze.outputs.meta_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: main
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Freeze public dated evidence version
+        id: freeze
+        run: echo "meta_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  prepare:
+    needs: [contract, source-snapshot]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU PyTorch
+        run: |
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check 'torch==2.8.0' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: ${{ needs.source-snapshot.outputs.meta_sha }}
+          path: dependencies/registry
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Produce disjoint date partitions; worker never receives test labels
+        run: |
+          SRC="$(git -C dependencies/registry rev-parse HEAD)"
+          python -m tools.essence_v19_gradirnya prepare --data-root dependencies/registry/data --source "$SRC" --out staging/splits
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v19-train-only-${{ github.run_id }}
+          path: |
+            staging/splits/train.json
+            staging/splits/validation.json
+            staging/splits/manifest.json
+          retention-days: 14
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v19-verifier-holdout-${{ github.run_id }}
+          path: staging/splits/holdout.json
+          retention-days: 14
+          if-no-files-found: error
+
+  microcore-offspring:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        cell: ${{ fromJSON(github.event_name == 'pull_request' && '[0]' || '[0,1,2,3,4,5]') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU PyTorch
+        run: |
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check 'torch==2.8.0' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v19-train-only-${{ github.run_id }}
+          path: staging/splits
+      - name: Two real-gradient generations per microkernel, validation-only survival
+        run: |
+          python -m tools.essence_v19_gradirnya train --train staging/splits/train.json --validation staging/splits/validation.json --manifest staging/splits/manifest.json --cell ${{ matrix.cell }} --steps 40 --out artifacts/cell-${{ matrix.cell }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v19-child-${{ matrix.cell }}-${{ github.run_id }}
+          path: artifacts/cell-${{ matrix.cell }}/
+          if-no-files-found: error
+          retention-days: 14
+
+  separate-holdout-verifier:
+    needs: [prepare, microcore-offspring]
+    if: always() && needs.prepare.result == 'success' && needs.microcore-offspring.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU PyTorch
+        run: |
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check 'torch==2.8.0' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v19-train-only-${{ github.run_id }}
+          path: staging/splits
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v19-verifier-holdout-${{ github.run_id }}
+          path: staging/splits
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: essence-v19-child-*-${{ github.run_id }}
+          path: artifacts/children
+      - name: Check lineage and evaluate unseen-to-training historical dates once
+        run: |
+          set -euo pipefail
+          COUNT=0
+          for folder in artifacts/children/essence-v19-child-*; do
+            test -d "$folder" || continue
+            name="$(basename "$folder")"
+            cell="${name#essence-v19-child-}"
+            cell="${cell%%-*}"
+            python -m tools.essence_v19_gradirnya verify --holdout staging/splits/holdout.json --manifest staging/splits/manifest.json --lineage "$folder/lineage.json" --weights "$folder/offspring.pt" --cell "$cell" --out "artifacts/verify/cell-$cell.json"
+            COUNT=$((COUNT+1))
+          done
+          if [ "${{ github.event_name }}" = "pull_request" ]; then test "$COUNT" -eq 1; else test "$COUNT" -eq 6; fi
+          echo "Research children verified: $COUNT; production admission HOLD" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v19-separated-heldout-${{ github.run_id }}
+          path: artifacts/verify/
+          if-no-files-found: error
+          retention-days: 30
+
+  isolated-http-neural-canary:
+    needs: [prepare, microcore-offspring, separate-holdout-verifier]
+    if: needs.separate-holdout-verifier.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU PyTorch
+        run: |
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check 'torch==2.8.0' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v19-train-only-${{ github.run_id }}
+          path: staging/splits
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v19-child-0-${{ github.run_id }}
+          path: artifacts/cell-0
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v19-separated-heldout-${{ github.run_id }}
+          path: artifacts/verify
+      - name: Only validation-and-heldout-gaining research child gets ephemeral live canary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('artifacts/verify/cell-0.json').read_text())
+          l=json.loads(Path('artifacts/cell-0/lineage.json').read_text())
+          accept=r['gate']=='RESEARCH_HISTORICAL_DATE_HOLDOUT_GAIN' and l['accepted_generations']>0
+          Path('artifacts/research-canary').mkdir(parents=True,exist_ok=True)
+          Path('artifacts/research-canary/allowed.txt').write_text('yes' if accept else 'no')
+          if not accept:
+              Path('artifacts/research-canary/HOLD.json').write_text(json.dumps({
+                  'status':'HOLD_NO_HISTORICAL_DATE_HOLDOUT_GAIN',
+                  'ephemeral_service_started':False,
+                  'production_authority':False
+              }))
+          print('RESEARCH_CANARY_ELIGIBLE',accept)
+          PY
+      - name: Deploy neural descendant to isolated running HTTP service; trigger auto rollback
+        if: success()
+        run: |
+          if [ "$(cat artifacts/research-canary/allowed.txt)" = "yes" ]; then
+            python -m tools.essence_v19_http_canary \
+              --weights artifacts/cell-0/offspring.pt \
+              --lineage artifacts/cell-0/lineage.json \
+              --validation staging/splits/validation.json \
+              --out artifacts/research-canary/receipt.json
+          else
+            echo 'HOLD: real localhost service canary intentionally NOT activated' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v19-isolated-http-rollback-${{ github.run_id }}
+          path: artifacts/research-canary/
+          if-no-files-found: error
+          retention-days: 30
