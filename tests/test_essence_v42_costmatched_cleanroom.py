@@ -119,6 +119,23 @@ class CleanroomContractTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError,"BAD_MANIFEST"):
                     clean.evaluate(self.lock,cost_path,"m14","ctrl","phys")
 
+    def test_continuous_14_step_fixed_baseline_is_safe_and_changes_weights(self):
+        import torch
+        torch.set_num_threads(1)
+        torch.manual_seed(777)
+        model=original.new_model(torch)
+        raw,_=prior.weight_bytes(torch,model)
+        source_sha=hashlib.sha256(raw).hexdigest()
+        train=torch.tensor(list(b"def stable_training_only():\n return 8\n"*150),
+                           dtype=torch.long)
+        rejected=cost.train_fixed_fourteen(torch,model,train,seed=4002)
+        changed,_=prior.weight_bytes(torch,model)
+        self.assertEqual(rejected,0)
+        self.assertNotEqual(hashlib.sha256(changed).hexdigest(),source_sha)
+        with self.assertRaisesRegex(ValueError,"FIXED_BASELINE14_CONTRACT_INVALID"):
+            cost.train_fixed_fourteen(torch,model,train,seed=9999)
+
+
     def test_invalid_cost_proof_veto(self):
         stub={"schema":cost.SCHEMA,"receipt_sha256":"bad"}
         with tempfile.TemporaryDirectory() as tmp:
