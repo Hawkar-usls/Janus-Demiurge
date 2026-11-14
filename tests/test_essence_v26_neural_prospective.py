@@ -59,6 +59,9 @@ class ProspectiveNeuralContract(unittest.TestCase):
                                  self.freeze+timedelta(days=1))
         self.assertEqual(next_state["generation"],1)
         self.assertTrue(next_state["history"][-1]["accepted"])
+        proof=next_state["history"][-1]["independent_future_verification"]
+        self.assertEqual(proof["receipt_sha256"],n.seal({
+            k:v for k,v in proof.items() if k!="receipt_sha256"}))
         self.assertEqual(next_state["history"][-1]["parent_sha256"],
                          self.frozen["pending"]["parent_sha256"])
         self.assertEqual(n.seal(next_state["parent"]),
