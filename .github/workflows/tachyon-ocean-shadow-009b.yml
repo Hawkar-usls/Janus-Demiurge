@@ -1,0 +1,131 @@
+name: JANUS Ocean × Tachyon shadow audit (read-only)
+on:
+  push:
+    branches: [janus/tachyon-ocean-shadow-20261111]
+    paths: ['.github/workflows/tachyon-ocean-shadow-009b.yml']
+  pull_request:
+    paths: ['.github/workflows/tachyon-ocean-shadow-009b.yml']
+  workflow_dispatch:
+    inputs:
+      target_date:
+        description: 'Frozen Ocean 009B target date YYYY-MM-DD (Nov 12-19 2026)'
+        required: true
+      include_late:
+        description: 'Read the scored artifact only after Ocean released and scored all rounds'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: tachyon-ocean-audit-${{ github.event.inputs.target_date }}
+  cancel-in-progress: false
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/Demi_Head
+          ref: 2dc460a6c83013d46eba0ec949d864cc11f9d9fb
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify Tachyon Ocean isolated, offline contracts
+        run: python -m unittest discover -s tests -p 'test_tachyon_ocean_link.py' -v
+  independent-readonly-audit:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/Demi_Head
+          ref: 2dc460a6c83013d46eba0ec949d864cc11f9d9fb
+          path: external/tachyon
+          persist-credentials: false
+          sparse-checkout: |
+            tachyon
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/TOPA
+          ref: 98a92e8abb4f05c41aae2921f0d956a210a74429
+          path: external/topa
+          persist-credentials: false
+          sparse-checkout: |
+            integrations/janus-distributed-ai-swarm/topa_epistemic_router.py
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Recover exact unique early Ocean artifact with GitHub timestamp
+        shell: bash
+        run: |
+          set -euo pipefail
+          DATE='${{ inputs.target_date }}'
+          [[ "$DATE" =~ ^2026-11-(1[2-9])$ ]] || { echo BAD_TARGET_DATE; exit 2; }
+          NAME="janus-open-future-009b-$DATE"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=$NAME&per_page=100" > artifacts-index.json
+          python - "$NAME" <<'PY'
+          import json,sys
+          xs=[x for x in json.load(open('artifacts-index.json'))['artifacts']
+              if x['name']==sys.argv[1] and not x['expired']]
+          if len(xs)!=1: raise SystemExit('NOT_EXACTLY_ONE_EARLY_ARTIFACT')
+          x=xs[0]
+          with open('early-meta.txt','w') as f:
+              f.write(str(x['workflow_run']['id'])+'\n'+x['created_at']+'\n')
+          PY
+          mkdir -p incoming/early results
+          gh run download "$(sed -n 1p early-meta.txt)" --repo "$GITHUB_REPOSITORY" --name "$NAME" --dir incoming/early
+          test -f incoming/early/early_009b_128_bit_model_forecast.json
+      - name: Read late result only with explicit operator request
+        if: ${{ inputs.include_late }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          DATE='${{ inputs.target_date }}'
+          NAME="janus-open-future-009b-scored-$DATE"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=$NAME&per_page=100" > late-index.json
+          python - "$NAME" <<'PY'
+          import json,sys
+          xs=[x for x in json.load(open('late-index.json'))['artifacts']
+              if x['name']==sys.argv[1] and not x['expired']]
+          if len(xs)!=1: raise SystemExit('NOT_EXACTLY_ONE_LATE_ARTIFACT')
+          open('late-run.txt','w').write(str(xs[0]['workflow_run']['id']))
+          PY
+          mkdir -p incoming/late
+          gh run download "$(cat late-run.txt)" --repo "$GITHUB_REPOSITORY" --name "$NAME" --dir incoming/late
+          test -f incoming/late/009b_128_verified_bit_score.json
+          test -f incoming/late/signed_128_future_rounds.json
+      - name: Validate phase-separated Ocean inputs and run canonical TOPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH=external/tachyon
+          args=(--precommit incoming/early/early_009b_128_bit_model_forecast.json
+                --ocean-commit "$GITHUB_SHA"
+                --github-created-at "$(sed -n 2p early-meta.txt)"
+                --topa-router external/topa/integrations/janus-distributed-ai-swarm/topa_epistemic_router.py
+                --output results/tachyon-ocean-audit.json)
+          if [[ '${{ inputs.include_late }}' = 'true' ]]; then
+            args+=(--late incoming/late/009b_128_verified_bit_score.json
+                   --beacons incoming/late/signed_128_future_rounds.json)
+          fi
+          python -m tachyon.ocean_link "${args[@]}"
+          (cd external/tachyon && git rev-parse HEAD) > results/tachyon-provider-commit.txt
+          (cd external/topa && git rev-parse HEAD) > results/topa-provider-commit.txt
+      - name: Preserve bounded audit without code/weights mutation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tachyon-ocean-shadow-${{ inputs.target_date }}-${{ github.run_id }}
+          path: results/
+          retention-days: 90
+          if-no-files-found: warn
