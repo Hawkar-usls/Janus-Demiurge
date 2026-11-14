@@ -131,6 +131,7 @@ class ThreeGateRealModelReview(unittest.TestCase):
     def test_reject_regressed_latency(self):
         e=fixture()
         e["hardware"]["runs"][3]["candidate_median_ms"]=2.2
+        e["hardware"]["runs"][3]["candidate_p95_ms"]=2.5
         with self.assertRaisesRegex(ValueError,"TARGET_HARDWARE_PER_RUN_REGRESSION"):
             a.hardware_results(e["hardware"])
 
