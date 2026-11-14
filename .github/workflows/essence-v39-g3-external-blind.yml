@@ -1,0 +1,204 @@
+name: ESSENCE v3.9 G3 inherited weights and external-source blind examination
+
+on:
+  pull_request:
+    paths:
+      - 'tools/essence_v39_g3.py'
+      - 'tests/test_essence_v39_g3.py'
+      - 'research/essence/codex_v39/external_source_lock.json'
+      - '.github/workflows/essence-v39-g3-external-blind.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/essence_v39_g3.py'
+      - 'tests/test_essence_v39_g3.py'
+      - 'research/essence/codex_v39/external_source_lock.json'
+      - '.github/workflows/essence-v39-g3-external-blind.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: essence-v39-g3-sourceblind-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  regression:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install reproducible CPU torch
+        run: python -m pip install --disable-pip-version-check torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+      - name: Validate prospective G3 mechanism on synthetic non-external fixtures
+        run: |
+          python -m py_compile tools/essence_v39_g3.py
+          python -m unittest -v \
+            tests.test_essence_v39_g3 \
+            tests.test_essence_v38_inheritance \
+            tests.test_essence_v37_codex_gpt \
+            tests.test_essence_v36_juxtapose_exact
+
+  freeze-external-cohort:
+    needs: regression
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.ESSENCE_EVOLUTION_PAUSED != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Seal source Git object IDs and rules before G3 training; no benchmark reads
+        run: |
+          python -m tools.essence_v39_g3 freeze --lock \
+            research/essence/codex_v39/external_source_lock.json \
+            --out runtime/essence/v39/g3-lock-receipt.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v39-external-lock-${{ github.run_id }}
+          path: runtime/essence/v39/g3-lock-receipt.json
+          if-no-files-found: error
+          retention-days: 90
+
+  inherit-g2-and-train-g3:
+    needs: freeze-external-cohort
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v38-freeze-43648008998
+          run-id: 43648008998
+          github-token: ${{ github.token }}
+          path: runtime/essence/v39
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v38-child-43648008998
+          run-id: 43648008998
+          github-token: ${{ github.token }}
+          path: runtime/essence/v39/g2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install reproducible CPU torch
+        run: python -m pip install --disable-pip-version-check torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+      - name: Load G2 actual weights via strict SHA256 and train G3 without any external test bytes
+        run: |
+          python -m tools.essence_v39_g3 train \
+            --repo-root . \
+            --lock research/essence/codex_v39/external_source_lock.json \
+            --g2-dir runtime/essence/v39/g2 \
+            --g2-freeze runtime/essence/v39/freeze.json \
+            --g3-dir runtime/essence/v39/g3 \
+            --out runtime/essence/v39/g3-train-receipt.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from tools.essence_v39_g3 import G2_WEIGHT_SHA256
+          receipt=json.loads(Path('runtime/essence/v39/g3-train-receipt.json').read_text())
+          assert receipt['g3_start_weights_sha256'] == G2_WEIGHT_SHA256
+          assert receipt['external_test_bytes_fetched_in_training'] is False
+          assert receipt['production_authority'] is False
+          print('G3 inherited G2 SHA256 and saved genuinely changed FP32 tensors')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v39-g3-checkpoint-${{ github.run_id }}
+          path: runtime/essence/v39/g3/
+          if-no-files-found: error
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v39-g3-train-receipt-${{ github.run_id }}
+          path: runtime/essence/v39/g3-train-receipt.json
+          if-no-files-found: error
+          retention-days: 90
+
+  single-external-source-exam:
+    needs: inherit-g2-and-train-g3
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v38-freeze-43648008998
+          run-id: 43648008998
+          github-token: ${{ github.token }}
+          path: runtime/essence/v39
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v38-child-43648008998
+          run-id: 43648008998
+          github-token: ${{ github.token }}
+          path: runtime/essence/v39/g2
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v39-g3-checkpoint-${{ github.run_id }}
+          path: runtime/essence/v39/g3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install reproducible CPU torch
+        run: python -m pip install --disable-pip-version-check torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+      - name: Fetch only pinned external authors after both weight generations are sealed
+        run: |
+          python -m tools.essence_v39_g3 exam \
+            --lock research/essence/codex_v39/external_source_lock.json \
+            --g2-dir runtime/essence/v39/g2 \
+            --g3-dir runtime/essence/v39/g3 \
+            --g2-freeze runtime/essence/v39/freeze.json \
+            --out runtime/essence/v39/g3-external-source-exam.json
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          from tools.essence_v39_g3 import EXAM
+          from tools.essence_v38_inheritance import sha
+          d=json.loads(Path('runtime/essence/v39/g3-external-source-exam.json').read_text())
+          assert d['schema'] == EXAM
+          assert d['receipt_sha256'] == sha({k:v for k,v in d.items() if k!='receipt_sha256'})
+          assert d['status'] in (
+              'PASS_EXTERNAL_SOURCE_BLIND_INTERNAL_G3_GAIN',
+              'NO_G3_GAIN_ON_PREDECLARED_EXTERNAL_COHORT')
+          assert d['g3_inherited_exact_g2_bytes'] is True
+          assert len(d['file_results'])==4
+          assert d['external_scientific_replication'] is False
+          assert d['automatic_weight_or_model_promotion'] is False
+          assert d['production_authority'] is False
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+              f.write('### JANUS CODEX G3 first external-source frozen exam\n')
+              f.write('Status: '+d['status']+'\n')
+              f.write('G2 mean file loss: '+str(d['g2_external_mean_file_loss'])+'\n')
+              f.write('G3 mean file loss: '+str(d['g3_external_mean_file_loss'])+'\n')
+              f.write('Two external software repositories; independent source != independent scientific replication.\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: essence-v39-g3-external-exam-${{ github.run_id }}
+          path: runtime/essence/v39/g3-external-source-exam.json
+          if-no-files-found: warn
+          retention-days: 90
