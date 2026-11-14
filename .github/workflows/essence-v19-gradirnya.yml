@@ -6,6 +6,8 @@ on:
       - 'tools/essence_v19_gradirnya.py'
       - 'tests/test_essence_v19_gradirnya.py'
       - 'tools/essence_v19_http_canary.py'
+      - 'tools/essence_v20_ancestry.py'
+      - 'tests/test_essence_v20_ancestry.py'
       - 'tests/test_essence_v19_http_canary.py'
       - '.github/workflows/essence-v19-gradirnya.yml'
   push:
@@ -197,6 +199,82 @@ jobs:
           path: artifacts/verify/
           if-no-files-found: error
           retention-days: 30
+
+  archive-reviewed-weights:
+    needs: [prepare, microcore-offspring, separate-holdout-verifier]
+    if: github.event_name != 'pull_request' && needs.separate-holdout-verifier.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Use installed CPU backend or exact approved CPU wheel
+        run: |
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check 'torch==2.8.0' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v19-train-only-${{ github.run_id }}
+          path: staging/splits
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: essence-v19-child-*-${{ github.run_id }}
+          path: artifacts/source_children
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v19-separated-heldout-${{ github.run_id }}
+          path: artifacts/verification
+      - name: Build immutable HOLD-or-eligible archive of SHA-pinned research weights
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import shutil
+          root=Path("artifacts/source_children")
+          normalized=Path("artifacts/normalized")
+          normalized.mkdir(parents=True,exist_ok=True)
+          source=list(root.glob("essence-v19-child-*"))
+          if len(source)!=6:
+              raise ValueError("NOT_ALL_SIX_PARENT_CANDIDATES_PRESENT")
+          for folder in source:
+              cell=folder.name.split("-")[3]
+              if cell not in tuple(str(i) for i in range(6)):
+                  raise ValueError("UNEXPECTED_CHILD_NAME")
+              dest=normalized/("cell-"+cell)
+              if dest.exists():raise ValueError("DUPLICATE_CELL_ARTIFACT")
+              shutil.copytree(folder,dest)
+          PY
+          python -m tools.essence_v20_ancestry pack \
+            --manifest staging/splits/manifest.json \
+            --children artifacts/normalized \
+            --verdicts artifacts/verification \
+            --run-id ${{ github.run_id }} --run-sha ${{ github.sha }} \
+            --out artifacts/reviewed_ancestry
+      - name: This archive never grants production promotion
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          p=json.loads(Path("artifacts/reviewed_ancestry/index.json").read_text())
+          assert p["production_authority"] is False and p["automatic_promotion"] is False
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as f:
+              f.write("# ESSENCE cross-run parent archive\n")
+              f.write("Status: "+p["status"]+"\n")
+              f.write("Research-eligible roles: "+str(p["accepted_cells"])+"\n")
+              f.write("Rejected roles: "+str(len(p["rejected_cells"]))+"\n")
+              f.write("No independent external attestations or production authority.\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v20-reviewed-archive-${{ github.run_id }}
+          path: artifacts/reviewed_ancestry/
+          if-no-files-found: error
+          retention-days: 90
 
   isolated-http-neural-canary:
     needs: [prepare, microcore-offspring, separate-holdout-verifier]
