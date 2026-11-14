@@ -288,6 +288,20 @@ class MemoryProspectiveTests(unittest.TestCase):
                          self.future[-1]["id"])
         self.assertNotIn("candidate_nll", report)
 
+    def test_fixed_created_cohort_survives_early_job_finishing_later(self):
+        packet, _ = self.packet()
+        pending = dict(self.future[0], status="in_progress", conclusion=None)
+        before = m.evaluate(packet, [pending] + self.future[1:],
+                            observed_at=EXAM_TIME, published_at=PUBLISHED)
+        self.assertEqual(before["status"], "HOLD_AWAITING_64_FIXED_COHORT_OUTCOMES")
+        immutable = before["cohort_manifest"]
+        after = m.evaluate(packet, self.future, observed_at=EXAM_TIME,
+                           published_at=PUBLISHED, cohort=immutable)
+        self.assertEqual(after["frozen_cohort_sha256"], immutable["cohort_sha256"])
+        self.assertEqual(after["first_future_run_id"], pending["id"])
+        self.assertEqual(after["status"], "RESEARCH_PASS_INTERNAL_PROSPECTIVE_PAIRED")
+        self.assertFalse(after["production_authority"])
+
     def test_cancelled_early_job_cannot_be_replaced_by_later_success(self):
         packet, _ = self.packet()
         cancelled = dict(self.future[0], status="completed", conclusion="cancelled")
