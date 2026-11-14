@@ -117,6 +117,21 @@ class EpistemicSpiralTests(unittest.TestCase):
         self.assertFalse(report["memory_changed"])
         self.assertEqual(report["status"], "NO_ASCENT_NO_NEW_INFORMATION")
 
+    def test_unrelated_git_commit_does_not_create_false_new_generation(self):
+        first, _ = self.run_cycle()
+        for role in self.records:
+            self.records[role]["source_commit"] = "b" * 40
+        second, report = self.run_cycle(first)
+        self.assertEqual(second, first)
+        self.assertEqual(report["status"], "NO_ASCENT_NO_NEW_INFORMATION")
+
+    def test_scout_identity_replacement_cannot_hide_in_new_turn(self):
+        first, _ = self.run_cycle()
+        self.records["scouts"]["payload"]["agents"][0]["id"] = "SCOUT_NEW"
+        reseal(self.records["scouts"])
+        with self.assertRaisesRegex(ValueError, "LINEAGE_REPLACED"):
+            self.run_cycle(first)
+
     def test_changed_source_appends_new_turn_without_erasure(self):
         first, _ = self.run_cycle()
         self.records["topa"]["payload"]["extra_note"] = "new methodological constraint"
