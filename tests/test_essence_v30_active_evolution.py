@@ -13,17 +13,17 @@ class IgnitionContract(unittest.TestCase):
                 "status":status,"conclusion":conclusion,"head_branch":"main"}
 
     def test_all_trusted_existing_workflows_are_allowlisted(self):
-        self.assertEqual(len(m.LANES),7)
+        self.assertEqual(len(m.LANES),8)
         self.assertEqual(len({x[1] for x in m.LANES}),len(m.LANES))
         self.assertTrue(all(x[1].endswith(".yml") for x in m.LANES))
-        self.assertEqual(m.MAX_BOOTSTRAP,7)
+        self.assertEqual(m.MAX_BOOTSTRAP,8)
         self.assertLess(m.MAX_CYCLE,m.MAX_BOOTSTRAP)
 
     def test_first_launch_is_real_dispatch_not_pass_claim(self):
         planned=m.decide({name:[] for name,*_ in m.LANES},
                          now=self.now,bootstrap=True)
         self.assertEqual([x["status"] for x in planned],
-                         ["DISPATCH_PLANNED"]*7)
+                         ["DISPATCH_PLANNED"]*8)
         self.assertEqual(planned[1]["inputs"],{"trigger_mode":"schedule"})
 
     def test_cycle_caps_new_work_and_rotates_fairly(self):
