@@ -1,0 +1,91 @@
+name: ESSENCE v2.3 continuous bounded evolutionary pulse
+
+on:
+  pull_request:
+    paths:
+      - 'tools/essence_v23_continuous_pulse.py'
+      - 'tests/test_essence_v23_continuous_pulse.py'
+      - '.github/workflows/essence-v23-continuous-pulse.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/essence_v23_continuous_pulse.py'
+      - 'tests/test_essence_v23_continuous_pulse.py'
+      - '.github/workflows/essence-v23-continuous-pulse.yml'
+  workflow_dispatch:
+  schedule:
+    # Off the top of the hour; GitHub cron is best-effort and may be delayed.
+    - cron: '7,22,37,52 * * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: essence-v23-continuous-pulse
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify bounded orchestration without network or model load
+        run: |
+          python -m py_compile tools/essence_v23_continuous_pulse.py
+          python -m unittest -v tests.test_essence_v23_continuous_pulse
+
+  pulse:
+    needs: verify
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Poll typed evidence and wake at most two previously gated workflows
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python -m tools.essence_v23_continuous_pulse \
+            --execute --out runtime/essence/pulse-v23.json
+      - name: Assert no self-governance escalation
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          x=json.loads(Path('runtime/essence/pulse-v23.json').read_text())
+          assert x['schema']=='janus.essence.continuous_pulse/2.3'
+          assert x['automatic_merge'] is False
+          assert x['automatic_production_model_promotion'] is False
+          assert x['main_code_changed_by_pulse'] is False
+          assert x['requested_dispatches'] <= 2
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as out:
+              out.write('## ESSENCE v2.3: bounded living pulse\n')
+              out.write('Requested downstream workflows: '+str(x['requested_dispatches'])+'\n')
+              for row in x['lanes']:
+                  out.write('- '+row['lane']+': '+row['status']+'\n')
+              out.write('Model self-evolution proven: NO. Production promotion: DENIED.\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: essence-v23-pulse-${{ github.run_id }}
+          path: runtime/essence/pulse-v23.json
+          if-no-files-found: warn
+          retention-days: 30
