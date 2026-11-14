@@ -5,17 +5,21 @@ on:
     paths:
       - 'tools/essence_v26_neural_prospective.py'
       - 'tests/test_essence_v26_neural_prospective.py'
+      - 'tools/essence_v27_neural_readiness.py'
+      - 'tests/test_essence_v27_neural_readiness.py'
       - '.github/workflows/essence-v26-prospective-neural.yml'
   push:
     branches: [main]
     paths:
       - 'tools/essence_v26_neural_prospective.py'
       - 'tests/test_essence_v26_neural_prospective.py'
+      - 'tools/essence_v27_neural_readiness.py'
+      - 'tests/test_essence_v27_neural_readiness.py'
       - '.github/workflows/essence-v26-prospective-neural.yml'
   workflow_dispatch:
   schedule:
     # GitHub hosted and best-effort; short resumable runs, no external hardware.
-    - cron: '13 */2 * * *'
+    - cron: '9,24,39,54 * * * *'
 
 permissions:
   contents: read
@@ -26,6 +30,7 @@ concurrency:
 
 jobs:
   neural-contract:
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     permissions:
@@ -45,11 +50,47 @@ jobs:
       - name: Verify prospective freeze, genuine gradient updates and contamination guards
         run: |
           python -m py_compile tools/essence_v26_neural_prospective.py
-          python -m unittest -v tests.test_essence_v26_neural_prospective
+          python -m unittest -v tests.test_essence_v26_neural_prospective tests.test_essence_v27_neural_readiness
+
+  prospective-readiness:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.ESSENCE_NEURAL_PAUSED != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      ready: ${{ steps.observe.outputs.ready }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: source
+          ref: main
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          path: state
+          ref: research/essence-neural-state
+          persist-credentials: false
+      - name: Cheap source-only prospective readiness; no neural tensors loaded
+        id: observe
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python source/tools/essence_v27_neural_readiness.py \
+            --state state/research/essence/neural_duration/state.json \
+            --published-at "$(git -C state log -1 --format=%cI)" \
+            --out source/artifacts/essence-v27/readiness.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v27-neural-readiness-${{ github.run_id }}
+          path: source/artifacts/essence-v27/readiness.json
+          if-no-files-found: error
+          retention-days: 30
 
   prospective-research:
-    needs: neural-contract
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.ESSENCE_NEURAL_PAUSED != 'true'
+    needs: prospective-readiness
+    if: needs.prospective-readiness.outputs.ready == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.ESSENCE_NEURAL_PAUSED != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 14
     permissions:
