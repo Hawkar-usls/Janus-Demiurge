@@ -67,6 +67,49 @@ def clone(torch, model):
     return copy
 
 
+def train_fixed_fourteen(torch, model, training, *, seed=BASELINE_SEED):
+    """Continuous 14 AdamW steps: isolated from the v4.0 eight-step cap.
+
+    The original Physarum trainer's safety cap remains unchanged. This
+    specifically implements the previously frozen 14-step fixed baseline.
+    No weight inheritance into production, no external source access.
+    """
+    require(type(seed) is int and seed == BASELINE_SEED and
+            len(training) > core.BLOCK+2,
+            "FIXED_BASELINE14_CONTRACT_INVALID")
+    torch.manual_seed(seed)
+    optimizer = torch.optim.AdamW(
+        model.parameters(), lr=0.0005, weight_decay=0.01)
+    rejected = 0
+    for _ in range(BASELINE_STEPS):
+        model.train()
+        starts = torch.randint(len(training)-core.BLOCK-1, (4,))
+        x = torch.stack([training[j:j+core.BLOCK] for j in starts])
+        y = torch.stack([training[j+1:j+core.BLOCK+1] for j in starts])
+        optimizer.zero_grad(set_to_none=True)
+        logits = model(x)
+        loss = torch.nn.functional.cross_entropy(
+            logits.reshape(-1,256), y.reshape(-1))
+        if not bool(torch.isfinite(loss)):
+            rejected += 1
+            continue
+        loss.backward()
+        grads = [p.grad for p in model.parameters() if p.grad is not None]
+        if not grads or not all(bool(torch.isfinite(v).all()) for v in grads):
+            rejected += 1
+            optimizer.zero_grad(set_to_none=True)
+            continue
+        norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+        if not math.isfinite(float(norm)):
+            rejected += 1
+            optimizer.zero_grad(set_to_none=True)
+            continue
+        optimizer.step()
+    require(rejected < BASELINE_STEPS,
+            "FIXED_BASELINE14_ALL_GRADIENTS_REJECTED")
+    return rejected
+
+
 def measured_trial(root, g3_dir, freeze_path, out_dir,
                    lock_path=LOCK):
     import torch
@@ -83,9 +126,8 @@ def measured_trial(root, g3_dir, freeze_path, out_dir,
     ctrl_cfg = phys.config(phys.BASELINE_INDEX)
     fixed = clone(torch, ancestor)
     start = clock()
-    rejects = phys.train_steps(torch, fixed, train,
-                               lr=ctrl_cfg["lr"], clip=ctrl_cfg["clip"],
-                               steps=BASELINE_STEPS, seed=BASELINE_SEED)
+    rejects = train_fixed_fourteen(torch, fixed, train,
+                                  seed=BASELINE_SEED)
     baseline_train = elapsed(start)
     start = clock()
     baseline_dev = float(core.val_loss(torch, fixed, val))
