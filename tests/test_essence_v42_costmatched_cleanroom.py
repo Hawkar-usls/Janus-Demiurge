@@ -92,7 +92,7 @@ class CleanroomContractTests(unittest.TestCase):
         bad=b"x"*3000
         with self.assertRaisesRegex(ValueError,
                                     "EXTERNAL_SOURCE_GIT_BLOB_MISMATCH"):
-            with patch("urllib.request.urlopen") as connection:
+            with patch.object(clean,"urlopen") as connection:
                 connection.return_value.__enter__.return_value.read.return_value=bad
                 clean.verified_source(fake,fake["paths"][0])
 
