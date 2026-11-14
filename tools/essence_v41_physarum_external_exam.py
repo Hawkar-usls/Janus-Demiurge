@@ -132,7 +132,6 @@ def verify_external(item,raw,prior_hashes):
 def examine(lock,freeze_path,control_dir,physarum_dir,fetch=fetch_pinned):
     import torch
     torch.set_num_threads(1)
-    require(load_lock(lock)==load_lock(lock),"INVALID_LOCK")  # explicit on-disk verification
     policy=load_lock(lock)
     freeze,models=verify_checkpoints(freeze_path,control_dir,physarum_dir,torch)
     exact_receipt=exact.field_search([[1,2],[-1,3],[2,-3]],80)
@@ -178,7 +177,7 @@ def examine(lock,freeze_path,control_dir,physarum_dir,fetch=fetch_pinned):
         x["physarum_mean_loss"]-x["control_mean_loss"] <=
         MAX_FAMILY_REGRESSION for x in pairs)
     return seal({
-        "schema":EXAM,
+        "schema":EXAM_SCHEMA,
         "status":("PASS_INTERNAL_PHYSARUM_GAIN_ON_NEW_EXTERNAL_SOURCES"
                   if passed else "NO_PHYSARUM_GAIN_ON_NEW_EXTERNAL_SOURCES"),
         "lock_sha256":origin.sha(policy),
