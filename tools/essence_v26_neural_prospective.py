@@ -418,7 +418,7 @@ def step(state,observed,now,*,history_exhaustive=True,state_published_at=None):
             "consecutive_accepted_generations":streak,
             "two_consecutive_prospective_gains":streak>=2,
             "generation_after":next_state["generation"],
-            "independent_future_verification":verdict
+            "independent_future_verification":dict(verdict)
         }])[-(MAX_GENERATIONS+20):]
         next_state["pending"]=None
         if not accepted:
@@ -456,9 +456,11 @@ def step(state,observed,now,*,history_exhaustive=True,state_published_at=None):
             original=load_state(next_state["parent"])
             next_state["pending"]=make_pending(original,observed,now)
             next_state["status"]="FROZEN_AWAITING_FUTURE_COHORT"
-            verdict["next_challenger_sha256"]=next_state["pending"]["challenger_sha256"]
+            if "receipt_sha256" not in verdict:
+                verdict["next_challenger_sha256"]=next_state["pending"]["challenger_sha256"]
         except ValueError as error:
-            verdict["next_training_hold"]=str(error)
+            if "receipt_sha256" not in verdict:
+                verdict["next_training_hold"]=str(error)
     next_state["state_sha256"]=seal(next_state)
     return next_state,verdict
 
