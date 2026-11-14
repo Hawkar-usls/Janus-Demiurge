@@ -22,6 +22,7 @@ import time
 import torch
 
 ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT))
 sys.path.insert(0,str(ROOT/".janus"/"essence"))
 import adaptive_quantization_v15 as quant
 from janus_model.model import ByteTokenizer
