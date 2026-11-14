@@ -86,8 +86,6 @@ def bench(root,g3_dir,freeze_path,out_dir,repetitions=1):
             phys.choose_physarum=timed_choose
             start_cpu=time.process_time_ns()
             start_wall=time.perf_counter_ns()
-            target=out/("replay_"+str(repeat))
-            receipt=phys.run(root,g3_dir,freeze_path,target)
             # Fully budget-matched fixed 14-step baseline from sealed G3.
             # Crucially this is a separate 14-step continuous trainer;
             # original Physarum's per-call 8-step cap remains untouched.
@@ -106,6 +104,10 @@ def bench(root,g3_dir,freeze_path,out_dir,repetitions=1):
             require(budget_hash==EXPECTED_BUDGET14_SHA,
                     "COSTMATCHED_14_WEIGHT_HASH_MISMATCH")
             require(rejects<14, "COSTMATCHED_14_NO_VALID_UPDATE")
+            # The original v4.2 costmatched experiment trained its 14-step
+            # control BEFORE the Physarum probes; preserve this order in replay.
+            target=out/("replay_"+str(repeat))
+            receipt=phys.run(root,g3_dir,freeze_path,target)
             full_cpu=(time.process_time_ns()-start_cpu)/1e9
             full_wall=(time.perf_counter_ns()-start_wall)/1e9
             for label in EXPECTED_WEIGHTS:
