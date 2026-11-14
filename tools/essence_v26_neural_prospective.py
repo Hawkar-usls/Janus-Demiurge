@@ -363,6 +363,7 @@ def step(state,observed,now,*,history_exhaustive=True,state_published_at=None):
                       "available":len(observed)}
     next_state={k:v for k,v in state.items() if k!="state_sha256"}
     pending=state["pending"]
+    permit_next_training=True
     if pending is not None:
         frozen=at(pending["sealed_before"])
         cutoff=at(state_published_at) if state_published_at else frozen
@@ -379,22 +380,54 @@ def step(state,observed,now,*,history_exhaustive=True,state_published_at=None):
         if accepted:
             next_state["generation"]+=1
             next_state["parent"]=state_of(descendant)
+        streak=0
+        if accepted:
+            for earlier in reversed(state["history"]):
+                if earlier.get("accepted") is not True:
+                    break
+                streak+=1
+            streak+=1
         next_state["history"]=(state["history"]+[{
             "sealed_before":pending["sealed_before"],
             "parent_sha256":pending["parent_sha256"],
             "child_sha256":pending["challenger_sha256"],
             "accepted":accepted,
+            "consecutive_accepted_generations":streak,
+            "two_consecutive_prospective_gains":streak>=2,
             "generation_after":next_state["generation"],
             "independent_future_verification":verdict
         }])[-(MAX_GENERATIONS+20):]
         next_state["pending"]=None
+        if not accepted:
+            # A failed prospective exam cannot launch another candidate on
+            # the same now-consumed cohort; require a later source increment.
+            permit_next_training=False
+            verdict["next_training_hold"]="HOLD_REJECTED_TRIAL_REQUIRES_NEW_HISTORY"
         next_state["status"]="RESEARCH_GEN"+str(next_state["generation"])+(
             "_ACCEPTED" if accepted else "_HOLD")
     else:
         verdict={"status":"INITIAL_NEURAL_PARENT"}
         if state["parent"] is None:
             next_state["parent"]=state_of(new_parent())
-    if next_state["generation"]<MAX_GENERATIONS:
+        elif state["history"]:
+            # Never repeatedly search for a lucky winner against an
+            # already-inspected prospective cohort. At least 24 further
+            # COMPLETED real jobs must appear after the last consumed trial.
+            previous=state["history"][-1]
+            examined=(previous.get("independent_future_verification") or {})
+            consumed=examined.get("last_new_created_at")
+            if not consumed:
+                raise ValueError("INCOMPLETE_PREVIOUS_NEURAL_EXAM_RECORD")
+            newly_seen=sum(at(row["created_at"])>at(consumed)
+                           for row in observed)
+            if newly_seen<24:
+                permit_next_training=False
+                verdict={"status":"HOLD_RETRAIN_REQUIRES_NEW_HISTORY",
+                         "new_runs_since_last_exam":newly_seen}
+            else:
+                verdict={"status":"RETRAIN_ALLOWED_AFTER_NEW_HISTORY",
+                         "new_runs_since_last_exam":newly_seen}
+    if permit_next_training and next_state["generation"]<MAX_GENERATIONS:
         try:
             original=load_state(next_state["parent"])
             next_state["pending"]=make_pending(original,observed,now)
