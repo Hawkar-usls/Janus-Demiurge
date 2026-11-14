@@ -1,0 +1,42 @@
+name: JANUS-011C Exact Future-Loop Fixed Point and Forward-Time No-Go
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/late_choice_010/retro_fixedpoint_011c.py'
+      - 'experiments/ocean_transformer/late_choice_010/test_retro_fixedpoint_011c.py'
+      - 'experiments/ocean_transformer/late_choice_010/PROTOCOL_011C_SELF_CONSISTENT_LOOP.md'
+      - '.github/workflows/janus-011c-self-consistency-no-go.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: janus-011c-fixedpoint-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  exact-rational-toy-no-hardware:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact fractions, unique stationary states, noise, chronology and claim veto
+        run: |
+          set -euo pipefail
+          python -m py_compile experiments/ocean_transformer/late_choice_010/retro_fixedpoint_011c.py
+          python -m unittest discover -v -s experiments/ocean_transformer/late_choice_010 -p 'test_retro_fixedpoint_011c.py'
+      - name: Produce append-only-ready mathematically grounded candidate map
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/janus011c"
+          python experiments/ocean_transformer/late_choice_010/retro_fixedpoint_011c.py --output "$RUNNER_TEMP/janus011c/retro_fixedpoint_011c.json"
+      - name: Preserve result excluding all raw user secrets and physical claims
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-011c-math-fixedpoint-${{ github.run_id }}
+          path: ${{ runner.temp }}/janus011c/retro_fixedpoint_011c.json
+          retention-days: 60
+          if-no-files-found: error
