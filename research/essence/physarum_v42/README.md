@@ -11,6 +11,7 @@ The code and scientific acceptance thresholds are in [external_replication_contr
 | G3 ancestor | \`7ae346fff869dc14eec9e32ffa0e00419d98faa2150f79a763e927e0fc2cd299\` |
 | G4 control | \`a5c5924acccdf47bfb9c3b6bc5ca9a8ba455e0cad4ef6d928ff684624634e57b\` |
 | G4 Physarum | \`dfbe1214f6e6f954b3f999d7d8802c89e2aa5fe45e75ffe9a68a73d76953683f\` |
+| G4 fixed 14-step cost-matched control | \`a0a8a878fd784235e390f441ec192d973e079714321b5d8a6b2cbb343d3bd174\` |
 
 The G4 pair already has a positive **self-verified** result on HTTPX/attrs. **That cohort has already been seen** and MUST NOT be presented as the new blinded test. G3's Requests/Click cohort is also permanently excluded.
 
@@ -83,6 +84,7 @@ python tools/essence_v42_cleanroom_verifier.py \
   --policy research/essence/physarum_v42/external_replication_contract.json \
   --g3-zip sealed-G3.zip \
   --g4-zip sealed-G4-siblings.zip \
+  --baseline14-zip sealed-14step-costmatched-control.zip \
   --challenge challenge.json \
   --precommit externally-published-precommit.json \
   --public-key external-custodian-ed25519.pub.b64 \
@@ -98,8 +100,12 @@ The full receipt includes an equal-file-weight next-byte CE over 32 evenly space
 
 ### Preregistered success is deliberately difficult
 
-All of these must be true: at least 1% mean loss reduction versus control, no source family loss regression over 0.001 CE, one-sided family sign-test p ≤ 0.05, both children better than G3, and Physarum's gain per **full CPU second** at least 1.05 times the fixed control. Any contrary result is \`NO_COST_ADJUSTED_PAIRED_GAIN\`.
+All of these must be true: at least 1% mean loss reduction versus both the old 8-step control AND the sealed 14-step equal-budget fixed control, no source family loss regression over 0.001 CE, one-sided family sign-test p ≤ 0.05, both children better than G3, and Physarum's gain per **full CPU second** at least 1.05 times the sealed 14-step equal-budget control. Any contrary result is \`NO_COST_ADJUSTED_PAIRED_GAIN\`.
 
 **Safety boundary:** the standalone verifier never grants production privileges. Even a signed \`PASS_COST_ADJUSTED_PAIRED_GAIN\` remains \`HOLD_PENDING_INDEPENDENT_IDENTITY_AND_PRECOMMIT_AUDIT\` until an uninvolved reviewer verifies the custodian's institutional independence and the actual earlier commitment publication. Production models may only be changed by a separate authorized, independently reviewed deployment protocol with holdouts, target-machine measurement and real rollback.
 
 This package does not create a hidden benchmark, connect an external lab, receive a signing key or run an outside computer by itself.
+
+### Prior cost-matched evidence (not external validation)
+
+A separate 14-step fixed control checkpoint was already sealed in [GitHub Actions run 43652825898](https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/43652825898) before the earlier internal source exam. On development data, this fixed 14-step model had loss **4.963532**, better than Physarum's **4.998392**; this is evidence AGAINST claiming a universal Physarum advantage. That internal external-source exam stopped on a Git blob hash mismatch, so it does not establish any held-out gain. Its attempted Werkzeug/Rich/Trio/Pydantic cohort is excluded from the genuinely new hidden custodian task set. All previous negative results are retained.
