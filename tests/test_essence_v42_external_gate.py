@@ -179,6 +179,13 @@ class CleanRoomPhysarumContract(unittest.TestCase):
         self.assertTrue(bool(torch.isfinite(pred).all()))
         self.assertEqual(m.WINDOWS,32)
 
+    def test_exact_original_14_step_order_replayed_before_physarum(self):
+        source=Path(cost.__file__).read_text()
+        self.assertLess(source.index("rejects=costmatch.train_fixed_fourteen("),
+                        source.index("receipt=phys.run(root,g3_dir,freeze_path,target)"))
+        self.assertIn("COSTMATCHED_14_WEIGHT_HASH_MISMATCH",source)
+        self.assertIn("COST_REPLAY_WEIGHT_SHA_MISMATCH",source)
+
     def test_cost_replay_resource_bounds(self):
         with self.assertRaisesRegex(ValueError,"UNBOUNDED_COST_REPLAY"):
             cost.bench("x","y","z","o",repetitions=4)
