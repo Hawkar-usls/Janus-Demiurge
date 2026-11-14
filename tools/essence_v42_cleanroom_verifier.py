@@ -43,6 +43,8 @@ G4 = {
         "manifest": "a8397385b2703d5cca7b15b9b12626960d8105e976f10b628451fe330dbcf003",
     },
 }
+BUDGET14_SHA = "a0a8a878fd784235e390f441ec192d973e079714321b5d8a6b2cbb343d3bd174"
+BUDGET14_MANIFEST = "49158892f8dc1674897465d84e45ecf02f19d96d79b72ae3aceb167599c61f5a"
 BLOCK = 24
 DIM = 32
 WINDOWS = 32
@@ -139,8 +141,12 @@ def clean_model(torch):
 
 
 def restore_model(torch, manifest, raw, target, generation):
-    require_sha = G3_SHA if target == "g3" else G4[target]["weights"]
-    require_manifest = G3_MANIFEST if target == "g3" else G4[target]["manifest"]
+    require_sha = (G3_SHA if target == "g3" else
+                   BUDGET14_SHA if target == "baseline14" else
+                   G4[target]["weights"])
+    require_manifest = (G3_MANIFEST if target == "g3" else
+                        BUDGET14_MANIFEST if target == "baseline14" else
+                        G4[target]["manifest"])
     demand(sys.byteorder == "little", "BIG_ENDIAN_UNSUPPORTED")
     demand(manifest.get("weights_sha256") == require_sha and
            hashlib.sha256(raw).hexdigest() == require_sha,
@@ -157,6 +163,10 @@ def restore_model(torch, manifest, raw, target, generation):
     if target=="g3":
         demand(manifest.get("parent_manifest_sha256")==G2_MANIFEST,
                "G3_PARENT_NOT_SEALED")
+    elif target=="baseline14":
+        demand(manifest.get("inherited_initial_weights_sha256")==G3_SHA and
+               manifest.get("parent_manifest_sha256")==G3_MANIFEST and
+               manifest.get("trained_steps")==14, "COSTMATCHED14_LINEAGE_INVALID")
     else:
         demand(manifest.get("inherited_initial_weights_sha256")==G3_SHA and
                manifest.get("parent_manifest_sha256")==G3_MANIFEST and
@@ -185,7 +195,7 @@ def restore_model(torch, manifest, raw, target, generation):
     return model
 
 
-def load_fixed_models(torch, g3_zip, g4_zip):
+def load_fixed_models(torch, g3_zip, g4_zip, baseline14_zip):
     g3m,g3w=read_zip_small(g3_zip,"")
     # Require exactly four G4 files; the archive may include only the JSON
     # research receipt from the original trial as an extra.
@@ -204,6 +214,27 @@ def load_fixed_models(torch, g3_zip, g4_zip):
             meta=json.loads(z.read(f"{name}/manifest.json").decode())
             raw=z.read(f"{name}/weights.f32")
             models[name]=restore_model(torch,meta,raw,name,"g4_"+name)
+    sealed14=Path(baseline14_zip)
+    demand(sealed14.is_file() and not sealed14.is_symlink() and
+           sealed14.stat().st_size < 2000000,
+           "MISSING_COSTMATCHED14_ARTIFACT")
+    with ZipFile(sealed14) as z:
+        demand(set(z.namelist())=={
+            "baseline14/manifest.json","baseline14/weights.f32",
+            "full-cost-receipt.json"} and len(z.namelist())==3,
+            "COSTMATCHED14_ARTIFACT_CONTENT_CHANGED")
+        for item in z.infolist():
+            demand(0 < item.file_size <= 500000,
+                   "OVERSIZED_COSTMATCHED14_MEMBER")
+        manifest=json.loads(z.read("baseline14/manifest.json").decode())
+        raw=z.read("baseline14/weights.f32")
+        cost_receipt=json.loads(z.read("full-cost-receipt.json").decode())
+    demand(cost_receipt.get("baseline14_weights_sha256")==BUDGET14_SHA and
+           cost_receipt.get("baseline14_manifest_sha256")==BUDGET14_MANIFEST and
+           cost_receipt.get("external_exam_bytes_read") is False,
+           "COSTMATCHED14_NOT_FROZEN_BEFORE_EXTERNAL")
+    models["baseline14"]=restore_model(
+        torch,manifest,raw,"baseline14","g4_fixed_budget14")
     return models
 
 
@@ -213,6 +244,7 @@ def load_protocol(policy_path):
            contract.get("frozen_g3_sha256")==G3_SHA and
            contract.get("frozen_g4_weights")=={
                k:v["weights"] for k,v in G4.items()} and
+           contract.get("frozen_budget14_weights_sha256")==BUDGET14_SHA and
            contract.get("score_metric")==
            "32_EVENLY_SPACED_CONTEXT24_NEXT_BYTE_CE_EQUAL_FILE_WEIGHT" and
            contract.get("min_source_families")==MIN_FAMILIES and
@@ -320,13 +352,16 @@ def signed_cost_ledger(cost_path, contract, precommit, pubkey,
            data.get("measured_on_same_cpu") is True and
            data.get("full_probe_steps")==6 and
            data.get("per_sibling_steps")==8 and
+           data.get("costmatched_baseline_steps")==14 and
+           data.get("baseline14_weights_sha256")==BUDGET14_SHA and
            data.get("no_cost_imputation") is True and
            data.get("hardware_description") and
            data.get("measurement_method")=="CPU_PROCESS_TIME_SECONDS_REPLAY",
            "UNVERIFIABLE_FULL_SEARCH_COST")
     fields=("control_training_cpu_seconds","physarum_probes_cpu_seconds",
             "physarum_network_search_cpu_seconds",
-            "physarum_training_cpu_seconds")
+            "physarum_training_cpu_seconds",
+            "baseline14_training_cpu_seconds")
     for f in fields:
         demand(type(data.get(f)) in (float,int) and
                math.isfinite(data[f]) and data[f]>0,
@@ -342,9 +377,11 @@ def sign_pvalue(n,wins):
 
 
 def grade(files,cost,contract):
+    """Both old control and 14-step costmatched control must be beaten."""
+    names=("g3","control","baseline14","physarum")
     families=sorted(set(x["family"] for x in files))
     means={k:sum(x[k]["cross_entropy"] for x in files)/len(files)
-           for k in ("g3","control","physarum")}
+           for k in names}
     family=[]
     for fam in families:
         group=[x for x in files if x["family"]==fam]
@@ -352,45 +389,61 @@ def grade(files,cost,contract):
         row.update({name:sum(x[name]["cross_entropy"] for x in group)/len(group)
                     for name in means})
         family.append(row)
-    wins=sum(x["physarum"]<x["control"] for x in family)
+    wins=sum(x["physarum"]<x["baseline14"] for x in family)
     p=sign_pvalue(len(family),wins)
     inference={k:sum(x[k]["inference_cpu_seconds"] for x in files)
                for k in means}
-    control_cost=cost["control_training_cpu_seconds"]+inference["control"]
+    control8_cost=cost["control_training_cpu_seconds"]+inference["control"]
+    baseline14_cost=cost["baseline14_training_cpu_seconds"]+inference["baseline14"]
     phys_cost=(cost["physarum_probes_cpu_seconds"]+
                cost["physarum_network_search_cpu_seconds"]+
                cost["physarum_training_cpu_seconds"]+
                inference["physarum"])
-    gain=(means["control"]-means["physarum"])/means["control"]
-    g3_control=means["g3"]-means["control"]
-    g3_phys=means["g3"]-means["physarum"]
-    gain_per_cpu_control=max(0.0,g3_control)/control_cost
-    gain_per_cpu_phys=max(0.0,g3_phys)/phys_cost
-    cost_ratio=(gain_per_cpu_phys/gain_per_cpu_control
-                if gain_per_cpu_control>0 else 0.0)
-    family_guard=all(x["physarum"]<=x["control"]+MAX_FAMILY_REGRESSION
-                     for x in family)
-    passed=(gain>=MIN_RELATIVE_GAIN and
-            family_guard and p<=MAX_SIGN_P and
-            g3_phys>0 and g3_control>0 and
-            cost_ratio>=MIN_EFFICIENCY_GAIN)
+    improvement8=(means["control"]-means["physarum"])/means["control"]
+    improvement14=(means["baseline14"]-means["physarum"])/means["baseline14"]
+    per_family=all(
+        x["physarum"]<=x["control"]+MAX_FAMILY_REGRESSION and
+        x["physarum"]<=x["baseline14"]+MAX_FAMILY_REGRESSION
+        for x in family)
+    gain14=means["g3"]-means["baseline14"]
+    gain8=means["g3"]-means["control"]
+    gainphys=means["g3"]-means["physarum"]
+    efficiency14=max(0.0,gain14)/baseline14_cost
+    efficiency8=max(0.0,gain8)/control8_cost
+    efficiency_phys=max(0.0,gainphys)/phys_cost
+    # The cost-aware success must beat the stronger fair-budget baseline,
+    # not merely the cheap-to-train old 8-step baseline.
+    ratio=(efficiency_phys/efficiency14 if efficiency14>0 else 0.0)
+    pass_all=(improvement14>=MIN_RELATIVE_GAIN and
+              improvement8>=MIN_RELATIVE_GAIN and
+              per_family and p<=MAX_SIGN_P and
+              gainphys>0 and gain14>0 and gain8>0 and
+              ratio>=MIN_EFFICIENCY_GAIN)
     return {
-        "statistical_status":("PASS_COST_ADJUSTED_PAIRED_GAIN"
-                              if passed else "NO_COST_ADJUSTED_PAIRED_GAIN"),
-        "means":means, "family":family,
-        "fam_sign_test_wins":wins, "fam_sign_test_total":len(family),
-        "fam_sign_test_one_sided_p":p,
-        "relative_physarum_loss_reduction":gain,
-        "total_control_cpu_seconds":control_cost,
+        "statistical_status":("PASS_COSTMATCHED_14STEP_EXTERNAL_GAIN"
+                              if pass_all else "NO_COSTMATCHED_14STEP_EXTERNAL_GAIN"),
+        "means":means,
+        "family":family,
+        "family_sign_test_wins_over_14step":wins,
+        "family_sign_test_total":len(family),
+        "family_sign_test_one_sided_p":p,
+        "relative_loss_improvement_vs_old_control8":improvement8,
+        "relative_loss_improvement_vs_14step_baseline":improvement14,
+        "all_families_nonregressing_vs_both_controls":per_family,
+        "total_control8_cpu_seconds":control8_cost,
+        "total_baseline14_cpu_seconds":baseline14_cost,
         "total_physarum_cpu_seconds":phys_cost,
         "inference_cpu_seconds":inference,
-        "gain_per_cpu_vs_g3_control":gain_per_cpu_control,
-        "gain_per_cpu_vs_g3_physarum":gain_per_cpu_phys,
-        "gain_per_cpu_ratio_physarum_vs_control":cost_ratio,
-        "requirement_loss":gain>=MIN_RELATIVE_GAIN,
-        "requirement_all_families":family_guard,
+        "gain_per_cpu_vs_g3_control8":efficiency8,
+        "gain_per_cpu_vs_g3_baseline14":efficiency14,
+        "gain_per_cpu_vs_g3_physarum":efficiency_phys,
+        "physarum_vs_costmatched_efficiency_ratio":ratio,
+        "requirement_both_controls_beaten":
+            improvement8>=MIN_RELATIVE_GAIN and
+            improvement14>=MIN_RELATIVE_GAIN,
+        "requirement_family_stability":per_family,
         "requirement_family_sign_test":p<=MAX_SIGN_P,
-        "requirement_cost_efficiency":cost_ratio>=MIN_EFFICIENCY_GAIN,
+        "requirement_cost_efficiency":ratio>=MIN_EFFICIENCY_GAIN,
     }
 
 
@@ -410,7 +463,8 @@ def run(args):
                             fingerprint)
     import torch
     torch.set_num_threads(1)
-    models=load_fixed_models(torch,args.g3_zip,args.g4_zip)
+    models=load_fixed_models(torch,args.g3_zip,args.g4_zip,
+                             args.baseline14_zip)
     tasks_root=Path(args.tasks_dir).resolve(strict=True)
     results=[]
     for item in challenge["files"]:
@@ -435,7 +489,9 @@ def run(args):
         "challenge_sha256":sha(challenge),
         "custodian_key_fingerprint":fingerprint,
         "cost_ledger_sha256":sha(cost),
-        "models": {"g3":G3_SHA,**{k:v["weights"] for k,v in G4.items()}},
+        "models": {"g3":G3_SHA,
+                   "baseline14":BUDGET14_SHA,
+                   **{k:v["weights"] for k,v in G4.items()}},
         "file_hash_only_results":results,
         "grade":graded,
         "ram_peak_kib":resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
@@ -456,6 +512,7 @@ def main():
     p.add_argument("--policy",required=True)
     p.add_argument("--g3-zip",required=True)
     p.add_argument("--g4-zip",required=True)
+    p.add_argument("--baseline14-zip",required=True)
     p.add_argument("--challenge",required=True)
     p.add_argument("--precommit",required=True)
     p.add_argument("--public-key",required=True)
