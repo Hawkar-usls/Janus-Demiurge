@@ -212,8 +212,9 @@ def decode_archive(raw,expected_run,expected_sha):
                 or (member.external_attr>>16)&0o170000 == 0o120000):
                 raise ValueError("UNSAFE_PARENT_ARCHIVE_STRUCTURE")
             entries[member.filename]=z.read(member)
-        if "index.json" not in entries or len(entries)>13:
-            raise ValueError("PARENT_INDEX_MISSING")
+        if (sum(v.file_size for v in z.infolist())>MAX_ZIP_BYTES
+            or "index.json" not in entries or len(entries)>13):
+            raise ValueError("PARENT_INDEX_MISSING_OR_OVERSIZED")
         index=json.loads(entries["index.json"])
     if (index.get("schema")!=SCHEMA or index.get("source_repository")!=OWNER_REPO
         or index.get("origin_run_id")!=expected_run
@@ -263,6 +264,101 @@ def valid_for_new_history(metadata,current_manifest):
         raise ValueError("MAX_ANCESTRY_DEPTH_REACHED")
     return True
 
+def fetch_trusted_research_ancestors(out,*,token,current_run,opener=urllib.request.urlopen):
+    """Read-only, bounded latest eligible artifact. Never use a PR or fork run."""
+    if not token or type(current_run) is not int or current_run<=0:
+        raise ValueError("GITHUB_READ_ONLY_CREDENTIALS_REQUIRED")
+    root=Path(out)
+    if root.exists():raise FileExistsError("ANCESTOR_ARCHIVE_ALREADY_EXISTS")
+    api="https://api.github.com/repos/"+OWNER_REPO
+    arts=[]
+    for page in (1,2,3):
+        obj=_fetch_json(api+f"/actions/artifacts?per_page=100&page={page}",token,opener)
+        batch=obj.get("artifacts") if isinstance(obj,dict) else None
+        if not isinstance(batch,list):raise ValueError("GITHUB_ARTIFACT_DISCOVERY_FAILED")
+        arts.extend(batch)
+        if len(batch)<100:break
+    candidates=[]
+    for art in arts:
+        match=ARCHIVE_RE.fullmatch(art.get("name",""))
+        if match and int(match.group(1))<current_run and art.get("expired") is False:
+            candidates.append(art)
+    candidates.sort(key=lambda art:int(ARCHIVE_RE.fullmatch(art["name"]).group(1)),reverse=True)
+    if len(candidates)>25:
+        candidates=candidates[:25]
+    runs={}
+    for art in candidates:
+        rid=int(ARCHIVE_RE.fullmatch(art["name"]).group(1))
+        if rid not in runs:
+            runs[rid]=_fetch_json(api+f"/actions/runs/{rid}",token,opener)
+    possible=select_archive(candidates,runs,current_run)
+    outcomes=[]
+    for rid,artifact_id,head_sha in possible:
+        url=api+f"/actions/artifacts/{artifact_id}/zip"
+        req=urllib.request.Request(url,headers={
+            "Authorization":"Bearer "+token,"Accept":"application/vnd.github+json",
+            "X-GitHub-Api-Version":"2022-11-28","User-Agent":"JANUS-ESSENCE-v20"})
+        try:
+            with opener(req,timeout=25) as response:
+                raw=response.read(MAX_ZIP_BYTES+1)
+            idx,files=decode_archive(raw,rid,head_sha)
+            if not idx["accepted_cells"]:
+                outcomes.append({"run":rid,"reason":"NO_ELIGIBLE_RESEARCH_PARENT"})
+                continue
+        except (OSError,RuntimeError,ValueError,zipfile.BadZipFile) as ex:
+            outcomes.append({"run":rid,"reason":type(ex).__name__})
+            continue
+        for name,data in files.items():
+            write(root/name,data)
+        status={"schema":SCHEMA,"status":"VERIFIED_PAST_MAIN_RESEARCH_PARENTS",
+                "source_artifact_id":artifact_id,"source_run_id":rid,
+                "parent_cells":idx["accepted_cells"],"production_authority":False,
+                "candidates_not_yet_prospectively_revalidated":True}
+        e.atomic_json(root/"fetch_receipt.json",status)
+        return status
+    status={"schema":SCHEMA,"status":"HOLD_NO_QUALIFIED_CROSS_RUN_PARENT",
+            "checked_archives":len(candidates),
+            "trusted_run_candidates":len(possible),
+            "reasons":outcomes[:25],
+            "parent_cells":[],"production_authority":False}
+    e.atomic_json(root/"fetch_receipt.json",status)
+    return status
+
+def verified_parent_for_cell(folder,cell,current_manifest):
+    """Load one exact SHA-bound parent for continuing genuine gradients."""
+    root=Path(folder)
+    idx=load(root/"index.json")
+    if (idx.get("schema")!=SCHEMA or idx.get("source_repository")!=OWNER_REPO
+        or idx.get("production_authority") is not False
+        or idx.get("receipt_sha256")!=e.seal({k:v for k,v in idx.items() if k!="receipt_sha256"})
+        or type(cell) is not int or cell not in idx.get("accepted_cells",[])):
+        raise ValueError("PARENT_NOT_SELECTED_FROM_TRUSTED_RUN")
+    meta=load(root/f"cell-{cell}"/"parent.json")
+    valid_for_new_history(meta,current_manifest)
+    if meta["receipt_sha256"]!=idx.get("parent_meta_sha256",{}).get(str(cell)):
+        raise ValueError("PARENT_INDEX_IDENTITY_BROKEN")
+    p=root/f"cell-{cell}"/"parent.pt"
+    if p.is_symlink() or not p.is_file() or p.stat().st_size>MAX_WEIGHT_BYTES:
+        raise ValueError("PARENT_FILE_PRECHECK_FAILED")
+    raw=p.read_bytes()
+    if digest(raw)!=meta.get("offspring_checkpoint_sha256"):
+        raise ValueError("PARENT_FILE_HASH_MISMATCH")
+    bundle=torch.load(io.BytesIO(raw),map_location="cpu",weights_only=True)
+    if (not isinstance(bundle,dict) or bundle.get("schema")!=e.LINEAGE
+        or bundle.get("cell")!=cell or bundle.get("source_commit")!=meta["source_commit"]
+        or bundle.get("production_authority") is not False):
+        raise ValueError("PARENT_PRETRAINED_MODEL_UNTRUSTED")
+    model=e.r.model_for(cell)
+    ref=model.state_dict()
+    state=bundle.get("final_state")
+    if (not isinstance(state,dict) or set(state)!=set(ref)
+        or any(not isinstance(state[k],torch.Tensor) or state[k].shape!=ref[k].shape
+               or not bool(torch.isfinite(state[k]).all()) for k in ref)
+        or e.stable_state(state)!=meta["parent_weight_sha256"]):
+        raise ValueError("PARENT_WEIGHTS_DO_NOT_MATCH_LINEAGE")
+    model.load_state_dict(state,strict=True)
+    return e.clone_state(model),meta
+
 def cli():
     p=argparse.ArgumentParser()
     sub=p.add_subparsers(dest="mode",required=True)
@@ -271,15 +367,23 @@ def cli():
     a.add_argument("--run-id",type=int,required=True)
     b=sub.add_parser("check")
     b.add_argument("--parent",required=True);b.add_argument("--current-manifest",required=True)
+    c=sub.add_parser("fetch")
+    c.add_argument("--out",required=True)
+    c.add_argument("--run-id",type=int,required=True)
     opts=p.parse_args()
     if opts.mode=="pack":
         obj=pack_run(opts.manifest,opts.children,opts.verdicts,opts.out,
                      run_id=opts.run_id,run_sha=opts.run_sha)
         print(json.dumps({"status":obj["status"],"accepted":obj["accepted_cells"],
                           "rejected":len(obj["rejected_cells"]),"production_authority":False}))
-    else:
+    elif opts.mode=="check":
         valid_for_new_history(load(opts.parent),load(opts.current_manifest))
         print(json.dumps({"status":"RESEARCH_PARENT_NEW_SOURCE_ELIGIBLE",
+                          "production_authority":False}))
+    else:
+        obj=fetch_trusted_research_ancestors(opts.out,token=os.environ.get("GH_TOKEN",""),
+                                              current_run=opts.run_id)
+        print(json.dumps({"status":obj["status"],"parent_cells":obj["parent_cells"],
                           "production_authority":False}))
 
 if __name__=="__main__":cli()
