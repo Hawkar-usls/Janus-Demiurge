@@ -114,6 +114,19 @@ def main() -> int:
             raise SystemExit(f"proposal authority refused: {proposal_id}")
         if proposal.get("need_kind") not in allowed_kinds:
             raise SystemExit(f"need kind refused: {proposal_id}")
+        # Already-born organs must not be treated as an unresolved need.
+        # This is a SKIP only: no evidence gets approved, no existing
+        # source or deployed module is changed, and no new authority is granted.
+        proposed_desire = proposal.get("suggested_desire")
+        proposed_module = (proposed_desire.get("module_id") if
+                           isinstance(proposed_desire, dict) else None)
+        if (isinstance(proposed_module, str) and
+            MODULE_ID_RE.fullmatch(proposed_module) and
+            module_exists(root, proposed_module)):
+            skipped.append({"proposal_id": proposal_id,
+                            "module_id": proposed_module,
+                            "reason": "ALREADY_IMPLEMENTED_NEED_NO_NEW_ADMISSION"})
+            continue
 
         observed = str(proposal.get("observed_path") or "")
         if not observed or not is_under(observed, allowed_roots):
