@@ -1,0 +1,92 @@
+name: ESSENCE v3.1 DovoD temporal evidence microcore
+
+on:
+  pull_request:
+    paths:
+      - 'tools/essence_v31_dovod_temporal_witness.py'
+      - 'tests/test_essence_v31_dovod_temporal_witness.py'
+      - '.github/workflows/essence-v31-dovod-temporal-witness.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/essence_v31_dovod_temporal_witness.py'
+      - 'tests/test_essence_v31_dovod_temporal_witness.py'
+      - '.github/workflows/essence-v31-dovod-temporal-witness.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: essence-v31-dovod-temporal-main
+  cancel-in-progress: false
+
+jobs:
+  verify-static-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Audit DovoD-inspired witness without executing historical archives
+        run: |
+          python -m py_compile tools/essence_v31_dovod_temporal_witness.py
+          python -m unittest -v tests.test_essence_v31_dovod_temporal_witness
+
+  temporal-observe:
+    needs: verify-static-contract
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.ESSENCE_EVOLUTION_PAUSED != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: source
+          ref: main
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          path: research-state
+          ref: research/essence-neural-state
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Observe independent events and prior frozen neural exam
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python source/tools/essence_v31_dovod_temporal_witness.py \
+            --state research-state/research/essence/neural_duration/state.json \
+            --out source/artifacts/essence-v31/dovod-temporal-receipt.json
+      - name: Record research-only verdict
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          data = json.loads(Path('source/artifacts/essence-v31/dovod-temporal-receipt.json').read_text())
+          assert data['production_authority'] is False
+          assert data['weights_updated'] is False
+          assert data['independent_neural_gain_proven'] is False
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
+              f.write('## DovoD temporal evidence witness\\n')
+              f.write('Status: ' + data['status'] + '\\n')
+              f.write('New completed runs: ' + str(data['new_since_consumed_exam']['completed_runs']) + '\\n')
+              f.write('Independent neural gain: NOT CLAIMED\\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: essence-v31-dovod-temporal-${{ github.run_id }}
+          path: source/artifacts/essence-v31/dovod-temporal-receipt.json
+          if-no-files-found: warn
+          retention-days: 90
