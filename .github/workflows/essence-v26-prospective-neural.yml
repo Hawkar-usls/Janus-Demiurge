@@ -89,8 +89,8 @@ jobs:
           retention-days: 30
 
   prospective-research:
-    needs: prospective-readiness
-    if: needs.prospective-readiness.outputs.ready == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.ESSENCE_NEURAL_PAUSED != 'true'
+    needs: [prospective-readiness, neural-contract]
+    if: always() && needs.prospective-readiness.result == 'success' && needs.prospective-readiness.outputs.ready == 'true' && (needs.neural-contract.result == 'success' || (github.event_name != 'push' && needs.neural-contract.result == 'skipped')) && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.ESSENCE_NEURAL_PAUSED != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 14
     permissions:
