@@ -117,6 +117,22 @@ def render(spec: dict[str, Any]) -> str:
             "    keys = sorted({key for row in dict_rows for key in row.keys() if isinstance(key, str)})",
             "    return {'status': 'OK', 'row_count': len(rows), 'dict_row_count': len(dict_rows), 'keys': keys, 'authority_delta': 0}",
         ]
+    elif template == "ledger_health":
+        lines += [
+            "    rows = context.get('rows', [])",
+            "    if not isinstance(rows, list):",
+            "        raise TypeError('context.rows must be list')",
+            "    dict_rows = [row for row in rows if isinstance(row, dict)]",
+            "    keys = sorted({key for row in dict_rows for key in row.keys() if isinstance(key, str)})",
+            "    states = {}",
+            "    for row in dict_rows:",
+            "        state = row.get('result_status', row.get('status', row.get('state', 'UNKNOWN')))",
+            "        if not isinstance(state, str):",
+            "            state = 'UNKNOWN'",
+            "        state = state[:64]",
+            "        states[state] = states.get(state, 0) + 1",
+            "    return {'status': 'OK', 'row_count': len(rows), 'dict_row_count': len(dict_rows), 'keys': keys, 'status_counts': states, 'authority_delta': 0}",
+        ]
     return "\n".join(lines) + "\n"
 
 

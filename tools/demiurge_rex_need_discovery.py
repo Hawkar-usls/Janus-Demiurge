@@ -160,12 +160,24 @@ def main() -> int:
                 continue
 
             module_id = bounded_module_id(family_dir.name, suffix)
+            proposed_kind = "ACCUMULATING_JSON_LEDGER"
+            proposed_template = template
             if module_exists(root, module_id):
-                skipped.append({"family": family_dir.relative_to(root).as_posix(), "reason": "summary_module_already_exists", "module_id": module_id})
-                continue
+                # A real organ already exists: don't re-propose the same
+                # fixed snapshot. A new capability is possible only when
+                # enough *additional* ledger evidence has accumulated.
+                if len(safe) < 32:
+                    skipped.append({"family": family_dir.relative_to(root).as_posix(), "reason": "summary_module_already_exists", "module_id": module_id})
+                    continue
+                module_id = bounded_module_id(family_dir.name, "_ledger_health")
+                proposed_kind = "LEDGER_HEALTH_GAP"
+                proposed_template = "ledger_health"
+                if module_exists(root, module_id):
+                    skipped.append({"family": family_dir.relative_to(root).as_posix(), "reason": "health_module_already_exists", "module_id": module_id})
+                    continue
 
             observed_path = family_dir.relative_to(root).as_posix()
-            need_material = f"ACCUMULATING_JSON_LEDGER|{observed_path}|{module_id}".encode()
+            need_material = f"{proposed_kind}|{observed_path}|{module_id}".encode()
             proposal_id = "need_" + hashlib.sha256(need_material).hexdigest()[:16]
             evidence = []
             birth_rows = []
@@ -194,7 +206,7 @@ def main() -> int:
                 "schema": PROPOSAL_SCHEMA,
                 "proposal_id": proposal_id,
                 "state": "PROPOSED_ONLY__NEXUS_NEED_GATE_REQUIRED",
-                "need_kind": "ACCUMULATING_JSON_LEDGER",
+                "need_kind": proposed_kind,
                 "observed_path": observed_path,
                 "evidence": {
                     "record_count": len(safe),
@@ -205,8 +217,10 @@ def main() -> int:
                     "desire_id": desire_id,
                     "status": "REQUESTED",
                     "module_id": module_id,
-                    "purpose": f"Summarize a bounded snapshot of the repeatedly accumulating ledger family {family_dir.name}; Rex detected {len(safe)} persisted receipts under {observed_path}.",
-                    "template": "ledger_summary",
+                    "purpose": (f"Report status counts and detect regression in ledger family {family_dir.name} after {len(safe)} persisted receipts; independently compare with original summary."
+                                if proposed_template == "ledger_health" else
+                                f"Summarize a bounded snapshot of the repeatedly accumulating ledger family {family_dir.name}; Rex detected {len(safe)} persisted receipts under {observed_path}."),
+                    "template": proposed_template,
                     "config": {},
                     "nexus": {
                         "request_autorun": prop.get("request_autorun") is True,
