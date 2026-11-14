@@ -1,0 +1,186 @@
+name: ESSENCE v3.5 Memory-guided Prospective Microcore Trial
+
+on:
+  pull_request:
+    paths:
+      - 'tools/essence_v35_creation_first_trial.py'
+      - 'tests/test_essence_v35_creation_first_trial.py'
+      - '.github/workflows/essence-v35-creation-first-trial.yml'
+      - 'tools/essence_v30_active_evolution.py'
+      - 'tests/test_essence_v30_active_evolution.py'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/essence_v35_creation_first_trial.py'
+      - 'tests/test_essence_v35_creation_first_trial.py'
+      - '.github/workflows/essence-v35-creation-first-trial.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: essence-v35-creation-first-prospective-main
+  cancel-in-progress: false
+
+jobs:
+  verify-source-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Adversarial tests for memory-bound proposals and fixed prospective cohort
+        run: |
+          python -m py_compile tools/essence_v35_creation_first_trial.py
+          python -m unittest -v tests.test_essence_v35_creation_first_trial tests.test_essence_v33_epistemic_exchange tests.test_essence_v32_keymaster_memory
+
+  prospective-freeze-or-evaluate:
+    needs: verify-source-contract
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.ESSENCE_EVOLUTION_PAUSED != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: write
+      actions: read
+    env:
+      PYTHONPATH: source
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: source
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: research/essence-epistemic-state
+          path: epi
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: research/essence-keymaster-memory-state
+          path: keymemory
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: research/essence-memory-proposals-v35-state
+          path: research-state
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Freeze research challenger or observe first immutable future cohort
+        id: trial
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="research-state/research/essence/memory_proposals_v35"
+          mkdir -p "$OUT/receipts"
+          RECEIPT="$OUT/receipts/$GITHUB_RUN_ID.json"
+          if [ -f "$OUT/freeze.json" ]; then
+            echo "phase=evaluate" >> "$GITHUB_OUTPUT"
+            PUBLISHED="$(git -C research-state log -1 --format=%cI -- research/essence/memory_proposals_v35/freeze.json)"
+            test -n "$PUBLISHED"
+            python source/tools/essence_v35_creation_first_trial.py evaluate \
+              --freeze "$OUT/freeze.json" \
+              --published-at "$PUBLISHED" \
+              --cohort "$OUT/cohort.json" \
+              --cohort-out "$OUT/cohort.json" \
+              --receipt "$RECEIPT"
+          else
+            echo "phase=freeze" >> "$GITHUB_OUTPUT"
+            EPI_SHA="$(git -C epi rev-parse HEAD)"
+            KEY_SHA="$(git -C keymemory rev-parse HEAD)"
+            python source/tools/essence_v35_creation_first_trial.py freeze \
+              --epistemic epi/research/essence/epistemic/state.json \
+              --keymaster keymemory/research/essence/keymaster_memory/state.json \
+              --epistemic-commit "$EPI_SHA" \
+              --keymaster-commit "$KEY_SHA" \
+              --freeze-out "$OUT/freeze.json" \
+              --receipt "$RECEIPT"
+          fi
+          mkdir -p source/artifacts/essence-v35
+          cp "$RECEIPT" source/artifacts/essence-v35/trial-receipt.json
+      - name: Verify and archive every HOLD and every PASS without auto admission
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          from tools.essence_v35_creation_first_trial import sha,validate_freeze,check_cohort
+          p=Path('research-state/research/essence/memory_proposals_v35/receipts')/(os.environ['GITHUB_RUN_ID']+'.json')
+          receipt=json.loads(p.read_text())
+          assert receipt['receipt_sha256']==sha({k:v for k,v in receipt.items() if k!='receipt_sha256'})
+          assert receipt['production_authority'] is False
+          if 'model_weights_updated' in receipt:
+              assert receipt['model_weights_updated'] is False
+          freeze=Path('research-state/research/essence/memory_proposals_v35/freeze.json')
+          assert freeze.is_file()
+          packet=json.loads(freeze.read_text())
+          validate_freeze(packet)
+          assert packet['research_only'] is True
+          assert packet['automatic_module_activation'] is False
+          assert packet['future_labels_used_in_training'] is False
+          assert packet['production_authority'] is False
+          cohort_path=Path('research-state/research/essence/memory_proposals_v35/cohort.json')
+          if cohort_path.exists():
+              cohort=json.loads(cohort_path.read_text())
+              check_cohort(cohort,packet)
+              assert receipt['cohort_manifest']['cohort_sha256']==cohort['cohort_sha256']
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as output:
+              output.write('### ESSENCE memory-guided candidate trial\\n')
+              output.write('Status: '+receipt['status']+'\\n')
+              output.write('Freeze: '+packet['freeze_sha256']+'\\n')
+              output.write('No production weights or authority changed\\n')
+          PY
+          git -C research-state config user.name janus-essence-memory-candidate-witness
+          git -C research-state config user.email janus-essence-memory-candidate-witness@users.noreply.github.com
+          START="$(git -C research-state rev-parse HEAD)"
+          git -C research-state add -f -- research/essence/memory_proposals_v35/freeze.json research/essence/memory_proposals_v35/receipts/"$GITHUB_RUN_ID".json
+          if [ -f research-state/research/essence/memory_proposals_v35/cohort.json ]; then
+            git -C research-state add -f -- research/essence/memory_proposals_v35/cohort.json
+          fi
+          if git -C research-state diff --cached --quiet; then
+            echo "NO_NEW_DURABLE_TRIAL_RECEIPT"
+            exit 0
+          fi
+          if git -C research-state diff --cached --name-only | grep -Ev '^research/essence/memory_proposals_v35/(freeze\.json|cohort\.json|receipts/[0-9]+\.json)
+            echo "STATE_BRANCH_PATH_ESCAPE" >&2
+            exit 10
+          fi
+          git -C research-state commit -m "ESSENCE paired-memory research: $GITHUB_RUN_ID"
+          REMOTE="$(git -C research-state ls-remote origin refs/heads/research/essence-memory-proposals-v35-state | cut -f1)"
+          test "$REMOTE" = "$START" || { echo "TRIAL_STATE_CAS_CONFLICT_HOLD" >&2; exit 6; }
+          git -C research-state push origin HEAD:refs/heads/research/essence-memory-proposals-v35-state
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: essence-v35-creation-first-${{ github.run_id }}
+          path: source/artifacts/essence-v35/trial-receipt.json
+          retention-days: 90
+          if-no-files-found: warn
+; then
+            echo "STATE_BRANCH_PATH_ESCAPE" >&2
+            exit 10
+          fi
+          git -C research-state commit -m "ESSENCE paired-memory research: $GITHUB_RUN_ID"
+          REMOTE="$(git -C research-state ls-remote origin refs/heads/research/essence-memory-proposals-v35-state | cut -f1)"
+          test "$REMOTE" = "$START" || { echo "TRIAL_STATE_CAS_CONFLICT_HOLD" >&2; exit 6; }
+          git -C research-state push origin HEAD:refs/heads/research/essence-memory-proposals-v35-state
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: essence-v35-creation-first-${{ github.run_id }}
+          path: source/artifacts/essence-v35/trial-receipt.json
+          retention-days: 90
+          if-no-files-found: warn
