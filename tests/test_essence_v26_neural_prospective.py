@@ -186,19 +186,34 @@ class ProspectiveNeuralContract(unittest.TestCase):
             key=lambda x:x["created_at"]),self.freeze+timedelta(days=2))
         self.assertEqual(verdict["status"],"RETRAIN_ALLOWED_AFTER_NEW_HISTORY")
 
-    def test_only_contiguous_accepted_generations_count_toward_two(self):
-        success={"accepted":True,"independent_future_verification":{
-            "status":"PASS_PROSPECTIVE_PAIRED_NEURAL_GAIN",
-            "improvement_proven_under_registered_internal_thresholds":True}}
+    def test_only_contiguous_hash_linked_future_gains_count_toward_two(self):
+        def accepted(parent,child):
+            proof={"status":"PASS_PROSPECTIVE_PAIRED_NEURAL_GAIN",
+                "improvement_proven_under_registered_internal_thresholds":True,
+                "future_records_created_after_weights_git_commit":True,
+                "training_saw_future_labels":False,
+                "production_authority":False,
+                "frozen_parent_sha256":parent,
+                "frozen_child_sha256":child}
+            proof["receipt_sha256"]=n.seal(proof)
+            return {"accepted":True,"parent_sha256":parent,
+                    "child_sha256":child,
+                    "independent_future_verification":proof}
+        a=accepted("a"*64,"b"*64)
+        b=accepted("b"*64,"c"*64)
         failure={"accepted":False,"independent_future_verification":{
             "status":"HOLD_FUTURE_NEURAL_GAIN_NOT_PROVEN"}}
-        self.assertEqual(n.consecutive_accepted([success,success]),2)
-        self.assertEqual(n.consecutive_accepted([success,failure,success]),1)
+        self.assertEqual(n.consecutive_accepted([a,b]),2)
+        self.assertEqual(n.consecutive_accepted([a,failure,b]),1)
+        bogus=copy.deepcopy(b)
+        bogus["child_sha256"]="d"*64
         with self.assertRaisesRegex(ValueError,
                                     "UNVERIFIED_ACCEPTED_NEURAL_GENERATION"):
-            n.consecutive_accepted([{"accepted":True,
-                "independent_future_verification":{
-                    "status":"HOLD_FUTURE_NEURAL_GAIN_NOT_PROVEN"}}])
+            n.consecutive_accepted([a,bogus])
+        wrong_parent=accepted("e"*64,"f"*64)
+        with self.assertRaisesRegex(ValueError,
+                                    "UNVERIFIED_ACCEPTED_NEURAL_GENERATION"):
+            n.consecutive_accepted([a,wrong_parent])
 
     def test_no_synthetic_pass_can_claim_external_custodian(self):
         completed=self.past+self.future
