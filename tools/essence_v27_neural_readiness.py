@@ -21,6 +21,8 @@ NEURAL_SCHEMA="janus.essence.github_future_weights/2.6"
 REPO="Hawkar-usls/Janus-Demiurge"
 MAX_PAGES=8
 MIN_FUTURE=48
+MIN_DISTINCT_WORKFLOWS=8
+MAX_WORKFLOW_SHARE=0.40
 MIN_NEW_RETRAIN=24
 MIN_HISTORY=180
 
@@ -86,7 +88,7 @@ def usable(raw,now):
         if (created>now or updated>now or started<created
             or seconds<3 or seconds>7200):
             continue
-        rows.append((created,rid,0 if seconds<30 else 1 if seconds<120 else 2))
+        rows.append((created,rid,0 if seconds<30 else 1 if seconds<120 else 2,wid))
     return sorted(rows)
 
 
@@ -119,6 +121,15 @@ def readiness(state,raw,published,now):
         counts=[sum(r[2]==label for r in future) for label in range(3)]
         if sum(c>=5 for c in counts)<2 or max(counts)/len(future)>0.85:
             return dict(info,status="HOLD_LOW_INFORMATION_FUTURE_COHORT")
+        families={}
+        for row in future:
+            families[row[3]]=families.get(row[3],0)+1
+        # Readiness emits counts only, not per-run labels or loss.
+        info["distinct_future_workflows"]=len(families)
+        info["max_workflow_share"]=max(families.values())/len(future)
+        if (len(families)<MIN_DISTINCT_WORKFLOWS or
+            info["max_workflow_share"]>MAX_WORKFLOW_SHARE):
+            return dict(info,status="HOLD_FUTURE_WORKFLOW_CLUSTER_INFORMATION")
         return dict(info,eligible=True,status="READY_PROSPECTIVE_NEURAL_EXAM")
     if state and state["generation"]>=4:
         return dict(info,status="HOLD_MAX_RESEARCH_GENERATIONS")
@@ -133,7 +144,7 @@ def readiness(state,raw,published,now):
             if not consumed:
                 raise ValueError("MISSING_LAST_EVALUATED_CUTOFF")
             cutoff=time(consumed)
-            fresh=sum(t>cutoff for t,_,_ in rows)
+            fresh=sum(t>cutoff for t,_,_,_ in rows)
             info["new_runs_since_previous_trial"]=fresh
             if fresh<MIN_NEW_RETRAIN:
                 return dict(info,status="HOLD_RETRAIN_REQUIRES_NEW_HISTORY")
