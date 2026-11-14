@@ -5,6 +5,8 @@ on:
     paths:
       - '.janus/essence/block_quantization_v18.py'
       - 'tests/test_essence_block_quantization_v18.py'
+      - 'tools/essence_v18_training_ledger_adapter.py'
+      - 'tests/test_essence_v18_training_ledger_adapter.py'
       - '.github/workflows/essence-block-quantization-v18.yml'
   workflow_dispatch:
 
@@ -29,7 +31,7 @@ jobs:
       - name: Verify numerical mutation guards
         run: |
           python -m py_compile .janus/essence/block_quantization_v18.py
-          python -m unittest -v tests.test_essence_block_quantization_v18
+          python -m unittest -v tests.test_essence_block_quantization_v18 tests.test_essence_v18_training_ledger_adapter
       - name: Run exact-source-preserving synthetic diagnostic (not release evidence)
         run: |
           python .janus/essence/block_quantization_v18.py \
@@ -49,9 +51,26 @@ jobs:
           assert r['v18_packed_bytes'] <= r['v15_packed_bytes']
           print('ESSENCE_V18_RESEARCH_ONLY_GUARD=PASS')
           PY
+      - name: Replay immutable actual JANUS GPT training loss observations
+        run: |
+          python tools/essence_v18_training_ledger_adapter.py --out runtime/essence_v18/recorded_history.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('runtime/essence_v18/recorded_history.json').read_text())
+          assert r['source_class']=='RECORDED_MODEL_LOSS_JOURNAL_NOT_LIVE_MICROKERNEL_TENSORS'
+          assert r['observations'] >= 16
+          assert r['v18_packed_bytes'] <= r['v15_packed_bytes']
+          assert r['working_checkpoint_changed'] is False
+          assert r['production_authority'] is False
+          assert r['independent_holdout_achieved'] is False
+          print('ESSENCE_V18_PINNED_TRAINING_LEDGER_REPLAY=PASS')
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: essence-v18-block-precision-research-only
-          path: runtime/essence_v18/research_receipt.json
+          path: |
+            runtime/essence_v18/research_receipt.json
+            runtime/essence_v18/recorded_history.json
           if-no-files-found: error
           retention-days: 30
