@@ -13,17 +13,18 @@ class IgnitionContract(unittest.TestCase):
                 "status":status,"conclusion":conclusion,"head_branch":"main"}
 
     def test_all_trusted_existing_workflows_are_allowlisted(self):
-        self.assertEqual(len(m.LANES),12)
+        self.assertEqual(len(m.LANES),13)
         self.assertEqual(len({x[1] for x in m.LANES}),len(m.LANES))
         self.assertTrue(all(x[1].endswith(".yml") for x in m.LANES))
         self.assertEqual(m.MAX_BOOTSTRAP,12)
+        self.assertIn("essence-v37-codex-gpt.yml",[row[1] for row in m.LANES])
         self.assertLess(m.MAX_CYCLE,m.MAX_BOOTSTRAP)
 
     def test_first_launch_is_real_dispatch_not_pass_claim(self):
         planned=m.decide({name:[] for name,*_ in m.LANES},
                          now=self.now,bootstrap=True)
-        self.assertEqual([x["status"] for x in planned],
-                         ["DISPATCH_PLANNED"]*12)
+        self.assertEqual(sum(x["status"] == "DISPATCH_PLANNED" for x in planned),12)
+        self.assertEqual(sum(x["status"] == "HOLD_MAX_CYCLE_DISPATCHES" for x in planned),1)
         self.assertEqual(planned[1]["inputs"],{"trigger_mode":"schedule"})
 
     def test_cycle_caps_new_work_and_rotates_fairly(self):
