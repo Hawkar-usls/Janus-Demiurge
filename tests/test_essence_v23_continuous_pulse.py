@@ -88,7 +88,7 @@ class ContinuousPulseTest(unittest.TestCase):
             p.source_decision(LANE, [change(NOW - timedelta(minutes=10))], [bad], now=NOW)
 
     def test_audit_receipt_cannot_promote_or_merge(self):
-        source = [change(NOW - timedelta(minutes=2))]
+        source = [change(datetime.now(timezone.utc) - timedelta(minutes=2))]
         with patch.object(p, "fetch_inputs", return_value=(source, [])), \
              patch.object(p, "api_json", return_value={}):
             with patch.dict(os.environ,
