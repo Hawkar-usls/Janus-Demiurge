@@ -44,9 +44,17 @@ class V20AncestryContract(unittest.TestCase):
         row["receipt_sha256"]=e.seal({k:w for k,w in row.items() if k!="receipt_sha256"})
         return row
 
+    def synthetic_rejected(self):
+        row=copy.deepcopy(self.verdict)
+        row.update(gate="HOLD_DEGENERATE_TEMPORAL_COHORT",diversity_gate=False,
+                   heldout_represented_classes=1,heldout_majority_fraction=1.0,
+                   nll_gain_vs_prior=-0.1,accuracy_gain_vs_prior=-0.01)
+        row["receipt_sha256"]=e.seal({k:w for k,w in row.items() if k!="receipt_sha256"})
+        return row
+
     def test_reject_current_failed_holdout_even_if_gradients_real(self):
         with self.assertRaisesRegex(ValueError,"NO_INDEPENDENT_RESEARCH_HOLDOUT_GAIN"):
-            v.validate_verified_parent(self.manifest,self.child,self.verdict,self.weight,0)
+            v.validate_verified_parent(self.manifest,self.child,self.synthetic_rejected(),self.weight,0)
 
     def test_fake_positive_contract_validates_hashes_but_is_not_scientific_proof(self):
         candidate=self.synthetic_positive()
@@ -74,7 +82,7 @@ class V20AncestryContract(unittest.TestCase):
             (base/"verify").mkdir()
             (base/"child"/"cell-0"/"lineage.json").write_text(json.dumps(self.child))
             (base/"child"/"cell-0"/"offspring.pt").write_bytes(self.weight)
-            (base/"verify"/"cell-0.json").write_text(json.dumps(self.verdict))
+            (base/"verify"/"cell-0.json").write_text(json.dumps(self.synthetic_rejected()))
             idx=v.pack_run(self.root/"split"/"manifest.json",base/"child",base/"verify",
                            base/"archive",run_id=100,run_sha="c"*40)
             self.assertEqual(idx["status"],"HOLD_NO_ADMISSIBLE_PARENT")
