@@ -20,7 +20,7 @@ from urllib.request import Request, urlopen
 REPOSITORY = "Hawkar-usls/Janus-Demiurge"
 BASE = "https://api.github.com/repos/" + REPOSITORY + "/actions/workflows/"
 SCHEMA = "janus.essence.active_evolution_cycle/3.0"
-MAX_BOOTSTRAP = 9
+MAX_BOOTSTRAP = 10
 MAX_CYCLE = 3
 CYCLE_COOLDOWN = timedelta(hours=2)
 FAILED_RETRY_BACKOFF = timedelta(hours=2)
@@ -36,6 +36,7 @@ LANES = (
     ("peer_ancestry", "essence-peer-inbox-v13.yml", {}),
     ("dovod_temporal_witness", "essence-v31-dovod-temporal-witness.yml", {}),
     ("keymaster_memory", "essence-v32-keymaster-memory.yml", {}),
+    ("epistemic_exchange", "essence-v33-epistemic-exchange.yml", {}),
     ("cooling_tower", "janus-cooling-tower-async.yml", {}),
     ("bounded_autonomy_pulse", "essence-v23-continuous-pulse.yml", {}),
 )
