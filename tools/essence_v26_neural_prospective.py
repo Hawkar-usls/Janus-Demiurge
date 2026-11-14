@@ -353,17 +353,30 @@ def future_decision(pending,parent,observed,now,*,published_at=None):
 
 
 def consecutive_accepted(history):
-    """Only an uninterrupted run of independently admitted descendants counts."""
+    """Verify an uninterrupted *hash-linked* chain of prospective PASS verdicts."""
     streak=0
+    successor_parent=None
     for entry in reversed(history):
         if not isinstance(entry,dict) or type(entry.get("accepted")) is not bool:
             raise ValueError("INVALID_GENERATIONAL_HISTORY")
         if not entry["accepted"]:
             break
         proof=entry.get("independent_future_verification") or {}
+        proof_seal=proof.get("receipt_sha256")
         if (proof.get("status")!="PASS_PROSPECTIVE_PAIRED_NEURAL_GAIN"
-            or proof.get("improvement_proven_under_registered_internal_thresholds") is not True):
+            or proof.get("improvement_proven_under_registered_internal_thresholds") is not True
+            or proof.get("future_records_created_after_weights_git_commit") is not True
+            or proof.get("training_saw_future_labels") is not False
+            or proof.get("production_authority") is not False
+            or not isinstance(proof_seal,str)
+            or proof_seal!=seal({k:v for k,v in proof.items()
+                                if k!="receipt_sha256"})
+            or proof.get("frozen_parent_sha256")!=entry.get("parent_sha256")
+            or proof.get("frozen_child_sha256")!=entry.get("child_sha256")
+            or (successor_parent is not None
+                and entry.get("child_sha256")!=successor_parent)):
             raise ValueError("UNVERIFIED_ACCEPTED_NEURAL_GENERATION")
+        successor_parent=entry["parent_sha256"]
         streak+=1
     return streak
 
