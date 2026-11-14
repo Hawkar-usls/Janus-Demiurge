@@ -36,7 +36,7 @@ MIN_NEW_AFTER_EXAM = 24
 MIN_INDEPENDENT_FAMILIES = 8
 MAX_FAMILY_SHARE = 0.40
 EVENTS = frozenset(("push", "workflow_dispatch", "schedule",
-                    "pull_request", "repository_dispatch"))
+                    "pull_request", "repository_dispatch", "workflow_run"))
 
 
 def canonical(value):
@@ -99,7 +99,7 @@ def observation_rows(raw, now):
     """Drop non-completed runs; reject eligible duplicate IDs, corrupt clocks."""
     if not isinstance(raw, list) or len(raw) > MAX_RUNS:
         raise ValueError("UNBOUNDED_ACTIONS_HISTORY")
-    rows, seen = [], set()
+    rows, seen = [], {}
     for run in raw:
         if not isinstance(run, dict):
             raise ValueError("INVALID_RUN")
@@ -111,9 +111,20 @@ def observation_rows(raw, now):
         rid, wid = run.get("id"), run.get("workflow_id")
         if (type(rid) is not int or rid <= 0
             or type(wid) is not int or wid <= 0
-            or rid in seen or run.get("event") not in EVENTS):
+            or run.get("event") not in EVENTS):
             raise ValueError("DUPLICATE_OR_INVALID_COMPLETED_RUN")
-        seen.add(rid)
+        # GitHub page offsets may shift while new runs are created: an
+        # identical run can appear on two different pages. Deduplicate only
+        # matching canonical observations; conflicting IDs fail closed.
+        identity = {k: run.get(k) for k in (
+            "workflow_id", "head_branch", "status", "conclusion",
+            "run_attempt", "event", "created_at", "run_started_at",
+            "updated_at")}
+        if rid in seen:
+            if seen[rid] != identity:
+                raise ValueError("DUPLICATE_CONFLICTING_RUN_ID")
+            continue
+        seen[rid] = identity
         created, started, updated = (stamp(run.get(k)) for k in
                                      ("created_at", "run_started_at", "updated_at"))
         if not (created <= started <= updated <= now):
