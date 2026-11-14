@@ -173,6 +173,27 @@ class ThreeGateRealModelReview(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"UNPINNED_OR_PRODUCTION_CANDIDATE"):
             a.fixed_candidate(e["candidate"])
 
+    def test_reject_reused_attestation_bound_to_different_candidate(self):
+        e=fixture()
+        e["attestations"]={
+          role:{"body":{"schema":a.ATTEST_SCHEMA,
+                 "role":role,
+                 "candidate_id":a.CANDIDATE,
+                 "candidate_sha256":"f"*64,
+                 "payload_sha256":a.sha(e["holdout"] if role in
+                   ("holdout_custodian","external_evaluator") else
+                   e["hardware"] if role=="target_hardware_operator" else e["rollback"]),
+                 "signed_at_utc":"2026-11-14T00:00:00Z",
+                 "scope":"INDEPENDENT_REVIEW_NO_MODEL_DISPATCH"},
+                 "signature":"-----BEGIN SSH SIGNATURE-----"+"x"*150+"-----END SSH SIGNATURE-----"}
+          for role in a.ROLES}
+        pins={role:{"identity":"test_"+role,
+                    "organization":"synthetic_org_"+role,
+                    "public_key":"ssh-ed25519 "+"A"*68}
+              for role in a.ROLES}
+        with self.assertRaisesRegex(ValueError,"ATTESTATION_PAYLOAD_BINDING_INVALID"):
+            a.verify_signatures(e,pins)
+
     @unittest.skipUnless(shutil.which("ssh-keygen"),"ssh-keygen unavailable")
     def test_ephemeral_crypto_proves_review_only_never_release(self):
         e=fixture();trust={}
@@ -189,6 +210,7 @@ class ThreeGateRealModelReview(unittest.TestCase):
                 part="holdout" if i<2 else ("hardware" if i==2 else "rollback")
                 body={"schema":a.ATTEST_SCHEMA,"role":role,
                       "candidate_id":a.CANDIDATE,
+                      "candidate_sha256":a.sha(e["candidate"]),
                       "payload_sha256":a.sha(e[part]),
                       "signed_at_utc":"2026-11-14T00:00:00Z",
                       "scope":"INDEPENDENT_REVIEW_NO_MODEL_DISPATCH"}
