@@ -14,7 +14,7 @@ from tools import essence_v33_epistemic_exchange as spi
 from tools import essence_v34_memory_guided_prospective as m
 
 FREEZE_TIME = "2026-11-14T20:00:00+00:00"
-PUBLISHED = "2026-11-15T00:00:00+00:00"
+PUBLISHED = "2026-11-14T23:59:00+00:00"
 EXAM_TIME = "2026-11-18T00:00:00+00:00"
 
 
