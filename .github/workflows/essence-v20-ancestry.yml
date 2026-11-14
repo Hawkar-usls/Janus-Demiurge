@@ -133,8 +133,9 @@ jobs:
       - name: Freeze actual historical source with strict chronology and holdout separation
         run: |
           SOURCE="$(git -C dependencies/registry rev-parse HEAD)"
-          python -m tools.essence_v19_gradirnya prepare --data-root dependencies/registry/data \
-            --source "$SOURCE" --out staging/new-splits
+          python -m tools.essence_v20_ancestry prepare-next --data-root dependencies/registry/data \
+            --source "$SOURCE" --previous-archive staging/previous \
+            --out staging/new-splits
       - name: Check each parent against genuinely later heldout dates and new dataset SHA
         id: gate
         run: |
