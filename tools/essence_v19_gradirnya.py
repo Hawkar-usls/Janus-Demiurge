@@ -73,7 +73,7 @@ def stable_state(state):
             raise ValueError("UNTRUSTED_WEIGHT_TENSOR")
         t=v.detach().cpu().contiguous()
         dig.update(name.encode()+b"\0"+str(tuple(t.shape)).encode()+b"\0")
-        dig.update(t.numpy().tobytes())
+        dig.update(bytes(t.view(torch.uint8).reshape(-1).tolist()))
     return dig.hexdigest()
 
 def clone_state(model):
