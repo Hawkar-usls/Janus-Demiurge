@@ -1,0 +1,65 @@
+name: ESSENCE v1.6 Real JANUS Checkpoint Quantization Research
+
+on:
+  pull_request:
+    paths:
+      - 'tools/essence_v16_real_checkpoint_bench.py'
+      - 'tests/test_essence_v16_real_checkpoint_bench.py'
+      - 'research/essence/v16/**'
+      - '.github/workflows/essence-v16-real-checkpoint-quant.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: essence-v16-real-checkpoint-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  actual-checkpoint-cpu-quality-and-memory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU neural runtime
+        run: |
+          python -m pip install --disable-pip-version-check 'torch==2.7.1+cpu' \
+            --index-url https://download.pytorch.org/whl/cpu
+      - name: Verify checkpoint admission and quantization safety
+        run: |
+          python -m unittest -v tests/test_janus_checkpoint_admission.py
+          python -m unittest -v tests/test_essence_v16_real_checkpoint_bench.py
+          python -m unittest discover -s tests -p 'test_essence_adaptive_quantization_v15.py' -q
+      - name: Evaluate original FP32 and actual recorded loss state
+        run: python tools/essence_v16_real_checkpoint_bench.py --mode baseline
+      - name: Compare FP16, INT8, INT4 and per-tensor adaptive compression
+        run: |
+          python tools/essence_v16_real_checkpoint_bench.py --mode fp16
+          python tools/essence_v16_real_checkpoint_bench.py --mode int8
+          python tools/essence_v16_real_checkpoint_bench.py --mode int4
+          python tools/essence_v16_real_checkpoint_bench.py --mode adaptive
+      - name: Reload exact original weights in separate process and summarize
+        run: |
+          python tools/essence_v16_real_checkpoint_bench.py --mode restored
+          python tools/essence_v16_real_checkpoint_bench.py --combine
+      - name: Reconfirm immutable source checkpoint hash
+        run: |
+          python - <<'PY'
+          from tools.essence_v16_real_checkpoint_bench import require_source
+          _,_,actual=require_source()
+          assert actual["checkpoint_sha256"]=="fc767adb812ac3bea54c44cbccfa9680941f95e2c8a77120559b41da044d9463"
+          assert actual["checkpoint_git"]=="88cad884b437dd0ab655d913b1c83d6a6d669735"
+          print("CHECKPOINT_UNCHANGED=PASS")
+          PY
+      - name: Preserve full evidence even for HOLD
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: essence-v16-real-checkpoint-quantization
+          path: runtime/essence_v16/
+          if-no-files-found: warn
+          retention-days: 30
