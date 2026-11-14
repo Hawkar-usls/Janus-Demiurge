@@ -33,8 +33,10 @@ jobs:
         run: python -m unittest -v tests/test_essence_v161_native_cpu_int8.py
       - name: Load untouched original checkpoint into independent FP32 baseline
         run: python tools/essence_v16_real_checkpoint_bench.py --mode baseline --out-dir runtime/essence_v161
-      - name: Run REAL PyTorch dynamic INT8 CPU modules in isolated copy
-        run: python tools/essence_v161_native_cpu_int8.py --out-dir runtime/essence_v161
+      - name: Run full and selective native INT8 CPU paths separately
+        run: |
+          python tools/essence_v161_native_cpu_int8.py --out-dir runtime/essence_v161 --policy all_linear
+          python tools/essence_v161_native_cpu_int8.py --out-dir runtime/essence_v161 --policy ffn_only
       - name: Preserve real CPU inference, quality, RSS and packed-model storage receipts
         if: always()
         uses: actions/upload-artifact@v4
