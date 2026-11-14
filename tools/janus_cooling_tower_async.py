@@ -39,6 +39,8 @@ CRITICAL = {
 }
 
 
+RESEARCH_WORKFLOWS = {"Janus-Demiurge": "essence-v19-gradirnya.yml"}
+
 def now():
     return datetime.now(timezone.utc).isoformat()
 
@@ -143,12 +145,18 @@ async def live(output, *, token="", expected_min=30):
     for name, workflow in CRITICAL.items():
         if name in names:
             organs.append((name, workflow))
+    for name, workflow in RESEARCH_WORKFLOWS.items():
+        if name in names:
+            organs.append((name, workflow))
 
     async def probe(organ):
         return await asyncio.to_thread(check_one, organ[0], token, organ[1])
 
     shots = await circulation(organs, probe)
-    important = [record for shot in shots for record in shot["records"] if record["organ"][1] is not None]
+    critical_ids={(name,wf) for name,wf in CRITICAL.items() if name in names}
+    research_ids={(name,wf) for name,wf in RESEARCH_WORKFLOWS.items() if name in names}
+    important = [record for shot in shots for record in shot["records"] if tuple(record["organ"]) in critical_ids]
+    research = [record for shot in shots for record in shot["records"] if tuple(record["organ"]) in research_ids]
     blockers = [record for record in important if record["health"] != "PASS"]
     isolated = [record for shot in shots for record in shot["records"] if record.get("isolated")]
     count = len(names)
@@ -163,6 +171,10 @@ async def live(output, *, token="", expected_min=30):
         "bounded_rounds": 2,
         "max_concurrency": 6,
         "critical_workflows": len(CRITICAL),
+        "research_workflows_monitored": len(research_ids),
+        "research_observations": research,
+        "research_quality_proven_by_workflow_status": False,
+        "gradirnya_training_success_is_not_external_holdout_or_production_admission": True,
         "observations": shots,
         "critical_blocker_count": len(blockers),
         "isolated_probe_failure_count": len(isolated),
