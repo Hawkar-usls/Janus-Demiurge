@@ -12,7 +12,7 @@ from tools import essence_v26_neural_prospective as n
 
 
 def row(i,when,label):
-    return {"id":100000+i,"workflow_id":1001+label,
+    return {"id":100000+i,"workflow_id":1001+label+3*((i//3)%5),
             "event":"schedule" if i%2 else "workflow_dispatch",
             "created_at":when.isoformat(),"label":label,
             "elapsed_seconds":12 if label==0 else 60 if label==1 else 180}
@@ -55,6 +55,9 @@ class ProspectiveNeuralContract(unittest.TestCase):
         self.assertEqual(result["sample_count"],75)
         self.assertTrue(result["improvement_proven_under_registered_internal_thresholds"])
         self.assertGreater(result["paired_one_sided_95pct_lower_bound"],0.0)
+        self.assertGreaterEqual(result["workflow_clusters"],8)
+        self.assertGreater(result["cluster_conservative_lower_bound"],0)
+        self.assertGreaterEqual(result["positive_workflow_fraction"],0.625)
         next_state,receipt=n.step(self.frozen,completed,
                                  self.freeze+timedelta(days=1))
         self.assertEqual(next_state["generation"],1)
@@ -135,6 +138,19 @@ class ProspectiveNeuralContract(unittest.TestCase):
                           t+timedelta(days=1))
         self.assertEqual([x["label"] for x in arr],[0,1,2])
         self.assertTrue(all("conclusion" not in x for x in arr))
+
+    def test_repetitions_of_three_workflows_are_not_independent(self):
+        rows=[]
+        for i in range(75):
+            item=row(i+300,self.freeze+timedelta(minutes=i+1),i%3)
+            item["workflow_id"]=7000+i%3
+            rows.append(item)
+        result,child=n.future_decision(self.frozen["pending"],
+            n.load_state(self.frozen["parent"]),self.past+rows,
+            self.freeze+timedelta(days=1))
+        self.assertEqual(result["status"],"HOLD_FUTURE_WORKFLOW_CLUSTER_INFORMATION")
+        self.assertEqual(result["distinct_workflows"],3)
+        self.assertIsNone(child)
 
     def test_only_post_publication_github_runs_are_scored(self):
         # Weights were frozen in memory at freeze; Git did not publish them
