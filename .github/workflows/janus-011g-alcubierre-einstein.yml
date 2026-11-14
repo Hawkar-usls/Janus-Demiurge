@@ -1,0 +1,46 @@
+name: JANUS-011G Einstein Alcubierre Negative Energy and Causal Gate
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/late_choice_010/alcubierre_einstein_011g.py'
+      - 'experiments/ocean_transformer/late_choice_010/test_alcubierre_einstein_011g.py'
+      - 'experiments/ocean_transformer/late_choice_010/PROTOCOL_011G_ALCUBIERRE_FROZEN.md'
+      - '.github/workflows/janus-011g-alcubierre-einstein.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-011g-alcubierre-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  einstein-constraint-and-no-real-time-loop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate ADM geometry, negativity, quadrature and no-retrocausal-claim gates
+        run: |
+          set -euo pipefail
+          python -m py_compile experiments/ocean_transformer/late_choice_010/alcubierre_einstein_011g.py
+          python -m unittest discover -v -s experiments/ocean_transformer/late_choice_010 -p 'test_alcubierre_einstein_011g.py'
+      - name: Compute frozen Alcubierre speed-radius-wall grid in SI
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/janus011g"
+          python -u experiments/ocean_transformer/late_choice_010/alcubierre_einstein_011g.py --output "$RUNNER_TEMP/janus011g/alcubierre_011g_einstein_negative_energy.json"
+      - name: Archive derived theory and provenance only, no lab physics claimed
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-011g-alcubierre-theory-${{ github.run_id }}
+          path: ${{ runner.temp }}/janus011g/alcubierre_011g_einstein_negative_energy.json
+          retention-days: 60
+          if-no-files-found: warn
