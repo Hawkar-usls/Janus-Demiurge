@@ -202,7 +202,7 @@ def select_archive(api_artifacts,run_details,current_run,*,repository=OWNER_REPO
         if (not isinstance(run,dict) or run.get("status")!="completed"
             or run.get("conclusion")!="success"
             or run.get("head_branch")!="main"
-            or run.get("event") not in ("push","schedule","workflow_dispatch")
+            or run.get("event") not in ("push","schedule","workflow_dispatch","workflow_run")
             or not any(str(run.get("path","")).endswith(p) for p in ALLOWED_WORKFLOWS)
             or not e.SHA.fullmatch(str(run.get("head_sha","")))):
             continue
