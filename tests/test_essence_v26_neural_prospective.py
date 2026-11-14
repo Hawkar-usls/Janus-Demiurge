@@ -63,9 +63,15 @@ class ProspectiveNeuralContract(unittest.TestCase):
                          self.frozen["pending"]["parent_sha256"])
         self.assertEqual(n.seal(next_state["parent"]),
                          self.frozen["pending"]["challenger_sha256"])
-        self.assertTrue(next_state["pending"] is not None)
-        self.assertGreater(n.at(next_state["pending"]["sealed_before"]),
-                           n.at(self.frozen["pending"]["sealed_before"]))
+        if next_state["pending"] is not None:
+            self.assertGreater(n.at(next_state["pending"]["sealed_before"]),
+                               n.at(self.frozen["pending"]["sealed_before"]))
+            self.assertEqual(next_state["pending"]["parent_sha256"],
+                             n.seal(next_state["parent"]))
+        else:
+            # A near-perfect inherited model must not invent a gradient gain
+            # merely to continue the cycle. The accepted weights are preserved.
+            self.assertIn("next_training_hold",receipt)
 
     def test_mismatched_child_or_seal_fails_closed(self):
         for k in ("challenger_sha256","parent_sha256"):
