@@ -95,8 +95,8 @@ def exact_exists_replay(before, after, pivot):
     for values in product((False, True), repeat=len(others)):
         state = dict(zip(others, values))
         expected = (
-            truth(before, dict(state, **{pivot: False})) or
-            truth(before, dict(state, **{pivot: True}))
+            truth(before, {**state, pivot: False}) or
+            truth(before, {**state, pivot: True})
         )
         observed = truth(after, state)
         if observed != expected:
