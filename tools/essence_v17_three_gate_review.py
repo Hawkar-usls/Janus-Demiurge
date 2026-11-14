@@ -120,8 +120,14 @@ def holdout_results(data):
         draws.sort()
         low=draws[24]  # two-sided ~95% conservative lower percentile
         empirical=sum(round(r*w) for r,w in zip(rates,weights))/sum(weights)
-        b=sum(base_ce)/size
-        c=sum(cand_ce)/size
+        # Each per-document CE is an average over that document's tokens.
+        # Use token-weighted corpus CE, otherwise many short documents can
+        # conceal a material regression concentrated in a long document.
+        total_tokens=sum(weights)
+        b=math.fsum(v*n for v,n in zip(base_ce,weights))/total_tokens
+        c=math.fsum(v*n for v,n in zip(cand_ce,weights))/total_tokens
+        if not math.isfinite(b) or not math.isfinite(c):
+            raise ValueError("NONFINITE_HOLDOUT_CORPUS_LOSS")
         regression=c/b-1
         if low<MIN_TOP1 or regression>MAX_RELATIVE_LOSS:
             raise ValueError("INDEPENDENT_HOLDOUT_QUALITY_HOLD")
