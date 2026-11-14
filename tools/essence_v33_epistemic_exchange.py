@@ -297,6 +297,7 @@ def verify_state(state):
     last = ROOT
     ids = set()
     prev_turn = 0
+    initial_scouts = None
     for item in history:
         require(isinstance(item, dict) and item.get("previous_sha256") == last
                 and type(item.get("turn")) is int and item["turn"] == prev_turn + 1
@@ -311,6 +312,17 @@ def verify_state(state):
                 and isinstance(item.get("negative_evidence"), list)
                 and len(item["negative_evidence"]) >= 3,
                 "EVIDENCE_HISTORY_LOSS")
+        current_scouts = item["scout_identities"]
+        require(isinstance(current_scouts, list)
+                and len(set(current_scouts)) == 17
+                and all(isinstance(x, str) and x.startswith("SCOUT_")
+                        for x in current_scouts),
+                "EVIDENCE_SCOUT_IDENTITY_INVALID")
+        if initial_scouts is None:
+            initial_scouts = current_scouts
+        else:
+            require(current_scouts == initial_scouts,
+                    "EVIDENCE_SCOUT_LINEAGE_REPLACED")
         ids.add(item["source_fingerprint_sha256"])
         last = item["receipt_sha256"]
         prev_turn = item["turn"]
@@ -320,7 +332,16 @@ def verify_state(state):
 def integrate(records, previous):
     refs, facts = check_sources(records)
     tail = verify_state(previous)
-    fingerprint = seal(refs)
+    # Commits advance for unrelated code changes. A new commit pointing to
+    # identical verified JSON blob bytes is NOT a new source/lesson turn.
+    # Keep commit hashes in the receipt for traceability, not in novelty ID.
+    fingerprint = seal({role: {
+        "repository": row["repository"], "path": row["path"],
+        "source_sha256": row["source_sha256"]}
+        for role, row in sorted(refs.items())})
+    if previous["history"]:
+        require(previous["history"][-1]["scout_identities"] == facts["roster_ids"],
+                "EVIDENCE_SCOUT_LINEAGE_REPLACED")
     already = {x["source_fingerprint_sha256"] for x in previous["history"]}
     new_information = fingerprint not in already
     require(not (new_information and len(previous["history"]) >= MAX_HISTORY),
