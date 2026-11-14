@@ -1,0 +1,45 @@
+name: ESSENCE v1.6.1 Real Native CPU Dynamic INT8
+
+on:
+  pull_request:
+    paths:
+      - 'tools/essence_v161_native_cpu_int8.py'
+      - 'tests/test_essence_v161_native_cpu_int8.py'
+      - '.github/workflows/essence-v161-native-cpu-int8.yml'
+      - 'research/essence/v161/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: essence-v161-native-int8-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  cpu-native-int8-research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only native Torch runtime
+        run: |
+          python -m pip install --disable-pip-version-check 'torch==2.7.1+cpu' \
+            --index-url https://download.pytorch.org/whl/cpu
+      - name: Verify native quantization and original checkpoint integrity
+        run: python -m unittest -v tests/test_essence_v161_native_cpu_int8.py
+      - name: Load untouched original checkpoint into independent FP32 baseline
+        run: python tools/essence_v16_real_checkpoint_bench.py --mode baseline --out-dir runtime/essence_v161
+      - name: Run REAL PyTorch dynamic INT8 CPU modules in isolated copy
+        run: python tools/essence_v161_native_cpu_int8.py --out-dir runtime/essence_v161
+      - name: Preserve real CPU inference, quality, RSS and packed-model storage receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: essence-v161-real-native-cpu-int8
+          path: runtime/essence_v161/
+          if-no-files-found: warn
+          retention-days: 30
