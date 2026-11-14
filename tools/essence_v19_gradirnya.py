@@ -124,7 +124,7 @@ def prepare(data_root,source_sha,out):
     groups,desc=r.collect(data_root)
     root=Path(out)
     if root.exists():raise FileExistsError("PREPARATION_ALREADY_EXISTS")
-    packets={k:split_packet(k,groups[k],source_sha,desc["dataset_sha256"]) for k in ("train","validation","holdout")}
+    packets={k:split_packet(k,groups["test" if k=="holdout" else k],source_sha,desc["dataset_sha256"]) for k in ("train","validation","holdout")}
     for k in packets:
         check_packet(packets[k],k,source_sha,desc["dataset_sha256"])
     manifest={"schema":SCHEMA,"source_commit":source_sha,
