@@ -131,6 +131,25 @@ class ProspectiveNeuralContract(unittest.TestCase):
         self.assertEqual([x["label"] for x in arr],[0,1,2])
         self.assertTrue(all("conclusion" not in x for x in arr))
 
+    def test_only_post_publication_github_runs_are_scored(self):
+        # Weights were frozen in memory at freeze; Git did not publish them
+        # until 15 minutes later. These earlier jobs are NOT future evidence.
+        published=self.freeze+timedelta(minutes=15)
+        observed=self.past+self.future
+        result=n.future_decision(self.frozen["pending"],
+            n.load_state(self.frozen["parent"]),observed,
+            self.freeze+timedelta(days=1),published_at=published)[0]
+        self.assertEqual(result["sample_count"],60)
+        self.assertTrue(result["future_records_created_after_weights_git_commit"])
+        self.assertGreater(n.at(result["first_new_created_at"]),published)
+
+    def test_unpublished_future_time_rejected(self):
+        with self.assertRaisesRegex(ValueError,"INVALID_PUBLISHED_STATE_TIME"):
+            n.future_decision(self.frozen["pending"],
+                n.load_state(self.frozen["parent"]),self.past+self.future,
+                self.freeze+timedelta(minutes=1),
+                published_at=self.freeze+timedelta(hours=3))
+
     def test_no_synthetic_pass_can_claim_external_custodian(self):
         completed=self.past+self.future
         result=n.future_decision(self.frozen["pending"],
