@@ -291,13 +291,23 @@ def verify(cell,holdout,manifest,receipt,checkpoint):
     delta=round(b["nll"]-c["nll"],6)
     prior_gain=round(frozen_prior["nll"]-c["nll"],6)
     prior_accuracy_gain=round(c["accuracy"]-frozen_prior["accuracy"],6)
+    # A one-class late cohort cannot establish generalization, regardless of
+    # the absolute accuracy of a model; preserve the observation as HOLD.
+    holdout_counts=[sum(row["label"]==i for row in test_rows) for i in range(len(r.LABELS))]
+    represented=sum(n>0 for n in holdout_counts)
+    dominance=max(holdout_counts)/len(test_rows)
+    diverse=represented>=3 and dominance<=0.85
     improvement=(delta>=0.02 and c["accuracy"]>=b["accuracy"]
                  and prior_gain>=0.02 and prior_accuracy_gain>0)
-    gate=("RESEARCH_HISTORICAL_DATE_HOLDOUT_GAIN" if improvement
+    gate=("HOLD_DEGENERATE_TEMPORAL_COHORT" if not diverse
+          else "RESEARCH_HISTORICAL_DATE_HOLDOUT_GAIN" if improvement
           else "HOLD_NOT_BETTER_THAN_FROZEN_PRIOR_AND_PARENT")
     result={"schema":"janus.essence.gradirnya_verifier/1.9","cell":cell,"role":r.CELL_ROLES[cell],
             "source_commit":source,"lineage_sha256":receipt["receipt_sha256"],
             "holdout_sha256":holdout["packet_sha256"],"heldout_rows":len(test_rows),
+            "heldout_class_counts":holdout_counts,"heldout_represented_classes":represented,
+            "heldout_majority_fraction":round(dominance,6),
+            "diversity_gate":diverse,
             "initial":b,"descendant":c,"frozen_train_prior":frozen_prior,
             "nll_reduction":delta,"nll_gain_vs_prior":prior_gain,
             "accuracy_gain_vs_prior":prior_accuracy_gain,"gate":gate,
@@ -326,6 +336,6 @@ def cli():
         result=verify(opt.cell,read_json(opt.holdout),read_json(opt.manifest),
                       read_json(opt.lineage),opt.weights)
         atomic_json(opt.out,result)
-        print(json.dumps({"cell":opt.cell,"gate":result["gate"],"heldout_rows":result["heldout_rows"],"parent":result["initial"],"descendant":result["descendant"],"frozen_prior":result["frozen_train_prior"],"nll_reduction":result["nll_reduction"],"nll_gain_vs_prior":result["nll_gain_vs_prior"],"accuracy_gain_vs_prior":result["accuracy_gain_vs_prior"],"production_authority":False}))
+        print(json.dumps({"cell":opt.cell,"gate":result["gate"],"heldout_rows":result["heldout_rows"],"represented_classes":result["heldout_represented_classes"],"majority_fraction":result["heldout_majority_fraction"],"parent":result["initial"],"descendant":result["descendant"],"frozen_prior":result["frozen_train_prior"],"nll_reduction":result["nll_reduction"],"nll_gain_vs_prior":result["nll_gain_vs_prior"],"accuracy_gain_vs_prior":result["accuracy_gain_vs_prior"],"production_authority":False}))
 
 if __name__=="__main__":cli()
