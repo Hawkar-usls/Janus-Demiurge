@@ -240,10 +240,11 @@ def verify_signatures(evidence,trust):
             raise ValueError("SIGNER_PIN_INVALID")
         body=entry["body"];sig=entry["signature"]
         if (not isinstance(body,dict) or set(body)!={"schema","role","candidate_id",
-               "payload_sha256","signed_at_utc","scope"} or
+               "candidate_sha256","payload_sha256","signed_at_utc","scope"} or
             body["schema"]!=ATTEST_SCHEMA or body["role"]!=role
-            or body["candidate_id"]!=CANDIDATE or
-            body["payload_sha256"]!=sha(evidence[part[role]])
+            or body["candidate_id"]!=CANDIDATE
+            or body["candidate_sha256"]!=sha(evidence["candidate"])
+            or body["payload_sha256"]!=sha(evidence[part[role]])
             or body["scope"]!="INDEPENDENT_REVIEW_NO_MODEL_DISPATCH"):
             raise ValueError("ATTESTATION_PAYLOAD_BINDING_INVALID")
         stamp=body["signed_at_utc"]
