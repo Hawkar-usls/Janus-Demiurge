@@ -352,6 +352,22 @@ def future_decision(pending,parent,observed,now,*,published_at=None):
     return result,child if passes else None
 
 
+def consecutive_accepted(history):
+    """Only an uninterrupted run of independently admitted descendants counts."""
+    streak=0
+    for entry in reversed(history):
+        if not isinstance(entry,dict) or type(entry.get("accepted")) is not bool:
+            raise ValueError("INVALID_GENERATIONAL_HISTORY")
+        if not entry["accepted"]:
+            break
+        proof=entry.get("independent_future_verification") or {}
+        if (proof.get("status")!="PASS_PROSPECTIVE_PAIRED_NEURAL_GAIN"
+            or proof.get("improvement_proven_under_registered_internal_thresholds") is not True):
+            raise ValueError("UNVERIFIED_ACCEPTED_NEURAL_GENERATION")
+        streak+=1
+    return streak
+
+
 def step(state,observed,now,*,history_exhaustive=True,state_published_at=None):
     check(state)
     if now.tzinfo is None:
@@ -380,13 +396,7 @@ def step(state,observed,now,*,history_exhaustive=True,state_published_at=None):
         if accepted:
             next_state["generation"]+=1
             next_state["parent"]=state_of(descendant)
-        streak=0
-        if accepted:
-            for earlier in reversed(state["history"]):
-                if earlier.get("accepted") is not True:
-                    break
-                streak+=1
-            streak+=1
+        streak=(consecutive_accepted(state["history"])+1) if accepted else 0
         next_state["history"]=(state["history"]+[{
             "sealed_before":pending["sealed_before"],
             "parent_sha256":pending["parent_sha256"],
@@ -402,7 +412,8 @@ def step(state,observed,now,*,history_exhaustive=True,state_published_at=None):
             # A failed prospective exam cannot launch another candidate on
             # the same now-consumed cohort; require a later source increment.
             permit_next_training=False
-            verdict["next_training_hold"]="HOLD_REJECTED_TRIAL_REQUIRES_NEW_HISTORY"
+            # The original future-verifier verdict stays hash-sealed without
+            # modification; the parent remains in research state as-is.
         next_state["status"]="RESEARCH_GEN"+str(next_state["generation"])+(
             "_ACCEPTED" if accepted else "_HOLD")
     else:
