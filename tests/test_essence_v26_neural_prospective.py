@@ -150,6 +150,56 @@ class ProspectiveNeuralContract(unittest.TestCase):
                 self.freeze+timedelta(minutes=1),
                 published_at=(self.freeze+timedelta(hours=3)).isoformat())
 
+    def failed_state(self):
+        trial=copy.deepcopy(self.frozen)
+        # A deliberately non-improving challenger has exactly the same
+        # weights as the parent; do not claim it is a real improvement.
+        trial["pending"]["challenger"]=copy.deepcopy(trial["parent"])
+        trial["pending"]["challenger_sha256"]=n.seal(trial["parent"])
+        trial["state_sha256"]=n.seal({k:v for k,v in trial.items()
+                                      if k!="state_sha256"})
+        return trial
+
+    def test_failed_future_trial_cannot_automatically_retry_same_cohort(self):
+        trial=self.failed_state()
+        rows=sorted(self.past+self.future,key=lambda x:x["created_at"])
+        completed,decision=n.step(trial,rows,self.freeze+timedelta(days=1))
+        self.assertEqual(decision["status"],"HOLD_FUTURE_NEURAL_GAIN_NOT_PROVEN")
+        self.assertEqual(completed["generation"],0)
+        self.assertIsNone(completed["pending"])
+        self.assertFalse(completed["history"][-1]["accepted"])
+        self.assertEqual(completed["history"][-1]["consecutive_accepted_generations"],0)
+        v=completed["history"][-1]["independent_future_verification"]
+        self.assertEqual(v["receipt_sha256"],n.seal({k:x for k,x in v.items()
+                                                 if k!="receipt_sha256"}))
+        replay,why=n.step(completed,rows,self.freeze+timedelta(days=1,hours=1))
+        self.assertEqual(why["status"],"HOLD_RETRAIN_REQUIRES_NEW_HISTORY")
+        self.assertEqual(replay["state_sha256"],completed["state_sha256"])
+
+    def test_rejected_trial_requires_an_additional_24_new_complete_runs(self):
+        rows=sorted(self.past+self.future,key=lambda x:x["created_at"])
+        stopped,_=n.step(self.failed_state(),rows,
+                         self.freeze+timedelta(days=1))
+        additional=[row(900+i,self.freeze+timedelta(days=1,minutes=i+1),i%3)
+                    for i in range(24)]
+        _,verdict=n.step(stopped,sorted(rows+additional,
+            key=lambda x:x["created_at"]),self.freeze+timedelta(days=2))
+        self.assertEqual(verdict["status"],"RETRAIN_ALLOWED_AFTER_NEW_HISTORY")
+
+    def test_only_contiguous_accepted_generations_count_toward_two(self):
+        success={"accepted":True,"independent_future_verification":{
+            "status":"PASS_PROSPECTIVE_PAIRED_NEURAL_GAIN",
+            "improvement_proven_under_registered_internal_thresholds":True}}
+        failure={"accepted":False,"independent_future_verification":{
+            "status":"HOLD_FUTURE_NEURAL_GAIN_NOT_PROVEN"}}
+        self.assertEqual(n.consecutive_accepted([success,success]),2)
+        self.assertEqual(n.consecutive_accepted([success,failure,success]),1)
+        with self.assertRaisesRegex(ValueError,
+                                    "UNVERIFIED_ACCEPTED_NEURAL_GENERATION"):
+            n.consecutive_accepted([{"accepted":True,
+                "independent_future_verification":{
+                    "status":"HOLD_FUTURE_NEURAL_GAIN_NOT_PROVEN"}}])
+
     def test_no_synthetic_pass_can_claim_external_custodian(self):
         completed=self.past+self.future
         result=n.future_decision(self.frozen["pending"],
