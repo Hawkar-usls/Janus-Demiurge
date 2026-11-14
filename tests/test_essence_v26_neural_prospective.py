@@ -74,7 +74,9 @@ class ProspectiveNeuralContract(unittest.TestCase):
         else:
             # A near-perfect inherited model must not invent a gradient gain
             # merely to continue the cycle. The accepted weights are preserved.
-            self.assertIn("next_training_hold",receipt)
+            self.assertEqual(next_state["status"],"RESEARCH_GEN1_ACCEPTED")
+            self.assertEqual(receipt["receipt_sha256"],n.seal({
+                k:v for k,v in receipt.items() if k!="receipt_sha256"}))
 
     def test_mismatched_child_or_seal_fails_closed(self):
         for k in ("challenger_sha256","parent_sha256"):
