@@ -295,11 +295,11 @@ def cli():
     elif opt.cmd=="train":
         result=train(opt.cell,read_json(opt.train),read_json(opt.validation),
                      read_json(opt.manifest),opt.out,opt.steps)
-        print(json.dumps({"cell":opt.cell,"accepted_generations":result["accepted_generations"],"production_authority":False}))
+        print(json.dumps({"cell":opt.cell,"accepted_generations":result["accepted_generations"],"validation":result["final_validation"],"quantization_v15_bytes":result["real_tensor_precision"]["parent_bytes"],"quantization_v19_bytes":result["real_tensor_precision"]["candidate_bytes"],"production_authority":False}))
     else:
         result=verify(opt.cell,read_json(opt.holdout),read_json(opt.manifest),
                       read_json(opt.lineage),opt.weights)
         atomic_json(opt.out,result)
-        print(json.dumps({"cell":opt.cell,"gate":result["gate"],"production_authority":False}))
+        print(json.dumps({"cell":opt.cell,"gate":result["gate"],"heldout_rows":result["heldout_rows"],"parent":result["initial"],"descendant":result["descendant"],"nll_reduction":result["nll_reduction"],"production_authority":False}))
 
 if __name__=="__main__":cli()
