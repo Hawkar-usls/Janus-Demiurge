@@ -67,7 +67,7 @@ class GradirnyaTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"SPLIT_DIGEST_OR_SOURCE_MISMATCH"):
             e.train(0,forged,self.val,self.manifest,self.path/"bad",steps=20)
         forged["packet_sha256"]=e.seal({k:v for k,v in forged.items() if k!="packet_sha256"})
-        with self.assertRaisesRegex(ValueError,"TRAIN_VALIDATION_LEAK"):
+        with self.assertRaisesRegex(ValueError,"TRAIN_PRIOR_COUNT_MISMATCH"):
             e.train(0,forged,self.val,self.manifest,self.path/"bad",steps=20)
 
     def test_tampered_lineage_fails_in_verifier(self):
