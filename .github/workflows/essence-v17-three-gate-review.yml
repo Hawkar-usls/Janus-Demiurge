@@ -1,0 +1,54 @@
+name: ESSENCE v1.7 External Model Admission Gate (read-only)
+
+on:
+  pull_request:
+    paths:
+      - 'tools/essence_v17_three_gate_review.py'
+      - 'tests/test_essence_v17_three_gate_review.py'
+      - '.github/workflows/essence-v17-three-gate-review.yml'
+      - 'research/essence/v17/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: essence-v17-review-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  independent-evidence-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify independent review protocol and injection controls
+        run: |
+          python -m py_compile tools/essence_v17_three_gate_review.py
+          python -m unittest -v tests.test_essence_v17_three_gate_review
+      - name: Run actual admission check without fabricated external evidence
+        run: |
+          python tools/essence_v17_three_gate_review.py --out runtime/essence_v17/admission.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('runtime/essence_v17/admission.json')
+          data=json.loads(p.read_text())
+          assert data['review_gate']=='HOLD_INDEPENDENT_BLIND_TARGET_HARDWARE_AND_REAL_SERVICE_ROLLBACK'
+          assert data['production_authority'] is False
+          assert data['automatic_promotion'] is False
+          assert data['live_weights_modified'] is False
+          print('ESSENCE_V17_REAL_WORLD_NO_ATTESTATIONS_HOLD=PASS')
+          PY
+      - name: Retain exact no-authority verdict
+        uses: actions/upload-artifact@v4
+        with:
+          name: essence-v17-real-model-admission-hold
+          path: runtime/essence_v17/admission.json
+          if-no-files-found: error
+          retention-days: 30
