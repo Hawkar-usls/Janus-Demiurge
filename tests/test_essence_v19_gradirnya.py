@@ -101,6 +101,25 @@ class GradirnyaTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"TRAIN_PRIOR_COUNT_MISMATCH"):
             e.train(0,self.train,self.val,altered,self.path/"fake",steps=20)
 
+    def test_collapsed_temporal_holdout_must_be_hold(self):
+        parent=e.train(0,self.train,self.val,self.manifest,self.path/"child",steps=20)
+        altered_hold=copy.deepcopy(self.hold)
+        for row in altered_hold["rows"]:
+            row["label"]=len(e.r.LABELS)-1
+        altered_hold["packet_sha256"]=e.seal({k:v for k,v in altered_hold.items() if k!="packet_sha256"})
+        altered_manifest=copy.deepcopy(self.manifest)
+        altered_manifest["split_sha256"]["holdout"]=altered_hold["packet_sha256"]
+        altered_manifest["receipt_sha256"]=e.seal({k:v for k,v in altered_manifest.items() if k!="receipt_sha256"})
+        altered_parent=copy.deepcopy(parent)
+        altered_parent["manifest_sha256"]=altered_manifest["receipt_sha256"]
+        altered_parent["holdout_sha256"]=altered_hold["packet_sha256"]
+        altered_parent["receipt_sha256"]=e.seal({k:v for k,v in altered_parent.items() if k!="receipt_sha256"})
+        result=e.verify(0,altered_hold,altered_manifest,altered_parent,self.path/"child"/"offspring.pt")
+        self.assertEqual(result["gate"],"HOLD_DEGENERATE_TEMPORAL_COHORT")
+        self.assertEqual(result["heldout_represented_classes"],1)
+        self.assertFalse(result["diversity_gate"])
+        self.assertFalse(result["automatic_production_promotion"])
+
     def test_no_automatic_research_overwrite(self):
         with self.assertRaises(FileExistsError):
             e.prepare(self.path/"source",self.source,self.path/"input")
