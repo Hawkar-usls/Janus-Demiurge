@@ -103,6 +103,8 @@ class CleanRoomPhysarumContract(unittest.TestCase):
             "measured_on_same_cpu":True,
             "full_probe_steps":6,
             "per_sibling_steps":8,
+            "costmatched_baseline_steps":14,
+            "baseline14_weights_sha256":m.BUDGET14_SHA,
             "no_cost_imputation":True,
             "hardware_description":"TEST_SYNTHETIC_CPU_NOT_EVIDENCE",
             "measurement_method":"CPU_PROCESS_TIME_SECONDS_REPLAY",
@@ -110,6 +112,7 @@ class CleanRoomPhysarumContract(unittest.TestCase):
             "physarum_probes_cpu_seconds":6.0,
             "physarum_network_search_cpu_seconds":0.5,
             "physarum_training_cpu_seconds":8.0,
+            "baseline14_training_cpu_seconds":14.0,
         }
         with tempfile.TemporaryDirectory() as td:
             p=Path(td)/"cost.json"
@@ -128,7 +131,8 @@ class CleanRoomPhysarumContract(unittest.TestCase):
             "control_training_cpu_seconds":8.0,
             "physarum_probes_cpu_seconds":6.0,
             "physarum_network_search_cpu_seconds":0.5,
-            "physarum_training_cpu_seconds":8.0
+            "physarum_training_cpu_seconds":8.0,
+            "baseline14_training_cpu_seconds":14.0
         }
         def rows(phys_value):
             out=[]
@@ -137,24 +141,27 @@ class CleanRoomPhysarumContract(unittest.TestCase):
                     "family":f"family_{i//2}",
                     "g3":{"cross_entropy":6.0,"inference_cpu_seconds":0.2},
                     "control":{"cross_entropy":5.5,"inference_cpu_seconds":0.2},
+                    "baseline14":{"cross_entropy":5.4,"inference_cpu_seconds":0.2},
                     "physarum":{"cross_entropy":phys_value,
                                 "inference_cpu_seconds":0.2}
                 })
             return out
         bad=m.grade(rows(5.3),cost_data,contract)
         self.assertFalse(bad["requirement_cost_efficiency"])
-        self.assertEqual(bad["statistical_status"],"NO_COST_ADJUSTED_PAIRED_GAIN")
+        self.assertEqual(bad["statistical_status"],"NO_COSTMATCHED_14STEP_EXTERNAL_GAIN")
         yes=m.grade(rows(4.0),cost_data,contract)
         self.assertTrue(yes["requirement_cost_efficiency"])
-        self.assertEqual(yes["fam_sign_test_one_sided_p"],0.03125)
-        self.assertEqual(yes["statistical_status"],"PASS_COST_ADJUSTED_PAIRED_GAIN")
+        self.assertEqual(yes["family_sign_test_one_sided_p"],0.03125)
+        self.assertEqual(yes["statistical_status"],"PASS_COSTMATCHED_14STEP_EXTERNAL_GAIN")
         not_all=m.grade(rows(5.5),cost_data,contract)
         self.assertEqual(not_all["statistical_status"],
-                         "NO_COST_ADJUSTED_PAIRED_GAIN")
+                         "NO_COSTMATCHED_14STEP_EXTERNAL_GAIN")
 
     def test_real_g4_weights_are_cryptographically_pinned(self):
         self.assertEqual(m.G3_SHA,
                          "7ae346fff869dc14eec9e32ffa0e00419d98faa2150f79a763e927e0fc2cd299")
+        self.assertEqual(m.BUDGET14_SHA,
+                         "a0a8a878fd784235e390f441ec192d973e079714321b5d8a6b2cbb343d3bd174")
         self.assertEqual(m.G4["control"]["manifest"],
                          cost.EXPECTED_MANIFESTS["control"])
         self.assertEqual(m.G4["physarum"]["weights"],
