@@ -97,8 +97,23 @@ class DovodTemporalWitnessContract(unittest.TestCase):
 
     def test_duplicate_completed_id_fails_closed(self):
         rows = self.corpus()
+        conflicting = copy.deepcopy(rows[0])
+        conflicting["workflow_id"] = 999
         with self.assertRaisesRegex(ValueError, "DUPLICATE"):
-            d.inspect(self.state, rows + [copy.deepcopy(rows[0])], self.now)
+            d.inspect(self.state, rows + [conflicting], self.now)
+
+    def test_identical_event_repeated_across_pages_is_deduplicated(self):
+        rows = self.corpus()
+        repeated = d.inspect(self.state, rows + [copy.deepcopy(rows[0])], self.now)
+        original = d.inspect(self.state, rows, self.now)
+        self.assertEqual(repeated["raw_observations_sha256"], original["raw_observations_sha256"])
+        self.assertEqual(repeated["before_consumed_cutoff"]["completed_runs"], 24)
+
+    def test_workflow_run_is_a_legitimate_github_actions_event(self):
+        rows = self.corpus()
+        rows[0]["event"] = "workflow_run"
+        receipt = d.inspect(self.state, rows, self.now)
+        self.assertEqual(receipt["before_consumed_cutoff"]["event_counts"]["workflow_run"], 1)
 
     def test_clock_inversion_fails_closed(self):
         rows = self.corpus()
