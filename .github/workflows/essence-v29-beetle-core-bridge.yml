@@ -1,0 +1,104 @@
+name: ESSENCE v2.9 bounded microcore bridge to Universal Beetle
+
+on:
+  pull_request:
+    paths:
+      - 'tools/essence_beetle_core_bridge.py'
+      - 'tools/demiurge_beetle_director.py'
+      - 'tests/test_essence_beetle_core_bridge.py'
+      - '.github/workflows/essence-v29-beetle-core-bridge.yml'
+      - '.github/workflows/janus-beetle-director.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/essence_beetle_core_bridge.py'
+      - 'tools/demiurge_beetle_director.py'
+      - 'tests/test_essence_beetle_core_bridge.py'
+      - '.github/workflows/essence-v29-beetle-core-bridge.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '16 */3 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: essence-v29-beetle-core-bridge
+  cancel-in-progress: false
+
+jobs:
+  core-bridge-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify provenance, direct-reader-only module, immutable intents and Beetle gate
+        run: |
+          python -m py_compile tools/essence_beetle_core_bridge.py tools/demiurge_beetle_director.py
+          python -m unittest -v tests.test_essence_beetle_core_bridge
+
+  live-core-link:
+    needs: core-bridge-tests
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.ESSENCE_BEETLE_PAUSED != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify pinned source Git blob SHAs in six actual core repositories
+        env:
+          GH_TOKEN: \${{ github.token }}
+        run: |
+          python tools/essence_beetle_core_bridge.py \
+            --out beetle/ESSENCE_CORE_BRIDGE.json
+      - name: Fail closed on untrusted generated source and zero-authority contract
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from tools import essence_beetle_core_bridge as core
+          p=Path('beetle/ESSENCE_CORE_BRIDGE.json')
+          x=json.loads(p.read_text())
+          assert x['schema']==core.SCHEMA
+          assert x['status']=='CORE_LINKED_SEARCH_STEERING_ONLY'
+          assert x['source_count']==len(core.SOURCES)
+          assert x['authority_delta']==0
+          assert x['automatic_production_promotion'] is False
+          assert x['producer_can_write_other_repositories'] is False
+          assert x['receipt_sha256']==core.sha({k:v for k,v in x.items() if k!='receipt_sha256'})
+          PY
+      - name: Commit only SHA-sealed core-source catalog for Demiurge priority bridge
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'janus-essence-beetle-core[bot]'
+          git config user.email 'janus-essence-beetle-core[bot]@users.noreply.github.com'
+          git add -f -- beetle/ESSENCE_CORE_BRIDGE.json
+          if git diff --cached --quiet; then
+            echo 'BEETLE_CORE_BRIDGE_SOURCES_UNCHANGED=HOLD'
+            exit 0
+          fi
+          test "$(git diff --cached --name-only)" = 'beetle/ESSENCE_CORE_BRIDGE.json'
+          git diff --cached --check
+          git commit -m 'ESSENCE: publish provenance-bound research intents for Universal Beetle'
+          git pull --rebase origin main
+          git push origin HEAD:main
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: essence-v29-beetle-core-bridge-\${{ github.run_id }}
+          path: beetle/ESSENCE_CORE_BRIDGE.json
+          if-no-files-found: warn
+          retention-days: 30
