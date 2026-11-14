@@ -154,22 +154,7 @@ jobs:
             echo "NO_NEW_DURABLE_TRIAL_RECEIPT"
             exit 0
           fi
-          if git -C research-state diff --cached --name-only | grep -Ev '^research/essence/memory_proposals_v35/(freeze\.json|cohort\.json|receipts/[0-9]+\.json)
-            echo "STATE_BRANCH_PATH_ESCAPE" >&2
-            exit 10
-          fi
-          git -C research-state commit -m "ESSENCE paired-memory research: $GITHUB_RUN_ID"
-          REMOTE="$(git -C research-state ls-remote origin refs/heads/research/essence-memory-proposals-v35-state | cut -f1)"
-          test "$REMOTE" = "$START" || { echo "TRIAL_STATE_CAS_CONFLICT_HOLD" >&2; exit 6; }
-          git -C research-state push origin HEAD:refs/heads/research/essence-memory-proposals-v35-state
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: essence-v35-creation-first-${{ github.run_id }}
-          path: source/artifacts/essence-v35/trial-receipt.json
-          retention-days: 90
-          if-no-files-found: warn
-; then
+          if git -C research-state diff --cached --name-only | grep -Ev '^research/essence/memory_proposals_v35/(freeze\.json|cohort\.json|receipts/[0-9]+\.json)$'; then
             echo "STATE_BRANCH_PATH_ESCAPE" >&2
             exit 10
           fi
