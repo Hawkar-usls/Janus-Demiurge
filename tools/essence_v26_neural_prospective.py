@@ -297,10 +297,16 @@ def make_pending(parent,history,now):
             "training":train_receipt,"status":"FROZEN_AWAITING_GITHUB_FUTURE"}
 
 
-def future_decision(pending,parent,observed,now):
+def future_decision(pending,parent,observed,now,*,published_at=None):
     if pending["parent_sha256"]!=seal(state_of(parent)):
         raise ValueError("PARENT_CROSS_RUN_DRIFT")
-    cutoff=at(pending["sealed_before"])
+    freeze=at(pending["sealed_before"])
+    publication=at(published_at) if published_at is not None else freeze
+    if publication>now or publication<freeze:
+        raise ValueError("INVALID_PUBLISHED_STATE_TIME")
+    # A Git commit, not an unpersisted in-memory checkpoint, is the
+    # reference for which outcomes count as genuinely prospective.
+    cutoff=publication
     fresh=[r for r in observed if at(r["created_at"])>cutoff]
     if not diverse(fresh,minimum=MIN_FUTURE):
         return {"status":"HOLD_FUTURE_COHORT_NOT_YET_DIVERSE",
@@ -326,6 +332,8 @@ def future_decision(pending,parent,observed,now):
                  "HOLD_FUTURE_NEURAL_GAIN_NOT_PROVEN",
         "sample_count":len(fresh),
         "first_new_created_at":fresh[0]["created_at"],
+        "frozen_weights_published_at":cutoff.isoformat(),
+        "future_records_created_after_weights_git_commit":published_at is not None,
         "last_new_created_at":fresh[-1]["created_at"],
         "labels_from_independent_postfreeze_run_events":True,
         "source_fingerprint_sha256":seal(fresh),
@@ -344,7 +352,7 @@ def future_decision(pending,parent,observed,now):
     return result,child if passes else None
 
 
-def step(state,observed,now,*,history_exhaustive=True):
+def step(state,observed,now,*,history_exhaustive=True,state_published_at=None):
     check(state)
     if now.tzinfo is None:
         raise ValueError("NAIVE_CYCLE_TIME")
@@ -356,11 +364,15 @@ def step(state,observed,now,*,history_exhaustive=True):
     next_state={k:v for k,v in state.items() if k!="state_sha256"}
     pending=state["pending"]
     if pending is not None:
-        cutoff=at(pending["sealed_before"])
+        frozen=at(pending["sealed_before"])
+        cutoff=at(state_published_at) if state_published_at else frozen
+        if cutoff<frozen or cutoff>now:
+            raise ValueError("INVALID_PUBLISHED_STATE_TIME")
         if observed and at(observed[0]["created_at"])>cutoff:
             return state,{"status":"HOLD_FUTURE_HISTORY_WINDOW_EXPIRED"}
         parent=load_state(state["parent"])
-        verdict,descendant=future_decision(pending,parent,observed,now)
+        verdict,descendant=future_decision(pending,parent,observed,now,
+                                         published_at=state_published_at)
         if descendant is None and verdict["status"]=="HOLD_FUTURE_COHORT_NOT_YET_DIVERSE":
             return state,verdict
         accepted=descendant is not None
@@ -398,6 +410,8 @@ def main():
     p=argparse.ArgumentParser()
     p.add_argument("--state",required=True)
     p.add_argument("--receipt",required=True)
+    p.add_argument("--state-committed-at",required=True,
+                   help="Last committed Git state-branch HEAD author time")
     args=p.parse_args()
     state_path=Path(args.state)
     receipt_path=Path(args.receipt)
@@ -407,10 +421,13 @@ def main():
     now=datetime.now(timezone.utc)
     raw=api_runs(os.environ.get("GH_TOKEN",""))
     observed=source_rows(raw,now)
+    cutoff=(at(args.state_committed_at) if doc.get("pending") is not None
+            else now)
     new,decision=step(doc,observed,now,
+        state_published_at=args.state_committed_at,
         history_exhaustive=(len(raw)<MAX_HISTORY or (
           doc.get("pending") is None or (
-            observed and at(observed[0]["created_at"])<=at(doc["pending"]["sealed_before"]))))
+            observed and at(observed[0]["created_at"])<=cutoff)))
         )
     receipt={"schema":SCHEMA,"at":now.isoformat(),
              "source_repository":SOURCE,"input_count":len(raw),
