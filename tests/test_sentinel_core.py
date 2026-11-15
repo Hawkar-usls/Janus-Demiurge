@@ -156,7 +156,9 @@ class SentinelTest(unittest.TestCase):
         self.assertEqual(result["status"],204)
         self.assertEqual(sent[-1][0],
                          "/actions/workflows/sentinel-node-c.yml/dispatches")
-        self.assertEqual(sent[-1][1],{"ref":"main","inputs":{"recovery_only":"true"}})
+        self.assertEqual(sent[-1][1],{"ref":"main","inputs":{
+            "recovery_only":"true",
+            "drill_nonce":"sentinel-recovery-A-991-1"}})
         self.assertEqual(len([x for x in sent if x[1] is not None]),1)
 
     def test_new_target_run_appearing_between_claim_and_dispatch_aborts(self):
