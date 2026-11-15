@@ -327,11 +327,23 @@ def publish(state,lock,plan,exam,child,seed):
         raise ValueError("TASK_ALREADY_ATTEMPTED")
     # Recover the *original* G2 seed even if the candidate is rejected.
     seed_path=target/"models/gen0002"
+    # 2026-11-15 initial state write excluded *.json via a legacy .gitignore.
+    # Restore only missing, original G2 model metadata from the SHA-verified
+    # source artifact. Never repair tensors with an unverified parent.
+    check_model(seed,GEN2_SHA,GEN2_LINEAGE)
     if not seed_path.exists():
-        check_model(seed,GEN2_SHA,GEN2_LINEAGE)
         seed_path.parent.mkdir(parents=True,exist_ok=True)
         shutil.copytree(seed,seed_path)
     else:
+        existing_weights=seed_path/"adapter_model.safetensors"
+        if (not existing_weights.is_file() or
+                hashlib.sha256(existing_weights.read_bytes()).hexdigest()!=GEN2_SHA):
+            raise ValueError("SEED_TENSORS_DIFFER_FROM_ORIGINAL_G2")
+        for name in ("adapter_config.json","lineage.json","README.md"):
+            source=Path(seed)/name
+            destination=seed_path/name
+            if not destination.is_file() and source.is_file():
+                shutil.copyfile(source,destination)
         check_model(seed_path,GEN2_SHA,GEN2_LINEAGE)
     approved=exam.get("status")=="PASS_INTERNAL_SHADOW_RETAINED"
     if approved:
@@ -381,6 +393,24 @@ def publish(state,lock,plan,exam,child,seed):
         "shadow_accepted":bool(approved),
         "external_validation":False,"production_promotion":False,
     }
+    # A first live run preserved the ledger but its attempt JSON was ignored.
+    # Reconstitute only explicitly labeled metadata from the already signed
+    # ledger; do not claim the full original exam bytes have been recovered.
+    historical=target/"research/essence/peer_v48_state/attempts"
+    for old_attempt in ledger["attempts"]:
+        old_path=historical/(old_attempt["id"]+".json")
+        if old_path.exists():
+            continue
+        evidence={
+            "schema":"janus.essence.recovered_attempt_metadata/4.8",
+            "prior_attempt":old_attempt,
+            "recoverable_from_existing_hash_chained_ledger":True,
+            "full_original_exam_reembedded":False,
+            "original_run_id":43749835808 if old_attempt["id"]=="0afda9803918e9d70abcea15" else None,
+            "original_exam_artifact_id":14175742166 if old_attempt["id"]=="0afda9803918e9d70abcea15" else None,
+            "production_promotion":False,
+        }
+        store(old_path,sealed(evidence))
     ledger["attempts"].append(attempt)
     ledger["bootstrap"]=False
     ledger["previous_ledger_sha256"]=ledger.get("ledger_sha256")
