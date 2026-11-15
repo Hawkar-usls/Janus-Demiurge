@@ -175,6 +175,52 @@ class PersistentCycleContract(unittest.TestCase):
                 s.publish(state_root,self.lock,plan,fake_exam,"absent","absent")
             self.assertEqual(json.loads(ledgerfile.read_text())["current_generation"],2)
 
+    def test_verified_failed_attempt_facts_replay_without_holdout_leakage(self):
+        with tempfile.TemporaryDirectory() as temp:
+            materialize_fake_sources(temp)
+            commit=lambda *_:"a"*40
+            first=s.make_plan(self.lock,self.ledger,temp,commit)
+            ledger=copy.deepcopy(self.ledger)
+            ledger["attempts"]=[{
+                "id":first["task_digest"][:24],"task_digest":first["task_digest"],
+                "source_id":first["source_id"],
+                "source_file_sha256":first["source_file_sha256"],
+                "source_fact_sha256":first["source_fact_sha256"],
+                "production_promotion":False
+            }]
+            ledger["bootstrap"]=False
+            ledger["ledger_sha256"]=s.digest({
+                k:v for k,v in ledger.items() if k!="ledger_sha256"})
+            second=s.make_plan(self.lock,ledger,temp,commit)
+            self.assertEqual(second["source_id"],"hrain")
+            self.assertEqual(second["holdout_id"],"genesis")
+            self.assertEqual(len(second["memory_replay"]),4)
+            self.assertEqual({r["source_repo"] for r in second["memory_replay"]},
+                             {"Hawkar-usls/-Terminal-for-Janus"})
+            s.verify_plan(second,self.lock,ledger)
+            # After HRain is tried, Genesis is trained, Terminal is the holdout.
+            ledger["attempts"].append({
+                "id":second["task_digest"][:24],"task_digest":second["task_digest"],
+                "source_id":second["source_id"],
+                "source_file_sha256":second["source_file_sha256"],
+                "source_fact_sha256":second["source_fact_sha256"],
+                "production_promotion":False
+            })
+            ledger["ledger_sha256"]=s.digest({
+                k:v for k,v in ledger.items() if k!="ledger_sha256"})
+            third=s.make_plan(self.lock,ledger,temp,commit)
+            self.assertEqual(third["source_id"],"genesis")
+            self.assertEqual(third["holdout_id"],"terminal")
+            self.assertEqual({r["source_repo"] for r in third["memory_replay"]},
+                             {"Hawkar-usls/Hrain"})
+            self.assertEqual(len(third["memory_replay"]),4)
+            s.verify_plan(third,self.lock,ledger)
+            invalid=copy.deepcopy(third)
+            invalid["memory_replay"][0]["source_repo"]="Hawkar-usls/-Terminal-for-Janus"
+            invalid["sha256"]=s.digest({k:v for k,v in invalid.items() if k!="sha256"})
+            with self.assertRaisesRegex(ValueError,"CORRUPT_OR_HOLDOUT"):
+                s.verify_plan(invalid,self.lock,ledger)
+
     def test_memory_ground_truth_digests_are_checked(self):
         with tempfile.TemporaryDirectory() as temp:
             materialize_fake_sources(temp)
