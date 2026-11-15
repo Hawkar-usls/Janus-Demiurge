@@ -41,7 +41,7 @@ ALLOWED={
     },
 }
 SENTINEL="PHYSARUM_G4_CANARY_ISOLATED_TEST_ONLY"
-SAMPLE_TOKENS=[ord(c) for c in "def f(x): return x + 3\n"]
+SAMPLE_TOKENS=[ord(c) for c in "def f(x): return x + 33\n"]
 assert len(SAMPLE_TOKENS)==24
 
 
