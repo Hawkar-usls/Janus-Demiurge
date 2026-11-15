@@ -1,0 +1,196 @@
+name: JANUS v5.0 Qwen G2 autonomous bounded research task choice
+
+on:
+  pull_request:
+    paths:
+      - 'tools/janus_v50_qwen_task_choice.py'
+      - 'tests/test_janus_v50_qwen_task_choice.py'
+      - '.github/workflows/janus-v50-qwen-task-choice.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/janus_v50_qwen_task_choice.py'
+      - 'tests/test_janus_v50_qwen_task_choice.py'
+      - '.github/workflows/janus-v50-qwen-task-choice.yml'
+  schedule:
+    - cron: '35 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-v50-g2-research-task-once-per-packet
+  cancel-in-progress: false
+
+env:
+  HF_HUB_DISABLE_TELEMETRY: '1'
+  HF_HUB_DOWNLOAD_TIMEOUT: '120'
+  TOKENIZERS_PARALLELISM: 'false'
+  OMP_NUM_THREADS: '4'
+
+jobs:
+  no-network-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reject all arbitrary model-generated commands and preserve NO_ACTION
+        run: |
+          python -m compileall -q tools/janus_v50_qwen_task_choice.py tests/test_janus_v50_qwen_task_choice.py
+          python -m unittest -v tests.test_janus_v50_qwen_task_choice
+
+  sealed-qwen-proposal:
+    needs: no-network-contract
+    if: github.event_name != 'pull_request' && vars.JANUS_V50_MODEL_CHOICE_PAUSED != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      ready: ${{ steps.gate.outputs.ready }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: janus-v50-agency-state
+          path: runtime/janus-v50/agency-state
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Only run if this new source-verified packet has no prior model decision
+        id: gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json,re
+          from pathlib import Path
+          p=Path('runtime/janus-v50/agency-state/research/janus_v50_agent')
+          idx=json.load(open(p/'LATEST.json'))
+          packet=idx['packet_id']
+          if not re.fullmatch('[0-9a-f]{64}',packet): raise RuntimeError('INVALID_PACKET_ID')
+          missing=not (p/'choices'/(packet+'.json')).exists()
+          print('ready='+str(missing).lower())
+          if missing:
+              Path('runtime/janus-v50/current-packet.txt').write_text(str(p/'packets'/(packet+'.json')))
+          PY
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.ready == 'true'
+        with:
+          ref: essence-peer-shadow-state
+          path: runtime/janus-v50/model-state
+          persist-credentials: false
+      - name: Install pinned, real Qwen G2 CPU inference runtime
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 peft==0.13.2 safetensors==0.5.3
+      - name: Ask genuine inherited neural model for ONE exact research action ID
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          python -m tools.janus_v50_qwen_task_choice \
+            --packet "$(cat runtime/janus-v50/current-packet.txt)" \
+            --model runtime/janus-v50/model-state/models/gen0002 \
+            --out runtime/janus-v50/neural-choice.json
+      - uses: actions/upload-artifact@v4
+        if: steps.gate.outputs.ready == 'true'
+        with:
+          name: janus-v50-g2-research-choice-${{ github.run_id }}
+          path: runtime/janus-v50/neural-choice.json
+          retention-days: 90
+          if-no-files-found: error
+
+  audit-and-run-model-selected-research-action:
+    needs: sealed-qwen-proposal
+    if: needs.sealed-qwen-proposal.outputs.ready == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: janus-v50-agency-state
+          path: runtime/janus-v50/state
+          persist-credentials: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-v50-g2-research-choice-${{ github.run_id }}
+          path: runtime/janus-v50
+      - name: Strictly verify immutable packet, parent lineage and neural reply
+        id: permit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json,re
+          from pathlib import Path
+          from tools import janus_v50_qwen_task_choice as q
+          from tools import janus_v50_ai_agency as a
+          root=Path('runtime/janus-v50/state/research/janus_v50_agent')
+          index=a.read(root/'LATEST.json')
+          key=index.get('packet_id')
+          if not isinstance(key,str) or not re.fullmatch('[a-f0-9]{64}',key):
+              raise RuntimeError('INVALID_LATEST_PACKET_POINTER')
+          packet=q.validate_packet(a.read(root/'packets'/(key+'.json')))
+          receipt=q.verify_receipt(packet,a.read('runtime/janus-v50/neural-choice.json'))
+          if receipt['source_packet_sha256']!=key:
+              raise RuntimeError('REPLAYED_OR_STALE_G2_RESEARCH_CHOICE')
+          target=root/'choices'/(key+'.json')
+          target.parent.mkdir(parents=True,exist_ok=True)
+          if target.exists():
+              if a.read(target)!=receipt: raise RuntimeError('DIFFERENT_CHOICE_FOR_SAME_PACKET')
+              print('fresh=false')
+          else:
+              target.write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+              print('fresh=true')
+          print('action='+receipt['model_choice'])
+          print('workflow='+(receipt['dispatch_workflow'] or 'NONE'))
+          PY
+      - name: Persist model proposal as evidence before dispatch
+        if: steps.permit.outputs.fresh == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd runtime/janus-v50/state
+          git config user.name 'JANUS G2 bounded task witness'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -f research/janus_v50_agent/choices/*.json
+          git diff --cached --check
+          git commit -m 'JANUS: retain one Qwen G2 allowlisted research decision per packet'
+          git push origin HEAD:refs/heads/janus-v50-agency-state
+      - name: Dispatch only the one allowlisted research contract selected by Qwen
+        if: steps.permit.outputs.fresh == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ACTION: ${{ steps.permit.outputs.action }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$ACTION" in
+            BEETLE_JSON_DISCOVERY)
+              gh workflow run janus-beetle-director.yml --repo "$GITHUB_REPOSITORY" --ref main
+              echo 'QWEN_SELECTED_BEETLE_WORKFLOW_SUBMITTED_NOT_YET_COMPLETED' ;;
+            TOPA_JSON_CHECK)
+              gh workflow run janus-topa-scout-epistemic.yml --repo "$GITHUB_REPOSITORY" --ref main
+              echo 'QWEN_SELECTED_TOPA_SCOUT_WORKFLOW_SUBMITTED_NOT_YET_COMPLETED' ;;
+            NO_ACTION)
+              echo 'QWEN_ABSTAINED_NO_EXECUTION' ;;
+            *)
+              echo 'UNRECOGNIZED_MODEL_ACTION_REFUSED'; exit 1 ;;
+          esac
