@@ -1,0 +1,96 @@
+name: JANUS SENTINEL one-shot real C fault and A/B rescue drill
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/sentinel-real-c-rescue-drill.yml'
+      - 'research/sentinel/locks/c-recovery-one-shot-lock.json'
+  push:
+    branches: [main]
+    paths:
+      - 'research/sentinel/locks/c-recovery-one-shot-lock.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-sentinel-one-real-recovery-drill
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Test exact allowlist, Git claim and C→A recovery receipts
+        run: |
+          python -m unittest -v tests.test_sentinel_live_failover_drill tests.test_sentinel_core
+
+  reverse-real-rescue:
+    if: github.event_name != 'pull_request' && github.run_attempt == 1 && vars.SENTINEL_PAUSED != 'true' && vars.ESSENCE_EVOLUTION_PAUSED != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Preflight all safety negative controls before failure injection
+        run: |
+          python -m py_compile tools/sentinel_live_failover_drill.py
+          python -m unittest -v tests.test_sentinel_live_failover_drill tests.test_sentinel_core
+      - name: Real C workflow failure, then A/B safety guardian recovery
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/sentinel/c-drill
+          python -m tools.sentinel_live_failover_drill \
+            --mode C \
+            --run-id "${{ github.run_id }}" \
+            --out runtime/sentinel/c-drill/failover-drill-receipt.json
+          python - <<'PY'
+          from tools.sentinel_live_failover_drill import canonical,SCHEMA
+          import json,hashlib,os
+          from pathlib import Path
+          p=Path('runtime/sentinel/c-drill/failover-drill-receipt.json')
+          result=json.loads(p.read_text())
+          assert result['schema']==SCHEMA
+          assert result['status']=='PASS_REAL_GH_A_RESCUES_C'
+          assert result['receipt_sha256']==hashlib.sha256(canonical(
+              {k:v for k,v in result.items() if k!='receipt_sha256'}
+          )).hexdigest()
+          assert result['actual_git_cas_claims_observed']==1
+          assert result['recovery_runs_verified']==1
+          assert result['production_authority'] is False
+          assert result['touches_live_production'] is False
+          assert result['claims']['C']['issuer']=='A'
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+            f.write('### SENTINEL: actual C failure and A recovery PASS\n')
+            f.write('Real C failed GH run: '+str(result['faults']['C'])+'\n')
+            f.write('Real Git CAS claim: '+str(result['claims']['C'])+'\n')
+            f.write('Real C successful recovered run: '+str(result['recovery_runs']['C'])+'\n')
+            f.write('Source receipt SHA256: '+result['receipt_sha256']+'\n')
+            f.write('No production changes, no 24/7 guarantee.\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sentinel-real-c-rescue-${{ github.run_id }}
+          path: runtime/sentinel/c-drill/failover-drill-receipt.json
+          if-no-files-found: warn
+          retention-days: 90
