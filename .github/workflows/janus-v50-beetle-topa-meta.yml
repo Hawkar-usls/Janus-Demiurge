@@ -1,0 +1,213 @@
+name: JANUS v5.0 agent control — Beetle TOPA JSON Meta
+
+on:
+  pull_request:
+    paths:
+      - 'tools/janus_v50_ai_agency.py'
+      - 'tests/test_janus_v50_ai_agency.py'
+      - 'beetle/JANUS_DESIRES.json'
+      - '.github/workflows/janus-v50-beetle-topa-meta.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/janus_v50_ai_agency.py'
+      - 'tests/test_janus_v50_ai_agency.py'
+      - 'beetle/JANUS_DESIRES.json'
+      - '.github/workflows/janus-v50-beetle-topa-meta.yml'
+  schedule:
+    - cron: '26 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-v50-bounded-agent-packet
+  cancel-in-progress: false
+
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Prove native abstention, canonical Beetle scope and fail-closed JSON contracts
+        run: |
+          python -m compileall -q tools/janus_v50_ai_agency.py tests/test_janus_v50_ai_agency.py
+          python -m unittest -v tests.test_janus_v50_ai_agency
+
+  topa-json-source-witness:
+    needs: contract
+    if: github.event_name != 'pull_request' && vars.JANUS_V50_AGENCY_PAUSED != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Execute real TOPA JSON Rails at pinned original source commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/janus-v50
+          git clone --quiet --depth 1 --filter=blob:none --sparse https://github.com/Hawkar-usls/TOPA.git runtime/janus-v50/topa
+          git -C runtime/janus-v50/topa fetch --quiet --depth 1 origin 0890172493d6ed0d3a62e79904c6a7593eb8a9f3
+          git -C runtime/janus-v50/topa checkout --quiet --detach 0890172493d6ed0d3a62e79904c6a7593eb8a9f3
+          git -C runtime/janus-v50/topa sparse-checkout set --no-cone tools/topa_json_rails.py protocols/TOPA_JSON_RAILS_PROTOCOL-v1.0.json
+          python runtime/janus-v50/topa/tools/topa_json_rails.py self-test > runtime/janus-v50/topa-self-test.json
+          python runtime/janus-v50/topa/tools/topa_json_rails.py inspect research/essence/peer_v49/FIRST_PROSPECTIVE_READOUT.json > runtime/janus-v50/topa-inspection.json
+          test "$(git -C runtime/janus-v50/topa rev-parse HEAD)" = 0890172493d6ed0d3a62e79904c6a7593eb8a9f3
+      - name: Bind TOPA byte-stream receipt to source and native JANUS abstention
+        run: |
+          python -m tools.janus_v50_ai_agency --root . --inspect runtime/janus-v50/topa-inspection.json --commit "$(git rev-parse HEAD)" --out runtime/janus-v50/packet.json
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          p=json.load(open('runtime/janus-v50/packet.json'))
+          print('### JANUS v5.0 user-directed verified control packet')
+          print('TOPA: real JSON Rails inspect at pinned source SHA, structural verification only')
+          print('Native neural decision:',p['native_model']['selected_action'])
+          print('Beetle task:',p['beetle_task_id'])
+          print('Packet SHA256:',p['receipt_sha256'])
+          print('Scientific proof/production/Sentinel authority: FALSE')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-v50-topa-json-control-${{ github.run_id }}
+          path: |
+            runtime/janus-v50/packet.json
+            runtime/janus-v50/topa-inspection.json
+            runtime/janus-v50/topa-self-test.json
+          retention-days: 90
+          if-no-files-found: error
+
+  persist-provenance-packet:
+    needs: topa-json-source-witness
+    runs-on: ubuntu-24.04
+    timeout-minutes: 9
+    permissions:
+      contents: write
+    outputs:
+      fresh: ${{ steps.persist.outputs.fresh }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: janus-v50-agency-state
+          path: state
+          fetch-depth: 1
+          persist-credentials: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-v50-topa-json-control-${{ github.run_id }}
+          path: runtime/janus-v50
+      - name: Append provenance packet exactly once (the model never writes commands)
+        id: persist
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from tools import janus_v50_ai_agency as ctl
+          packet=ctl.check(ctl.read('runtime/janus-v50/packet.json'))
+          root=Path('state')/'research/janus_v50_agent'
+          directory=root/'packets'
+          directory.mkdir(parents=True,exist_ok=True)
+          key=packet['receipt_sha256']
+          path=directory/(key+'.json')
+          Path('runtime/janus-v50/packet_id.txt').write_text(key)
+          if path.exists():
+              old=ctl.check(ctl.read(path))
+              if old!=packet: raise RuntimeError('SAME_KEY_DIFFERENT_PACKET')
+              Path('runtime/janus-v50/fresh.txt').write_text('false')
+          else:
+              path.write_text(json.dumps(packet,sort_keys=True,indent=2,ensure_ascii=False)+'\n')
+              index={
+                  'schema':'janus.agency.latest_verified_packet/5.0',
+                  'packet_id':key,'source_commit':packet['source_commit'],
+                  'source_sha256':packet['source_raw_sha256'],
+                  'topa_structural_only':True,'science_truth_authority':False,
+                  'native_model_selected':packet['native_model']['selected_action'],
+                  'production_promotion':False
+              }
+              (root/'LATEST.json').write_text(json.dumps(index,sort_keys=True,indent=2)+'\n')
+              Path('runtime/janus-v50/fresh.txt').write_text('true')
+          PY
+          echo "fresh=$(cat runtime/janus-v50/fresh.txt)" >> "$GITHUB_OUTPUT"
+          if [ "$(cat runtime/janus-v50/fresh.txt)" != true ]; then
+            echo 'ALREADY_RECORDED_SKIP_DUPLICATE'
+            exit 0
+          fi
+          cd state
+          git config user.name "JANUS v5.0 verified agency"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f research/janus_v50_agent/LATEST.json research/janus_v50_agent/packets/*.json
+          git diff --cached --check
+          git commit -m "JANUS agent: append source-checked TOPA/Beetle/EYE JSON request"
+          git push origin HEAD:refs/heads/janus-v50-agency-state
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-v50-packet-persistence-${{ github.run_id }}
+          path: |
+            runtime/janus-v50/fresh.txt
+            runtime/janus-v50/packet_id.txt
+          retention-days: 30
+          if-no-files-found: error
+
+  launch-allowed-local-organs:
+    needs: persist-provenance-packet
+    if: needs.persist-provenance-packet.outputs.fresh == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: Launch exactly two existing bounded JANUS workflows, not arbitrary model commands
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow run janus-beetle-director.yml --repo "$GITHUB_REPOSITORY" --ref main
+          echo 'BEETLE_DIRECTOR_DISPATCH_SUBMITTED'
+          gh workflow run janus-topa-scout-epistemic.yml --repo "$GITHUB_REPOSITORY" --ref main
+          echo 'TOPA_SCOUT_CONTRACT_DISPATCH_SUBMITTED'
+          echo 'NOTE: Submitted != completed. Source integrity != science truth.' >> "$GITHUB_STEP_SUMMARY"
+
+  request-external-repo-workers-if-authorized:
+    needs: persist-provenance-packet
+    if: needs.persist-provenance-packet.outputs.fresh == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Cross-repository launch only with separately authorized exact-workflow token
+        env:
+          CROSS_REPO_TOKEN: ${{ secrets.JANUS_CROSS_REPO_ACTIONS_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$CROSS_REPO_TOKEN" ]; then
+            echo 'HOLD_NO_CROSS_REPO_ACTIONS_TOKEN: external dispatch NOT performed'
+            echo 'Meta Registry will still independently poll the public, source-verified JSON packet.'
+            exit 0
+          fi
+          export GH_TOKEN="$CROSS_REPO_TOKEN"
+          gh workflow run validate-json-rails.yml --repo Hawkar-usls/TOPA --ref main
+          echo 'TOPA_REMOTE_WORKFLOW_DISPATCH_SUBMITTED_NOT_VERIFIED_COMPLETE'
+          gh workflow run eye-meta-registry-train.yml --repo Hawkar-usls/janus-meta-registry --ref main
+          echo 'META_EYE_REMOTE_DISPATCH_SUBMITTED_NOT_VERIFIED_COMPLETE'
