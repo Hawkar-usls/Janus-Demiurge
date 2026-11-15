@@ -129,6 +129,26 @@ class SentinelLiveDrillContracts(unittest.TestCase):
         with patch.object(d,"utcnow",return_value=NOW+timedelta(minutes=91)):
             d.check_no_unknown_prior_claim(prior,["B"])
 
+    def test_b_to_c_real_mode_has_b_actor_and_exact_owner(self):
+        source=Path(d.__file__).read_text()
+        self.assertIn('"CB"',source)
+        self.assertIn('else "B" if mode=="CB"',source)
+        self.assertIn("PASS_REAL_GH_B_RESCUES_C",source)
+        self.assertIn("COOLDOWN_SECONDS",source)
+        failed={"id":701,"created_at":(NOW-timedelta(minutes=8)).isoformat()}
+        claim={
+            "schema":"janus.sentinel.recovery_state/1.0",
+            "epoch":1,"authority":"BOUNDED_GITHUB_ACTIONS_ONLY",
+            "production_model_updates":False,
+            "last_dispatch":{"C":{"target":"C","issuer":"B",
+                "run_id":"123456","issued_at":NOW.isoformat(),
+                "observed_target_run_id":701,"claim_epoch":1,
+                "outcome":"ATTEMPTED_NOT_CONFIRMED"}},
+        }
+        self.assertEqual(d.validate_claim(claim,"C",failed,"B")["issuer"],"B")
+        with self.assertRaisesRegex(RuntimeError,"BAD_RECOVERY_CLAIM"):
+            d.validate_claim(claim,"C",failed,"A")
+
     def test_workflow_fault_inputs_only_under_explicit_nonce(self):
         repo=Path(__file__).resolve().parents[1]
         for role in ("a","b","c"):

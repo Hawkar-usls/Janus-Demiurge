@@ -40,9 +40,10 @@ TARGETS={
 WORKER="essence-v44-github-async.yml"
 TARGET_FILE={**ROLES,"WORKER":WORKER}
 MAX_API_SIZE=320000
-COOLDOWN_SECONDS=90*60
-LIVENESS_SECONDS=65*60
-MIN_FAILURE_AGE_SECONDS=10*60
+COOLDOWN_SECONDS=30*60
+LIVENESS_SECONDS=40*60
+WORKER_LIVENESS_SECONDS=65*60  # ESSENCE worker keeps its own cadence
+MIN_FAILURE_AGE_SECONDS=6*60
 OBSERVE_MAX_RUNS=8
 HEX40=re.compile(r"^[0-9a-f]{40}$")
 INT_ID=re.compile(r"^[1-9][0-9]{0,19}$")
@@ -170,7 +171,7 @@ def runs(target,token,*,fetch=api):
     return sorted(out,key=lambda row:(row["created"],row["id"]),reverse=True)
 
 
-def health(rows,now,*,omit_run_id=None):
+def health(rows,now,*,omit_run_id=None,liveness_seconds=LIVENESS_SECONDS):
     rows=[r for r in rows if r["id"]!=omit_run_id]
     if not rows:
         return {"status":"UNKNOWN_NO_OBSERVATIONS","last_run_id":None,
@@ -189,7 +190,7 @@ def health(rows,now,*,omit_run_id=None):
         status="UNKNOWN_NO_RECENT_SUCCESS" # never self-heal unknown service
     elif last["conclusion"]=="failure" and age>=MIN_FAILURE_AGE_SECONDS:
         status="STALE_FAILED"
-    elif age>=LIVENESS_SECONDS:
+    elif age>=liveness_seconds:
         status="STALE_MISSED_WAKE"
     return {
         "status":status,"last_run_id":last["id"],
@@ -242,7 +243,9 @@ def decide(role,run_id,now,observed,stored,*,pending=0,model=None):
             "UNKNOWN_SENTINEL_ROLE")
     state_check(stored)
     require(set(observed)==set(TARGET_FILE),"INCOMPLETE_WORKFLOW_OBSERVATION")
-    condition={key:health(observed[key],now,omit_run_id=int(run_id))
+    condition={key:health(observed[key],now,omit_run_id=int(run_id),
+                liveness_seconds=(WORKER_LIVENESS_SECONDS if key=="WORKER"
+                                  else LIVENESS_SECONDS))
                for key in TARGET_FILE}
     candidates=[]
     for target in TARGETS[role]:

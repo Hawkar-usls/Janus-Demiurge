@@ -1,0 +1,94 @@
+name: JANUS SENTINEL observed cron and 24h reliability audit
+
+on:
+  pull_request:
+    paths:
+      - 'tools/sentinel_cadence_audit.py'
+      - 'tests/test_sentinel_cadence_audit.py'
+      - '.github/workflows/sentinel-cadence-audit.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/sentinel_cadence_audit.py'
+      - '.github/workflows/sentinel-cadence-audit.yml'
+  schedule:
+    - cron: '11,41 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: janus-sentinel-cadence-audit
+  cancel-in-progress: false
+
+jobs:
+  audit-contract:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify false cron proofs are refused
+        run: |
+          python -m py_compile tools/sentinel_cadence_audit.py
+          python -m unittest -v tests.test_sentinel_cadence_audit
+
+  actual-github-cron-evidence:
+    if: github.event_name != 'pull_request' && vars.SENTINEL_PAUSED != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Inspect genuine scheduled node histories and mark PASS/HOLD/FAIL
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/sentinel/cadence-audit
+          FROZEN_AT="$(git log -1 --format=%cI -- .github/workflows/sentinel-node-a.yml)"
+          test -n "$FROZEN_AT"
+          python -m tools.sentinel_cadence_audit \
+            --activated "$FROZEN_AT" \
+            --out runtime/sentinel/cadence-audit/report.json
+      - name: Attach truthful audit summary
+        if: always()
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          p=Path("runtime/sentinel/cadence-audit/report.json")
+          if not p.is_file():
+              print("No audit report; previous step failed closed.")
+          else:
+              r=json.loads(p.read_text())
+              with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+                  f.write("### SENTINEL real 24-hour schedule delivery\n")
+                  f.write("Status: "+r["status"]+"\n")
+                  for role,x in r["nodes"].items():
+                      f.write(f"- {role}: {x['successful_schedule_count']}/{x['expected_delivery_count']} successful scheduled wakes; max gap {x['largest_success_gap_minutes']}m\n")
+                  f.write("This is GitHub-local evidence, not independent uptime or outage immunity.\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: janus-sentinel-cadence-audit-${{ github.run_id }}
+          path: runtime/sentinel/cadence-audit/report.json
+          retention-days: 30
+          if-no-files-found: warn
