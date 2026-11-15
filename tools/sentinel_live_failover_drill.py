@@ -317,8 +317,29 @@ def main():
     p.add_argument("--run-id",required=True)
     p.add_argument("--out",required=True)
     args=p.parse_args()
-    result=run(token=os.getenv("GH_TOKEN",""),run_id=args.run_id,
-               mode=args.mode)
+    try:
+        result=run(token=os.getenv("GH_TOKEN",""),run_id=args.run_id,
+                   mode=args.mode)
+        failed=False
+    except (RuntimeError,ValueError,KeyError,TypeError,
+            urllib.error.HTTPError,urllib.error.URLError) as exc:
+        # Failures must be durable, explicitly negative and never silently
+        # converted to a success merely because GH API accepted dispatch.
+        result={
+            "schema":SCHEMA,
+            "status":"HOLD_REAL_GITHUB_RECOVERY_NOT_PROVEN",
+            "drill_source_run_id":args.run_id,
+            "drill_mode":args.mode,
+            "error_type":type(exc).__name__,
+            "error_code":str(exc)[:180] if not isinstance(exc,
+                urllib.error.HTTPError) else f"HTTP_{exc.code}",
+            "claims_verified":0,
+            "recovered_verified":0,
+            "production_authority":False,
+            "touches_live_production":False,
+            "common_github_failure_domain":True,
+        }
+        failed=True
     path=Path(args.out)
     require(not path.exists(),"IMMUTABLE_DRILL_RESULT_ALREADY_EXISTS")
     path.parent.mkdir(parents=True,exist_ok=True)
@@ -326,10 +347,12 @@ def main():
     path.write_text(json.dumps(result,sort_keys=True,indent=2)+"\n")
     print(json.dumps({
         "status":result["status"],
-        "claims":result["actual_git_cas_claims_observed"],
-        "recovered":result["recovery_runs_verified"],
+        "claims":result.get("actual_git_cas_claims_observed",0),
+        "recovered":result.get("recovery_runs_verified",0),
         "receipt_sha256":result["receipt_sha256"],
         "production_authority":False},sort_keys=True))
+    if failed:
+        raise SystemExit(1)
 
 
 if __name__=="__main__":
