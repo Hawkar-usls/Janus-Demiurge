@@ -145,6 +145,8 @@ def preflight(records, labels, lock):
         blockers.append("HOLD_PROSPECTIVE_EXAM_NOT_FROZEN")
     if not isinstance(custodian, str) or not custodian.strip():
         blockers.append("HOLD_INDEPENDENT_CUSTODIAN_MISSING")
+    if lock.get("frozen_before_training") is not True:
+        blockers.append("HOLD_EXAM_COMMITMENT_NOT_PREDECLARED")
     payload = {
         "schema": "janus.essence.peer_shadow_preflight.v4.5",
         "corpus_source_count": len(records),
