@@ -115,8 +115,8 @@ def dispatch(node,token,nonce,*,fault=False,recovery=False,call=fetch):
     return call(
         f"/actions/workflows/{TARGETS[node]}/dispatches",
         token,post={"ref":"main",
-                     "inputs":{"fault_inject":bool(fault),
-                               "recovery_only":bool(recovery),
+                     "inputs":{"fault_inject":"true" if fault else "false",
+                               "recovery_only":"true" if recovery else "false",
                                "drill_nonce":nonce}})
 
 
@@ -172,18 +172,15 @@ def check_no_unknown_prior_claim(st,roles):
                     "DRILL_CANNOT_BYPASS_EXISTING_COOLDOWN_"+role)
 
 
-def validate_claim(st,target,fault):
+def validate_claim(st,target,fault,expected_issuer):
     row=st["last_dispatch"].get(target)
     if not row or row.get("observed_target_run_id")!=fault["id"]:
         return None
-    require(row["target"]==target and row["issuer"] in ("A","B","C") and
+    require(row["target"]==target and row["issuer"]==expected_issuer and
             row["outcome"]=="ATTEMPTED_NOT_CONFIRMED" and
-            int(row["run_id"])>0 and row["claim_epoch"]==st["epoch"] or
-            # Epoch may progress after the original claim if another
-            # non-conflicting target is legitimately recovered.
-            (row and row["target"]==target and row["issuer"] in ("A","B","C")
-             and row["claim_epoch"]<=st["epoch"] and
-             row["observed_target_run_id"]==fault["id"]),
+            int(row["run_id"])>0 and
+            1<=row["claim_epoch"]<=st["epoch"] and
+            stamp(row["issued_at"])>=stamp(fault["created_at"]),
             "BAD_RECOVERY_CLAIM")
     return row
 
@@ -269,7 +266,7 @@ def run(*,token,run_id,mode="AB"):
     require(failed_first is not None,"ORIGINAL_FAILURE_NO_LONGER_AVAILABLE")
 
     claim=wait_until(
-        lambda:validate_claim(state(token),first,failed_first),
+        lambda:validate_claim(state(token),first,failed_first,actor),
         deadline,description="CAS_CLAIM_"+first)
     records["claims"][first]=claim
     recovered=wait_until(
@@ -290,7 +287,7 @@ def run(*,token,run_id,mode="AB"):
             if x["id"]==records["faults"]["B"]["run_id"]),None)
         require(failed_b is not None,"B_FAILURE_PROVENANCE_MISSING")
         claim_b=wait_until(
-            lambda:validate_claim(state(token),"B",failed_b),
+            lambda:validate_claim(state(token),"B",failed_b,"A"),
             deadline,description="CAS_CLAIM_B")
         records["claims"]["B"]=claim_b
         recovered_b=wait_until(
