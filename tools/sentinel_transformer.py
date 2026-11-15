@@ -321,8 +321,11 @@ def fetch_real(token,maxpages=6):
         }
         with urllib.request.urlopen(urllib.request.Request(path,headers=headers),
                                     timeout=18) as response:
-            chunk=response.read(1_000_001)
-            require(len(chunk)<=1_000_000,"TOO_MANY_GITHUB_RUNS_BYTES")
+            # GitHub Actions REST run objects include extensive metadata;
+            # a full 100-entry page can legitimately exceed 1 MiB.
+            # Keep a hard per-page cap, but above observed real payload size.
+            chunk=response.read(6_000_001)
+            require(len(chunk)<=6_000_000,"TOO_MANY_GITHUB_RUNS_BYTES")
             value=json.loads(chunk)
         require(isinstance(value,dict) and
                 isinstance(value.get("workflow_runs"),list) and

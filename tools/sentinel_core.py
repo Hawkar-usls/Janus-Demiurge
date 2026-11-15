@@ -145,6 +145,10 @@ def runs(target,token,*,fetch=api):
     out=[]
     seen=set()
     for v in items:
+        # GitHub returns PR check runs on the contributor's source branch
+        # alongside trusted main runs. They are not heartbeat evidence.
+        if isinstance(v,dict) and v.get("event")=="pull_request":
+            continue
         require(isinstance(v,dict) and
                 type(v.get("id")) is int and v["id"]>0 and
                 v["id"] not in seen and
