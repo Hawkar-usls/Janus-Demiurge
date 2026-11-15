@@ -1,0 +1,30 @@
+{
+  "schema": "janus.sentinel.failover_drill_lock/1.0",
+  "id": "SENTINEL_AB_FAULT_AND_C_RECOVERY_2026-11-15",
+  "research_only": true,
+  "one_shot_on_main_merge": true,
+  "run_condition": "Push to main including this exact lock path and github.run_attempt=1",
+  "controlled_faults": [
+    "sentinel-node-a.yml",
+    "sentinel-node-b.yml"
+  ],
+  "actual_recovery_sequence": [
+    "sentinel-node-c.yml recovers A after >=10m age",
+    "recovered A wakes with recovery_only=false and recovers B"
+  ],
+  "source_of_truth": "Real GitHub Actions failed workflow runs and Git CAS claims on sentinel-state",
+  "allowed_github_repo": "Hawkar-usls/Janus-Demiurge",
+  "never_touch": [
+    "live production",
+    "ESSENCE neural weights",
+    "NAS",
+    "other repositories",
+    "API tokens output"
+  ],
+  "max_total_duration_minutes": 32,
+  "cooldown_minutes": 90,
+  "no_recursion": true,
+  "false_positive_policy": "HOLD on stale observation, preemption, ambiguous new run, missing CAS claim or missing actual successful recovery run",
+  "common_github_failure_domain": true,
+  "production_authority": false
+}
