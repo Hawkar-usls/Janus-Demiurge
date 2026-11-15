@@ -73,6 +73,17 @@ def create_receipt(packet,raw):
     return agency.sealed(record)
 
 
+def verify_receipt(packet,receipt):
+    agency.check(receipt)
+    expected=create_receipt(packet,receipt.get("model_raw_response"))
+    if receipt!=expected:
+        raise ValueError("MODEL_CHOICE_OR_PARENT_PROVENANCE_TAMPER")
+    if (receipt["dispatch_workflow"] is not None and
+            receipt["dispatch_workflow"] not in packet["allowed_local_workflows"]):
+        raise ValueError("MODEL_DISPATCH_OUTSIDE_CANONICAL_WORKFLOWS")
+    return receipt
+
+
 def infer_choice(model_dir,packet):
     import torch
     from peft import PeftModel
