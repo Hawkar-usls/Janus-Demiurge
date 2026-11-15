@@ -63,9 +63,9 @@ jobs:
       - name: Check existing sealed model store
         id: check
         run: |
-          if [ -d runtime/essence/v44/state/essence-runtime/model-store ]; then
-            python -m tools.essence_v44_checkpoint_store verify \
-              --store runtime/essence/v44/state/essence-runtime/model-store
+          if [ -d runtime/essence/v44/state/essence-runtime/model-store ] && \
+             python -m tools.essence_v44_checkpoint_store verify \
+               --store runtime/essence/v44/state/essence-runtime/model-store; then
             echo "missing=false" >> "$GITHUB_OUTPUT"
           else
             echo "missing=true" >> "$GITHUB_OUTPUT"
@@ -104,7 +104,21 @@ jobs:
           set -euo pipefail
           git -C "$CHECKOUT" config user.name "github-actions[bot]"
           git -C "$CHECKOUT" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git -C "$CHECKOUT" add essence-runtime/model-store
+          # Main repository ignores all *.json, even model manifests.
+          # Stage precisely pinned research store JSON AND original FP32.
+          git -C "$CHECKOUT" add -f essence-runtime/model-store/index.json \
+            essence-runtime/model-store/baseline14/manifest.json \
+            essence-runtime/model-store/physarum/manifest.json
+          git -C "$CHECKOUT" add essence-runtime/model-store/baseline14/weights.f32 \
+            essence-runtime/model-store/physarum/weights.f32
+          for path in essence-runtime/model-store/index.json \
+                      essence-runtime/model-store/baseline14/manifest.json \
+                      essence-runtime/model-store/physarum/manifest.json; do
+            git -C "$CHECKOUT" ls-files --error-unmatch "$path" >/dev/null || {
+              echo "::error::Missing tracked model metadata: $path"
+              exit 1
+            }
+          done
           git -C "$CHECKOUT" diff --cached --quiet && exit 0
           git -C "$CHECKOUT" commit -m "ESSENCE v4.4: seal original G4 FP32 model hashes (research only)"
           pushed=false
