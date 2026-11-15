@@ -107,8 +107,14 @@ jobs:
           git -C "$CHECKOUT" commit -m "JANUS SENTINEL: fenced one-target recovery claim on run ${{ github.run_id }}"
           # Ordinary non-force push is our atomic compare-and-swap.
           # In a race, the loser fails closed and cannot dispatch.
-          git -C "$CHECKOUT" push origin HEAD:refs/heads/sentinel-state
-          echo "won=true" >> "$GITHUB_OUTPUT"
+          if git -C "$CHECKOUT" push origin HEAD:refs/heads/sentinel-state; then
+            echo "won=true" >> "$GITHUB_OUTPUT"
+          else
+            # A different guardian won the non-force CAS. No dispatch is
+            # authorized; this is an expected split-brain fence, not uptime.
+            echo "SENTINEL_HOLD_CAS_LOST_NO_DISPATCH" >> "$GITHUB_STEP_SUMMARY"
+            echo "won=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Verify claim and dispatch exactly one preallowed same-repo workflow
         if: steps.claim.outputs.won == 'true' && !inputs.recovery_only
         env:
