@@ -294,8 +294,6 @@ def peer_dialogue(root,lock,frozen,parent_dir):
 
 
 def train(root,lock,frozen,parent_dir,dialogue,output_dir):
-    import torch
-    from safetensors.torch import load_file
     verify_freeze(root,lock,frozen)
     checked(dialogue)
     if (dialogue.get("schema")!="janus.essence.source_grounded_peer_dialogue/4.7" or
@@ -311,6 +309,8 @@ def train(root,lock,frozen,parent_dir,dialogue,output_dir):
     rows=examples(obj,TRAIN_KEYS)
     if sha(rows)!=frozen["train_examples_sha256"]:
         raise ValueError("TRAIN_SPLIT_CHANGED_AFTER_FREEZE")
+    import torch
+    from safetensors.torch import load_file
     # No use of peer-generated target text in gradient updates.
     ordered=[next(row for row in rows if row["key"]==dialogue["selected_verified_key"])]
     ordered += [r for r in rows if r["key"]!=dialogue["selected_verified_key"]]
