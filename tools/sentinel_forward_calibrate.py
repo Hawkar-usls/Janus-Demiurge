@@ -83,9 +83,12 @@ def eligible(rows,checkpoint_commit_utc,cursor):
     earliest=m.timepoint(rows[0]["created_at"])
     require(earliest<=cutoff,
             "HISTORY_GAP_CANNOT_PROVE_NO_MISSING_FUTURE_TASKS")
+    lower_id=(cursor["last_target_id"] if cursor is not None and
+              m.timepoint(cursor["last_target_utc"])>=m.timepoint(
+                  checkpoint_commit_utc) else 0)
     return [
        x for x in m.examples(rows)
-       if m.timepoint(x[3])>cutoff
+       if ((m.timepoint(x[3]),x[2])>(cutoff,lower_id))
     ],cutoff
 
 
@@ -218,20 +221,42 @@ def new_parent(parent,result):
     return fresh
 
 
-def process(model_file,cursor_file,freeze_utc,output_dir,token):
-    parent=m.check_checkpoint(load_json(model_file))
+def freeze_observation(model_file,cursor_file,freeze_utc,outfile,token):
+    m.check_checkpoint(load_json(model_file))
     cursor=validate_cursor(load_json(cursor_file)
         if Path(cursor_file).is_file() else None)
     rows=m.fetch_real(token,maxpages=8)
     candidates,cutoff=eligible(rows,freeze_utc,cursor)
+    target=Path(outfile)
+    require(not target.exists(),"FROZEN_SOURCE_ALREADY_PRESENT")
+    target.parent.mkdir(parents=True,exist_ok=True)
+    target.write_text(json.dumps(rows,sort_keys=True,
+                                 separators=(",",":"))+"\n")
+    return {"source_row_count":len(rows),
+            "post_freeze_target_count":len(candidates),
+            "needs_torch":len(candidates)>=FUTURE_TOTAL,
+            "source_rows_sha256":hashlib.sha256(canonical(rows)).hexdigest(),
+            "last_source_target_utc":rows[-1]["created_at"]}
+
+
+def process(model_file,cursor_file,freeze_utc,output_dir,token,source_rows_file):
+    parent=m.check_checkpoint(load_json(model_file))
+    cursor=validate_cursor(load_json(cursor_file)
+        if Path(cursor_file).is_file() else None)
+    rows=load_json(source_rows_file)
+    require(isinstance(rows,list) and len(rows)<=m.MAX_RUNS,
+            "NOT_A_FROZEN_GITHUB_ROWS_PACKET")
+    candidates,cutoff=eligible(rows,freeze_utc,cursor)
     out=Path(output_dir)
     require(not out.exists(),"OUT_DIR_MUST_BE_NEW_FOR_IMMUTABLE_RECEIPT")
     out.mkdir(parents=True)
+    source_rows_sha256=hashlib.sha256(canonical(rows)).hexdigest()
     if len(candidates)<FUTURE_TOTAL:
         record=receipt({
             "schema":SCHEMA,
             "status":"HOLD_NOT_ENOUGH_POST_FREEZE_REAL_GITHUB_RUNS",
             "post_freeze_eligible":len(candidates),
+            "frozen_source_rows_sha256":source_rows_sha256,
             "needed":FUTURE_TOTAL,
             "model_sha256":parent["checkpoint_sha256"],
             "cutoff_utc":cutoff.isoformat(),
@@ -260,6 +285,7 @@ def process(model_file,cursor_file,freeze_utc,output_dir,token):
           "research_only":True,"production_authority":False,
           "external_independent_validation":False,
         }
+    record["frozen_source_rows_sha256"]=source_rows_sha256
     record=receipt(record)
     (out/"result.json").write_text(json.dumps(record,indent=2)+"\n")
     next_cursor={
@@ -287,10 +313,19 @@ def main():
     p.add_argument("--checkpoint",required=True)
     p.add_argument("--cursor",required=True)
     p.add_argument("--freeze-utc",required=True)
-    p.add_argument("--out-dir",required=True)
+    p.add_argument("--out-dir",default="")
+    p.add_argument("--source-rows",required=True)
+    p.add_argument("--preflight",action="store_true")
     args=p.parse_args()
-    output=process(args.checkpoint,args.cursor,args.freeze_utc,args.out_dir,
-                   __import__("os").environ.get("GH_TOKEN",""))
+    token=__import__("os").environ.get("GH_TOKEN","")
+    if args.preflight:
+        output=freeze_observation(args.checkpoint,args.cursor,
+                                  args.freeze_utc,args.source_rows,token)
+        print(json.dumps(output,sort_keys=True))
+        return
+    require(bool(args.out_dir),"NEED_CALIBRATION_OUTPUT_DIR")
+    output=process(args.checkpoint,args.cursor,args.freeze_utc,
+                   args.out_dir,token,args.source_rows)
     print(json.dumps({
        "status":output["status"],
        "accepted":output.get("accepted",False),
