@@ -59,7 +59,7 @@ class RepoPeerEvolutionTests(unittest.TestCase):
     def test_model_cannot_choose_arbitrary_file_paths(self):
         self.assertEqual(field_choice("architecture.n_heads"),"architecture.n_heads")
         self.assertIsNone(field_choice("secrets/private.txt"))
-        self.assertEqual(field_choice("model_id then world_memory"),"model_id")
+        self.assertIsNone(field_choice("model_id then world_memory"))
         self.assertIn("architecture.n_heads",question("architecture.n_heads",True))
 
     def test_cannot_mutate_train_authority_or_source_key_lists(self):
