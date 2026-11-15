@@ -176,6 +176,7 @@ def build(repo_root, inspect, commit):
         "native_model":native,
         "source_beetle_intent":"EXPLICIT_USER_DISCOVERY_STEERING",
         "beetle_task_id":desire["ad_hoc"][0]["id"],
+        "beetle_intent_sha256":sha(desire),
         "allowed_local_workflows":[
             "janus-beetle-director.yml","janus-topa-scout-epistemic.yml"],
         "allowlisted_remote_workflows":[
