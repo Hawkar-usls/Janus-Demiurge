@@ -14,6 +14,10 @@ on:
   schedule:
     - cron: '6,36 * * * *'
   workflow_dispatch:
+  workflow_run:
+    workflows:
+      - JANUS Sentinel Cross-Repository Mesh Guardian
+    types: [completed]
 
 permissions:
   contents: read
@@ -40,7 +44,15 @@ jobs:
           python -m unittest -v tests.test_sentinel_weight_gate tests.test_sentinel_forward_calibrate
 
   prospective-128-real-github-outcomes:
-    if: github.event_name != 'pull_request' && vars.SENTINEL_PAUSED != 'true' && vars.ESSENCE_EVOLUTION_PAUSED != 'true'
+    if: >-
+      ${{ github.event_name != 'pull_request' &&
+          (github.event_name != 'workflow_run' ||
+           (github.event.workflow_run.head_branch == 'main' &&
+            github.event.workflow_run.conclusion == 'success' &&
+            (github.event.workflow_run.event == 'schedule' ||
+             github.event.workflow_run.event == 'push'))) &&
+          vars.SENTINEL_PAUSED != 'true' &&
+          vars.ESSENCE_EVOLUTION_PAUSED != 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 18
     permissions:
