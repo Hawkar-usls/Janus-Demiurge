@@ -49,7 +49,7 @@ jobs:
           python -m unittest -v tests.test_essence_v47_repo_peer_evolution tests.test_essence_v46_oracle_descendant
       - name: Freeze source bytes and training vs unseen fact commitments
         run: |
-          python tools/essence_v47_repo_peer_evolution.py freeze \
+          python -m tools.essence_v47_repo_peer_evolution freeze \
             --root . --lock research/essence/peer_v47/repo_lock.json \
             --out runtime/essence/v47/freeze.json
       - uses: actions/upload-artifact@v4
@@ -92,7 +92,7 @@ jobs:
           python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 peft==0.13.2 safetensors==0.5.3
       - name: Qwen chooses its knowledge gap and asks SmolLM to inspect source evidence
         run: |
-          python tools/essence_v47_repo_peer_evolution.py peer \
+          python -m tools.essence_v47_repo_peer_evolution peer \
             --root . --lock research/essence/peer_v47/repo_lock.json \
             --freeze runtime/essence/v47/freeze.json \
             --parent runtime/essence/v47/parent/child \
@@ -150,7 +150,7 @@ jobs:
           python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 peft==0.13.2 safetensors==0.5.3
       - name: Start exactly at G1 tensors, train only verified JANUS repository fact labels
         run: |
-          python tools/essence_v47_repo_peer_evolution.py train \
+          python -m tools.essence_v47_repo_peer_evolution train \
             --root . --lock research/essence/peer_v47/repo_lock.json \
             --freeze runtime/essence/v47/freeze.json \
             --parent runtime/essence/v47/parent/child \
@@ -203,7 +203,7 @@ jobs:
           python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 peft==0.13.2 safetensors==0.5.3
       - name: One-shot new-fact and old-ability regression exam (never auto-promote)
         run: |
-          python tools/essence_v47_repo_peer_evolution.py exam \
+          python -m tools.essence_v47_repo_peer_evolution exam \
             --root . --lock research/essence/peer_v47/repo_lock.json \
             --freeze runtime/essence/v47/freeze.json \
             --parent runtime/essence/v47/parent/child \
