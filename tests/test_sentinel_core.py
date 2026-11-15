@@ -181,6 +181,37 @@ class SentinelTest(unittest.TestCase):
         self.assertEqual(d["decision"],"OBSERVE_ONLY")
         self.assertFalse(d["production_model_updates"])
 
+    def test_minute_scale_guardrails_and_worker_independence(self):
+        self.assertEqual(s.COOLDOWN_SECONDS,30*60)
+        self.assertEqual(s.LIVENESS_SECONDS,40*60)
+        self.assertEqual(s.MIN_FAILURE_AGE_SECONDS,6*60)
+        self.assertEqual(s.WORKER_LIVENESS_SECONDS,65*60)
+        ins=inventory(c=39,worker=50)
+        d=s.decide("A","991",NOW,ins,base(),pending=1)
+        self.assertIsNone(d["target"])
+        ins["C"][0]=row(301,40)
+        d=s.decide("A","991",NOW,ins,base(),pending=0)
+        self.assertEqual(d["target"],"C")
+        self.assertEqual(d["statuses"]["WORKER"]["status"],"HEALTHY")
+        ins=inventory()
+        ins["C"][0]=row(301,5,success=False)
+        self.assertIsNone(s.decide("B","991",NOW,ins,base())["target"])
+        ins["C"][0]=row(301,6,success=False)
+        self.assertEqual(s.decide("B","991",NOW,ins,base())["target"],"C")
+
+    def test_minute_cooldown_blocks_repeat_fault_but_allows_after_30(self):
+        d=s.decide("B","991",NOW,inventory(c=50),base())
+        self.assertEqual(d["target"],"C")
+        current=s.claim(base(),d)
+        self.assertEqual(s.decide("A","992",NOW+dt.timedelta(minutes=29),
+                         inventory(c=60),current)["target"],None)
+        accepted=s.decide("A","992",NOW+dt.timedelta(minutes=30),
+                          inventory(c=60),current)
+        self.assertEqual(accepted["target"],"C")
+        self.assertTrue(s.claimed("C","B","991",1,current))
+        next_state=s.claim(current,accepted)
+        self.assertEqual(next_state["epoch"],2)
+
     def test_file_overwrite_and_wrong_state_forbidden(self):
         with tempfile.TemporaryDirectory() as d:
             p=Path(d)/"evidence.json"
