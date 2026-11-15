@@ -1,0 +1,108 @@
+name: JANUS SENTINEL one-shot real A/B/C GitHub Actions failover drill
+
+on:
+  pull_request:
+    paths:
+      - 'tools/sentinel_live_failover_drill.py'
+      - 'tests/test_sentinel_live_failover_drill.py'
+      - '.github/workflows/sentinel-real-failover-drill.yml'
+      - '.github/workflows/sentinel-node-a.yml'
+      - '.github/workflows/sentinel-node-b.yml'
+      - '.github/workflows/sentinel-node-c.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/sentinel/locks/fault-drill-one-shot-lock.json'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Controlled real recovery drill: A, AB or C (only Sentinel jobs)'
+        type: choice
+        options: [A, AB, C]
+        required: true
+        default: AB
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-sentinel-one-real-recovery-drill
+  cancel-in-progress: false
+
+jobs:
+  contract-tests:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify real same-GitHub recovery drill is bounded and never touches production
+        run: |
+          python -m py_compile tools/sentinel_live_failover_drill.py
+          python -m unittest -v tests.test_sentinel_live_failover_drill tests.test_sentinel_core
+
+  real-failover-rehearsal:
+    if: github.event_name != 'pull_request' && github.run_attempt == 1 && vars.SENTINEL_PAUSED != 'true' && vars.ESSENCE_EVOLUTION_PAUSED != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 32
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Preflight — test all same-repo dispatch policies before injecting any fault
+        run: |
+          python -m unittest -v tests.test_sentinel_live_failover_drill tests.test_sentinel_core
+      - name: Actual GitHub failure and CAS recovery drill — two Sentinel nodes only
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRILL_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'AB' }}
+          REAL_SOURCE_RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/sentinel/live-drill
+          python -m tools.sentinel_live_failover_drill \
+            --mode "$DRILL_MODE" \
+            --run-id "$REAL_SOURCE_RUN_ID" \
+            --out runtime/sentinel/live-drill/failover-drill-receipt.json
+          python - <<'PY'
+          import json,hashlib,os
+          from pathlib import Path
+          from tools.sentinel_live_failover_drill import canonical,SCHEMA
+          p=Path('runtime/sentinel/live-drill/failover-drill-receipt.json')
+          report=json.loads(p.read_text())
+          assert report['schema']==SCHEMA
+          assert report['receipt_sha256']==hashlib.sha256(canonical(
+             {k:v for k,v in report.items() if k!='receipt_sha256'}
+          )).hexdigest()
+          assert report['production_authority'] is False
+          assert report['touches_live_production'] is False
+          assert report['status'].startswith('PASS_REAL_GH_')
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+            f.write('### SENTINEL real three-guardian GitHub recovery drill\n')
+            f.write('Real injected GitHub failed workflows: '+str(report['faults'])+'\n')
+            f.write('Git CAS recovery claims: '+str(report['claims'])+'\n')
+            f.write('Verified new recovered workflow runs: '+str(report['recovery_runs'])+'\n')
+            f.write('No production services, weights, NAS, external infrastructure.\n')
+            f.write('No 24/7 uptime or independent common-mode resilience claim.\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sentinel-real-abc-failover-drill-${{ github.run_id }}
+          path: runtime/sentinel/live-drill/failover-drill-receipt.json
+          if-no-files-found: warn
+          retention-days: 90

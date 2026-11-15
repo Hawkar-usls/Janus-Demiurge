@@ -328,7 +328,13 @@ def dispatch(plan,current,token,*,fetch=api):
     if target=="WORKER":
         payload={"ref":"main","inputs":{"mode":"pulse","input_hex":""}}
     else:
-        payload={"ref":"main","inputs":{"recovery_only":"true"}}
+        # Embed the exact signed-by-Git-CAS recovery identity in the
+        # resulting GitHub workflow run-name. Otherwise an unrelated human
+        # workflow_dispatch could be mistaken for our successful recovery.
+        nonce=("sentinel-recovery-"+role+"-"+plan["run_id"]+"-"+
+               str(current["last_dispatch"][target]["claim_epoch"]))
+        payload={"ref":"main","inputs":{"recovery_only":"true",
+                                         "drill_nonce":nonce}}
     return fetch("/actions/workflows/"+TARGET_FILE[target]+"/dispatches",
                  token,post=payload)
 
