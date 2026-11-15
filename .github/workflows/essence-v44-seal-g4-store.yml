@@ -1,0 +1,136 @@
+name: ESSENCE v4.4 GitHub G4 permanent checkpoint bootstrap
+
+on:
+  pull_request:
+    paths:
+      - 'tools/essence_v44_checkpoint_store.py'
+      - 'tests/test_essence_v44_checkpoint_store.py'
+      - '.github/workflows/essence-v44-seal-g4-store.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/essence_v44_checkpoint_store.py'
+      - '.github/workflows/essence-v44-seal-g4-store.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: essence-v44-sealed-store
+  cancel-in-progress: false
+
+jobs:
+  negative-contract-tests:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Frozen store tests — no torch or external source
+        run: |
+          python -m py_compile tools/essence_v44_checkpoint_store.py tools/essence_v44_actions_async.py
+          python -m unittest -v tests.test_essence_v44_checkpoint_store tests.test_essence_v44_actions_async
+
+  seal-exact-models-in-data-branch:
+    if: github.event_name != 'pull_request' && vars.ESSENCE_EVOLUTION_PAUSED != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: essence-actions-state
+          path: runtime/essence/v44/state
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check existing sealed model store
+        id: check
+        run: |
+          if [ -d runtime/essence/v44/state/essence-runtime/model-store ]; then
+            python -m tools.essence_v44_checkpoint_store verify \
+              --store runtime/essence/v44/state/essence-runtime/model-store
+            echo "missing=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "missing=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/download-artifact@v4
+        if: steps.check.outputs.missing == 'true'
+        with:
+          name: essence-v40-physarum-research-43650540561
+          run-id: 43650540561
+          github-token: ${{ github.token }}
+          path: runtime/essence/v44/legacy-g4
+      - uses: actions/download-artifact@v4
+        if: steps.check.outputs.missing == 'true'
+        with:
+          name: essence-v42-sealed-cost-checkpoints-43652825898
+          run-id: 43652825898
+          github-token: ${{ github.token }}
+          path: runtime/essence/v44/legacy-budget14
+      - name: Permanently pin the two ORIGINAL FP32 checkpoints, never pickle
+        if: steps.check.outputs.missing == 'true'
+        run: |
+          mkdir -p runtime/essence/v44/bootstrap
+          python -m tools.essence_v44_checkpoint_store bootstrap \
+            --source-fixed runtime/essence/v44/legacy-budget14/baseline14 \
+            --source-physarum runtime/essence/v44/legacy-g4/physarum \
+            --store runtime/essence/v44/state/essence-runtime/model-store \
+            --out runtime/essence/v44/bootstrap/receipt.json
+          python -m tools.essence_v44_checkpoint_store verify \
+            --store runtime/essence/v44/state/essence-runtime/model-store
+      - name: Persist models in GitHub branch so 90-day artifacts are not a dependency
+        if: steps.check.outputs.missing == 'true'
+        env:
+          DATA_BRANCH: essence-actions-state
+          CHECKOUT: runtime/essence/v44/state
+        run: |
+          set -euo pipefail
+          git -C "$CHECKOUT" config user.name "github-actions[bot]"
+          git -C "$CHECKOUT" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C "$CHECKOUT" add essence-runtime/model-store
+          git -C "$CHECKOUT" diff --cached --quiet && exit 0
+          git -C "$CHECKOUT" commit -m "ESSENCE v4.4: seal original G4 FP32 model hashes (research only)"
+          pushed=false
+          for n in 1 2 3 4 5; do
+            git -C "$CHECKOUT" fetch origin "+refs/heads/$DATA_BRANCH:refs/remotes/origin/$DATA_BRANCH"
+            git -C "$CHECKOUT" rebase "origin/$DATA_BRANCH"
+            if git -C "$CHECKOUT" push origin "HEAD:refs/heads/$DATA_BRANCH"; then
+              pushed=true
+              break
+            fi
+            sleep 2
+          done
+          if [ "$pushed" != true ]; then
+            echo "::error::Could not persist sealed model store after conflicts"
+            exit 1
+          fi
+      - name: Record strict scientific limits
+        run: |
+          echo "### ESSENCE v4.4 sealed research checkpoints" >> "$GITHUB_STEP_SUMMARY"
+          echo "GitHub data branch: essence-actions-state; model bytes verified by SHA256." >> "$GITHUB_STEP_SUMMARY"
+          echo "G4 fixed14 remains active; Physarum remains research shadow only." >> "$GITHUB_STEP_SUMMARY"
+          echo "NOT externally validated, NOT promoted, NOT an always-running server." >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: steps.check.outputs.missing == 'true'
+        with:
+          name: essence-v44-sealed-store-bootstrap-${{ github.run_id }}
+          path: runtime/essence/v44/bootstrap/receipt.json
+          if-no-files-found: error
+          retention-days: 90
