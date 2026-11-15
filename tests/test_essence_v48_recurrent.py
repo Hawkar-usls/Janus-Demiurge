@@ -183,6 +183,8 @@ class PersistentCycleContract(unittest.TestCase):
                     "fact_digest":"0"*64}
             ledger=copy.deepcopy(self.ledger)
             ledger["memory"]=[memory]
+            ledger["bootstrap"]=False
+            ledger["ledger_sha256"]=s.digest({k:v for k,v in ledger.items() if k!="ledger_sha256"})
             with self.assertRaisesRegex(ValueError,"CORRUPT"):
                 s.make_plan(self.lock,ledger,temp,lambda *_:"e"*40)
 
