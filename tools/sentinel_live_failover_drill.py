@@ -168,7 +168,8 @@ def check_no_unknown_prior_claim(st,roles):
         recent=st["last_dispatch"].get(role)
         if recent:
             when=stamp(recent["issued_at"])
-            require((utcnow()-when).total_seconds()>90*60,
+            from tools.sentinel_core import COOLDOWN_SECONDS
+            require((utcnow()-when).total_seconds()>COOLDOWN_SECONDS,
                     "DRILL_CANNOT_BYPASS_EXISTING_COOLDOWN_"+role)
 
 
@@ -204,12 +205,24 @@ def prove_healthy_after_claim(node,fault,claim,token,*,call=fetch):
 
 
 def run(*,token,run_id,mode="AB"):
-    require(mode in ("A","AB","C"),"UNAUTHORIZED_DRILL_FAULT_COHORT")
+    require(mode in ("A","AB","C","CB"),"UNAUTHORIZED_DRILL_FAULT_COHORT")
     require(type(run_id) is str and re.fullmatch(r"[1-9][0-9]{4,19}",run_id),
             "DRILL_RUN_ID_INVALID")
     nonce=f"sentinel-drill-v1-{run_id}"
-    injected=["A","B"] if mode=="AB" else [mode]
+    injected=["A","B"] if mode=="AB" else ["C"] if mode=="CB" else [mode]
     initial=state(token)
+    # Never bypass an existing real C recovery claim for a synthetic PASS.
+    # The single B→C drill may wait at most 32 minutes for actual cooldown.
+    if mode=="CB" and "C" in initial["last_dispatch"]:
+        from tools.sentinel_core import COOLDOWN_SECONDS
+        due=(stamp(initial["last_dispatch"]["C"]["issued_at"]) +
+             timedelta(seconds=COOLDOWN_SECONDS+2))
+        preflight_deadline=utcnow()+timedelta(seconds=32*60)
+        while utcnow()<due:
+            require(utcnow()<preflight_deadline,
+                    "DRILL_C_COOLDOWN_PREFLIGHT_TIMEOUT")
+            time.sleep(min(POLL,max(1,(due-utcnow()).total_seconds())))
+        initial=state(token)
     check_no_unknown_prior_claim(initial,injected)
     records={
         "schema":SCHEMA,
@@ -244,8 +257,10 @@ def run(*,token,run_id,mode="AB"):
             "url":failure["html_url"],
         }
 
-    # The real SENTINEL recovery policy requires >=10m age for failed run.
-    earliest=max(stamp(v["created_at"]) for v in records["faults"].values()) + timedelta(minutes=10,seconds=12)
+    # Use the identical real-policy failure age as the guardian.
+    from tools.sentinel_core import MIN_FAILURE_AGE_SECONDS
+    earliest=(max(stamp(v["created_at"]) for v in records["faults"].values())
+              + timedelta(seconds=MIN_FAILURE_AGE_SECONDS+12))
     while utcnow()<earliest:
         require(utcnow()<deadline,"DRILL_TIMEOUT_WAIT_FOR_REAL_POLICY_AGE")
         time.sleep(min(POLL,max(1,(earliest-utcnow()).total_seconds())))
@@ -260,7 +275,7 @@ def run(*,token,run_id,mode="AB"):
             require(before and before.get("observed_target_run_id")==
                     records["faults"][role]["run_id"],
                     "SCHEDULE_PREEMPTED_TEST_NOT_RECOVERY_PROOF")
-    actor="C" if mode in ("A","AB") else "A"
+    actor="C" if mode in ("A","AB") else "B" if mode=="CB" else "A"
     dispatch(actor,token,nonce+"-probe")
     records["actual_dispatch_actions"].append({
         "target":actor,"type":"WAKE_REAL_DETERMINISTIC_GUARDIAN"})
@@ -306,10 +321,11 @@ def run(*,token,run_id,mode="AB"):
         if mode=="AB" else
         "PASS_REAL_GH_C_RESCUES_A"
         if mode=="A" else
-        "PASS_REAL_GH_A_RESCUES_C")
+        "PASS_REAL_GH_A_RESCUES_C" if mode=="C" else
+        "PASS_REAL_GH_B_RESCUES_C")
     records["actual_git_cas_claims_observed"]=len(records["claims"])
     records["recovery_runs_verified"]=len(records["recovery_runs"])
-    records["claims_only_after_failure_age_10m"]=True
+    records["claims_only_after_failure_age_seconds"]=MIN_FAILURE_AGE_SECONDS
     records["no_recursive_workflow_dispatch"]=True
     records["shared_github_failure_domain"]=True
     return records
@@ -317,7 +333,7 @@ def run(*,token,run_id,mode="AB"):
 
 def main():
     p=argparse.ArgumentParser()
-    p.add_argument("--mode",choices=("A","AB","C"),default="AB")
+    p.add_argument("--mode",choices=("A","AB","C","CB"),default="AB")
     p.add_argument("--run-id",required=True)
     p.add_argument("--out",required=True)
     args=p.parse_args()
