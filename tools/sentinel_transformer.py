@@ -332,6 +332,28 @@ def fetch_real(token,maxpages=6):
     return rows_from_github(out,datetime.now(timezone.utc))
 
 
+def predict_recent_risk(path,observed,token):
+    """Actual A/B inference on same saved network; no dispatch permissions."""
+    path=Path(path)
+    require(path.is_file() and not path.is_symlink() and
+            path.stat().st_size<=1000000,"UNSAFE_NEURAL_CHECKPOINT")
+    meta=check_checkpoint(json.loads(path.read_text("utf-8")))
+    history=fetch_real(token,maxpages=1)
+    require(len(history)>=8,"NOT_ENOUGH_CURRENT_GITHUB_RUN_HISTORY")
+    result={}
+    for role in ("A","B","C","WORKER"):
+        runs=observed.get(role,[])
+        if not runs or type(runs[0].get("workflow_id")) is not int:
+            result[role]={"status":"INSUFFICIENT_WORKFLOW_HISTORY"}
+            continue
+        risk=score_checkpoint(meta,history[-8:],runs[0]["workflow_id"])
+        result[role]={"status":"RESEARCH_CALIBRATED_FORECAST",
+                      "risk_of_next_workflow_failure":round(risk,6),
+                      "checkpoint_sha256":meta["checkpoint_sha256"],
+                      "no_dispatch_authority":True}
+    return result
+
+
 def main():
     p=argparse.ArgumentParser()
     p.add_argument("--out",required=True)
