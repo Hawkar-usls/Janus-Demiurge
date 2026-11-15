@@ -158,8 +158,13 @@ jobs:
           set -euo pipefail
           git -C "$CHECKOUT" config user.name "github-actions[bot]"
           git -C "$CHECKOUT" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git -C "$CHECKOUT" add essence-runtime/results essence-runtime/events
-          git -C "$CHECKOUT" diff --cached --quiet && exit 0
+          # The repository-wide *.json ignore must never silently drop
+          # an async output or let the job claim success without persistence.
+          git -C "$CHECKOUT" add -f essence-runtime/results essence-runtime/events
+          if git -C "$CHECKOUT" diff --cached --quiet; then
+            echo "::error::Async worker reported work but no JSON receipt was staged"
+            exit 1
+          fi
           git -C "$CHECKOUT" commit -m "ESSENCE async research results: run ${{ github.run_id }} attempt ${{ github.run_attempt }}"
           pushed=false
           for n in 1 2 3 4 5; do
