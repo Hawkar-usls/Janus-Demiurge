@@ -118,9 +118,13 @@ def choose_pending(state_root):
             "UNSAFE_ASYNC_QUEUE_DIRECTORY")
     directory.mkdir(parents=True,exist_ok=True)
     results.mkdir(parents=True,exist_ok=True)
+    # Completed requests remain in Git as provenance. They must never count
+    # against the LIVE queue bound or a long-running logical worker would
+    # permanently deadlock after its first 1,000 historical completions.
     paths=sorted(directory.glob("*.json"))
-    require(len(paths)<=MAX_INBOX_SCAN,"QUEUE_OVERFLOW_OPERATOR_REVIEW_REQUIRED")
     unprocessed=[p for p in paths if not (results/p.name).exists()]
+    require(len(unprocessed)<=MAX_INBOX_SCAN,
+            "LIVE_QUEUE_OVERFLOW_OPERATOR_REVIEW_REQUIRED")
     return unprocessed[:MAX_BATCH],len(unprocessed)
 
 
