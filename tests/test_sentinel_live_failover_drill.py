@@ -93,10 +93,13 @@ class SentinelLiveDrillContracts(unittest.TestCase):
             "created_at":(NOW-timedelta(minutes=15)).isoformat()
         }
         claim={
-            "issued_at":(NOW-timedelta(minutes=2)).isoformat()
+            "issued_at":(NOW-timedelta(minutes=2)).isoformat(),
+            "issuer":"C","run_id":"123456","claim_epoch":7
         }
+        expected="JANUS SENTINEL A · sentinel-recovery-C-123456-7"
         earlier={
             "id":702,"event":"workflow_dispatch","status":"completed",
+            "display_title":expected,
             "conclusion":"success","head_branch":"main",
             "created_at":(NOW-timedelta(minutes=4)).isoformat()
         }
