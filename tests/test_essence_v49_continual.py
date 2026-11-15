@@ -18,7 +18,7 @@ class ProspectiveContinualTests(unittest.TestCase):
         self.assertEqual(self.lock["max_steps_per_candidate"],40)
         self.assertNotEqual(self.lock["new_train_source"]["repo"],
                             self.lock["prospective_holdout_source"]["repo"])
-        for key in ("automatic_research_model_acceptance","production_model_updates",
+        for key in ("automated_research_model_acceptance","production_model_updates",
                     "native_janus_weight_changes","sentinel_A_B_C_execution",
                     "human_independent_custodian","retune_after_exam"):
             self.assertIs(self.lock[key],False)
