@@ -1,6 +1,13 @@
 name: ESSENCE v4.3 isolated real HTTP canary and rollback rehearsal
 
 on:
+  workflow_dispatch:
+    inputs:
+      purpose:
+        description: 'Explicit rerun of real isolated staging HTTP fault and rollback evidence'
+        required: false
+        type: string
+        default: 'isolated-staging-only'
   pull_request:
     paths:
       - 'tools/essence_v43_staging_rollback.py'
@@ -40,7 +47,7 @@ jobs:
 
   real-local-service-rehearsal:
     needs: tests
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.run_attempt == 1 && vars.ESSENCE_EVOLUTION_PAUSED != 'true'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && github.run_attempt == 1 && vars.ESSENCE_EVOLUTION_PAUSED != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
