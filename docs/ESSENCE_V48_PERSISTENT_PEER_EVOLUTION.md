@@ -44,8 +44,12 @@ in `research/essence/peer_v48/CYCLE_LOCK.json`.
    Never choose a better seed/threshold retrospectively on this exam.
 7. **Persistence:** checkpoint safetensors, parent chain SHA, individual
    source SHA, positive source-backed factual memory and negative receipts
-   are preserved in GitHub. GitHub Actions runners may disappear; GitHub
-   remains a common global failure point.
+   are preserved in GitHub. Independently checkable source facts remain in
+   the factual replay memory **even when a neural candidate is rejected**.
+   Old attempts can be re-verified against their original public file SHA;
+   facts from the next heldout repository are explicitly excluded from
+   the training memory to avoid leakage. GitHub Actions runners may disappear;
+   GitHub remains a common global failure point.
 
 ## Security and science boundaries
 
