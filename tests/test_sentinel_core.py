@@ -25,6 +25,24 @@ def inventory(a=8,b=10,c=12,worker=8):
 
 
 class SentinelTest(unittest.TestCase):
+    def test_real_github_pr_branch_is_ignored_before_trusted_main_checks(self):
+        def fetch(path,token):
+            self.assertTrue(path.endswith("sentinel-node-a.yml/runs?per_page=8"))
+            return {"workflow_runs":[
+                {"id":90,"event":"pull_request","head_branch":"research/sentinel",
+                 "created_at":"2026-11-15T11:50:00Z",
+                 "status":"completed","conclusion":"success","run_attempt":1,
+                 "workflow_id":123},
+                {"id":91,"event":"push","head_branch":"main",
+                 "created_at":"2026-11-15T11:45:00Z",
+                 "status":"completed","conclusion":"success","run_attempt":1,
+                 "workflow_id":123}
+            ]}
+        rows=s.runs("A","synthetic-token",fetch=fetch)
+        self.assertEqual(len(rows),1)
+        self.assertEqual(rows[0]["id"],91)
+        self.assertEqual(rows[0]["workflow_id"],123)
+
     def test_nodes_identical_allowlist_and_roles(self):
         self.assertEqual(s.TARGETS["A"],("B","C","WORKER"))
         self.assertEqual(s.TARGETS["B"],("A","C","WORKER"))
