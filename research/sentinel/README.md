@@ -6,10 +6,12 @@
 
 | Workflow | Role | Cron | Watches and may safely dispatch |
 | --- | --- | --- | --- |
-| `sentinel-node-a.yml` | A / Alpha | :07, :37 each hour | B, C, ESSENCE v4.4 worker |
-| `sentinel-node-b.yml` | B / Beta | :22, :52 each hour | A, C, ESSENCE v4.4 worker |
-| `sentinel-node-c.yml` | C / Custodian | :12, :42 each hour | A or B |
-| `sentinel-train-transformer.yml` | shared A/B trainer | :49 every 12h | Trains only; **no dispatch** |
+| `sentinel-node-a.yml` | A / Alpha | :07, :22, :37, :52 every hour (**15 minutes**) | B, C, ESSENCE v4.4 worker |
+| `sentinel-node-b.yml` | B / Beta | :12, :27, :42, :57 every hour (**15 minutes**) | A, C, ESSENCE v4.4 worker |
+| `sentinel-node-c.yml` | C / Custodian | :02, :17, :32, :47 every hour (**15 minutes**) | A or B |
+| `sentinel-train-transformer.yml` | shared A/B trainer | :19, :49 every hour (**30 minutes**) | Research candidates only; **no dispatch** |
+| `sentinel-forward-calibration.yml` | shared model temperature | :14, :44 every hour (**30 minutes**) | 64/64 prospective gate; no changed weights |
+| `sentinel-cadence-audit.yml` | independent *workflow* observer | :11, :41 every hour (**30 minutes**) | 24-hour real scheduled heartbeat PASS/HOLD/FAIL; no dispatch |
 
 Each wrapper uses `sentinel-shared-guardian.yml`, but has its own workflow identity, cron and concurrency. Resuming a fallen node is an explicit, restricted `workflow_dispatch` with `recovery_only=true`; the recovered workflow can only observe, never trigger another recovery chain.
 
@@ -23,8 +25,8 @@ The first verified real checkpoint is persisted in **`sentinel-state/sentinel/mo
 
 - Exact same-repo allowlist: `sentinel-node-a.yml`, `sentinel-node-b.yml`, `sentinel-node-c.yml`, and `essence-v44-github-async.yml` (pulse only).
 - A/B truly interchangeable **controller source**. Either can observe the peer or rescue C. C does not depend on the trained neural weights and can dispatch one failed A/B node per run.
-- No recovery on never-seen workflow, missing GitHub API data, pending/in-progress jobs or after transient failure under 10 minutes. Stale after 65 minutes of missed runs, or completed failure beyond 10 minutes with prior success. A failed GitHub cron alone is not proof of an outage; this is a bounded heuristic.
-- Global per-target cooldown 90 minutes. Every permitted dispatch requires an **atomic, non-force Git push** of `sentinel-state/sentinel/recovery.json` with expected epoch; if simultaneous A/B/C claims race, loser fails closed and never dispatches.
+- No recovery on never-seen workflow, missing GitHub API data, pending/in-progress jobs or after transient failure under **6 minutes**. A/B/C are considered stale after **40 minutes** of missed runs (allowing >2 cron opportunities); the ESSENCE worker retains **65 minutes** to avoid unnecessary worker dispatches. A failed GitHub cron alone is not proof of an outage; this is a bounded heuristic.
+- Global per-target cooldown **30 minutes**. New tests enforce the 29/30-minute boundary, separate worker liveness and B→C real-evidence attribution. Every permitted dispatch requires an **atomic, non-force Git push** of `sentinel-state/sentinel/recovery.json` with expected epoch; if simultaneous A/B/C claims race, loser fails closed and never dispatches.
 - On successful claim, recheck remote workflow's newest run ID BEFORE dispatch. If target revived in the meantime, cancel dispatch. Outcome is marked `ATTEMPTED_NOT_CONFIRMED`, never `RECOVERED` until a later independent run/observation.
 - Worker `pulse` can be dispatched only when there is unprocessed public queue work and the worker itself is stale, with same cooldown, and A/B cannot launch arbitrary workflow names.
 - Synthetic fault-injection tests cover A missing, B missing, C missing, both A/B missing, any unknown workflow, race/CAS conflict, cooldown, concurrent live worker and GitHub common outage.
@@ -48,3 +50,27 @@ Set GitHub repository variables `SENTINEL_PAUSED=true` (all guardian/trainer job
 - **Certification ladder:** SYNTHETIC_TESTED → GITHUB_ACTIONS_BOOTSTRAP → REAL_TRAINED_CHECKPOINT → FENCED_RECOVERY_IN_ISOLATED_FAULT_TEST → REAL_GITHUB_DISPATCH_RECORDED (only after genuine controlled fault recovery).
 
 Status should never be raised without corresponding run IDs and inspected artifact receipts.
+
+## Minute-cadence acceptance gates (November 2026)
+
+The initial real GitHub Actions drills proved **C→A→B** and **A→C**, but not
+**B→C**. The new one-shot `sentinel-real-b-rescues-c-drill.yml` triggers from
+`research/sentinel/locks/b-to-c-minute-one-shot-lock.json` after merge, waits
+only for a *real existing* C cooldown claim (no fabricated time), injects one
+C-only failure, requires a new CAS claim **issued by B**, and verifies an
+entirely new successful C run with exact recovery nonce. It emits
+`PASS_REAL_GH_B_RESCUES_C` or explicit HOLD; pending runs do not count.
+
+`sentinel-cadence-audit.yml` collects real `event=schedule`, `main`,
+completed/success metadata for each A/B/C role. Its 24-hour gate cannot PASS
+until at least 24 hours after this policy's actual Git commit and then only if
+at least 77 of 96 expected wakes succeeded per role, with no gap exceeding
+45 minutes. `push`, `pull_request`, and manual dispatches are excluded.
+A one-shot passing drill is **not** 24-hour reliability. This is GitHub-local
+observation, not independent verification or guarantee against platform outages.
+
+Model training cadence is shorter, but **every trainer run still creates a
+research candidate**, not an accepted descendant. Forward-only temperature
+calibration retains its unmodified 64/64 data requirement. No automatic
+promotions of working JANUS weights or open-ended launches are enabled.
+Scheduled job delivery, budgets and limitations must be observed over time.
