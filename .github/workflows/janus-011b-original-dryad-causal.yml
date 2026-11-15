@@ -1,0 +1,43 @@
+name: JANUS-011B Original Qu 2026 Dryad Causal Inequality Replay
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/late_choice_010/dryad_switch_011b.py'
+      - 'experiments/ocean_transformer/late_choice_010/test_dryad_switch_011b.py'
+      - 'experiments/ocean_transformer/late_choice_010/PROTOCOL_011B_FROZEN.md'
+      - '.github/workflows/janus-011b-original-dryad-causal.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: janus-011b-original-dryad-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  independently-derive-frozen-paper-equation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Offline independent exact equation, integrity and physical null tests
+        run: |
+          set -euo pipefail
+          python -m py_compile experiments/ocean_transformer/late_choice_010/dryad_switch_011b.py
+          python -m unittest discover -v -s experiments/ocean_transformer/late_choice_010 -p 'test_dryad_switch_011b.py'
+      - name: Independently download immutable official 16x16 Dryad version and compute Eq4
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/janus011b"
+          python -u experiments/ocean_transformer/late_choice_010/dryad_switch_011b.py --output "$RUNNER_TEMP/janus011b/dryad_2026_qu_causal_replay.json"
+      - name: Archive only aggregate results, source hashes and explicit uncertainty limits
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-011b-causal-replay-${{ github.run_id }}
+          path: ${{ runner.temp }}/janus011b/dryad_2026_qu_causal_replay.json
+          retention-days: 60
+          if-no-files-found: warn
