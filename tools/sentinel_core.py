@@ -323,7 +323,7 @@ def dispatch(plan,current,token,*,fetch=api):
     if target=="WORKER":
         payload={"ref":"main","inputs":{"mode":"pulse","input_hex":""}}
     else:
-        payload={"ref":"main"}
+        payload={"ref":"main","inputs":{"recovery_only":"true"}}
     return fetch("/actions/workflows/"+TARGET_FILE[target]+"/dispatches",
                  token,post=payload)
 
