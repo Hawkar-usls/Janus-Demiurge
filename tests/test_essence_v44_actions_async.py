@@ -190,6 +190,25 @@ class GitHubOnlyAsyncWorkerContract(unittest.TestCase):
             self.assertEqual(len(plan["selected"]),4)
             self.assertEqual(plan["pending_before"],9)
 
+    def test_historical_completed_requests_do_not_exhaust_live_limit(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=state(d)
+            for i in range(1001):
+                name=f"old-{i:04}"
+                create(root,name,request(name))
+                completed=root/"results"/(name+".json")
+                completed.parent.mkdir(exist_ok=True)
+                completed.write_text("{}")
+            plan=worker.prepare(root,"pulse","","909","1",SOURCE_SHA,
+                                Path(d)/"plan.json")
+            self.assertFalse(plan["needs_models"])
+            self.assertEqual(plan["pending_before"],0)
+            create(root,"fresh-003",request("fresh-003"))
+            p2=worker.prepare(root,"pulse","","910","1",SOURCE_SHA,
+                              Path(d)/"plan2.json")
+            self.assertEqual(p2["pending_before"],1)
+            self.assertEqual(p2["selected"][0]["file"],"fresh-003.json")
+
     def test_no_remote_execution_or_production_authority(self):
         text=Path(worker.__file__).read_text()
         self.assertNotIn("torch.load(",text)
