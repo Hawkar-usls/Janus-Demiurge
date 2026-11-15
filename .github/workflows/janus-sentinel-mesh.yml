@@ -24,12 +24,18 @@ on:
     branches: [main]
     paths:
       - 'tools/janus_sentinel_mesh.py'
+      - 'tools/janus_sentinel_mesh_lease.py'
+      - 'tools/janus_sentinel_mesh_lease.py'
       - 'tests/test_janus_sentinel_mesh.py'
+      - 'tests/test_janus_sentinel_mesh_lease.py'
+      - 'tests/test_janus_sentinel_mesh_lease.py'
       - '.github/workflows/janus-sentinel-mesh.yml'
   pull_request:
     paths:
       - 'tools/janus_sentinel_mesh.py'
+      - 'tools/janus_sentinel_mesh_lease.py'
       - 'tests/test_janus_sentinel_mesh.py'
+      - 'tests/test_janus_sentinel_mesh_lease.py'
       - '.github/workflows/janus-sentinel-mesh.yml'
 
 permissions:
@@ -59,11 +65,15 @@ jobs:
         run: |
           python -m py_compile tools/janus_sentinel_mesh.py tests/test_janus_sentinel_mesh.py
           python -m unittest discover -v -s tests -p test_janus_sentinel_mesh.py
+          python -m py_compile tools/janus_sentinel_mesh_lease.py tests/test_janus_sentinel_mesh_lease.py
+          python -m unittest discover -v -s tests -p test_janus_sentinel_mesh_lease.py
+          python -m py_compile tools/janus_sentinel_mesh_lease.py
+          python -m unittest discover -v -s tests -p test_janus_sentinel_mesh_lease.py
       - name: Observe peer workflows and optionally submit one bounded remote wake
         if: github.event_name != 'pull_request'
         env:
           GH_READ_TOKEN: ${{ github.token }}
-          GH_MESH_DISPATCH_TOKEN: ${{ secrets.JANUS_MESH_DISPATCH_TOKEN }}
+         # First pass is read-only; no unleased token is supplied.
           RECOVERY_ONLY: ${{ github.event_name == 'workflow_dispatch' && inputs.recovery_only || false }}
         run: |
           mkdir -p runtime/sentinel-mesh
@@ -72,6 +82,26 @@ jobs:
           else
             python tools/janus_sentinel_mesh.py --out runtime/sentinel-mesh/receipt.json
           fi
+      - name: Atomic shared Git lease before one allowed remote wake
+        if: github.event_name != 'pull_request'
+        env:
+          GH_READ_TOKEN: ${{ github.token }}
+          GH_MESH_STATE_TOKEN: ${{ secrets.JANUS_MESH_STATE_TOKEN }}
+          # Direct unleased remote dispatch is intentionally impossible.
+        run: |
+          python tools/janus_sentinel_mesh_lease.py \
+            --observation runtime/sentinel-mesh/receipt.json \
+            --out runtime/sentinel-mesh/lease-receipt.json
+      - name: Acquire one shared non-force Git CAS lease before authenticated remote wake
+        if: github.event_name != 'pull_request'
+        env:
+          GH_READ_TOKEN: ${{ github.token }}
+          GH_MESH_STATE_TOKEN: ${{ secrets.JANUS_MESH_STATE_TOKEN }}
+          GH_MESH_DISPATCH_TOKEN: ${{ secrets.JANUS_MESH_DISPATCH_TOKEN }}
+        run: |
+          python tools/janus_sentinel_mesh_lease.py \
+            --observation runtime/sentinel-mesh/receipt.json \
+            --out runtime/sentinel-mesh/lease-receipt.json
       - name: Upload data-only sealed observations
         if: always() && github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
