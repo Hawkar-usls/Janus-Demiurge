@@ -189,8 +189,12 @@ def prove_healthy_after_claim(node,fault,claim,token,*,call=fetch):
     # Pre-existing successful runs don't count. Recovery is a NEW main-branch
     # workflow_dispatch with a later GH timestamp than the failure and claim.
     cutoff=max(stamp(fault["created_at"]),stamp(claim["issued_at"]))
+    expected_title=("JANUS SENTINEL "+node+" · sentinel-recovery-"+
+                    claim["issuer"]+"-"+claim["run_id"]+"-"+
+                    str(claim["claim_epoch"]))
     rows=recent(node,token,call=call)
     restored=[v for v in rows if v.get("event")=="workflow_dispatch"
+        and v.get("display_title")==expected_title
         and v.get("status")=="completed"
         and v.get("conclusion")=="success"
         and v.get("head_branch")=="main"
