@@ -219,9 +219,9 @@ def answer_text(tokenizer, model, conversation, maximum=MAX_GENERATED):
 
 def field_choice(text):
     # Only keys in a reviewed allowlist; no model-generated paths are ever opened.
-    matches=[(text.find(key), key) for key in TRAIN_KEYS if key in text]
-    matches=[t for t in matches if t[0]>=0]
-    return min(matches)[1] if matches else None
+    # Reject echo of an entire key-list as a fake autonomous selection.
+    matches=[key for key in TRAIN_KEYS if key in text]
+    return matches[0] if len(matches)==1 else None
 
 
 def peer_dialogue(root,lock,frozen,parent_dir):
