@@ -324,6 +324,23 @@ def verify_plan(plan,lock,ledger=None):
                 not 1<=len(row["answer"])<=62 or SECRET.search(row["answer"]) or
                 row.get("prompt")!=question(repo,row["key"])):
             raise ValueError("INJECTED_SOURCE_FACT_TEXT")
+    replay=plan.get("memory_replay",[])
+    withheld_repo=SOURCES[plan["holdout_id"]][0]
+    if not isinstance(replay,list) or len(replay)>lock["max_memory_records"]:
+        raise ValueError("UNBOUNDED_MEMORIZED_SOURCE_FACTS")
+    for item in replay:
+        repo=item.get("source_repo")
+        provenance=next((v for v in SOURCES.values() if v[0]==repo),None)
+        if (not provenance or repo==withheld_repo or
+                item.get("key") not in provenance[2] or
+                item.get("training_verified_by_repository_sha") is not True or
+                not HEX.fullmatch(item.get("source_file_sha256","")) or
+                not SHA1.fullmatch(item.get("source_commit","")) or
+                not isinstance(item.get("answer"),str) or
+                not 1<=len(item["answer"])<=62 or SECRET.search(item["answer"]) or
+                item.get("fact_digest")!=digest({
+                    k:v for k,v in item.items() if k!="fact_digest"})):
+            raise ValueError("CORRUPT_OR_HOLDOUT_LEAKED_SOURCE_MEMORY")
     if (plan.get("external_custodian") is not False or
             plan.get("production_promotion") is not False or
             plan.get("sentinel_dispatch") is not False):
