@@ -74,3 +74,32 @@ research candidate**, not an accepted descendant. Forward-only temperature
 calibration retains its unmodified 64/64 data requirement. No automatic
 promotions of working JANUS weights or open-ended launches are enabled.
 Scheduled job delivery, budgets and limitations must be observed over time.
+
+## Prospective shared neural-weight descendants
+
+`sentinel-train-transformer.yml` still trains real PyTorch attention weights
+every 30 minutes as research candidates. It now stages **at most one**
+SHA-256-sealed `sentinel/model/pending-challenge.json` pointing to the
+parent checkpoint and an immutable child candidate created in the same
+trainer commit. Later candidates remain shadow while this challenge is live.
+
+`sentinel-weight-prospective.yml` checks that challenge every 30 minutes,
+without installing Torch until there are **128** genuinely new *post-Git-freeze*
+completed, chronological `schedule`/`push` GitHub outcomes. Controlled
+`workflow_dispatch` failures and PR checks are excluded. The first 64
+unseen labels form prospective confirmation A; the next 64, untouched
+confirmation B. Both must separately produce paired Brier gain >=0.001,
+ECE <=0.20, non-degenerate failure labels, at least six workflow families,
+and bounded inference time. No later outcomes can influence earlier inputs.
+
+If and only if both gates pass, the exact model parent is archived, the
+new weights are promoted to the **A/B research-only** checkpoint via a
+non-force Git CAS and the result receipt is sealed. Otherwise the candidate
+is retired once with a durable HOLD receipt; subsequent training may propose
+a new candidate but cannot reuse the old forward evaluation to certify it.
+All three guardians' hard dispatch policy is unchanged, C remains
+Torch-independent, and **working JANUS model promotion remains blocked**.
+
+An unsuccessful CAS race is an explicit `HOLD`, never fictitious
+recoveries or promotions. Even a prospective internal PASS is
+`SELF_VERIFIED`, not independent external scientific validation.

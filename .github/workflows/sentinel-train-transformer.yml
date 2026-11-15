@@ -113,6 +113,36 @@ jobs:
             # on a previously exposed or overlapping internal holdout.
             cp runtime/sentinel/output/candidate.json \
               "$CHECKOUT/sentinel/model/candidates/${{ github.run_id }}.json"
+            # Freeze ONE immutable child before any future GH outcomes. Other
+            # 30-minute candidates remain shadow until this gate is consumed.
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          from tools import sentinel_transformer as m
+          root=Path('runtime/sentinel/state/sentinel/model')
+          parent=m.check_checkpoint(json.loads((root/'checkpoint.json').read_text()))
+          child=m.check_checkpoint(json.loads(Path('runtime/sentinel/output/candidate.json').read_text()))
+          pending=root/'pending-challenge.json'
+          if not pending.exists() and child['parent_checkpoint_sha256']==parent['checkpoint_sha256'] and m.canonical(parent['weights'])!=m.canonical(child['weights']):
+              run_id='${{ github.run_id }}'
+              record={
+                  'schema':'janus.sentinel.precommitted_weight_challenge/1.0',
+                  'candidate_file':'sentinel/model/candidates/'+run_id+'.json',
+                  'source_run_id':run_id,
+                  'candidate_checkpoint_sha256':child['checkpoint_sha256'],
+                  'parent_checkpoint_sha256':parent['checkpoint_sha256'],
+                  'candidate_last_test_utc':child['last_test_utc'],
+                  'research_only':True,
+                  'production_authority':False,
+              }
+              record['receipt_sha256']=m.digest(record)
+              pending.write_text(json.dumps(record,sort_keys=True,indent=2)+chr(10))
+              print('SENTINEL_CHALLENGER_FROZEN_PENDING_128_NEW_GITHUB_RUNS',run_id)
+          elif pending.exists():
+              print('SENTINEL_EXISTING_CHALLENGER_ALREADY_FROZEN')
+          else:
+              print('SENTINEL_HOLD_NO_NEW_WEIGHTS_FOR_CHALLENGER')
+          PY
           fi
           git -C "$CHECKOUT" config user.name "github-actions[bot]"
           git -C "$CHECKOUT" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -124,7 +154,13 @@ jobs:
           git -C "$CHECKOUT" commit -m "SENTINEL: real GitHub history Transformer checkpoint/calibration ${{ github.run_id }}"
           # Atomic non-force Git compare-and-swap, bounded retries only.
           # On conflict, DO NOT blindly overwrite A/B checkpoint.
-          git -C "$CHECKOUT" push origin HEAD:refs/heads/sentinel-state
+          if git -C "$CHECKOUT" push origin HEAD:refs/heads/sentinel-state; then
+            echo "SENTINEL_RESEARCH_CANDIDATE_AND_CHALLENGE_CAS_PERSISTED" >> "$GITHUB_STEP_SUMMARY"
+          else
+            # Branch changed under concurrent guardian CAS. Candidate
+            # remains an immutable artifact; do not rebase/retry unsafe state.
+            echo "SENTINEL_HOLD_TRAINER_CAS_CONFLICT_CANDIDATE_ARTIFACT_ONLY" >> "$GITHUB_STEP_SUMMARY"
+          fi
           echo "SENTINEL_TRAINED_RESEARCH_ONLY_NO_DISPATCH_AUTHORITY" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
