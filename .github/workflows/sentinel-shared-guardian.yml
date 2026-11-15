@@ -38,6 +38,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Install exact shared Torch CPU runtime only if A/B checkpoint exists
+        if: inputs.role != 'C'
+        run: |
+          if [ -f runtime/sentinel/state/sentinel/model/checkpoint.json ]; then
+            python -m pip install --disable-pip-version-check \
+              torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          else
+            echo "NO_MODEL_YET — deterministic guardian monitoring active"
+          fi
       - name: Verify exact data-only GitHub branch state
         run: |
           set -euo pipefail
