@@ -202,6 +202,59 @@ def source_commit(sources,id):
     return commit
 
 
+
+
+def source_fact_memory(repo,source_sha,commit,row):
+    """Public exact JSON property, not a model self-label or neural grade."""
+    if repo not in (v[0] for v in SOURCES.values()):
+        raise ValueError("MEMORY_SOURCE_REPO_NOT_ALLOWED")
+    note={
+        "source_repo":repo,"source_file_sha256":source_sha,
+        "key":row["key"],"answer":row["answer"],
+        "source_commit":commit,"training_verified_by_repository_sha":True,
+        "external_validation":False,
+    }
+    return dict(note,fact_digest=digest(note))
+
+
+def verified_replay(lock,ledger,sources,commit_lookup,exclude_id):
+    """Recover prior verified facts only if current public source bytes match.
+
+    Never replay facts from the prospective heldout repo into the training
+    process, even if those facts were used by an earlier experiment.
+    """
+    withheld_repo=SOURCES[exclude_id][0]
+    combined=list(ledger["memory"])
+    for attempt in ledger["attempts"]:
+        id=attempt.get("source_id")
+        if id not in SOURCES or id==exclude_id:
+            continue
+        repo,path,keys=SOURCES[id]
+        original={"id":id,"repo":repo,"path":path,"keys":list(keys)}
+        file_sha,doc=source_file(sources,original)
+        if file_sha!=attempt.get("source_file_sha256"):
+            continue
+        rows=facts_from_json(repo,keys,doc)
+        if digest(rows)!=attempt.get("source_fact_sha256"):
+            continue
+        commit=commit_lookup(sources,id)
+        combined.extend(source_fact_memory(repo,file_sha,commit,row)
+                        for row in rows[:4])
+    current={}
+    for row in combined:
+        if row.get("fact_digest")!=digest({k:v for k,v in row.items()
+                                           if k!="fact_digest"}):
+            raise ValueError("CORRUPT_PERSISTENT_FACT_MEMORY")
+        repo=row.get("source_repo")
+        if repo==withheld_repo:
+            continue
+        if repo not in [v[0] for v in SOURCES.values()] or not row.get(
+                "training_verified_by_repository_sha"):
+            raise ValueError("UNVERIFIED_HISTORICAL_FACT_LABEL")
+        key=(repo,row.get("key"))
+        current[key]=row  # replace outdated fact at same repo/key
+    return list(current.values())[-lock["max_memory_records"]:]
+
 def make_plan(lock,ledger,sources,commit_lookup=source_commit):
     verify_lock(lock)
     verify_ledger(ledger)
@@ -219,13 +272,8 @@ def make_plan(lock,ledger,sources,commit_lookup=source_commit):
         task=hashlib.sha256((entry["id"]+"|"+digest(rows)).encode()).hexdigest()
         if task in seen:
             continue
-        memory=ledger["memory"][-lock["max_memory_records"]:]
-        # Replay is factual memory previously checked against a committed JSON.
-        for rec in memory:
-            if rec.get("fact_digest") != digest({
-                k:v for k,v in rec.items() if k!="fact_digest"}):
-                raise ValueError("CORRUPT_PERSISTENT_FACT_MEMORY")
         holdout=lock["holdout_rotation"][entry["id"]]
+        memory=verified_replay(lock,ledger,sources,commit_lookup,holdout)
         origin_commit=commit_lookup(sources,entry["id"])
         holdout_commit=commit_lookup(sources,holdout)
         return sealed({
@@ -373,14 +421,21 @@ def publish(state,lock,plan,exam,child,seed):
             "internal_exam_sha256":exam["sha256"],
             "external_validation":False,
         })
-        for row in plan["facts"][:4]:
-            fact={
-                "source_repo":plan["source_repo"],"source_file_sha256":plan["source_file_sha256"],
-                "key":row["key"],"answer":row["answer"],"source_commit":plan["source_commit"],
-                "training_verified_by_repository_sha":True,"external_validation":False,
-            }
-            ledger["memory"].append(dict(fact,fact_digest=digest(fact)))
-        ledger["memory"]=ledger["memory"][-lock["max_memory_records"]:]
+    # Verified repository memory survives even when the neural candidate
+    # fails. A wrong neural model does not invalidate ground-truth JSON.
+    # Keep one active value per repository/key; historical receipts retain
+    # the original source SHA and failure verdict.
+    merged={}
+    for item in ledger["memory"]+plan["memory_replay"]:
+        if item.get("fact_digest")!=digest({
+                k:v for k,v in item.items() if k!="fact_digest"}):
+            raise ValueError("INVALID_REPLAY_MEMORY_IN_ADMISSION")
+        merged[(item["source_repo"],item["key"])]=item
+    for row in plan["facts"][:4]:
+        fact=source_fact_memory(plan["source_repo"],plan["source_file_sha256"],
+                                plan["source_commit"],row)
+        merged[(fact["source_repo"],fact["key"])]=fact
+    ledger["memory"]=list(merged.values())[-lock["max_memory_records"]:]
     attempt = {
         "id":plan["task_digest"][:24],
         "task_digest":plan["task_digest"],"source_id":plan["source_id"],
