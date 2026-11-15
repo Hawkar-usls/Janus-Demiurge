@@ -29,6 +29,29 @@ class FrozenGitHubCheckpointStoreTests(unittest.TestCase):
                                         "UNSAFE_OR_MISSING_SEALED_CHECKPOINT"):
                 store.bootstrap(root,"invalid","invalid",Path(tmp)/"receipt.json")
 
+    def test_partial_json_repair_does_not_accept_mismatched_weights(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            store_root=root/"model-store"
+            for label in ("baseline14","physarum"):
+                path=store_root/label
+                path.mkdir(parents=True)
+                (path/"weights.f32").write_bytes(b"forged"*200)
+            with self.assertRaisesRegex(ValueError,
+                                        "UNSAFE_OR_MISSING_SEALED_CHECKPOINT"):
+                store.bootstrap(store_root,root/"missing-fixed",
+                                root/"missing-phys",root/"receipt.json")
+            self.assertFalse((store_root/"index.json").exists())
+
+    def test_repo_gitignore_cannot_silently_discard_json_artifacts(self):
+        base=Path(__file__).resolve().parents[1]
+        ignored=(base/".gitignore").read_text()
+        self.assertIn("*.json",ignored)
+        boot=(base/".github/workflows/essence-v44-seal-g4-store.yml").read_text()
+        worker=(base/".github/workflows/essence-v44-github-async.yml").read_text()
+        self.assertIn("git -C \"$CHECKOUT\" add -f essence-runtime/model-store/index.json",boot)
+        self.assertIn("git -C \"$CHECKOUT\" add -f essence-runtime/results essence-runtime/events",worker)
+
     def test_invalid_source_cannot_bootstrap(self):
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaisesRegex(ValueError,

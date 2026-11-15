@@ -87,32 +87,8 @@ def verify_store(store):
     return result
 
 
-def bootstrap(store,source_fixed,source_physarum,out):
-    target=Path(store)
-    require(not target.is_symlink(),"STORE_PATH_SYMLINK_REFUSED")
-    if target.exists():
-        require(target.is_dir(),"UNSAFE_MODEL_STORE")
-        # Treat incomplete model store as evidence of unsafe partial mutation.
-        # Never repair/rewrite sealed bytes in-place.
-        done=verify_store(target)
-        immutable(out,seal({
-            "schema":SCHEMA,"status":"ALREADY_PRESENT_SHA_VERIFIED",
-            "model_digests":done,
-            "production_authority":False,"trainable_weights":False}))
-        return done
-    fixed=read_one(source_fixed,"baseline14")
-    phys=read_one(source_physarum,"physarum")
-    target.mkdir(parents=True)
-    for source,label in ((source_fixed,"baseline14"),
-                         (source_physarum,"physarum")):
-        dest=target/label
-        dest.mkdir(mode=0o700)
-        for filename in ("manifest.json","weights.f32"):
-            src=Path(source)/filename
-            dst=dest/filename
-            shutil.copyfile(src,dst)
-    model_digests={"baseline14":fixed,"physarum":phys}
-    index={
+def expected_index(model_digests):
+    return {
         "schema":SCHEMA,
         "model_digests":model_digests,
         "artifacts_originally_from":{
@@ -122,6 +98,73 @@ def bootstrap(store,source_fixed,source_physarum,out):
         "trainable_weights":False,
         "source_of_truth":"original_GitHub_Actions_fp32_byte_artifacts",
     }
+
+
+def bootstrap(store,source_fixed,source_physarum,out):
+    target=Path(store)
+    require(not target.is_symlink(),"STORE_PATH_SYMLINK_REFUSED")
+    sources=((Path(source_fixed),"baseline14"),
+             (Path(source_physarum),"physarum"))
+    fixed=read_one(source_fixed,"baseline14")
+    phys=read_one(source_physarum,"physarum")
+    model_digests={"baseline14":fixed,"physarum":phys}
+    index=expected_index(model_digests)
+
+    if target.exists():
+        require(target.is_dir(),"UNSAFE_MODEL_STORE")
+        try:
+            done=verify_store(target)
+        except ValueError:
+            # Recover ONLY the exact original JSON files missing because
+            # repo-wide *.json in .gitignore excluded them from git add.
+            # Existing FP32 bytes must match their frozen SHA unchanged.
+            for source,label in sources:
+                dest=target/label
+                require(dest.is_dir() and not dest.is_symlink(),
+                        "INCOMPLETE_STORE_MODEL_DIRECTORY")
+                weight=dest/"weights.f32"
+                require(weight.is_file() and not weight.is_symlink() and
+                        hashlib.sha256(weight.read_bytes()).hexdigest()==
+                        EXPECTED[label]["weights_sha256"],
+                        "INCOMPLETE_STORE_WEIGHT_IDENTITY_CHANGED")
+                require(weight.read_bytes()==(source/"weights.f32").read_bytes(),
+                        "RECOVERED_WEIGHT_BYTES_NOT_IDENTICAL")
+                src_manifest=source/"manifest.json"
+                dst_manifest=dest/"manifest.json"
+                require(not dst_manifest.is_symlink(),
+                        "UNSAFE_STORED_MANIFEST_SYMLINK")
+                if dst_manifest.exists():
+                    require(dst_manifest.read_bytes()==src_manifest.read_bytes(),
+                            "EXISTING_MODEL_MANIFEST_CANNOT_BE_REWRITTEN")
+                else:
+                    shutil.copyfile(src_manifest,dst_manifest)
+            indexed=target/"index.json"
+            require(not indexed.is_symlink(),"UNSAFE_STORE_INDEX_SYMLINK")
+            if indexed.exists():
+                require(json.loads(indexed.read_text("utf-8"))==index,
+                        "EXISTING_STORE_INDEX_CANNOT_BE_REWRITTEN")
+            else:
+                immutable(indexed,index)
+            done=verify_store(target)
+            require(done==model_digests,"RESTORED_MODEL_STORE_NOT_SOURCE_IDENTICAL")
+            status="RESTORED_ONLY_MISSING_JSON_FILES_UNDER_EXACT_ORIGINAL_WEIGHT_HASHES"
+        else:
+            status="ALREADY_PRESENT_SHA_VERIFIED"
+        immutable(out,seal({
+            "schema":SCHEMA,
+            "status":status,
+            "model_digests":done,
+            "production_authority":False,
+            "trainable_weights":False,
+            "external_independent_validation":False,
+        }))
+        return done
+    target.mkdir(parents=True)
+    for source,label in sources:
+        dest=target/label
+        dest.mkdir(mode=0o700)
+        for filename in ("manifest.json","weights.f32"):
+            shutil.copyfile(source/filename,dest/filename)
     immutable(target/"index.json",index)
     require(verify_store(target)==model_digests,
             "PERSISTENT_CHECKPOINT_STORE_RECHECK_FAILED")
