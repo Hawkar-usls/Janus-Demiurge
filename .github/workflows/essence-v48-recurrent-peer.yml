@@ -159,10 +159,11 @@ jobs:
           root=Path("runtime/essence/v48")
           d=json.loads((root/"plan.json").read_text())
           actual=root/"state"/d["parent_model_path"]
-          if not actual.is_dir():
-              if d["parent_generation"]!=2:
-                  raise RuntimeError("NO_PERSISTENT_PARENT_AFTER_BOOTSTRAP")
+          if d["parent_generation"]==2:
+              # Always use sealed G2 artifact until first missing JSON recovery.
               actual=root/"seed"/"child"
+          elif not actual.is_dir():
+              raise RuntimeError("NO_PERSISTENT_PARENT_AFTER_BOOTSTRAP")
           s.check_model(actual,d["parent_adapter_sha256"],d["parent_lineage_sha256"])
           print("JANUS_SHADOW_PARENT="+str(actual))
           PY
@@ -257,9 +258,10 @@ jobs:
           from tools import essence_v48_recurrent_state as s
           d=json.load(open('runtime/essence/v48/plan.json'))
           parent=Path('runtime/essence/v48/state')/d['parent_model_path']
-          if not parent.is_dir():
-              if d['parent_generation']!=2: raise RuntimeError('NO_PARENT')
+          if d['parent_generation']==2:
               parent=Path('runtime/essence/v48/seed/child')
+          elif not parent.is_dir():
+              raise RuntimeError('NO_PERSISTED_PARENT')
           s.check_model(parent,d['parent_adapter_sha256'],d['parent_lineage_sha256'])
           print('JANUS_SHADOW_PARENT='+str(parent))
           PY
@@ -334,7 +336,15 @@ jobs:
             --child "$ROOT/candidate" --seed "$ROOT/seed/child"
           git -C "$ROOT/state" config user.name "JANUS ESSENCE Shadow Witness"
           git -C "$ROOT/state" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git -C "$ROOT/state" add research/essence/peer_v48_state models/
+          # The parent repo ignores *.json globally. Force-add ONLY this
+          # isolated shadow state and its model receipts, not arbitrary JSON.
+          (
+            cd "$ROOT/state"
+            shopt -s nullglob
+            git add -f research/essence/peer_v48_state/ledger.json
+            git add -f research/essence/peer_v48_state/attempts/*.json
+            git add -f models/gen*/*.json models/gen*/adapter_model.safetensors models/gen*/README.md
+          )
           if git -C "$ROOT/state" diff --cached --quiet; then
             echo "NO_NEW_STATE"
           else
