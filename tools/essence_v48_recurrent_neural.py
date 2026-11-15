@@ -192,3 +192,162 @@ def train_candidate(lock,plan,parent_dir,dialogue,output):
     })
     state.store(dest/"lineage.json",receipt)
     return receipt
+
+
+def scores(tokenizer,model,rows):
+    import torch
+    result=[]
+    model.eval()
+    for row in rows:
+        prefix,ids,labels=input_tokens(tokenizer,row["prompt"],row["answer"])
+        with torch.inference_mode():
+            loss=model(input_ids=ids,attention_mask=torch.ones_like(ids),
+                       labels=labels).loss
+            generated=model.generate(prefix,attention_mask=torch.ones_like(prefix),
+                                     max_new_tokens=32,do_sample=False,
+                                     pad_token_id=tokenizer.eos_token_id)
+        reply=tokenizer.decode(generated[0,prefix.shape[1]:],
+                               skip_special_tokens=True).strip()
+        result.append({
+            "key":row.get("key","legacy"),"loss":float(loss),
+            "exact":reply==row["answer"],"answer":reply[:100],
+        })
+    return result
+
+
+def metrics(parent,child):
+    if not parent or len(parent)!=len(child):
+        raise ValueError("INVALID_PAIRED_EXAM_COHORT")
+    p=sum(r["loss"] for r in parent)/len(parent)
+    c=sum(r["loss"] for r in child)/len(child)
+    if not math.isfinite(p) or not math.isfinite(c):
+        raise ValueError("NONFINITE_HOLDOUT_SCORE")
+    return {"parent_nll":round(p,7),"child_nll":round(c,7),
+            "paired_nll_gain":round(p-c,7),
+            "parent_exact":sum(x["exact"] for x in parent),
+            "child_exact":sum(x["exact"] for x in child),
+            "count":len(parent)}
+
+
+def read_holdout(plan,holdout_dir):
+    repo,path,keys=state.SOURCES[plan["holdout_id"]]
+    folder=Path(holdout_dir).resolve(strict=True)
+    commit=subprocess.check_output(["git","-C",str(folder),"rev-parse","HEAD"],
+                                   text=True,timeout=10).strip()
+    if commit!=plan["holdout_commit"]:
+        raise ValueError("HOLDOUT_GIT_COMMIT_NOT_PREDECLARED")
+    target=folder/path
+    if not target.is_file() or target.is_symlink() or target.stat().st_size>80000:
+        raise ValueError("INVALID_HELDOUT_REPOSITORY_FILE")
+    obj=json.loads(target.read_text(encoding="utf-8"))
+    return state.facts_from_json(repo,keys,obj)[:4]
+
+
+def evaluate(lock,plan,parent_dir,child_dir,holdout_dir):
+    state.verify_plan(plan,lock)
+    lineage=state.check(state.load(Path(child_dir)/"lineage.json"))
+    child_weights=Path(child_dir)/"adapter_model.safetensors"
+    if not child_weights.is_file():
+        raise ValueError("CHILD_TENSORS_MISSING")
+    child_sha=hashlib.sha256(child_weights.read_bytes()).hexdigest()
+    if (lineage.get("schema")!="janus.essence.recurrent_lora_lineage/4.8"
+            or lineage.get("plan_sha256")!=plan["sha256"]
+            or lineage.get("adapter_sha256")!=child_sha
+            or lineage.get("parent_adapter_sha256")!=plan["parent_adapter_sha256"]
+            or lineage.get("generation")!=plan["candidate_generation"]):
+        raise ValueError("CHILD_PARENT_LINEAGE_FAILURE")
+    start=time.monotonic()
+    known=[dict(row,prompt=state.question(plan["source_repo"],row["key"],True))
+           for row in plan["facts"]]
+    k=len(known)
+    indices=sorted(set([0,k//3,2*k//3,k-1]))
+    known=[known[i] for i in indices]
+    heldout=read_holdout(plan,holdout_dir)
+    previous=v46.lock_check(v46.read("research/essence/peer_v46/oracle_lock.json"))
+    old=v46.sample_set(previous,"holdout")[:8]
+    retained=[{"key":"legacy"+str(i),"prompt":row["prompt"],
+               "answer":row["expected"]} for i,row in enumerate(old)]
+    retained.extend([
+        {"key":row["key"],"prompt":state.question(row["source_repo"],row["key"]),
+         "answer":row["answer"]}
+        for row in plan["memory_replay"][-4:]
+    ])
+    tokenizer,model=load_parent(parent_dir,plan)
+    parent_known=scores(tokenizer,model,known)
+    parent_fresh=scores(tokenizer,model,heldout)
+    parent_retained=scores(tokenizer,model,retained)
+    model.load_adapter(str(child_dir),adapter_name="research_descendant",
+                       is_trainable=False)
+    model.set_adapter("research_descendant")
+    model.eval()
+    child_known=scores(tokenizer,model,known)
+    child_fresh=scores(tokenizer,model,heldout)
+    child_retained=scores(tokenizer,model,retained)
+    known_metric=metrics(parent_known,child_known)
+    fresh_metric=metrics(parent_fresh,child_fresh)
+    prior_metric=metrics(parent_retained,child_retained)
+    accepted=(
+        known_metric["paired_nll_gain"]>=lock["required_paraphrase_mean_nll_gain"]
+        and known_metric["child_exact"]>=(
+            known_metric["parent_exact"]+lock["required_paraphrase_exact_gain"])
+        and fresh_metric["paired_nll_gain"]>=(
+            -lock["maximum_external_repo_nll_regression"])
+        and fresh_metric["child_exact"]>=fresh_metric["parent_exact"]
+        and prior_metric["paired_nll_gain"]>=(
+            -lock["maximum_retention_nll_regression"])
+        and prior_metric["child_exact"]>=prior_metric["parent_exact"]
+    )
+    return state.sealed({
+        "schema":state.EXAM,
+        "status":"PASS_INTERNAL_SHADOW_RETAINED" if accepted
+                 else "HOLD_NO_FUNCTIONAL_GAIN_OR_REGRESSION",
+        "plan_sha256":plan["sha256"],
+        "candidate_generation":plan["candidate_generation"],
+        "parent_adapter_sha256":plan["parent_adapter_sha256"],
+        "child_adapter_sha256":child_sha,
+        "child_lineage_sha256":lineage["sha256"],
+        "source_paraphrase":known_metric,
+        "other_repository_unseen":fresh_metric,
+        "previous_skills_and_memory":prior_metric,
+        "training_wall_seconds":lineage["training_seconds"],
+        "exam_wall_seconds":round(time.monotonic()-start,4),
+        "model_to_model_dialogue_sha256":lineage["dialogue_sha256"],
+        "trained_on_peer_claims":False,
+        "heldout_source_fetched_only_after_weights_sealed":True,
+        "prospective_external_replicator":False,
+        "independent_external_validation":False,
+        "production_promotion":False,
+        "sentinel_dispatch":False,
+    })
+
+
+def main():
+    ap=argparse.ArgumentParser()
+    ap.add_argument("phase",choices=["peer","train","exam"])
+    ap.add_argument("--lock",required=True)
+    ap.add_argument("--plan",required=True)
+    ap.add_argument("--parent",required=True)
+    ap.add_argument("--dialogue")
+    ap.add_argument("--child")
+    ap.add_argument("--holdout")
+    ap.add_argument("--out",required=True)
+    args=ap.parse_args()
+    lock=state.verify_lock(state.load(args.lock))
+    plan=state.verify_plan(state.load(args.plan),lock)
+    if args.phase=="peer":
+        output=talk(lock,plan,args.parent)
+    elif args.phase=="train":
+        if not args.dialogue or not args.child:
+            raise ValueError("NEED_VERIFIED_DIALOGUE_AND_CHILD_FOLDER")
+        output=train_candidate(lock,plan,args.parent,state.load(args.dialogue),
+                               args.child)
+    else:
+        if not args.child or not args.holdout:
+            raise ValueError("EXAM_REQUIRES_CHILD_AND_HELDOUT_REPO")
+        output=evaluate(lock,plan,args.parent,args.child,args.holdout)
+    state.store(args.out,output)
+    print(json.dumps(output,ensure_ascii=False,indent=2)[:12000])
+
+
+if __name__=="__main__":
+    main()
