@@ -1,0 +1,184 @@
+name: ESSENCE v4.4 GitHub-native asynchronous model worker
+
+on:
+  schedule:
+    - cron: '3-59/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'pulse: process pending JSON inbox; infer: one direct 24-byte research inference'
+        type: choice
+        options:
+          - pulse
+          - infer
+        required: true
+        default: pulse
+      input_hex:
+        description: 'Public 24-byte context as 48 HEX characters; no secrets or blind test inputs'
+        type: string
+        required: false
+        default: ''
+  pull_request:
+    paths:
+      - 'tools/essence_v44_actions_async.py'
+      - 'tools/essence_v44_checkpoint_store.py'
+      - 'tests/test_essence_v44_actions_async.py'
+      - 'tests/test_essence_v44_checkpoint_store.py'
+      - '.github/workflows/essence-v44-github-async.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/essence_v44_actions_async.py'
+      - '.github/workflows/essence-v44-github-async.yml'
+
+permissions:
+  contents: read
+
+# A scheduled event cannot overlap another scheduled pulse; queued jobs
+# continue in a later wake if GitHub replaces a pending schedule. Each manual
+# dispatch has a distinct run-id and its own append-only result key.
+concurrency:
+  group: essence-v44-${{ github.event_name == 'workflow_dispatch' && github.run_id || 'scheduled-pulse' }}
+  cancel-in-progress: false
+
+jobs:
+  offline-anti-mutation-tests:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Queue, model and immutable receipt safety contracts
+        run: |
+          python -m py_compile tools/essence_v44_actions_async.py tools/essence_v44_checkpoint_store.py
+          python -m unittest -v tests.test_essence_v44_actions_async tests.test_essence_v44_checkpoint_store
+
+  asynchronous-g4-worker:
+    if: github.event_name != 'pull_request' && vars.ESSENCE_EVOLUTION_PAUSED != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: essence-actions-state
+          fetch-depth: 0
+          path: runtime/essence/v44/state
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Checkpoint queue cursor — refuse unsafe inputs before installing torch
+        id: plan
+        env:
+          RUN_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'pulse' }}
+          PUBLIC_INPUT_HEX: ${{ inputs.input_hex }}
+          ACTION_RUN_ID: ${{ github.run_id }}
+          ACTION_RUN_ATTEMPT: ${{ github.run_attempt }}
+          ACTION_SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/essence/v44/run
+          python -m tools.essence_v44_actions_async prepare \
+            --state-dir runtime/essence/v44/state/essence-runtime \
+            --mode "$RUN_MODE" \
+            --input-hex "$PUBLIC_INPUT_HEX" \
+            --run-id "$ACTION_RUN_ID" \
+            --attempt "$ACTION_RUN_ATTEMPT" \
+            --source-sha "$ACTION_SOURCE_SHA" \
+            --out runtime/essence/v44/run/plan.json
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          p=json.loads(Path('runtime/essence/v44/run/plan.json').read_text())
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:
+              f.write('needs_models='+str(p['needs_models']).lower()+'\n')
+          PY
+      - name: Fail closed if permanent G4 model branch has been tampered
+        if: steps.plan.outputs.needs_models == 'true'
+        run: |
+          python -m tools.essence_v44_checkpoint_store verify \
+            --store runtime/essence/v44/state/essence-runtime/model-store
+      - name: Install CPU inference runtime only when there are valid requests
+        if: steps.plan.outputs.needs_models == 'true'
+        run: |
+          python -m pip install --disable-pip-version-check \
+            torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+      - name: Run bounded queue of max 4 requests and preserve research-only model provenance
+        id: execute
+        env:
+          PUBLIC_INPUT_HEX: ${{ inputs.input_hex }}
+        run: |
+          set -euo pipefail
+          python -m tools.essence_v44_actions_async execute \
+            --state-dir runtime/essence/v44/state/essence-runtime \
+            --plan runtime/essence/v44/run/plan.json \
+            --baseline14-dir runtime/essence/v44/state/essence-runtime/model-store/baseline14 \
+            --physarum-dir runtime/essence/v44/state/essence-runtime/model-store/physarum \
+            --input-hex "$PUBLIC_INPUT_HEX" \
+            --out runtime/essence/v44/run/event.json
+          python - <<'PY'
+          from pathlib import Path
+          import json,os
+          from tools.essence_v44_actions_async import digest
+          e=json.loads(Path('runtime/essence/v44/run/event.json').read_text())
+          assert e['receipt_sha256']==digest({k:v for k,v in e.items() if k!='receipt_sha256'})
+          assert e['worker_os_persistent'] is False
+          assert e['production_authority'] is False
+          assert e['candidate_shadow_only'] is True
+          active=(e['accepted_count']+e['rejected_count'])>0
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:
+              f.write('state_changed='+str(active).lower()+'\n')
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+              f.write('### ESSENCE async wake — '+e['status']+'\n')
+              f.write('G4 fixed14 active; Physarum shadow only.\n')
+              f.write('Accepted '+str(e['accepted_count'])+', rejected '+str(e['rejected_count'])+'\n')
+              f.write('Pending at wake: '+str(e['queued_before'])+'\n')
+              f.write('RUNNER ENDS AFTER JOB; GitHub schedule is best effort. NO 24/7 server claim.\n')
+          PY
+      - name: Commit immutable queue results and cursor to durable GitHub data branch
+        if: steps.execute.outputs.state_changed == 'true'
+        env:
+          CHECKOUT: runtime/essence/v44/state
+          DATA_BRANCH: essence-actions-state
+        run: |
+          set -euo pipefail
+          git -C "$CHECKOUT" config user.name "github-actions[bot]"
+          git -C "$CHECKOUT" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C "$CHECKOUT" add essence-runtime/results essence-runtime/events
+          git -C "$CHECKOUT" diff --cached --quiet && exit 0
+          git -C "$CHECKOUT" commit -m "ESSENCE async research results: run ${{ github.run_id }} attempt ${{ github.run_attempt }}"
+          pushed=false
+          for n in 1 2 3 4 5; do
+            git -C "$CHECKOUT" fetch origin "+refs/heads/$DATA_BRANCH:refs/remotes/origin/$DATA_BRANCH"
+            git -C "$CHECKOUT" rebase "origin/$DATA_BRANCH"
+            if git -C "$CHECKOUT" push origin "HEAD:refs/heads/$DATA_BRANCH"; then
+              pushed=true
+              break
+            fi
+            sleep 2
+          done
+          if [ "$pushed" != true ]; then
+            echo "::error::Failed to checkpoint async results; no completion claimed"
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always() && (steps.execute.outputs.state_changed == 'true' || github.event_name == 'workflow_dispatch')
+        with:
+          name: essence-v44-async-run-${{ github.run_id }}-${{ github.run_attempt }}
+          path: runtime/essence/v44/run/
+          if-no-files-found: warn
+          retention-days: 30
