@@ -1,0 +1,232 @@
+name: ESSENCE v4.9 prospective continual replay (one-shot research)
+
+on:
+  pull_request:
+    paths:
+      - 'tools/essence_v49_continual.py'
+      - 'tests/test_essence_v49_continual.py'
+      - 'research/essence/peer_v49/FROZEN_PROSPECTIVE_LOCK.json'
+      - '.github/workflows/essence-v49-prospective-continual.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/essence_v49_continual.py'
+      - 'tests/test_essence_v49_continual.py'
+      - 'research/essence/peer_v49/FROZEN_PROSPECTIVE_LOCK.json'
+      - '.github/workflows/essence-v49-prospective-continual.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: essence-v49-precommitted-prospective
+  cancel-in-progress: false
+
+env:
+  LOCK: research/essence/peer_v49/FROZEN_PROSPECTIVE_LOCK.json
+  E49: runtime/essence/v49
+  HF_HUB_DISABLE_TELEMETRY: '1'
+  HF_HUB_DOWNLOAD_TIMEOUT: '120'
+  TOKENIZERS_PARALLELISM: 'false'
+  OMP_NUM_THREADS: '4'
+
+jobs:
+  preflight-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Freeze exact thresholds, lineage, unbiased schedules and objective-oracle checks
+        run: |
+          python -m compileall -q tools/essence_v49_continual.py tests/test_essence_v49_continual.py
+          python -m unittest -v tests.test_essence_v49_continual
+
+  prospective-holdout-commitment:
+    if: github.event_name == 'push' && vars.ESSENCE_EVOLUTION_PAUSED != 'true'
+    needs: preflight-contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Read only pinned Lapis + new, never-trained Cosmos source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$E49"
+          git clone --quiet --depth 1 --filter=blob:none --sparse https://github.com/Hawkar-usls/janus-lapis.git "$E49/lapis"
+          git -C "$E49/lapis" fetch --quiet --depth 1 origin 1d0ac3433b45296fa4d1636bf31ed25725663174
+          git -C "$E49/lapis" checkout --quiet --detach 1d0ac3433b45296fa4d1636bf31ed25725663174
+          git -C "$E49/lapis" sparse-checkout set --no-cone PROJECT_STATUS.json
+          git clone --quiet --depth 1 --filter=blob:none --sparse https://github.com/Hawkar-usls/Janus-Cosmos.git "$E49/cosmos"
+          git -C "$E49/cosmos" fetch --quiet --depth 1 origin 1582ba6f4d818d434ef65743dc6992e8b3645fab
+          git -C "$E49/cosmos" checkout --quiet --detach 1582ba6f4d818d434ef65743dc6992e8b3645fab
+          git -C "$E49/cosmos" sparse-checkout set --no-cone PROJECT_STATUS.json
+      - name: Generate genuinely fresh route identifiers and commit ALL paired exam inputs before training
+        run: |
+          python -m tools.essence_v49_continual freeze --lock "$LOCK" --lapis "$E49/lapis" --cosmos "$E49/cosmos" --out "$E49/exam_payload.json" --commit-out "$E49/exam_commitment.json"
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          x=json.load(open('runtime/essence/v49/exam_commitment.json'))
+          print('### V4.9 prospective exam pre-commit')
+          print('Commit SHA256:',x['exam_payload_sha256'])
+          print('Three groups:',x['cohort_sizes'])
+          print('First frozen before training. Internal GitHub separate-job exam, no external custodian.')
+          PY
+      - name: Seal independent exam cohort artifact (never used by training jobs)
+        uses: actions/upload-artifact@v4
+        with:
+          name: essence-v49-future-exam-${{ github.run_id }}
+          path: |
+            runtime/essence/v49/exam_payload.json
+            runtime/essence/v49/exam_commitment.json
+          retention-days: 90
+          if-no-files-found: error
+
+  train-baseline:
+    if: github.event_name == 'push' && vars.ESSENCE_EVOLUTION_PAUSED != 'true'
+    needs: prospective-holdout-commitment
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: essence-peer-shadow-state
+          path: runtime/essence/v49/state
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Obtain ONLY pinned Lapis training facts — never Cosmos or hidden exam payload
+        run: |
+          git clone --quiet --depth 1 --filter=blob:none --sparse https://github.com/Hawkar-usls/janus-lapis.git "$E49/lapis"
+          git -C "$E49/lapis" fetch --quiet --depth 1 origin 1d0ac3433b45296fa4d1636bf31ed25725663174
+          git -C "$E49/lapis" checkout --quiet --detach 1d0ac3433b45296fa4d1636bf31ed25725663174
+          git -C "$E49/lapis" sparse-checkout set --no-cone PROJECT_STATUS.json
+      - name: Install pinned real CPU LoRA training libraries
+        run: |
+          python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 peft==0.13.2 safetensors==0.5.3
+      - name: Exactly forty supervised steps from G2 without replay, an equal-cost control
+        run: |
+          python -m tools.essence_v49_continual train --lock "$LOCK" --mode naive --parent "$E49/state/models/gen0002" --lapis "$E49/lapis" --state "$E49/state" --out "$E49/naive"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v49-naive-${{ github.run_id }}
+          path: runtime/essence/v49/naive/
+          retention-days: 90
+          if-no-files-found: error
+
+  train-continual-replay:
+    if: github.event_name == 'push' && vars.ESSENCE_EVOLUTION_PAUSED != 'true'
+    needs: prospective-holdout-commitment
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: essence-peer-shadow-state
+          path: runtime/essence/v49/state
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Obtain only frozen new Lapis source; old exact-oracle and accepted memory are local
+        run: |
+          git clone --quiet --depth 1 --filter=blob:none --sparse https://github.com/Hawkar-usls/janus-lapis.git "$E49/lapis"
+          git -C "$E49/lapis" fetch --quiet --depth 1 origin 1d0ac3433b45296fa4d1636bf31ed25725663174
+          git -C "$E49/lapis" checkout --quiet --detach 1d0ac3433b45296fa4d1636bf31ed25725663174
+          git -C "$E49/lapis" sparse-checkout set --no-cone PROJECT_STATUS.json
+      - name: Install pinned CPU tensor, tokenizer and LoRA trainer
+        run: |
+          python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 peft==0.13.2 safetensors==0.5.3
+      - name: Exactly forty steps from SAME G2, half new facts and half old-memory with parent KL
+        run: |
+          python -m tools.essence_v49_continual train --lock "$LOCK" --mode replay --parent "$E49/state/models/gen0002" --lapis "$E49/lapis" --state "$E49/state" --out "$E49/replay"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: essence-v49-replay-${{ github.run_id }}
+          path: runtime/essence/v49/replay/
+          retention-days: 90
+          if-no-files-found: error
+
+  prospective-paired-exam:
+    needs: [prospective-holdout-commitment, train-baseline, train-continual-replay]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: essence-peer-shadow-state
+          path: runtime/essence/v49/state
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v49-future-exam-${{ github.run_id }}
+          path: runtime/essence/v49
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v49-naive-${{ github.run_id }}
+          path: runtime/essence/v49/naive
+      - uses: actions/download-artifact@v4
+        with:
+          name: essence-v49-replay-${{ github.run_id }}
+          path: runtime/essence/v49/replay
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install fixed CPU inference runtime
+        run: |
+          python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 peft==0.13.2 safetensors==0.5.3
+      - name: First exposure of hidden job-separated prospective inputs to evaluation model
+        run: |
+          python -m tools.essence_v49_continual exam --lock "$LOCK" --parent "$E49/state/models/gen0002" --state "$E49/state" --naive "$E49/naive" --replay "$E49/replay" --payload "$E49/exam_payload.json" --commitment "$E49/exam_commitment.json" --out "$E49/paired_exam.json"
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          x=json.load(open('runtime/essence/v49/paired_exam.json'))
+          print('### v4.9 prospective, matched-step parent / naive / continual replay')
+          print('Internal readout:',x['label'])
+          print('Premade test commitment:',x['exam_commitment_sha256'])
+          for mode in ('parent','naive','replay'):
+              print(mode,x['comparative_results'][mode])
+          print('Research-only. Even a PASS is not external replication or approval to update JANUS/Sentinel.')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: essence-v49-first-prospective-paired-${{ github.run_id }}
+          path: runtime/essence/v49/paired_exam.json
+          retention-days: 90
+          if-no-files-found: warn
