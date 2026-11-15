@@ -161,6 +161,7 @@ def runs(target,token,*,fetch=api):
             "id":v["id"],"created":to_iso(stamp(v["created_at"])),
             "status":v["status"],"conclusion":v.get("conclusion"),
             "event":v["event"],"run_attempt":v.get("run_attempt",1),
+            "workflow_id":v.get("workflow_id"),
         })
     return sorted(out,key=lambda row:(row["created"],row["id"]),reverse=True)
 
@@ -364,16 +365,29 @@ def main():
     if a.command=="observe":
         state=read_json(a.state)
         role=a.role
+        token=os.environ.get("GH_TOKEN","")
+        now,seen,pending=observe(role,a.run_id,token)
         model=None
         if role in ("A","B"):
+            path=Path(a.state).parent/"model"/"checkpoint.json"
             try:
-                from tools.sentinel_transformer import read_research_score
-                model=read_research_score(
-                    Path(a.state).parent/"model"/"checkpoint.json")
+                from tools.sentinel_transformer import (read_research_score,
+                    predict_recent_risk)
+                model=read_research_score(path)
+                # Every actual A/B guardian consumes the SAME sealed neural
+                # weights. Forecasts cannot authorize/cancel recovery.
+                model["risk_by_workflow"]=predict_recent_risk(
+                    path,seen,token)
             except FileNotFoundError:
                 model={"status":"UNTRAINED_PENDING_REAL_GITHUB_HISTORY",
                        "calibrated":False}
-        now,seen,pending=observe(role,a.run_id,os.environ.get("GH_TOKEN",""))
+            except (ValueError,KeyError,RuntimeError,OSError,
+                    urllib.error.URLError,ImportError) as error:
+                # C always works without Torch; A/B retain their
+                # deterministic recovery rules after neural failure.
+                model={"status":"NEURAL_INFERENCE_FAILED_DETERMINISTIC_GUARD",
+                       "error_type":type(error).__name__,
+                       "calibrated":False}
         result=decide(role,a.run_id,now,seen,state,pending=pending,model=model)
     elif a.command=="claim":
         result=claim(read_json(a.state),read_json(a.plan,60000))
