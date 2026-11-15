@@ -132,9 +132,13 @@ jobs:
           key=packet['receipt_sha256']
           path=directory/(key+'.json')
           Path('runtime/janus-v50/packet_id.txt').write_text(key)
-          if path.exists():
-              old=ctl.check(ctl.read(path))
-              if old!=packet: raise RuntimeError('SAME_KEY_DIFFERENT_PACKET')
+          index_path=root/'LATEST.json'
+          old_index=ctl.read(index_path) if index_path.is_file() else {}
+          already_processed=(old_index.get('source_sha256')==packet['source_raw_sha256']
+              and old_index.get('beetle_intent_sha256')==packet['beetle_intent_sha256'])
+          if already_processed or path.exists():
+              if path.exists() and ctl.check(ctl.read(path))!=packet:
+                  raise RuntimeError('SAME_KEY_DIFFERENT_PACKET')
               Path('runtime/janus-v50/fresh.txt').write_text('false')
           else:
               path.write_text(json.dumps(packet,sort_keys=True,indent=2,ensure_ascii=False)+'\n')
@@ -142,6 +146,7 @@ jobs:
                   'schema':'janus.agency.latest_verified_packet/5.0',
                   'packet_id':key,'source_commit':packet['source_commit'],
                   'source_sha256':packet['source_raw_sha256'],
+                  'beetle_intent_sha256':packet['beetle_intent_sha256'],
                   'topa_structural_only':True,'science_truth_authority':False,
                   'native_model_selected':packet['native_model']['selected_action'],
                   'production_promotion':False
