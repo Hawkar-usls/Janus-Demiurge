@@ -13,6 +13,7 @@ Physarum is shadow-only, and the better 14-step fixed baseline is active.
 """
 from __future__ import annotations
 import argparse
+from datetime import datetime,timezone
 import hashlib
 import json
 import math
@@ -136,6 +137,8 @@ def prepare(state_root,mode,input_hex,run_id,attempt,source_sha,out):
     if mode=="pulse":
         paths,pending=choose_pending(state_root)
         for p in paths:
+            require(not p.is_symlink() and p.is_file(),
+                    "UNSAFE_ASYNC_INBOX_ENTRY")
             selected.append({"file":p.name,"sha256":hashlib.sha256(
                 p.read_bytes()).hexdigest() if p.stat().st_size<=MAX_REQUEST_BYTES
                 else "OVERSIZED"})
@@ -286,22 +289,25 @@ def execute(state_root,plan_path,output,baseline_path,physarum_path,input_hex=""
                 try:
                     rid,raw=validate_request(load_small_json(p),filename)
                     require(models is not None,"MISSING_MODEL_FOR_VALID_REQUEST")
-                    rec=result_receipt(rid,raw,run_id,attempt,models,torch,
-                                       source_sha=source_sha)
-                    accepted+=1
                 except (ValueError,KeyError,TypeError,UnicodeError,
                         json.JSONDecodeError) as e:
-                    # A malformed request is accounted for once and cannot
-                    # keep a queued job stuck forever.
+                    # Malformed requests are rejected once. Model execution
+                    # errors must fail the whole job, never be disguised
+                    # as input rejection.
                     rec=rejected_receipt(name,item["sha256"],run_id,attempt,
                                          source_sha,str(e)[:120])
                     rejected+=1
+                else:
+                    rec=result_receipt(rid,raw,run_id,attempt,models,torch,
+                                       source_sha=source_sha)
+                    accepted+=1
             immutable(dst,rec)
             processed.append(name)
     event=seal({
         "schema":SCHEMA,
         "run_id":run_id,"run_attempt":attempt,
         "source_commit_sha":source_sha,
+        "recorded_utc":datetime.now(timezone.utc).isoformat(),
         "mode":mode,
         "status":("WORK_PROCESSED" if accepted or rejected else
                   "IDLE_NO_WORK_PROCESSED"),
