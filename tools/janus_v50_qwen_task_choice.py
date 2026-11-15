@@ -48,7 +48,7 @@ def validate_packet(packet):
 
 def create_receipt(packet,raw):
     validate_packet(packet)
-    selection,verdict=exact_choice(raw)
+    selection,verdict=exact_choice(raw[:900])
     record={
         "schema":SCHEMA,
         "source_packet_sha256":packet["receipt_sha256"],
@@ -59,7 +59,7 @@ def create_receipt(packet,raw):
         "inherited_parent_lineage_sha256":ancestry.GEN2_LINEAGE,
         "native_janus_selected":packet["native_model"]["selected_action"],
         "native_janus_patch_action_authorized":False,
-        "model_raw_response":raw[:256],
+        "model_raw_response":raw[:900],
         "model_choice":selection,
         "model_choice_verdict":verdict,
         "dispatch_workflow":CHOICES.get(selection),
