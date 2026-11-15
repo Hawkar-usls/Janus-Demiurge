@@ -1,0 +1,43 @@
+name: JANUS-010L NIST Independent UTC Clock Custody Gate
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/late_choice_010/nist_utc_clock_gate_010l.py'
+      - 'experiments/ocean_transformer/late_choice_010/test_nist_utc_clock_gate_010l.py'
+      - '.github/workflows/janus-010l-nist-utc-custody.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-nist-010l-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  no-photon-clock-provenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Prove unverified clock labels cannot become physical proof
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v -s experiments/ocean_transformer/late_choice_010 -p 'test_nist_utc_clock_gate_010l.py'
+      - name: Evaluate verified NIST 010F inventory with no supplied UTC labels
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/nist010l"
+          python experiments/ocean_transformer/late_choice_010/nist_utc_clock_gate_010l.py --output "$RUNNER_TEMP/nist010l/nist_utc_clock_admission.json"
+      - name: Archive negative admission and original source hashes only
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-nist-010l-clock-custody-${{ github.run_id }}
+          path: ${{ runner.temp }}/nist010l/nist_utc_clock_admission.json
+          retention-days: 60
+          if-no-files-found: error
