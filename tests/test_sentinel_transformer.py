@@ -34,6 +34,12 @@ def synthetic_actions(count=170):
 
 
 class SentinelTinyTransformerTests(unittest.TestCase):
+    def test_live_github_api_full_pages_can_exceed_one_megabyte(self):
+        source=Path(m.__file__).read_text()
+        self.assertIn("response.read(6_000_001)",source)
+        self.assertIn("TOO_MANY_GITHUB_RUNS_BYTES",source)
+        self.assertIn("len(value[\"workflow_runs\"])<=100",source)
+
     def test_genuine_github_history_parser_orders_and_filters(self):
         inp=synthetic_actions(120)
         rows=m.rows_from_github(list(reversed(inp)),NOW)
