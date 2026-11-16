@@ -114,8 +114,16 @@ class SwarmGenomeNervousSystemTests(unittest.TestCase):
     def test_same_fact_keeps_two_observation_genome_nodes(self):
         out = build_nervous_system(self._result())
         fact_node = out["indexes"]["fact_nodes"]["FACT_X"]
+        # Fact evidence links must not become identity-lineage parents.
         parents = out["swarm_genome_ledger"]["nodes"][fact_node]["parent_ids"]
-        self.assertEqual(len(parents), 2)
+        self.assertEqual(parents, [])
+        supporting = [
+            edge for edge in out["typed_interaction_edges"]
+            if edge["child_genome_id"] == fact_node
+            and edge["relation"] == "SUPPORTS_FACT_CLUSTER"
+        ]
+        self.assertEqual(len(supporting), 2)
+        self.assertTrue(all(edge["interaction_only"] for edge in supporting))
         self.assertEqual(out["stats"]["observation_node_count"], 3)
 
     def test_peer_message_becomes_parent_context_for_round2(self):
@@ -127,6 +135,15 @@ class SwarmGenomeNervousSystemTests(unittest.TestCase):
             for e in out["typed_interaction_edges"]
         }
         self.assertIn((msg_node, round2_node, "PEER_CONTEXT_FOR"), edges)
+        # Peer messages provide context but never an identity parent.
+        round2 = out["swarm_genome_ledger"]["nodes"][round2_node]
+        self.assertNotIn(msg_node, round2["parent_ids"])
+        self.assertTrue(any(
+            e["parent_genome_id"] == msg_node
+            and e["child_genome_id"] == round2_node
+            and e["interaction_only"]
+            for e in out["typed_interaction_edges"]
+        ))
 
     def test_response_links_inbound_message_and_new_observation(self):
         out = build_nervous_system(self._result())
