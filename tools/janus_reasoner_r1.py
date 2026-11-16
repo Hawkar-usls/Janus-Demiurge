@@ -67,7 +67,7 @@ def project_evidence(obj):
         ],
         "hypotheses": [
             {"id": row["id"], "hypothesis": row["hypothesis"],
-             "for": row["supporting_clues"], "unresolved": row["unresolved_observations"]}
+             "for": row.get("supporting_clues", []), "unresolved": row.get("unresolved_observations", [])}
             for row in obj["competing_interpretations"]
         ],
         "evidence_matrix": obj["evidence_matrix"],
