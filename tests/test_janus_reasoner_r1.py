@@ -98,6 +98,22 @@ class ReasonerContract(unittest.TestCase):
         self.assertEqual(projected["screen_observations"], ["Бесс исчезает"])
         self.assertNotIn("detailed_plot_chronology", projected)
 
+    def test_verdict_schema_requires_prose_not_array(self):
+        self.assertEqual(r.VERDICT_SCHEMA["properties"]["final_answer"]["type"], "string")
+        self.assertEqual(set(r.VERDICT_SCHEMA["required"]), set(good().keys()))
+
+    def test_film_false_mediator_cannot_pass(self):
+        item = good()
+        item["unresolved"] = ["Бесс могла быть посредником между мирами."]
+        result = r.examine(item)
+        self.assertEqual(result["research_quality_gate"], "HOLD_UNSUPPORTED_SOURCE_CLAIM")
+
+    def test_porter_misattribution_cannot_pass(self):
+        item = good()
+        item["evidence_for"][0] = "Роберт Портер заявляет, что прибыл с Ка-Пэкс."
+        result = r.examine(item)
+        self.assertEqual(result["research_quality_gate"], "HOLD_UNSUPPORTED_SOURCE_CLAIM")
+
     def test_no_remote_host_from_source(self):
         self.assertTrue(r.ENDPOINT.startswith("http://127.0.0.1:"))
         self.assertFalse(hasattr(r, "auto_promote"))
