@@ -28,10 +28,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 6
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: '3.11'
       - name: Prove model text cannot become shell commands, scientific truth, or executable workflow
@@ -52,19 +52,19 @@ jobs:
       TOKENIZERS_PARALLELISM: 'false'
       OMP_NUM_THREADS: '4'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           ref: main
           path: code
           persist-credentials: false
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           ref: essence-voice-state
           path: state
           sparse-checkout: |
             research/essence/voice_v51
           persist-credentials: true
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           ref: essence-peer-shadow-state
           path: original-model
@@ -95,7 +95,7 @@ jobs:
                   break
           print('ready='+str(found).lower())
           PY
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         if: steps.gate.outputs.ready == 'true'
         with:
           python-version: '3.11'
@@ -128,7 +128,7 @@ jobs:
           git pull --rebase origin essence-voice-state
           git push origin HEAD:refs/heads/essence-voice-state
           echo 'ONE_REAL_MODEL_UTTERANCE_PERSISTED'
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: steps.gate.outputs.ready == 'true'
         with:
           name: essence-v51-g2-actual-voice-${{ github.run_id }}
