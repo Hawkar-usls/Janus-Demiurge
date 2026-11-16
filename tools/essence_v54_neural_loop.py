@@ -3,7 +3,7 @@
 
 This is an experiment, NOT a production model updater. Peer text never becomes
 training truth. Training labels come from pinned source-repository JSON only.
-A withheld TOPA file is opened by the exam job AFTER weights are sealed.
+Withheld peer-project records are first opened by a separate examiner after weights are sealed.
 """
 from __future__ import annotations
 import argparse
