@@ -70,21 +70,21 @@ def project_evidence(obj):
     """Retain the relevant source evidence; do not pick a conclusion for model."""
     data = {
         "work": obj["work"]["original_title"],
-        "story_summary": obj["abstract"],
-        "screen_observations": obj["ending"]["observed"],
-        "unverified": obj["ending"]["not_shown_or_not_proved"],
+        "story_summary": obj["abstract"][:500],
+        "screen_observations": obj["ending"]["observed"][:5],
+        "unverified": obj["ending"]["not_shown_or_not_proved"][:4],
         "robert_porter_backstory": obj["backstory_reconstruction"]["reported_sequence"],
         "timeline": [
             {"step": row["step"], "event": row["event"]}
             for row in obj["detailed_plot_chronology"]
-            if row["step"] in (6, 9, 10, 11, 12, 13, 14, 15, 16, 17)
+            if row["step"] in (6, 9, 11, 12, 13, 14, 16)
         ],
         "hypotheses": [
             {"id": row["id"], "hypothesis": row["hypothesis"],
-             "for": row.get("supporting_clues", []), "unresolved": row.get("unresolved_observations", [])}
+             "for": row.get("supporting_clues", [])[:2], "unresolved": row.get("unresolved_observations", [])[:2]}
             for row in obj["competing_interpretations"]
         ],
-        "evidence_matrix": obj["evidence_matrix"],
+        "evidence_matrix": [{"observation": x["observation"], "limits": x["limits"]} for x in obj["evidence_matrix"]],
         "authorial_uncertainty": obj["ending"]["core_ambiguity"],
     }
     view = compact_json(data)
@@ -124,7 +124,7 @@ def messages_for_verdict(evidence, draft):
         {"role": "user", "content": (
             "ИСТОЧНИК (проверенное извлечение из полного JSON):\n"
             + evidence + "\n\nПЕРВАЯ ВЕРСИЯ РАССУЖДЕНИЯ:\n"
-            + draft[:2600] +
+            + draft[:1100] +
             "\n\nПересмотри свои аргументы. Верни JSON с ПОЛЯМИ: "
             "'hypothesis' — одно из psychological, extraterrestrial, undetermined; "
             "'confidence' — low, moderate или high; "
@@ -151,9 +151,11 @@ def call_model(messages, *, json_mode=False, max_predict=400):
         "messages": messages,
         "options": {
             "temperature": 0.18,
-            "num_ctx": 8192,
+            "num_ctx": 4096,
             "num_predict": max_predict,
-            "num_thread": 4,
+            "num_thread": 2,
+            "num_batch": 128,
+            "num_gpu": 0,
             "repeat_penalty": 1.12,
         },
         "keep_alive": "5m",
@@ -242,8 +244,8 @@ def examine(output):
 def run(source_path, output_path):
     obj, digest, byte_count = read_source(source_path)
     evidence = project_evidence(obj)
-    draft, draft_metrics = call_model(messages_for_analysis(evidence), max_predict=500)
-    final_raw, final_metrics = call_model(messages_for_verdict(evidence, draft), json_mode=True, max_predict=800)
+    draft, draft_metrics = call_model(messages_for_analysis(evidence), max_predict=360)
+    final_raw, final_metrics = call_model(messages_for_verdict(evidence, draft), json_mode=True, max_predict=580)
     result = {
         "schema": SCHEMA, "status": "MODEL_COMPLETED",
         "source_artifact_id": SOURCE_ID, "source_sha256": digest,
