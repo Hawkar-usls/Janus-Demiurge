@@ -35,7 +35,7 @@ class ReasonerContract(unittest.TestCase):
         self.assertFalse(result["is_independent_generalization_proof"])
 
     def test_not_faking_superior_model_or_mutation(self):
-        self.assertEqual(r.MODEL, "qwen2.5:3b-instruct-q4_K_M")
+        self.assertEqual(r.MODEL, "qwen2.5:1.5b-instruct-q4_K_M")
         self.assertEqual(r.ENDPOINT, "http://127.0.0.1:11434/api/chat")
         self.assertEqual(len(r.SOURCE_SHA256), 64)
         self.assertNotEqual(r.SOURCE_SHA256, "0" * 64)
