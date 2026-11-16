@@ -162,7 +162,7 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: '3.11'
-      - name: Checkout ONLY precommitted training repository and original parent, never TOPA exam
+      - name: Bind precommitted training peer and SHA-verified inherited model
         shell: bash
         run: |
           set -euo pipefail
@@ -177,13 +177,15 @@ jobs:
           print("V54_TRAIN_ID="+p["source_id"])
           print("V54_TRAIN_COMMIT="+p["source_commit"])
           PY
-      - name: Fetch pinned training source only, no access to TOPA
+      - name: Fetch pinned training source only, no access to withheld peer
         shell: bash
         run: |
           set -euo pipefail
           case "$V54_TRAIN_ID" in
-            demihead) repo=Demi_Head ;;
-            swarm) repo=janus-distributed-ai-swarm ;;
+            inaihr) repo=iNaiHR ;;
+            aura) repo=aura-oracle-tg ;;
+            simptomat) repo=Simptomat ;;
+            scoby) repo=SCOBY-D0 ;;
             *) echo 'UNTRUSTED_TRAIN_SOURCE'; exit 1 ;;
           esac
           git clone --quiet --depth 1 --filter=blob:none --sparse "https://github.com/Hawkar-usls/$repo.git" "$ROOT/source"
@@ -195,7 +197,7 @@ jobs:
         run: |
           python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
           python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 peft==0.13.2 safetensors==0.5.4
-      - name: Train exactly 24 bounded steps from the SHA-verified parent adapter
+      - name: Train 96 bounded real LoRA steps with verified replay
         run: |
           python -m tools.essence_v54_neural_loop train \
             --plan "$ROOT/plan.json" --parent "$V54_PARENT" \
@@ -238,7 +240,7 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: '3.11'
-      - name: Open TOPA unseen source only after candidate weights were sealed in prior job
+      - name: Open fresh peer holdout only after weights sealed by previous job
         shell: bash
         run: |
           set -euo pipefail
@@ -250,12 +252,20 @@ jobs:
           m.state.check_model(parent,p["parent_adapter_sha256"],p["parent_lineage_sha256"])
           print("V54_PARENT="+str(parent))
           print("V54_HOLDOUT_COMMIT="+p["holdout_commit"])
+          print("V54_HOLDOUT_ID="+p["source_id"])
           PY
-      - name: Fetch only source-pinned withheld TOPA repo in examiner job
+      - name: Fetch only source-pinned withheld peer in examiner job
         shell: bash
         run: |
           set -euo pipefail
-          git clone --quiet --depth 1 --filter=blob:none --sparse https://github.com/Hawkar-usls/TOPA.git "$ROOT/holdout"
+          case "$V54_HOLDOUT_ID" in
+            inaihr) repo=BFain ;;
+            aura) repo=Janus ;;
+            simptomat) repo=Janus_Genesis ;;
+            scoby) repo=Janus-HELIOS ;;
+            *) echo 'UNTRUSTED_HOLDOUT_SOURCE'; exit 1 ;;
+          esac
+          git clone --quiet --depth 1 --filter=blob:none --sparse "https://github.com/Hawkar-usls/$repo.git" "$ROOT/holdout"
           git -C "$ROOT/holdout" fetch --quiet --depth 1 origin "$V54_HOLDOUT_COMMIT"
           git -C "$ROOT/holdout" checkout --quiet --detach "$V54_HOLDOUT_COMMIT"
           git -C "$ROOT/holdout" sparse-checkout set --no-cone PROJECT_STATUS.json
@@ -264,7 +274,7 @@ jobs:
         run: |
           python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
           python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 peft==0.13.2 safetensors==0.5.4
-      - name: Pair parent and child on new source, withheld TOPA and old-skill retention
+      - name: Pair parent/child on new source, fresh peer and old retention; restore parent
         run: |
           python -m tools.essence_v54_neural_loop exam \
             --plan "$ROOT/plan.json" --parent "$V54_PARENT" \
@@ -277,9 +287,11 @@ jobs:
           print("Status:",p["status"])
           for k,v in p["metrics"].items():
               print(k,v)
+          print("Parent restored after model exam:",p["parent_restored_after_shadow_exam"])
+          print("Withheld peer:",p["holdout_repo"])
           print("Training time (seconds):",p["training_seconds"])
           print("Exam time (seconds):",p["exam_seconds"])
-          print("Internal prospective shadow only; no external custodian.")
+          print("Internal paired shadow research, not independent external validation.")
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
