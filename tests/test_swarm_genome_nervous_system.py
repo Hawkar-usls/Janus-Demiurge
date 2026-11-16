@@ -5,6 +5,7 @@ import unittest
 from swarm_genome_nervous_system import build_nervous_system
 
 
+# Separate evidence from identity lineage.
 class SwarmGenomeNervousSystemTests(unittest.TestCase):
     def _result(self):
         return {
