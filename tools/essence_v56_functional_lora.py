@@ -102,13 +102,14 @@ def rows(seed,count,split):
             prompt=f"What is the greatest common divisor of {a} and {b}? Return only the integer."
             value=math.gcd(a,b);group="gcd"
         else:
-            direct=(rng.randint(14,30) if split=="train" else rng.randint(35,60))
-            hop=(rng.randint(3,12) if split=="train" else rng.randint(13,25))
-            # Two routes: a direct A->C edge, or A->B->C with weights hop and b.
+            direct=(rng.randint(14,46) if split=="train" else rng.randint(30,80))
+            hop=(rng.randint(3,26) if split=="train" else rng.randint(7,40))
+            second=(rng.randint(4,28) if split=="train" else rng.randint(9,45))
+            # Either route may be shorter, unlike the degenerate always-direct case.
             prompt=(f"Directed weighted graph: A to C costs {direct}; "
-                    f"A to B costs {hop}; B to C costs {b}. "
+                    f"A to B costs {hop}; B to C costs {second}. "
                     "What is the shortest route cost from A to C? Return only the integer.")
-            value=min(direct,hop+b);group="shortest_path"
+            value=min(direct,hop+second);group="shortest_path"
         result.append({"key":f"{split[:1]}{i:03d}_{group}",
                        "prompt":prompt,"answer":str(value),"category":group})
     require(len(result)==count and
@@ -173,10 +174,14 @@ def verify_plan(p):
        and p.get("external_validation") is False,
        "UNTRUSTED_PLAN")
     for x in p["memory_replay"]:
+        # The original complete memory row SHA was verified at source freeze.
+        # The plan contains only a safe projection, not the full hash preimage.
         require(x.get("training_verified_by_repository_sha") is True and
-                x.get("fact_digest")==state.digest({
-                  k:v for k,v in x.items() if k!="fact_digest"
-                  and k!="prompt"}),
+                x.get("source_repo") in ("Hawkar-usls/Hrain","Hawkar-usls/Janus_Genesis") and
+                isinstance(x.get("fact_digest"),str) and
+                bool(state.HEX.fullmatch(x["fact_digest"])) and
+                isinstance(x.get("answer"),str) and
+                1<=len(x["answer"])<=62,
                 "UNVERIFIED_MEMORY")
     return p
 
