@@ -105,15 +105,31 @@ class NervousGenomeBuilder:
             lessons=[],
             constraints=list(NERVOUS_SYSTEM_LAWS),
         )
+        # Peer messages, observations and fact clusters create *contextual*
+        # edges, not an entitlement to cross-entity identity inheritance.
+        # The canonical genome firewall requires separately approved JANUS
+        # lineage for true extra identity parents. Never approve external
+        # observations or peer text merely to satisfy this visualization.
         node = self.genome.register_spiral_turn(
             turn,
             identity_strand=_clean(state),
             evidence_strand=_clean(evidence),
-            extra_parent_ids=list(extra_parents or []),
+            extra_parent_ids=[],
             relation=relation,
         )
         relmap = dict(parent_relations or {})
-        for parent_id in node.parent_ids:
+        contextual = list(extra_parents or [])
+        if any(p not in self.genome.nodes for p in contextual):
+            raise ValueError("UNKNOWN_CONTEXTUAL_EVIDENCE_PARENT")
+        if node.genome_id in contextual:
+            raise ValueError("SELF_REFERENTIAL_CONTEXTUAL_EDGE")
+        # Preserve all evidence associations as separate typed edges; only
+        # the same-entity ancestry below is an approved genome parent.
+        seen = set()
+        for parent_id in [*node.parent_ids, *contextual]:
+            if parent_id in seen:
+                continue
+            seen.add(parent_id)
             edge_relation = relmap.get(parent_id)
             if edge_relation is None:
                 edge_relation = (
@@ -557,6 +573,8 @@ class NervousGenomeBuilder:
                 "same_source_multi_scout_is_independent_replication": False,
                 "round2_new_fact_means_exact_message_caused_fact": False,
                 "exact_causal_mapping_requires_explicit_source_artifact": True,
+                "typed_context_edges_are_identity_parents": False,
+                "cross_entity_identity_inheritance_from_peer_evidence": False,
             },
             "indexes": {
                 "scout_round_nodes": {
@@ -707,7 +725,13 @@ def self_test() -> None:
     )
     fact_x = out["indexes"]["fact_nodes"]["FACT_X"]
     parents = out["swarm_genome_ledger"]["nodes"][fact_x]["parent_ids"]
-    assert len(parents) == 2
+    assert len(parents) == 0
+    context_edges = [
+        e for e in out["typed_interaction_edges"]
+        if e["child_genome_id"] == fact_x and
+        e["relation"] == "SUPPORTS_FACT_CLUSTER"
+    ]
+    assert len(context_edges) == 2
     assert out["evidence_boundary"]["same_source_multi_scout_is_independent_replication"] is False
     assert "SCOUT_A::R2" in out["indexes"]["scout_round_nodes"]
     assert "SCOUT_B::R2" in out["indexes"]["scout_round_nodes"]

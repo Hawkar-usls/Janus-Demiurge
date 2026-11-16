@@ -115,7 +115,15 @@ class SwarmGenomeNervousSystemTests(unittest.TestCase):
         out = build_nervous_system(self._result())
         fact_node = out["indexes"]["fact_nodes"]["FACT_X"]
         parents = out["swarm_genome_ledger"]["nodes"][fact_node]["parent_ids"]
-        self.assertEqual(len(parents), 2)
+        self.assertEqual(len(parents), 0, "source evidence must not grant identity parentage")
+        context_edges = [
+            edge for edge in out["typed_interaction_edges"]
+            if edge["child_genome_id"] == fact_node
+            and edge["relation"] == "SUPPORTS_FACT_CLUSTER"
+        ]
+        self.assertEqual(len(context_edges), 2)
+        self.assertEqual(len({e["parent_genome_id"] for e in context_edges}), 2)
+        self.assertFalse(out["evidence_boundary"]["typed_context_edges_are_identity_parents"])
         self.assertEqual(out["stats"]["observation_node_count"], 3)
 
     def test_peer_message_becomes_parent_context_for_round2(self):
@@ -127,6 +135,7 @@ class SwarmGenomeNervousSystemTests(unittest.TestCase):
             for e in out["typed_interaction_edges"]
         }
         self.assertIn((msg_node, round2_node, "PEER_CONTEXT_FOR"), edges)
+        self.assertNotIn(msg_node, out["swarm_genome_ledger"]["nodes"][round2_node]["parent_ids"])
 
     def test_response_links_inbound_message_and_new_observation(self):
         out = build_nervous_system(self._result())
