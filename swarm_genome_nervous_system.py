@@ -718,7 +718,16 @@ def self_test() -> None:
     )
     fact_x = out["indexes"]["fact_nodes"]["FACT_X"]
     parents = out["swarm_genome_ledger"]["nodes"][fact_x]["parent_ids"]
-    assert len(parents) == 2
+    # Evidence edges are never authorization-bearing genealogy parents.
+    assert parents == []
+    support_edges = [
+        edge for edge in out["typed_interaction_edges"]
+        if edge["child_genome_id"] == fact_x
+        and edge["relation"] == "SUPPORTS_FACT_CLUSTER"
+    ]
+    assert len(support_edges) == 2
+    assert all(edge["interaction_only"] and not edge["identity_inheritance"]
+               for edge in support_edges)
     assert out["evidence_boundary"]["same_source_multi_scout_is_independent_replication"] is False
     assert "SCOUT_A::R2" in out["indexes"]["scout_round_nodes"]
     assert "SCOUT_B::R2" in out["indexes"]["scout_round_nodes"]
