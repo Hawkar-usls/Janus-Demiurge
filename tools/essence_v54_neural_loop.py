@@ -130,7 +130,9 @@ def safe_source(root,repo):
          f.stat().st_size<=MAX_BYTES,"V54_UNSAFE_SOURCE")
     raw=f.read_bytes()
     obj=json.loads(raw.decode("utf-8"),
-                   object_pairs_hook=lambda pairs: unique(pairs))
+                   object_pairs_hook=unique,
+                   parse_constant=lambda _: (_ for _ in ()).throw(
+                       ValueError("V54_NONFINITE_SOURCE_JSON")))
     fail(isinstance(obj,dict),"V54_INVALID_OBJECT")
     return hashlib.sha256(raw).hexdigest(),obj
 
