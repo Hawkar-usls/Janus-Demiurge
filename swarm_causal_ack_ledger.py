@@ -336,19 +336,25 @@ class _GenomeProjection:
             outcome=relation,
             constraints=list(CAUSAL_ACK_LAWS),
         )
-        parent_pairs = list(parents or [])
+        # The inputs below are evidence and message provenance links, never
+        # parent identities. Identity ancestry stays protected by
+        # SwarmGenomeLedger's cross-entity authorization firewall.
+        parent_pairs = list(dict.fromkeys(parents or []))
         node = self.genome.register_spiral_turn(
             turn,
             identity_strand=state,
             evidence_strand=evidence,
-            extra_parent_ids=[pid for pid, _ in parent_pairs],
             relation=relation,
         )
         for parent_id, edge_relation in parent_pairs:
+            if parent_id not in self.genome.nodes or parent_id == node.genome_id:
+                raise ValueError("UNKNOWN_OR_SELF_CAUSAL_ACK_EVIDENCE_PARENT")
             body = {
                 "parent_genome_id": parent_id,
                 "child_genome_id": node.genome_id,
                 "relation": edge_relation,
+                "identity_inheritance": False,
+                "interaction_only": True,
             }
             self.typed_edges.append({
                 "edge_id": "EDGE::" + fingerprint_payload(body)[:28],

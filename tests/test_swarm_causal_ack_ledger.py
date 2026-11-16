@@ -139,5 +139,27 @@ class CausalAckLedgerTests(unittest.TestCase):
         self.assertFalse(bundle["causal_acks"][0]["work_route_proven"])
 
 
+    def test_evidence_links_cannot_inherit_identity_authority(self):
+        # This used to raise FOREIGN_OR_UNTRUSTED_IDENTITY_PARENT because
+        # peer messages were mistaken for identity genealogy parents.
+        from swarm_causal_ack_ledger import _GenomeProjection
+        p = _GenomeProjection("TEST", "SECURITY")
+        message = p.add(
+            "MESSAGE::controlled", {"kind": "MESSAGE"}, {"verified": False},
+            relation="MESSAGE_ANCHOR",
+        )
+        claim = p.add(
+            "WORK_CLAIM::controlled", {"kind": "WORK_CLAIM"},
+            {"verified": False},
+            parents=[(message, "PEER_CONTEXT_ONLY")],
+            relation="WORK_CLAIM",
+        )
+        self.assertNotIn(message, p.genome.nodes[claim].parent_ids)
+        self.assertTrue(p.typed_edges[-1]["interaction_only"])
+        self.assertFalse(p.typed_edges[-1]["identity_inheritance"])
+        with self.assertRaisesRegex(ValueError, "UNKNOWN_OR_SELF"):
+            p.add("INVALID::parent", {}, {},
+                  parents=[("UNKNOWN", "FAKE_IDENTITY")])
+
 if __name__ == "__main__":
     unittest.main()

@@ -17,23 +17,45 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: janus-causal-ack-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
-  causal_ack:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+  pr-contract:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
-          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.11'
+      - name: Verify contract without repository write token or persistence
+        run: |
+          python swarm_causal_ack_ledger.py --self-test
+          python -m unittest tests.test_swarm_causal_ack_ledger
+
+  causal_ack:
+    # A PR can contain arbitrary code. Never run it with contents:write.
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: main
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: '3.11'
 
@@ -95,8 +117,9 @@ jobs:
       - name: Build real-run CAUSAL_ACK genome
         if: steps.guard.outputs.skip != 'true' && steps.latest.outputs.found == 'true'
         shell: bash
+        env:
+          RUN_DIR: ${{ steps.latest.outputs.run_dir }}
         run: |
-          RUN_DIR='${{ steps.latest.outputs.run_dir }}'
           python swarm_causal_ack_ledger.py \
             --run-dir "$RUN_DIR" \
             --output runtime/CAUSAL_ACK_GENOME.json
@@ -111,7 +134,7 @@ jobs:
 
       - name: Upload CAUSAL_ACK genome
         if: steps.guard.outputs.skip != 'true' && steps.latest.outputs.found == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: janus-causal-ack-genome
           path: runtime/CAUSAL_ACK_GENOME.json
@@ -121,8 +144,9 @@ jobs:
       - name: Persist append-only CAUSAL_ACK genome beside orchestrator run
         if: github.event_name == 'push' && steps.guard.outputs.skip != 'true' && steps.latest.outputs.found == 'true'
         shell: bash
+        env:
+          RUN_DIR: ${{ steps.latest.outputs.run_dir }}
         run: |
-          RUN_DIR='${{ steps.latest.outputs.run_dir }}'
           TARGET="$RUN_DIR/CAUSAL_ACK_GENOME.json"
           if [[ -f "$TARGET" ]]; then
             echo "CAUSAL_ACK_ALREADY_PERSISTED=$TARGET"
