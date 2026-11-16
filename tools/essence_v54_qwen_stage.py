@@ -33,7 +33,7 @@ PARENT_LINEAGE="bea00f89a3e03b05faaed901afdb6cdd0c7f5f70293615250c20dec171196b6c
 CHILD_LINEAGE="9f8d54a6e3d497a46a12d3a27752caa710900e1c5b4a506f6477812d35162025"
 MODELS={"g2":PARENT,"g3":CHILD}
 PROMPT="In Hawkar-usls/iNaiHR/PROJECT_STATUS.json, what is the exact value of portfolio_class? Output only that value."
-MAX_REPLY=128
+MAX_REPLY=384
 
 
 def require(value,error):
