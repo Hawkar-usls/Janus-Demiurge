@@ -11,7 +11,7 @@ from tools import essence_v54_qwen_stage as m
 class QwenStageTests(unittest.TestCase):
     def test_static_model_allowlist_and_stage_policy(self):
         self.assertEqual(set(m.MODELS),{"g2","g3"})
-        self.assertEqual(m.PARENT,len(m.PARENT)*"z" if False else m.MODELS["g2"])
+        self.assertEqual(m.PARENT,m.MODELS["g2"])
         self.assertNotEqual(m.PARENT,m.CHILD)
         self.assertEqual(m.verify_route(m.route("g2")),"g2")
         self.assertEqual(m.verify_route(m.route("g3")),"g3")
