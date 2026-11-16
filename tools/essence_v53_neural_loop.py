@@ -165,7 +165,12 @@ def verify_memory(ledger):
              isinstance(row.get("answer"),str) and
              1<=len(row["answer"])<=62,"V53_UNVERIFIED_MEMORY")
         memory.append({"key":row["key"],"answer":row["answer"],
-                       "prompt":state.question(row["source_repo"],row["key"])})
+                       "prompt":state.question(row["source_repo"],row["key"]),
+                       "source_repo":row["source_repo"],
+                       "source_commit":row["source_commit"],
+                       "source_file_sha256":row["source_file_sha256"],
+                       "fact_digest":row["fact_digest"],
+                       "training_verified_by_repository_sha":True})
     fail(len(memory)>=4,"V53_MEMORY_NOT_VERIFIED")
     return memory[-4:]
 
@@ -233,13 +238,28 @@ def verify_plan(p,lock,ledger=None):
          p.get("sentinel_dispatch") is False and
          p.get("external_validation") is False,"V53_INVALID_OR_ESCALATED_PLAN")
     memory=p.get("memory_replay")
-    fail(isinstance(memory,list) and len(memory)==4 and
-         all(isinstance(x,dict) and x.get("key") in MEMORY_KEYS
-             and x.get("answer") and
-             x.get("prompt")==state.question(
-                  "Hawkar-usls/Hrain" if x["answer"]=="HRain" else
-                  "Hawkar-usls/Janus_Genesis",x["key"])
-             for x in []),"V53_MEMORY_PLAN_INVALID")
+    fail(isinstance(memory,list) and len(memory)==4,
+         "V53_MEMORY_PLAN_INVALID")
+    for item in memory:
+        repo=item.get("source_repo")
+        fail(isinstance(item,dict) and
+             repo in ("Hawkar-usls/Hrain","Hawkar-usls/Janus_Genesis") and
+             item.get("key") in MEMORY_KEYS and
+             isinstance(item.get("answer"),str) and
+             1<=len(item["answer"])<=62 and
+             not state.SECRET.search(item["answer"]) and
+             item.get("prompt")==state.question(repo,item["key"]) and
+             item.get("training_verified_by_repository_sha") is True and
+             isinstance(item.get("source_commit"),str) and
+             bool(state.SHA1.fullmatch(item["source_commit"])) and
+             isinstance(item.get("source_file_sha256"),str) and
+             bool(state.HEX.fullmatch(item["source_file_sha256"])) and
+             isinstance(item.get("fact_digest"),str) and
+             state.source_fact_memory(repo,item["source_file_sha256"],
+                         item["source_commit"],
+                         {"key":item["key"],"answer":item["answer"]})["fact_digest"]
+                 ==item["fact_digest"],
+             "V53_UNVERIFIED_MEMORY_IN_PLAN")
     if ledger is not None:
         validate_ledger(ledger)
         fail(p.get("prior_ledger_sha256")==ledger["sha256"] and
