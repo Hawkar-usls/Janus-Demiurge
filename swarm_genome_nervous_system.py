@@ -105,15 +105,24 @@ class NervousGenomeBuilder:
             lessons=[],
             constraints=list(NERVOUS_SYSTEM_LAWS),
         )
+        # Message, observation and fact links are evidence, NOT identity
+        # inheritance. The genome firewall deliberately rejects untrusted
+        # cross-entity parents. Keep that protection and record such links as
+        # typed interaction edges outside GenomeNode.parent_ids.
+        context_ids = list(dict.fromkeys(str(p) for p in (extra_parents or [])))
         node = self.genome.register_spiral_turn(
             turn,
             identity_strand=_clean(state),
             evidence_strand=_clean(evidence),
-            extra_parent_ids=list(extra_parents or []),
             relation=relation,
         )
         relmap = dict(parent_relations or {})
-        for parent_id in node.parent_ids:
+        for parent_id in dict.fromkeys([*node.parent_ids, *context_ids]):
+            if parent_id not in self.genome.nodes:
+                raise ValueError(f"UNKNOWN_INTERACTION_SOURCE:{parent_id}")
+            if parent_id == node.genome_id:
+                raise ValueError("SELF_REFERENTIAL_INTERACTION_EDGE")
+            is_identity_parent = parent_id in node.parent_ids
             edge_relation = relmap.get(parent_id)
             if edge_relation is None:
                 edge_relation = (
@@ -125,6 +134,8 @@ class NervousGenomeBuilder:
                 "parent_genome_id": parent_id,
                 "child_genome_id": node.genome_id,
                 "relation": edge_relation,
+                "identity_inheritance": is_identity_parent,
+                "interaction_only": not is_identity_parent,
             }
             self.edges.append(
                 {
