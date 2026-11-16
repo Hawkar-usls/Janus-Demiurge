@@ -129,6 +129,14 @@ class FederatedNeuralTests(unittest.TestCase):
             fp.write_text('{"project":"ok","project":"override"}')
             with self.assertRaisesRegex(ValueError,"DUPLICATE_JSON_KEY"):
                 m.safe_source(root/"inaihr","Hawkar-usls/iNaiHR")
+            # The selected learning keys can all look safe while unrelated
+            # unreviewed source fields contain non-finite JSON extensions.
+            fp.write_text(json.dumps(fixture("inaihr"))[:-1]+',"extra":NaN}')
+            with self.assertRaisesRegex(ValueError,"NONFINITE_SOURCE_JSON"):
+                m.safe_source(root/"inaihr","Hawkar-usls/iNaiHR")
+            fp.write_text(json.dumps(fixture("inaihr"))[:-1]+',"extra":Infinity}')
+            with self.assertRaisesRegex(ValueError,"NONFINITE_SOURCE_JSON"):
+                m.safe_source(root/"inaihr","Hawkar-usls/iNaiHR")
 
     def test_no_model_text_can_escalate_source_authority(self):
         with tempfile.TemporaryDirectory() as d:
