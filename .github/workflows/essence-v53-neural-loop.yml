@@ -134,7 +134,7 @@ jobs:
           ref: essence-peer-shadow-state
           path: runtime/essence/v53/state
           persist-credentials: false
-      - uses: actions/download-artifact@b13b49a744c866f0544ba462e3d110e8e698b13f
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: essence-v53-plan-${{ github.run_id }}
           path: runtime/essence/v53
@@ -156,6 +156,10 @@ jobs:
           print("V53_TRAIN_ID="+p["source_id"])
           print("V53_TRAIN_COMMIT="+p["source_commit"])
           PY
+      - name: Fetch pinned training source only, no access to TOPA
+        shell: bash
+        run: |
+          set -euo pipefail
           case "$V53_TRAIN_ID" in
             demihead) repo=Demi_Head ;;
             swarm) repo=janus-distributed-ai-swarm ;;
@@ -202,11 +206,11 @@ jobs:
           ref: essence-peer-shadow-state
           path: runtime/essence/v53/state
           persist-credentials: false
-      - uses: actions/download-artifact@b13b49a744c866f0544ba462e3d110e8e698b13f
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: essence-v53-plan-${{ github.run_id }}
           path: runtime/essence/v53
-      - uses: actions/download-artifact@b13b49a744c866f0544ba462e3d110e8e698b13f
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: essence-v53-candidate-${{ github.run_id }}
           path: runtime/essence/v53
@@ -226,6 +230,10 @@ jobs:
           print("V53_PARENT="+str(parent))
           print("V53_HOLDOUT_COMMIT="+p["holdout_commit"])
           PY
+      - name: Fetch only source-pinned withheld TOPA repo in examiner job
+        shell: bash
+        run: |
+          set -euo pipefail
           git clone --quiet --depth 1 --filter=blob:none --sparse https://github.com/Hawkar-usls/TOPA.git "$ROOT/holdout"
           git -C "$ROOT/holdout" fetch --quiet --depth 1 origin "$V53_HOLDOUT_COMMIT"
           git -C "$ROOT/holdout" checkout --quiet --detach "$V53_HOLDOUT_COMMIT"
@@ -275,15 +283,15 @@ jobs:
           ref: essence-peer-shadow-state
           path: runtime/essence/v53/state
           persist-credentials: true
-      - uses: actions/download-artifact@b13b49a744c866f0544ba462e3d110e8e698b13f
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: essence-v53-plan-${{ github.run_id }}
           path: runtime/essence/v53
-      - uses: actions/download-artifact@b13b49a744c866f0544ba462e3d110e8e698b13f
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: essence-v53-candidate-${{ github.run_id }}
           path: runtime/essence/v53
-      - uses: actions/download-artifact@b13b49a744c866f0544ba462e3d110e8e698b13f
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: essence-v53-exam-${{ github.run_id }}
           path: runtime/essence/v53
