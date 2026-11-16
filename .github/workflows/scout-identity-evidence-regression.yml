@@ -1,0 +1,42 @@
+name: Scout evidence vs identity firewall regression
+
+on:
+  pull_request:
+    paths:
+      - 'swarm_genome_nervous_system.py'
+      - 'swarm_genome_ledger.py'
+      - 'tests/test_swarm_genome_nervous_system.py'
+      - 'tests/test_swarm_genome_ledger.py'
+      - 'tests/test_foreign_trait_lineage_firewall.py'
+      - '.github/workflows/scout-identity-evidence-regression.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'swarm_genome_nervous_system.py'
+      - 'swarm_genome_ledger.py'
+      - 'tests/test_swarm_genome_nervous_system.py'
+      - 'tests/test_swarm_genome_ledger.py'
+      - 'tests/test_foreign_trait_lineage_firewall.py'
+      - '.github/workflows/scout-identity-evidence-regression.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-evidence-not-identity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.11'
+      - name: Test only verified identity parents can inherit authority
+        run: |
+          python swarm_genome_nervous_system.py --self-test
+          python -m unittest discover -s tests -p test_swarm_genome_nervous_system.py -v
+          python -m unittest discover -s tests -p test_swarm_genome_ledger.py -v
+          python -m unittest discover -s tests -p test_foreign_trait_lineage_firewall.py -v
