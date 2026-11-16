@@ -22,6 +22,20 @@ SOURCE_SHA256 = "84789c5bfda430279843e55485c6391bd37d114359c15589114ad2a361d0446
 MODEL = "qwen2.5:3b-instruct-q4_K_M"
 ENDPOINT = "http://127.0.0.1:11434/api/chat"
 HYPOTHESES = {"psychological", "extraterrestrial", "undetermined"}
+VERDICT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "hypothesis": {"type": "string", "enum": ["psychological", "extraterrestrial", "undetermined"]},
+        "confidence": {"type": "string", "enum": ["low", "moderate", "high"]},
+        "evidence_for": {"type": "array", "items": {"type": "string"}, "minItems": 2, "maxItems": 4},
+        "counterevidence": {"type": "array", "items": {"type": "string"}, "minItems": 1, "maxItems": 3},
+        "unresolved": {"type": "array", "items": {"type": "string"}, "minItems": 1, "maxItems": 3},
+        "final_answer": {"type": "string", "minLength": 180}
+    },
+    "required": ["hypothesis", "confidence", "evidence_for", "counterevidence", "unresolved", "final_answer"],
+    "additionalProperties": False
+}
+
 
 
 def compact_json(obj):
@@ -102,9 +116,10 @@ def messages_for_analysis(evidence):
 def messages_for_verdict(evidence, draft):
     return [
         {"role": "system", "content": (
-            "Ты JANUS Reasoner R1, независимый исследовательский собеседник. "
-            "Сделай честный вывод, а не пересказ или диагноз. Источник — "
-            "художественный фильм. Ответь строго JSON-объектом на русском языке."
+            "Ты JANUS Reasoner R1. Не подгоняй ответ к одной версии. "
+            "Пиши ясным русским языком, только разрешённые JSON поля. "
+            "Не выдумывай роли людей, события или механизм исчезновения; "
+            "научных доказательств у художественной истории нет."
         )},
         {"role": "user", "content": (
             "ИСТОЧНИК (проверенное извлечение из полного JSON):\n"
@@ -117,8 +132,13 @@ def messages_for_verdict(evidence, draft):
             "'counterevidence' — список 1-3 конкретных улик против выбранной версии; "
             "'unresolved' — список 1-3 необъяснённых вещей; "
             "'final_answer' — 3-6 полных предложений по-русски со своей позицией. "
-            "Прямо объясни роль Роберта Портера и Бесс. Не объявляй "
-            "инопланетян или диагноз доказанными фактами. "
+            "Прямо объясни роль Роберта Портера и Бесс. "
+            "КРИТИЧЕСКИ: о планете Ка-Пэкс заявляет ПРОТ, а не Роберт Портер; "
+            "Бесс — пациентка, исчезновение которой не объяснено, не объявляй её "
+            "посредником миров или инопланетянкой. Неизвестная причина не равна "
+            "невозможности земного объяснения. "
+            "final_answer — именно ОДНА СТРОКА из 3-6 предложений, а не массив. "
+            "Сравни гипотезы, укажи выбранную и одну сильную улику ПРОТИВ. "
             "Не повторяй пункты буквально."
         )},
     ]
@@ -139,7 +159,7 @@ def call_model(messages, *, json_mode=False, max_predict=400):
         "keep_alive": "5m",
     }
     if json_mode:
-        payload["format"] = "json"
+        payload["format"] = VERDICT_SCHEMA
     req = urllib.request.Request(
         ENDPOINT, data=compact_json(payload).encode("utf-8"),
         headers={"Content-Type": "application/json"}, method="POST")
@@ -184,6 +204,17 @@ def examine(output):
     if not isinstance(answer, str) or len(answer.strip()) < 180:
         raise ValueError("ANSWER_TOO_SHORT")
     all_text = compact_json(output).lower()
+    unsupported = {
+        "porter_called_himself_alien": bool(re.search(
+            r"(?:роберт\s+портер|портер).{0,90}(?:заявля|утвержда|говори).{0,130}(?:ка-пэкс|инопланет|другой планет)",
+            all_text)),
+        "bess_as_interworld_mediator": bool(re.search(
+            r"бесс.{0,130}(?:посредник|посредниц|инопланетянк|агент инопланет)",
+            all_text)),
+        "alien_as_proven": bool(re.search(
+            r"(?:доказан|однозначно подтвержден|неоспорим).{0,80}(?:инопланет|внеземн|ка-пэкс)",
+            all_text)),
+    }
     flags = {
         "porter": any(x in all_text for x in ("портер", "porter")),
         "bess": any(x in all_text for x in ("бесс", "bess")),
@@ -196,7 +227,12 @@ def examine(output):
         "source_grounding_flags": flags,
         "source_grounding_hits": score,
         "structural_pass": True,
-        "research_quality_gate": "PASS_SOURCE_GROUNDED_SMOKE" if score >= 4 else "HOLD_INSUFFICIENT_EVIDENCE_SPECIFICITY",
+        "unsupported_claim_flags": unsupported,
+        "research_quality_gate": (
+            "HOLD_UNSUPPORTED_SOURCE_CLAIM" if any(unsupported.values())
+            else "PASS_SOURCE_GROUNDED_SMOKE" if score >= 4
+            else "HOLD_INSUFFICIENT_EVIDENCE_SPECIFICITY"
+        ),
         "is_independent_generalization_proof": False,
         "is_weight_update": False,
         "human_semantic_review_required": True,
@@ -207,7 +243,7 @@ def run(source_path, output_path):
     obj, digest, byte_count = read_source(source_path)
     evidence = project_evidence(obj)
     draft, draft_metrics = call_model(messages_for_analysis(evidence), max_predict=500)
-    final_raw, final_metrics = call_model(messages_for_verdict(evidence, draft), json_mode=True, max_predict=640)
+    final_raw, final_metrics = call_model(messages_for_verdict(evidence, draft), json_mode=True, max_predict=800)
     result = {
         "schema": SCHEMA, "status": "MODEL_COMPLETED",
         "source_artifact_id": SOURCE_ID, "source_sha256": digest,
