@@ -18,7 +18,8 @@ def fixture(name):
             "repository": "https://github.com/Hawkar-usls/" + name,
             "portfolio_class": "research",
             "last_reviewed": "2026-11-16",
-            "maturity": "ACTIVE"}
+            "maturity": "ACTIVE",
+            "completion_status":"TEST_ONLY_COMPLETE"}
 
 
 def init_repo(path, record):
