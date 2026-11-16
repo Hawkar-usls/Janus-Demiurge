@@ -73,53 +73,55 @@ def locked(path=LOCK_PATH):
 
 
 def rows(seed,count,split):
-    """Pure ground-truth oracle, deterministic and completely independent of Qwen."""
+    """Deterministic exact-label oracle, deduplicated without leaking exam cases."""
     require(split in ("train","heldout","replay"),"BAD_DATA_SPLIT")
     require((split=="train" and seed==LOCK["training_seed"] and count==LOCK["training_count"])
             or (split=="replay" and seed==LOCK["replay_seed"] and count==LOCK["replay_count"])
             or (split=="heldout" and seed==LOCK["heldout_seed"] and count==LOCK["heldout_count"]),
             "UNREGISTERED_ORACLE_SEED")
     rng=random.Random(seed)
-    result=[]
+    result=[];seen=set()
     for i in range(count):
         kind=i%6
-        # Heldout numbers are deliberately disjoint from the training range.
-        lo,hi=(11,89) if split!="heldout" else (111,189)
-        a=rng.randint(lo,hi);b=rng.randint(lo,hi)
-        if kind==0:
-            prompt=f"Compute {a} plus {b}. Return only the integer."
-            value=a+b;group="addition"
-        elif kind==1:
-            prompt=f"Compute {a+b} minus {b}. Return only the integer."
-            value=a;group="subtraction"
-        elif kind==2:
-            factor=(rng.randint(11,19) if split!="heldout" else rng.randint(21,29))
-            prompt=f"Compute {a} multiplied by {factor}. Return only the integer."
-            value=a*factor;group="multiplication"
-        elif kind==3:
-            div=(rng.randint(6,17) if split!="heldout" else rng.randint(18,33))
-            prompt=f"What is the remainder of {a+b} divided by {div}? Return only the integer."
-            value=(a+b)%div;group="modulus"
-        elif kind==4:
-            prompt=f"What is the greatest common divisor of {a} and {b}? Return only the integer."
-            value=math.gcd(a,b);group="gcd"
+        for retry in range(128):
+            lo,hi=(11,89) if split!="heldout" else (111,189)
+            a=rng.randint(lo,hi);b=rng.randint(lo,hi)
+            if kind==0:
+                prompt=f"Compute {a} plus {b}. Return only the integer."
+                value=a+b;group="addition"
+            elif kind==1:
+                prompt=f"Compute {a+b} minus {b}. Return only the integer."
+                value=a;group="subtraction"
+            elif kind==2:
+                factor=rng.randint(11,19) if split!="heldout" else rng.randint(21,29)
+                prompt=f"Compute {a} multiplied by {factor}. Return only the integer."
+                value=a*factor;group="multiplication"
+            elif kind==3:
+                div=rng.randint(6,17) if split!="heldout" else rng.randint(18,33)
+                prompt=f"What is the remainder of {a+b} divided by {div}? Return only the integer."
+                value=(a+b)%div;group="modulus"
+            elif kind==4:
+                prompt=f"What is the greatest common divisor of {a} and {b}? Return only the integer."
+                value=math.gcd(a,b);group="gcd"
+            else:
+                direct=rng.randint(14,46) if split!="heldout" else rng.randint(30,80)
+                hop=rng.randint(3,26) if split!="heldout" else rng.randint(7,40)
+                second=rng.randint(4,28) if split!="heldout" else rng.randint(9,45)
+                prompt=(f"Directed weighted graph: A to C costs {direct}; "
+                        f"A to B costs {hop}; B to C costs {second}. "
+                        "What is the shortest route cost from A to C? Return only the integer.")
+                value=min(direct,hop+second);group="shortest_path"
+            if prompt not in seen:
+                break
         else:
-            direct=(rng.randint(14,46) if split!="heldout" else rng.randint(30,80))
-            hop=(rng.randint(3,26) if split!="heldout" else rng.randint(7,40))
-            second=(rng.randint(4,28) if split!="heldout" else rng.randint(9,45))
-            # Either route may be shorter, unlike the degenerate always-direct case.
-            prompt=(f"Directed weighted graph: A to C costs {direct}; "
-                    f"A to B costs {hop}; B to C costs {second}. "
-                    "What is the shortest route cost from A to C? Return only the integer.")
-            value=min(direct,hop+second);group="shortest_path"
+            raise ValueError("V57_ORACLE_DEDUP_BUDGET_EXHAUSTED")
+        seen.add(prompt)
         result.append({"key":f"{split[:1]}{i:03d}_{group}",
                        "prompt":prompt,"answer":str(value),"category":group})
-    require(len(result)==count and
-            len({x["prompt"] for x in result})==count and
+    require(len(result)==count and len(seen)==count and
             all(1<=len(r["answer"])<=12 and len(r["prompt"])<255 for r in result),
             "NONUNIQUE_OR_INVALID_ORACLE")
     return result
-
 
 def frozen_memory(folder):
     p=Path(folder)/"research/essence/peer_v48_state/ledger.json"
