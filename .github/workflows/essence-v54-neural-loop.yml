@@ -75,24 +75,43 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: '3.11'
-      - name: Read strictly allowlisted source heads; only observe TOPA commit, not exam bytes
+      - name: Fetch four verified training sources; read only withheld peer HEAD SHA
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p "$ROOT/sources"
-          git clone --quiet --depth 1 --filter=blob:none --sparse https://github.com/Hawkar-usls/Demi_Head.git "$ROOT/sources/demihead"
-          git -C "$ROOT/sources/demihead" sparse-checkout set --no-cone PROJECT_STATUS.json
-          git clone --quiet --depth 1 --filter=blob:none --sparse https://github.com/Hawkar-usls/janus-distributed-ai-swarm.git "$ROOT/sources/swarm"
-          git -C "$ROOT/sources/swarm" sparse-checkout set --no-cone PROJECT_STATUS.json
-          git ls-remote https://github.com/Hawkar-usls/TOPA.git HEAD | awk '{print $1}' > "$ROOT/holdout-commit.txt"
-      - name: Seal at most one new factual cohort against current parent and future TOPA SHA
+          git clone --quiet --depth 1 --filter=blob:none --sparse https://github.com/Hawkar-usls/iNaiHR.git "$ROOT/sources/inaihr"
+          git -C "$ROOT/sources/inaihr" sparse-checkout set --no-cone PROJECT_STATUS.json
+          git clone --quiet --depth 1 --filter=blob:none --sparse https://github.com/Hawkar-usls/aura-oracle-tg.git "$ROOT/sources/aura"
+          git -C "$ROOT/sources/aura" sparse-checkout set --no-cone PROJECT_STATUS.json
+          git clone --quiet --depth 1 --filter=blob:none --sparse https://github.com/Hawkar-usls/Simptomat.git "$ROOT/sources/simptomat"
+          git -C "$ROOT/sources/simptomat" sparse-checkout set --no-cone PROJECT_STATUS.json
+          git clone --quiet --depth 1 --filter=blob:none --sparse https://github.com/Hawkar-usls/SCOBY-D0.git "$ROOT/sources/scoby"
+          git -C "$ROOT/sources/scoby" sparse-checkout set --no-cone PROJECT_STATUS.json
+          python - <<'PY'
+          import json,re,subprocess
+          from pathlib import Path
+          repos={"inaihr":"BFain","aura":"Janus",
+                 "simptomat":"Janus_Genesis","scoby":"Janus-HELIOS"}
+          heads={}
+          for sid,repo in repos.items():
+              result=subprocess.check_output(
+                  ["git","ls-remote",f"https://github.com/Hawkar-usls/{repo}.git","HEAD"],
+                  text=True,timeout=30).split()
+              if not result or not re.fullmatch("[0-9a-f]{40}",result[0]):
+                  raise SystemExit("V54_UNFROZEN_HOLDOUT_HEAD")
+              heads[sid]=result[0]
+          Path("runtime/essence/v54/holdout-commits.json").write_text(
+              json.dumps(heads,sort_keys=True,indent=2))
+          PY
+      - name: Seal at most one fresh paired source against previous receipts and withheld SHA
         id: freeze
         run: |
           set -euo pipefail
           python -m tools.essence_v54_neural_loop plan \
             --state "$ROOT/state" \
             --sources "$ROOT/sources" \
-            --holdout-commit "$(cat "$ROOT/holdout-commit.txt")" \
+            --holdout-commits "$ROOT/holdout-commits.json" \
             --memory "$ROOT/state/research/essence/peer_v48_state/ledger.json" \
             --out "$ROOT/plan.json"
           python - <<'PY' >> "$GITHUB_OUTPUT"
@@ -109,7 +128,7 @@ jobs:
           print("Decision:",p["action"])
           print("Parent:",p.get("parent_generation","unchanged"))
           print("Source:",p.get("source_repo","none"))
-          print("TOPA exam content remains unread until the separate exam job.")
+          print("Withheld peer repo content unread until the separate exam job.")
           print("No auto-promotion to production or Sentinel.")
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
