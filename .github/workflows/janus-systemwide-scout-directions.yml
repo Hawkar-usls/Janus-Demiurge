@@ -1,22 +1,6 @@
 name: JANUS Whole-System Scout Directions 17
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'scout_swarm/missions/JANUS_FULL_SYSTEM_SCOUT_DIRECTIONS-2026-08-22-v1.json'
-      - 'scout_swarm/orchestrator/**'
-      - 'tools/demiurge_systemwide_scout_runner.py'
-      - 'tools/demiurge_systemwide_independent_evidence.py'
-      - 'tools/demiurge_systemwide_frontier_gates.py'
-      - 'tools/demiurge_systemwide_frontier_gates_v2.py'
-      - 'tools/demiurge_swarm_orchestrator.py'
-      - 'tools/demiurge_swarm_peer_round.py'
-      - 'swarm_genome_ledger.py'
-      - 'spiral_evolution.py'
-      - 'swarm_genome_nervous_system.py'
-      - 'tests/test_swarm_genome_nervous_system.py'
-      - '.github/workflows/janus-systemwide-scout-directions.yml'
   push:
     branches: [main]
     paths:
@@ -49,7 +33,7 @@ jobs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       skip: ${{ steps.guard.outputs.skip }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
           fetch-depth: 2
@@ -63,7 +47,7 @@ jobs:
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         if: steps.guard.outputs.skip != 'true'
         with:
           python-version: '3.11'
@@ -99,10 +83,10 @@ jobs:
       max-parallel: 17
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: '3.11'
       - run: python -m pip install --disable-pip-version-check requests beautifulsoup4 pypdf
@@ -122,7 +106,7 @@ jobs:
             --report runtime/${{ matrix.id }}/report.json
       - name: Upload round 1 evidence report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: janus-systemwide-${{ matrix.id }}
           path: runtime/${{ matrix.id }}/report.json
@@ -135,15 +119,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: '3.11'
       - run: python -m pip install --disable-pip-version-check requests beautifulsoup4 pypdf
       - name: Download round 1 reports
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           pattern: janus-systemwide-SCOUT_*
           path: runtime/round1
@@ -153,7 +137,7 @@ jobs:
             --build-round runtime/round1 \
             --output-dir runtime/orchestrator
       - name: Upload communication bus
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: janus-orchestrator-bus
           path: runtime/orchestrator
@@ -170,20 +154,20 @@ jobs:
       max-parallel: 17
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: '3.11'
       - run: python -m pip install --disable-pip-version-check requests beautifulsoup4 pypdf
       - name: Download round 1 reports
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           pattern: janus-systemwide-SCOUT_*
           path: runtime/round1
       - name: Download orchestrator bus
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: janus-orchestrator-bus
           path: runtime/orchestrator
@@ -225,7 +209,7 @@ jobs:
             --report runtime/peer/${{ matrix.id }}/report.json
       - name: Upload peer report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: janus-peer-${{ matrix.id }}
           path: runtime/peer/${{ matrix.id }}/report.json
@@ -239,29 +223,29 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout mission branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
           fetch-depth: 0
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: '3.11'
       - run: python -m pip install --disable-pip-version-check requests beautifulsoup4 pypdf
       - name: Download round 1 reports
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           pattern: janus-systemwide-SCOUT_*
           path: runtime/round1
       - name: Download peer reports
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           pattern: janus-peer-SCOUT_*
           path: runtime/round2
       - name: Download orchestrator bus
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: janus-orchestrator-bus
           path: runtime/orchestrator
@@ -289,16 +273,18 @@ jobs:
           test -s "$GENOME"
           echo "JANUS_SWARM_GENOME_NERVOUS_SYSTEM_BINDING=PASS"
       - name: Upload genome nervous-system artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: janus-genome-nervous-system
           path: scout_swarm/orchestrator/outbox/JANUS_FULL_SYSTEM_SCOUT_DIRECTIONS_2026_08_22_V1/${{ github.run_id }}/GENOME_NERVOUS_SYSTEM.json
           if-no-files-found: error
           retention-days: 30
       - name: Persist append-only result, communication and genome lineage
+        env:
+          JANUS_TARGET_BRANCH: ${{ github.ref_name }}
         shell: bash
         run: |
-          BRANCH='${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}'
+          BRANCH="$JANUS_TARGET_BRANCH"
           git config user.name "janus-whole-system-scout"
           git config user.email "janus-whole-system-scout@users.noreply.github.com"
           git add -f scout_swarm/outbox/public_research scout_swarm/state/public_research
