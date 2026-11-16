@@ -1,0 +1,157 @@
+name: JANUS ESSENCE G2 K-PAX one-shot read-only answer
+
+on:
+  push:
+    branches: [research/kpax-one-shot-model-20261117]
+    paths:
+      - '.github/workflows/janus-kpax-one-shot-qa.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-kpax-20261117-one-shot
+  cancel-in-progress: false
+
+jobs:
+  genuine-g2-research-inference:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      HF_HUB_DISABLE_TELEMETRY: '1'
+      HF_HUB_DOWNLOAD_TIMEOUT: '120'
+      TOKENIZERS_PARALLELISM: 'false'
+      OMP_NUM_THREADS: '4'
+    steps:
+      - name: Checkout audited JANUS research inference source
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: research/kpax-one-shot-model-20261117
+          path: code
+          persist-credentials: false
+
+      - name: Read immutable source JSON from JANUS Meta Registry
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: 38f625b556bf4c81e2786cbbbda365c7a19e373b
+          path: registry
+          persist-credentials: false
+
+      - name: Read SHA-verified inherited JANUS ESSENCE Qwen G2 adapter
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          repository: Hawkar-usls/Janus-Demiurge
+          ref: essence-peer-shadow-state
+          path: checkpoint
+          sparse-checkout: |
+            models/gen0002
+          persist-credentials: false
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.11'
+
+      - name: Install pinned, isolated CPU inference runtime
+        run: |
+          python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 peft==0.13.2 safetensors==0.5.3
+
+      - name: Ask real JANUS G2 a neutral K-PAX question and preserve exact raw output
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=code python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          import torch
+          from peft import PeftModel
+          from tools import essence_v46_oracle_descendant as v46
+          from tools import essence_v47_repo_peer_evolution as v47
+          from tools import essence_v48_recurrent_state as lineage
+
+          src=Path('registry/data/JANUS-K-PAX-2001-PLOT-IDENTITY-AND-CAUSAL-INTERPRETATION-2026-11-17-v1.json')
+          raw=src.read_bytes()
+          assert len(raw) < 100000
+          datum=json.loads(raw)
+          assert datum['artifact_id']=='JANUS-K-PAX-2001-PLOT-IDENTITY-AND-CAUSAL-INTERPRETATION-2026-11-17-v1'
+          assert datum['epistemic_status']=='FICTIONAL_NARRATIVE_ANALYSIS_NOT_SCIENTIFIC_EVIDENCE'
+          assert len(datum['detailed_plot_chronology'])==19
+          assert len(datum['competing_interpretations'])==3
+          assert len(datum['evidence_matrix'])==6
+
+          # Full JSON is verified and parsed. The model receives a compressed
+          # source-derived context, not a false claim of 40 KB of direct attention.
+          fragments=[
+              'Сюжет: '+datum['abstract'][:780],
+              'Финал: '+('; '.join(datum['ending']['observed']))[:650],
+              'Версии: '+'; '.join(h['label']+': '+h['hypothesis'] for h in datum['competing_interpretations']),
+              'Слабые места: '+('; '.join(datum['ending']['not_shown_or_not_proved']))[:360],
+          ]
+          prompt=(
+              'Перед тобой краткое извлечение из JANUS Meta Registry о фильме K-PAX (2001). '
+              'Это художественный сюжет, не научное доказательство. '
+              + ' '.join(fragments) +
+              ' Вопрос к тебе, JANUS: кем ты считаешь Прота и почему? '
+              'Оцени обе версии, назови сильнейшие и слабейшие улики, '
+              'отдели факт сюжета от догадки и выскажи своё мнение. '
+              'Ответь по-русски, кратко, но содержательно. '
+              'Если вывод не определён, так и скажи.'
+          )
+          torch.set_num_threads(4)
+          torch.manual_seed(20261117)
+          model_dir=Path('checkpoint/models/gen0002')
+          lineage.check_model(model_dir,lineage.GEN2_SHA,lineage.GEN2_LINEAGE)
+          tokenizer,base=v46.tokenizer_and_base({})
+          model=PeftModel.from_pretrained(base,str(model_dir),is_trainable=False).to('cpu').eval()
+          messages=[
+              {'role':'system','content':'Ты JANUS ESSENCE G2, исследовательский собеседник. Это вопрос о художественном фильме. Твоё мнение не является эмпирическим доказательством.'},
+              {'role':'user','content':prompt},
+          ]
+          token_count=tokenizer.apply_chat_template(messages,tokenize=True,add_generation_prompt=True,return_tensors='pt').shape[1]
+          print('MODEL_INPUT_TOKENS=',token_count)
+          if token_count>650:
+              raise RuntimeError('MODEL_CONTEXT_TOO_LARGE_FAIL_CLOSED')
+          answer=v47.answer_text(tokenizer,model,messages,160)
+          out={
+            'schema':'janus.kpax.g2_answer.v1',
+            'source_repository':'Hawkar-usls/janus-meta-registry',
+            'source_commit':'38f625b556bf4c81e2786cbbbda365c7a19e373b',
+            'source_path':str(src.relative_to('registry')),
+            'source_sha256':hashlib.sha256(raw).hexdigest(),
+            'source_bytes_verified':len(raw),
+            'full_json_parsed':True,
+            'model_context_is_extracted_summary':True,
+            'model_context_input_tokens':token_count,
+            'question':'Кем ты считаешь Прота и почему? Назови сильнейшие и слабейшие улики.',
+            'model_name':v46.MODEL,
+            'model_revision':v46.REVISION,
+            'janus_essence_adapter_generation':'G2',
+            'adapter_sha256':lineage.GEN2_SHA,
+            'adapter_lineage_sha256':lineage.GEN2_LINEAGE,
+            'prompt_sha256':hashlib.sha256(prompt.encode('utf-8')).hexdigest(),
+            'raw_model_answer':answer,
+            'answer_status':'GENERATED_FROM_REAL_MODEL' if answer.strip() else 'EMPTY_GENERATION',
+            'read_only':True,
+            'model_weights_changed':False,
+            'scientific_evidence':False
+          }
+          Path('runtime').mkdir(exist_ok=True)
+          Path('runtime/janus-kpax-g2-answer.json').write_text(json.dumps(out,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          print('=== BEGIN REAL JANUS MODEL RESPONSE ===')
+          print(answer)
+          print('=== END REAL JANUS MODEL RESPONSE ===')
+          print('SOURCE_SHA256',out['source_sha256'])
+          if not answer.strip():
+              raise RuntimeError('EMPTY_MODEL_ANSWER')
+          PY
+
+      - name: Publish verifiable answer artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: janus-kpax-g2-real-answer-${{ github.run_id }}
+          path: runtime/janus-kpax-g2-answer.json
+          retention-days: 30
+          if-no-files-found: warn
