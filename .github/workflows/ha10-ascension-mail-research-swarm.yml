@@ -40,6 +40,8 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: '3.11'
+      - name: Install only research parser dependencies (no Copilot CLI)
+        run: python -m pip install --disable-pip-version-check requests beautifulsoup4 pypdf
       - name: Validate HA10 read-only PR contract without Copilot or write tokens
         run: |
           python tools/demiurge_mail_research_swarm.py --self-test
