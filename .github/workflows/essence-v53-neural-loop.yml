@@ -1,0 +1,339 @@
+name: ESSENCE v5.3 bounded prospective shadow neural generations
+
+on:
+  pull_request:
+    paths:
+      - 'tools/essence_v53_neural_loop.py'
+      - 'tests/test_essence_v53_neural_loop.py'
+      - 'research/essence/peer_v53/FROZEN_LOCK.json'
+      - '.github/workflows/essence-v53-neural-loop.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/essence_v53_neural_loop.py'
+      - 'tests/test_essence_v53_neural_loop.py'
+      - 'research/essence/peer_v53/FROZEN_LOCK.json'
+      - '.github/workflows/essence-v53-neural-loop.yml'
+  schedule:
+    - cron: '26 */4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: essence-v53-single-shadow-writer
+  cancel-in-progress: false
+
+env:
+  ROOT: runtime/essence/v53
+  LOCK: research/essence/peer_v53/FROZEN_LOCK.json
+  HF_HUB_DISABLE_TELEMETRY: '1'
+  HF_HUB_DOWNLOAD_TIMEOUT: '120'
+  TOKENIZERS_PARALLELISM: 'false'
+  OMP_NUM_THREADS: '4'
+
+jobs:
+  offline-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.11'
+      - name: Verify immutable research lock, live-source planning and malicious packet rejection
+        run: |
+          python -m py_compile tools/essence_v53_neural_loop.py tests/test_essence_v53_neural_loop.py
+          python -m unittest -v tests.test_essence_v53_neural_loop
+
+  preregister-new-source:
+    needs: offline-contract
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.ESSENCE_EVOLUTION_PAUSED != 'true' && vars.ESSENCE_V53_PAUSED != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    outputs:
+      ready: ${{ steps.freeze.outputs.ready }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: essence-peer-shadow-state
+          path: runtime/essence/v53/state
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.11'
+      - name: Read strictly allowlisted source heads; only observe TOPA commit, not exam bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$ROOT/sources"
+          git clone --quiet --depth 1 --filter=blob:none --sparse https://github.com/Hawkar-usls/Demi_Head.git "$ROOT/sources/demihead"
+          git -C "$ROOT/sources/demihead" sparse-checkout set --no-cone PROJECT_STATUS.json
+          git clone --quiet --depth 1 --filter=blob:none --sparse https://github.com/Hawkar-usls/janus-distributed-ai-swarm.git "$ROOT/sources/swarm"
+          git -C "$ROOT/sources/swarm" sparse-checkout set --no-cone PROJECT_STATUS.json
+          git ls-remote https://github.com/Hawkar-usls/TOPA.git HEAD | awk '{print $1}' > "$ROOT/holdout-commit.txt"
+      - name: Seal at most one new factual cohort against current parent and future TOPA SHA
+        id: freeze
+        run: |
+          set -euo pipefail
+          python -m tools.essence_v53_neural_loop plan \
+            --state "$ROOT/state" \
+            --sources "$ROOT/sources" \
+            --holdout-commit "$(cat "$ROOT/holdout-commit.txt")" \
+            --memory "$ROOT/state/research/essence/peer_v48_state/ledger.json" \
+            --out "$ROOT/plan.json"
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+          p=json.loads(Path("runtime/essence/v53/plan.json").read_text())
+          print("ready="+str(p["action"]=="TRAIN_SHADOW").lower())
+          PY
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          from pathlib import Path
+          p=json.loads(Path("runtime/essence/v53/plan.json").read_text())
+          print("### ESSENCE v5.3 source commitment")
+          print("Decision:",p["action"])
+          print("Parent:",p.get("parent_generation","unchanged"))
+          print("Source:",p.get("source_repo","none"))
+          print("TOPA exam content remains unread until the separate exam job.")
+          print("No auto-promotion to production or Sentinel.")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: essence-v53-plan-${{ github.run_id }}
+          path: runtime/essence/v53/plan.json
+          retention-days: 90
+          if-no-files-found: error
+
+  learn-inherited-weights:
+    needs: preregister-new-source
+    if: needs.preregister-new-source.outputs.ready == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 48
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: essence-peer-shadow-state
+          path: runtime/essence/v53/state
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: essence-v53-plan-${{ github.run_id }}
+          path: runtime/essence/v53
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.11'
+      - name: Checkout ONLY precommitted training repository and original parent, never TOPA exam
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' >> "$GITHUB_ENV"
+          import json
+          from pathlib import Path
+          from tools import essence_v53_neural_loop as m
+          p=m.verify_plan(m.state.load("runtime/essence/v53/plan.json"),m.LOCK)
+          parent=Path("runtime/essence/v53/state")/p["parent_path"]
+          m.state.check_model(parent,p["parent_adapter_sha256"],p["parent_lineage_sha256"])
+          print("V53_PARENT="+str(parent))
+          print("V53_TRAIN_ID="+p["source_id"])
+          print("V53_TRAIN_COMMIT="+p["source_commit"])
+          PY
+      - name: Fetch pinned training source only, no access to TOPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$V53_TRAIN_ID" in
+            demihead) repo=Demi_Head ;;
+            swarm) repo=janus-distributed-ai-swarm ;;
+            *) echo 'UNTRUSTED_TRAIN_SOURCE'; exit 1 ;;
+          esac
+          git clone --quiet --depth 1 --filter=blob:none --sparse "https://github.com/Hawkar-usls/$repo.git" "$ROOT/source"
+          git -C "$ROOT/source" fetch --quiet --depth 1 origin "$V53_TRAIN_COMMIT"
+          git -C "$ROOT/source" checkout --quiet --detach "$V53_TRAIN_COMMIT"
+          git -C "$ROOT/source" sparse-checkout set --no-cone PROJECT_STATUS.json
+          test "$(git -C "$ROOT/source" rev-parse HEAD)" = "$V53_TRAIN_COMMIT"
+      - name: Install fixed CPU-only LoRA trainer, not arbitrary peer requirements
+        run: |
+          python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 peft==0.13.2 safetensors==0.5.3
+      - name: Train exactly 24 bounded steps from the SHA-verified parent adapter
+        run: |
+          python -m tools.essence_v53_neural_loop train \
+            --plan "$ROOT/plan.json" --parent "$V53_PARENT" \
+            --source "$ROOT/source" --child "$ROOT/child" \
+            --out "$ROOT/train.json"
+          echo 'REAL_WEIGHT_UPDATE_SEALED_BEFORE_HOLDOUT=TRUE' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: essence-v53-candidate-${{ github.run_id }}
+          path: |
+            runtime/essence/v53/child/
+            runtime/essence/v53/train.json
+          retention-days: 90
+          if-no-files-found: error
+
+  first-look-independent-job-exam:
+    needs: [preregister-new-source,learn-inherited-weights]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: essence-peer-shadow-state
+          path: runtime/essence/v53/state
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: essence-v53-plan-${{ github.run_id }}
+          path: runtime/essence/v53
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: essence-v53-candidate-${{ github.run_id }}
+          path: runtime/essence/v53
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.11'
+      - name: Open TOPA unseen source only after candidate weights were sealed in prior job
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' >> "$GITHUB_ENV"
+          from pathlib import Path
+          from tools import essence_v53_neural_loop as m
+          p=m.verify_plan(m.state.load("runtime/essence/v53/plan.json"),m.LOCK)
+          parent=Path("runtime/essence/v53/state")/p["parent_path"]
+          m.state.check_model(parent,p["parent_adapter_sha256"],p["parent_lineage_sha256"])
+          print("V53_PARENT="+str(parent))
+          print("V53_HOLDOUT_COMMIT="+p["holdout_commit"])
+          PY
+      - name: Fetch only source-pinned withheld TOPA repo in examiner job
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --quiet --depth 1 --filter=blob:none --sparse https://github.com/Hawkar-usls/TOPA.git "$ROOT/holdout"
+          git -C "$ROOT/holdout" fetch --quiet --depth 1 origin "$V53_HOLDOUT_COMMIT"
+          git -C "$ROOT/holdout" checkout --quiet --detach "$V53_HOLDOUT_COMMIT"
+          git -C "$ROOT/holdout" sparse-checkout set --no-cone PROJECT_STATUS.json
+          test "$(git -C "$ROOT/holdout" rev-parse HEAD)" = "$V53_HOLDOUT_COMMIT"
+      - name: Install fixed CPU-only examiner
+        run: |
+          python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 peft==0.13.2 safetensors==0.5.3
+      - name: Pair parent and child on new source, withheld TOPA and old-skill retention
+        run: |
+          python -m tools.essence_v53_neural_loop exam \
+            --plan "$ROOT/plan.json" --parent "$V53_PARENT" \
+            --child "$ROOT/child" --holdout "$ROOT/holdout" \
+            --out "$ROOT/exam.json"
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          p=json.load(open("runtime/essence/v53/exam.json"))
+          print("### ESSENCE v5.3 real neural paired examination")
+          print("Status:",p["status"])
+          for k,v in p["metrics"].items():
+              print(k,v)
+          print("Training time (seconds):",p["training_seconds"])
+          print("Exam time (seconds):",p["exam_seconds"])
+          print("Internal prospective shadow only; no external custodian.")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: essence-v53-exam-${{ github.run_id }}
+          path: runtime/essence/v53/exam.json
+          retention-days: 90
+          if-no-files-found: error
+
+  persist-shadow-lineage:
+    needs: [preregister-new-source,learn-inherited-weights,first-look-independent-job-exam]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: essence-peer-shadow-state
+          path: runtime/essence/v53/state
+          persist-credentials: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: essence-v53-plan-${{ github.run_id }}
+          path: runtime/essence/v53
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: essence-v53-candidate-${{ github.run_id }}
+          path: runtime/essence/v53
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: essence-v53-exam-${{ github.run_id }}
+          path: runtime/essence/v53
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.11'
+      - name: Accept better research weights or record immutable HOLD without production rights
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m tools.essence_v53_neural_loop publish \
+            --state "$ROOT/state" --plan "$ROOT/plan.json" \
+            --exam "$ROOT/exam.json" --child "$ROOT/child" \
+            --out "$ROOT/publish.json"
+          cd "$ROOT/state"
+          git config user.name "ESSENCE prospective research[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f research/essence/peer_v53_state/ledger.json
+          git add -f research/essence/peer_v53_state/attempts/*.json
+          shopt -s nullglob
+          candidate_files=(models/v53gen*/*)
+          if (("${#candidate_files[@]}" > 0)); then
+            git add -f "${candidate_files[@]}"
+          fi
+          git diff --cached --check
+          git diff --cached --name-only > /tmp/v53-staged-paths.txt
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          paths=Path("/tmp/v53-staged-paths.txt").read_text().splitlines()
+          allowed=re.compile(r"^(?:research/essence/peer_v53_state/(?:ledger\.json|attempts/[0-9a-f]{24}\.json)|models/v53gen[0-9]{4}/(?:adapter_config\.json|adapter_model\.safetensors|lineage\.json|README\.md))$")
+          if not paths or any(not allowed.fullmatch(x) for x in paths):
+              raise SystemExit("V53_UNAUTHORIZED_BRANCH_WRITE")
+          PY
+          git commit -m "ESSENCE v5.3: one paired shadow neural attempt and verified parent lineage"
+          git pull --rebase origin essence-peer-shadow-state
+          git push origin HEAD:refs/heads/essence-peer-shadow-state
+          echo 'V53_RESEARCH_GENERATION_LEDGER_PERSISTED=TRUE' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: essence-v53-persistence-${{ github.run_id }}
+          path: runtime/essence/v53/publish.json
+          if-no-files-found: warn
+          retention-days: 90
