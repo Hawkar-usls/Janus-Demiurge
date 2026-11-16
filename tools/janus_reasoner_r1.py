@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """JANUS Reasoner R1: source-grounded, read-only higher-capacity reasoning.
 
-A separate Qwen 2.5 3B specialist; NOT a mutation of JANUS ESSENCE G2 weights.
+A separate Qwen 2.5 1.5B specialist; NOT a mutation of JANUS ESSENCE G2 weights.
 The source JSON is fully integrity-checked and parsed, then projected into
 a bounded evidence view. The model receives that view, NOT all raw JSON bytes.
 No model output may dispatch code, alter weights, or command Sentinel.
@@ -19,7 +19,7 @@ from pathlib import Path
 SCHEMA = "janus.essence.reasoner_r1.research_answer.v1"
 SOURCE_ID = "JANUS-K-PAX-2001-PLOT-IDENTITY-AND-CAUSAL-INTERPRETATION-2026-11-17-v1"
 SOURCE_SHA256 = "84789c5bfda430279843e55485c6391bd37d114359c15589114ad2a361d04460"
-MODEL = "qwen2.5:3b-instruct-q4_K_M"
+MODEL = "qwen2.5:1.5b-instruct-q4_K_M"
 ENDPOINT = "http://127.0.0.1:11434/api/chat"
 HYPOTHESES = {"psychological", "extraterrestrial", "undetermined"}
 VERDICT_SCHEMA = {
