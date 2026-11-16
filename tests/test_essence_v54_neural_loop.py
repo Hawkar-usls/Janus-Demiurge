@@ -166,6 +166,27 @@ class FederatedNeuralTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,"UNVERIFIED_MEMORY"):
                 m.verify_plan(poisoned,m.LOCK)
 
+    def test_bounded_immediate_self_wake_is_source_driven_only(self):
+        y=(Path(__file__).resolve().parents[1]/
+           ".github/workflows/essence-v54-neural-loop.yml").read_text()
+        self.assertIn("continue-from-verified-state:",y)
+        continuation=y.split("  continue-from-verified-state:",1)[1]
+        self.assertIn("needs.persist-shadow-lineage.result == 'success'",continuation)
+        self.assertIn("github.run_attempt == 1",continuation)
+        self.assertIn("vars.ESSENCE_V54_PAUSED != 'true'",continuation)
+        self.assertIn("actions: write",continuation)
+        self.assertIn('test "$GITHUB_REPOSITORY" = "Hawkar-usls/Janus-Demiurge"',continuation)
+        self.assertIn('if [[ "$DECISION" == "TRAIN_SHADOW" ]]',continuation)
+        self.assertIn("m.verify_plan(plan,m.LOCK,ledger)",continuation)
+        self.assertIn('len(ledger["attempts"])>=m.LOCK["max_attempts"]',continuation)
+        self.assertIn('len(ledger["admitted"])>=m.LOCK["max_accepted_generations"]',continuation)
+        self.assertEqual(continuation.count("gh api --method POST"),1)
+        self.assertIn("repos/Hawkar-usls/Janus-Demiurge/actions/workflows/essence-v54-neural-loop.yml/dispatches",continuation)
+        self.assertIn("NO_FRESH_PAIRED_SOURCE_FACTS",continuation)
+        self.assertIn("HOLD_BUDGET",continuation)
+        self.assertNotIn("sentinel-node",continuation)
+        self.assertNotIn("production",continuation.lower())
+
     def test_exact_gain_is_mandatory_with_independent_retention(self):
         def score(p_exact,c_exact,p_nll,c_nll):
             return {"parent_exact":p_exact,"child_exact":c_exact,
