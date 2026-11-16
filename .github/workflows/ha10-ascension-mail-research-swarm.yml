@@ -24,18 +24,41 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write
-  copilot-requests: write
+  contents: read
 
 jobs:
+  pr-contract:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.11'
+      - name: Install only research parser dependencies (no Copilot CLI)
+        run: python -m pip install --disable-pip-version-check requests beautifulsoup4 pypdf
+      - name: Validate HA10 read-only PR contract without Copilot or write tokens
+        run: |
+          python tools/demiurge_mail_research_swarm.py --self-test
+          python tools/demiurge_independent_evidence.py --self-test
+          python tools/demiurge_bgs_intersection_gate.py --self-test
+
   plan:
-    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       skip: ${{ steps.guard.outputs.skip }}
     steps:
       - name: Checkout mission branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           fetch-depth: 2
       - name: Guard against persistence-only retrigger
@@ -50,7 +73,7 @@ jobs:
           fi
       - name: Set up Python
         if: steps.guard.outputs.skip != 'true'
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: '3.11'
       - name: Install research dependencies
@@ -74,9 +97,12 @@ jobs:
           fi
 
   scout:
-    if: needs.plan.outputs.skip != 'true'
+    if: needs.plan.result == 'success' && needs.plan.outputs.skip != 'true'
     needs: plan
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      copilot-requests: write
     timeout-minutes: 25
     strategy:
       fail-fast: false
@@ -84,9 +110,9 @@ jobs:
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
       - name: Checkout mission branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: '3.11'
       - name: Install research dependencies
@@ -118,7 +144,7 @@ jobs:
             --report runtime/${{ matrix.id }}/report.json
       - name: Upload evidence-carrying report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: mail-research-${{ matrix.id }}
           path: runtime/${{ matrix.id }}/report.json
@@ -126,18 +152,20 @@ jobs:
           retention-days: 30
 
   aggregate:
-    if: ${{ always() && needs.plan.outputs.skip != 'true' }}
+    if: ${{ always() && needs.plan.result == 'success' && needs.plan.outputs.skip != 'true' }}
     needs: [plan, scout]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
     timeout-minutes: 10
     steps:
       - name: Checkout mission branch for persistence
-        uses: actions/checkout@v4
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
-          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
+          ref: main
           fetch-depth: 0
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: '3.11'
       - name: Install research dependencies
@@ -157,7 +185,7 @@ jobs:
       - name: Persist append-only mission result
         shell: bash
         run: |
-          BRANCH='${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}'
+          BRANCH='main'
           git config user.name "janus-demiurge-mail-research-swarm"
           git config user.email "janus-demiurge-mail-research-swarm@users.noreply.github.com"
           git add -f scout_swarm/outbox/public_research scout_swarm/state/public_research
