@@ -76,7 +76,7 @@ jobs:
           sudo tar --zstd -xf /tmp/ollama-linux-amd64.tar.zst -C /usr
           ollama --version
 
-      - name: Start local CPU model and fetch Qwen 2.5 3B instruct quantized weights
+      - name: Start local CPU model and fetch Qwen 2.5 1.5B instruct quantized weights
         shell: bash
         run: |
           set -euo pipefail
@@ -86,9 +86,9 @@ jobs:
             sleep 2
           done
           curl -fsS http://127.0.0.1:11434/api/version
-          ollama pull qwen2.5:3b-instruct-q4_K_M
+          ollama pull qwen2.5:1.5b-instruct-q4_K_M
           ollama list | tee /tmp/janus-reasoner-r1-model-manifest.txt
-          grep -F 'qwen2.5:3b-instruct-q4_K_M' /tmp/janus-reasoner-r1-model-manifest.txt
+          grep -F 'qwen2.5:1.5b-instruct-q4_K_M' /tmp/janus-reasoner-r1-model-manifest.txt
 
       - name: Model-load smoke at 512 context tokens before full question
         shell: bash
@@ -96,13 +96,13 @@ jobs:
           set -euo pipefail
           curl -fsS --max-time 240 http://127.0.0.1:11434/api/chat \
             -H 'Content-Type: application/json' \
-            -d '{"model":"qwen2.5:3b-instruct-q4_K_M","stream":false,"messages":[{"role":"user","content":"Say OK."}],"options":{"num_ctx":512,"num_predict":8,"num_thread":2,"num_gpu":0,"num_batch":128}}' \
+            -d '{"model":"qwen2.5:1.5b-instruct-q4_K_M","stream":false,"messages":[{"role":"user","content":"Say OK."}],"options":{"num_ctx":512,"num_predict":8,"num_thread":2,"num_gpu":0,"num_batch":128}}' \
             -o /tmp/janus-reasoner-smoke.json
           python - <<'PY'
           import json
           d=json.load(open('/tmp/janus-reasoner-smoke.json'))
           assert d.get('message',{}).get('content','').strip()
-          print('QWEN_3B_CPU_SMOKE=PASS')
+          print('QWEN_1_5B_CPU_SMOKE=PASS')
           PY
 
       - name: Real two-pass model examination with source-locked case
