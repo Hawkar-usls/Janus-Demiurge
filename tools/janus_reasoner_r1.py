@@ -143,8 +143,12 @@ def call_model(messages, *, json_mode=False, max_predict=400):
     req = urllib.request.Request(
         ENDPOINT, data=compact_json(payload).encode("utf-8"),
         headers={"Content-Type": "application/json"}, method="POST")
-    with urllib.request.urlopen(req, timeout=720) as response:
-        data = json.load(response)
+    try:
+        with urllib.request.urlopen(req, timeout=720) as response:
+            data = json.load(response)
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")[:2500]
+        raise RuntimeError("OLLAMA_HTTP_" + str(exc.code) + ":" + body) from exc
     if not isinstance(data, dict) or not isinstance(data.get("message"), dict):
         raise ValueError("NO_VALID_MODEL_REPLY")
     output = data["message"].get("content", "")
