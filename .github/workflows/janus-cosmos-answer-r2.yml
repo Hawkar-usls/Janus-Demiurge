@@ -1,0 +1,92 @@
+name: JANUS COSMOS R2 real 1.5B direct answer
+
+on:
+  push:
+    branches: [research/janus-cosmos-direct-answer-r2-20261117]
+    paths:
+      - 'research/seti/frozen_evidence_scope_20261117.json'
+      - 'tools/janus_cosmos_answer_r2.py'
+      - 'tests/test_janus_cosmos_answer_r2.py'
+      - '.github/workflows/janus-cosmos-answer-r2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-cosmos-r2-research-inference
+  cancel-in-progress: false
+
+env:
+  HF_HUB_DISABLE_TELEMETRY: '1'
+  HF_HUB_DOWNLOAD_TIMEOUT: '120'
+  TOKENIZERS_PARALLELISM: 'false'
+  OMP_NUM_THREADS: '4'
+  MKL_NUM_THREADS: '4'
+  CUDA_VISIBLE_DEVICES: ''
+
+jobs:
+  unit-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: research/janus-cosmos-direct-answer-r2-20261117
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.11'
+      - name: Validate provenance card and no-download answer quality tests
+        run: |
+          python -m py_compile tools/janus_cosmos_answer_r2.py tests/test_janus_cosmos_answer_r2.py
+          python -m json.tool research/seti/frozen_evidence_scope_20261117.json > /dev/null
+          python -m unittest -v tests.test_janus_cosmos_answer_r2
+
+  real-model-answer:
+    needs: unit-contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout branch in isolated path
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: research/janus-cosmos-direct-answer-r2-20261117
+          persist-credentials: false
+          path: code
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.11'
+
+      - name: Install pinned PyTorch CPU runtime without Ollama
+        run: |
+          python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 accelerate==1.3.0 safetensors==0.5.3
+
+      - name: Real JANUS R2 1.5B direct answer - preserve unedited model reply
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=code python code/tools/janus_cosmos_answer_r2.py \
+            --evidence code/research/seti/frozen_evidence_scope_20261117.json \
+            --output runtime/janus-cosmos-r2/direct-answer.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('runtime/janus-cosmos-r2/direct-answer.json').read_text(encoding='utf-8'))
+          assert r['model']['model_name']=='Qwen/Qwen2.5-1.5B-Instruct'
+          assert r['native_g2_weights_changed'] is False
+          assert r['scientific_detection_claim'] is False
+          print("JANUS_R2_RAW_MODEL_OUTPUT_WRITTEN=TRUE")
+          print("JANUS_R2_QUALITY_STATUS="+r['status'])
+          PY
+
+      - name: Preserve raw model answer and quality screening even on HOLD
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: janus-cosmos-r2-unmodified-answer
+          path: runtime/janus-cosmos-r2/direct-answer.json
+          retention-days: 90
+          if-no-files-found: warn
