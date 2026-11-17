@@ -42,7 +42,7 @@ SYSTEM = (
 
 def assessment(text):
     """A stricter answer-format screen, NOT a truth verifier."""
-    norm = re.sub(r"\\s+", " ", text.strip().lower())
+    norm = re.sub(r"\s+", " ", text.strip().lower())
     if len(norm) < 100:
         return {"status": "HOLD_EMPTY_OR_SHORT", "human_semantic_review_required": True}
     first = re.split(r"[.!?]", norm, maxsplit=1)[0]
