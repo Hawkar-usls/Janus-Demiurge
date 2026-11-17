@@ -125,8 +125,6 @@ jobs:
             'adapter_lineage_sha256':lineage.GEN2_LINEAGE,
             'prompt_sha256':hashlib.sha256(prompt.encode('utf-8')).hexdigest(),
             'raw_model_answer':answer,
-            'first_binary_token':(answer.strip().upper().split()[0].strip('.,!?«»') if answer.strip() else None),
-            'binary_answer_is_valid':(answer.strip().upper().split()[0].strip('.,!?«»') in ('ДА','НЕТ') if answer.strip() else False),
             'answer_status':'GENERATED_FROM_REAL_MODEL' if answer.strip() else 'EMPTY_GENERATION',
             'read_only':True,
             'model_weights_changed':False,
@@ -147,6 +145,6 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: janus-g2-universe-aliens-answer-${{ github.run_id }}
-          path: runtime/janus-kpax-g2-where-alien-answer.json
+          path: runtime/janus-g2-universe-aliens-answer.json
           retention-days: 30
           if-no-files-found: warn
