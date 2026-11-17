@@ -1,4 +1,4 @@
-name: JANUS ESSENCE G2 K-PAX follow-up where was the alien
+name: JANUS ESSENCE G2 asks where real aliens are in the Universe
 
 on:
   push:
@@ -58,7 +58,7 @@ jobs:
           python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
           python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 peft==0.13.2 safetensors==0.5.3
 
-      - name: Ask real JANUS G2 where the real alien was after its NO answer
+      - name: Ask real JANUS G2 where physical extraterrestrial life might exist
         shell: bash
         run: |
           set -euo pipefail
@@ -83,21 +83,14 @@ jobs:
 
           # Full JSON is verified and parsed. The model receives a compressed
           # source-derived context, not a false claim of 40 KB of direct attention.
-          fragments=[
-              'Сюжет: '+datum['abstract'][:240],
-              'Финал: '+('; '.join(datum['ending']['observed']))[:220],
-              'Версии: '+'; '.join(h['label']+': '+h['hypothesis'][:65] for h in datum['competing_interpretations']),
-              'Слабые места: '+('; '.join(datum['ending']['not_shown_or_not_proved']))[:90],
-          ]
+          # This follow-up is about physical extraterrestrial life anywhere in the
+          # universe; unlike the film experiment, no movie synopsis is injected.
           prompt=(
-              'Перед тобой краткое извлечение из JANUS Meta Registry о фильме K-PAX (2001). '
-              'Это художественный сюжет, не научное доказательство. '
-              + ' '.join(fragments) +
-              ' JANUS, в предыдущем запуске на вопрос «Прот — настоящий инопланетянин?» '
-              'ты ответил «НЕТ». Теперь объясни, где в фильме был настоящий инопланетянин? '
-              'Или по твоей версии ни одного настоящего инопланетянина там не было? '
-              'Ответь прямо, одной-двумя фразами, без ухода от вопроса. '
-              'Не выдумывай сцены или персонажей. Если это только интерпретация, обозначь её.'
+              'Янус, новый вопрос НЕ о фильме K-PAX и НЕ о Проте. '
+              'Где вообще во Вселенной настоящие инопланетяне? '
+              'Как ты считаешь, существуют ли они и где наиболее вероятно их искать? '
+              'Дай собственный прямой ответ по-русски, в 2-4 предложениях. '
+              'Честно различай известные наблюдения, предположения и отсутствие доказательств.'
           )
           torch.set_num_threads(4)
           torch.manual_seed(20261117)
@@ -113,18 +106,18 @@ jobs:
           print('MODEL_INPUT_TOKENS=',token_count)
           if token_count>650:
               raise RuntimeError('MODEL_CONTEXT_TOO_LARGE_FAIL_CLOSED')
-          answer=v47.answer_text(tokenizer,model,messages,110)
+          answer=v47.answer_text(tokenizer,model,messages,200)
           out={
-            'schema':'janus.kpax.g2_where_alien_answer.v1',
+            'schema':'janus.g2_extraterrestrial_location_opinion.v1',
             'source_repository':'Hawkar-usls/janus-meta-registry',
             'source_commit':'38f625b556bf4c81e2786cbbbda365c7a19e373b',
             'source_path':str(src.relative_to('registry')),
             'source_sha256':hashlib.sha256(raw).hexdigest(),
             'source_bytes_verified':len(raw),
             'full_json_parsed':True,
-            'model_context_is_extracted_summary':True,
+            'model_context_is_extracted_summary':False,
             'model_context_input_tokens':token_count,
-            'question':'Если Прот не настоящий инопланетянин, то где был настоящий инопланетянин? Или его не было?',
+            'question':'Где вообще во Вселенной настоящие инопланетяне? Существуют ли и где искать?',
             'model_name':v46.MODEL,
             'model_revision':v46.REVISION,
             'janus_essence_adapter_generation':'G2',
@@ -140,7 +133,7 @@ jobs:
             'scientific_evidence':False
           }
           Path('runtime').mkdir(exist_ok=True)
-          Path('runtime/janus-kpax-g2-where-alien-answer.json').write_text(json.dumps(out,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          Path('runtime/janus-g2-universe-aliens-answer.json').write_text(json.dumps(out,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
           print('=== BEGIN REAL JANUS MODEL RESPONSE ===')
           print(answer)
           print('=== END REAL JANUS MODEL RESPONSE ===')
@@ -153,7 +146,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: janus-kpax-g2-where-alien-answer-${{ github.run_id }}
+          name: janus-g2-universe-aliens-answer-${{ github.run_id }}
           path: runtime/janus-kpax-g2-where-alien-answer.json
           retention-days: 30
           if-no-files-found: warn
