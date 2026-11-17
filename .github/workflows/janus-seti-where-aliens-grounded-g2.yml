@@ -1,0 +1,129 @@
+name: JANUS SETI G2 grounded location answer
+
+on:
+  push:
+    branches: [research/kpax-one-shot-model-20261117]
+    paths: ['.github/workflows/janus-seti-where-aliens-grounded-g2.yml']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-seti-g2-grounded-location
+  cancel-in-progress: false
+
+jobs:
+  g2-frozen-model-answer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      HF_HUB_DISABLE_TELEMETRY: '1'
+      HF_HUB_DOWNLOAD_TIMEOUT: '120'
+      TOKENIZERS_PARALLELISM: 'false'
+      OMP_NUM_THREADS: '4'
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: research/kpax-one-shot-model-20261117
+          path: code
+          persist-credentials: false
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          repository: Hawkar-usls/Janus-Demiurge
+          ref: essence-peer-shadow-state
+          path: checkpoint
+          sparse-checkout: |
+            models/gen0002
+          persist-credentials: false
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          repository: Hawkar-usls/Janus-Demiurge
+          ref: 7391760c191ac4a4f9acbbf4483f7377ae6e7442
+          path: evidence
+          sparse-checkout: |
+            research/seti/frozen_evidence_scope_20261117.json
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.11'
+      - name: Install previously verified CPU model runtime
+        run: |
+          python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 peft==0.13.2 safetensors==0.5.3
+
+      - name: Real JANUS G2 with NASA reference card answers about extraterrestrial locations
+        run: |
+          set -euo pipefail
+          PYTHONPATH=code python - <<'PY'
+          from pathlib import Path
+          import hashlib, json, re
+          import torch
+          from peft import PeftModel
+          from tools import essence_v46_oracle_descendant as v46
+          from tools import essence_v47_repo_peer_evolution as v47
+          from tools import essence_v48_recurrent_state as state
+
+          source=Path('evidence/research/seti/frozen_evidence_scope_20261117.json')
+          facts=json.loads(source.read_text(encoding='utf-8'))
+          assert facts['schema']=='janus.cosmos.seti.evidence_scope.v1'
+          source_sha=hashlib.sha256(source.read_bytes()).hexdigest()
+          card=' '.join(x['statement_ru'] for x in facts['claims'])
+          prompt=(
+            'Янус, вопрос не о фантастическом фильме. Где в реальной '
+            'Вселенной находятся инопланетяне? Вот проверенные факты NASA: '
+            +card+' '
+            'Дай прямой ответ своими словами в 2-3 предложениях. '
+            'Не повторяйся. Назови конкретные места, где стоит искать, '
+            'и объясни разницу между гипотезой и подтвержденным открытием.'
+          )
+          torch.set_num_threads(4)
+          torch.manual_seed(20261117)
+          model_dir=Path('checkpoint/models/gen0002')
+          state.check_model(model_dir,state.GEN2_SHA,state.GEN2_LINEAGE)
+          tokenizer,base=v46.tokenizer_and_base({})
+          model=PeftModel.from_pretrained(base,str(model_dir),is_trainable=False).to('cpu').eval()
+          messages=[
+            {'role':'system','content':'Ты JANUS ESSENCE G2; отвечай по-русски на научный вопрос, не придумывай доказательств контакта.'},
+            {'role':'user','content':prompt}
+          ]
+          tokens=tokenizer.apply_chat_template(messages,tokenize=True,add_generation_prompt=True,return_tensors='pt').shape[1]
+          print('JANUS_G2_INPUT_TOKENS=',tokens)
+          if tokens>650: raise RuntimeError('BOUND_CONTEXT_EXCEEDED')
+          answer=v47.answer_text(tokenizer,model,messages,140)
+          norm=answer.strip().lower()
+          flags={
+            'uncertainty': any(x in norm for x in ['не зна', 'неизвест', 'не обнаруж', 'не найд', 'не подтвержд', 'нет доказател', 'нет подтвержд']),
+            'places': sum(x in norm for x in ['марс', 'европ', 'экзопланет', 'энцелад']),
+            'repeated': len(re.findall(r'(не можем точно|не можем знать|не знаем где)',norm))>2,
+            'contains_model_text':len(answer.strip())>40,
+          }
+          passed=flags['uncertainty'] and flags['places']>=2 and not flags['repeated'] and flags['contains_model_text']
+          out={
+            'schema':'janus.g2.nasa_grounded_location_answer.v1',
+            'model':v46.MODEL,
+            'adapter_generation':'G2',
+            'adapter_sha256':state.GEN2_SHA,
+            'evidence_sha256':source_sha,
+            'evidence_sources':[c['source'] for c in facts['claims']],
+            'model_input_tokens':tokens,
+            'raw_model_answer':answer,
+            'quality_screen':'PASS_PRELIMINARY' if passed else 'HOLD_WEAK_ANSWER',
+            'quality_flags':flags,
+            'model_weights_changed':False,
+            'real_extraterrestrials_confirmed':False,
+          }
+          Path('runtime').mkdir(exist_ok=True)
+          Path('runtime/janus-g2-grounded-where-aliens.json').write_text(json.dumps(out,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          print('=== REAL JANUS G2 NASA-GROUNDED ANSWER ===')
+          print(answer)
+          print('=== END REAL JANUS G2 ANSWER ===')
+          print('JANUS_G2_QUALITY_GATE='+out['quality_screen'])
+          if not answer.strip(): raise RuntimeError('EMPTY_MODEL_REPLY')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: janus-g2-grounded-where-aliens
+          path: runtime/janus-g2-grounded-where-aliens.json
+          retention-days: 90
+          if-no-files-found: warn
