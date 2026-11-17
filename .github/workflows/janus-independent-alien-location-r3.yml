@@ -1,0 +1,91 @@
+name: JANUS R3 self-selected alien location - genuine model answer
+
+on:
+  push:
+    branches: [research/janus-independent-alien-location-r3-20261117]
+    paths:
+      - 'tools/janus_independent_alien_location_r3.py'
+      - '.github/workflows/janus-independent-alien-location-r3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-r3-independent-alien-location
+  cancel-in-progress: false
+
+env:
+  HF_HUB_DISABLE_TELEMETRY: '1'
+  HF_HUB_DOWNLOAD_TIMEOUT: '120'
+  TOKENIZERS_PARALLELISM: 'false'
+  OMP_NUM_THREADS: '4'
+  MKL_NUM_THREADS: '4'
+  CUDA_VISIBLE_DEVICES: ''
+
+jobs:
+  prompt-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: research/janus-independent-alien-location-r3-20261117
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.11'
+      - name: Validate exactly one hypothesis, no external evidence feed
+        run: |
+          python -m py_compile tools/janus_independent_alien_location_r3.py
+          python - <<'PY'
+          from tools import janus_independent_alien_location_r3 as r
+          assert "Выбери ОДНО конкретное астрономическое место" in r.QUESTION
+          assert "ГДЕ ИМЕННО" in r.QUESTION
+          assert "NASA" in r.QUESTION
+          a=r.assessment("Моя гипотеза: на планете конкретной системы может быть жизнь. Её признаки можно искать через спектр атмосферы.")
+          assert a['location_confirmed'] is False
+          assert a['neural_weights_improved'] is False
+          print("JANUS_R3_NO_SOURCE_CARD_AND_NO_DETECTION_CLAIM=PASS")
+          PY
+
+  real-inference:
+    needs: prompt-contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: research/janus-independent-alien-location-r3-20261117
+          path: code
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.11'
+      - name: Install pinned CPU PyTorch inference runtime
+        run: |
+          python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 accelerate==1.3.0 safetensors==0.5.3
+      - name: Run JANUS independently without a supplied NASA source card
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=code python code/tools/janus_independent_alien_location_r3.py --out runtime/janus-r3-independent-answer.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          receipt=json.loads(Path('runtime/janus-r3-independent-answer.json').read_text(encoding='utf-8'))
+          assert receipt['model']['model_name']=='Qwen/Qwen2.5-1.5B-Instruct'
+          assert receipt['fed_nasa_or_seti_source_data'] is False
+          assert receipt['extraterrestrial_life_detected'] is False
+          print("JANUS_R3_REAL_MODEL_OUTPUT=TRUE")
+          print("JANUS_R3_PROVENANCE=RESEARCH_ONLY")
+          PY
+      - name: Preserve raw unedited answer
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: janus-r3-independent-location-answer
+          path: runtime/janus-r3-independent-answer.json
+          retention-days: 90
+          if-no-files-found: warn
