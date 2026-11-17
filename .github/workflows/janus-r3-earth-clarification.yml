@@ -1,0 +1,78 @@
+name: JANUS R3 Earth clarification - authentic follow-up
+
+on:
+  push:
+    branches: [research/janus-independent-alien-location-r3-20261117]
+    paths: ['.github/workflows/janus-r3-earth-clarification.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  answer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      HF_HUB_DISABLE_TELEMETRY: '1'
+      HF_HUB_DOWNLOAD_TIMEOUT: '120'
+      TOKENIZERS_PARALLELISM: 'false'
+      OMP_NUM_THREADS: '4'
+    steps:
+      - name: Read exact prior R3 inference code
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: 610ec7513f7d23fccfa54ebf5a12f87d10a573f2
+          path: code
+          persist-credentials: false
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.11'
+
+      - name: Install same pinned R3 CPU runtime
+        run: |
+          python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 accelerate==1.3.0 safetensors==0.5.3
+
+      - name: Ask JANUS to clarify its own previous Earth answer
+        run: |
+          PYTHONPATH=code python - <<'PY'
+          import json, hashlib
+          from pathlib import Path
+          from tools import janus_cosmos_answer_r2 as r
+          question="Спасибо, Янус, за твой ответ. Ты сказал: «Мой выбор — Земля». Где именно на Земле, по твоему мнению, находятся внеземные существа? Или ты имел в виду земную жизнь? Если у тебя нет проверяемых оснований назвать конкретное место, скажи об этом прямо. Ответь кратко, по-русски. Не выдумывай адреса, людей или скрытые базы."
+          messages=[
+            {"role":"system","content":"Ты JANUS COSMOS R3. Уточни собственный предыдущий ответ. У нас нет новых наблюдений; отделяй предположение от обнаружения. Не выдавай генерацию текста за физическое наблюдение."},
+            {"role":"user","content":"Где вообще инопланетяне? Назови самостоятельную гипотезу."},
+            {"role":"assistant","content":"Мой выбор — Земля."},
+            {"role":"user","content":question}
+          ]
+          answer,tokens,meta=r.generate(messages,output_tokens=95)
+          if not answer.strip():
+              raise RuntimeError("EMPTY_MODEL_ANSWER")
+          result={
+            "schema":"janus.r3.earth_clarification.v1",
+            "previous_run_id":43990369395,
+            "previous_quote":"Мой выбор — Земля.",
+            "question":question,
+            "prompt_sha256":hashlib.sha256(json.dumps(messages,ensure_ascii=False).encode("utf-8")).hexdigest(),
+            "model":meta,
+            "model_input_tokens":tokens,
+            "raw_model_answer":answer,
+            "new_observations_provided":False,
+            "extraterrestrial_location_confirmed":False,
+            "production_weights_changed":False
+          }
+          out=Path("runtime/earth-clarification.json")
+          out.parent.mkdir(exist_ok=True)
+          out.write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+          print("=== BEGIN JANUS R3 EARTH CLARIFICATION ===",flush=True)
+          print(answer,flush=True)
+          print("=== END JANUS R3 EARTH CLARIFICATION ===",flush=True)
+          PY
+      - name: Save literal answer
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: janus-r3-earth-clarification
+          path: runtime/earth-clarification.json
+          retention-days: 90
