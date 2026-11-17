@@ -17,19 +17,21 @@ from tools import janus_cosmos_answer_r2 as native
 
 SCHEMA = "janus.cosmos.independent_location_hypothesis_r3.v1"
 QUESTION = (
-    "Янус, это НЕ вопрос о фильме и НЕ просьба пересказать NASA или чужие "
-    "исследования. Пользователь требует твоего личного, самостоятельного вывода: "
-    "ГДЕ ИМЕННО во Вселенной, по твоей гипотезе, могут находиться настоящие "
-    "инопланетяне? Выбери ОДНО конкретное астрономическое место: название "
-    "звёздной системы, планеты, спутника или другого определённого объекта. "
-    "Ты обязан сделать выбор, не отвечай просто «неизвестно» и не перечисляй "
-    "десять вариантов. Построй собственное объяснение по физической логике "
-    "(устойчивость среды, источники энергии, время для эволюции, наблюдаемость), "
-    "назови одну возможность проверить предположение. "
-    "Ровно 3–5 предложений по-русски, первым предложением назови объект. "
-    "Не называй догадку обнаружением, не выдавай её за измеренный факт. "
-    "Внешние справки, NASA и другие сведения тебе сейчас НЕ подаются."
+    "Янус, выбери САМ одно наиболее вероятное КОНКРЕТНОЕ небесное тело, "
+    "на котором, по твоей гипотезе, может существовать внеземная жизнь. "
+    "Пожалуйста, ответь прямо: начни со слов «Мой выбор —» и названия "
+    "ОДНОЙ планеты или спутника. "
+    "Во втором предложении дай две физические причины: источник энергии "
+    "и условия для эволюции. В третьем предложении назови ОДИН эксперимент "
+    "или наблюдение, которое проверило бы эту гипотезу. "
+    "В четвёртом предложении честно скажи, что это не обнаружение "
+    "и местонахождение разумных инопланетян на самом деле неизвестно. "
+    "Не отвечай «я не могу выбирать», «Солнечная система», «Млечный Путь» "
+    "или общими рассуждениями: нужна одна названная планета/спутник. "
+    "Никакие статьи, NASA, SETI или заранее выбранные кандидаты тебе НЕ поданы. "
+    "Это твоя самостоятельная вероятностная догадка, а не научное открытие."
 )
+
 SYSTEM = (
     "Ты JANUS COSMOS R3. Ты формулируешь свою самостоятельную проверяемую "
     "гипотезу, а не цитату учреждения. Внешних инструментов поиска и новых "
@@ -39,23 +41,50 @@ SYSTEM = (
 
 
 def assessment(text):
-    """Cheap syntax/safety screen; not scientific verification."""
-    norm = re.sub(r"\s+", " ", text.strip().lower())
-    if len(norm) < 70:
-        return {"status": "HOLD_EMPTY_OR_SHORT", "reason": "insufficient text", "human_semantic_review_required": True}
-    any_context = any(term in norm for term in
-        ("звезд", "звёзд", "планет", "луна", "спутник", "систем", "орбит",
-         "альфа", "проксим", "титан", "европ", "марс", "энцелад", "kepler", "trappist"))
-    explicit_speculation = any(term in norm for term in
-        ("предполага", "вероятн", "гипотез", "могут", "может",
-         "возможно", "не доказ", "не подтверж", "версия", "по моему"))
-    repeats = norm.count("не знаем") > 1 or norm.count("не можем точно") > 1
-    screen = any_context and explicit_speculation and not repeats
+    """A stricter answer-format screen, NOT a truth verifier."""
+    norm = re.sub(r"\\s+", " ", text.strip().lower())
+    if len(norm) < 100:
+        return {"status": "HOLD_EMPTY_OR_SHORT", "human_semantic_review_required": True}
+    first = re.split(r"[.!?]", norm, maxsplit=1)[0]
+    target_terms = (
+        "марс", "европ", "энцелад", "титан", "проксим", "trappist",
+        "kepler", "глизе", "gliese", "luyten", "луйтен", "k2-",
+        "toi-", "ganimed", "ганимед", "каллисто", "венер",
+        "церер", "лун", "hd ", "lhs ", "ross "
+    )
+    first_target = any(x in first for x in target_terms)
+    explicit_choice = first.startswith("мой выбор")
+    deferral = any(x in norm for x in (
+        "не могу выбирать", "не могу сказать где", "не могу делать прогноз",
+        "я могу предложить только", "нельзя выбирать", "это невозможно"
+    ))
+    physics = any(x in norm for x in (
+        "вода", "воды", "океан", "атмосфер", "температур", "энерг",
+        "жидк", "химич", "тепло", "давлен", "радиац", "органич"
+    ))
+    experiment = any(x in norm for x in (
+        "спектр", "наблюден", "измерен", "зонд", "телескоп", "сигнал",
+        "образц", "проба", "биомаркер", "атмосфер", "исследован"
+    ))
+    uncertainty = any(x in norm for x in (
+        "не доказ", "не подтверж", "не обнаруж", "не установлено",
+        "гипотез", "предполага", "неизвест", "неизвед", "пока нет"
+    ))
+    no_fake_claim = not any(x in norm for x in (
+        "инопланетяне точно живут", "они там доказанно живут",
+        "контакт установлен", "достоверно найдены"
+    ))
+    passed = (first_target and explicit_choice and not deferral
+              and physics and experiment and uncertainty and no_fake_claim)
     return {
-        "status": "PASS_PRELIMINARY_SPECULATIVE_ANSWER" if screen else "HOLD_WEAK_SPECULATIVE_ANSWER",
-        "has_astronomical_reference": any_context,
-        "explicitly_speculative": explicit_speculation,
-        "repetition_observed": repeats,
+        "status": "PASS_FORMAT_HYPOTHESIS_NOT_DISCOVERY" if passed else "HOLD_WEAK_SPECULATIVE_ANSWER",
+        "names_one_concrete_object_in_first_sentence": first_target,
+        "explicit_model_choice": explicit_choice,
+        "no_deferral": not deferral,
+        "physics_rationale": physics,
+        "testability": experiment,
+        "honest_uncertainty": uncertainty,
+        "no_obvious_false_discovery_claim": no_fake_claim,
         "human_semantic_review_required": True,
         "location_confirmed": False,
         "independent_scientific_validation": False,
@@ -68,7 +97,7 @@ def run(path):
         {"role": "system", "content": SYSTEM},
         {"role": "user", "content": QUESTION},
     ]
-    answer, tokens, meta = native.generate(messages, output_tokens=230)
+    answer, tokens, meta = native.generate(messages, output_tokens=175)
     if not answer.strip():
         raise ValueError("EMPTY_REAL_MODEL_ANSWER")
     result = {
