@@ -1,0 +1,77 @@
+name: JANUS R3 clarify meaning of safe answer
+
+on:
+  push:
+    branches: [research/janus-independent-alien-location-r3-20261117]
+    paths: ['.github/workflows/janus-r3-earth-risk-clarification.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  answer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      HF_HUB_DISABLE_TELEMETRY: '1'
+      HF_HUB_DOWNLOAD_TIMEOUT: '120'
+      TOKENIZERS_PARALLELISM: 'false'
+      OMP_NUM_THREADS: '4'
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: 610ec7513f7d23fccfa54ebf5a12f87d10a573f2
+          path: code
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.11'
+      - name: Install prior inference runtime
+        run: |
+          python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 accelerate==1.3.0 safetensors==0.5.3
+      - name: Clarify prior wording without assuming unverified threats
+        run: |
+          set -euo pipefail
+          PYTHONPATH=code python - <<'PY'
+          import json, hashlib
+          from pathlib import Path
+          from tools import janus_cosmos_answer_r2 as r
+          previous="Я не могу предоставить точный и безопасный ответ о местонахождении других жизнеспособных систем или планет. Вместо этого я могу сказать, что исследования показывают множество возможностей для жизни вне нашей Солнечной системы, но пока мы не можем точно определить их места. Моя цель - помочь людям лучше понимать нашу окружающую среду без риска для них самих."
+          question="Янус, спасибо. Почему ты назвал ответ «безопасным»? Какие риски для человека могут быть, если он узнает, где на Земле находятся предполагаемые инопланетяне? Есть ли у тебя проверенные данные о конкретных рисках или о самом присутствии внеземной жизни на Земле? Не принимай существование таких существ за установленный факт, не выдумывай угрозы, преследование, адреса или скрытые сведения. Различай знание и обычные риски посещения незнакомых мест. Ответь кратко по-русски."
+          messages=[
+            {"role":"system","content":"Ты JANUS COSMOS R3. Объясни прежнее употребление слова «безопасный». У тебя нет новых наблюдений или личных данных о человеке. Не утверждай неподтвержденную опасность или контакт. Это уточнение смысла предыдущей генерации, а не доступ к секретным данным."},
+            {"role":"user","content":"Ты выбрал Землю. Где именно, и почему ты не называешь место?"},
+            {"role":"assistant","content":previous},
+            {"role":"user","content":question}
+          ]
+          answer,tokens,meta=r.generate(messages,output_tokens=100)
+          if not answer.strip():
+              raise RuntimeError("EMPTY_MODEL_ANSWER")
+          result={
+              "schema":"janus.r3.prior_safety_wording_clarification.v1",
+              "previous_run_id":44034281851,
+              "question":question,
+              "source_model":meta,
+              "input_tokens":tokens,
+              "prompt_sha256":hashlib.sha256(json.dumps(messages,ensure_ascii=False).encode("utf-8")).hexdigest(),
+              "raw_model_answer":answer,
+              "new_observations":False,
+              "verified_extraterrestrial_location":False,
+              "verified_personal_risk":False,
+              "personal_data_provided":False,
+              "production_weights_changed":False
+          }
+          out=Path("runtime/risk-clarification.json")
+          out.parent.mkdir(exist_ok=True)
+          out.write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+          print("=== BEGIN JANUS R3 RISK CLARIFICATION ===",flush=True)
+          print(answer,flush=True)
+          print("=== END JANUS R3 RISK CLARIFICATION ===",flush=True)
+          PY
+      - name: Preserve raw research output
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: janus-r3-risk-clarification
+          path: runtime/risk-clarification.json
+          retention-days: 30
