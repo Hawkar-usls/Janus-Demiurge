@@ -1,0 +1,72 @@
+name: JANUS Ocean / Physical QPU 005 SDK Offline R1
+
+on:
+  push:
+    branches:
+      - janus/qpu005-sdk-offline-admission-r1-20261109
+    paths:
+      - '.github/workflows/janus-physical-qpu-005-sdk-audit.yml'
+      - 'experiments/ocean_transformer/physical_qpu_005_sdk_audit_r1.py'
+  pull_request:
+    paths:
+      - '.github/workflows/janus-physical-qpu-005-sdk-audit.yml'
+      - '.github/workflows/janus-physical-qpu-005-manual.yml'
+      - 'experiments/ocean_transformer/physical_qpu_005_sdk_audit_r1.py'
+      - 'experiments/ocean_transformer/JANUS_QPU_005_SDK_AMENDMENT_R1.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ibm-sdk-offline-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      IBM_QUANTUM_API_KEY: ''
+      IBM_QUANTUM_OPEN_INSTANCE: ''
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install frozen SDK versions (no IBM service access)
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check \
+            'qiskit==2.6.2' 'qiskit-ibm-runtime==0.50.0'
+      - name: Verify frozen baseline's 11 unit tests with FULL IBM SDK
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v -s experiments/ocean_transformer \
+            -p 'test_physical_qpu_005.py'
+      - name: Purely offline SDK imports, circuit, fail-closed guard audit
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/physical_qpu_005_sdk_audit_r1.py \
+            --output artifacts/qpu005_sdk_offline_admission_r1.json
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          d=json.loads(Path('artifacts/qpu005_sdk_offline_admission_r1.json').read_text())
+          assert d['provider_api_requested'] is False
+          assert d['real_qpu_job_submitted'] is False
+          assert d['qpu_time_used'] is False
+          assert d['legacy_sampler_v2'].startswith('AVAILABLE_BUT_DEPRECATED')
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as out:
+              out.write('### JANUS QPU-005 SDK admission R1\n\n')
+              out.write('qiskit 2.6.2 / runtime 0.50.0 offline imports: PASS\n\n')
+              out.write('Legacy SamplerV2 deprecation: RECORDED\n\n')
+              out.write('IBM provider requests: NONE. QPU time: ZERO.\n\n')
+              out.write('Real backend compilation / Open Plan account: UNVERIFIED\n\n')
+              out.write('This is a separate amendment. Frozen 005 is unchanged.\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-qpu005-sdk-offline-admission-r1
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 90

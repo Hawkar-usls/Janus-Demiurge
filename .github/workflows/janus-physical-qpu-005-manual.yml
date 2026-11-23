@@ -16,6 +16,11 @@ on:
         required: false
         type: string
         default: ""
+      frozen_sha256:
+        description: "Paste the EXACT SHA-256 of frozen preregistered QPU-005 plan"
+        required: true
+        type: string
+        default: ""
       approve_provider_run:
         description: "I authorize this physical QPU access under my IBM Quantum plan"
         required: true
@@ -37,7 +42,8 @@ concurrency:
 
 jobs:
   physical-qpu-by-explicit-approval:
-    if: inputs.approve_provider_run == true && inputs.confirm_open_plan == true
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.actor == 'Hawkar-usls' && github.run_attempt == 1 && inputs.approve_provider_run == true && inputs.confirm_open_plan == true
+    environment: janus-qpu005-approval
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
@@ -51,6 +57,25 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Verify frozen plan hash before provider calls
+        env:
+          EXPECTED_FROZEN_SHA: ${{ inputs.frozen_sha256 }}
+          QPU005_RELEASE_GATE: ${{ vars.JANUS_QPU005_RELEASE_GATE }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$QPU005_RELEASE_GATE" = "APPROVE_QPU005_R1" || {
+            echo "QPU005_RELEASE_GATE_NOT_EXPLICITLY_ENABLED"; exit 1;
+          }
+          python - <<'PY'
+          import os, sys
+          sys.path.insert(0, "experiments/ocean_transformer")
+          import physical_qpu_005_protocol as p
+          expected = os.environ["EXPECTED_FROZEN_SHA"]
+          if len(expected) != 64 or expected != p.plan()["preregistered_sha256"]:
+              raise SystemExit("QPU005_FROZEN_SHA_MISMATCH")
+          print("QPU005_FROZEN_PLAN_MANUALLY_ACKNOWLEDGED")
+          PY
       - name: Fail closed unless credentials are provided privately
         shell: bash
         run: |
