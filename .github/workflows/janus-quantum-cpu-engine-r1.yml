@@ -1,0 +1,76 @@
+name: JANUS Quantum CPU Engine R1 - Adaptive Emulation and No-Future-Leak Gate
+
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/janus_quantum_cpu_engine_r1.py'
+      - 'experiments/ocean_transformer/test_janus_quantum_cpu_engine_r1.py'
+      - '.github/workflows/janus-quantum-cpu-engine-r1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-quantum-engine-r1-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  independently-repeated-CPU:
+    name: "Adaptive CPU quantum emulator Python ${{ matrix.python }}"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install fixed CPU classical-simulator dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --only-binary=:all: 'numpy==2.3.3' 'stim==1.16.0'
+          python - <<'PY'
+          import numpy, stim
+          print('NumPy:', numpy.__version__, 'Stim:', stim.__version__)
+          PY
+      - name: Cross-check 256-qubit Clifford plus non-Clifford small statevector
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s experiments/ocean_transformer \
+            -p 'test_janus_quantum_cpu_engine_r1.py'
+      - name: Write complete reproducible CPU-emulator evidence (no physical claims)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/janus_quantum_cpu_engine_r1.py \
+            --out out/janus-quantum-cpu-r1-py${{ matrix.python }}.json
+          python - <<'PY'
+          import glob,json,math
+          x=json.load(open(glob.glob('out/janus-quantum-cpu-r1-*.json')[0]))
+          assert x['large_clifford_case']['backend']=='stim'
+          assert x['large_clifford_case']['qubits']==256
+          assert x['nonclifford_case']['backend']=='numpy'
+          assert x['cross_backend_6q_max_difference']<1e-10
+          assert x['eight_pair_future_local_choice']['maximum_one_qubit_trace_distance']<1e-10
+          assert not x['physical_past_directed_signal']
+          assert not x['promotion_to_production']
+          assert not x['external_precommit_or_late_rng_connected']
+          print('CPU mathematical checks passed, physical retrospective channel not claimed')
+          PY
+          sha256sum out/janus-quantum-cpu-r1-py${{ matrix.python }}.json
+          echo '256-qubit Clifford CPU simulation (Stim) and 16-qubit T-gate statevector (NumPy). No physical retrocausality demonstrated.' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-quantum-engine-r1-py${{ matrix.python }}
+          path: out/janus-quantum-cpu-r1-py${{ matrix.python }}.json
+          retention-days: 90
+          if-no-files-found: error
