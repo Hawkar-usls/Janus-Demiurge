@@ -71,8 +71,9 @@ Independent unseen-question evaluation and all model-promotion gates remain open
 
 Compact receipts include intake-health counts and error categories, so observers
 need not download the multi-megabyte sealed state to see backlog/retry health.
-The initial main push starts a real collection immediately. Subsequent scheduled
-collection is GitHub-hosted, not dependent on a chat or an owner's computer.
+Source changes wake Pulse, which applies the same cooldown/running-worker gates
+instead of duplicating a collector directly on every code push. Collection is
+GitHub-hosted, not dependent on a chat or an owner's computer.
 
 ## Validation
 
