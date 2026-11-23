@@ -1,0 +1,62 @@
+name: JANUS Delayed Choice - Clock Audit Software Dry Run
+
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/janus_delayed_choice_clock_audit.py'
+      - 'experiments/ocean_transformer/test_janus_delayed_choice_clock_audit.py'
+      - '.github/workflows/janus-delayed-choice-clock-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-clock-audit-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  synthetic-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Verify strict all-trial data contract and fail-closed chronology
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v -s experiments/ocean_transformer -p 'test_janus_delayed_choice_clock_audit.py'
+      - name: Record deterministic mock audit without physical claims
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/janus_delayed_choice_clock_audit.py --demo --out out/clock-audit-${{ matrix.python }}.json
+          python - <<'PY'
+          import json, glob
+          x=json.load(open(glob.glob('out/clock-audit-*.json')[0]))
+          assert x['synthetic_demo_only'] is True
+          assert x['unfiltered_early_outcomes_including_no_click'] is True
+          assert x['fixed_n_primary_valid'] is True
+          assert x['hardware_QRNG_independence_verified'] is False
+          assert x['external_sha_timestamp_signature_verified'] is False
+          assert x['physical_A_before_B_proven'] is False
+          assert x['physical_retro_signal_detected'] is False
+          assert x['production_promotion']=='REFUSED_NO_INDEPENDENT_LAB_EVIDENCE'
+          PY
+          sha256sum out/clock-audit-${{ matrix.python }}.json
+          echo 'DRY RUN ONLY: classical synthetic logs cannot demonstrate a physical photon experiment, QRNG independence or retrocausality.' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-clock-audit-mock-python-${{ matrix.python }}
+          path: out/clock-audit-${{ matrix.python }}.json
+          retention-days: 30
+          if-no-files-found: error
