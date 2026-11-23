@@ -1,0 +1,45 @@
+name: JANUS-010G NIST Shared GPS Waveform Blind Lag Check
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/late_choice_010/nist_pps_waveform_010g.py'
+      - 'experiments/ocean_transformer/late_choice_010/test_nist_pps_waveform_010g.py'
+      - '.github/workflows/janus-010g-nist-pps-waveform.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-nist-010g-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  physical-gps-no-photon-lag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Independent GPS waveform, split validation and never-causality tests
+        run: |
+          set -euo pipefail
+          python -m py_compile experiments/ocean_transformer/late_choice_010/nist_pps_waveform_010g.py
+          python -m unittest discover -v -s experiments/ocean_transformer/late_choice_010 -p 'test_nist_pps_waveform_010g.py'
+      - name: Verify source SHA and search held-out correlated PPS interval pattern only
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/nist010g"
+          python -u experiments/ocean_transformer/late_choice_010/nist_pps_waveform_010g.py --output "$RUNNER_TEMP/nist010g/nist_pps_lag_010g.json"
+      - name: Retain only derived lag statistics and source SHA256
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-nist-010g-pps-only-${{ github.run_id }}
+          path: ${{ runner.temp }}/nist010g/nist_pps_lag_010g.json
+          retention-days: 60
+          if-no-files-found: warn

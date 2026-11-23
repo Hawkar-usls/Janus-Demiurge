@@ -1,0 +1,45 @@
+name: JANUS-010F NIST Full Raw Run GPS-Only Clock Audit
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/late_choice_010/nist_full_clock_010f.py'
+      - 'experiments/ocean_transformer/late_choice_010/test_nist_full_clock_010f.py'
+      - '.github/workflows/janus-010f-nist-full-clock.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-nist-010f-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  full-physical-run-negative-instrument-control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: GPS-only proof-of-abstention and safe stream parser tests
+        run: |
+          set -euo pipefail
+          python -m py_compile experiments/ocean_transformer/late_choice_010/nist_full_clock_010f.py
+          python -m unittest discover -v -s experiments/ocean_transformer/late_choice_010 -p 'test_nist_full_clock_010f.py'
+      - name: Analyze complete original NIST 00_44 run (known faulty timing control)
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/nist010f"
+          python -u experiments/ocean_transformer/late_choice_010/nist_full_clock_010f.py --run 00_44_run3_known_timing_fault --output "$RUNNER_TEMP/nist010f/nist_full_gps_010f.json"
+      - name: Archive ONLY aggregated report with actual source SHA256 digests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-nist-010f-full-run-${{ github.run_id }}
+          path: ${{ runner.temp }}/nist010f/nist_full_gps_010f.json
+          retention-days: 60
+          if-no-files-found: warn
