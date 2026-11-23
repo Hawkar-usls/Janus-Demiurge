@@ -45,6 +45,8 @@ jobs:
       contents: write
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    outputs:
+      published: ${{ steps.persist.outputs.published }}
     steps:
       - name: Checkout trusted source code without persisted credentials
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -124,6 +126,7 @@ jobs:
           python -m janus_model.memory_cortex_growth "${args[@]}"
           test -z "$(git -C "$GITHUB_WORKSPACE/registry-source" status --porcelain)"
       - name: Persist intake and active generation with a normal non-force branch push
+        id: persist
         working-directory: memory-state
         shell: bash
         run: |
@@ -145,6 +148,14 @@ jobs:
           git diff --cached --check -- data/memory-cortex/STATE.json data/memory-cortex/CURRENT.json data/memory-cortex/LATEST.json data/memory-cortex/generations
           git commit -m "memory: verified intake and thresholded generation ${GITHUB_RUN_ID}"
           git push origin HEAD:refs/heads/memory-cortex-state
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          report = json.loads((Path(os.environ['RUNNER_TEMP'])/'MEMORY_CORTEX_GROWTH.json').read_text())
+          published = report['status'] == 'GENERATION_PUBLISHED'
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('published=' + str(published).lower() + '\n')
+          PY
       - name: Retain compact measured intake receipt
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -153,3 +164,10 @@ jobs:
           path: ${{ runner.temp }}/MEMORY_CORTEX_GROWTH.json
           retention-days: 30
           if-no-files-found: ignore
+
+  read-published-generation:
+    needs: collect
+    if: needs.collect.outputs.published == 'true'
+    uses: ./.github/workflows/janus-memory-cortex-query.yml
+    with:
+      query: memory
