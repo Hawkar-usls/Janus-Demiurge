@@ -240,13 +240,20 @@ def read_beetle_leads(state: dict, beetle: Path, max_lines=2000):
     if not base.is_dir():
         return {"available": False, "lines_consumed": 0}
     commit = git_head(beetle)
-    consumed = 0
-    for part in sorted(base.glob("part-*.jsonl")):
+    consumed, hot_consumed = 0, 0
+    parts = sorted(base.glob("part-*.jsonl"))
+    hot_offsets = state.setdefault("beetle_hot_offsets", {})
+
+    def read_part(part, offsets, budget, hot=False):
         if part.is_symlink():
             raise Hold("GROWTH_BEETLE_SYMLINK")
         rel = str(part.relative_to(beetle))
-        cursor = state["beetle_offsets"].get(rel, {"offset": 0, "tail": ""})
+        cursor = offsets.get(rel, {"offset": 0, "tail": ""})
         offset = cursor["offset"]
+        count = 0
+        from_start = rel not in offsets and (not hot or part.stat().st_size <= 262144)
+        covered_prefix = from_start or (rel in offsets and
+            state["beetle_offsets"].get(rel, {}).get("offset", 0) == offset)
         with part.open("rb") as f:
             if offset > part.stat().st_size:
                 raise Hold("GROWTH_BEETLE_LEDGER_TRUNCATED")
@@ -256,7 +263,14 @@ def read_beetle_leads(state: dict, beetle: Path, max_lines=2000):
                 if digest(f.read(n)) != cursor["tail"]:
                     raise Hold("GROWTH_BEETLE_CURSOR_REWRITTEN")
             f.seek(offset)
-            while consumed < max_lines and len(state["beetle_queue"]) < 8192:
+            if hot and rel not in offsets and part.stat().st_size > 262144:
+                # Give new discoveries an immediate lane, while preserving the
+                # separate historical cursor for later lossless backfill.
+                f.seek(part.stat().st_size - 262144)
+                f.readline(131073)
+                offset = f.tell()
+            queue_cap = 8192 if hot else 4096
+            while count < budget and len(state["beetle_queue"]) < queue_cap:
                 line = f.readline(131073)
                 if not line:
                     break
@@ -266,20 +280,36 @@ def read_beetle_leads(state: dict, beetle: Path, max_lines=2000):
                 lead = canonical_lead(str(row.get("url", "")))
                 if lead and row.get("schema") == "janus.universal_beetle.candidate.v1":
                     ident, url = lead
+                    priority = 2 if str(row.get("direction_id", "")).startswith("memory_cortex_incremental_sources") else int(hot)
                     if ident not in state["beetle_done"] and ident not in state["beetle_queue"]:
                         state["beetle_queue"][ident] = {"url": url, "candidate_id": row.get("candidate_id"),
                             "beetle_commit": commit, "beetle_path": rel,
-                            "discovered_at": str(row.get("discovered_at", "")), "attempts": 0, "retry_at": 0}
+                            "discovered_at": str(row.get("discovered_at", "")), "attempts": 0, "retry_at": 0,
+                            "priority": priority}
+                    elif ident in state["beetle_queue"]:
+                        item = state["beetle_queue"][ident]
+                        item["priority"] = max(priority, item.get("priority", 0))
                 offset = f.tell()
-                consumed += 1
+                count += 1
             n = min(offset, 128)
             f.seek(offset - n)
-            state["beetle_offsets"][rel] = {"offset": offset, "tail": digest(f.read(n))}
-        if consumed >= max_lines or len(state["beetle_queue"]) >= 8192:
+            offsets[rel] = {"offset": offset, "tail": digest(f.read(n))}
+        if hot and covered_prefix and state["beetle_offsets"].get(rel, {}).get("offset", 0) <= offset:
+            state["beetle_offsets"][rel] = dict(offsets[rel])
+        return count
+
+    if parts:
+        hot_consumed = read_part(parts[-1], hot_offsets, min(256, max_lines), hot=True)
+        consumed += hot_consumed
+    for part in parts:
+        if consumed >= max_lines or len(state["beetle_queue"]) >= 4096:
             break
+        consumed += read_part(part, state["beetle_offsets"], max_lines - consumed)
     if consumed:
         state["last_sources"]["beetle"] = commit
-    return {"available": True, "source_commit": commit, "lines_consumed": consumed}
+    return {"available": True, "source_commit": commit, "lines_consumed": consumed,
+            "recent_lines_consumed": hot_consumed,
+            "historical_backfill_paused": len(state["beetle_queue"]) >= 4096}
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -334,7 +364,7 @@ def consume_beetle(root: Path, state: dict, max_fetches=8, fetch=fetch_primary, 
     now = time.time() if now is None else now
     fetched, added, errors = 0, 0, 0
     queue = state["beetle_queue"]
-    for ident in sorted(queue, key=lambda k: queue[k]["discovered_at"], reverse=True):
+    for ident in sorted(queue, key=lambda k: (queue[k].get("priority", 0), queue[k]["discovered_at"]), reverse=True):
         item = queue[ident]
         if fetched >= max_fetches:
             break

@@ -21,6 +21,9 @@ Every 20 minutes, subject to GitHub scheduling, the collector:
    fetches per scan. Errors use exponential backoff, pausing after five failed
    fetches. Arbitrary discovered URLs, redirects and executable content are not
    fetched/executed. Source confidentiality/holdout exclusions are retained.
+   A separate tail cursor reserves space for recent discoveries, with Cortex
+   direction leads ahead of historical backlog. Historical cursors and queued
+   records are preserved when backfill pauses; old successes are never refetched.
 5. Publishes after **4 MiB of new distinct text OR 128 new documents**. Pending
    text survives all intermediate runs. It rebuilds FTS from exact CAS objects,
    rechecks all hashes and SQLite integrity, then appends a generation manifest

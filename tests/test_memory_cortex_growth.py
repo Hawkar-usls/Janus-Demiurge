@@ -234,6 +234,35 @@ class GrowthTests(unittest.TestCase):
         with self.assertRaisesRegex(g.Hold, "ENTITIES"):
             g.primary_text("arxiv:2601.12345", b'<!DOCTYPE x>' + raw)
 
+    def test_recent_beetle_discovery_is_not_starved_by_old_backlog(self):
+        base = self.source / "data/beetle-state/candidates.parts"
+        base.mkdir(parents=True)
+        part = base / "part-000002.jsonl"
+        rows = []
+        for i in range(1800):
+            rows.append({"schema": "janus.universal_beetle.candidate.v1", "candidate_id": str(i),
+                "url": f"https://zenodo.org/records/{10000+i}", "discovered_at": "2026-01-01",
+                "summary": "x" * 200})
+        rows.append({"schema": "janus.universal_beetle.candidate.v1", "candidate_id": "fresh",
+            "url": "https://zenodo.org/records/99999", "discovered_at": "2026-11-23",
+            "direction_id": "memory_cortex_incremental_sources::FORWARD"})
+        part.write_text(''.join(json.dumps(x) + '\n' for x in rows))
+        self.commit()
+        for i in range(4096):
+            self.state["beetle_queue"][f'zenodo:{i}'] = {"discovered_at": "2025-01-01", "retry_at": 999999999999}
+        # More than one bounded hot read may be needed, but no archive slot is
+        # required and none of the 4096 old queued IDs is discarded.
+        for _ in range(4):
+            g.read_beetle_leads(self.state, self.source)
+        self.assertEqual(self.state["beetle_queue"]["zenodo:99999"]["priority"], 2)
+        self.assertIn('zenodo:0', self.state["beetle_queue"])
+        self.assertNotIn(str(part.relative_to(self.source)), self.state["beetle_offsets"])
+        fetched = []
+        raw = b'{"id":99999,"metadata":{"title":"Fresh","description":"A newly discovered primary abstract with genuine research content."}}'
+        g.consume_beetle(self.root, self.state, max_fetches=1,
+                         fetch=lambda u: fetched.append(u) or raw, now=1)
+        self.assertEqual(fetched, ['https://zenodo.org/api/records/99999'])
+
     def test_symlink_source_object_refused(self):
         sha = self.state["active"][0]
         path = g.object_path(self.root, sha)
