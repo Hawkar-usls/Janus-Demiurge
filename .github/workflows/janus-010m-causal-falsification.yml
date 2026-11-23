@@ -1,0 +1,46 @@
+name: JANUS-010M Three Models Falsification on Real ETH Bell
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/late_choice_010/causal_falsification_010m.py'
+      - 'experiments/ocean_transformer/late_choice_010/test_causal_falsification_010m.py'
+      - 'experiments/ocean_transformer/late_choice_010/PROTOCOL_010M.md'
+      - '.github/workflows/janus-010m-causal-falsification.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-010m-causal-falsification-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  original-eth-quantum-outcomes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: No-signalling and collider toy proofs, no files downloaded
+        run: |
+          set -euo pipefail
+          python -m py_compile experiments/ocean_transformer/late_choice_010/causal_falsification_010m.py
+          python -m unittest discover -v -s experiments/ocean_transformer/late_choice_010 -p 'test_causal_falsification_010m.py'
+      - name: Replay all SHA-pinned original ETH 2023 physical Bell records
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/eth010m"
+          python -u experiments/ocean_transformer/late_choice_010/causal_falsification_010m.py --output "$RUNNER_TEMP/eth010m/eth010m_three_model_archival.json"
+      - name: Archive aggregate, model comparison and original source hash only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-010m-three-models-${{ github.run_id }}
+          path: ${{ runner.temp }}/eth010m/eth010m_three_model_archival.json
+          retention-days: 60
+          if-no-files-found: warn
