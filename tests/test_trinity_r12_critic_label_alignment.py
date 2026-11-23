@@ -52,6 +52,16 @@ class TrinityR12LabelRescue(unittest.TestCase):
         self.assertFalse(result["may_graduate_trinity"])
         self.assertFalse(result["external_independent_exam"])
 
+    def test_all_no_cannot_be_promoted_even_if_detects_every_error(self):
+        rows=evaluation.rows()
+        result=evaluation.evaluate_predictions(
+            rows,["maybe"]*36,["NO"]*36,"b"*64)
+        self.assertEqual(result["status"],"HOLD_CRITIC_GENERALIZATION_NOT_PROVEN")
+        self.assertTrue(result["criterion"]["all_veto_strategy_rejected"])
+        self.assertFalse(result["criterion"]["correct_absolute_approval_floor_8_of_12"])
+        self.assertEqual(result["metrics"]["CANDIDATE"]["INCORRECT"]["VETO"],12)
+        self.assertEqual(result["metrics"]["CANDIDATE"]["CORRECT"]["APPROVE"],0)
+
     def test_all_yes_cannot_be_promoted(self):
         rows=evaluation.rows()
         result=evaluation.evaluate_predictions(rows,["YES"]*36,["YES"]*36,"a"*64)
