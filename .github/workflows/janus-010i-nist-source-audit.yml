@@ -1,0 +1,44 @@
+name: JANUS-010I NIST Original Source Clock Semantics Audit
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/late_choice_010/nist_original_code_010i.py'
+      - 'experiments/ocean_transformer/late_choice_010/test_nist_original_code_010i.py'
+      - '.github/workflows/janus-010i-nist-source-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-nist-010i-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  source-provenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Bounded original code source tests
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v -s experiments/ocean_transformer/late_choice_010 -p 'test_nist_original_code_010i.py'
+      - name: Download official original NIST analysis archive and inspect source-only semantics
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/nist010i"
+          python -u experiments/ocean_transformer/late_choice_010/nist_original_code_010i.py --output "$RUNNER_TEMP/nist010i/source_semantics_010i.json"
+      - name: Archive only SHA256 plus small source line references
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-nist-010i-original-code-meta-${{ github.run_id }}
+          path: ${{ runner.temp }}/nist010i/*.json
+          retention-days: 60
+          if-no-files-found: warn
