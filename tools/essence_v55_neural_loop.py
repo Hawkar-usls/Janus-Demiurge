@@ -526,7 +526,15 @@ def publish(folder,p,lock,exam,child):
                  a.get("holdout_rows_sha256")==exam["holdout_rows_sha256"]
                  for a in ledger["attempts"]),
          "V55_REUSED_HOLDOUT_FACTS")
-    accepted=exam["status"]=="PASS_INTERNAL_SHADOW"
+    # ESSENCE G9 safeguard: internal PROJECT_STATUS holdout improvement has
+    # already failed to generalize for the G8 functional descendant (4/16
+    # vs G3 5/16). Do not auto-admit generation 9 on the same internal proxy.
+    # G9 requires a separate frozen Genesis 64-case first-look, exact source
+    # commits/weight hashes, and explicit independent admission review. This
+    # code MUST NOT grant admission merely on a self-reported external flag.
+    internal_pass=exam["status"]=="PASS_INTERNAL_SHADOW"
+    requires_g9_functional_review=p["parent_generation"]>=8
+    accepted=internal_pass and not requires_g9_functional_review
     if accepted:
         dest=folder/f"models/v55gen{p['parent_generation']+1:04d}"
         fail(not dest.exists(),"V55_GENERATION_COLLISION")
@@ -549,7 +557,10 @@ def publish(folder,p,lock,exam,child):
         "holdout_source_sha256":exam["holdout_source_sha256"],
         "source_sha256":p["source_sha256"],"parent_generation":p["parent_generation"],
         "candidate_generation":p["parent_generation"]+1,
-        "exam_sha256":exam["sha256"],"status":exam["status"],
+        "exam_sha256":exam["sha256"],
+        "status":("HOLD_G9_FUNCTIONAL_REVIEW_REQUIRED"
+                  if internal_pass and requires_g9_functional_review
+                  else exam["status"]),
         "shadow_accepted":accepted,"production_promotion":False,
     })
     new=sealed({k:v for k,v in ledger.items() if k!="sha256"})
@@ -560,6 +571,8 @@ def publish(folder,p,lock,exam,child):
         "plan_sha256":p["sha256"],"exam_sha256":exam["sha256"],
         "candidate_adapter_sha256":lineage["adapter_sha256"],
         "shadow_accepted":accepted,"current_generation":new["current_generation"],
+        "g9_functional_review_required":requires_g9_functional_review,
+        "g9_first_look_64_case_accepted":False,
         "production_promotion":False})
     path=target.parent/"attempts"/(p["task_digest"][:24]+".json")
     state.store(path,receipt)
