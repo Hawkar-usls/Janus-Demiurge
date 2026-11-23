@@ -1,0 +1,252 @@
+name: Trinity R1.1 CPU Critic Recovery and JANUS Shadow Context Training
+
+on:
+  pull_request:
+    paths:
+      - 'tools/trinity_r11_*.py'
+      - 'tests/test_trinity_r11_shadow_training.py'
+      - 'research/essence/trinity_parental_school/R11_*'
+      - '.github/workflows/trinity-r11-shadow-cpu.yml'
+  push:
+    branches:
+      - research/trinity-r11-shadow-training-20261123
+    paths:
+      - 'tools/trinity_r11_*.py'
+      - 'tests/test_trinity_r11_shadow_training.py'
+      - 'research/essence/trinity_parental_school/R11_*'
+      - '.github/workflows/trinity-r11-shadow-cpu.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HF_HUB_DISABLE_TELEMETRY: '1'
+  HF_HUB_DOWNLOAD_TIMEOUT: '120'
+  TOKENIZERS_PARALLELISM: 'false'
+  OMP_NUM_THREADS: '4'
+  PYTHONHASHSEED: '0'
+
+jobs:
+  safety-contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify prior R0/R1 and new disjoint train-firstlook contract
+        run: |
+          set -euo pipefail
+          python -m py_compile tools/trinity_r11_critic_train.py tools/trinity_r11_critic_eval.py tools/trinity_r11_student_train.py tools/trinity_r11_student_eval.py tests/test_trinity_r11_shadow_training.py
+          python -m unittest -v tests.test_trinity_parental_school tests.test_trinity_critic_context_r1 tests.test_trinity_r11_shadow_training
+
+  critic-train:
+    needs: safety-contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned CPU torch, transformers and PEFT
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 peft==0.13.2 safetensors==0.5.3
+      - name: Fit SmolLM TRAIN ONLY with symbolic truth labels, no evaluation file read
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/trinity/r11/critic
+          python -m tools.trinity_r11_critic_train --steps 96 \
+            --adapter runtime/trinity/r11/critic/adapter \
+            --receipt runtime/trinity/r11/critic/train_receipt.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from tools import trinity_parental_contract as c
+          r=c.checked_seal(json.loads(Path('runtime/trinity/r11/critic/train_receipt.json').read_text()))
+          assert r['schema']=='janus.trinity.r11.critic_lora_train/1.0'
+          assert r['train_cases']==144 and r['used_genesis_64'] is False
+          assert r['read_future_r11_evaluation_cases'] is False
+          assert r['production_promotion'] is False and r['eligible_to_train_JANUS'] is False
+          print('TRINITY_CRITIC_LORA_TRAIN_SHADOW_ONLY__INTERNAL_FIRSTLOOK_PENDING')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trinity-r11-critic-shadow
+          path: runtime/trinity/r11/critic
+          if-no-files-found: error
+          retention-days: 60
+
+  critic-firstlook:
+    needs: critic-train
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: trinity-r11-critic-shadow
+          path: runtime/trinity/r11/critic
+      - name: Install pinned CPU parents for real same-conditions comparison
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 peft==0.13.2 safetensors==0.5.3
+      - name: Compare base and trained SmolLM on disjoint predeclared 36 new cases
+        run: |
+          set -euo pipefail
+          python -m tools.trinity_r11_critic_eval \
+            --adapter runtime/trinity/r11/critic/adapter \
+            --train-receipt runtime/trinity/r11/critic/train_receipt.json \
+            --out runtime/trinity/r11/critic_firstlook.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from tools import trinity_parental_contract as c
+          r=c.checked_seal(json.loads(Path('runtime/trinity/r11/critic_firstlook.json').read_text()))
+          assert r['cases']==36 and r['public_prior_36_probes_reused'] is False
+          assert not r['may_replace_parent_critic'] and not r['may_graduate_trinity']
+          assert not r['external_independent_exam']
+          print('TRINITY_R11_CRITIC_FIRSTLOOK=' + r['status'])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trinity-r11-critic-firstlook
+          path: runtime/trinity/r11/critic_firstlook.json
+          if-no-files-found: error
+          retention-days: 60
+
+  janus-train:
+    needs: safety-contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        context: [128, 256, 512]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned CPU-only JANUS checkpoint trainer
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+      - name: Train 128, 256 or 512 disposable shadow from SAME immutable incumbent
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/trinity/r11/janus-${{ matrix.context }}
+          python -m tools.trinity_r11_student_train --context ${{ matrix.context }} --steps 60 \
+            --out runtime/trinity/r11/janus-${{ matrix.context }}/shadow.pt \
+            --receipt runtime/trinity/r11/janus-${{ matrix.context }}/train_receipt.json
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          from tools import trinity_parental_contract as c
+          n=int(os.environ['CTX'])
+          r=c.checked_seal(json.loads(Path(f'runtime/trinity/r11/janus-{n}/train_receipt.json').read_text()))
+          assert r['context_length']==n and r['no_genesis_64_exam_read']
+          assert r['no_r11_internal_eval_read'] and r['checkpoint_saved_only_to_artifact']
+          assert r['incumbent_checkpoint_unchanged'] and not r['production_promotion']
+          print('TRINITY_R11_DISPOSABLE_JANUS_SHADOW_SEALED',n)
+          PY
+        env:
+          CTX: '${{ matrix.context }}'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trinity-r11-janus-train-${{ matrix.context }}
+          path: runtime/trinity/r11/janus-${{ matrix.context }}/
+          if-no-files-found: error
+          retention-days: 60
+
+  janus-firstlook:
+    needs: janus-train
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        context: [128, 256, 512]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: trinity-r11-janus-train-${{ matrix.context }}
+          path: runtime/trinity/r11/janus-${{ matrix.context }}
+      - name: Install pinned CPU inference runtime
+        run: |
+          python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+      - name: Compare actual original 128 checkpoint with each new shadow on same new diagnostic cases
+        run: |
+          set -euo pipefail
+          python -m tools.trinity_r11_student_eval \
+            --student runtime/trinity/r11/janus-${{ matrix.context }}/shadow.pt \
+            --train-receipt runtime/trinity/r11/janus-${{ matrix.context }}/train_receipt.json \
+            --out runtime/trinity/r11/janus_firstlook_${{ matrix.context }}.json
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          from tools import trinity_parental_contract as c
+          n=int(os.environ['CTX'])
+          r=c.checked_seal(json.loads(Path(f'runtime/trinity/r11/janus_firstlook_{n}.json').read_text()))
+          assert r['student_context']==n and r['evaluation_cases']==36
+          assert r['used_genesis_firstlook_64'] is False
+          assert not r['checkpoint_admitted'] and not r['student_graduated']
+          assert not r['independent_external_validation']
+          print('TRINITY_R11_JANUS_INTERNAL_FIRSTLOOK',n,r['status'])
+          PY
+        env:
+          CTX: '${{ matrix.context }}'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trinity-r11-janus-firstlook-${{ matrix.context }}
+          path: runtime/trinity/r11/janus_firstlook_${{ matrix.context }}.json
+          if-no-files-found: error
+          retention-days: 60
+
+  final-research-hold:
+    needs: [safety-contracts, critic-firstlook, janus-firstlook]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: trinity-r11-*-firstlook*
+          merge-multiple: true
+          path: runtime/trinity/r11
+      - name: Verify same new JANUS cases, common incumbent and science HOLD
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          folder=Path('runtime/trinity/r11')
+          c=json.loads((folder/'critic_firstlook.json').read_text())
+          s=[json.loads((folder/f'janus_firstlook_{n}.json').read_text()) for n in (128,256,512)]
+          assert c['may_replace_parent_critic'] is False
+          assert c['external_independent_exam'] is False
+          assert len({x['case_set_sha256'] for x in s})==1
+          assert len({x['base_checkpoint_sha256'] for x in s})==1
+          assert all(not x['student_graduated'] and not x['checkpoint_admitted'] for x in s)
+          print('TRINITY_R11_COMPLETED_CPU_SHADOW_STUDIES__GRADUATION_HOLD')
+          PY
