@@ -1,0 +1,39 @@
+{
+  "schema": "janus.trinity.r12.causal_label_alignment_protocol/1.0",
+  "date_utc": "2026-11-23",
+  "name": "TRINITY_R12_HF_INTERNAL_SHIFT_CORRECTION",
+  "status": "PREDECLARED_NEW_THIRD_DOMAIN__NO_EXTERNAL_VALIDATION",
+  "parent_source": "https://github.com/Hawkar-usls/Janus-Demiurge/pull/706",
+  "original_negative_firstlook": "research/essence/trinity_parental_school/RESULT_R11_REAL_CPU_20261123.json",
+  "source_root_cause": "HF AutoModelForCausalLM shifts labels by one internally. R1.1 mistakenly pre-shifted both input and labels; loss was optimized on misaligned next-token targets.",
+  "code_fix": "Use unshifted complete prompt+answer input_ids; mask all prompt label tokens; let HF shift logits/labels internally.",
+  "corrected_training_module": "tools/trinity_r12_critic_train.py",
+  "new_eval_module": "tools/trinity_r12_critic_eval.py",
+  "training_only_symbolic_examples": 144,
+  "training_examples_same_as_R11": true,
+  "exposed_R11_firstlook_used_as_train": false,
+  "exposed_R11_firstlook_used_as_new_test": false,
+  "new_firstlook": {
+    "examples": 36,
+    "numeric_operands": "1731+19*i and 1931+29*i, i=0..11",
+    "purpose": "Different numeric domain, first evaluated only after corrected adapter is trained",
+    "source_precommitted_before_real_actions_training": true,
+    "same_owner_internal_prospective": true,
+    "independent_external_blind": false,
+    "no_new_external_custodian_claim": true
+  },
+  "source_pins": {
+    "model": "HuggingFaceTB/SmolLM2-135M-Instruct",
+    "revision": "12fd25f77366fa6b3b4b768ec3050bf629380bac",
+    "original_student_checkpoint_sha256": "06d7e6228ca9aef2dc58eb55fe1c805aa3b66e4f8fb90b0e946ce6af47b1a662"
+  },
+  "admission": {
+    "internal_pass_does_not_promote": true,
+    "cannot_replace_original_critic": true,
+    "cannot_promote_student_or_student_context": true,
+    "no_64_exam_training": true,
+    "three_external_independent_batches_completed": 0,
+    "no_auto_merge": true
+  },
+  "next": "Read new R12 CPU GitHub Actions full artifacts and record full score, including negative result. If internally better, obtain truly withheld third-party critic and 3 external student cohorts before any graduation."
+}
