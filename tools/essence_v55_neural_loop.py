@@ -492,6 +492,17 @@ def evaluate(p,lock,parent,child,holdout_root):
     })
 
 
+def g9_internal_admission_allowed(parent_generation, internal_pass):
+    """Pure fail-closed G9 gate. External Genesis results require a NEW reviewed pathway.
+
+    A successful internal shadow metric is not sufficient evidence to promote G9.
+    This gate intentionally cannot accept any G9 candidate.
+    """
+    fail(type(parent_generation) is int and 3 <= parent_generation <= 9 and
+         type(internal_pass) is bool, "G9_INVALID_SHADOW_ADMISSION_REQUEST")
+    return internal_pass and parent_generation < 8
+
+
 def publish(folder,p,lock,exam,child):
     folder=Path(folder)
     ledger=ledger_at(folder)
@@ -534,7 +545,7 @@ def publish(folder,p,lock,exam,child):
     # code MUST NOT grant admission merely on a self-reported external flag.
     internal_pass=exam["status"]=="PASS_INTERNAL_SHADOW"
     requires_g9_functional_review=p["parent_generation"]>=8
-    accepted=internal_pass and not requires_g9_functional_review
+    accepted=g9_internal_admission_allowed(p["parent_generation"],internal_pass)
     if accepted:
         dest=folder/f"models/v55gen{p['parent_generation']+1:04d}"
         fail(not dest.exists(),"V55_GENERATION_COLLISION")
