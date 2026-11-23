@@ -1,0 +1,108 @@
+{
+  "schema": "janus.trinity.r11.real_cpu_firstlook_record.v1",
+  "id": "JANUS-TRINITY-R11-2026-11-23-REAL_CPU_NEGATIVE",
+  "date_utc": "2026-11-23",
+  "status": "ENGINEERING_CI_PASS__CRITIC_QUALITY_HOLD__STUDENT_GENERALIZATION_HOLD",
+  "repo": "Hawkar-usls/Janus-Demiurge",
+  "branch": "research/trinity-r11-shadow-training-20261123",
+  "pr": "https://github.com/Hawkar-usls/Janus-Demiurge/pull/706",
+  "ci_success_runs": [
+    "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/45195390658",
+    "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/45195404724"
+  ],
+  "critic": {
+    "base": "HuggingFaceTB/SmolLM2-135M-Instruct",
+    "revision": "12fd25f77366fa6b3b4b768ec3050bf629380bac",
+    "train_only_cases": 144,
+    "lo_ra_rank": 4,
+    "train_steps": 96,
+    "trainable_parameters": 230400,
+    "first_train_loss": 15.32589054107666,
+    "last_train_loss": 0.007092672400176525,
+    "adapter_sha256": "aa988c6b5b91682973ac79a94a1c449751671aef8a7edef83168ac64cd170930",
+    "firstlook_internal_cases": 36,
+    "baseline_metrics": {
+      "CORRECT": {
+        "APPROVE": 12,
+        "VETO": 0,
+        "ABSTAIN": 0
+      },
+      "INCORRECT": {
+        "APPROVE": 12,
+        "VETO": 0,
+        "ABSTAIN": 0
+      },
+      "AMBIGUOUS": {
+        "APPROVE": 12,
+        "VETO": 0,
+        "ABSTAIN": 0
+      }
+    },
+    "trained_metrics": {
+      "CORRECT": {
+        "APPROVE": 0,
+        "VETO": 0,
+        "ABSTAIN": 12
+      },
+      "INCORRECT": {
+        "APPROVE": 0,
+        "VETO": 0,
+        "ABSTAIN": 12
+      },
+      "AMBIGUOUS": {
+        "APPROVE": 0,
+        "VETO": 0,
+        "ABSTAIN": 12
+      }
+    },
+    "train_sha_receipt": "27f595418b768ac49d33b1911a80274f4504b0c3fafaf5f6737be3c2285ca673",
+    "firstlook_sha_receipt": "e4c37e7313aa9b7deb3ac9096426918ff10c20c8b3f62cd7edfa30a5fba04f23",
+    "result": "HOLD_CRITIC_GENERALIZATION_NOT_PROVEN",
+    "root_cause_to_verify": "Potential double shift: Hugging Face AutoModelForCausalLM shifts labels internally, but current training supplied pre-shifted input and labels; correct the implementation and evaluate only on a NEW third set.",
+    "scientific_classification": "Source-level implementation hypothesis until fixed and independently rerun"
+  },
+  "student": {
+    "original_checkpoint_sha256": "06d7e6228ca9aef2dc58eb55fe1c805aa3b66e4f8fb90b0e946ce6af47b1a662",
+    "steps": 60,
+    "train_examples": 48,
+    "internal_firstlook_cases": 36,
+    "arms": [
+      {
+        "context": 128,
+        "fit_cases": 12,
+        "exact": 0,
+        "first_loss": 7.180201530456543,
+        "last_loss": 1.5278337001800537,
+        "sha": "c79333a23102862fbb4fff6ac176e2eeffdf9e5e8209fd32e0fe438dccec2d35"
+      },
+      {
+        "context": 256,
+        "fit_cases": 24,
+        "exact": 0,
+        "first_loss": 8.299843788146973,
+        "last_loss": 1.9870104789733887,
+        "sha": "af11fa3166ba5ff4817f0b66811a2646b0871ff239e11b01aa81836d163094e4"
+      },
+      {
+        "context": 512,
+        "fit_cases": 36,
+        "exact": 0,
+        "first_loss": 8.036589622497559,
+        "last_loss": 2.6789402961730957,
+        "sha": "1d2c5250d7c204f191ff3a25a1d2ee292fa8b5bd4fdece96dd8616effb455c88"
+      }
+    ],
+    "result": "HOLD_NO_PROVEN_STUDENT_GENERALIZATION"
+  },
+  "exam_controls": {
+    "initial_Genesis64_NOT_used": true,
+    "previous36_R1_critic_diagnostic_NOT_used_for_training": true,
+    "published_R11_firstlook_now_retired_from_fresh_eval": true,
+    "independently_sourced_external3_batches_completed": 0,
+    "production_checkpoint_changed": false,
+    "LoRA_parent_replaced": false,
+    "autonomous_self_admission": false,
+    "scientific_parent_surpass_proven": false
+  },
+  "next": "Fix known HF internal label-shifting semantics in R1.2 with a separately frozen new numerical first-look domain. Do not requalify against the now exposed R1.1 critic examples. Separately revisit JANUS training objective and collect new disjoint cohorts before adoption."
+}

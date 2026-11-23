@@ -1,0 +1,62 @@
+{
+  "schema": "janus.trinity.parental_r11_shadow_recovery_protocol/1.0",
+  "id": "JANUS-TRINITY-R11-CRITIC-AND-CONTEXT-TRAINING-2026-11-23",
+  "date_utc": "2026-11-23",
+  "state": "DRAFT_UNVALIDATED_MODELS__NO_ADMISSION__INTERNAL_FUTURE_FIRSTLOOK",
+  "prior": {
+    "R1_open_pr": "https://github.com/Hawkar-usls/Janus-Demiurge/pull/705",
+    "R1_cpu_run": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/45191245034",
+    "critic_wrong_veto": "0/12 on public diagnostic",
+    "JANUS_context_exact": "0/36 at all 128/256/512 untrained, with fit 24/30/36",
+    "incumbent_checkpoint_sha256": "06d7e6228ca9aef2dc58eb55fe1c805aa3b66e4f8fb90b0e946ce6af47b1a662"
+  },
+  "critic": {
+    "source_model": "HuggingFaceTB/SmolLM2-135M-Instruct",
+    "source_revision": "12fd25f77366fa6b3b4b768ec3050bf629380bac",
+    "training_script": "tools/trinity_r11_critic_train.py",
+    "trained_method": "CPU LoRA r=4 q_proj,v_proj",
+    "train_only_symbolic_cases": 144,
+    "train_seed": 20261123,
+    "train_source_not_reusing_published_36_or_genesis_64": true,
+    "firstlook_script": "tools/trinity_r11_critic_eval.py",
+    "next_internal_firstlook_cases": 36,
+    "independent_external_critic_qualification": false,
+    "criteria": "Detect >=8/12 wrong as explicit NO; no additional wrong-approved compared with baseline; no more than two correct approvals lost; ambiguous approvals zero; additionally require new wrong-veto improvement for provisional flag",
+    "limitation": "Same-owner predeclared eval script is visible in repository; NOT an external blind or independent certification.",
+    "no_auto_install_parent": true
+  },
+  "student": {
+    "source_checkpoint_sha256": "06d7e6228ca9aef2dc58eb55fe1c805aa3b66e4f8fb90b0e946ce6af47b1a662",
+    "contexts": [
+      128,
+      256,
+      512
+    ],
+    "training_script": "tools/trinity_r11_student_train.py",
+    "eval_script": "tools/trinity_r11_student_eval.py",
+    "train_only_examples": 48,
+    "internal_firstlook_cases": 36,
+    "same_train_only_data_generator": true,
+    "same_optimizer_steps_per_context": 60,
+    "modulo_repeated_positional_initialization_for_long_context": true,
+    "trained_context_windows_only_in_disposable_shadow": true,
+    "output_kind": "SHA-pinned GitHub Actions artifacts, never production weight commit",
+    "promoted_checkpoint_write": false,
+    "graduation_64_cases_accessed": false,
+    "independent_generalization_established": false
+  },
+  "safeguards": {
+    "existing_G9_ESSENCE_gate_unchanged": true,
+    "existing_Trinity_Graduation_Policy_unchanged": true,
+    "original_R0_R1_evidence_unchanged": true,
+    "publicly_exposed_64_regression_only": true,
+    "future_three_externally_independent_disjoint_cohorts_obtained": false,
+    "no_training_on_public_or_closed_eval": true,
+    "no_training_on_model_generated_truth_labels": true,
+    "no_automated_model_review_or_auto_merge": true,
+    "no_long_context_skill_gain_inferred_from_fit_counts": true,
+    "no_model_self_approval": true,
+    "no_production_checkpoint_promotion": true
+  },
+  "next": "Read actual Actions firstlook receipts for critic and three student shadows; preserve negative results, improve training ONLY on train-only sources; do not call visible developer tests external replication."
+}
