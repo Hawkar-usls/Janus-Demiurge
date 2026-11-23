@@ -1,0 +1,165 @@
+name: Trinity R1 Critic and Context Diagnostics (No Promotion)
+
+on:
+  pull_request:
+    paths:
+      - 'tools/trinity_parental_contract.py'
+      - 'tools/trinity_critic_probe.py'
+      - 'tools/trinity_context_probe.py'
+      - 'tests/test_trinity_critic_context_r1.py'
+      - 'research/essence/trinity_parental_school/R1_REPAIR_PROTOCOL_20261123.json'
+      - '.github/workflows/trinity-r1-critic-context.yml'
+  push:
+    branches:
+      - research/trinity-critic-context-r1-20261123
+    paths:
+      - 'tools/trinity_parental_contract.py'
+      - 'tools/trinity_critic_probe.py'
+      - 'tools/trinity_context_probe.py'
+      - 'tests/test_trinity_critic_context_r1.py'
+      - '.github/workflows/trinity-r1-critic-context.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HF_HUB_DISABLE_TELEMETRY: '1'
+  HF_HUB_DOWNLOAD_TIMEOUT: '120'
+  TOKENIZERS_PARALLELISM: 'false'
+  OMP_NUM_THREADS: '4'
+
+jobs:
+  contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Fail-closed tests and R0 backward compatibility
+        run: |
+          set -euo pipefail
+          python -m py_compile tools/trinity_parental_contract.py tools/trinity_critic_probe.py tools/trinity_context_probe.py tests/test_trinity_critic_context_r1.py
+          python -m unittest -v tests.test_trinity_parental_school tests.test_trinity_critic_context_r1
+
+  critic-real-cpu:
+    needs: contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned CPU-only SmolLM evaluation runtime
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 safetensors==0.5.3
+      - name: Run 36 public diagnostic verdicts (never a student exam)
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/trinity/r1
+          python -m tools.trinity_critic_probe --out runtime/trinity/r1/critic_diagnostic.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from tools import trinity_parental_contract as c
+          r=c.checked_seal(json.loads(Path('runtime/trinity/r1/critic_diagnostic.json').read_text()))
+          assert r['diagnostic_case_count']==36
+          assert r['may_promote_native_weights'] is False
+          assert r['eligible_to_certify_student_training'] is False
+          assert r['independent_external_exam'] is False
+          assert r['qualification'] in (
+              'HOLD_CRITIC_NOT_QUALIFIED',
+              'PUBLIC_DIAGNOSTIC_PASS_STILL_NEEDS_UNSEEN_CRITIC_HOLDOUT')
+          print('TRINITY_R1_REAL_CPU_CRITIC_DIAGNOSTIC=' + r['qualification'])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trinity-r1-critic-diagnostic
+          path: runtime/trinity/r1/critic_diagnostic.json
+          if-no-files-found: error
+          retention-days: 60
+
+  context-capacity:
+    needs: contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        context: [128, 256, 512]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU checkpoint loader, no optimizer or training runner
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+      - name: Measure exact fit, synthetic responses and peak RSS
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/trinity/r1
+          python -m tools.trinity_context_probe --context ${{ matrix.context }} --out runtime/trinity/r1/context_${{ matrix.context }}.json
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          from tools import trinity_parental_contract as c
+          n=int(os.environ.get("CONTEXT_LENGTH"))
+          r=c.checked_seal(json.loads(Path(f'runtime/trinity/r1/context_{n}.json').read_text()))
+          assert r['context_length']==n
+          assert r['original_weights_unchanged'] is True
+          assert r['training_performed'] is False
+          assert r['weights_saved'] is False and r['promotion'] is False
+          assert r['read_genesis_firstlook'] is False
+          assert r['summary']['TRAIN_ONLY_SHORT']['total']==24
+          assert r['summary']['TRAIN_ONLY_SHORT']['fit']==24
+          print('TRINITY_R1_CONTEXT_DIAGNOSTIC_ONLY',n)
+          PY
+        env:
+          CONTEXT_LENGTH: ${{ matrix.context }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trinity-r1-context-${{ matrix.context }}
+          path: runtime/trinity/r1/context_${{ matrix.context }}.json
+          if-no-files-found: error
+          retention-days: 60
+
+  science-hold:
+    needs: [contracts, critic-real-cpu, context-capacity]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: trinity-r1-*
+          merge-multiple: true
+          path: runtime/trinity/r1
+      - name: Prevent inference of graduation from open diagnostics
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from hashlib import sha256
+          folder=Path('runtime/trinity/r1')
+          critic=json.loads((folder/'critic_diagnostic.json').read_text())
+          contexts=[json.loads((folder/f'context_{n}.json').read_text()) for n in (128,256,512)]
+          assert critic['independent_external_exam'] is False
+          assert not critic['eligible_to_certify_student_training']
+          assert len({x['base_checkpoint_sha256'] for x in contexts})==1
+          assert len({x['probe_set_sha256'] for x in contexts})==1
+          assert all(x['read_genesis_firstlook'] is False and x['promotion'] is False for x in contexts)
+          assert critic['may_promote_native_weights'] is False
+          print('TRINITY_R1_CONTRACTS_AND_DIAGNOSTICS_COMPLETE__GRADUATION_HOLD')
+          PY
