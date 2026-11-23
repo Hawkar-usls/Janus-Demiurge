@@ -1,0 +1,235 @@
+name: JANUS R5 - Trained Transformer vs Future BLS-Signed drand Beacon
+
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/janus_retro_trained_drand_r5.py'
+      - 'experiments/ocean_transformer/test_janus_retro_trained_drand_r5.py'
+      - 'experiments/ocean_transformer/janus_retro_drand_external_r4.py'
+      - 'experiments/ocean_transformer/janus_retro_drand_external_r4.mjs'
+      - '.github/workflows/janus-retro-trained-drand-r5.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: janus-trained-drand-r5-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  regression:
+    name: R5 actual-model signature/time controls Python ${{ matrix.python }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11','3.12']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Run 12 R5 controls and 11 original R4 controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v -s experiments/ocean_transformer \
+            -p 'test_janus_retro_trained_drand_r5.py'
+          python -m unittest discover -v -s experiments/ocean_transformer \
+            -p 'test_janus_retro_drand_external_r4.py'
+
+  commit-trained-early:
+    needs: [regression]
+    name: Freeze original trained JANUS forecast + four decoders before future round
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    permissions:
+      contents: read
+      actions: read
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      PYTHONPATH: .
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install real checkpoint CPU inference runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check --retries 3 \
+              'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-ocean-v3-retrain-result-42125238873
+          run-id: '42125238873'
+          repository: ${{ github.repository }}
+          github-token: ${{ github.token }}
+          path: artifacts/model
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-ocean-v3-snapshot
+          run-id: '42125238873'
+          repository: ${{ github.repository }}
+          github-token: ${{ github.token }}
+          path: artifacts/snapshot
+      - name: Produce actual frozen 40-river Transformer forecast using pinned model/SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/retro_channel_trial.py predict \
+            --trial-id "janus-retro-${{ github.run_id }}" \
+            --model artifacts/model/ocean_candidate.pt \
+            --snapshot artifacts/snapshot/ocean_v3_snapshot.json \
+            --output out/original-model-early.json
+          python experiments/ocean_transformer/janus_retro_trained_drand_r5.py freeze \
+            --trial-id ${{ github.run_id }} \
+            --model-prediction out/original-model-early.json \
+            --early-out out/early.json \
+            --plan-out out/plan.json
+          python - <<'PY'
+          import json
+          m=json.load(open('out/original-model-early.json'))
+          e=json.load(open('out/early.json'))
+          p=json.load(open('out/plan.json'))
+          assert m['model_sha256']=='2c38788e8468a98e9377fcdb9058c488ec3ec17dfacfbf553402a9b1a86cd4ca'
+          assert e['source']=='ACTUAL_TRAINED_JANUS_40_RIVER_V3'
+          assert set(e['frozen_predictors'])=={
+            'RAW','INVERTED','CONFIDENCE_HIGH_FLIP','CONFIDENCE_LOW_FLIP'}
+          assert 'forecast_bits' not in p
+          assert p['actual_model_is_trained_janus']
+          assert p['target_release_epoch'] - p['early_created_epoch'] >= 180
+          PY
+          sha256sum out/original-model-early.json out/early.json out/plan.json
+          echo 'Actual trained JANUS 256 early bits frozen before exact future Quicknet round; four early-only decoders fixed.' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-r5-trained-early-${{ github.run_id }}
+          path: |
+            out/original-model-early.json
+            out/early.json
+          retention-days: 90
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-r5-future-plan-${{ github.run_id }}
+          path: out/plan.json
+          retention-days: 90
+          if-no-files-found: error
+
+  fetch-signed-future:
+    needs: [commit-trained-early]
+    name: Blind future round on external drand network / BLS verified
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-r5-future-plan-${{ github.run_id }}
+          path: evidence/plan
+      - name: Install official BLS-verifying drand client (do not disable verification)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save --ignore-scripts --no-audit --no-fund 'drand-client@1.4.2'
+          npm ls drand-client --depth=0
+      - name: Fetch future random beacon WITHOUT trained forecast artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          node experiments/ocean_transformer/janus_retro_drand_external_r4.mjs \
+            future evidence/plan/plan.json evidence/future.json
+          sha256sum evidence/future.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-r5-signed-future-${{ github.run_id }}
+          path: evidence/future.json
+          retention-days: 90
+          if-no-files-found: error
+
+  verify-and-score:
+    needs: [fetch-signed-future]
+    name: Independently reverify BLS signature; score all four original JANUS forecasts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-r5-trained-early-${{ github.run_id }}
+          path: evidence/early
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-r5-future-plan-${{ github.run_id }}
+          path: evidence/plan
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-r5-signed-future-${{ github.run_id }}
+          path: evidence/future
+      - name: Recheck the published BLS signature on an independent worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save --ignore-scripts --no-audit --no-fund 'drand-client@1.4.2'
+          node experiments/ocean_transformer/janus_retro_drand_external_r4.mjs \
+            verify-existing evidence/plan/plan.json evidence/future/future.json \
+            out/reverification.json
+      - name: Score the REAL JANUS prediction and three predeclared alternative decoders
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/janus_retro_trained_drand_r5.py score \
+            --early evidence/early/early.json \
+            --model-prediction evidence/early/original-model-early.json \
+            --plan evidence/plan/plan.json \
+            --future evidence/future/future.json \
+            --out out/result.json
+          python - <<'PY'
+          import json,os
+          x=json.load(open('out/result.json'))
+          verify=json.load(open('out/reverification.json'))
+          assert x['source']=='ACTUAL_TRAINED_JANUS_40_RIVER_V3'
+          assert x['all_256_bits_and_all_4_decoders_scored']
+          assert not x['late_outcome_postselection']
+          assert verify['independent_second_fetch_and_BLS_verification_pass']
+          assert not x['physical_retrocausality_proven']
+          assert not x['production_promotion']
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+            f.write('## JANUS R5 · Actual trained Transformer vs signed external future\n')
+            f.write(f'- Drand Quicknet round: {x["beacon_round"]}\n')
+            for n,z in x['all_precommitted_candidates'].items():
+              f.write(f'- {n}: {z["correct"]}/256 (nominal p={z["nominal_upper_tail"]:.6g})\n')
+            f.write(f'- Four-way Bonferroni p={x["familywise_bonferroni_upper_tail_p"]:.6g}\n')
+            f.write('- One future beacon / one signature hash. **No physical retrocausality demonstrated.**\n')
+          PY
+          sha256sum evidence/early/original-model-early.json \
+            evidence/early/early.json evidence/plan/plan.json \
+            evidence/future/future.json out/reverification.json out/result.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-r5-independent-score-${{ github.run_id }}
+          path: out/
+          retention-days: 90
+          if-no-files-found: error
