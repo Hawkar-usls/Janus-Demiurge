@@ -1,0 +1,231 @@
+name: JANUS Retro R3 - 20-Lane CPU Addressed Handshake Batch
+
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/janus_addressed_batch_audit_r3.py'
+      - 'experiments/ocean_transformer/test_janus_addressed_batch_audit_r3.py'
+      - 'experiments/ocean_transformer/janus_addressed_handshake_cpu_r2.py'
+      - 'experiments/ocean_transformer/test_janus_addressed_handshake_cpu_r2.py'
+      - '.github/workflows/janus-addressed-handshake-batch-r3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-retro-r3-matrix-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  contract-tests:
+    name: Validate batch parser and leak controls Python ${{ matrix.python }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11','3.12']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Reproduce 12 R2 cases and 7 R3 full-ledger safety gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s experiments/ocean_transformer \
+            -p 'test_janus_addressed_handshake_cpu_r2.py'
+          python -m unittest discover -v \
+            -s experiments/ocean_transformer \
+            -p 'test_janus_addressed_batch_audit_r3.py'
+
+  freeze-early:
+    needs: [contract-tests]
+    name: Early committed slot ${{ matrix.shard }} of 20
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        shard: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Produce 64 early requests and BOTH predictors before B exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          TRIAL="${{ github.run_id }}$(printf '%02d' '${{ matrix.shard }}')"
+          python experiments/ocean_transformer/janus_addressed_handshake_cpu_r2.py \
+            early --trial-id "$TRIAL" --out evidence/early.json
+          sha256sum evidence/early.json
+          python - <<'PY'
+          import json
+          x=json.load(open('evidence/early.json'))
+          assert x['trial_count']==64
+          assert x['future_target_not_generated']
+          assert x['late_routing_mode_not_yet_generated']
+          assert all('future_target_bit' not in r for r in x['records'])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-addressed-r3-early-${{ github.run_id }}-${{ matrix.shard }}
+          path: evidence/early.json
+          retention-days: 90
+          if-no-files-found: error
+
+  precommit-delay:
+    needs: [freeze-early]
+    name: 120s barrier AFTER all 20 early artifacts are stored
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - name: Delay future RNG until all 20 early lanes committed
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'All 20 early GH artifacts exist before the wait. Beginning 120 second wall-clock barrier.'
+          sleep 120
+          echo '120 second barrier completed. No future target can be read by the early jobs.' >> "$GITHUB_STEP_SUMMARY"
+
+  generate-late:
+    needs: [precommit-delay]
+    name: Future blind RNG slot ${{ matrix.shard }} of 20
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        shard: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Generate 64 later bits and route labels with no early artifact downloaded
+        shell: bash
+        run: |
+          set -euo pipefail
+          TRIAL="${{ github.run_id }}$(printf '%02d' '${{ matrix.shard }}')"
+          python experiments/ocean_transformer/janus_addressed_handshake_cpu_r2.py \
+            future --trial-id "$TRIAL" --out evidence/future.json
+          sha256sum evidence/future.json
+          python - <<'PY'
+          import json
+          x=json.load(open('evidence/future.json'))
+          assert x['trial_count']==64
+          assert not x['early_predictions_or_request_keys_loaded']
+          assert all('request_key_sha256' not in r for r in x['records'])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-addressed-r3-future-${{ github.run_id }}-${{ matrix.shard }}
+          path: evidence/future.json
+          retention-days: 90
+          if-no-files-found: error
+
+  score-after-both:
+    needs: [generate-late]
+    name: Unconditional 64-request scoring slot ${{ matrix.shard }} of 20
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        shard: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-addressed-r3-early-${{ github.run_id }}-${{ matrix.shard }}
+          path: evidence/early
+      - uses: actions/download-artifact@v4
+        with:
+          name: janus-addressed-r3-future-${{ github.run_id }}-${{ matrix.shard }}
+          path: evidence/future
+      - name: Verify 64/64 attempts, 2x2 cells, chronology and both record digests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/janus_addressed_handshake_cpu_r2.py \
+            score --early evidence/early/early.json \
+                  --future evidence/future/future.json \
+                  --out evidence/score.json
+          python - <<'PY'
+          import json
+          x=json.load(open('evidence/score.json'))
+          assert x['trials']==64 and x['all_64_trials_included']
+          assert x['no_postselection']
+          assert len(x['four_cells_n'])==4
+          assert all(v==16 for v in x['four_cells_n'].values())
+          assert not x['physical_retrocausal_signal_proven']
+          assert not x['production_promote']
+          PY
+          sha256sum evidence/score.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-addressed-r3-comparison-${{ github.run_id }}-${{ matrix.shard }}
+          path: evidence/score.json
+          retention-days: 90
+          if-no-files-found: error
+
+  aggregate-20:
+    needs: [score-after-both]
+    name: Mandatory all-shard 1280-trial non-postselected audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: janus-addressed-r3-*-${{ github.run_id }}-*
+          path: artifacts
+          merge-multiple: false
+      - name: Independently recount 20x64 requests, 320 per cell, no missing attempts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/janus_addressed_batch_audit_r3.py \
+            --artifacts artifacts --run-id ${{ github.run_id }} \
+            --out out/janus-addressed-r3-batch.json
+          python - <<'PY'
+          import json,os
+          x=json.load(open('out/janus-addressed-r3-batch.json'))
+          assert x['status']=='COMPLETE_RESEARCH_ONLY'
+          assert x['shards']==20 and x['unfiltered_total_trials']==1280
+          assert x['all_20_shards_required']
+          assert len(x['per_shard'])==20
+          assert all(v==320 for v in x['balanced_four_cell_counts'].values())
+          assert x['no_missing_or_early_filtered_attempts']
+          assert not x['independently_attested_physical_clock']
+          assert not x['independently_certified_future_entropy']
+          assert not x['physical_message_into_past']
+          assert not x['physical_retrocausal_principle_proven']
+          assert not x['production_promotion']
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+              f.write('## JANUS R3 · 20 simultaneous lanes / 1280 complete trials\n')
+              f.write(f'- Global addressing 2×2 interaction = {x["difference_in_differences_addressing_effect"]:.6f}\n')
+              f.write(f'- Paired exact p = {x["paired_exact_p"]:.6g}\n')
+              f.write(f'- Within-shard route permutation p = {x["shard_stratified_routing_permutation_p"]:.6g}\n')
+              f.write(f'- Two-test Bonferroni p = {x["two_tests_bonferroni_min_p"]:.6g}\n')
+              f.write('- Physical past-directed message: NOT DEMONSTRATED; this is a classical CPU blind-null experiment.\n')
+          PY
+          sha256sum out/janus-addressed-r3-batch.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-addressed-r3-aggregate-${{ github.run_id }}
+          path: out/janus-addressed-r3-batch.json
+          retention-days: 90
+          if-no-files-found: error
