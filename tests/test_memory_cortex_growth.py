@@ -1,0 +1,247 @@
+import copy
+import json
+from pathlib import Path
+import subprocess
+import tempfile
+import unittest
+from unittest.mock import patch
+import urllib.error
+
+from janus_model import memory_cortex_growth as g
+
+
+class GrowthTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.home = Path(self.tmp.name)
+        self.root = self.home / "state"
+        self.source = self.home / "source"
+        self.source.mkdir()
+        self.git("init", "-q")
+        self.git("config", "user.name", "Test")
+        self.git("config", "user.email", "test@example.invalid")
+        self.put("data/baseline.json", '{"schema":"baseline","value":7}')
+        self.commit()
+        self.state = g.new_state()
+        raw = (self.source / "data/baseline.json").read_bytes()
+        g.add_text(self.root, self.state, raw, {"repository": g.REGISTRY,
+                   "commit": g.git_head(self.source), "path": "data/baseline.json"})
+        baseline_blob = next(g.git_files(self.source))[1]
+        self.state["seen_registry_blobs"][baseline_blob] = "BASELINE"
+        g.publish(self.root, self.state, "BASELINE")
+        self.save()
+        self.policy = {"publish_new_bytes": 4194304, "publish_new_documents": 2,
+                       "max_registry_documents_per_scan": 512, "max_primary_fetches_per_scan": 8}
+
+    def git(self, *args):
+        return subprocess.run(["git", "-C", str(self.source), *args], check=True,
+                              capture_output=True, text=True).stdout.strip()
+
+    def put(self, name, body):
+        path = self.source / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(body, encoding="utf-8")
+
+    def commit(self):
+        self.git("add", ".")
+        self.git("commit", "-qm", "fixture")
+
+    def save(self):
+        g.write_json(self.root / "STATE.json", g.sealed(self.state))
+
+    def scan(self, fetch=lambda u: self.fail("unexpected network fetch")):
+        return g.collect(self.root, self.source, None, self.policy, fetch=fetch)
+
+    def test_unchanged_run_is_noop_and_does_not_rebuild_or_read_old_text(self):
+        self.scan()
+        before = (self.root / "STATE.json").read_bytes()
+        with patch.object(g, "raw_from_tree", side_effect=AssertionError("old source reread")), \
+                patch.object(g, "build_active_index", side_effect=AssertionError("index rebuilt")):
+            r = self.scan()
+        self.assertEqual(r["status"], "NO_NEW_INFORMATION")
+        self.assertEqual((self.root / "STATE.json").read_bytes(), before)
+        self.assertEqual(len(list((self.root / "generations").glob("*.json"))), 1)
+
+    def test_pending_survives_restart_and_publishes_once_at_document_threshold(self):
+        self.put("data/one.json", '{"schema":"new-one","answer":11}')
+        self.commit()
+        first = self.scan()
+        self.assertEqual(first["generation"], 0)
+        self.assertEqual(first["pending_documents"], 1)
+        self.assertEqual(len(g.load_state(self.root)["pending"]), 1)
+        self.put("data/two.json", '{"schema":"new-two","answer":22}')
+        self.commit()
+        second = self.scan()
+        self.assertEqual(second["status"], "GENERATION_PUBLISHED")
+        self.assertEqual(second["generation"], 1)
+        self.assertEqual(second["active_documents"], 3)
+        self.assertEqual(second["pending_documents"], 0)
+        third = self.scan()
+        self.assertEqual(third["status"], "NO_NEW_INFORMATION")
+        self.assertEqual(third["generation"], 1)
+        manifest = g.checked(json.loads((self.root / "generations/000001.json").read_text()))
+        previous = g.checked(json.loads((self.root / "generations/000000.json").read_text()))
+        self.assertEqual(manifest["parent_manifest_sha256"], previous["receipt_sha256"])
+
+    def test_byte_threshold_can_publish_without_document_threshold(self):
+        self.policy["publish_new_bytes"] = 8
+        self.put("data/one.json", '{"actual":"new information"}')
+        self.commit()
+        self.assertEqual(self.scan()["generation"], 1)
+
+    def test_same_bytes_new_path_or_beetle_id_are_not_new_capacity(self):
+        self.put("data/copy.json", (self.source / "data/baseline.json").read_text())
+        self.commit()
+        r = self.scan()
+        self.assertEqual(r["pending_unique_source_bytes"], 0)
+        state = g.load_state(self.root)
+        self.assertFalse(g.add_text(self.root, state,
+            (self.source / "data/baseline.json").read_bytes(), {"primary_id": "other"}))
+        self.assertEqual(len(state["records"]), 1)
+
+    def test_source_worktree_tampering_is_rejected_by_git_blob_replay(self):
+        self.put("data/new.json", '{"value":111}')
+        self.commit()
+        self.put("data/new.json", '{"value":222}')
+        with self.assertRaisesRegex(g.Hold, "GIT_BLOB"):
+            self.scan()
+
+    def test_sealed_private_invalid_and_large_inputs_are_excluded(self):
+        self.put("data/sealed_answers.json", '{"value":"hidden"}')
+        self.put("data/invalid.json", '{broken')
+        self.put("data/large.txt", "x" * (g.MAX_DOC + 1))
+        self.put("data/private.json", '{"private":true}')
+        self.commit()
+        r = self.scan()
+        self.assertEqual(r["pending_documents"], 0)
+        self.assertEqual(r["active_documents"], 1)
+
+    def test_corrupted_cas_never_becomes_a_published_generation(self):
+        self.put("data/new.json", '{"value":33}')
+        self.commit()
+        self.scan()
+        state = g.load_state(self.root)
+        sha = state["pending"][0]
+        g.object_path(self.root, sha).write_bytes(b"forged")
+        self.put("data/other.json", '{"value":44}')
+        self.commit()
+        with self.assertRaisesRegex(g.Hold, "CONTENT_HASH"):
+            self.scan()
+        self.assertEqual(json.loads((self.root / "CURRENT.json").read_text())["generation"], 0)
+
+    def test_tampered_state_is_not_silently_reset(self):
+        path = self.root / "STATE.json"
+        data = json.loads(path.read_text())
+        data["active"] = []
+        g.write_json(path, data)
+        with self.assertRaisesRegex(g.Hold, "HASH_MISMATCH"):
+            self.scan()
+
+    def test_pointer_and_manifest_cannot_silently_drift(self):
+        path = self.root / "CURRENT.json"
+        data = json.loads(path.read_text())
+        data["generation"] = 8
+        g.write_json(path, g.sealed(data))
+        with self.assertRaisesRegex(g.Hold, "MANIFEST_DRIFT"):
+            g.load_state(self.root)
+
+    def test_query_has_exact_provenance_and_abstains(self):
+        result = g.query(self.root, "baseline")
+        self.assertEqual(result["status"], "VERIFIED_SOURCE_POINTERS_ONLY")
+        cite = result["citations"][0]
+        self.assertEqual(cite["sha256"], g.digest((self.source / "data/baseline.json").read_bytes()))
+        self.assertEqual(cite["origin"]["repository"], g.REGISTRY)
+        self.assertEqual(g.query(self.root, "zzzznonexistent")["status"], "NO_MATCH")
+        self.assertFalse(result["model_inference_executed"])
+
+    def test_uninitialized_query_is_explicit(self):
+        self.assertEqual(g.query(self.home / "empty", "memory")["status"], "UNINITIALIZED")
+
+    def test_only_provider_identifiers_can_become_fetch_urls(self):
+        self.assertIsNone(g.canonical_lead("https://127.0.0.1/records/3"))
+        self.assertIsNone(g.canonical_lead("https://zenodo.org.evil.test/records/3"))
+        self.assertIsNone(g.canonical_lead("https://user@zenodo.org/records/3"))
+        self.assertIsNone(g.canonical_lead("https://zenodo.org:invalid/records/3"))
+        self.assertIsNone(g.canonical_lead("https://zenodo.org/records/3?url=https://evil.test"))
+        self.assertEqual(g.canonical_lead("https://arxiv.org/abs/2601.12345v2")[0], "arxiv:2601.12345v2")
+
+    def seed_lead(self, ident="zenodo:123"):
+        self.state["beetle_queue"][ident] = {"url": "https://zenodo.org/api/records/123",
+            "candidate_id": "candidate1", "beetle_commit": "b" * 40,
+            "beetle_path": "data/beetle-state/candidates.parts/part-000001.jsonl",
+            "discovered_at": "2026-11-23", "attempts": 0, "retry_at": 0}
+
+    def test_primary_is_independently_fetched_then_never_refetched(self):
+        self.seed_lead()
+        raw = json.dumps({"id": 123, "metadata": {"title": "A primary title",
+            "description": "Measured source abstract describing reproducible retrieval and its limitations."}}).encode()
+        fetches = []
+        fetch = lambda url: fetches.append(url) or raw
+        first = g.consume_beetle(self.root, self.state, fetch=fetch)
+        second = g.consume_beetle(self.root, self.state, fetch=fetch)
+        self.assertEqual(len(fetches), 1)
+        self.assertEqual(first["new_primary_texts"], 1)
+        self.assertEqual(second["primary_fetches"], 0)
+        record = self.state["records"][self.state["pending"][0]]
+        self.assertEqual(record["origin"]["provider_sha256"], g.digest(raw))
+        self.assertIn("NOT_FULL_PAPER", record["origin"]["kind"])
+
+    def test_provider_id_mismatch_rejected_without_capacity_gain(self):
+        self.seed_lead()
+        raw = b'{"id":456,"metadata":{"title":"wrong","description":"this must never enter the source corpus as record 123"}}'
+        result = g.consume_beetle(self.root, self.state, fetch=lambda url: raw)
+        self.assertEqual(result["new_primary_texts"], 0)
+        self.assertEqual(self.state["pending"], [])
+        self.assertEqual(self.state["beetle_done"]["zenodo:123"]["status"], "REJECTED_PRIMARY_RECORD")
+
+    def test_transient_fetch_failure_backoff_does_not_mark_success(self):
+        self.seed_lead()
+        def fail(url):
+            raise urllib.error.URLError("unavailable")
+        g.consume_beetle(self.root, self.state, fetch=fail, now=100)
+        self.assertNotIn("zenodo:123", self.state["beetle_done"])
+        result = g.consume_beetle(self.root, self.state, fetch=lambda u: self.fail("early retry"), now=200)
+        self.assertEqual(result["primary_fetches"], 0)
+
+    def test_beetle_cursor_continues_new_lines_and_deduplicates_provider(self):
+        root = self.source / "data/beetle-state/candidates.parts"
+        root.mkdir(parents=True)
+        part = root / "part-000001.jsonl"
+        row = {"schema": "janus.universal_beetle.candidate.v1", "candidate_id": "one",
+               "url": "https://zenodo.org/records/123", "discovered_at": "2026-11-23"}
+        part.write_text(json.dumps(row) + "\n")
+        self.commit()
+        first = g.read_beetle_leads(self.state, self.source)
+        second = g.read_beetle_leads(self.state, self.source)
+        self.assertEqual((first["lines_consumed"], second["lines_consumed"]), (1, 0))
+        self.assertEqual(len(self.state["beetle_queue"]), 1)
+        with part.open("a") as f:
+            f.write(json.dumps({**row, "candidate_id": "two"}) + "\n")
+        self.commit()
+        third = g.read_beetle_leads(self.state, self.source)
+        self.assertEqual(third["lines_consumed"], 1)
+        self.assertEqual(len(self.state["beetle_queue"]), 1)
+        part.write_text("{}\n")
+        with self.assertRaisesRegex(g.Hold, "TRUNCATED"):
+            g.read_beetle_leads(self.state, self.source)
+
+    def test_arxiv_xml_id_and_entity_boundary(self):
+        raw = b'<feed xmlns="http://www.w3.org/2005/Atom"><entry><id>http://arxiv.org/abs/2601.12345v2</id><title>A study</title><summary>An original abstract concerning memory retrieval with stated controls and limitations.</summary></entry></feed>'
+        self.assertIn(b"original abstract", g.primary_text("arxiv:2601.12345", raw))
+        with self.assertRaisesRegex(g.Hold, "ID_MISMATCH"):
+            g.primary_text("arxiv:2601.99999", raw)
+        with self.assertRaisesRegex(g.Hold, "ENTITIES"):
+            g.primary_text("arxiv:2601.12345", b'<!DOCTYPE x>' + raw)
+
+    def test_symlink_source_object_refused(self):
+        sha = self.state["active"][0]
+        path = g.object_path(self.root, sha)
+        path.unlink()
+        path.symlink_to(self.source / "data/baseline.json")
+        with self.assertRaisesRegex(g.Hold, "SYMLINK"):
+            g.query(self.root, "baseline")
+
+
+if __name__ == "__main__":
+    unittest.main()

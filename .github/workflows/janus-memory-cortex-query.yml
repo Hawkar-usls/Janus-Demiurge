@@ -1,0 +1,49 @@
+name: JANUS Memory Cortex - read active growing generation
+
+on:
+  workflow_call:
+    inputs:
+      query:
+        type: string
+        required: false
+        default: memory
+  workflow_dispatch:
+    inputs:
+      query:
+        type: string
+        required: false
+        default: memory
+
+permissions:
+  contents: read
+
+jobs:
+  read-active-generation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: memory-cortex-state
+          path: _cortex_state
+          sparse-checkout: data/memory-cortex
+          persist-credentials: false
+      - name: Replay active source hashes and search verified FTS
+        env:
+          CORTEX_QUERY: ${{ inputs.query || 'memory' }}
+        run: |
+          python -m janus_model.memory_cortex_growth query \
+            --state _cortex_state/data/memory-cortex --query "$CORTEX_QUERY" \
+            --report "$RUNNER_TEMP/MEMORY_CORTEX_QUERY.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: memory-cortex-active-query-${{ github.run_id }}
+          path: ${{ runner.temp }}/MEMORY_CORTEX_QUERY.json
+          retention-days: 14
+          if-no-files-found: error
