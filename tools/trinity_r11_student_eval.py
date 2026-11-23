@@ -15,8 +15,6 @@ from pathlib import Path
 from tools import trinity_parental_contract as c
 from tools import trinity_parental_cpu as cpu
 from tools import trinity_r11_student_train as train
-from janus_model.model import ByteTokenizer
-from janus_model.train_registry import load_checkpoint,sha256_file
 
 SCHEMA="janus.trinity.r11.student_internal_firstlook.v1"
 
@@ -33,6 +31,8 @@ def cases():
     return rows
 
 def run(shadow_path:Path,receipt_path:Path):
+    from janus_model.model import ByteTokenizer
+    from janus_model.train_registry import load_checkpoint,sha256_file
     record=c.checked_seal(json.loads(receipt_path.read_text()))
     if record.get("schema")!=train.SCHEMA or record.get("production_promotion") is not False:
         raise ValueError("R11_BAD_SHADOW_TRAIN_RECEIPT")
