@@ -31,8 +31,15 @@ REGISTRY = "Hawkar-usls/janus-meta-registry"
 BEETLE = "Hawkar-usls/janus-lapis"
 MAX_DOC = 1024 * 1024
 TARGET = 512 * 1024 * 1024
+# 512 MiB is a goal, not an exact-sum requirement on indivisible documents.
+# A one-document margin allows crossing that goal without unbounded storage.
+MAX_CORPUS_BYTES = TARGET + MAX_DOC
 BASE_SOURCE = "c8e47bb54e954ab122e111c97198131f048bd5fd"
 BASE_CATALOG = "6c9259c43d89569b11351bf8579a3775025fa2f0"
+
+
+class CapacityHold(Hold):
+    pass
 
 
 def canonical(obj):
@@ -124,8 +131,8 @@ def add_text(root: Path, state: dict, raw: bytes, origin: dict):
     if sha in state["records"]:
         return False
     # The capacity ceiling is on distinct source bytes, not SQLite or metadata.
-    if sum(r["size"] for r in state["records"].values()) + len(raw) > TARGET:
-        raise Hold("GROWTH_CAPACITY_BUDGET_REACHED")
+    if sum(r["size"] for r in state["records"].values()) + len(raw) > MAX_CORPUS_BYTES:
+        raise CapacityHold("GROWTH_CAPACITY_BUDGET_REACHED")
     path = object_path(root, sha)
     if path.exists():
         read_object(root, sha, len(raw))
@@ -173,7 +180,7 @@ def collect_registry(root: Path, state: dict, source: Path, max_documents=512):
     commit = git_head(source)
     if state["last_sources"].get("registry") == commit:
         return {"new_documents": 0, "already_scanned_snapshot": True}
-    new, inspected = 0, 0
+    new, inspected, capacity_paused = 0, 0, False
     complete = True
     for path, blob, size in git_files(source):
         if blob in state["seen_registry_blobs"]:
@@ -204,15 +211,20 @@ def collect_registry(root: Path, state: dict, source: Path, max_documents=512):
         actual_blob = hashlib.sha1(b"blob " + str(len(raw)).encode() + b"\0" + raw).hexdigest()
         if actual_blob != blob or len(raw) != size:
             raise Hold("GROWTH_GIT_BLOB_SOURCE_MISMATCH")
-        if add_text(root, state, raw, {"repository": REGISTRY, "commit": commit,
-                    "path": path, "git_blob": blob,
-                    "kind": "PUBLIC_REGISTRY_TEXT_NOT_SCIENTIFIC_PROOF"}):
-            new += 1
+        try:
+            if add_text(root, state, raw, {"repository": REGISTRY, "commit": commit,
+                        "path": path, "git_blob": blob,
+                        "kind": "PUBLIC_REGISTRY_TEXT_NOT_SCIENTIFIC_PROOF"}):
+                new += 1
+        except CapacityHold:
+            capacity_paused, complete = True, False
+            break
         state["seen_registry_blobs"][blob] = "VERIFIED_OR_CONTENT_DUPLICATE"
     if complete:
         state["last_sources"]["registry"] = commit
     return {"new_documents": new, "candidate_documents_read": inspected,
-            "snapshot_scan_complete": complete, "source_commit": commit}
+            "snapshot_scan_complete": complete, "source_commit": commit,
+            "capacity_admission_paused": capacity_paused}
 
 
 def canonical_lead(url):
@@ -348,10 +360,16 @@ def primary_text(ident, raw):
         title, body = e.findtext("a:title", "", ns), e.findtext("a:summary", "", ns)
     else:
         record = json.loads(raw)
+        if not isinstance(record, dict):
+            raise Hold("GROWTH_PROVIDER_OBJECT_REQUIRED")
         if str(record.get("id")) != ident.split(":", 1)[1]:
             raise Hold("GROWTH_ZENODO_ID_MISMATCH")
         meta = record.get("metadata", {})
+        if not isinstance(meta, dict):
+            raise Hold("GROWTH_PROVIDER_METADATA_OBJECT_REQUIRED")
         title, body = meta.get("title", ""), meta.get("description", "")
+        if not isinstance(title, str) or not isinstance(body, str):
+            raise Hold("GROWTH_PROVIDER_TEXT_REQUIRED")
         body = html.unescape(re.sub(r"<[^>]*>", " ", body))
     title, body = " ".join(title.split()), " ".join(body.split())
     if not title or len(body) < 40:
@@ -362,7 +380,7 @@ def primary_text(ident, raw):
 
 def consume_beetle(root: Path, state: dict, max_fetches=8, fetch=fetch_primary, now=None):
     now = time.time() if now is None else now
-    fetched, added, errors = 0, 0, 0
+    fetched, added, errors, capacity_paused = 0, 0, 0, False
     queue = state["beetle_queue"]
     for ident in sorted(queue, key=lambda k: (queue[k].get("priority", 0), queue[k]["discovered_at"]), reverse=True):
         item = queue[ident]
@@ -382,6 +400,12 @@ def consume_beetle(root: Path, state: dict, max_fetches=8, fetch=fetch_primary, 
                 added += 1
             state["beetle_done"][ident] = {"status": "PRIMARY_TEXT_VERIFIED_OR_DUPLICATE", "sha256": digest(text)}
             del queue[ident]
+        except CapacityHold:
+            # Capacity pressure is not a bad paper or a completed provider ID.
+            item["retry_at"] = now + 86400
+            item["last_error"] = "CAPACITY_ADMISSION_PAUSED"
+            capacity_paused = True
+            break
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             item["attempts"] += 1
             item["retry_at"] = now + min(86400, 1200 * 2 ** min(item["attempts"], 6))
@@ -395,7 +419,27 @@ def consume_beetle(root: Path, state: dict, max_fetches=8, fetch=fetch_primary, 
             del queue[ident]
             errors += 1
     return {"primary_fetches": fetched, "new_primary_texts": added,
-            "fetch_errors": errors, "queued": len(queue)}
+            "fetch_errors": errors, "queued": len(queue),
+            "capacity_admission_paused": capacity_paused}
+
+
+def intake_health(state):
+    queue, done = state["beetle_queue"], state["beetle_done"]
+    failures = {}
+    for item in queue.values():
+        if item.get("last_error"):
+            reason = str(item["last_error"])[:120]
+            failures[reason] = failures.get(reason, 0) + 1
+    for item in done.values():
+        if item.get("status") != "PRIMARY_TEXT_VERIFIED_OR_DUPLICATE":
+            reason = str(item.get("reason") or item.get("error") or item["status"])[:120]
+            failures[reason] = failures.get(reason, 0) + 1
+    return {"queue_count": len(queue), "provider_ids_completed_or_paused": len(done),
+            "retrying_provider_ids": sum(bool(v.get("attempts")) for v in queue.values()),
+            "recent_priority_queued": sum(v.get("priority", 0) > 0 for v in queue.values()),
+            "failure_counts": dict(sorted(failures.items())[:16]),
+            "historical_cursor_count": len(state["beetle_offsets"]),
+            "recent_cursor_count": len(state.get("beetle_hot_offsets", {}))}
 
 
 def build_active_index(root: Path, state: dict, hashes: list, db: Path):
@@ -458,14 +502,17 @@ def collect(root: Path, source: Path, beetle: Path | None, policy: dict,
     beetle_scan = read_beetle_leads(state, beetle) if beetle else {"available": False}
     beetle_read = consume_beetle(root, state, policy["max_primary_fetches_per_scan"], fetch=fetch)
     pending_bytes = sum(state["records"][s]["size"] for s in state["pending"])
+    capacity_paused = registry.get("capacity_admission_paused", False) or beetle_read.get("capacity_admission_paused", False)
     if (pending_bytes >= policy["publish_new_bytes"] or
-            len(state["pending"]) >= policy["publish_new_documents"]):
+            len(state["pending"]) >= policy["publish_new_documents"] or
+            (state["pending"] and capacity_paused)):
         publish(root, state, "NOVEL_VERIFIED_TEXT_THRESHOLD_REACHED")
     changed = canonical(sealed(state)) != before
     if changed:
         write_json(root / "STATE.json", sealed(state))
     active_bytes = sum(state["records"][s]["size"] for s in state["active"])
     report = sealed({"schema": SCHEMA, "status": "GENERATION_PUBLISHED" if state["generation"] > old_generation
+                     else "CAPACITY_ADMISSION_PAUSED" if capacity_paused
                      else "ACCUMULATING" if changed else "NO_NEW_INFORMATION",
                     "generation": state["generation"], "state_changed": changed,
                     "active_verified_unique_source_bytes": active_bytes,
@@ -473,7 +520,12 @@ def collect(root: Path, source: Path, beetle: Path | None, policy: dict,
                     "pending_unique_source_bytes": sum(state["records"][s]["size"] for s in state["pending"]),
                     "pending_documents": len(state["pending"]),
                     "remaining_to_512_mib": max(0, TARGET - active_bytes),
+                    "capacity_admission_paused": capacity_paused,
+                    "source_storage_budget_bytes": MAX_CORPUS_BYTES,
+                    "corpus_byte_goal_met": active_bytes >= TARGET,
+                    "observed_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
                     "registry": registry, "beetle_scan": beetle_scan, "beetle_read": beetle_read,
+                    "intake_health": intake_health(state),
                     "model_weights_updated": False, "independent_qa_passed": False,
                     "cold_source_store": "GIT_CONTENT_ADDRESSED_TEXT_AND_VERSIONED_MANIFESTS",
                     "sqlite_is_rebuildable": True})

@@ -30,10 +30,22 @@ Every 20 minutes, subject to GitHub scheduling, the collector:
    and advances `CURRENT.json`. A normal single Git commit atomically publishes
    all state; conflicting pushes fail instead of overwriting history.
 
-After every actual generation publication, a separate read-only job checks out
-the persisted branch on a fresh runner, replays its object hashes, reconstructs
-FTS and queries the newly active generation. No-publication cycles skip this
-consumer job. The same reusable worker is wired into the standard Demiurge query.
+After every healthy collection cycle, a separate read-only job checks out the
+persisted branch on a fresh runner, replays its object hashes, reconstructs FTS
+and queries the active generation. This retries a previously interrupted read
+even if no further generation was published. It is an integrity check, not new
+source intake, a new QA exam or a corpus update. The same reusable worker is
+wired into the standard Demiurge query.
+
+The existing ESSENCE v2.3 Pulse also has an allowlisted Cortex lane, with a
+20-minute cooldown/backoff and a reserved place inside its existing two-dispatch
+budget. It can wake an overdue collector if the collector's own cron is delayed.
+Pulse additionally observes successful trusted-main scheduled/push/manual
+completions of the existing Beetle Memory Receiver. It checks exact parent
+repository, branch, event, workflow name and success before dispatching; it
+checks out main and never downloads or executes parent artifacts. Cortex is
+not a parent of Pulse, so this edge cannot self-dispatch recursively. Both wake
+paths still depend on GitHub availability; their continuity is measured from runs.
 
 `objects/` contains exact UTF-8 source bytes keyed by SHA-256, not a binary
 SQLite database. `STATE.json` retains seen blobs, completed provider IDs, errors,
@@ -46,15 +58,22 @@ The 512-MiB counter is the sum of distinct stored source-text documents actually
 indexed in the active generation. Pending bytes and all metadata, repeated source
 hashes, SQLite overhead and synthetic seeds are excluded. Source versions remain
 separately addressable; SHA distinctness does not establish semantic novelty or
-independent scientific evidence. The corpus cap is 512 MiB; text documents remain
-bounded to 1 MiB each. Full-history and arbitrary repository ingestion are absent.
+independent scientific evidence. The byte goal is 512 MiB. Storage has a bounded
+one-document margin (513 MiB), so the final document can cross the goal without
+requiring an impossible exact sum. Capacity pressure pauses admission without
+deleting pending text, losing provider IDs, or falsely rejecting a valid source.
+Text documents remain bounded to 1 MiB each. Full-history and arbitrary repository
+ingestion are absent.
 
 No-new-input runs do not rebuild or publish generations. Baseline migration,
 source intake and search are different from training weights or improving QA.
 Independent unseen-question evaluation and all model-promotion gates remain open.
 
-The initial main push starts a real collection immediately. Subsequent scheduled
-collection is GitHub-hosted, not dependent on a chat or an owner's computer.
+Compact receipts include intake-health counts and error categories, so observers
+need not download the multi-megabyte sealed state to see backlog/retry health.
+Source changes wake Pulse, which applies the same cooldown/running-worker gates
+instead of duplicating a collector directly on every code push. Collection is
+GitHub-hosted, not dependent on a chat or an owner's computer.
 
 ## Validation
 

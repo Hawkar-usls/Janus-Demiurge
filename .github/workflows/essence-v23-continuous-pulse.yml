@@ -1,14 +1,21 @@
 name: ESSENCE v2.3 continuous bounded evolutionary pulse
 
 on:
+  workflow_run:
+    workflows: ['JANUS Beetle Memory Receiver']
+    types: [completed]
   pull_request:
     paths:
+      - 'janus_model/memory_cortex_growth.py'
+      - 'beetle/MEMORY_CORTEX_GROWTH.json'
       - 'tools/essence_v23_continuous_pulse.py'
       - 'tests/test_essence_v23_continuous_pulse.py'
       - '.github/workflows/essence-v23-continuous-pulse.yml'
   push:
     branches: [main]
     paths:
+      - 'janus_model/memory_cortex_growth.py'
+      - 'beetle/MEMORY_CORTEX_GROWTH.json'
       - 'tools/essence_v23_continuous_pulse.py'
       - 'tests/test_essence_v23_continuous_pulse.py'
       - '.github/workflows/essence-v23-continuous-pulse.yml'
@@ -44,7 +51,14 @@ jobs:
 
   pulse:
     needs: verify
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.ESSENCE_PULSE_PAUSED != 'true'
+    if: >-
+      github.event_name != 'pull_request' && github.ref == 'refs/heads/main' &&
+      vars.ESSENCE_PULSE_PAUSED != 'true' &&
+      (github.event_name != 'workflow_run' ||
+       (github.event.workflow_run.head_repository.full_name == github.repository &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.conclusion == 'success' &&
+        contains(fromJSON('["push","schedule","workflow_dispatch"]'), github.event.workflow_run.event)))
     runs-on: ubuntu-24.04
     timeout-minutes: 6
     permissions:
@@ -53,6 +67,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: main
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
@@ -60,6 +75,11 @@ jobs:
       - name: Poll typed evidence and wake at most two previously gated workflows
         env:
           GH_TOKEN: ${{ github.token }}
+          JANUS_PARENT_REPOSITORY: ${{ github.event.workflow_run.head_repository.full_name }}
+          JANUS_PARENT_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          JANUS_PARENT_EVENT: ${{ github.event.workflow_run.event }}
+          JANUS_PARENT_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          JANUS_PARENT_WORKFLOW: ${{ github.event.workflow_run.name }}
         run: |
           python -m tools.essence_v23_continuous_pulse \
             --execute --out runtime/essence/pulse-v23.json
@@ -89,3 +109,4 @@ jobs:
           path: runtime/essence/pulse-v23.json
           if-no-files-found: warn
           retention-days: 30
+

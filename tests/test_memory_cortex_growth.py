@@ -271,6 +271,62 @@ class GrowthTests(unittest.TestCase):
         with self.assertRaisesRegex(g.Hold, "SYMLINK"):
             g.query(self.root, "baseline")
 
+    def test_malformed_provider_shapes_do_not_crash_whole_intake(self):
+        for raw in (b'[]', b'{"id":123,"metadata":null}',
+                    b'{"id":123,"metadata":{"title":[],"description":42}}'):
+            state = copy.deepcopy(self.state)
+            state["beetle_queue"]["zenodo:123"] = {"url": "https://zenodo.org/api/records/123",
+                "candidate_id": "bad", "beetle_commit": "b" * 40,
+                "beetle_path": "data/beetle-state/candidates.parts/part-000001.jsonl",
+                "discovered_at": "2026-11-23", "attempts": 0, "retry_at": 0}
+            result = g.consume_beetle(self.root, state, fetch=lambda u: raw)
+            self.assertEqual(result["fetch_errors"], 1)
+            self.assertEqual(result["new_primary_texts"], 0)
+
+    def test_crossing_byte_goal_does_not_require_an_exact_document_sum(self):
+        used = sum(v["size"] for v in self.state["records"].values())
+        raw = b'A genuinely different source document extending past the byte goal.'
+        with patch.object(g, 'TARGET', used + 10), patch.object(g, 'MAX_CORPUS_BYTES', used + 100):
+            self.assertTrue(g.add_text(self.root, self.state, raw, {"kind": "TEST_SOURCE"}))
+            total = sum(v["size"] for v in self.state["records"].values())
+            self.assertGreater(total, g.TARGET)
+            self.assertLessEqual(total, g.MAX_CORPUS_BYTES)
+
+    def test_capacity_pressure_retains_provider_for_later_and_is_not_bad_source(self):
+        self.seed_lead()
+        used = sum(v["size"] for v in self.state["records"].values())
+        raw = b'{"id":123,"metadata":{"title":"Valid","description":"A valid primary abstract that remains queued during source storage pressure."}}'
+        with patch.object(g, 'MAX_CORPUS_BYTES', used):
+            result = g.consume_beetle(self.root, self.state, fetch=lambda u: raw, now=1)
+        self.assertTrue(result["capacity_admission_paused"])
+        self.assertIn('zenodo:123', self.state['beetle_queue'])
+        self.assertNotIn('zenodo:123', self.state['beetle_done'])
+        self.assertEqual(result['fetch_errors'], 0)
+
+    def test_registry_capacity_pressure_does_not_lose_pending_verified_text(self):
+        self.put('data/a_new.json', '{"value":"first acceptable new source"}')
+        self.put('data/b_new.json', '{"value":"second acceptable source that does not fit"}')
+        self.commit()
+        used = sum(v["size"] for v in self.state["records"].values())
+        first_size = (self.source / 'data/a_new.json').stat().st_size
+        with patch.object(g, 'MAX_CORPUS_BYTES', used + first_size):
+            result = self.scan()
+        self.assertTrue(result['capacity_admission_paused'])
+        self.assertEqual(result['status'], 'GENERATION_PUBLISHED')
+        self.assertEqual(result['active_documents'], 2)
+        self.assertEqual(result['pending_documents'], 0)
+        self.assertEqual(g.load_state(self.root)['generation'], 1)
+
+    def test_small_health_receipt_explains_errors_without_full_state_download(self):
+        self.seed_lead()
+        def fail(url):
+            raise urllib.error.URLError('offline')
+        g.consume_beetle(self.root, self.state, fetch=fail, now=1)
+        report = g.intake_health(self.state)
+        self.assertEqual(report['retrying_provider_ids'], 1)
+        self.assertEqual(report['failure_counts'], {'URLError': 1})
+        self.assertLess(len(json.dumps(report)), 4096)
+
 
 if __name__ == "__main__":
     unittest.main()
