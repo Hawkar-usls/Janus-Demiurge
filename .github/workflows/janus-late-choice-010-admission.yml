@@ -1,0 +1,53 @@
+name: JANUS 010 Physical Late-Choice Offline Admission
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/late_choice_010/**'
+      - '.github/workflows/janus-late-choice-010-admission.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-physical-010-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  offline-admission:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Python syntax and complete anti-postselection tests
+        run: |
+          set -euo pipefail
+          python -m py_compile experiments/ocean_transformer/late_choice_010/late_choice_010.py
+          python -m unittest discover -v -s experiments/ocean_transformer/late_choice_010 -p 'test_late_choice_010.py'
+      - name: Only simulate random late choice and forbidden postselection artifact
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/late_choice_010/late_choice_010.py simulate --output-dir "$RUNNER_TEMP/janus010"
+          python - <<'PY'
+          import json,os,pathlib
+          p=pathlib.Path(os.environ["RUNNER_TEMP"])/"janus010/010_sim_score.json"
+          r=json.loads(p.read_text())
+          assert r["status"]=="SIMULATION_NOT_SCIENTIFIC_EVIDENCE"
+          assert not r["eligible_to_claim_retrocausality"]
+          assert r["n_expected"]==r["n_received"]==4096
+          assert r["all_trials_in_primary"]
+          assert r["postselection_diagnostic_exploratory"]["n_postselected"]>0
+          PY
+      - name: Preserve simulation evidence (never physical claim)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-010-simulation-only-${{ github.run_id }}
+          path: ${{ runner.temp }}/janus010/*.json
+          retention-days: 60
+          if-no-files-found: warn
