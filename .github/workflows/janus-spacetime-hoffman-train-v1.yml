@@ -1,0 +1,120 @@
+name: JANUS SpaceTime + Hoffman - Evidence-Gated Native Transformer CPU Training
+
+on:
+  pull_request:
+    paths:
+      - 'experiments/spacetime_transformer/spacetime_sources_v1.json'
+      - 'experiments/spacetime_transformer/train_spacetime_hoffman_v1.py'
+      - 'experiments/spacetime_transformer/test_train_spacetime_hoffman_v1.py'
+      - '.github/workflows/janus-spacetime-hoffman-train-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-spacetime-research-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  source-integrity:
+    name: Research corpus integrity, Hoffman criticism & leakage ${{ matrix.python }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11','3.12']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Verify sources, philosophical hypothesis labels and isolated test cards
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s experiments/spacetime_transformer \
+            -p 'test_train_spacetime_hoffman_v1.py'
+          python experiments/spacetime_transformer/train_spacetime_hoffman_v1.py \
+            prepare --source experiments/spacetime_transformer/spacetime_sources_v1.json \
+            --data-dir work/dataset
+          sha256sum work/dataset/manifest.json work/dataset/*.txt
+
+  train-candidate:
+    name: CPU train COPY of incumbent JanusTinyTransformer; never promote automatically
+    needs: [source-integrity]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install bounded CPU PyTorch runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! python -c 'import torch' >/dev/null 2>&1; then
+            python -m pip install --disable-pip-version-check --retries 2 \
+              'torch==2.6.0+cpu' --index-url https://download.pytorch.org/whl/cpu
+          fi
+          python -c 'import torch; print("cpu_torch_version=", torch.__version__)'
+      - name: Freeze train, validation, test splits with original DOI/source records
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/spacetime_transformer/train_spacetime_hoffman_v1.py \
+            prepare --source experiments/spacetime_transformer/spacetime_sources_v1.json \
+            --data-dir work/dataset
+      - name: Update only copied research weights on CPU and compare to incumbent
+        shell: bash
+        env:
+          PYTHONPATH: .
+          OMP_NUM_THREADS: '2'
+          MKL_NUM_THREADS: '2'
+        run: |
+          set -euo pipefail
+          python experiments/spacetime_transformer/train_spacetime_hoffman_v1.py \
+            train --data-dir work/dataset \
+            --incumbent janus_model/checkpoints/promoted.pt \
+            --candidate out/spacetime-hoffman-research-only.pt \
+            --receipt out/training-receipt.json --steps 24 --batch-size 4
+      - name: Independent nonpromotion and checkpoint integrity assertions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,hashlib
+          from pathlib import Path
+          r=json.loads(Path("out/training-receipt.json").read_text())
+          b=Path("out/spacetime-hoffman-research-only.pt").read_bytes()
+          assert len(b)>10000
+          assert hashlib.sha256(b).hexdigest()==r["candidate_model_sha256"]
+          assert r["source_model"]=="existing JanusTinyTransformer promoted.pt, weights continued"
+          assert r["training_steps"]==24
+          assert not r["automatic_promotion_allowed"]
+          assert not r["actually_promoted"]
+          assert not r["knowledge_or_science_correctness_validated"]
+          assert not r["actual_3d_visual_system_or_bird_connectome_trained"]
+          assert not r["user_supplied_untranscribed_video_used"]
+          for section in ("validation","test","frozen_anchor"):
+              assert r["next_token_cross_entropy_baseline"][section]>0
+              assert r["next_token_cross_entropy_candidate"][section]>0
+          print("candidate research gate:",r["research_evaluation_gate"])
+          PY
+          sha256sum out/*.pt out/*.json work/dataset/manifest.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-spacetime-hoffman-candidate-research-only-${{ github.run_id }}
+          path: |
+            out/spacetime-hoffman-research-only.pt
+            out/training-receipt.json
+            work/dataset/manifest.json
+          retention-days: 90
+          if-no-files-found: error
