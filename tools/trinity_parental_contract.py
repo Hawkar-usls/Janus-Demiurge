@@ -56,6 +56,22 @@ def answer(text):
     stripped=text.strip()
     return stripped if re.fullmatch(r"(?:0|[1-9][0-9]{0,4})",stripped) else None
 
+def critic_decision(text):
+    """Strict triage: only a standalone YES is approval.
+
+    Malformed, missing, multi-line or explanatory outputs ABSTAIN and
+    may NEVER silently become positive teacher supervision.
+    """
+    if not isinstance(text, str) or len(text) > 100:
+        return "ABSTAIN"
+    normalized = text.strip().upper()
+    if normalized == "YES":
+        return "APPROVE"
+    if normalized == "NO":
+        return "VETO"
+    return "ABSTAIN"
+
+
 def teach_gate(rows):
     tasks=curriculum()
     if not isinstance(rows,list) or len(rows)!=len(tasks):
@@ -68,13 +84,17 @@ def teach_gate(rows):
         critic=row.get("critic_text")
         if not isinstance(critic,str) or len(critic)>100:
             raise ValueError("TRINITY_CRITIC_BAD_RESPONSE")
-        # Critical veto is explicit NO; deterministic oracle may veto any case.
-        critic_veto=critic.strip().upper()=="NO"
+        # No implicit approval: NO is a veto; anything except exact YES
+        # is also a fail-closed hold for teacher-supervision purposes.
+        decision=critic_decision(critic)
+        critic_veto=decision!="APPROVE"
         correct=teacher==task["expected"]
         checked.append({"id":task["id"],"prompt":task["prompt"],"expected":task["expected"],
                         "teacher_proposed_correct":correct,
+                        "critic_decision":decision,
+                        "critic_abstained":decision=="ABSTAIN",
                         "critic_veto":critic_veto,
-                        "eligible_for_train":correct and not critic_veto,
+                        "eligible_for_train":correct and decision=="APPROVE",
                         "teacher_output_sha256":sha256(row["teacher_text"].encode()).hexdigest(),
                         "critic_output_sha256":sha256(critic.encode()).hexdigest()})
     return checked
