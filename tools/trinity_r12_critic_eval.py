@@ -71,7 +71,9 @@ def evaluate_predictions(rows, baseline, candidate, train_hash):
         "status":"INTERNAL_CRITIC_IMPROVEMENT_OBSERVED__EXTERNAL_HOLD" if strong and improved
                  else "HOLD_CRITIC_GENERALIZATION_NOT_PROVEN",
         "source_adapter_train_receipt_sha256":train_hash,
-        "first_look_only":True,"same_owner_GitHub_Actions":True,
+        "first_look_only":False,"same_owner_GitHub_Actions":True,
+        "rerun_of_disclosed_r12_cases_for_admission_audit":True,
+        "original_firstlook_preserved_in_actions_run":"45197279127",
         "external_independent_exam":False,
         "public_prior_36_probes_reused":False,"r11_firstlook_reused":False,
         "genesis64_read":False,
