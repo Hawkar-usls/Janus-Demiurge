@@ -1,0 +1,170 @@
+name: Trinity R1.3 Balanced SmolLM Critic CPU
+
+on:
+  pull_request:
+    paths:
+      - 'tools/trinity_r13_*.py'
+      - 'tests/test_trinity_r13_balanced_critic.py'
+      - 'research/essence/trinity_parental_school/R13_*'
+      - '.github/workflows/trinity-r13-balanced-critic-cpu.yml'
+  push:
+    branches:
+      - research/trinity-r13-balanced-critic-20261123
+    paths:
+      - 'tools/trinity_r13_*.py'
+      - 'tests/test_trinity_r13_balanced_critic.py'
+      - 'research/essence/trinity_parental_school/R13_*'
+      - '.github/workflows/trinity-r13-balanced-critic-cpu.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HF_HUB_DISABLE_TELEMETRY: '1'
+  HF_HUB_DOWNLOAD_TIMEOUT: '120'
+  TOKENIZERS_PARALLELISM: 'false'
+  OMP_NUM_THREADS: '4'
+  PYTHONHASHSEED: '0'
+
+jobs:
+  contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify balanced input, no-overlap, original failure cases and admission safety
+        run: |
+          set -euo pipefail
+          python -m py_compile tools/trinity_r13_balanced_critic_train.py tools/trinity_r13_fourth_critic_eval.py tests/test_trinity_r13_balanced_critic.py
+          python -m unittest -v tests.test_trinity_parental_school tests.test_trinity_critic_context_r1 tests.test_trinity_r11_shadow_training tests.test_trinity_r12_critic_label_alignment tests.test_trinity_r13_balanced_critic
+
+  critic-train:
+    needs: contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned CPU PyTorch plus HF adapters
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 peft==0.13.2 safetensors==0.5.3
+      - name: Train balanced 96 YES / 96 NO symbolic examples, without reading future exam
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/trinity/r13/critic
+          python -m tools.trinity_r13_balanced_critic_train --steps 192 \
+            --adapter runtime/trinity/r13/critic/adapter \
+            --receipt runtime/trinity/r13/critic/train_receipt.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from tools import trinity_parental_contract as c
+          x=c.checked_seal(json.loads(Path('runtime/trinity/r13/critic/train_receipt.json').read_text()))
+          assert x['schema']=='janus.trinity.r13.balanced_critic_lora_train/1.0'
+          assert x['train_cases']==192 and x['positive_train_labels']==96 and x['negative_train_labels']==96
+          assert x['balanced_alternating_label_schedule'] is True
+          assert x['source_examples_consumed']==192
+          assert x['read_r13_fourth_domain_eval'] is False
+          assert x['used_genesis_64'] is False
+          assert x['training_only'] and not x['production_promotion']
+          print('R13_BALANCED_CRITIC_CPU_TRAINED__EVAL_PENDING__NO_ADOPTION')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trinity-r13-balanced-critic-shadow
+          path: runtime/trinity/r13/critic/
+          if-no-files-found: error
+          retention-days: 60
+
+  fresh-fourth-firstlook:
+    needs: critic-train
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: trinity-r13-balanced-critic-shadow
+          path: runtime/trinity/r13/critic
+      - name: Install pinned CPU baseline and adapter runtime
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 peft==0.13.2 safetensors==0.5.3
+      - name: Compare baseline and balanced critic on fourth distinct numeric domain once
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/trinity/r13
+          python -m tools.trinity_r13_fourth_critic_eval \
+            --adapter runtime/trinity/r13/critic/adapter \
+            --train-receipt runtime/trinity/r13/critic/train_receipt.json \
+            --out runtime/trinity/r13/fourth_firstlook.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from tools import trinity_parental_contract as c
+          x=c.checked_seal(json.loads(Path('runtime/trinity/r13/fourth_firstlook.json').read_text()))
+          assert x['schema']=='janus.trinity.r13.critic_fourth_firstlook/1.0'
+          assert x['cases']==36 and x['preregistered_fourth_domain_firstlook'] is True
+          assert x['first_look_only'] is True and not x['r12_firstlook_reused']
+          assert x['required_correct_approvals']==8 and x['required_wrong_vetoes']==8
+          assert not x['external_independent_exam'] and not x['may_replace_parent_critic']
+          assert not x['may_graduate_trinity'] and not x['production_promotion']
+          print('TRINITY_R13_FOURTH_INTERNAL_FIRSTLOOK=' + x['status'])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trinity-r13-fourth-critic-firstlook
+          path: runtime/trinity/r13/fourth_firstlook.json
+          if-no-files-found: error
+          retention-days: 90
+
+  retain-graduation-hold:
+    needs: fresh-fourth-firstlook
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: trinity-r13-fourth-critic-firstlook
+          path: out
+      - name: Correctness cannot override independent or production authority
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path('out/fourth_firstlook.json').read_text())
+          assert j['status'] in ('HOLD_CRITIC_GENERALIZATION_NOT_PROVEN',
+              'INTERNAL_CRITIC_IMPROVEMENT_OBSERVED__EXTERNAL_HOLD')
+          assert j['external_independent_exam'] is False
+          assert j['may_promote_JANUS'] is False
+          assert j['may_replace_parent_critic'] is False
+          assert j['may_graduate_trinity'] is False
+          assert j['production_promotion'] is False
+          print('TRINITY_R13_INTERNAL_STUDY_COMPLETE__INDEPENDENT_GRADUATION_HOLD')
+          PY
