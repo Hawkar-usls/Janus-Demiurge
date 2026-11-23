@@ -1,0 +1,45 @@
+name: JANUS-011D ABL Two-Boundary versus Deutsch Quantum SWAP
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/late_choice_010/abl_deutsch_011d.py'
+      - 'experiments/ocean_transformer/late_choice_010/test_abl_deutsch_011d.py'
+      - 'experiments/ocean_transformer/late_choice_010/PROTOCOL_011D_ABL_DEUTSCH_COMPARISON.md'
+      - '.github/workflows/janus-011d-abl-deutsch-quantum.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-011d-two-boundary-ctc-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  quantitative-no-physical-overclaim:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Test entire ABL outcome ensemble, real 4x4 SWAP matrix, noisy CTC fixed-point and no-CTC controls
+        run: |
+          set -euo pipefail
+          python -m py_compile experiments/ocean_transformer/late_choice_010/abl_deutsch_011d.py
+          python -m unittest discover -v -s experiments/ocean_transformer/late_choice_010 -p 'test_abl_deutsch_011d.py'
+      - name: Compute fully normalized theory comparison without claiming apparatus
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/janus011d"
+          python -u experiments/ocean_transformer/late_choice_010/abl_deutsch_011d.py --output "$RUNNER_TEMP/janus011d/abl_deutsch_011d_theory.json"
+      - name: Archive only mathematically verified derived results
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-011d-abl-deutsch-theory-${{ github.run_id }}
+          path: ${{ runner.temp }}/janus011d/abl_deutsch_011d_theory.json
+          retention-days: 60
+          if-no-files-found: error
