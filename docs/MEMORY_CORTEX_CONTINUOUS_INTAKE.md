@@ -27,6 +27,11 @@ Every 20 minutes, subject to GitHub scheduling, the collector:
    and advances `CURRENT.json`. A normal single Git commit atomically publishes
    all state; conflicting pushes fail instead of overwriting history.
 
+After every actual generation publication, a separate read-only job checks out
+the persisted branch on a fresh runner, replays its object hashes, reconstructs
+FTS and queries the newly active generation. No-publication cycles skip this
+consumer job. The same reusable worker is wired into the standard Demiurge query.
+
 `objects/` contains exact UTF-8 source bytes keyed by SHA-256, not a binary
 SQLite database. `STATE.json` retains seen blobs, completed provider IDs, errors,
 cursors and pending/active document membership. `generations/` preserves all
