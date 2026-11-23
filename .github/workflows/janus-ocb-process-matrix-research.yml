@@ -1,0 +1,68 @@
+name: JANUS Research - OCB Process Matrix and Causal Inequality
+
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/janus_ocb_process_matrix_probe.py'
+      - 'experiments/ocean_transformer/test_janus_ocb_process_matrix_probe.py'
+      - '.github/workflows/janus-ocb-process-matrix-research.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-ocb-research-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  independent-cpu:
+    name: OCB three-method research audit Python ${{ matrix.python }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Test all branches, three numerical methods and physical claim gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s experiments/ocean_transformer \
+            -p 'test_janus_ocb_process_matrix_probe.py'
+      - name: Generate exact unconditional OCB mathematics audit JSON
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/janus_ocb_process_matrix_probe.py \
+            --out out/ocb-${{ matrix.python }}.json
+          python - <<'PY'
+          import glob,json
+          (p,) = glob.glob('out/ocb-*.json')
+          x=json.load(open(p,encoding='utf-8'))
+          assert x['all_outcomes_retained']
+          assert not x['late_postselection_used']
+          assert not x['independently_generated_late_choice']
+          assert not x['earlier_physical_clock_recording']
+          assert not x['past_directed_message_detected']
+          assert x['production_promotion']=='REFUSED_RESEARCH_ONLY'
+          assert x['all_visibilities'][-1]['causal_inequality_violated']
+          assert x['max_backend_absolute_difference']<1e-12
+          print(x['candidate_spec_sha256'])
+          PY
+          sha256sum out/ocb-${{ matrix.python }}.json
+          echo 'OCB mathematical causal inequality verified; no physically timed early reader or future-to-past message tested.' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-ocb-mathematical-audit-py${{ matrix.python }}
+          path: out/ocb-${{ matrix.python }}.json
+          retention-days: 90
+          if-no-files-found: error
