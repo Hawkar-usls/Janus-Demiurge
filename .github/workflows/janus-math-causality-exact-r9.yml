@@ -1,0 +1,74 @@
+name: JANUS R9 - Exact Mathematical Noncausal Certificate
+
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/janus_math_causality_exact_r9.py'
+      - 'experiments/ocean_transformer/test_janus_math_causality_exact_r9.py'
+      - '.github/workflows/janus-math-causality-exact-r9.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-math-r9-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  exact-proof:
+    name: Rational Q(sqrt2) OCB and no-go certificate Python ${{ matrix.python }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11','3.12']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Run exact rational proof gates independent of probabilistic sampling
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s experiments/ocean_transformer \
+            -p 'test_janus_math_causality_exact_r9.py'
+      - name: Recompute every Born branch and independently write exact theorem certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/janus_math_causality_exact_r9.py \
+            --out out/janus-r9-exact-certificate.json
+          python - <<'PY'
+          import json,os
+          x=json.load(open('out/janus-r9-exact-certificate.json'))
+          assert x['ocb_game_cases'][-1]['exact_score']=={
+            'rational':'1/2','sqrt2_coefficient':'1/4'}
+          assert x['ocb_game_cases'][-1]['exact_advantage']=={
+            'rational':'-1/4','sqrt2_coefficient':'1/4'}
+          assert x['standard_forward_cpu_no_go']['finite_exact_cross_checks']==256
+          assert x['postselection_false_positive']['selected_fraction_of_original_attempts']=='1/2'
+          assert x['physical_retrocausal_channel_deduced'] is False
+          assert x['future_b_known_as_model_parameter_if_simulated']
+          assert x['no_quantum_hardware_used']
+          assert x['production_promotion'] is False
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+            f.write('## JANUS R9 — exact mathematical proof (not physical experiment)\n')
+            f.write('- OCB process W is positive/trace normalized in process-matrix theory; exact 16x16 generalized Born probabilities checked without floating-point.\n')
+            f.write('- OCB causal-game success: (2+sqrt(2))/4 > 3/4. Exact advantage (sqrt(2)-1)/4 > 0.\n')
+            f.write('- Independent later fair bit B: any early CPU f(R) or (X,Z)=g(R) remains independent; exhaustive 256 exact function-pair sanity checks.\n')
+            f.write('- Late postselection can counterfeit ideal jamming with 50% acceptance.\n')
+            f.write('- MATHEMATICAL MODEL NONCAUSALITY PROVEN; REAL TIME-ORDERED RETROCHANNEL NOT PROVEN.\n')
+          PY
+          sha256sum out/janus-r9-exact-certificate.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-r9-exact-mathematical-certificate-py${{ matrix.python }}
+          path: out/janus-r9-exact-certificate.json
+          retention-days: 90
+          if-no-files-found: error
