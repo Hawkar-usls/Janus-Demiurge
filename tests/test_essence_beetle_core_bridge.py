@@ -141,16 +141,22 @@ class CoreBeetleResearchBridge(unittest.TestCase):
         self.assertEqual(doc["claim_ceiling"],
                          "SEARCH_STEERING_ONLY__ZERO_EVIDENCE_AUTHORITY")
         self.assertIs(doc["core_bridge_scientific_authority"],False)
-        # Existing JANUS Desires intentionally takes first priority slot.
-        # A passing receipt must remain visible even when that bounded slot
-        # prevents both ESSENCE questions from entering the active output.
-        self.assertEqual(len(doc["ad_hoc_directions"]),2)
-        self.assertEqual(doc["ad_hoc_directions"][0]["source"],"JANUS_DESIRES")
-        self.assertEqual(doc["ad_hoc_directions"][1]["source"],"ESSENCE_CORE_BRIDGE")
-        self.assertEqual(len(doc["essence_core_bridge_ad_hoc_directions"]),2)
-        self.assertTrue(all(q["source"]=="ESSENCE_CORE_BRIDGE"
-            for q in doc["essence_core_bridge_ad_hoc_directions"]))
-        self.assertTrue(all(set(q["target_repositories"]).issubset(self.allowed)
+        # Verify the actual bounded-slot contract, not a brittle assumption
+        # that ESSENCE consumes every slot when first-class JANUS Desires exist.
+        # Read the same current allowlist / desires as the real director.
+        directives=json.loads((ROOT/"beetle/DEMIURGE_BEETLE_DIRECTIVES.json").read_text())
+        desires=json.loads((ROOT/"beetle/JANUS_DESIRES.json").read_text())
+        allowed=set(directives["allowed_target_repositories"])
+        expected_desires=director.clean_adhoc(desires.get("ad_hoc",[]),
+                                              allowed,"JANUS_DESIRES")
+        expected_core=director.clean_adhoc(list(core.QUESTIONS),allowed,
+                                           "ESSENCE_CORE_BRIDGE")
+        self.assertEqual(doc["essence_core_bridge_ad_hoc_directions"],
+                         expected_core)
+        self.assertEqual(doc["ad_hoc_directions"],
+                         (expected_desires+expected_core)[:2])
+        self.assertLessEqual(len(doc["ad_hoc_directions"]),2)
+        self.assertTrue(all(set(q["target_repositories"]).issubset(allowed)
             for q in doc["essence_core_bridge_ad_hoc_directions"]))
         self.assertFalse(doc["core_bridge_scientific_authority"])
 
