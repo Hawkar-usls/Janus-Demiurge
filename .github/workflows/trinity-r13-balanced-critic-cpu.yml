@@ -5,7 +5,6 @@ on:
     paths:
       - 'tools/trinity_r13_*.py'
       - 'tests/test_trinity_r13_balanced_critic.py'
-      - 'research/essence/trinity_parental_school/R13_*'
       - '.github/workflows/trinity-r13-balanced-critic-cpu.yml'
   push:
     branches:
@@ -13,7 +12,6 @@ on:
     paths:
       - 'tools/trinity_r13_*.py'
       - 'tests/test_trinity_r13_balanced_critic.py'
-      - 'research/essence/trinity_parental_school/R13_*'
       - '.github/workflows/trinity-r13-balanced-critic-cpu.yml'
   workflow_dispatch:
 
@@ -47,6 +45,11 @@ jobs:
           python -m unittest -v tests.test_trinity_parental_school tests.test_trinity_critic_context_r1 tests.test_trinity_r11_shadow_training tests.test_trinity_r12_critic_label_alignment tests.test_trinity_r13_balanced_critic
 
   critic-train:
+    # This publicly visible fourth-domain first-look is ONE-SHOT ONLY.
+    # The SHA below is the exact frozen original successful push run.
+    # Later pushes, pull requests and manual reruns must NOT re-evaluate it
+    # while pretending it is still prospective.
+    if: github.event_name == 'push' && github.sha == '08dd0823346dd3c403c92d367f57dfd912b4b62e'
     needs: contracts
     runs-on: ubuntu-24.04
     timeout-minutes: 50
