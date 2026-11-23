@@ -1,0 +1,49 @@
+name: JANUS OPEN-009F physical MLE + exact late-choice null
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/open_causality_009/physical_mle_009f.py'
+      - 'experiments/ocean_transformer/open_causality_009/no_signalling_009f.py'
+      - 'experiments/ocean_transformer/open_causality_009/test_open009f.py'
+      - '.github/workflows/janus-ocean-009f-physics-mle.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-open009f-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  no-heuristic-controls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Static syntax and unit tests
+        run: |
+          set -euo pipefail
+          python -m py_compile experiments/ocean_transformer/open_causality_009/physical_mle_009f.py experiments/ocean_transformer/open_causality_009/no_signalling_009f.py
+          python -m unittest discover -v -s experiments/ocean_transformer/open_causality_009 -p 'test_open009f.py'
+      - name: Late choice generated after locally flushed pre-choice predictions
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/open_causality_009/no_signalling_009f.py --out-dir "$RUNNER_TEMP/open009f"
+      - name: Real NOAA historical chronological holdout with MLE
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/open_causality_009/physical_mle_009f.py --out-dir "$RUNNER_TEMP/open009f"
+      - name: Archive frozen evidence including any partial failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-open009f-physics-evidence-${{ github.run_id }}
+          path: ${{ runner.temp }}/open009f/*.json
+          retention-days: 60
+          if-no-files-found: warn

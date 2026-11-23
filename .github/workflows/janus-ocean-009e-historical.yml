@@ -1,0 +1,44 @@
+name: JANUS OPEN-009E historical holdout + late-choice diagnostic
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/open_causality_009/backtest_009e.py'
+      - '.github/workflows/janus-ocean-009e-historical.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-open009e-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  historical-controls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Frozen-code local sanity checks
+        run: |
+          set -euo pipefail
+          python -m py_compile experiments/ocean_transformer/open_causality_009/backtest_009e.py
+          python -m unittest discover -v -s experiments/ocean_transformer/open_causality_009 -p 'test_open_causality_009.py'
+          python -m unittest discover -v -s experiments/ocean_transformer/open_causality_009 -p 'test_open009.py'
+      - name: Bounded retrospective NOAA plus simulated late-choice checks
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/open_causality_009/backtest_009e.py --out-dir "$RUNNER_TEMP/open009e"
+      - name: Retain evidence in immutable run artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-open009e-historical-evidence-${{ github.run_id }}
+          path: ${{ runner.temp }}/open009e/*.json
+          retention-days: 30
+          if-no-files-found: warn
