@@ -1,0 +1,61 @@
+name: JANUS Ocean reads Tachyon research-only feedback
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/tachyon_review_consumer.py'
+      - 'tests/test_ocean_tachyon_review_consumer.py'
+      - 'tests/fixtures/tachyon_ocean_early_20261112.json'
+      - 'docs/OCEAN_TACHYON_RESEARCH_INBOX.md'
+      - '.github/workflows/janus-ocean-tachyon-research-inbox.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: janus-ocean-tachyon-research-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  offline-bridge-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/Demi_Head
+          ref: b7804129e6e18fddc5e741d4d2d230f74ad92eab
+          path: external/tachyon
+          sparse-checkout: |
+            data/tachyon/ocean/real_009b_early_witness_20261112.json
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Unit tests and check immutable original Tachyon receipt
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p test_ocean_tachyon_review_consumer.py -v
+          cmp -s tests/fixtures/tachyon_ocean_early_20261112.json \
+            external/tachyon/data/tachyon/ocean/real_009b_early_witness_20261112.json
+      - name: Consume cross-repository research receipt without training
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/tachyon_review_consumer.py \
+            --tachyon-review external/tachyon/data/tachyon/ocean/real_009b_early_witness_20261112.json \
+            --out artifacts/tachyon-inbox.json
+          python - <<'PY'
+          import json
+          r=json.load(open('artifacts/tachyon-inbox.json'))
+          assert r['status']=='RESEARCH_CONTEXT_ONLY_NOT_TRAINING'
+          assert r['model']['auto_training_triggered'] is False
+          assert r['physical_retrocausality_established'] is False
+          print('JANUS_OCEAN_TACHYON_FEEDBACK_IMPORT_PASS')
+          PY
+      - name: Preserve read-only proof of import
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-ocean-tachyon-research-only-inbox
+          path: artifacts/tachyon-inbox.json
+          retention-days: 30
+          if-no-files-found: error
