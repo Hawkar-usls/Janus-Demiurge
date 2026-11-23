@@ -141,8 +141,18 @@ class CoreBeetleResearchBridge(unittest.TestCase):
         self.assertEqual(doc["claim_ceiling"],
                          "SEARCH_STEERING_ONLY__ZERO_EVIDENCE_AUTHORITY")
         self.assertIs(doc["core_bridge_scientific_authority"],False)
+        # Existing JANUS Desires intentionally takes first priority slot.
+        # A passing receipt must remain visible even when that bounded slot
+        # prevents both ESSENCE questions from entering the active output.
+        self.assertEqual(len(doc["ad_hoc_directions"]),2)
+        self.assertEqual(doc["ad_hoc_directions"][0]["source"],"JANUS_DESIRES")
+        self.assertEqual(doc["ad_hoc_directions"][1]["source"],"ESSENCE_CORE_BRIDGE")
+        self.assertEqual(len(doc["essence_core_bridge_ad_hoc_directions"]),2)
         self.assertTrue(all(q["source"]=="ESSENCE_CORE_BRIDGE"
-            for q in doc["ad_hoc_directions"]))
+            for q in doc["essence_core_bridge_ad_hoc_directions"]))
+        self.assertTrue(all(set(q["target_repositories"]).issubset(self.allowed)
+            for q in doc["essence_core_bridge_ad_hoc_directions"]))
+        self.assertFalse(doc["core_bridge_scientific_authority"])
 
 
 if __name__=="__main__":
