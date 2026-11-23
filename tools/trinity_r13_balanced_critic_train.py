@@ -67,6 +67,23 @@ def verify_train_rows(rows):
     return c.digest(rows)
 
 
+def balanced_indices(rows, seed=SEED):
+    """Every partial even-length prefix has equal YES and NO supervision."""
+    if rows!=train_rows():
+        raise ValueError("R13_UNTRUSTED_SAMPLING_DATA")
+    positive=[i for i,r in enumerate(rows) if r["answer"]=="YES"]
+    negative=[i for i,r in enumerate(rows) if r["answer"]=="NO"]
+    if len(positive)!=96 or len(negative)!=96:
+        raise ValueError("R13_BAD_STRATIFIED_SAMPLE_COUNT")
+    rng=random.Random(seed)
+    rng.shuffle(positive)
+    rng.shuffle(negative)
+    indices=[j for pair in zip(positive,negative) for j in pair]
+    if len(indices)!=192 or len(set(indices))!=192:
+        raise ValueError("R13_BAD_BALANCED_TRAIN_SCHEDULE")
+    return indices
+
+
 def pack_hf_causal_labels(prefix, target):
     """HF AutoModelForCausalLM shifts labels INSIDE forward(loss).
 
@@ -123,18 +140,8 @@ def load_and_train(path:Path, receipt_path:Path, steps:int):
     optimizer=torch.optim.AdamW(
         (p for p in model.parameters() if p.requires_grad),
         lr=3e-4,weight_decay=0.0)
-    positive=[i for i,r in enumerate(rows) if r["answer"]=="YES"]
-    negative=[i for i,r in enumerate(rows) if r["answer"]=="NO"]
-    if len(positive)!=96 or len(negative)!=96:
-        raise ValueError("R13_BAD_STRATIFIED_SAMPLE_COUNT")
-    rng=random.Random(SEED)
-    rng.shuffle(positive)
-    rng.shuffle(negative)
-    # Alternate YES/NO, so even partial training budgets cannot collapse to
-    # a majority-NO prefix of the source; all 192 are seen at default steps.
-    indices=[j for pair in zip(positive,negative) for j in pair]
-    if len(indices)!=192 or len(set(indices))!=192:
-        raise ValueError("R13_BAD_BALANCED_TRAIN_SCHEDULE")
+    # Fixed stratified sampler: 192 default steps cover every train-only row.
+    indices=balanced_indices(rows)
     losses=[]
     started=time.monotonic()
     for step in range(steps):
