@@ -1,0 +1,147 @@
+name: JANUS DADDY_KEYMASTER Champion Release Safety
+
+on:
+  pull_request:
+    paths:
+      - 'daddy_keymaster/champion_release.py'
+      - 'daddy_keymaster/cloud_replay.py'
+      - 'janus_model/keymaster.py'
+      - 'janus_model/corpus.py'
+      - 'tests/test_native_corpus_portable_bytes.py'
+      - 'daddy_keymaster/quarantine.py'
+      - 'tests/test_champion_quarantine.py'
+      - 'daddy_keymaster/CHAMPION_RELEASE.md'
+      - 'tests/test_champion_release.py'
+      - 'tests/test_champion_release_torch_e2e.py'
+      - 'tests/test_champion_real_incumbent.py'
+      - '.github/workflows/janus-daddy-keymaster-champion-release-safety.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'daddy_keymaster/champion_release.py'
+      - 'daddy_keymaster/cloud_replay.py'
+      - 'janus_model/keymaster.py'
+      - 'janus_model/corpus.py'
+      - 'tests/test_native_corpus_portable_bytes.py'
+      - 'daddy_keymaster/quarantine.py'
+      - 'tests/test_champion_quarantine.py'
+      - 'tests/test_champion_release.py'
+      - 'tests/test_champion_release_torch_e2e.py'
+      - 'tests/test_champion_real_incumbent.py'
+      - '.github/workflows/janus-daddy-keymaster-champion-release-safety.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-daddy-keymaster-champion-release-safety-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  admission-negative-controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile fail-closed controller
+        run: python -m py_compile daddy_keymaster/champion_release.py tests/test_champion_release.py
+      - name: Run local Git CAS and rollback regression tests (no external network)
+        run: |
+          python -m unittest discover -s tests -p 'test_champion_release.py' -v
+          python -m unittest discover -s tests -p 'test_champion_quarantine.py' -v
+          python -m unittest discover -s tests -p 'test_native_corpus_portable_bytes.py' -v
+      - name: Assert production publisher remains sealed
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('daddy_keymaster/champion_release.py').read_text()
+          assert 'CHAMPION_PUBLISH_CLI_SEALED_UNTIL_TRUSTED_BLIND_ISSUER' in s
+          assert "git(root, 'push', 'origin', 'HEAD:main')" in s
+          assert 'force-with-lease' not in s and '--force' not in s
+          print('CHAMPION_RELEASE_PRODUCTION_WRITE_DISABLED=PASS')
+          PY
+
+  real-torch-e2e:
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - arch: X64
+            vm: ubuntu-24.04
+          - arch: ARM64
+            vm: ubuntu-24.04-arm
+    runs-on: ${{ matrix.vm }}
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install JANUS own model torch runtime on CPU
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ matrix.arch }}" = X64 ]; then
+            python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+          else
+            python -m pip install --disable-pip-version-check torch
+          fi
+      - name: Train genuine JANUS Transformer, rerun gates and test CAS rollback
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p 'test_champion_release_torch_e2e.py' -v
+          python -m unittest discover -s tests -p 'test_champion_real_incumbent.py' -v
+          echo "CHAMPION_ACTUAL_TORCH_ISOLATED_E2E=PASS:${{ matrix.arch }}"
+      - name: Download immutable real candidate and pre-registered external control
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://raw.githubusercontent.com/Hawkar-usls/Janus-Demiurge/1ae68da4ab52e79d8a3788426939f3c7807427ca/daddy_keymaster/quarantine/r2-20261031-local-b'
+          mkdir -p runtime/champion-replay
+          curl -fLSs --retry 2 --max-time 60 "$BASE/candidate.pt" -o runtime/champion-replay/candidate.pt
+          curl -fLSs --retry 2 --max-time 60 "$BASE/MANIFEST.json" -o runtime/champion-replay/MANIFEST.json
+          curl -fLSs --retry 2 --max-time 60 "$BASE/R2_LOCAL_B.json" -o runtime/champion-replay/R2_LOCAL_B.json
+          curl -fLSs --retry 2 --max-time 60 "$BASE/PRE_REGISTERED_EXTERNAL_FINAL.json" -o runtime/champion-replay/PRE_REGISTERED_EXTERNAL_FINAL.json
+          curl -fLSs --retry 2 --max-time 60 'https://www.rfc-editor.org/rfc/rfc9113.txt' -o runtime/champion-replay/RFC9113.txt
+          echo 'e89352cf649c67d8fb88e9cb6b929897460fd99e0d5bcd29e6c096b4ff39a321  runtime/champion-replay/candidate.pt' | sha256sum -c -
+      - name: Replay actual canonical weights versus candidate B (read-only, no promotion)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m daddy_keymaster.cloud_replay \
+            --root . \
+            --candidate runtime/champion-replay/candidate.pt \
+            --manifest runtime/champion-replay/MANIFEST.json \
+            --training runtime/champion-replay/R2_LOCAL_B.json \
+            --pre-registration runtime/champion-replay/PRE_REGISTERED_EXTERNAL_FINAL.json \
+            --external-raw runtime/champion-replay/RFC9113.txt \
+            --out runtime/champion-replay/REPLAY.json
+          python - <<'PY'
+          import json
+          r=json.load(open('runtime/champion-replay/REPLAY.json'))
+          assert r['status']=='REPLAY_PASS__RESEARCH_ONLY'
+          assert r['production_promotion_authorized'] is False
+          assert r['independent_blind_custody'] is False
+          assert r['adaptive_source_replayed'] is False
+          print('JANUS_CLOUD_CANDIDATE_REPLAY=PASS_RESEARCH_ONLY')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: daddy-real-champion-replay-${{ matrix.arch }}
+          path: runtime/champion-replay/REPLAY.json
+          retention-days: 14
+          if-no-files-found: error

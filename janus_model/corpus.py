@@ -138,7 +138,7 @@ def build_corpus(registry:Path,out_dir:Path,max_train_bytes=2_000_000,max_holdou
         records.append({'path':rel,'sha256':file_sha,'bytes':len(raw),'split':split})
 
     registry_train_text=''.join(train)
-    (out_dir/'registry_train.txt').write_text(registry_train_text,encoding='utf-8')
+    (out_dir/'registry_train.txt').write_bytes(registry_train_text.encode('utf-8'))
 
     if (keymaster_training_path is None)!=(keymaster_manifest_path is None):
         raise RuntimeError('KEYMASTER_TRAINING_AND_MANIFEST_MUST_BE_PAIRED')
@@ -171,8 +171,8 @@ def build_corpus(registry:Path,out_dir:Path,max_train_bytes=2_000_000,max_holdou
     train_text=''.join(train); holdout_text=''.join(holdout)
     if len(train_text.encode())<50_000: raise RuntimeError('TRAIN_CORPUS_TOO_SMALL')
     if len(holdout_text.encode())<10_000: raise RuntimeError('HOLDOUT_CORPUS_TOO_SMALL')
-    (out_dir/'train.txt').write_text(train_text,encoding='utf-8')
-    (out_dir/'holdout.txt').write_text(holdout_text,encoding='utf-8')
+    (out_dir/'train.txt').write_bytes(train_text.encode('utf-8'))
+    (out_dir/'holdout.txt').write_bytes(holdout_text.encode('utf-8'))
 
     registry_source_digest=registry_digest_hasher.hexdigest()
     evaluation_contract=contract_identity()
@@ -235,7 +235,7 @@ def build_corpus(registry:Path,out_dir:Path,max_train_bytes=2_000_000,max_holdou
         'eye_exclusions_enforced':True,
         'records':records
     }
-    (out_dir/'corpus_manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2,sort_keys=True),encoding='utf-8')
+    (out_dir/'corpus_manifest.json').write_bytes(json.dumps(manifest,ensure_ascii=False,indent=2,sort_keys=True).encode('utf-8'))
     return manifest
 
 def main():
