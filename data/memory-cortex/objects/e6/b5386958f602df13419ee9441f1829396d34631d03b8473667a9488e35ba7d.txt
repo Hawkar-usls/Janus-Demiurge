@@ -1,0 +1,79 @@
+{
+  "schema": "janus.memory_cortex.reliability_repair.receipt.v2",
+  "date": "2026-11-23",
+  "status": "MERGED__AUTOMATIC_PULSE_WAKE_AND_BELOW_THRESHOLD_CONSUMER_READ_VERIFIED",
+  "supersedes_operational_notes": "data/JANUS-MEMORY-CORTEX-CONTINUOUS-INTAKE-BEETLE-2026-11-23-v1.json",
+  "source": {
+    "repository": "Hawkar-usls/Janus-Demiurge",
+    "pr": "https://github.com/Hawkar-usls/Janus-Demiurge/pull/702",
+    "main_commit": "dd39feaa008869fc5353e01a1658b10e1b5f1e17"
+  },
+  "verified_fixes": [
+    "Existing ESSENCE Pulse now reserves an allowlisted Cortex lane inside the unchanged two-dispatch budget, with 20-minute cooldown/backoff.",
+    "Code-change wakes go through Pulse instead of spawning a duplicate collector directly on every push.",
+    "A trusted-main successful Beetle Memory Receiver completion may wake Pulse; PR, foreign repository, wrong workflow, failed or untrusted parent is rejected. Code is from main and no upstream artifacts execute.",
+    "Every successful collection retries the read-only fresh consumer, including accumulation or no-new-source cycles.",
+    "Invalid primary API object/metadata/text shapes are quarantined per source, not allowed to abort a whole collection cycle.",
+    "512 MiB is a reachable goal; bounded 1-MiB document margin avoids an exact-byte-sum deadlock. Capacity pressure retains pending/provider state.",
+    "Compact intake-health and retry/error counts are exposed without requiring the oversized full STATE.json through the connector."
+  ],
+  "tests": {
+    "cortex": 24,
+    "pulse": 18,
+    "total": 42,
+    "cortex_ci": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/45141125667",
+    "pulse_ci": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/45141125656",
+    "legacy_ci": "Secret Persistence Guard, Restoration Probation CI and Self-Evolution v2 CI passed on the same PR head.",
+    "scope": "Finite offline engineering tests; no independent new-question/model gain proof."
+  },
+  "live": {
+    "automatic_controller_run": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/45141332515",
+    "automatic_controller_artifact": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/45141332515/artifacts/14802246116",
+    "actual_status": "memory_cortex_intake=DISPATCH_REQUESTED_NOT_WORKER_PASS; requested_dispatches=2",
+    "dispatched_worker_run": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/45141405932",
+    "collector_job": 137580162023,
+    "consumer_job": 137580497073,
+    "worker_conclusion": "success",
+    "consumer_conclusion": "success",
+    "active_generation": 2,
+    "active_documents": 5557,
+    "active_verified_unique_source_bytes": 67567132,
+    "pending_documents": 31,
+    "pending_unique_source_bytes": 1349719,
+    "new_registry_documents": 8,
+    "new_primary_abstract_metadata_documents": 8,
+    "provider_fetch_errors": 0,
+    "health": {
+      "failure_counts": {
+        "GROWTH_PRIMARY_TEXT_EMPTY": 2
+      },
+      "historical_cursor_count": 2,
+      "provider_ids_completed_or_paused": 32,
+      "queue_count": 4088,
+      "recent_cursor_count": 1,
+      "recent_priority_queued": 101,
+      "retrying_provider_ids": 0
+    },
+    "sqlite_integrity": "ok",
+    "consumer_citation_pointers": 5
+  },
+  "policy": {
+    "publish_if_new_bytes_at_least": 4194304,
+    "publish_if_new_documents_at_least": 128,
+    "operator": "OR",
+    "target_bytes": 536870912,
+    "source_storage_budget_bytes": 537919488,
+    "max_document_bytes": 1048576,
+    "unchanged_sources_reingested": false,
+    "weights_updated_by_route": false,
+    "independent_qa_improvement_established": false,
+    "model_window_expanded": false
+  },
+  "boundaries": [
+    "The observed successful controller was awakened by a main code push and dispatched the worker automatically. Long-run native cron regularity and recovery from platform-wide GitHub failure are not established.",
+    "Historical exact source-text versions may overlap semantically. Exact SHA uniqueness and more corpus bytes do not imply more independent knowledge.",
+    "Provider records are title/abstract/description text, not full papers or validated scientific evidence.",
+    "512 MiB remains unfilled; no new native neural inference gain or independent QA experiment was performed."
+  ],
+  "next_verifiable_gate": "Observe repeated unattended cron/receiver-to-Pulse wakes with fresh receipts; preserve source-byte deltas and no-op generation behaviour, then evaluate independently authored new QA under fixed budgets."
+}
