@@ -1,0 +1,45 @@
+name: JANUS-010N Independent Munich Atomic Bell Holdout
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/late_choice_010/rosenfeld_three_model_010n.py'
+      - 'experiments/ocean_transformer/late_choice_010/test_rosenfeld_three_model_010n.py'
+      - '.github/workflows/janus-010n-rosenfeld-holdout.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-010n-munich-atoms-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  source-independent-lab-replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Preflight all schema, selection and no-signalling false-positive tests
+        run: |
+          set -euo pipefail
+          python -m py_compile experiments/ocean_transformer/late_choice_010/rosenfeld_three_model_010n.py
+          python -m unittest discover -v -s experiments/ocean_transformer/late_choice_010 -p 'test_rosenfeld_three_model_010n.py'
+      - name: Read April calibration and entire June validation originals after frozen protocol
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/rosenfeld010n"
+          python -u experiments/ocean_transformer/late_choice_010/rosenfeld_three_model_010n.py --output "$RUNNER_TEMP/rosenfeld010n/rosenfeld010n_three_model.json"
+      - name: Keep source hashes, inclusion audit and derived statistics only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-010n-munich-atomic-bell-${{ github.run_id }}
+          path: ${{ runner.temp }}/rosenfeld010n/rosenfeld010n_three_model.json
+          retention-days: 60
+          if-no-files-found: warn
