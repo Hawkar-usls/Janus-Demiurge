@@ -1,0 +1,155 @@
+name: JANUS Memory Cortex - continuous thresholded intake
+
+on:
+  schedule:
+    - cron: '17,37,57 * * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'janus_model/memory_cortex_growth.py'
+      - 'beetle/MEMORY_CORTEX_GROWTH.json'
+      - '.github/workflows/janus-memory-cortex-growth.yml'
+  pull_request:
+    paths:
+      - 'janus_model/memory_cortex_growth.py'
+      - 'beetle/MEMORY_CORTEX_GROWTH.json'
+      - 'tests/test_memory_cortex_growth.py'
+      - '.github/workflows/janus-memory-cortex-growth.yml'
+      - '.github/workflows/janus-memory-cortex-query.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-memory-cortex-growth-state
+  cancel-in-progress: false
+
+jobs:
+  tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - run: python -m unittest discover -s tests -p 'test_memory_cortex_growth.py' -v
+
+  collect:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: tests
+    permissions:
+      contents: write
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout trusted source code without persisted credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          path: code
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - name: Restore durable intake history and exact source objects
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: memory-cortex-state
+          path: memory-state
+          sparse-checkout: data/memory-cortex
+          fetch-depth: 1
+      - name: Check whether the original verified baseline needs migration
+        id: state
+        run: |
+          if test -f memory-state/data/memory-cortex/STATE.json; then
+            echo 'initialized=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'initialized=false' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Read immutable R3 catalog for one-time baseline migration
+        if: steps.state.outputs.initialized != 'true'
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: 6c9259c43d89569b11351bf8579a3775025fa2f0
+          path: baseline-catalog
+          persist-credentials: false
+      - name: Read immutable R3 source for one-time baseline migration
+        if: steps.state.outputs.initialized != 'true'
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: c8e47bb54e954ab122e111c97198131f048bd5fd
+          path: baseline-source
+          persist-credentials: false
+      - name: Discover the current public registry snapshot
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: main
+          path: registry-source
+          persist-credentials: false
+      - name: Read Universal Beetle's durable discovery ledger
+        id: beetle
+        continue-on-error: true
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Hawkar-usls/janus-lapis
+          ref: beetle-state
+          path: beetle-source
+          sparse-checkout: data/beetle-state/candidates.parts
+          persist-credentials: false
+      - name: Accumulate unseen verified information and publish only at threshold
+        working-directory: code
+        env:
+          BEETLE_AVAILABLE: ${{ steps.beetle.outcome == 'success' }}
+          BASELINE_INITIALIZED: ${{ steps.state.outputs.initialized }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=(collect
+            --state "$GITHUB_WORKSPACE/memory-state/data/memory-cortex"
+            --registry "$GITHUB_WORKSPACE/registry-source"
+            --report "$RUNNER_TEMP/MEMORY_CORTEX_GROWTH.json")
+          if [[ "$BEETLE_AVAILABLE" == 'true' ]]; then
+            args+=(--beetle "$GITHUB_WORKSPACE/beetle-source")
+          fi
+          if [[ "$BASELINE_INITIALIZED" != 'true' ]]; then
+            args+=(--baseline-catalog "$GITHUB_WORKSPACE/baseline-catalog"
+                   --baseline-source "$GITHUB_WORKSPACE/baseline-source")
+          fi
+          python -m janus_model.memory_cortex_growth "${args[@]}"
+          test -z "$(git -C "$GITHUB_WORKSPACE/registry-source" status --porcelain)"
+      - name: Persist intake and active generation with a normal non-force branch push
+        working-directory: memory-state
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'janus-memory-cortex[bot]'
+          git config user.email 'janus-memory-cortex[bot]@users.noreply.github.com'
+          git add -- data/memory-cortex
+          python - <<'PY'
+          import subprocess
+          paths = subprocess.check_output(['git','diff','--cached','--name-only','-z']).split(b'\0')
+          if any(p and not p.startswith(b'data/memory-cortex/') for p in paths):
+              raise SystemExit('refused write outside isolated memory state')
+          PY
+          if git diff --cached --quiet; then
+            echo 'No new information or state progress; nothing to commit'
+            exit 0
+          fi
+          # Exact source bytes may legitimately contain trailing whitespace.
+          git diff --cached --check -- data/memory-cortex/STATE.json data/memory-cortex/CURRENT.json data/memory-cortex/LATEST.json data/memory-cortex/generations
+          git commit -m "memory: verified intake and thresholded generation ${GITHUB_RUN_ID}"
+          git push origin HEAD:refs/heads/memory-cortex-state
+      - name: Retain compact measured intake receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: memory-cortex-growth-${{ github.run_id }}
+          path: ${{ runner.temp }}/MEMORY_CORTEX_GROWTH.json
+          retention-days: 30
+          if-no-files-found: ignore
