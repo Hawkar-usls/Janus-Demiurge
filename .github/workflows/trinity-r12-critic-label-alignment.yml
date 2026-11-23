@@ -1,0 +1,160 @@
+name: Trinity R1.2 SmolLM Causal Label Alignment Rescue
+
+on:
+  pull_request:
+    paths:
+      - 'tools/trinity_r12_*.py'
+      - 'tests/test_trinity_r12_critic_label_alignment.py'
+      - 'research/essence/trinity_parental_school/R12_*'
+      - '.github/workflows/trinity-r12-critic-label-alignment.yml'
+  push:
+    branches:
+      - research/trinity-r12-critic-label-alignment-20261123
+    paths:
+      - 'tools/trinity_r12_*.py'
+      - 'tests/test_trinity_r12_critic_label_alignment.py'
+      - 'research/essence/trinity_parental_school/R12_*'
+      - '.github/workflows/trinity-r12-critic-label-alignment.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HF_HUB_DISABLE_TELEMETRY: '1'
+  HF_HUB_DOWNLOAD_TIMEOUT: '120'
+  TOKENIZERS_PARALLELISM: 'false'
+  OMP_NUM_THREADS: '4'
+
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check HF loss shift source and v1-exam isolation
+        run: |
+          set -euo pipefail
+          python -m py_compile tools/trinity_r12_critic_train.py tools/trinity_r12_critic_eval.py tests/test_trinity_r12_critic_label_alignment.py
+          python -m unittest -v tests.test_trinity_parental_school tests.test_trinity_critic_context_r1 tests.test_trinity_r11_shadow_training tests.test_trinity_r12_critic_label_alignment
+
+  cpu-lora-train:
+    needs: contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned CPU model runtime
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 peft==0.13.2 safetensors==0.5.3
+      - name: Train corrected HF causal targets on OLD training-only counterexamples
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/trinity/r12/critic
+          python -m tools.trinity_r12_critic_train --steps 96 \
+            --adapter runtime/trinity/r12/critic/adapter \
+            --receipt runtime/trinity/r12/critic/train_receipt.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from tools import trinity_parental_contract as c
+          r=c.checked_seal(json.loads(Path('runtime/trinity/r12/critic/train_receipt.json').read_text()))
+          assert r['schema']=='janus.trinity.r12.critic_lora_train/1.0'
+          assert r['huggingface_causal_labels_internal_shift'] is True
+          assert r['labels_preshifted_in_training_script'] is False
+          assert r['original_R11_firstlook_reused_for_qualification'] is False
+          assert r['used_genesis_64'] is False
+          assert r['production_promotion'] is False
+          print('TRINITY_R12_CORRECTED_CAUSAL_TRAIN_ONLY__NO_GRADUATION')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trinity-r12-critic-shadow
+          path: runtime/trinity/r12/critic
+          if-no-files-found: error
+          retention-days: 60
+
+  fresh-critic-firstlook:
+    needs: cpu-lora-train
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: trinity-r12-critic-shadow
+          path: runtime/trinity/r12/critic
+      - name: Install pinned CPU baseline/candidate runtime
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 peft==0.13.2 safetensors==0.5.3
+      - name: First look at THIRD numeric domain only, with source hashes
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/trinity/r12
+          python -m tools.trinity_r12_critic_eval \
+            --adapter runtime/trinity/r12/critic/adapter \
+            --train-receipt runtime/trinity/r12/critic/train_receipt.json \
+            --out runtime/trinity/r12/fresh_critic_firstlook.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from tools import trinity_parental_contract as c
+          r=c.checked_seal(json.loads(Path('runtime/trinity/r12/fresh_critic_firstlook.json').read_text()))
+          assert r['schema']=='janus.trinity.r12.critic_firstlook_internal/1.0'
+          assert r['cases']==36 and not r['r11_firstlook_reused']
+          assert r['genesis64_read'] is False
+          assert r['may_replace_parent_critic'] is False
+          assert r['may_graduate_trinity'] is False
+          assert r['external_independent_exam'] is False
+          print('TRINITY_R12_NEW_FIRSTLOOK='+r['status'])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trinity-r12-critic-third-domain-firstlook
+          path: runtime/trinity/r12/fresh_critic_firstlook.json
+          if-no-files-found: error
+          retention-days: 60
+
+  research-hold:
+    needs: fresh-critic-firstlook
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: trinity-r12-critic-third-domain-firstlook
+          path: out
+      - name: Never promote based on same-owner internal score
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path('out/fresh_critic_firstlook.json').read_text())
+          assert not j['may_replace_parent_critic']
+          assert not j['may_graduate_trinity']
+          assert not j['production_promotion']
+          assert not j['external_independent_exam']
+          assert j['status'] in (
+              'HOLD_CRITIC_GENERALIZATION_NOT_PROVEN',
+              'INTERNAL_CRITIC_IMPROVEMENT_OBSERVED__EXTERNAL_HOLD')
+          print('TRINITY_R12_CPU_VALIDATION_COMPLETE__EXTERNAL_EXAM_PENDING')
+          PY
