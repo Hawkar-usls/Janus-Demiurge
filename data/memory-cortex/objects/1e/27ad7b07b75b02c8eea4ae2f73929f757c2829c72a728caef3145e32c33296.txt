@@ -1,0 +1,102 @@
+{
+  "schema": "janus.essence.adaptive_state_quantization_research/1.5",
+  "record_date_utc": "2026-11-14",
+  "topic": "ESSENCE_SELF_AND_SIX_MICROKERNEL_NUMERICAL_STATE_ADAPTIVE_QUANTIZATION",
+  "status": "IMPLEMENTED_ON_SIX_REVIEW_BRANCHES_CI_PENDING_NO_MODEL_WEIGHTS",
+  "github_only": true,
+  "source_code_git_blob_sha1": "7e192825663d6e571a6d791cb802db9a25b866c2",
+  "adversarial_tests_git_blob_sha1": "b1b6faee497c68d8be781460a94884a3a849dfac",
+  "repositories": [
+    {
+      "repository": "Hawkar-usls/Janus_Genesis",
+      "pr_number": 339,
+      "implementation_state": "OPEN_PR_REQUIRES_OWN_CI_PASS_BEFORE_MERGE"
+    },
+    {
+      "repository": "Hawkar-usls/Janus-Demiurge",
+      "pr_number": 567,
+      "implementation_state": "OPEN_PR_REQUIRES_OWN_CI_PASS_BEFORE_MERGE"
+    },
+    {
+      "repository": "Hawkar-usls/Demi_Head",
+      "pr_number": 105,
+      "implementation_state": "OPEN_PR_REQUIRES_OWN_CI_PASS_BEFORE_MERGE"
+    },
+    {
+      "repository": "Hawkar-usls/janus-distributed-ai-swarm",
+      "pr_number": 39,
+      "implementation_state": "OPEN_PR_REQUIRES_OWN_CI_PASS_BEFORE_MERGE"
+    },
+    {
+      "repository": "Hawkar-usls/Janus-Cosmos",
+      "pr_number": 57,
+      "implementation_state": "OPEN_PR_REQUIRES_OWN_CI_PASS_BEFORE_MERGE"
+    },
+    {
+      "repository": "Hawkar-usls/Hrain",
+      "pr_number": 54,
+      "implementation_state": "OPEN_PR_REQUIRES_OWN_CI_PASS_BEFORE_MERGE"
+    }
+  ],
+  "mechanics": {
+    "channels": [
+      "sensing",
+      "memory",
+      "planning",
+      "verification",
+      "recovery",
+      "coding",
+      "essence_self"
+    ],
+    "formats": [
+      "SIGNED_SYMMETRIC_INT4_BLOCK32",
+      "SIGNED_SYMMETRIC_INT8_BLOCK32",
+      "FP16",
+      "RAW_FP32_FALLBACK"
+    ],
+    "policy": "SELECT_LOWER_PRECISION_IF_MAX_ABS_ERROR_AND_FOUR_ROUND_DRIFT_WITHIN_ROLE_TOLERANCE_AND_BINARY_STORAGE_SAVING_AT_LEAST_10_PERCENT",
+    "scales_storage_bytes_per_block": 8,
+    "block_values": 32,
+    "error_limits_absolute": {
+      "sensing": 0.015,
+      "memory": 0.03,
+      "planning": 0.012,
+      "verification": 0.002,
+      "recovery": 0.003,
+      "coding": 0.012,
+      "essence_self": 0.004
+    },
+    "cryptographic_control": "SHA256_FOR_MANIFEST_FIXTURE_EACH_PACKED_LANE_AND_ORIGINAL_FP32_SNAPSHOT",
+    "rollback": "LOSSLESS_RESTORE_FROM_PRESERVED_ORIGINAL_FP32_BYTES_NOT_FROM_LOSSY_QUANTIZATION"
+  },
+  "local_cpu_synthetic_experiment": {
+    "provenance": "LOCAL_REFERENCE_UTILITY_WITH_EQUIVALENT_ARITHMETIC_NOT_AN_ATTESTED_GITHUB_RUN",
+    "state_vectors": 7,
+    "elements_per_vector": 256,
+    "baseline_float32_bytes": 7168,
+    "packed_quantized_bytes_including_headers_scales": 2680,
+    "packed_binary_storage_saving_fraction": 0.626116,
+    "chosen_modes": {
+      "sensing": "INT8",
+      "memory": "INT8",
+      "planning": "INT8",
+      "verification": "FP16",
+      "recovery": "FP16",
+      "coding": "INT8",
+      "essence_self": "INT8"
+    },
+    "no_claim_of_total_process_ram_saving": true,
+    "full_artifact_with_original_snapshot_bytes": 9848,
+    "note": "The 2,680-byte packed representation is smaller than 7,168-byte original, but the research evidence retains the 7,168-byte original separately. Total binary data plus backup is 9,848 bytes before JSON and ZIP overhead."
+  },
+  "authorization": {
+    "production_model_weights_changed": false,
+    "working_modules_replaced": false,
+    "independent_blind_quality_verification": false,
+    "automatic_promote_quantized_checkpoint": false,
+    "real_neural_inference_speedup_confirmed": false,
+    "real_gpu_memory_measured": false,
+    "external_checkpoint_rollback_verified": false,
+    "research_only": true
+  }
+}
