@@ -1,0 +1,165 @@
+name: Trinity R1.4 Oracle Grounded Critic CPU
+
+on:
+  pull_request:
+    paths:
+      - 'tools/trinity_r14_*.py'
+      - 'tests/test_trinity_r14_verified_oracle.py'
+      - 'research/essence/trinity_parental_school/R14_*'
+      - '.github/workflows/trinity-r14-verified-critic-cpu.yml'
+  push:
+    branches: [research/trinity-r14-verified-critic-20261123]
+    paths:
+      - 'tools/trinity_r14_*.py'
+      - 'tests/test_trinity_r14_verified_oracle.py'
+      - 'research/essence/trinity_parental_school/R14_*'
+      - '.github/workflows/trinity-r14-verified-critic-cpu.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trinity-r14-oracle-verified-study
+  cancel-in-progress: false
+
+env:
+  HF_HUB_DISABLE_TELEMETRY: '1'
+  HF_HUB_DOWNLOAD_TIMEOUT: '120'
+  TOKENIZERS_PARALLELISM: 'false'
+  OMP_NUM_THREADS: '4'
+  PYTHONHASHSEED: '0'
+
+jobs:
+  contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Frozen fifth, strict grammar and model nonauthority
+        run: |
+          set -euo pipefail
+          python -m py_compile tools/trinity_r14_verified_oracle.py tools/trinity_r14_cpu_bridge.py tests/test_trinity_r14_verified_oracle.py
+          python -m unittest -v tests.test_trinity_parental_school tests.test_trinity_critic_context_r1 tests.test_trinity_r13_balanced_critic tests.test_trinity_r14_verified_oracle
+
+  cpu-train-source:
+    # Original prospective CPU source SHA ONLY. Following runs are contract
+    # audits: disclosed cases must not be re-presented as fresh research.
+    if: github.event_name == 'push' && github.sha == '6acb9288601673d49b65c61ab26952705d346fe6'
+    needs: contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pinned CPU-only parents
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 safetensors==0.5.3
+      - name: Qwen proposes TRAIN ONLY; oracle verifies; SmolLM advises
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/trinity/r14
+          python -m tools.trinity_r14_cpu_bridge --mode train --out runtime/trinity/r14/verified_train_source.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from tools import trinity_r14_verified_oracle as o
+          x=json.loads(Path('runtime/trinity/r14/verified_train_source.json').read_text())
+          assert x['sha256']==o.digest({k:v for k,v in x.items() if k!='sha256'})
+          assert x['teacher_proposals_count']==24
+          assert x['real_cpu_qwen_generation'] and x['real_cpu_smollm_format_explanation']
+          assert x['fifth_exam_not_read'] and x['known_genesis_64_not_read']
+          assert not x['student_training_executed'] and x['not_yet_used_to_train_student']
+          assert not x['may_promote_JANUS'] and not x['production_promotion']
+          print('R14_VERIFIED_TRAIN_SOURCE_READY__JANUS_WEIGHTS_UNCHANGED')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trinity-r14-verified-train-source
+          path: runtime/trinity/r14/verified_train_source.json
+          if-no-files-found: error
+          retention-days: 90
+
+  cpu-fifth:
+    # Original prospective CPU source SHA ONLY. Following runs are contract
+    # audits: disclosed cases must not be re-presented as fresh research.
+    if: github.event_name == 'push' && github.sha == '6acb9288601673d49b65c61ab26952705d346fe6'
+    needs: contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pinned SmolLM CPU runtime
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 safetensors==0.5.3
+      - name: Fifth precommitted 64 cases; advisory cannot change math truth
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/trinity/r14
+          python -m tools.trinity_r14_cpu_bridge --mode fifth --repo-root . --out runtime/trinity/r14/fifth_firstlook.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from tools import trinity_r14_verified_oracle as o
+          x=json.loads(Path('runtime/trinity/r14/fifth_firstlook.json').read_text())
+          assert x['sha256']==o.digest({k:v for k,v in x.items() if k!='sha256'})
+          assert x['fifth_blob_sha1']==o.FIFTH_BLOB and x['fifth_cases']==64
+          assert x['oracle_matches_frozen_reference']
+          assert sum(v['oracle_exact'] for v in x['metrics'].values())==64
+          assert sum(v['format_only_exact'] for v in x['metrics'].values())==48
+          assert not x['external_validation'] and not x['production_promotion']
+          assert not x['janus_model_promoted'] and not x['automatic_self_training']
+          print('R14_INTERNAL_FIFTH_ORACLE_MATCH__GRADUATION_HOLD')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trinity-r14-fifth-oracle-firstlook
+          path: runtime/trinity/r14/fifth_firstlook.json
+          if-no-files-found: error
+          retention-days: 90
+
+  graduation-hold:
+    needs: [contracts, cpu-train-source, cpu-fifth]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: trinity-r14-*
+          merge-multiple: true
+          path: runtime/trinity/r14
+      - name: Never auto-promote student or critic
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('runtime/trinity/r14')
+          train=json.loads((p/'verified_train_source.json').read_text())
+          fifth=json.loads((p/'fifth_firstlook.json').read_text())
+          assert train['student_training_executed'] is False and train['fifth_exam_not_read']
+          assert fifth['fifth_ever_used_to_train_student'] is False
+          assert fifth['independent_exam_completed'] is False
+          assert fifth['oracle_not_learned_intelligence'] is True
+          assert fifth['parent_surpassed'] is False
+          assert fifth['gradutation_approved'] is False
+          assert fifth['student_weights_modified'] is False
+          print('TRINITY_R14_INTERNAL_STUDY_ONLY__ALL_PRODUCTION_AND_GRADUATION_HOLDS')
+          PY
