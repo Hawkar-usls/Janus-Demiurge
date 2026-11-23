@@ -57,9 +57,12 @@ def evaluate_predictions(rows, baseline, candidate, train_hash):
         totals[label]=matrix
         hashed[label]=fingerprints
     b,after=totals["BASELINE"],totals["CANDIDATE"]
+    # Absolute positive sensitivity is mandatory: a degenerate critic that
+    # VETOes ALL answers is NOT qualified even if baseline mostly abstains.
     strong=(after["INCORRECT"]["VETO"]>=8 and
             after["INCORRECT"]["APPROVE"]<=b["INCORRECT"]["APPROVE"] and
-            after["CORRECT"]["APPROVE"]>=max(0,b["CORRECT"]["APPROVE"]-2) and
+            after["CORRECT"]["APPROVE"]>=8 and
+            after["CORRECT"]["APPROVE"]>=b["CORRECT"]["APPROVE"]-2 and
             after["AMBIGUOUS"]["APPROVE"]==0)
     improved=(after["INCORRECT"]["VETO"]>b["INCORRECT"]["VETO"] and
               after["INCORRECT"]["APPROVE"]<b["INCORRECT"]["APPROVE"])
@@ -75,7 +78,9 @@ def evaluate_predictions(rows, baseline, candidate, train_hash):
         "cases":len(rows),"case_set_sha256":c.digest(rows),
         "metrics":totals,"responses":hashed,
         "criterion":{"strong_wrong_veto_and_nonregression":strong,
-                     "newly_detected_wrong":improved},
+                     "newly_detected_wrong":improved,
+                     "correct_absolute_approval_floor_8_of_12":after["CORRECT"]["APPROVE"]>=8,
+                     "all_veto_strategy_rejected":after["CORRECT"]["APPROVE"]<8},
         "may_promote_JANUS":False,
         "may_replace_parent_critic":False,
         "may_graduate_trinity":False,
