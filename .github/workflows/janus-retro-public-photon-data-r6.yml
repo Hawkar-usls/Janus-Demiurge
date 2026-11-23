@@ -1,0 +1,189 @@
+name: JANUS R6 - Independent Public Photonic Quantum-Switch Data Audit
+
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/janus_public_ico_dryad_audit_r6.py'
+      - 'experiments/ocean_transformer/test_janus_public_ico_dryad_audit_r6.py'
+      - 'experiments/ocean_transformer/janus_public_ico_zenodo_inventory_r6.py'
+      - 'experiments/ocean_transformer/test_janus_public_ico_zenodo_inventory_r6.py'
+      - '.github/workflows/janus-retro-public-photon-data-r6.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-photonic-r6-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  parser-tests:
+    name: Fail-closed 16 setting dataset integrity tests Python ${{ matrix.python }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11','3.12']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Verify all 16 settings required and reject malformed or renormalized data
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v \
+            -s experiments/ocean_transformer \
+            -p 'test_janus_public_ico_dryad_audit_r6.py'
+          python -m unittest discover -v \
+            -s experiments/ocean_transformer \
+            -p 'test_janus_public_ico_zenodo_inventory_r6.py'
+
+  public-photon-data:
+    name: Dryad genuine-data check or explicitly recorded HTTP 401 access blocker
+    needs: [parser-tests]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Download DOI pinned publicly published Dataset (never execute third-party code)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p incoming
+          mkdir -p out
+          # Dryad v2 file-download endpoints require an OAuth bearer token.
+          # A 401 becomes a *visible scientific NOT-RUN* record, not a
+          # fabricated result and not a skipped negative trial.
+          status=$(curl --location --show-error --silent \
+            --retry 2 --connect-timeout 15 --max-time 90 \
+            --write-out '%{http_code}' \
+            'https://datadryad.org/api/v2/datasets/doi%3A10.5061%2Fdryad.8kprr4z24/download' \
+            --output incoming/qu-et-al-2026.zip)
+          if [[ "$status" == '401' ]]; then
+            echo 'DRYAD_ACCESS_BLOCKED_401=true' >> "$GITHUB_ENV"
+            python - <<'PY'
+          import json
+          x={"schema":"janus.r6.dryad_access_status.v1",
+             "dataset_doi":"10.5061/dryad.8kprr4z24",
+             "http_status":401,
+             "status":"NOT_RUN__DOWNLOAD_REQUIRES_AUTHORIZATION",
+             "settings_read":0,
+             "original_data_audit_completed":False,
+             "physical_retrocausality_proven":False,
+             "next_required_resource":"Authorized Dryad bearer token, supplied through an approved secret with limited scope"}
+          open('out/independent-public-photon-aggregate-audit.json','w').write(
+            json.dumps(x,indent=2,sort_keys=True)+'\n')
+          PY
+            echo 'Dryad published-data metadata accessible but API file download returned HTTP 401; DATA AUDIT NOT RUN. No credential requested or invented.' >> "$GITHUB_STEP_SUMMARY"
+          elif [[ "$status" == '200' ]]; then
+            python - <<'PY'
+          import zipfile,os
+          p='incoming/qu-et-al-2026.zip'
+          assert os.path.getsize(p)<4_000_000, 'Dataset package exceeds resource cap'
+          assert zipfile.is_zipfile(p), 'Source did not return expected ZIP; REFUSE interpretation'
+          print('Original Dryad source ZIP bytes:',os.path.getsize(p))
+          PY
+            sha256sum incoming/qu-et-al-2026.zip
+          else
+            echo "::error::Unexpected Dryad HTTP status $status; stop without interpreting as physical data"
+            exit 1
+          fi
+      - name: Inspect 16 distinct conditional-probability CSV settings without postselection
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${DRYAD_ACCESS_BLOCKED_401:-false}" == 'true' ]]; then
+            echo 'Dryad scientific audit NOT RUN because HTTP 401: explicit status artifact retained.'
+            exit 0
+          fi
+          python experiments/ocean_transformer/janus_public_ico_dryad_audit_r6.py \
+            --zip incoming/qu-et-al-2026.zip \
+            --out out/independent-public-photon-aggregate-audit.json
+          python - <<'PY'
+          import json,os
+          r=json.load(open('out/independent-public-photon-aggregate-audit.json'))
+          assert r['settings_verified']==16
+          assert r['original_data_are_aggregated_fig4_conditional_probabilities']
+          assert not r['original_trial_level_detector_time_tags_in_these_16_csv']
+          assert r['no_events_dropped_or_renormalized_by_this_audit']
+          assert r['published_inequality_reference']['raw_csv_to_inequality_term_mapping_reproduced'] is False
+          assert not r['physical_retrocausality_proven']
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+            f.write('## JANUS · Independent public Qu et al 2026 data integrity audit\n')
+            f.write(f'- CSV input settings: {r["settings_verified"]}/16\n')
+            f.write(f'- Probability sum range: [{r["sum_probability_min"]:.5f}, {r["sum_probability_max"]:.5f}]\n')
+            f.write('- These are aggregate conditional probabilities, **NOT** individual photon time-tag logs.\n')
+            f.write('- Published 1.8090 ± 0.0024 inequality is cited, not falsely rederived here from CSV without a certified term mapping/covariance.\n')
+            f.write('- Physical retrocausal message to earlier receiver: NOT DEMONSTRATED.\n')
+          PY
+          sha256sum out/independent-public-photon-aggregate-audit.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-r6-dryad-access-or-integrity-status
+          path: out/independent-public-photon-aggregate-audit.json
+          retention-days: 90
+          if-no-files-found: error
+
+  public-zenodo-inventory:
+    name: Independently examine open 2026 photonic ICO QKD archive without executing source code
+    needs: [parser-tests]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Obtain actual published Zenodo dataset by official DOI record
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p incoming
+          curl --fail --location --show-error --silent \
+            --retry 2 --connect-timeout 15 --max-time 75 \
+            'https://zenodo.org/records/21916346/files/experimental_ico_qkd.zip?download=1' \
+            --output incoming/experimental_ico_qkd.zip
+          python - <<'PY'
+          import zipfile,os
+          file='incoming/experimental_ico_qkd.zip'
+          assert os.path.getsize(file) < 3_000_000
+          assert zipfile.is_zipfile(file),'Source was not an authentic ZIP archive'
+          print('Fetched Zenodo published archive bytes:',os.path.getsize(file))
+          PY
+          sha256sum incoming/experimental_ico_qkd.zip
+      - name: Validate ZIP structure and provenance; never execute downloaded Python
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/ocean_transformer/janus_public_ico_zenodo_inventory_r6.py \
+            --zip incoming/experimental_ico_qkd.zip \
+            --out out/zenodo-photonic-ico-inventory.json
+          python - <<'PY'
+          import json,os
+          x=json.load(open('out/zenodo-photonic-ico-inventory.json'))
+          assert x['file_count']>0
+          assert x['dataset_doi']=='10.5281/zenodo.21916346'
+          assert x['external_code_executed'] is False
+          assert x['original_individual_shot_time_tags_independently_verified'] is False
+          assert x['physical_future_to_past_message_demonstrated'] is False
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+            f.write('## JANUS R6 · Zenodo actual public photonic ICO/QKD archive\n')
+            f.write(f'- Original files inventoried: {x["file_count"]}\n')
+            f.write(f'- Data-format candidates: {x["data_candidate_files_by_extension"]}\n')
+            f.write(f'- Independent uploaded source SHA256: {x["original_archive_sha256"]}\n')
+            f.write('- External author Python scripts NOT executed. Shot time tags/early-late causality NOT independently verified.\n')
+          PY
+          sha256sum out/zenodo-photonic-ico-inventory.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janus-r6-zenodo-photonic-ico-safe-inventory
+          path: out/zenodo-photonic-ico-inventory.json
+          retention-days: 90
+          if-no-files-found: error
