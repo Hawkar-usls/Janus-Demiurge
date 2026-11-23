@@ -1,0 +1,44 @@
+name: JANUS-010J NIST Original GPS Offset Source
+on:
+  pull_request:
+    paths:
+      - 'experiments/ocean_transformer/late_choice_010/nist_author_source_010j.py'
+      - 'experiments/ocean_transformer/late_choice_010/test_nist_author_source_010j.py'
+      - '.github/workflows/janus-010j-original-sync-source.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-nist-010j-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  original-laboratory-code-provenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Confirm fail-closed original source reader
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v -s experiments/ocean_transformer/late_choice_010 -p 'test_nist_author_source_010j.py'
+      - name: Original NIST source ZIP SHA pinned and five sync programs inspected without execution
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/nist010j"
+          python -u experiments/ocean_transformer/late_choice_010/nist_author_source_010j.py --output "$RUNNER_TEMP/nist010j/source_of_clock_010j.json"
+      - name: Preserve small original author code extracts for independent interpretation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-nist-010j-original-sync-code-${{ github.run_id }}
+          path: ${{ runner.temp }}/nist010j/*.json
+          retention-days: 60
+          if-no-files-found: warn
