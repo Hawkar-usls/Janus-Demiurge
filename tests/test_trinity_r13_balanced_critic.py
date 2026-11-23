@@ -21,7 +21,7 @@ class TrinityR13BalancedCriticContracts(unittest.TestCase):
         rows=train.train_rows()
         self.assertEqual(sum(r["answer"]=="YES" for r in rows),96)
         self.assertEqual(sum(r["answer"]=="NO" for r in rows),96)
-        self.assertEqual(sum("CORRECT" in r["kind"] for r in rows),96)
+        self.assertEqual(sum(r["kind"].endswith("_CORRECT") for r in rows),96)
 
     def test_both_problem_phrasings_have_both_labels(self):
         rows=train.train_rows()
