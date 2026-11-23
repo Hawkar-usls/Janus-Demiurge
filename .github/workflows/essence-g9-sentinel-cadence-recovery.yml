@@ -1,0 +1,113 @@
+name: ESSENCE G9 Sentinel bounded cadence recovery
+
+on:
+  pull_request:
+    paths:
+      - 'tools/essence_g9_cadence_recovery.py'
+      - 'tests/test_essence_g9_cadence_recovery.py'
+      - 'tests/test_essence_beetle_core_bridge.py'
+      - '.github/workflows/essence-g9-sentinel-cadence-recovery.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/essence_g9_cadence_recovery.py'
+      - 'tests/test_essence_g9_cadence_recovery.py'
+      - '.github/workflows/essence-g9-sentinel-cadence-recovery.yml'
+  schedule:
+    - cron: '23,53 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: essence-g9-sentinel-recovery-single-issuer
+  cancel-in-progress: false
+
+jobs:
+  fail-closed-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify no false cron PASS, single role per wake, cooldown and negative controls
+        run: |
+          set -euo pipefail
+          python -m py_compile tools/essence_g9_cadence_recovery.py tests/test_essence_g9_cadence_recovery.py
+          python -m unittest -v tests.test_essence_g9_cadence_recovery
+          python -m unittest -v tests.test_essence_beetle_core_bridge
+
+  plan-and-dispatch-bounded-recovery:
+    needs: fail-closed-contract
+    if: github.event_name != 'pull_request' && github.repository == 'Hawkar-usls/Janus-Demiurge' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Plan recovery only after reading actual GitHub run histories
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/essence/g9
+          python -m tools.essence_g9_cadence_recovery --out runtime/essence/g9/recovery-plan.json
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+          from tools import essence_g9_cadence_recovery as m
+          p=json.loads(Path("runtime/essence/g9/recovery-plan.json").read_text())
+          signature=p.pop("sha256")
+          if m.sha(p)!=signature or p.get("repository")!=m.REPO:
+              raise SystemExit("G9_RECOVERY_PLAN_INTEGRITY_FAIL")
+          role=p.get("role")
+          allow=m.WORKFLOWS
+          if p["action"]=="DISPATCH_ONE_BOUNDED_RECOVERY":
+              if role not in allow or p.get("workflow")!=allow[role] or p.get("workflow_input")!={"recovery_only":"true"}:
+                  raise SystemExit("G9_RECOVERY_ROLE_NOT_ALLOWED")
+              print("ready=true")
+              print("workflow="+allow[role])
+              print("role="+role)
+          elif p["action"]=="HOLD_NO_RECOVERY_NEEDED":
+              print("ready=false")
+          else:
+              raise SystemExit("G9_UNEXPECTED_RECOVERY_ACTION")
+          PY
+          echo 'G9_NOTE=manual_recovery_does_NOT_count_as_15min_cron_delivery' >> "$GITHUB_STEP_SUMMARY"
+      - name: Dispatch at most one RECOVERY_ONLY Sentinel with no recursive spawn
+        if: steps.plan.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WF: ${{ steps.plan.outputs.workflow }}
+          ROLE: ${{ steps.plan.outputs.role }}
+        run: |
+          set -euo pipefail
+          case "$WF" in
+            sentinel-node-a.yml|sentinel-node-b.yml|sentinel-node-c.yml) ;;
+            *) echo "G9_DISPATCH_NOT_ALLOWLISTED" ; exit 1 ;;
+          esac
+          gh workflow run "$WF" --repo 'Hawkar-usls/Janus-Demiurge' --ref main --field recovery_only=true
+          echo "G9_RECOVERY_DISPATCH_ONLY_ROLE=$ROLE" >> "$GITHUB_STEP_SUMMARY"
+          echo "G9_REAL_CRON_24H_STATUS=NOT_PROVEN_BY_THIS_ACTION" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: essence-g9-sentinel-recovery-plan-${{ github.run_id }}
+          path: runtime/essence/g9/recovery-plan.json
+          if-no-files-found: warn
+          retention-days: 30
