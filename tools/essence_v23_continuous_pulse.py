@@ -38,8 +38,13 @@ class Lane:
     source_ref: str
     source_paths: tuple[str, ...]
     max_idle: timedelta
+    dispatch_cooldown: timedelta = DISPATCH_COOLDOWN
+    retry_backoff: timedelta = RETRY_BACKOFF
 
 LANES = (
+    Lane("memory_cortex_intake", "janus-memory-cortex-growth.yml",
+         "Hawkar-usls/janus-meta-registry", "main", ("data",),
+         timedelta(minutes=20), timedelta(minutes=20), timedelta(minutes=20)),
     Lane("missing_module_discovery", "janus-rex-need-discovery.yml",
          TARGET, "main", ("rex/lifecycle_runs", "rex/runs",
                           "rex/need_discovery_policy.json"),
@@ -127,9 +132,9 @@ def source_decision(lane, latest_changes, runs, *, now):
         created, run = newest_run
         if run["status"] != "completed":
             return {**evidence, "status": "HOLD_WORKER_ALREADY_RUNNING"}
-        if now - created < DISPATCH_COOLDOWN:
+        if now - created < lane.dispatch_cooldown:
             return {**evidence, "status": "HOLD_DISPATCH_COOLDOWN"}
-        if run["conclusion"] != "success" and now - created < RETRY_BACKOFF:
+        if run["conclusion"] != "success" and now - created < lane.retry_backoff:
             return {**evidence, "status": "HOLD_WORKER_RETRY_BACKOFF"}
         if (newest <= created and now - created < lane.max_idle
             and run["conclusion"] == "success"):
@@ -206,10 +211,16 @@ def plan(lane_inputs, *, now):
 def run(*, token, do_dispatch):
     if not token or len(token) > 4096:
         raise ValueError("MISSING_OR_INVALID_GITHUB_TOKEN")
-    if do_dispatch and (
-        os.environ.get("GITHUB_REF") != "refs/heads/main" or
-        os.environ.get("GITHUB_EVENT_NAME") not in
-        ("push", "schedule", "workflow_dispatch")):
+    event = os.environ.get("GITHUB_EVENT_NAME")
+    trusted_event = event in ("push", "schedule", "workflow_dispatch")
+    if event == "workflow_run":
+        trusted_event = (
+            os.environ.get("JANUS_PARENT_REPOSITORY") == TARGET and
+            os.environ.get("JANUS_PARENT_BRANCH") == "main" and
+            os.environ.get("JANUS_PARENT_EVENT") in ("push", "schedule", "workflow_dispatch") and
+            os.environ.get("JANUS_PARENT_CONCLUSION") == "success" and
+            os.environ.get("JANUS_PARENT_WORKFLOW") == "JANUS Beetle Memory Receiver")
+    if do_dispatch and (os.environ.get("GITHUB_REF") != "refs/heads/main" or not trusted_event):
         raise ValueError("WRITE_DISPATCH_REQUIRES_MAIN_TRUSTED_EVENT")
     now = datetime.now(timezone.utc)
     inputs = {}
@@ -284,3 +295,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

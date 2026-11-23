@@ -167,7 +167,9 @@ jobs:
 
   read-published-generation:
     needs: collect
-    if: needs.collect.outputs.published == 'true'
+    # A failed consumer must be retried on the next healthy scan even when
+    # no further generation has been published in the meantime.
+    if: needs.collect.result == 'success'
     uses: ./.github/workflows/janus-memory-cortex-query.yml
     with:
       query: memory

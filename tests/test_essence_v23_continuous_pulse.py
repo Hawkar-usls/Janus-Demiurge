@@ -9,7 +9,7 @@ import unittest
 from tools import essence_v23_continuous_pulse as p
 
 NOW = datetime(2026, 11, 14, 14, 30, tzinfo=timezone.utc)
-LANE = p.LANES[0]
+LANE = next(x for x in p.LANES if x.name == "missing_module_discovery")
 
 def change(at, sha="a" * 40):
     return {"sha": sha, "commit": {"committer": {"date": at.isoformat()}}}
@@ -79,7 +79,7 @@ class ContinuousPulseTest(unittest.TestCase):
         inp = {lane.name: (source, prior) for lane in p.LANES}
         result = p.plan(inp, now=NOW)
         self.assertEqual(sum(x["status"] == "DISPATCH_PLANNED" for x in result), 2)
-        self.assertEqual(sum(x["status"] == "HOLD_PULSE_CAPACITY" for x in result), 2)
+        self.assertEqual(sum(x["status"] == "HOLD_PULSE_CAPACITY" for x in result), len(p.LANES) - 2)
 
     def test_suspect_run_origin_blocks_instead_of_dispatch(self):
         bad = workflow(NOW - timedelta(hours=1))
@@ -128,6 +128,42 @@ class ContinuousPulseTest(unittest.TestCase):
         item = p.source_decision(LANE, source, prior, now=NOW)
         self.assertEqual(item["status"], "HOLD_NO_NEW_INPUT")
 
+    def test_cortex_wakes_after_twenty_minutes_with_same_or_backdated_source(self):
+        lane = next(x for x in p.LANES if x.name == "memory_cortex_intake")
+        item = p.source_decision(lane, [change(NOW - timedelta(days=1))],
+                                 [workflow(NOW - timedelta(minutes=21))], now=NOW)
+        self.assertEqual(item["status"], "READY_EXISTING_GATED_WORKFLOW")
+        item = p.source_decision(lane, [change(NOW - timedelta(minutes=1))],
+                                 [workflow(NOW - timedelta(minutes=19))], now=NOW)
+        self.assertEqual(item["status"], "HOLD_DISPATCH_COOLDOWN")
+
+    def test_cortex_keeps_one_bounded_slot_when_all_lanes_need_work(self):
+        inp = {lane.name: ([change(NOW - timedelta(minutes=1))],
+                          [workflow(NOW - timedelta(hours=1))]) for lane in p.LANES}
+        decisions = p.plan(inp, now=NOW)
+        cortex = next(x for x in decisions if x["lane"] == "memory_cortex_intake")
+        self.assertEqual(cortex["status"], "DISPATCH_PLANNED")
+        self.assertEqual(sum(x["status"] == "DISPATCH_PLANNED" for x in decisions), 2)
+
+    def test_workflow_run_requires_exact_trusted_beetle_parent(self):
+        env = {"GITHUB_REF": "refs/heads/main", "GITHUB_EVENT_NAME": "workflow_run",
+               "JANUS_PARENT_REPOSITORY": p.TARGET, "JANUS_PARENT_BRANCH": "main",
+               "JANUS_PARENT_EVENT": "schedule", "JANUS_PARENT_CONCLUSION": "success",
+               "JANUS_PARENT_WORKFLOW": "JANUS Beetle Memory Receiver"}
+        source = [change(datetime.now(timezone.utc) - timedelta(minutes=2))]
+        with patch.dict(os.environ, env), patch.object(p, "fetch_inputs", return_value=(source, [])), \
+                patch.object(p, "api_json", return_value={}):
+            result = p.run(token="placeholder", do_dispatch=True)
+            self.assertLessEqual(result["requested_dispatches"], 2)
+        for key, bad in (("JANUS_PARENT_BRANCH", "research/untrusted"),
+                         ("JANUS_PARENT_EVENT", "pull_request"),
+                         ("JANUS_PARENT_REPOSITORY", "other/repo"),
+                         ("JANUS_PARENT_CONCLUSION", "failure"),
+                         ("JANUS_PARENT_WORKFLOW", "untrusted-workflow")):
+            with patch.dict(os.environ, {**env, key: bad}), self.assertRaisesRegex(ValueError, "WRITE_DISPATCH"):
+                p.run(token="placeholder", do_dispatch=True)
+
 
 if __name__ == "__main__":
     unittest.main()
+
