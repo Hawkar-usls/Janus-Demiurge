@@ -1,0 +1,137 @@
+name: JANUS Reasoner R1 - real Qwen 3B K-PAX evidence test
+
+on:
+  push:
+    branches:
+      - research/essence-reasoner-r1-20261117
+    paths:
+      - 'tools/janus_reasoner_r1.py'
+      - 'tests/test_janus_reasoner_r1.py'
+      - '.github/workflows/janus-reasoner-r1-kpax.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: janus-reasoner-r1-kpax-readonly
+  cancel-in-progress: false
+
+env:
+  OLLAMA_INSTALL_URL: https://github.com/ollama/ollama/releases/download/v0.30.8/ollama-linux-amd64.tar.zst
+  OLLAMA_INSTALL_SHA256: ffe2b2c2f2f5f5b30c081ec353c2e0bb2d9ead516064a8e22663b24b8fd8dca0
+  OLLAMA_HOST: 127.0.0.1:11434
+  OLLAMA_NUM_PARALLEL: '1'
+  OLLAMA_MAX_LOADED_MODELS: '1'
+  OLLAMA_FLASH_ATTENTION: 'false'
+  OLLAMA_LLM_LIBRARY: cpu
+
+jobs:
+  source-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: research/essence-reasoner-r1-20261117
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.11'
+      - name: Validate structural evidence and source-provenance contract
+        run: |
+          python -m py_compile tools/janus_reasoner_r1.py tests/test_janus_reasoner_r1.py
+          python -m unittest discover -s tests -p 'test_janus_reasoner_r1.py' -v
+
+  real-frozen-model-evidence-reasoning:
+    needs: source-contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Read-only JANUS Reasoner R1 source
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: research/essence-reasoner-r1-20261117
+          persist-credentials: false
+          path: code
+
+      - name: Checkout immutable JANUS Meta Registry source
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: 38f625b556bf4c81e2786cbbbda365c7a19e373b
+          path: registry
+          persist-credentials: false
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.11'
+
+      - name: Install exact checksum-verified Ollama runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 5 --retry-delay 2 "$OLLAMA_INSTALL_URL" -o /tmp/ollama-linux-amd64.tar.zst
+          echo "$OLLAMA_INSTALL_SHA256  /tmp/ollama-linux-amd64.tar.zst" | sha256sum -c -
+          sudo tar --zstd -xf /tmp/ollama-linux-amd64.tar.zst -C /usr
+          ollama --version
+
+      - name: Start local CPU model and fetch Qwen 2.5 1.5B instruct quantized weights
+        shell: bash
+        run: |
+          set -euo pipefail
+          ollama serve > /tmp/janus-reasoner-r1-ollama.log 2>&1 &
+          for attempt in $(seq 1 80); do
+            if curl -fsS http://127.0.0.1:11434/api/version; then break; fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:11434/api/version
+          ollama pull qwen2.5:1.5b-instruct-q4_K_M
+          ollama list | tee /tmp/janus-reasoner-r1-model-manifest.txt
+          grep -F 'qwen2.5:1.5b-instruct-q4_K_M' /tmp/janus-reasoner-r1-model-manifest.txt
+
+      - name: Model-load smoke at 512 context tokens before full question
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsS --max-time 240 http://127.0.0.1:11434/api/chat \
+            -H 'Content-Type: application/json' \
+            -d '{"model":"qwen2.5:1.5b-instruct-q4_K_M","stream":false,"messages":[{"role":"user","content":"Say OK."}],"options":{"num_ctx":512,"num_predict":8,"num_thread":2,"num_gpu":0,"num_batch":128}}' \
+            -o /tmp/janus-reasoner-smoke.json
+          python - <<'PY'
+          import json
+          d=json.load(open('/tmp/janus-reasoner-smoke.json'))
+          assert d.get('message',{}).get('content','').strip()
+          print('QWEN_1_5B_CPU_SMOKE=PASS')
+          PY
+
+      - name: Real two-pass model examination with source-locked case
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/reasoner-r1
+          python code/tools/janus_reasoner_r1.py \
+            --source registry/data/JANUS-K-PAX-2001-PLOT-IDENTITY-AND-CAUSAL-INTERPRETATION-2026-11-17-v1.json \
+            --out runtime/reasoner-r1/kpax-answer.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('runtime/reasoner-r1/kpax-answer.json').read_text(encoding='utf-8'))
+          assert r['full_json_parsed'] is True
+          assert r['source_sha256'] == '84789c5bfda430279843e55485c6391bd37d114359c15589114ad2a361d04460'
+          assert r['model_directly_received_entire_json'] is False
+          assert r['base_or_adapter_weights_updated'] is False
+          assert r['sentinel_dispatch'] is False
+          print('JANUS_ACTUAL_MODEL_OUTPUT_RECEIVED=TRUE')
+          print('JANUS_EVIDENCE_REASONING_GATE='+r['research_quality_gate'])
+          print('JANUS_RESEARCH_NOT_PRODUCTION=TRUE')
+          PY
+
+      - name: Upload original raw first/final reply and assessment
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: janus-reasoner-r1-kpax-raw-answer
+          path: runtime/reasoner-r1/kpax-answer.json
+          retention-days: 90
+          if-no-files-found: warn
