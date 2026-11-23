@@ -1,0 +1,95 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1C5B2B0-FORCED-DYNAMIC-BASE-CLOSURE-INDEPENDENT-REPLAY-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "PASS_INDEPENDENT_LOGICAL_REPLAY",
+  "gate": "R5_B1B1C5B2B0_FORCED_DYNAMIC_BASE_CLOSURE_GATE_V1",
+  "binds": {
+    "prereg_blob": "94c678a11941098e0274f4b388363be4d7f51c4f",
+    "clarification_blob": "9593ae809a62de39c3b925dacf3bd582df8c91c8",
+    "primary_result_blob": "46cfc8fc13bf9ede54268c5879cd44d1fb781ec8",
+    "B2A_theorem_seal_blob": "bef6531ad1d5c8382c453f4304783ce563cea9da"
+  },
+  "replay_method": "Re-derive the one-force and equal-color-pair constructions directly from the exact Paper-II axioms (i)-(iv), the source partition definition, and the already sealed dynamic-to-Y0-component uniformity. Do not reuse the primary proof wording as an assumption.",
+  "source_axiom_replay": {
+    "i": {
+      "source": "G minus X0 connected",
+      "single": "G and X0 are unchanged, so the truth value is unchanged.",
+      "pair": "G and X0 are unchanged, so the truth value is unchanged.",
+      "verdict": "PASS"
+    },
+    "ii_connected": {
+      "source": "S connected",
+      "derived_fact": "Every u in X union Y has a neighbor in S, because axiom (iii) makes Y0 exactly the vertices outside S union X0 anticomplete to S.",
+      "single": "Adding u attached to S preserves connectedness.",
+      "pair": "Adding u and v, each attached to S, preserves connectedness even though uv is a nonedge.",
+      "verdict": "PASS"
+    },
+    "ii_no_complete": {
+      "source": "No vertex outside S is complete to S.",
+      "single": "A vertex outside S union {u} complete to S union {u} would be complete to S.",
+      "pair": "A vertex outside S union {u,v} complete to the enlarged seed would be complete to S.",
+      "verdict": "PASS"
+    },
+    "iii": {
+      "source": "Y0=V(G) minus (N(S) union X0 union S).",
+      "single_set_identity": "V(G) minus (N(S union {u}) union X0 union (S union {u})) = Y0 minus N(u).",
+      "pair_set_identity": "V(G) minus (N(S union {u,v}) union X0 union (S union {u,v})) = Y0 minus (N(u) union N(v)).",
+      "why_no_new_residual_vertices": "Every old non-Y0 vertex outside S union X0 already belongs to N(S).",
+      "verdict": "PASS"
+    },
+    "component_integrity": {
+      "single": "For each connected old Y0 component C, u is complete or anticomplete to C. Hence either all of C is deleted from Y0 or all is retained.",
+      "pair": "A component is retained exactly when both u and v are anticomplete to it; otherwise the whole component is deleted.",
+      "verdict": "PASS"
+    },
+    "iv": {
+      "source": "No vertex outside Y0 union X0 is mixed on an edge of Y0.",
+      "replay_cases": [
+        "Old outside-Y0/non-X0 vertices: old axiom (iv) applies to every retained edge because retained edges are old Y0 edges.",
+        "Newly seeded vertex or vertices: retained components are anticomplete to each forced vertex.",
+        "Old Y0 vertices moved out of the residual: each lies in a whole removed old component; distinct old connected components have no edges between them, so it is anticomplete to the retained component containing the tested edge."
+      ],
+      "verdict": "PASS"
+    }
+  },
+  "precoloring_replay": {
+    "single": {
+      "properness": "c in A(u) excludes conflicts with already fixed neighbors.",
+      "normal_subcase_syntax": "Empty deletion set; S only grows by u from X union Y; X0 unchanged; f only extends by u->c.",
+      "extension_equivalence": "Extensions of the new state are exactly extensions of P with u=c.",
+      "verdict": "PASS"
+    },
+    "pair": {
+      "properness": "c lies in both exact palettes and uv is a nonedge, so assigning c to both is proper.",
+      "normal_subcase_syntax": "Empty deletion set; S grows by u,v from X union Y; X0 unchanged; f extends by the two assignments.",
+      "extension_equivalence": "Extensions of the new state are exactly extensions of P with u=v=c.",
+      "verdict": "PASS"
+    }
+  },
+  "R2_replay": {
+    "identity": "Existence of an extension of P with u=v=c is equivalent to existence of an extension of the u=c forced state with v=c.",
+    "algorithmic_firewall": "No recursive algorithm follows until B2B1 proves that the forced state returns to an authorized R1 class or terminates.",
+    "verdict": "PASS_IDENTITY_ONLY"
+  },
+  "negative_checks": {
+    "source_v_not_used": true,
+    "source_vi_not_used": true,
+    "generic_P7_precoloring_solver_not_used": true,
+    "generic_List4_solver_not_used": true,
+    "P6_specific_Lemma10_transfer_not_used": true,
+    "recursive_reseed_not_used": true,
+    "polynomial_R1_R2_claim_not_made": true
+  },
+  "mismatch_count": 0,
+  "replay_verdict": "MATCH_PRIMARY_RESULT",
+  "scientific_ceiling": {
+    "B2B0_BASE_CLOSURE": "REPLAY_CLEAN",
+    "CLASS_RETURN": "OPEN",
+    "R1_DECIDABILITY": "OPEN",
+    "R2_DECIDABILITY": "OPEN",
+    "C5C": "LOCKED",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  }
+}

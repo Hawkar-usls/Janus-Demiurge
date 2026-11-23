@@ -1,0 +1,145 @@
+{
+  "schema": "janus.research.open009_retrospective_noaa_qc.v1",
+  "record_id": "JANUS-OPEN-CAUSALITY-009-NOAA-RETROSPECTIVE-QC-2026-11-10",
+  "record_type": "POSTHOC_REAL_THIRD_PARTY_OBSERVATION_WITH_ALL_FAILED_COHORTS_RETAINED",
+  "created_local_date": "2026-11-10",
+  "status": "PARTIAL_RETROSPECTIVE_QC_FAILURES_RETAINED__NOT_PROSPECTIVE_EVIDENCE",
+  "parent_preregistration": "data/experiments/JANUS-OPEN-CAUSALITY-009-PREREG-2026-11-10-v1.json",
+  "protocol_relationship": "Independent exploratory history-only diagnostic, not a substitute for 12–19 November 009A future cohort or its early commit.",
+  "source": {
+    "provider": "NOAA SURFRAD Bondville bon, real public irradiance data",
+    "url_pattern": "https://gml.noaa.gov/aftp/data/radiation/surfrad/bon/2026/bon26DDD.dat",
+    "fixed_target_dates": [
+      "2026-11-02",
+      "2026-11-03",
+      "2026-11-04",
+      "2026-11-05"
+    ],
+    "n_unique_original_noaa_files": 11,
+    "target_hours_planned": 96,
+    "target_hours_scored": 48,
+    "training_window_for_each_target": "Target minus 9, 8, 7 and 6 days; all records exist historically now",
+    "quality_requirements": "All minutes available, QC=0, >=45/60 valid points each hour in each training and target day",
+    "raw_source_hashes_archived_in_run": true
+  },
+  "code_evidence": {
+    "repo": "Hawkar-usls/Janus-Demiurge",
+    "code_pr": "https://github.com/Hawkar-usls/Janus-Demiurge/pull/492",
+    "code_pr_merged": true,
+    "merge_sha": "7bc1342715d48316879ab07af6a035609dc83cc3",
+    "script": "experiments/ocean_transformer/open_causality_009/retrospective_noaa_009_exploratory.py",
+    "tests": "experiments/ocean_transformer/open_causality_009/test_retrospective_noaa_009.py",
+    "github_actions_run_id": 42715625064,
+    "run_url": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/42715625064",
+    "run_conclusion": "success",
+    "unit_tests_passed": 4,
+    "raw_json_artifact_id": 13718191130,
+    "artifact_zip_sha256": "b399a0d1c20980be81ae6ee7b23d449d4e1637cc1590516be4dd74ae8e8a072e",
+    "raw_json_sha256": "0606a6a518725d8739863d6654946fafeb27d336b589fd13dca6d6e391ad613c",
+    "artifact_expires_at": "2027-02-07T22:51:58Z"
+  },
+  "results": {
+    "scored_dates": [
+      "2026-11-04",
+      "2026-11-05"
+    ],
+    "qc_failed_dates": [
+      "2026-11-02",
+      "2026-11-03"
+    ],
+    "complete_four_date_aggregate_available": false,
+    "score_is_conditional_on_quality_control_survivors": true,
+    "average_mae_w_m2_on_valid_two_days": {
+      "persistence": 46.9230389,
+      "JANUS_PHYSICS_HEURISTIC": 70.5734779,
+      "diurnal": 73.1172122,
+      "clear_sky": 97.2755341
+    },
+    "best_valid_subset": "persistence",
+    "hybrid_outperformed_persistence": false,
+    "individual_dates": [
+      {
+        "date": "2026-11-02",
+        "status": "NOT_SCORABLE_QC_FAIL",
+        "missing_training_hours_utc": {
+          "2026-10-24": [
+            22,
+            23
+          ],
+          "2026-10-25": [
+            12,
+            13,
+            21,
+            22,
+            23
+          ]
+        },
+        "missing_target_hours_utc": []
+      },
+      {
+        "date": "2026-11-03",
+        "status": "NOT_SCORABLE_QC_FAIL",
+        "missing_training_hours_utc": {
+          "2026-10-25": [
+            12,
+            13,
+            21,
+            22,
+            23
+          ]
+        },
+        "missing_target_hours_utc": []
+      },
+      {
+        "date": "2026-11-04",
+        "status": "VALID_EXPLORATORY_DAY",
+        "mae_w_m2": {
+          "JANUS_PHYSICS_HEURISTIC": 70.8538,
+          "persistence": 71.0512862,
+          "diurnal": 73.63645,
+          "clear_sky": 90.2949086
+        },
+        "virtual_glow_mae_microwatt": 0.74600741
+      },
+      {
+        "date": "2026-11-05",
+        "status": "VALID_EXPLORATORY_DAY",
+        "mae_w_m2": {
+          "JANUS_PHYSICS_HEURISTIC": 70.2931557,
+          "persistence": 22.7947915,
+          "diurnal": 72.5979744,
+          "clear_sky": 104.2561596
+        },
+        "virtual_glow_mae_microwatt": 0.74010381
+      }
+    ],
+    "virtual_glow_009c": {
+      "modelled_mean_absolute_error_microwatt_on_valid_dates": 0.74305561,
+      "real_phosphor_measurements": 0,
+      "detector_photons_measured": 0,
+      "status": "HYPOTHETICAL_520NM_OUTPUT_DERIVED_FROM_REAL_NOAA_GHI_ONLY",
+      "limitations": "Arbitrary spectral conversion, absorption, storage and decay coefficients; cannot validate SUNLU filament without calibrated physical light emission measurement."
+    }
+  },
+  "scientific_interpretation": [
+    "On the two valid historical days, JANUS's fixed physics-informed heuristic is worse than the simple persistence benchmark on average, so there is no advantage to claim.",
+    "The 4-day exploratory sample is small, two dates are unscorable under immutable QC rules; do not use survivor-only improvement as a preregistered confirmation.",
+    "November 4 hybrid slightly outperformed persistence, November 5 substantially underperformed; this motivates a new separately preregistered model-selection trial only, not retuning the already frozen 009A.",
+    "All actual input data are from third-party public NOAA historical measurements. Their existence at analysis time does not establish prediction-before-future publication.",
+    "Virtual PLA Glow calculations model ordinary optical memory and do not measure stored energy or prove retrocausality."
+  ],
+  "next_gate": {
+    "name": "OPEN-LIGHT-009A_REAL_PROSPECTIVE_PENDING",
+    "status": "AWAITING_NOVEMBER_12_TO_19_DATA",
+    "requirements": "Preserve all eight predeclared future dates, original baseline code and hashes; record every QC failure and clock/witness condition; no manipulation of original 009 preregistration."
+  },
+  "safety": {
+    "original_QPU005_unchanged": true,
+    "original_009_preregistration_unchanged": true,
+    "real_NOAA_data_scored": true,
+    "independent_future_data_scored": false,
+    "user_hardware_operated": false,
+    "QPU_minutes_used": 0,
+    "retrocausality_proven": false
+  }
+}

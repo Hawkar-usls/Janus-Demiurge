@@ -1,0 +1,52 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-R3C-1E-ANNOTATION-SIZE-METRIC-DISAMBIGUATION-SPEC-2026-08-14-v0.1",
+  "timestamp": "2026-08-14T17:36:00+03:00",
+  "version": "v0.1",
+  "title": "Disambiguate Briakos annotations.js reported size: UTF-8 bytes versus Unicode character/declaration length",
+  "observer": "Oleksandr Ahapov / Hawkar + JANUS",
+  "node_type": "post_observation_metadata_metric_disambiguation_spec",
+  "status": "FROZEN_BEFORE_EXECUTION",
+  "source_candidate": {
+    "repository": "mwenge/lineara.xyz",
+    "commit": "568f452c7a5ec80fa292cb307ead2fc6f65d07fb",
+    "path": "annotations.js",
+    "sha256": "7ce1f87a98827d059a732cc00506c635b4d5f65b2d0e2f1592fc2b67827758cd",
+    "utf8_bytes_observed": 2239932
+  },
+  "published_value": {
+    "label": "Bytes",
+    "value": 2201442,
+    "sha256_prefix": "7ce1f87a"
+  },
+  "hypothesis_generation_contamination": {
+    "observed_before_freeze": "annotation parser boundary ended at Unicode character offset 2201440 and published value is 2201442",
+    "therefore_blind_credit": false,
+    "purpose": "metadata reconciliation only; not corpus discovery"
+  },
+  "predeclared_measurements": [
+    "raw UTF-8 byte length",
+    "full decoded Unicode code-point count using Python len(str)",
+    "decoded code-point count after removing exactly one terminal LF if present",
+    "decoded code-point count after removing exactly one terminal CRLF if present",
+    "character length from source start through the semicolon immediately following the matching wordAnnotations top-level array",
+    "UTF-8 byte length over that same declaration span"
+  ],
+  "decision_rule": {
+    "MATCHES_FULL_UNICODE_CHARACTER_COUNT": "published 2201442 equals decoded full-file code-point count",
+    "MATCHES_DECLARATION_CHARACTER_COUNT": "published value equals source-start-through-array-semicolon character length",
+    "MATCHES_TERMINAL_NEWLINE_NORMALIZED_CHARACTER_COUNT": "published value equals a predeclared single terminal newline normalization",
+    "NO_PREDECLARED_SIZE_METRIC_MATCH": "none of the predeclared measurements equals 2201442"
+  },
+  "interpretation_ceiling": {
+    "may_call_unit_label_mismatch_proven": false,
+    "may_call_character_count_explanation_exact_if_measurement_matches": true,
+    "may_not_infer_author_measurement_implementation": true
+  },
+  "claim_ceiling": {
+    "metadata_only": true,
+    "Briakos_scope_inference": false,
+    "R3B_effect": "NONE",
+    "new_anchor": false,
+    "decipherment": false
+  }
+}

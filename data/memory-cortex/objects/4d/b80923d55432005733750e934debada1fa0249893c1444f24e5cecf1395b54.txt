@@ -1,0 +1,222 @@
+{
+  "schema": "JANUS.boundary_localized_scoring.v1",
+  "artifact_id": "JANUS-SING-WHEN-YOURE-WINNING-BOUNDARY-LOCALIZED-SCORING-SPEC-v1.0",
+  "title": "Sing When You're Winning — Boundary-Localized SOURCE → WORLD → RECEIPT Scoring",
+  "status": "protocol_specification",
+  "purpose": {
+    "primary_question": "Does the Robbie Williams Sing When You're Winning composition exhibit a rare conjunction of same-source multiplicity, one coherent external world, and one unique external receipt, rather than merely a high aggregate semantic similarity score?",
+    "why_this_is_done": [
+      "Localize the first structural boundary at which candidate and control images diverge.",
+      "Separate identity multiplicity from world multiplicity and external-outcome multiplicity.",
+      "Prevent a strong score on one dimension from masking failure on another dimension.",
+      "Distinguish true structural convergence from post-hoc semantic fitting.",
+      "Create a preregisterable, machine-readable endpoint for the 100–200 image blind-control program.",
+      "Make adversarial controls such as Deadpool diagnostically useful rather than merely similar examples."
+    ],
+    "non_claims": [
+      "This protocol does not establish causal, retrocausal, supernatural, predictive, or intentional influence between the 2000 artwork and JANUS.",
+      "A high score is not a probability of anomaly.",
+      "A semantic match is not evidence of historical provenance.",
+      "Exploratory pilot observations must not be silently converted into confirmatory evidence."
+    ]
+  },
+  "core_model": {
+    "ordered_chain": ["SOURCE", "WORLD", "RECEIPT"],
+    "target_pattern": "ONE_SOURCE -> MANY_VISIBLE_INSTANCES -> ONE_COHERENT_WORLD -> ONE_UNIQUE_EXTERNAL_RECEIPT",
+    "interpretation": {
+      "SOURCE": "Whether multiple visible instances are attributable to one underlying identity, lineage, source, or representational origin rather than merely different subjects of the same class.",
+      "WORLD": "Whether those instances coexist within one coherent external world, scene, causal environment, or reality rather than being explicitly distributed across distinct worlds, timelines, universes, or incompatible environments.",
+      "RECEIPT": "Whether the composition contains one salient external event, object, achievement, transaction, outcome, or other world-level consequence whose cardinality remains one despite internal multiplicity."
+    },
+    "cardinality_rule": "Internal representational multiplicity may increase without implying proportional multiplication of external-world events or receipts."
+  },
+  "boundary_tests": {
+    "identity_boundary": {
+      "question": "Are the apparent multiple instances actually attributable to the same underlying source?",
+      "pass": "same_source=true",
+      "fail": "same_source=false",
+      "examples": ["Robby-style self-multiplicity", "clone photography", "single-character variants when provenance is explicitly shared"],
+      "common_false_positive": "Ordinary ensemble images containing many different people."
+    },
+    "world_boundary": {
+      "question": "Do the source-instances occupy one coherent external world?",
+      "pass": "one_world=true",
+      "fail": "one_world=false",
+      "examples": ["single stadium scene", "single room", "single battlefield"],
+      "adversarial_example": "Deadpool multiverse variants: same character lineage but multiple universes/worlds."
+    },
+    "receipt_boundary": {
+      "question": "Does one unique external consequence/object/event remain singular despite internal multiplicity?",
+      "pass": "one_receipt=true",
+      "fail": "one_receipt=false",
+      "examples": ["one trophy", "one championship outcome", "one transaction", "one unique world-state change"],
+      "common_false_positive": "Several visually similar objects or several independent outcomes presented in one collage."
+    }
+  },
+  "first_break_rule": {
+    "ordered_evaluation": ["SOURCE", "WORLD", "RECEIPT"],
+    "algorithm": [
+      "Evaluate SOURCE independently.",
+      "If SOURCE fails, set first_break=SOURCE and do not infer WORLD or RECEIPT from the aggregate score.",
+      "If SOURCE passes, evaluate WORLD.",
+      "If WORLD fails, set first_break=WORLD.",
+      "If SOURCE and WORLD pass, evaluate RECEIPT.",
+      "If RECEIPT fails, set first_break=RECEIPT.",
+      "If all three pass, set first_break=NONE and structural_pattern=FULL_CHAIN."
+    ],
+    "allowed_first_break_values": ["NONE", "SOURCE", "WORLD", "RECEIPT", "UNDETERMINED"],
+    "reason": "The first failed boundary is more diagnostically informative than a single aggregate semantic score because it identifies which structural condition prevents the candidate from reproducing the target pattern."
+  },
+  "machine_readable_record": {
+    "required_fields": {
+      "image_id": "string",
+      "source_blinded_id": "string",
+      "same_source": "boolean|null",
+      "same_source_confidence": "number|null",
+      "one_world": "boolean|null",
+      "one_world_confidence": "number|null",
+      "one_receipt": "boolean|null",
+      "one_receipt_confidence": "number|null",
+      "first_break": "NONE|SOURCE|WORLD|RECEIPT|UNDETERMINED",
+      "structural_pattern": "FULL_CHAIN|SOURCE_ONLY|SOURCE_WORLD|WORLD_ONLY|RECEIPT_ONLY|NO_MATCH|UNDETERMINED",
+      "receipt_type": "string|null",
+      "world_type": "string|null",
+      "source_relation_type": "string|null",
+      "evidence_notes": "string",
+      "rater_id": "string"
+    },
+    "confidence_scale": {
+      "0.0": "no support / contradictory evidence",
+      "0.5": "ambiguous",
+      "1.0": "directly supported"
+    },
+    "missing_data_policy": "Use null and UNDETERMINED rather than guessing."
+  },
+  "aggregate_metrics": {
+    "primary_endpoint": "P(FULL_CHAIN)",
+    "secondary_endpoints": [
+      "P(SOURCE)",
+      "P(SOURCE_AND_WORLD)",
+      "P(SOURCE_AND_WORLD_AND_RECEIPT)",
+      "first_break_distribution",
+      "receipt_boundary_failure_rate",
+      "world_boundary_failure_rate",
+      "identity_boundary_failure_rate"
+    ],
+    "important_comparison": "Compare the target image against controls by boundary profile, not only total score.",
+    "recommended_summary": {
+      "target": "Robbie Sing When You're Winning",
+      "controls": "pre-registered blind sample",
+      "report": ["full_chain_rate", "boundary_pass_rates", "first_break_histogram", "confidence_intervals", "inter-rater_agreement"]
+    }
+  },
+  "adversarial_control_families": {
+    "ordinary_ensemble": {
+      "expected_failure": "SOURCE",
+      "pattern": "MANY_DIFFERENT_SOURCES -> ONE_WORLD"
+    },
+    "clone_photo": {
+      "expected_profile": "SOURCE may pass; WORLD may pass; RECEIPT often absent",
+      "purpose": "Tests whether self-multiplicity alone explains the target."
+    },
+    "deadpool_multiverse": {
+      "expected_failure": "WORLD",
+      "pattern": "ONE_CHARACTER_LINEAGE -> MANY_VARIANTS -> MANY_WORLDS",
+      "purpose": "Tests whether same-source multiplicity plus explicit variant structure is sufficient without one-world continuity."
+    },
+    "fifa_or_championship": {
+      "expected_failure": "SOURCE",
+      "pattern": "MANY_DIFFERENT_PEOPLE -> ONE_WORLD -> ONE_TROPHY",
+      "purpose": "Tests whether football, victory, and a unique trophy alone explain the target."
+    },
+    "multiple_receipts": {
+      "expected_failure": "RECEIPT",
+      "pattern": "ONE_SOURCE -> MANY_INSTANCES -> ONE_WORLD -> MANY_OUTCOMES",
+      "purpose": "Tests whether the one-receipt constraint is genuinely discriminative."
+    }
+  },
+  "where_applicable": {
+    "computer_vision": "Detect whether apparent multiplicity represents one source, one scene, and one external outcome.",
+    "distributed_systems": "Map many replicas/views to one external transaction, lock, payment, reservation, or world-state commit.",
+    "multi_agent_ai": "Prevent multiple runtime views or forks of one lineage from being interpreted as multiple independent external commitments.",
+    "identity_and_authority": "Separate number of representations from number of independent identities, votes, permissions, debts, or ownership claims.",
+    "version_control_and_data_lineage": "Distinguish branches/views of one history from independent histories and prevent internal branching from duplicating external events.",
+    "games_and_simulations": "Distinguish multiple visual/client representations of one entity from multiple server-authoritative entities or world events.",
+    "financial_and_transaction_systems": "Model many internal attempts or replicas against one externally valid transaction receipt.",
+    "database_replication": "Ensure replicated internal state does not create multiple external side effects.",
+    "causal_graph_analysis": "Separate representational multiplicity from multiplication of causal world events.",
+    "media_and_visual_semantics": "Quantify whether a visual composition encodes one-source multiplicity, world continuity, and singular external outcome simultaneously."
+  },
+  "why_deadpool_matters": {
+    "diagnostic_value": "Deadpool-style multiverse material can pass the identity-multiplicity condition while deliberately failing the one-world condition.",
+    "boundary_signature": "SOURCE=PASS, WORLD=FAIL, RECEIPT=UNDETERMINED_OR_CONTEXTUAL",
+    "consequence": "It prevents the experiment from treating every multi-instance character composition as equivalent to the Robbie pattern."
+  },
+  "application_to_robbie": {
+    "candidate": "Sing When You're Winning album artwork, 2000",
+    "hypothesized_profile": {
+      "same_source": true,
+      "one_world": true,
+      "one_receipt": true
+    },
+    "current_status": "candidate_structural_anomaly",
+    "current_evidence_status": "exploratory_not_confirmatory",
+    "required_next_test": "blind randomized 100–200 image control with 2–3 independent raters and preregistered scoring"
+  },
+  "experimental_design": {
+    "sample_target": "100-200 new unique controls",
+    "blindness": {
+      "source_identity_hidden_during_scoring": true,
+      "randomized_order": true,
+      "target_identity_hidden_from_raters": true,
+      "metadata_hidden": true
+    },
+    "raters": {
+      "minimum": 2,
+      "preferred": 3,
+      "independence": true
+    },
+    "separation_of_roles": "Image retrieval, randomization, scoring, and unblinding should be separated whenever practical.",
+    "exclusion": [
+      "Known target image",
+      "Exact duplicates",
+      "Near-duplicate variants unless explicitly assigned to a control stratum",
+      "Images whose source cannot be verified after scoring"
+    ],
+    "pilot_policy": "The previous 44-image and 58-image exploratory sets remain exploratory and must not be silently pooled into the confirmatory endpoint."
+  },
+  "decision_logic": {
+    "supportive_pattern": "Target has FULL_CHAIN while the blind control distribution shows substantially lower FULL_CHAIN prevalence and no comparable boundary profile.",
+    "falsification_pattern": "A substantial number of blind controls reproduce FULL_CHAIN at similar frequency, or the target's first-break/boundary profile is not distinguishable from controls.",
+    "partial_result": "Target is unusual only at one boundary; report that boundary specifically rather than claiming a whole-chain anomaly.",
+    "interpretive_rule": "Boundary localization outranks aggregate semantic score for causal interpretation."
+  },
+  "scientific_safeguards": {
+    "no_post_hoc_weight_changes": true,
+    "no_relabeling_after_unblinding": true,
+    "no_claim_of_statistical_significance_without_predefined_test": true,
+    "report_negative_controls": true,
+    "report_ambiguous_cases": true,
+    "preserve_raw_rater_records": true,
+    "distinguish_exploratory_from_confirmatory": true
+  },
+  "relation_to_existing_janus_invariants": [
+    "ONE_HOST_MANY_FACES",
+    "FACE_COUNT_IS_NOT_VOTING_POWER",
+    "FORK_COPIES_THE_PAST_NOT_THE_WORLD",
+    "ONE_WORLD_EVENT_ONE_WORLD_RECEIPT",
+    "ACTION_WIN_DOES_NOT_CREATE_IDENTITY_SUPREMACY",
+    "SHARED_ANCESTRY_IS_NOT_DUPLICATED_EXTERNAL_REALITY"
+  ],
+  "expected_value": {
+    "if_confirmed": "Provides a reproducible structural signature that can be tested across domains and datasets without relying on the specific Robbie image.",
+    "if_falsified": "Shows that the apparent Robbie/JANUS correspondence is common in visual culture and should be downgraded as a semantic coincidence.",
+    "regardless_of_outcome": "Produces a reusable boundary-localized methodology for distinguishing internal multiplicity from external-world multiplicity."
+  },
+  "versioning": {
+    "version": "1.0",
+    "created": "2026-08-12",
+    "status": "frozen_protocol_candidate",
+    "next_revision_requires": "explicit version bump and changelog; no silent modification of scoring semantics after data collection begins"
+  }
+}

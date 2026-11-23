@@ -1,0 +1,80 @@
+{
+  "artifact_id": "JANUS-PALOMAR-JPFM-4A-HUMAN-MADE-SKY-EVENT-ACQUISITION-GATE-v1.0",
+  "experiment_id": "JPFM-4A",
+  "date": "2026-08-15",
+  "status": "PREREGISTERED_ACQUISITION_GATE__NO_BLUEBOOK_OR_POSS_JOIN",
+  "purpose": "Acquire and classify human-made high-altitude sky-event calendars that could contribute to STARLIKE/compact-light reports or photographic candidates, while explicitly separating positive-event manifests from true no-event denominators.",
+  "study_window": ["1949-11-19", "1957-04-28"],
+  "arms": {
+    "SOUNDING_ROCKETS": {
+      "primary_authority": "NASA Technical Reports Server / World Data Center A",
+      "source_record": "https://ntrs.nasa.gov/citations/19720015241",
+      "document_id": "19720015241",
+      "report_number": "NASA-TM-X-68822",
+      "published_scope": "Cumulative listing starts with V-2 launch 1947-03-07 and extends through 1971-12-31.",
+      "critical_population_boundary": "NASA describes the catalogue as scientifically successful rockets identified from various sources. It is therefore a positive-event manifest, not an all-attempt denominator.",
+      "negative_date_semantics": "FORBIDDEN until an official all-launch/attempt/failure opportunity source is acquired for the same temporal/geographic scope.",
+      "admission_tier_initial": "POSITIVE_EVENT_ONLY",
+      "required_fields_before_join": [
+        "launch_date",
+        "launch_site or documented unknown",
+        "vehicle/rocket type",
+        "scientific-success selection flag inherited from catalogue",
+        "source row/page locator",
+        "manifest completeness statement"
+      ],
+      "required_upgrade_for_rate_or_negative_controls": "Independent official all-launch/firing record including failed/unsuccessful attempts or an explicitly documented launch-opportunity denominator."
+    },
+    "HIGH_ALTITUDE_BALLOONS_GENETRIX_119L": {
+      "primary_authority": "CIA FOIA release of SAC Historical Study 62, History of 1st Air Division, Volume 2",
+      "source_record": "https://www.cia.gov/readingroom/document/cia-rdp88b00831r000100210004-6",
+      "document_number": "CIA-RDP88B00831R000100210004-6",
+      "document_scope": "Project/Weapons System 119L primary mission and related operational activity.",
+      "prejoin_facts_frozen_from_authority_text": {
+        "mission_execution_date": "1956-01-10",
+        "effective_launches_first_day": 8,
+        "subsequent_launch_policy": "balloons launched daily subject to directed limits, political constraints and surface weather",
+        "daily_effective_launch_limit_until_1956_01_17": 10,
+        "daily_limit_from_1956_01_17": 20,
+        "daily_limit_from_1956_01_25": 30,
+        "daily_limit_from_1956_01_28": 40,
+        "documented_resume_date": "1956-02-03",
+        "statistics_cutoff": "1956-03-05"
+      },
+      "critical_population_boundary": "Operational prose establishes launch opportunity and interruptions but does not by itself expose every daily launch count in the currently parsed HTML. A daily event manifest must be recovered from the study statistics/IBM tables or another official companion source before date-level inference.",
+      "negative_date_semantics": "A day inside the operation is not automatically a no-launch day. Only explicit zero-launch/stand-down dates from a complete daily manifest may be used as negative controls.",
+      "admission_tier_initial": "OPERATIONAL_OPPORTUNITY_KNOWN__DAILY_COUNTS_PENDING",
+      "required_fields_before_join": [
+        "date",
+        "launch_count or explicit zero/stand-down",
+        "launch site where recoverable",
+        "balloon type where recoverable",
+        "weather/political suspension marker",
+        "source locator",
+        "daily completeness flag"
+      ]
+    }
+  },
+  "cross_channel_future_design": {
+    "bluebook": "STARLIKE/COMPACT_LIGHT event-day and geography-aware enrichment only after the event manifest's negative-date semantics are admitted.",
+    "poss": "Candidate rate only on actually observed Palomar nights; no unobserved calendar zeros.",
+    "lags_initial_candidate": [-3, -2, -1, 0, 1, 2, 3],
+    "geography": "Mandatory when launch site and witness location are available; date-only coincidence cannot establish contamination by a local human-made event.",
+    "shared_trigger_rule": "A human-made event family is not a shared explanation unless independent human and photographic endpoints survive frozen nulls in compatible direction and the event calendar has explicit opportunity/completeness."
+  },
+  "forbidden": [
+    "No use of NASA scientifically-successful-only catalogue absences as no-launch dates.",
+    "No use of Genetrix operational-window dates as launch dates without daily launch evidence.",
+    "No cherry-picking famous V-2, rocket or balloon events after looking at STARLIKE/POSS dates.",
+    "No mixing rocket and balloon families into one exposure before separate family results exist.",
+    "No Blue Book or POSS outcome access during source acquisition/schema/completeness gates."
+  ],
+  "next_gates": [
+    "Freeze NASA NTRS and CIA FOIA source bytes/metadata independently of outcomes.",
+    "Acquire a row-level rocket positive-event table and determine whether an official all-attempt denominator can be recovered.",
+    "Recover Genetrix daily launch-count/stand-down statistics from official source material and freeze them before any outcome join.",
+    "Only then preregister JPFM-4B rocket and balloon association tests separately."
+  ],
+  "current_authority_changed": false,
+  "claim_ceiling": "HUMAN_MADE_SKY_EVENT_ACQUISITION_ONLY__NO_ASSOCIATION_OR_CONTAMINATION_CLAIM"
+}

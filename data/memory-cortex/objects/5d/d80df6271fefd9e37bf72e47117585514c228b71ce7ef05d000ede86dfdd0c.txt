@@ -1,0 +1,31 @@
+{
+  "artifact_id": "JANUS-PALOMAR-JPFM-3A-SOURCE-COVERAGE-CORRECTIVE-AUDIT-v1.0",
+  "experiment_id": "JPFM-3A",
+  "version": "1.0",
+  "date": "2026-08-15",
+  "status": "PRE_OUTCOME_SOURCE_COVERAGE_CORRECTION__NO_EVENT_FAMILY_REPLACEMENT",
+  "parent_admission": "data/JANUS-PALOMAR-JPFM-3A-CROSS-EVENT-ATLAS-ADMISSION-v1.0.json",
+  "failed_workflow_run": 31871330353,
+  "failed_job": 94980323017,
+  "failure_stage": "GFZ source ingestion before primary cross-channel or discovery outcome computation",
+  "observed_problem": "GFZ combined Kp/ap/Ap/SN/F10.7 product contains missing f107_adj values inside the frozen 1949-11-19..1957-04-28 study window. The original v1 runner required complete 2718/2718 F10.7 coverage and therefore failed closed before model execution.",
+  "correction": {
+    "D1_SOLAR_F107_HIGH": "REMAINS_FROZEN_BUT_NOT_EXECUTED_IF_F107_ADJ_IS_INCOMPLETE",
+    "replacement_family_added": false,
+    "interpolation_permitted": false,
+    "fallback_to_f107_obs_permitted": false,
+    "threshold_redefinition_permitted": false,
+    "D2_SUNSPOT_HIGH": "EXECUTES_ONLY_IF_ISN_COVERAGE_IS_COMPLETE_2718_OF_2718",
+    "D3_D4_KP": "UNCHANGED",
+    "D5_METEOR_PROXY": "UNCHANGED",
+    "D6_D7_LUNAR": "UNCHANGED_AS_POSS_ONLY_VISIBILITY_CONTROLS_IN_V1"
+  },
+  "multiplicity_rule": "BH-FDR is applied only across actually executed preregistered discovery families in a given layer. A source-incomplete family receives no p-value and no q-value and is not replaced by a newly invented family.",
+  "epistemic_reason": "Treating missing historical solar-flux days as low activity, interpolating them, or switching to another solar proxy after inspecting source coverage would manufacture information and could change event membership. Fail closed for D1 while preserving all other pre-frozen tests.",
+  "outcome_visibility": {
+    "primary_P1_computed_before_failure": false,
+    "POSS_discovery_models_computed_before_failure": false,
+    "BlueBook_discovery_permutation_models_computed_before_failure": false
+  },
+  "claim_ceiling": "SOURCE_COVERAGE_CORRECTION_ONLY__NO_JPFM_3A_OUTCOME_CLAIM"
+}

@@ -1,0 +1,102 @@
+{
+  "schema": "janus.meta_registry.fallout3_f3dad_commented_entrypoint_dead_function_chain_audit.v1",
+  "artifact_id": "FALLOUT-3-F3DAD-COMMENTED-ENTRYPOINT-DEAD-FUNCTION-CHAIN-AUDIT-v1.4",
+  "title_ru": "Fallout 3 — F3DAD: аудит закомментированных точек входа и мёртвых функциональных цепей",
+  "title_en": "Fallout 3 — F3DAD Commented-Entrypoint & Dead-Function-Chain Audit v1.4",
+  "created_at_local": "2026-08-14T19:46:00+03:00",
+  "version": "v1.4",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "intended_layer": "data",
+  "registry_family": "FALLOUT_3_PRIMARY_ASSET_DATAMINING",
+  "artifact_class": "FIFTH_PASS_COMMENTED_ENTRYPOINT_DEAD_GRAPH_AND_REVISION_ARCHAEOLOGY_AUDIT",
+  "status": "PASS_1260_COMMENTED_COMMAND_LINES_TRIAGED_4_HIGH_VALUE_FAMILIES_2_PRIMARY_WORLD_GHOST_ENCOUNTERS_2_REVISION_ARCHITECTURES",
+  "extends": "data/FALLOUT-3-F3DAD-COMPILED-SCDA-SCRO-CTDA-STATIC-GHOST-REACHABILITY-AUDIT-v1.3.json",
+  "source_lineage": {
+    "archive_name": "F3DAD.rar",
+    "archive_size_bytes": 251166524,
+    "archive_sha256": "311f481de1de176a33a358d993563f551bc617651225059d40ce6de430c865ce",
+    "registry_receipt": "data/FALLOUT-3-F3DAD-PRIMARY-ARCHIVE-MANIFEST-RECEIPT-v1.0.json",
+    "official_master_set": ["Fallout3.esm", "Anchorage.esm", "ThePitt.esm", "BrokenSteel.esm", "PointLookout.esm", "Zeta.esm"],
+    "authority": "USER_SUPPLIED_SHIPPED_MASTER_BYTES"
+  },
+  "analysis_receipts": {
+    "scanner_source": {"path_local": "f3_v14_commented_entrypoint_scan.py", "sha256": "c9ab6bdd3d214ec32288c14b30dc23d736b4d169eb57c7954075473bcf56ccd2"},
+    "scanner_result": {"path_local": "f3_v14_commented_entrypoint_scan.json", "size_bytes": 2823474, "sha256": "f2ed8a77631813933f2eacfe9f65c7dbc501a602c2bf0aaf8fd4e998cc491fba"},
+    "scanner_stdout": {"path_local": "f3_v14_commented_entrypoint_scan_stdout.txt", "sha256": "41e495fffa7677ebdf680a6ecab472f45de8e47908a5ff7f70434b56c12d478f"}
+  },
+  "scan_metrics": {
+    "records_walked": 933282,
+    "sctx_blocks_scanned": 12322,
+    "sctx_by_master": {"Fallout3.esm": 8716, "Anchorage.esm": 507, "ThePitt.esm": 640, "BrokenSteel.esm": 1185, "PointLookout.esm": 594, "Zeta.esm": 680},
+    "commented_command_lines": 1260,
+    "commented_command_counts": {"enable": 258, "disable": 275, "activate": 125, "setstage": 67, "placeatme": 49, "fireweapon": 7, "moveto": 47, "additem": 13, "removeitem": 10, "pushactoraway": 5, "kill": 122, "open": 130, "playgroup": 48, "playsound": 21, "unlock": 65, "lock": 39, "cast": 3, "resurrect": 2},
+    "commented_lines_by_master": {"Fallout3.esm": 566, "Anchorage.esm": 60, "ThePitt.esm": 80, "BrokenSteel.esm": 127, "PointLookout.esm": 165, "Zeta.esm": 262}
+  },
+  "methodology": {
+    "core_rule": "COMMENTED_COMMAND != DEAD_SYSTEM. Every commented action is resolved against the shipped reference graph before promotion.",
+    "pipeline": ["scan every SCTX block across SCPT and embedded record scripts", "split active source from semicolon comments", "extract commented mutation/entrypoint commands", "resolve EditorID tokens back to shipped records", "check Initial Disabled, XESP, XLKR, active SCTX hits, attached scripts and dependent children", "compare with active production alternatives and sibling refs", "separate public transcript visibility from graph-level reconstruction"],
+    "promotion_requirements": ["surviving shipped target record or dependent graph", "commented line is semantically capable of entering or mutating that graph", "no equivalent active path, unless classified as a revision comparator", "interpretation is bounded below exact developer-intent claims"]
+  },
+  "findings": [
+    {
+      "finding_id": "F3DM-021-THE-PITT-BRIDGE-ESCAPE-HIDDEN-DOG-AND-FOURTH-SLAVE-ENCOUNTER",
+      "priority": "VERY_HIGH",
+      "master": "ThePitt.esm",
+      "classification": ["CUT_ENCOUNTER_BRANCH", "STATIC_WORLD_GHOST_ACTORS", "COMMENTED_ENTRYPOINT", "SURVIVING_DOWNSTREAM_BEHAVIOR"],
+      "controller": {"script": "DLC01BridgeSlaveEscapeTrigSCRIPT", "form_id": "xx00155C"},
+      "production_branch": ["DLC01BridgeEscapeSlave01REF.Enable", "DLC01BridgeEscapeSlave02REF.Enable", "DLC01BridgeEscapeSlave03REF.Enable", "DLC01RaiderGateREF.Enable", "DLC01RaiderGateREF.StartCombat DLC01BridgeEscapeSlave01REF"],
+      "commented_branch": [";DLC02BridgeEscapeDogEnablerREF.enable", ";DLC01BridgeEscapeSlave04REF.enable"],
+      "dog_enabler": {"editor_id": "DLC02BridgeEscapeDogEnablerREF", "form_id": "xx00A6FA", "record_type": "REFR", "initially_disabled": true, "xesp": null, "active_enable_found": false, "children": [{"form_id": "xx00A6F9", "record_type": "ACRE", "base": "DLC01BridgeDog02", "display_name_ru": "Одичавшая собака"}, {"form_id": "xx00A6F8", "record_type": "ACRE", "base": "DLC01BridgeDog02", "display_name_ru": "Одичавшая собака"}]},
+      "fourth_slave": {"editor_id": "DLC01BridgeEscapeSlave04REF", "form_id": "xx001577", "base": "DLC01BridgeEscapeSlave04", "display_name_ru": "Питтсбургский раб", "initially_disabled": true, "xesp": null, "active_enable_found": false, "linked_ref": "xx001579", "surviving_behavior": ["DLC01BridgeEscapeFallTrigSCRIPT checks IsActionRef DLC01BridgeEscapeSlave04REF and sets Fatigue to -5.", "BridgeEscapeFallTrigSCRIPT preserves an older equivalent fall-trigger implementation for the same fourth slave."]},
+      "interpretation": "The shipped bridge-escape scene preserves a larger encounter than the active branch uses: three slaves and the raider gate are enabled, while a fourth slave and a two-dog enabler are left disabled by commented-out entrypoints. The fourth slave still has dedicated downstream fall-trigger logic, strengthening the interpretation that this was a real scene branch rather than isolated leftover forms.",
+      "public_footprint": {"exact_editor_id_queries_indexed_results": 0, "queries_checked": ["DLC02BridgeEscapeDogEnablerREF", "DLC01BridgeEscapeSlave04REF", "DLC01BridgeSlaveEscapeTrigSCRIPT"], "world_first_claim": false},
+      "confidence": "VERY_HIGH_PRIMARY_GRAPH_AND_SOURCE"
+    },
+    {
+      "finding_id": "F3DM-022-VAULT101-REACTOR-DYNAMIC-LIGHTING-AND-DESTRUCTION-STATE-MACHINE",
+      "priority": "VERY_HIGH",
+      "master": "Fallout3.esm",
+      "classification": ["COMMENTED_STATE_TRANSITION_GRAPH", "CUT_DYNAMIC_LIGHTING_SCHEME", "CUT_DESTRUCTION_SET", "QUEST_REVISION_ARCHAEOLOGY"],
+      "location": "Vault101Reactor / Реактор Убежища 101",
+      "parents": [{"editor_id": "Vault101RegularLightsREF", "form_id": "000521C2", "initially_disabled": true, "children_count": 56, "children": "56 x VaultUtilityBright"}, {"editor_id": "Vault101RedLightsREF", "form_id": "000521C3", "initially_disabled": false, "children_count": 56, "children": "56 x Vault87RedDoor"}, {"editor_id": "Vault101BackupGeneratorLightsREF", "form_id": "000521BF", "initially_disabled": false, "children_count": 3, "children": "3 x VaultElectric"}, {"editor_id": "MS16DestructionREF", "form_id": "000522FC", "initially_disabled": true, "children_count": 10, "children_breakdown": {"LockerVault01Empty": 4, "TableVault01": 4, "OffRublPileA01": 2}}],
+      "commented_quest_transitions": {"MS16_Trouble_on_the_Homefront": [";Vault101RedLightsREF.enable", ";MS16DestructionREF.enable"], "CG04_Escape": [";Vault101RedLightsREF.disable", ";Vault101RegularLightsREF.enable", ";Vault101BackupGeneratorLightsREF.disable"]},
+      "active_source_hit_counts": {"Vault101RegularLightsREF": 0, "Vault101RedLightsREF": 0, "Vault101BackupGeneratorLightsREF": 0, "MS16DestructionREF": 0},
+      "interpretation": "Bethesda shipped a complete parent-switched lighting layout for the Vault 101 reactor, plus a ten-object destruction dressing set. Quest source still preserves transitions for lockdown/destruction and later restoration, but those state changes are commented out. This is stronger than a single unused light: it is a surviving scene-state architecture spanning 125 XESP children.",
+      "public_footprint": {"exact_editor_id_queries_indexed_results": 0, "queries_checked": ["Vault101RegularLightsREF", "Vault101RedLightsREF", "MS16DestructionREF"], "world_first_claim": false},
+      "confidence": "VERY_HIGH_PRIMARY_XESP_GRAPH_AND_QUEST_SOURCE"
+    },
+    {
+      "finding_id": "F3DM-023-ROBCO-SUPERSEDED-TWO-ZONE-MARKER-CONTROL-ARCHITECTURE",
+      "priority": "VERY_HIGH",
+      "master": "Fallout3.esm",
+      "classification": ["REVISION_ARCHITECTURE", "UNPLACED_TRIGGER_BASE", "DEAD_SECOND_MARKER_BANK", "PRODUCTION_FACTION_CONTROL_REPLACEMENT"],
+      "terminal": {"editor_id": "MS03robcoMasterControlTerminal", "form_id": "0002D837", "display_name_ru": "Главный терминал оператора «РобКо»", "sctx_result_blocks": 6},
+      "marker_banks": {"factory01": ["xmrkRobcoFactory01KillEveryoneFlag", "xmrkRobcoFactory01KillRoachesFlag", "xmrkRobcoFactory01ShutdownFlag"], "factory02": ["xmrkRobcoFactory02KillEveryoneFlag", "xmrkRobcoFactory02KillRoachesFlag", "xmrkRobcoFactory02ShutdownFlag"], "common_state": "All six are persistent initially-disabled XMarker references in cell RobcoFactory02 / Офисы и кафетерий, with no XESP."},
+      "commented_terminal_logic": ["Each of three behavior choices contains a commented three-flag assignment for FACTORY 01.", "The same choice contains a parallel commented three-flag assignment for FACTORY 02."],
+      "surviving_old_controller": {"base": "trigRobco01Master / 0002E422", "script": "robco01MasterScript / 0002E3E1", "base_placement_count": 0, "factory01_consumer": "The script reads the three Factory01 markers and then disables them during cleanup.", "factory02_consumer": "No equivalent shipped consumer was found for the three Factory02 markers.", "implementation_state": "The trigger/controller itself is unplaced, and much of its robot-faction manipulation body is also commented."},
+      "production_replacement": {"mechanism": "The live terminal result scripts directly call SetEnemy/SetAlly and StopCombat on RobCo factions and RobCo02EmployeeA..J instead of enabling the marker banks.", "interpretation": "The shipped data preserves a superseded marker-trigger design beneath the player-facing direct-faction implementation."},
+      "public_footprint": {"terminal_itself_publicly_documented": true, "exact_internal_marker_queries_indexed_results": 0, "queries_checked": ["robco01MasterScript", "xmrkRobcoFactory01KillRoachesFlag", "xmrkRobcoFactory02KillEveryoneFlag"], "world_first_claim": false},
+      "confidence": "VERY_HIGH_FOR_REVISION_GRAPH_MEDIUM_HIGH_FOR_CHRONOLOGICAL_ORDER"
+    },
+    {
+      "finding_id": "F3DM-024-POINT-LOOKOUT-UNUSED-FINAL-WAVE-BREACH-POINTS-PHYSICAL-GRAPH",
+      "priority": "HIGH_CONTROLLED_PUBLIC_TEXT",
+      "master": "PointLookout.esm",
+      "classification": ["EXPLICITLY_UNUSED_SCENE_BRANCH", "PHYSICAL_ENABLER_GRAPH", "PUBLIC_SCRIPT_TEXT_PRIMARY_GRAPH_EXTENSION"],
+      "script": "DLC04ManMasterSCRIPT / xx0035A0",
+      "explicit_source_marker": ";Unused Final Wave Breach Points",
+      "unused_routes": [{"route": "Left Upper Back Door", "after_enabler": "DLC04ManSideDoor02AfterEnablerREF / xx00DE20", "after_enabler_children": 3, "children": "3 x DLC04WoodPlank01", "tribal_enabler": "DLC04ManSideDoor02EnablerREF / xx00DE21", "tribal_enabler_children": 3}, {"route": "Right Bottom Back Doors", "enabler": "DLC04SideDoubleDoorEnablerREF / xx00CFB5", "children": 18, "children_breakdown": "3 final-wave tribal NPCs + board/plank/furniture dressing"}, {"route": "Left Bottom Back Doors", "enabler": "DLC04SideDoubleDoor02EnablerREF / xx00DE29", "children": 6, "children_breakdown": "3 final-wave tribal NPCs + 3 wood planks"}],
+      "production_comparator": "The active final wave uses other front/side breach routes and four staged wave enablers before completion at finalWaveDeadCount > 14.",
+      "public_footprint": {"script_transcript_public": true, "source": "Fallout Wiki DLC04ManMasterSCRIPT", "novelty_claim": "NO_NOVELTY_CLAIM_FOR_UNUSED_LABEL_OR_COMMENTED_LINES", "registry_contribution": "Primary-ESM child/enabler graph and physical composition of the unused routes."},
+      "confidence": "VERY_HIGH_PRIMARY_GRAPH; PUBLIC_TEXT_CONTROL"
+    }
+  ],
+  "negative_and_calibration_controls": [
+    {"control_id": "F3DM-V14-CONTROL-ZETA-CRYO-DIRECT-ENABLE-COMMENTED-BUT-STILL-REACHABLE", "object": "DLC05LivingAreaEnablerCryoREF / xx00BD76", "comment": ";DLC05LivingAreaEnablerCryoREF.Enable", "why_not_dead": "The ref has XESP to DLC05LivingAreaEnablerStage03REF, and Stage03REF is actively enabled elsewhere. A commented direct Enable is therefore not evidence of runtime unreachability.", "lesson": "COMMENTED_ENTRYPOINT + ACTIVE_PARENT_PATH != DEAD_GRAPH"},
+    {"control_id": "F3DM-V14-CONTROL-ZETA-BRAHMIN-EXPERIMENT-02-03", "objects": ["DLC05BrahminExperiment02", "DLC05BrahminExperiment03"], "status": "PUBLICLY_TRANSCRIBED_CUT_VARIANTS", "note": "The commented spawn branches are already visible in the public DLC05EXLabTeleControlSCRIPT transcript, so the variants are not promoted as a new secret."},
+    {"control_id": "F3DM-V14-CONTROL-MANSION-EXPLOSION-PARENT-MARKER", "object": "DLC04MansionExplosionParentMarker / xx00E77A", "commented_enable": true, "xesp_children": 0, "note": "A commented Enable on an empty XMarker is weak evidence by itself; the actual mansion explosion is controlled by separate active explosion logic."}
+  ],
+  "claim_ceiling": ["COMMENTED_CODE != RUNTIME_CODE", "NO_INDEXED_EXACT_SEARCH_RESULT != NEVER_PUBLICLY_DOCUMENTED", "PRIMARY_ESM_GRAPH != WORLD_FIRST_DISCOVERY", "UNPLACED_OR_INITIALLY_DISABLED != ABSOLUTE_ENGINE_IMPOSSIBILITY", "REVISION_GRAPH != CERTAIN_DEVELOPMENT_CHRONOLOGY", "PUBLIC_SCRIPT_TRANSCRIPT_CAN_COEXIST_WITH_NEW_GRAPH_LEVEL_RECONSTRUCTION"],
+  "research_summary": "The strongest v1.4 result is that commented source lines become informative only after graph reconstruction. This pass identified a hidden The Pitt bridge encounter branch, a 125-child Vault 101 lighting/destruction state architecture, and a superseded two-bank RobCo marker-controller design, while explicitly rejecting misleading commented lines that remain reachable through XESP or are already publicly documented.",
+  "next_gate": "FALLOUT-3-F3DAD-CUT-ACTOR-CREATURE-ENCOUNTER-AND-INVENTORY-OBTAINABILITY-AUDIT-v1.5"
+}

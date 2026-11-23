@@ -1,0 +1,117 @@
+{
+  "schema": "janus.meta_registry.cousteau.video_observability_v1",
+  "artifact_id": "JANUS-COUSTEAU-SOUTHERN-OCEAN-VIDEO-OBSERVABILITY-2026-11-09-v1.0",
+  "recorded_date": "2026-11-09",
+  "project": "JANUS_ECHO_COUSTEAU",
+  "video": {
+    "url": "https://youtu.be/oMPHmMnS0Mc",
+    "id": "oMPHmMnS0Mc",
+    "title": "Почему мы не можем по-настоящему исследовать Антарктический океан?",
+    "published_at": "2026-11-06T04:00:01Z",
+    "author": "Лошадиная сила",
+    "duration": "50:18",
+    "method": "transcript-assisted critical review; video is not primary scientific evidence",
+    "excerpt_policy": "references/timecodes only, no copied transcript"
+  },
+  "verified_conclusions": [
+    {
+      "time": "11:02–12:23",
+      "scientific_point": "Under-ice robot position estimate can drift; cause of Ran loss remains unknown",
+      "source": "https://www.thwaitesglacier.org/news/final-mission-auv-under-thwaites-glacier"
+    },
+    {
+      "time": "15:09–17:50",
+      "scientific_point": "Bathymetry surface and source quality are distinct; IBCSO 2025 bed/RID/TID must remain linked",
+      "source": "https://ibcso.org/ibcso-2025-annual-release/"
+    },
+    {
+      "time": "19:29–21:54",
+      "scientific_point": "Summer-biased observational selection can hide winter dynamics",
+      "source": "https://www.nature.com/articles/s41586-018-0182-3"
+    },
+    {
+      "time": "23:17–25:25",
+      "scientific_point": "Argo delayed mode and QC1 adjusted levels; estimated under-ice positions may have POSITION_QC=8",
+      "source": "https://argo.ucsd.edu/data/how-to-use-argo-files/"
+    },
+    {
+      "time": "25:25–26:29",
+      "scientific_point": "Marine mammal-mounted CTD is an independent complementary source; cannot silently mix its QC with Argo",
+      "source": "https://www.ncei.noaa.gov/archive/archive-management-system/OAS/bin/prd/jquery/accession/details/297525"
+    },
+    {
+      "time": "32:08–34:48",
+      "scientific_point": "Thwaites basal melting heterogeneous and geometry-dependent, cannot be inferred from generic CTD alone",
+      "source": "https://www.nature.com/articles/s41586-022-05691-0"
+    },
+    {
+      "time": "37:13–40:59",
+      "scientific_point": "BGC Argo/ SOCCOM adds independent oxygen nitrate pH bio-optical observations",
+      "source": "https://www.sciencedirect.com/science/article/pii/S0079661123001738"
+    }
+  ],
+  "implementation": {
+    "repo": "Hawkar-usls/Janus-Cosmos",
+    "branch": "experiment/cousteau-southern-ocean-20261109",
+    "pull_request": "https://github.com/Hawkar-usls/Janus-Cosmos/pull/49",
+    "video_analysis": "data/cousteau/southern_ocean/JANUS-COUSTEAU-SOUTHERN-OCEAN-VIDEO-AUDIT-2026-11-09.json",
+    "audit_code": "workspace/cousteau_southern_observability_audit.py",
+    "audit_recovery_workflow": ".github/workflows/cousteau-southern-video-observability.yml",
+    "audit_json": "data/cousteau/southern_ocean/observability_runs/argo-coverage-audit-from-42585534673.json",
+    "original_training_run": "https://github.com/Hawkar-usls/Janus-Cosmos/actions/runs/42585534673",
+    "recovery_pass_run": "https://github.com/Hawkar-usls/Janus-Cosmos/actions/runs/42588440299",
+    "recovered_full_argo_observations": "data/cousteau/southern_ocean/argo_observations/argo_core_D_QC1_run-42585534673.json",
+    "recovered_training_receipt": "data/cousteau/southern_ocean/argo_runs/run-42585534673.json",
+    "next_stratified_argo_run": "https://github.com/Hawkar-usls/Janus-Cosmos/actions/runs/42588785957",
+    "stratification_rule": "one deterministic source profile per float, interleaved latitude x month buckets rather than always latest",
+    "stratified_run_at_registry_record": "RUNNING__NO_METRICS_CLAIM_YET"
+  },
+  "verified_argo_90_audit": {
+    "accepted_delayed_mode_wmos": 90,
+    "rejected_candidates": 36,
+    "latitude_counts": {
+      "50-60S": 67,
+      "60-70S": 19,
+      "70-80S": 4,
+      "80-90S": 0
+    },
+    "year_counts": {
+      "2022": 21,
+      "2023": 18,
+      "2024": 51
+    },
+    "season_counts": {
+      "DJF": 45,
+      "MAM": 21,
+      "JJA": 15,
+      "SON": 9
+    },
+    "empty_latitude_by_month_cells": 27,
+    "total_latitude_by_month_cells": 48,
+    "depth_coverage": {
+      "10_dbar": 89,
+      "100_dbar": 90,
+      "300_dbar": 90,
+      "600_dbar": 90,
+      "1000_dbar": 80
+    },
+    "source_observations_sha256": "bb6d3f30f80dd57d6eb5159d5b1fccdf3fad0a1edcc9afca320b7ec02b726497",
+    "model_validation_retrospective_float_disjoint": {
+      "temperature_rmse_c": 1.606393,
+      "temperature_baseline_rmse_c": 2.898942,
+      "salinity_rmse": 0.180103,
+      "salinity_baseline_rmse": 0.213841
+    },
+    "limits": "nonrepresentative WMO-disjoint 90-float sample; not prospective ocean forecast; model not promoted"
+  },
+  "strict_bounds": {
+    "no_assertion_of_global_argo_coverage_from_sample": true,
+    "no_assertion_of_zero_under_ice_observations": true,
+    "no_assertion_of_seafloor_or_ice_shelf_geometry_from_CTDS": true,
+    "do_not_label_interpolated_IBCSO_pixels_as_direct_multibeam": true,
+    "do_not_derive_melt_rate_from_generic_open_ocean_CTD": true,
+    "separate_MEOP_BGC_ICEFIN_sources_and_QC": true,
+    "training_on_new_sources_requires_first_read_provenance": true,
+    "model_promotion_disabled": true
+  }
+}

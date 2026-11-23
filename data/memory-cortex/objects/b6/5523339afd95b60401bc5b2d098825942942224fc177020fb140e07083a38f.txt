@@ -1,0 +1,558 @@
+{
+  "schema": "janus.cosmos.seti.r30.false_alarm_shield.receipt.v1",
+  "date": "2026-11-18",
+  "status": "HOLD_NO_SCIENTIFIC_GAIN",
+  "r30a": {
+    "status": "DEVELOPMENT_DIAGNOSTIC",
+    "source_run": 44257652209,
+    "job": 134643091165,
+    "source_artifact": 14407466601,
+    "source_artifact_sha256": "b611c03cc74d228d98f3995568ff0b632657fa1f6af342fa65bdd2e2ca67934e",
+    "target_controls": [
+      [
+        "HIP56452",
+        57783,
+        3,
+        3
+      ],
+      [
+        "HIP29295",
+        57782,
+        2,
+        2
+      ],
+      [
+        "HIP11964",
+        57958,
+        10,
+        11
+      ],
+      [
+        "HIP10138",
+        57958,
+        7,
+        11
+      ]
+    ],
+    "columns": [
+      "target",
+      "observation_mjd_day",
+      "full_r28_control_alerts",
+      "star_forge_control_alerts"
+    ],
+    "same_day_cluster": {
+      "day": 57958,
+      "r28_alerts": 17,
+      "r28_total": 22,
+      "star_forge_alerts": 22,
+      "star_forge_total": 27
+    },
+    "hypothesis": "Acquisition-day dependent noise or interference may produce concentrated alerts; only observation, not causal proof. R29 viewed; no new threshold chosen from these exam scores.",
+    "r29_calibration_targets": [
+      "HIP84478",
+      "HIP102141"
+    ],
+    "r29_excluded_days": [
+      57842,
+      57956,
+      57783,
+      57782,
+      57958
+    ]
+  },
+  "r30b": {
+    "status": "HOLD",
+    "repo": "Hawkar-usls/Janus-Cosmos",
+    "branch": "research/seti-radio-candidate-search-20261117",
+    "protocol": {
+      "path": "research/seti/r30_false_alarm_protocol.json",
+      "commit": "c5d72dace666819bed697220bdcf34b4f1594f95",
+      "blob": "10de9d69a3a4dbb051cb0a5154d089f9481503c7"
+    },
+    "implementation": {
+      "path": "research/seti/r30_false_alarm_shield.py",
+      "commit": "28b2103427d5176ef003bf5360cb194500ac417f",
+      "blob": "e1d9d15ea9b4b895e6314beaad26cd407ef946b0"
+    },
+    "workflow": {
+      "path": ".github/workflows/seti-r30-false-alarm-shield.yml",
+      "commit": "3eda0f2bb4b1272b3357e0050c3f94ba814dfc22",
+      "blob": "7e4d01c2f2ddfa7ff69afde25ee4d820e8675be4",
+      "run": 44262281770,
+      "job": 134658251957,
+      "event": "push",
+      "observed_status": "completed/success",
+      "last_observed_step": "dependency installation"
+    },
+    "design": {
+      "component_fit_targets": 2,
+      "null_calibration_targets": 4,
+      "evaluation_targets": 4,
+      "unique_acquisition_days": 10,
+      "prior_target_and_r29_day_exclusion": true,
+      "paired_exam_examples": 1024,
+      "controls": 512,
+      "synthetic_injections": 512,
+      "shared_signal_challenges": 128,
+      "arms": [
+        "baseline_full",
+        "pooled_strict",
+        "kusto",
+        "topa",
+        "kusto_topa",
+        "topa_tile_family",
+        "protected_raw_union"
+      ],
+      "null_calibration": "Separate measured control patches, full path maximization included; OFF-only covariate; two strata min 128 controls and 3 targets each, otherwise pooled fallback; 5% baseline/2.5% shield control calibration budget; tile max diagnostic; no exact p-value claim.",
+      "gate": "KUSTO+TOPA localized and weak localized >= same fresh baseline, control alerts half or fewer with nonzero baseline count, shared-reference challenge localized no lower. Paired losses reported. Research only."
+    },
+    "result": {
+      "schema": "janus.cosmos.r30.false_alarm.result.v1",
+      "status": "ARCHIVE_SYNTHETIC_DEVELOPMENT_EXAM",
+      "gate": "HOLD",
+      "gate_checks": {
+        "localized_not_lower": false,
+        "weak_not_lower": false,
+        "control_half": false,
+        "shared_reference_not_lower": false
+      },
+      "samples": 1024,
+      "selftests": {
+        "joint_calibration": "PASS",
+        "selected_witness": "PASS",
+        "upstream_source_hashes": "PASS",
+        "tree_map_exhaustive_8": "PASS",
+        "tree_witness": "PASS",
+        "shift_recovery": "PASS",
+        "unmatched_fallback": "PASS",
+        "physical_grid_overlap": "PASS",
+        "tie_safe_cut": "PASS",
+        "block_support": "PASS",
+        "tile_max": "PASS",
+        "sparse_fallback": "PASS"
+      },
+      "lock_sha256": "e157d73df1b7bffab8e9f9436e24288286e086c114ac0556b5aff5e20d21abda",
+      "manifest_sha256": "34d519b21bc029b41dfac3aa98810db67099861ed9255f340ac630d97be2d5f5",
+      "protocol_sha256": "5b77430224291aee264af9118c0af4b212e913686819f2ce6e0ce0d621a19ee1",
+      "sources_sha256": "6fdef51674e7afe1ee0dfd336e82182acd986e60ec5e67a3c10412d65b12bad5",
+      "targets": [
+        {
+          "target": "HIP33478",
+          "day": 57778,
+          "split": "component_fit"
+        },
+        {
+          "target": "HIP84720",
+          "day": 57801,
+          "split": "component_fit"
+        },
+        {
+          "target": "HIP37217",
+          "day": 57962,
+          "split": "null_calibration"
+        },
+        {
+          "target": "HIP32349",
+          "day": 58017,
+          "split": "null_calibration"
+        },
+        {
+          "target": "HIP52341",
+          "day": 57776,
+          "split": "null_calibration"
+        },
+        {
+          "target": "HIP16711",
+          "day": 57781,
+          "split": "null_calibration"
+        },
+        {
+          "target": "HIP102186",
+          "day": 57957,
+          "split": "evaluation"
+        },
+        {
+          "target": "HIP39342",
+          "day": 57768,
+          "split": "evaluation"
+        },
+        {
+          "target": "HIP8768",
+          "day": 57982,
+          "split": "evaluation"
+        },
+        {
+          "target": "HIP77952",
+          "day": 57960,
+          "split": "evaluation"
+        }
+      ],
+      "modes": {
+        "baseline_full": {
+          "localized": 148,
+          "detected": 181,
+          "positives": 512,
+          "weak_localized": 22,
+          "control_alerts": 25,
+          "controls": 512,
+          "held_baseline_positive": 0,
+          "held_baseline_control": 0,
+          "added_localized": 0,
+          "lost_localized": 0,
+          "added_weak": 0,
+          "lost_weak": 0,
+          "added_controls": 0,
+          "removed_controls": 0,
+          "alerted_control_tiles": 13,
+          "control_alert_fraction": 0.048828125,
+          "paired_target_deltas": {
+            "HIP102186": {
+              "localized": 0,
+              "controls": 0,
+              "weak": 0
+            },
+            "HIP39342": {
+              "localized": 0,
+              "controls": 0,
+              "weak": 0
+            },
+            "HIP8768": {
+              "localized": 0,
+              "controls": 0,
+              "weak": 0
+            },
+            "HIP77952": {
+              "localized": 0,
+              "controls": 0,
+              "weak": 0
+            }
+          }
+        },
+        "pooled_strict": {
+          "localized": 104,
+          "detected": 122,
+          "positives": 512,
+          "weak_localized": 10,
+          "control_alerts": 17,
+          "controls": 512,
+          "held_baseline_positive": 59,
+          "held_baseline_control": 8,
+          "added_localized": 0,
+          "lost_localized": 44,
+          "added_weak": 0,
+          "lost_weak": 12,
+          "added_controls": 0,
+          "removed_controls": 8,
+          "alerted_control_tiles": 10,
+          "control_alert_fraction": 0.033203125,
+          "paired_target_deltas": {
+            "HIP102186": {
+              "localized": -7,
+              "controls": -1,
+              "weak": -2
+            },
+            "HIP39342": {
+              "localized": -14,
+              "controls": -3,
+              "weak": -5
+            },
+            "HIP8768": {
+              "localized": -11,
+              "controls": -1,
+              "weak": -2
+            },
+            "HIP77952": {
+              "localized": -12,
+              "controls": -3,
+              "weak": -3
+            }
+          }
+        },
+        "kusto": {
+          "localized": 71,
+          "detected": 88,
+          "positives": 512,
+          "weak_localized": 8,
+          "control_alerts": 13,
+          "controls": 512,
+          "held_baseline_positive": 93,
+          "held_baseline_control": 12,
+          "added_localized": 0,
+          "lost_localized": 77,
+          "added_weak": 0,
+          "lost_weak": 14,
+          "added_controls": 0,
+          "removed_controls": 12,
+          "alerted_control_tiles": 8,
+          "control_alert_fraction": 0.025390625,
+          "paired_target_deltas": {
+            "HIP102186": {
+              "localized": -17,
+              "controls": -2,
+              "weak": -3
+            },
+            "HIP39342": {
+              "localized": -19,
+              "controls": -3,
+              "weak": -4
+            },
+            "HIP8768": {
+              "localized": -21,
+              "controls": -1,
+              "weak": -3
+            },
+            "HIP77952": {
+              "localized": -20,
+              "controls": -6,
+              "weak": -4
+            }
+          }
+        },
+        "topa": {
+          "localized": 53,
+          "detected": 72,
+          "positives": 512,
+          "weak_localized": 3,
+          "control_alerts": 20,
+          "controls": 512,
+          "held_baseline_positive": 110,
+          "held_baseline_control": 8,
+          "added_localized": 0,
+          "lost_localized": 95,
+          "added_weak": 0,
+          "lost_weak": 19,
+          "added_controls": 3,
+          "removed_controls": 8,
+          "alerted_control_tiles": 10,
+          "control_alert_fraction": 0.0390625,
+          "paired_target_deltas": {
+            "HIP102186": {
+              "localized": -19,
+              "controls": 0,
+              "weak": -4
+            },
+            "HIP39342": {
+              "localized": -27,
+              "controls": -1,
+              "weak": -8
+            },
+            "HIP8768": {
+              "localized": -29,
+              "controls": 0,
+              "weak": -3
+            },
+            "HIP77952": {
+              "localized": -20,
+              "controls": -4,
+              "weak": -4
+            }
+          }
+        },
+        "kusto_topa": {
+          "localized": 40,
+          "detected": 54,
+          "positives": 512,
+          "weak_localized": 5,
+          "control_alerts": 15,
+          "controls": 512,
+          "held_baseline_positive": 131,
+          "held_baseline_control": 12,
+          "added_localized": 3,
+          "lost_localized": 111,
+          "added_weak": 1,
+          "lost_weak": 18,
+          "added_controls": 2,
+          "removed_controls": 12,
+          "alerted_control_tiles": 9,
+          "control_alert_fraction": 0.029296875,
+          "paired_target_deltas": {
+            "HIP102186": {
+              "localized": -27,
+              "controls": 0,
+              "weak": -5
+            },
+            "HIP39342": {
+              "localized": -29,
+              "controls": -3,
+              "weak": -6
+            },
+            "HIP8768": {
+              "localized": -29,
+              "controls": -1,
+              "weak": -2
+            },
+            "HIP77952": {
+              "localized": -23,
+              "controls": -6,
+              "weak": -4
+            }
+          }
+        },
+        "topa_tile_family": {
+          "localized": 0,
+          "detected": 1,
+          "positives": 512,
+          "weak_localized": 0,
+          "control_alerts": 1,
+          "controls": 512,
+          "held_baseline_positive": 180,
+          "held_baseline_control": 24,
+          "added_localized": 0,
+          "lost_localized": 148,
+          "added_weak": 0,
+          "lost_weak": 22,
+          "added_controls": 0,
+          "removed_controls": 24,
+          "alerted_control_tiles": 1,
+          "control_alert_fraction": 0.001953125,
+          "paired_target_deltas": {
+            "HIP102186": {
+              "localized": -34,
+              "controls": -6,
+              "weak": -5
+            },
+            "HIP39342": {
+              "localized": -38,
+              "controls": -5,
+              "weak": -8
+            },
+            "HIP8768": {
+              "localized": -36,
+              "controls": -5,
+              "weak": -3
+            },
+            "HIP77952": {
+              "localized": -40,
+              "controls": -8,
+              "weak": -6
+            }
+          }
+        },
+        "protected_raw_union": {
+          "localized": 139,
+          "detected": 171,
+          "positives": 512,
+          "weak_localized": 19,
+          "control_alerts": 24,
+          "controls": 512,
+          "held_baseline_positive": 12,
+          "held_baseline_control": 4,
+          "added_localized": 0,
+          "lost_localized": 9,
+          "added_weak": 0,
+          "lost_weak": 3,
+          "added_controls": 3,
+          "removed_controls": 4,
+          "alerted_control_tiles": 12,
+          "control_alert_fraction": 0.046875,
+          "paired_target_deltas": {
+            "HIP102186": {
+              "localized": -3,
+              "controls": 2,
+              "weak": 0
+            },
+            "HIP39342": {
+              "localized": -2,
+              "controls": -2,
+              "weak": -1
+            },
+            "HIP8768": {
+              "localized": -1,
+              "controls": 0,
+              "weak": -1
+            },
+            "HIP77952": {
+              "localized": -3,
+              "controls": -1,
+              "weak": -1
+            }
+          }
+        }
+      },
+      "leak_challenge": {
+        "baseline_full": {
+          "localized": 17,
+          "positives": 128,
+          "weak_localized": 9,
+          "lost_localized": 0,
+          "added_localized": 0
+        },
+        "pooled_strict": {
+          "localized": 6,
+          "positives": 128,
+          "weak_localized": 3,
+          "lost_localized": 11,
+          "added_localized": 0
+        },
+        "kusto": {
+          "localized": 6,
+          "positives": 128,
+          "weak_localized": 3,
+          "lost_localized": 11,
+          "added_localized": 0
+        },
+        "topa": {
+          "localized": 0,
+          "positives": 128,
+          "weak_localized": 0,
+          "lost_localized": 17,
+          "added_localized": 0
+        },
+        "kusto_topa": {
+          "localized": 1,
+          "positives": 128,
+          "weak_localized": 1,
+          "lost_localized": 16,
+          "added_localized": 0
+        },
+        "topa_tile_family": {
+          "localized": 0,
+          "positives": 128,
+          "weak_localized": 0,
+          "lost_localized": 17,
+          "added_localized": 0
+        },
+        "protected_raw_union": {
+          "localized": 53,
+          "positives": 128,
+          "weak_localized": 9,
+          "lost_localized": 4,
+          "added_localized": 40
+        }
+      },
+      "fit_and_null_and_exam_panel_wall_seconds": 4.303101618000142,
+      "archive_load_seconds": 535.5855274800001,
+      "external_fetch_and_jit_seconds": 0.9032833740000115,
+      "timing_scope": "Panel computes five shared kernels for ablation; actual total panel seconds and separate kernel/feature subtotals. Not an end-to-end speedup claim.",
+      "limitations": [
+        "Control alerts are empirical proxies; unmodified archive backgrounds can contain physical signals.",
+        "Control patches within source tiles correlate; only four evaluation days; report paired target deltas, no independence-based p-values.",
+        "TOPA block support computed on selected full path (not an independent confirmation); empirical null calibrated after this entire selection.",
+        "Tile maximum covers sampled windows of each tile, not entire telescope band. Different target/day is not independent instrument.",
+        "BLC1/Voyager external source-labelled verification not performed here. No RFI-origin verdict."
+      ],
+      "scope": "R30B: archival Parkes ON/OFF backgrounds with paired synthetic injections. New target and unique observation day per target across all three splits, excluding R29 days; no repeated source names/URLs or tile hashes. 2 component-fit, 4 null calibration, 4 evaluation targets; no eval label adjustment. Not independent physical source labels or external blind experiment. No production change.",
+      "production_adoption": false
+    },
+    "artifacts": {
+      "manifest": {
+        "id": 14409292043,
+        "sha256": "0cb1606683bafacd2ca6c66028b9b1fccbafe0dcd9f12f64474c0a60f15b54af"
+      },
+      "result": {
+        "id": 14408812860,
+        "sha256": "49ea750a401bf613c7896cff439685a7e338f4417970049f05430e261d4b916e"
+      }
+    }
+  },
+  "limitations": [
+    "No R30 performance measured at launch; success of CI not scientific PASS.",
+    "Full R28 source code unchanged; separate escalation research, raw and protected candidate witnesses retained.",
+    "Same-day association not proof of causality; archived measured background is not verified RFI-negative; within-target and tile correlations remain; no independent origin labels.",
+    "TOPA block score selected on whole path and subsequently empirically calibrated, not independent confirmation. R30C HANNAH and external BLC1/Voyager preservation gates remain pending.",
+    "Initial guessed R28B router and workflow filenames returned 404; resolved actual source paths r28b_router.py and seti-r29-starforge.yml before implementation. No issue with baseline science."
+  ],
+  "production_adoption": false,
+  "confirmed_technosignatures": 0,
+  "next_gate": "KUSTO/TOPA no hard veto. Retain baseline; HANNAH is advisory. Protected raw union leakage improvement warrants separate later test. All new threshold selection on new calibration only."
+}

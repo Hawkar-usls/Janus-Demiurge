@@ -1,0 +1,82 @@
+{
+  "artifact_id": "JANUS-LOGOS-001-R1-SYNTHETIC-SYMBOLIC-DISCOVERY-PREREG-v1.0",
+  "status": "FROZEN_PLAN_BEFORE_FIRST_R1_CLOUD_RUN",
+  "version": "1.0.0",
+  "date_utc": "2026-11-01",
+  "parent": {
+    "god_code": "data/JANUS-GOD-CODE-v1.0.json",
+    "r0": "data/JANUS-LOGOS-001-PROTOCOL-v1.0.json"
+  },
+  "hypothesis": {
+    "primary": "Bounded symbolic regression can recover predeclared simple analytic laws on synthetic independent test points.",
+    "null_control": "Random labels must not be classified as law.",
+    "distribution_shift": "A training-valid law that fails outside the observed regime must be rejected by the independent witness."
+  },
+  "scientific_design": {
+    "case_ids": {
+      "positive": [
+        "C01",
+        "C02",
+        "C03",
+        "C04"
+      ],
+      "negative": [
+        "N01",
+        "N02"
+      ]
+    },
+    "law_families": [
+      "affine",
+      "quadratic",
+      "sin(pi*x)",
+      "cubic_x_plus_linear"
+    ],
+    "negative_laws": [
+      "deterministic_sha256_random_independent_by_split",
+      "piecewise_regime_shift_only_at_holdout"
+    ],
+    "training_coordinates": {
+      "count": 30,
+      "definition": "x=-1+2*i/29, i in [0,29]"
+    },
+    "validation_coordinates": {
+      "count": 23,
+      "definition": "x=-0.97+1.94*i/22, i in [0,22]"
+    },
+    "independent_holdout_coordinates": {
+      "count": 31,
+      "positive_and_noise": "x=-1.4+2.8*i/30",
+      "shift_control": "x=1.3+0.4*i/30"
+    },
+    "formula_grammar": [
+      "constant plus 1..2 terms from x,x2,x3,x4,sin(pi*x),cos(pi*x),sin(2*pi*x),exp(x),1/(1+x*x)"
+    ],
+    "fitting": "Train-set deterministic ordinary least squares with Gaussian pivot, test validity on validation, rank via validation NRMSE + fixed complexity penalty.",
+    "decision": {
+      "max_terms": 2,
+      "validation_nrmse_lt": 0.08,
+      "validation_gain_over_constant_gt": 0.9,
+      "positive_holdout_nrmse_lt": 0.06,
+      "shift_holdout_nrmse_gt": 0.25,
+      "noise_control": "ABSTAIN_REQUIRED",
+      "positive_count_required": 4,
+      "negative_count_required": 2
+    },
+    "negative_tamper_controls": [
+      "altered_dataset_sha",
+      "modified_coefficient",
+      "forbidden_basis_expression",
+      "noise_class_falsely_promoted"
+    ],
+    "information_boundary": "Discoverer receives only 30 train and 23 validation points per case. Witness receives only the discoverer's JSON, recreates source digest, constructs fresh unseen points from frozen public source; no discovery imports; no new external data source or real laboratory. Public source code means this is NOT cryptographically blind.",
+    "independent_execution": "Separate GitHub Actions runner and code; read-only GitHub permissions; no upload to registry from workflow.",
+    "prior_work": "R0 is retrospective-known-universality replication and does not establish R1 outcome."
+  },
+  "preregistration_integrity": {
+    "disclosure": "This experiment is constructed before first CI run; no empirical result is asserted in this plan.",
+    "published_data": "Only synthetic data generated in CI; no paid external datasets or Rowan.",
+    "source_commit_policy": "Report exact PR/commit SHA and CI run before any scientific promotion."
+  },
+  "scientific_ceiling": "Recovering synthetic known formulas is a bounded software capability; it is not novel physics, not mathematical evidence for divine authorship, not a proof of computational ontology, and not P=NP.",
+  "next_stage": "R1.1 independent external scientific benchmark with data license, genuine heldout evaluator and alternative regression baseline; R2 matched-budget agents."
+}

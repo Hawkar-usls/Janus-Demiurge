@@ -1,0 +1,133 @@
+{
+  "artifact_id": "JANUS-TRUMP-ABSTRACT-TWO-BLOCK-CHANNEL-THEOREM-2026-09-20-v1.0",
+  "version": "v1.0",
+  "date": "2026-09-20",
+  "status": "PASS_ABSTRACT_TWO_BLOCK_CHANNEL_THEOREM",
+  "scope": "PURE_GRAPH_THEOREM__NO_C11_NO_P7_NO_OCTAHEDRON_ASSUMPTIONS",
+  "abstract_object": {
+    "vertex_partition": "V(G)=L disjoint_union R disjoint_union {z}",
+    "anchors": {
+      "c": "c in L",
+      "f": "f in R"
+    },
+    "ports": {
+      "P_L": "P_L subseteq L\\{c}",
+      "P_R": "P_R subseteq R\\{f}"
+    },
+    "exact_channel_interface": [
+      "cz and zf are edges.",
+      "c is complete to P_L.",
+      "f is complete to P_R.",
+      "Every L-R edge is a port edge: E(L,R)=X subseteq P_L x P_R.",
+      "There are no vertices outside L union R union {z}.",
+      "No condition is imposed on internal edges of G[L] or G[R], or on other z-L / z-R adjacencies."
+    ],
+    "channel_graph": "X is bipartite with bipartition (P_L,P_R).",
+    "invariant": "k := nu(X), the maximum matching number of X."
+  },
+  "layer_1_exact_local_channel_theorem": {
+    "name": "EXACT_LOCAL_CHANNEL_THEOREM",
+    "status": "PASS",
+    "statement": "lambda_G(c,f)=1+nu(X).",
+    "proof": {
+      "lower_bound": [
+        "Let M be a maximum matching in X of size k.",
+        "For every uv in M, c-u-v-f is a c-f path.",
+        "Because M is a matching, these k direct paths are pairwise internally vertex-disjoint.",
+        "The hub path c-z-f is internally vertex-disjoint from all direct paths because z is outside P_L union P_R.",
+        "Hence lambda_G(c,f)>=k+1."
+      ],
+      "upper_bound": [
+        "Let U be a minimum vertex cover of bipartite X.",
+        "Delete {z} union U. The hub path is destroyed by deleting z.",
+        "Every L-R edge lies in X and every X-edge meets U, so no L-R edge survives.",
+        "Because c notin P_L and f notin P_R, neither anchor is deleted by U.",
+        "Thus c and f lie in different components of G-({z} union U).",
+        "By Konig's theorem, |U|=tau(X)=nu(X)=k.",
+        "Hence lambda_G(c,f)<=k+1."
+      ],
+      "conclusion": "lambda_G(c,f)=1+nu(X)."
+    },
+    "dependencies": [
+      "Konig theorem for finite bipartite graphs"
+    ]
+  },
+  "layer_2A_block_quotient_transfer_theorem": {
+    "name": "TWO_BLOCK_CHANNEL_LOCAL_TO_GLOBAL_TRANSFER_THEOREM__BLOCK_QUOTIENT",
+    "status": "PASS_SUFFICIENT_THEOREM",
+    "purpose": "Simple compositional sufficient theorem when each surviving block remains internally connected.",
+    "definitions": {
+      "deletion_budget": "k=nu(X). Consider every S subseteq V(G) with |S|<=k.",
+      "BLOCK_ROBUSTNESS": "Whenever L-S is nonempty, G[L-S] is connected; whenever R-S is nonempty, G[R-S] is connected.",
+      "block_interface_graph_BS": [
+        "Vertices are the surviving nonempty modules among L-S, R-S, and {z} if z notin S.",
+        "L-R is an edge iff at least one X-edge has both endpoints outside S.",
+        "z-L is an edge iff z notin S and z has a neighbor in L-S.",
+        "z-R is an edge iff z notin S and z has a neighbor in R-S."
+      ],
+      "INTERFACE_ROBUSTNESS": "For every |S|<=k, B_S is connected on its surviving modules."
+    },
+    "quotient_lemma": "Under BLOCK_ROBUSTNESS, for every such S, G-S is connected iff B_S is connected.",
+    "theorem": [
+      "If BLOCK_ROBUSTNESS and INTERFACE_ROBUSTNESS hold for every |S|<=k, then G-S is connected for every |S|<=k.",
+      "Therefore kappa(G)>=k+1.",
+      "The explicit cut {z} union U for a minimum vertex cover U of X has size k+1 and disconnects c from f, hence disconnects G.",
+      "Therefore kappa(G)=lambda_G(c,f)=1+nu(X)."
+    ],
+    "sharpness_note": "This layer is sufficient, not necessary. It may fail when a block splits internally after k deletions even though the whole graph remains connected through external interfaces."
+  },
+  "layer_2B_component_refined_transfer_theorem": {
+    "name": "TWO_BLOCK_CHANNEL_LOCAL_TO_GLOBAL_TRANSFER_THEOREM__COMPONENT_REFINED",
+    "status": "PASS_SHARP_COMPOSITIONAL_THEOREM",
+    "motivation": "Remove unnecessary block-connectivity assumptions by quotienting actual surviving connected components.",
+    "definitions": {
+      "deletion_budget": "k=nu(X). Consider every S subseteq V(G) with |S|<=k.",
+      "surviving_modules": [
+        "Every connected component of G[L-S].",
+        "Every connected component of G[R-S].",
+        "The singleton module {z} if z notin S."
+      ],
+      "refined_interface_graph_hat_BS": [
+        "Create one quotient vertex for every surviving module.",
+        "Two quotient vertices are adjacent iff G-S contains at least one edge with endpoints in the two corresponding modules."
+      ],
+      "REFINED_INTERFACE_ROBUSTNESS": "For every |S|<=k, hat_B_S is connected."
+    },
+    "exact_quotient_lemma": "For every S, without any block-robustness assumption, G-S is connected iff hat_B_S is connected.",
+    "theorem": [
+      "If REFINED_INTERFACE_ROBUSTNESS holds for every |S|<=k, then G-S is connected for every |S|<=k.",
+      "Hence kappa(G)>=k+1.",
+      "The same explicit vertex-cover cut {z} union U gives kappa(G)<=k+1.",
+      "Therefore kappa(G)=lambda_G(c,f)=1+nu(X)."
+    ],
+    "equivalence_form": "Under the exact-channel interface, kappa(G)>=k+1 iff hat_B_S is connected for every S with |S|<=k.",
+    "role": "This is the reusable sharp transfer layer for frames in which individual blocks may split under the deletion budget."
+  },
+  "easy_sufficient_corollary": {
+    "name": "HIGH_BLOCK_CONNECTIVITY_PLUS_HUB_DEGREE_COROLLARY",
+    "status": "PASS",
+    "assumptions": [
+      "k=nu(X).",
+      "G[L] and G[R] remain connected after deletion of any at most k vertices from their own vertex sets (for example, each block has vertex connectivity at least k+1).",
+      "z has at least k+1 neighbors in L and at least k+1 neighbors in R.",
+      "E(L,R)=X and the exact-channel interface assumptions hold."
+    ],
+    "proof": [
+      "If z notin S and |S|<=k, at least one z-neighbor survives in each block; block robustness then makes B_S connected through z.",
+      "If z in S, at most k-1 other vertices are deleted. Since tau(X)=nu(X)=k, those vertices cannot cover all X-edges; one cross-edge survives and joins the two connected blocks.",
+      "Thus Layer 2A applies."
+    ],
+    "conclusion": "kappa(G)=lambda_G(c,f)=1+nu(X).",
+    "limitation": "This easy corollary is intentionally stronger than the sharp component-refined theorem and need not cover deletion budgets at which a block itself can split."
+  },
+  "epistemic_ceiling": {
+    "theorem_class": "GENERAL_FINITE_GRAPH_THEOREM",
+    "C11_DEPENDENCE": "NONE",
+    "P7_DEPENDENCE": "NONE",
+    "OCTAHEDRON_DEPENDENCE": "NONE",
+    "claims_about_arbitrary_C11": "NONE",
+    "algorithmic_P7_4COLOR_claim": "NONE",
+    "P_VS_NP": "OPEN"
+  },
+  "stop": true
+}

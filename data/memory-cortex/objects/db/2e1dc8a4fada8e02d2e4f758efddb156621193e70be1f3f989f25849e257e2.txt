@@ -1,0 +1,85 @@
+{
+  "id": "EYE-R4.1-MINIMUM-WITNESS-SET-SOLVER-CONTRACT-2026-09-01-v1.0",
+  "schema_version": "1.0",
+  "created_at": "2026-09-01",
+  "program": "EYE",
+  "stage": "R4.1",
+  "status": "EXECUTABLE_CONTRACT",
+  "title": "Minimum Independent Witness Set Solver",
+  "canonical_question": "Given candidate cause classes and an admissible test catalog with costs, dependencies and failure domains, what is the minimum additional witness set that makes the requested cause-class partition identifiable under the declared measurement model?",
+  "input_contract": {
+    "cause_classes": "Cause ids with optional target_class. Causes sharing target_class need not be separated when only class recovery is requested.",
+    "tests": {
+      "id": "unique witness/test id",
+      "cost": "non-negative incremental acquisition cost",
+      "distinguishes": "explicit cause-id pairs the witness can separate under the declared model",
+      "depends_on": "prerequisite witnesses/tests; dependency closure is charged exactly once",
+      "failure_domains": "declared latent failure/provenance domains used by the independence gate",
+      "available": "false means counterfactual/planning-only and excluded from exact selectable sets"
+    },
+    "already_acquired": "sunk-cost witnesses already available to the inference problem",
+    "requirements": {
+      "required_independent_separators_per_pair": "minimum failure-mode-independent separators required for each rival cause pair",
+      "unknown_independence_conflicts": "when true, missing failure-domain metadata cannot be used to claim redundant independence",
+      "max_exact_tests": "hard exact-search ceiling; exceeding it yields UNKNOWN_RESOURCE_LIMIT rather than a fake minimum",
+      "objective": "incremental_cost_then_cardinality"
+    }
+  },
+  "solver_machine": [
+    "LOAD_AND_VALIDATE_MODEL",
+    "BUILD_TARGET_RIVAL_PAIRS",
+    "EXPAND_DEPENDENCY_CLOSURE",
+    "AUDIT_FAILURE_MODE_INDEPENDENCE",
+    "ENUMERATE_EXACT_SUBSETS_WITHIN_RESOURCE_CEILING",
+    "TEST_PAIRWISE_IDENTIFIABILITY",
+    "MINIMIZE_INCREMENTAL_COST_THEN_CARDINALITY",
+    "RUN_LEAVE_ONE_OUT_MINIMALITY",
+    "RANK_NEXT_SINGLE_TESTS",
+    "PRESERVE_UNRESOLVED_PAIRS_AND_COUNTERFACTUAL_BLOCKERS"
+  ],
+  "exactness_rule": {
+    "small_problem": "For decision-test count <= max_exact_tests, every selectable subset is considered after dependency closure and duplicate closure elimination; minimum is exact under the supplied binary discrimination and independence model.",
+    "large_problem": "For decision-test count > max_exact_tests, verdict = UNKNOWN_RESOURCE_LIMIT. Any ranking is heuristic planning information only and is not called a minimum proof."
+  },
+  "independence_rule": {
+    "pairwise": "Two witnesses count as failure-mode independent only when their declared failure_domains are disjoint.",
+    "unknown_metadata": "With unknown_independence_conflicts=true, an untagged witness cannot create a second independent confirmation merely because it is a separate record.",
+    "shared_lineage_warning": "Different files, scans, models or instruments may still be dependent when they share a latent provenance or processing failure domain."
+  },
+  "required_json_outputs": [
+    "cause_class_catalog.json",
+    "witness_catalog.json",
+    "independence_matrix.json",
+    "pairwise_discrimination_matrix.json",
+    "minimum_witness_sets.json",
+    "leave_one_out_receipt.json",
+    "unresolved_equivalence_classes.json",
+    "next_best_tests.json",
+    "solver_receipt.json"
+  ],
+  "verdicts": {
+    "IDENTIFIABILITY_CANDIDATE": "An exact minimum witness set exists under the declared planning model; this is not empirical proof that the discrimination edges are scientifically correct.",
+    "NON_IDENTIFIABLE_UNDER_CURRENT_MEASUREMENT_MODEL": "All admissible exact subsets were evaluated and at least one rival pair remains unresolved.",
+    "UNKNOWN_RESOURCE_LIMIT": "The exact-search ceiling was exceeded; silence or heuristic failure is not negative evidence."
+  },
+  "firewalls": [
+    "OUTPUT_SYMBOL != CAUSE",
+    "MORE_EVIDENCE != MORE_INDEPENDENT_EVIDENCE",
+    "DEPENDENCY_CLOSURE_COUNTS_TOWARD_COST",
+    "UNKNOWN_INDEPENDENCE != INDEPENDENCE",
+    "HEURISTIC_RANKING != MINIMUM_PROOF",
+    "NON_IDENTIFIABLE != FALSE",
+    "CAUSE_CLASS_RECOVERY != EXACT_MECHANISM_RECOVERY",
+    "SOLVER_OPTIMUM_UNDER_MODEL != TRUE_CAUSE_IN_WORLD"
+  ],
+  "validation_plan": {
+    "synthetic_known_minimum": "Must recover a predeclared exact minimum and cost.",
+    "cross_domain_search_proof": "Must recover an exact minimum in a non-optical operational domain.",
+    "palomar_real_world_structured_replay": "Must preserve unresolved historical-origin ambiguity rather than force a cause when current admissible deterministic witnesses do not separate all remaining classes.",
+    "current_ceiling": "SOLVER_LOGIC_VALIDATED_ON_SYNTHETIC_AND_STRUCTURED_CROSS_DOMAIN_REPLAYS__EMPIRICAL_DISCRIMINATION_CALIBRATION_STILL_REQUIRED"
+  },
+  "provenance": {
+    "supersedes_stage": "EYE-R4-MINIMAL-INDEPENDENT-EVIDENCE-IDENTIFIABILITY-CONTRACT-2026-09-01-v1.0 next_executable_stage",
+    "preservation_rule": "Future R4.x revisions must supersede this contract and preserve failed/negative replay receipts."
+  }
+}

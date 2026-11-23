@@ -1,0 +1,66 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-R3B-0-NOTTI-2018-SIGN-ID-CONFORMANCE-SPEC-2026-08-14-v0.1",
+  "version": "v0.1",
+  "node_type": "nonblind_corrective_alternate_editorial_sign_id_conformance_spec",
+  "status": "FROZEN_BEFORE_READING_COMPARISON",
+  "prerequisites": {
+    "exact_pdf_receipt": "data/JANUS-LINEAR-A-R3B-0-NOTTI-2018-OPEN-PUBLISHER-RESCUE-ACQUISITION-RESULT-2026-08-14-v0.1.1.json",
+    "identity_inventory": "data/JANUS-LINEAR-A-R3B-0-NOTTI-2018-ALL-TABLE-IDENTITY-INVENTORY-RESULT-2026-08-14-v0.1.json",
+    "identity_bridge": "data/JANUS-LINEAR-A-R3B-0-NOTTI-2018-IDENTITY-BRIDGE-RESULT-2026-08-14-v0.1.json"
+  },
+  "source_table_regions": [
+    {"page":2,"first_line":4,"last_line":45},
+    {"page":3,"first_line":4,"last_line":15}
+  ],
+  "source_row_rules": {
+    "row_start_regexes": [
+      "^THE\\s+Z[bBgG]\\s+\\d+\\**\\b",
+      "^THE\\s+\\d+[ab]?\\b"
+    ],
+    "range_header_regex": "^THE\\s+7[-–]12\\b",
+    "row_continuation": "ALL_FOLLOWING_LINES_UNTIL_NEXT_ROW_START_OR_REGION_END",
+    "THE7_document_aggregation": ["THE7A","THE7B"],
+    "unresolved_rows_excluded_only_for_IDENTITY_REASON": ["THEZB14","THEZB15"],
+    "all_13_bridged_documents_required": true
+  },
+  "source_sign_id_parser": {
+    "unicode_normalization": "NFD_REMOVE_COMBINING_MARKS_FOR_DIGIT_RECOGNITION_ONLY",
+    "recognized_sequences": "A_OR_AB_PREFIX_PLUS_FIRST_INTEGER_AND_ANY_HYPHEN_CONNECTED_FOLLOWING_INTEGERS",
+    "canonical_id": "AB_ZERO_PAD_3_OR_A_ZERO_PAD_3",
+    "standalone_unprefixed_integers": "NOT_PROMOTED_TO_SIGN_ID",
+    "damage_and_brackets": "PRESERVED_IN_RAW_ROW_BUT_NOT_TREATED_AS_SIGN_IDS",
+    "uncertainty_marks": "RECORDED_AS_SOURCE_UNCERTAINTY_FLAG_NOT_ERASED_FROM_RAW_ROW"
+  },
+  "reference_sign_id_parser": {
+    "reference_commit": "43fe7cf1abc8e6bb1ea3228c3a1bd5938709620a",
+    "input": "FIRST transcribed-reading-unicode/reading-text block from each bridged item HTML",
+    "mechanical_mapping": "Python unicodedata.name(character) must match LINEAR A SIGN AB### or LINEAR A SIGN A###",
+    "phonetic_transliteration_used": false,
+    "semantic_mapping_used": false,
+    "non_sign_numerals_ignored_for_sign_sequence": true
+  },
+  "comparison_family": {
+    "documents": ["THEZB1","THEZB2","THEZB3","THEZB4","THEZG5","THEZB6","THE7","THE8","THE9","THE10","THE11","THE12","THEZB13"],
+    "primary_metric": "EXACT_SIGN_ID_SEQUENCE_EQUALITY",
+    "secondary_metrics": ["SOURCE_SIGN_COUNT","REFERENCE_SIGN_COUNT","LONGEST_COMMON_PREFIX_LENGTH","LEVENSHTEIN_DISTANCE"],
+    "classification": ["EXACT_SIGN_ID_SEQUENCE_MATCH","SIGN_ID_SEQUENCE_MISMATCH","NONCOMPARABLE_EMPTY_PARSED_SEQUENCE"],
+    "no_cherry_picking": true,
+    "all_document_results_persisted": true
+  },
+  "contamination_and_claims": {
+    "blind_novelty_credit": false,
+    "scientific_classification": "NONBLIND_CORRECTIVE_ALTERNATE_EDITORIAL_CONTROL",
+    "exact_match_does_not_establish_correctness": true,
+    "mismatch_does_not_by_itself_establish_reference_error": true,
+    "decipherment_performed": false
+  },
+  "claim_ceiling": {
+    "allowed_if_executed":"For all 13 pre-bridged Theran document identities, JANUS reports exact mechanical AB/A sign-ID sequence agreement or disagreement between Notti 2018 and the frozen current lineara reference, using only source AB/A numbers and Unicode character names; Zb14/Zb15 remain outside the comparison because identity is unresolved.",
+    "forbidden":[
+      "The source is a blinded R3B witness.",
+      "Agreement proves either editorial reading correct.",
+      "Disagreement is silently resolved in favor of either edition.",
+      "Any language value, anchor, or decipherment is inferred."
+    ]
+  }
+}

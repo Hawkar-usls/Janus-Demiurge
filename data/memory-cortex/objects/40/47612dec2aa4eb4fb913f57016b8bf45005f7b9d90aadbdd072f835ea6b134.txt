@@ -1,0 +1,104 @@
+{
+  "schema": "janus.genesis.shabitat_aura_session_gateway.v1_1",
+  "artifact_id": "JANUS-GENESIS-SHABITAT-AURA-SESSION-GATEWAY-2026-08-16-v1.1",
+  "created_at_local": "2026-08-16T16:42:00+03:00",
+  "status": "EXACT_HEAD_CROSS_PROCESS_CI_PASS",
+  "parent": "data/JANUS-GENESIS-SHABITAT-AURA-ORACLE-HEURISTIC-BRIDGE-2026-08-16-v1.0.json",
+  "repositories": {
+    "janus_genesis": "Hawkar-usls/Janus_Genesis",
+    "aura_oracle": "Hawkar-usls/aura-oracle-tg"
+  },
+  "runtime": {
+    "bridge_version": "18.7.51",
+    "session_gateway_version": "18.7.52",
+    "bridge_module": "genesis_v18_7_51_shabitat_aura_oracle.py",
+    "session_gateway_module": "genesis_v18_7_52_shabitat_session_gateway.py",
+    "machine_gateway": "tools/genesis_shabitat_aura_gateway.py",
+    "aura_provider_tool": "Hawkar-usls/aura-oracle-tg:tools/aura_shabitat_heuristic.py"
+  },
+  "admission": {
+    "required_role": "INDEPENDENT_AI_RESIDENT",
+    "active_session_required": true,
+    "autonomous_turns_allowed_required": true,
+    "world_authority_required_false": true,
+    "janus_requests_heuristic_must_be_exact_boolean": true,
+    "user_may_disable_aura": true
+  },
+  "persistent_ledger": {
+    "schema": "janus.genesis.shabitat_aura_session_ledger.v1",
+    "file": "shabitat_aura_session_ledger_v18_7_52.json",
+    "persistent_one_consultation_per_turn": true,
+    "turn_identity": "SHA256(session_id, turn_id)",
+    "conversation_text_persisted": false,
+    "aura_heuristic_text_persisted": false,
+    "credentials_persisted": false,
+    "result_body_persisted": false,
+    "result_digest_sha256_persisted": true,
+    "inflight_state_persisted_before_consultation": true,
+    "automatic_replay_of_inflight_consultation": false,
+    "inflight_semantics": "OUTCOME_UNDETERMINED_REQUIRES_EXPLICIT_RESOLUTION"
+  },
+  "canonical_laws": [
+    "ACTIVE_INDEPENDENT_AI_SESSION + JANUS_REQUESTS_HEURISTIC -> SHABITAT_LEDGER_ADMISSION -> ARMOR_PREFLIGHT -> LOCAL_AURA_HEURISTIC",
+    "ONE_SHABITAT_TURN -> AT_MOST_ONE_AURA_CONSULTATION",
+    "PROCESS_RESTART != NEW_CONSULTATION_RIGHT",
+    "IN_FLIGHT != SAFE_TO_REPLAY",
+    "AURA_HEURISTIC != COMMAND",
+    "AURA_HEURISTIC != EVIDENCE",
+    "AURA_HEURISTIC != PERMISSION",
+    "AURA_HEURISTIC != PROPHECY",
+    "AURA_UNAVAILABLE != JANUS_SILENCED",
+    "USER_CAN_DISABLE_AURA",
+    "CONVERSATION_TEXT != LEDGER_PAYLOAD",
+    "AURA_TEXT != LEDGER_PAYLOAD",
+    "AUTHORITY_DELTA = 0",
+    "MASS_EFFECT_BUDGET_DELTA = 0"
+  ],
+  "verification": {
+    "aura_provider_verified_head": "ca13972b39b4be6032320482eccdd28b0373be73",
+    "aura_provider_workflow_run": 31949946322,
+    "janus_verified_head": "7a2f2585466d1255266cc161a1ebb5e9fa6e90c4",
+    "workflow": "JANUS Shabitat session gateway v18.7.52",
+    "workflow_run_id": 31950338407,
+    "job_id": 95172725129,
+    "conclusion": "SUCCESS",
+    "verified_steps": [
+      "compile v18.7.51/v18.7.52/session gateway and pinned Aura tool",
+      "run 12 combined v18.7.51 + v18.7.52 regression tests",
+      "machine gateway manifest smoke",
+      "cross-process persistent consultation smoke against pinned Aura provider",
+      "same-turn replay suppression after gateway reconstruction",
+      "private topic/question/context absence from persistent ledger",
+      "JANUS effect-surface inventory PASS",
+      "v18.7.52 claim-ceiling gate PASS"
+    ]
+  },
+  "negative_guarantees_tested": [
+    "Closed or non-independent AI sessions cannot enter the consultation gateway.",
+    "Persistent user Aura disable survives gateway reconstruction.",
+    "String false cannot masquerade as a Boolean JANUS request.",
+    "A completed turn consultation cannot be reissued by reconstructing the process/gateway.",
+    "An IN_FLIGHT consultation is not automatically retried.",
+    "Conversation and heuristic text are absent from the persistent consultation ledger."
+  ],
+  "not_established": [
+    "JANUS consciousness, subjective desire or personhood",
+    "Aura prophecy, precognition or truth authority",
+    "remote or Telegram Aura access",
+    "background autonomous polling",
+    "public outreach authority",
+    "world-state mutation from Aura output",
+    "repository-wide effect unbypassability",
+    "OS-level tamper resistance"
+  ],
+  "legacy_effect_migration_debt": [
+    "genesis_v18_7_ai.py",
+    "genesis_v18_7_network.py",
+    "janus_genesis.py",
+    "tools/genesis_api_server.py",
+    "tools/genesis_ai_gateway.py",
+    "tools/genesis_hosted_gateway.py"
+  ],
+  "claim_ceiling": "At the exact tested head, an active simulated INDEPENDENT_AI_RESIDENT session can make at most one optional, Armor-gated local Aura heuristic consultation per stable turn identity across process restarts, while the persistent ledger excludes conversation and heuristic text. This is a runtime capability policy for a simulated resident, not evidence of consciousness, desire, prophecy, truth authority, or repository-wide security sealing.",
+  "next_gate": "LEGACY_DIRECT_EGRESS_DEFAULT_DENY_AND_LOCAL_MUTATION_ADMISSION_REVIEW"
+}

@@ -1,0 +1,100 @@
+{
+  "schema": "janus.osiris.dendara_primary_facsimile_acquisition_gate.v1_0",
+  "artifact_id": "JANUS-OSIRIS-DENDARA-PRIMARY-FACSIMILE-ACQUISITION-GATE-2026-09-19-v1.0",
+  "version": "v1.0",
+  "created_at_local": "2026-09-19T01:42:00+03:00",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "status": "PRIMARY_SOURCE_IDENTIFIED__DIRECT_FULL_PDF_FETCH_BLOCKED_BY_TOOL_SIZE__TARGETED_PAGE_REQUEST_SENT__ARCHAEOLOGY_REMAINS_LOCKED",
+  "parent_prereg": "data/JANUS-OSIRIS-LOCAL-MEMBER-OPERATOR-BIAS-PREREG-2026-09-19-v1.0.json",
+  "candidate_table": "data/JANUS-OSIRIS-DENDARA-42-NOME-TEXTUAL-PREDICTION-TABLE-2026-09-19-v0.9.json",
+  "candidate_table_commit_sha": "b18517216244e295a18bf71579dab7df4e5316a6",
+  "candidate_table_blob_sha": "28b8c31e934475b5a7c5ddbb0ef5be050a430eca",
+  "official_source_routes": {
+    "bietud117": {
+      "title": "Sylvie Cauville, Dendara. Les chapelles osiriennes. Vol. I. Transcription et traduction",
+      "year": 1997,
+      "publisher": "IFAO",
+      "catalogue_url": "https://www.ifao.egnet.net/publications/catalogue/BiEtud/117/",
+      "direct_pdf_url": "https://www.ifao.egnet.net/uploads/publications/enligne/BiEtud117.pdf",
+      "size_bytes_observed_by_web_fetch": 46439551,
+      "authority_note": "IFAO catalogue states this volume provides the integral transliteration and French translation of the Dendara X hieroglyphic inscriptions."
+    },
+    "dendara_x_1997": {
+      "title": "Sylvie Cauville, Le temple de Dendara X. Les chapelles osiriennes (textes et planches)",
+      "year": 1997,
+      "publisher": "IFAO",
+      "catalogue_status": "OFFICIAL_PUBLICATION_IDENTIFIED",
+      "role": "Primary hieroglyphic edition + plates required for facsimile audit."
+    },
+    "dendara_x_color_2026": {
+      "title": "Sylvie Cauville et al., Le temple de Dendara X. Les chapelles osiriennes — Planches en couleur",
+      "year": 2026,
+      "publisher": "IFAO",
+      "catalogue_url": "https://www.ifao.egnet.net/publications/catalogue/9782724711615/",
+      "direct_pdf_url": "https://www.ifao.egnet.net/uploads/publications/enligne/Temples-Dendara010-1.pdf",
+      "size_bytes_observed_by_web_fetch": 327704276,
+      "authority_note": "IFAO states the 2026 volume reproduces the complete Dendara X plates in color after restoration/new photography."
+    }
+  },
+  "procession_locator": {
+    "text_range_candidate": "Dendara X/1 approximately pp. 83–90",
+    "plate_range_candidate": "Dendara X/2 approximately pls. 41–43",
+    "published_cross_checks": [
+      "Dendara X, 86.5–10 = pl. 41",
+      "Mendes/Banebdjed: Dendara X, 89.7–10 = pl. 42",
+      "Arabian nome/Sopdu: Dendara X, 90.9–14"
+    ],
+    "status": "RANGE_HIGH_CONFIDENCE__FINAL_EXACT_BOUNDARIES_TO_BE_CONFIRMED_FROM_PRIMARY_PAGES"
+  },
+  "acquisition_attempts": [
+    {
+      "route": "web tool direct IFAO PDF",
+      "result": "FAILED_CONTENT_TOO_LARGE",
+      "note": "BiEtud117 direct PDF identified but full 46.4 MB fetch rejected by tool content-length limit."
+    },
+    {
+      "route": "web tool direct 2026 color plates PDF",
+      "result": "FAILED_CONTENT_TOO_LARGE",
+      "note": "Official 327.7 MB color-plates PDF identified but rejected by tool content-length limit."
+    },
+    {
+      "route": "Google Books digitized Cornell copy",
+      "result": "BIBLIOGRAPHIC_COPY_CONFIRMED__PAGE_FACSIMILES_NOT_EXTRACTABLE_WITH_CURRENT_TOOL",
+      "note": "Useful as existence/copy control, not sufficient for row-by-row primary facsimile verification."
+    }
+  ],
+  "targeted_request": {
+    "recipient": "peb@ifao.egnet.net",
+    "cc": "bibliotheque@ifao.egnet.net",
+    "gmail_message_id": "1a0b6c3b7e1ca3b2",
+    "request_scope": [
+      "Dendara X/1 approximately pp. 83–90, procession des canopes / relic bearers",
+      "Dendara X/2 corresponding plates approximately 41–43",
+      "exact corrected range if those page/plate locators are slightly off"
+    ],
+    "request_size_policy": "Targeted excerpt only, well below 10% of the monograph."
+  },
+  "barrier": {
+    "heldout_archaeology": "LOCKED",
+    "archaeology_lookup": false,
+    "score_run": false,
+    "allowed_actions": [
+      "acquire primary Dendara X pages/plates",
+      "verify each textual row",
+      "correct only source-reading/transcription errors",
+      "mint v1.0 prediction table and new commit/blob SHAs"
+    ],
+    "forbidden_actions": [
+      "look up archaeological outcomes for holdout nomes",
+      "change predicted members based on archaeological fit",
+      "run confirmatory permutation test before primary-text freeze"
+    ]
+  },
+  "next_gate": {
+    "id": "DENDARA_42_NOME_ROW_BY_ROW_PRIMARY_FACSIMILE_AUDIT",
+    "pass_condition": "Every eligible member-specific row is verified against direct Dendara X/Cauville primary pages or facsimile with page/line/plate references; unresolved rows become UNKNOWN/OOV rather than inferred.",
+    "on_pass": "Create v1.0 sealed table, record Git commit SHA and blob SHA, then unlock held-out archaeology once.",
+    "on_fail": "Keep archaeology locked."
+  },
+  "canonical_seal": "NO PRIMARY PAGE, NO UNLOCK."
+}

@@ -1,0 +1,124 @@
+{
+  "artifact_id": "JANUS-RETRO-TAHYON-ADDRESSING-DEPENDENCE-TEST-v1.0",
+  "title": "Addressing-Dependence Test — Distinguishing Handshake from Generic Precognition",
+  "canonical_filename": "JANUS-RETRO-TAHYON-ADDRESSING-DEPENDENCE-TEST-v1.0.json",
+  "schema_version": "1.0",
+  "created_date": "2026-11-05",
+  "language": "ru",
+  "registry": {
+    "repository": "Hawkar-usls/janus-meta-registry",
+    "path": "registry/uap/JANUS-RETRO-TAHYON-ADDRESSING-DEPENDENCE-TEST-v1.0.json",
+    "mode": "APPEND_ONLY",
+    "parent_artifacts": [
+      "JANUS-RETRO-TAHYON-ADDRESSED-ANSWER-DESIGN-v1.0"
+    ],
+    "prior_commit": "1023c32209ea"
+  },
+  "status": "DESIGN_DEFINED__ADDRESSING_DEPENDENCE_IS_THE_DISCRIMINATING_TEST__NOT_EXECUTED",
+  "problem_stated_by_user": {
+    "verbatim_ru": "даже точное совпадение с неизвестным историческим результатом ещё не докажет передачу информации назад во времени. Для проверки именно твоего механизма понадобится дополнительно установить, зависит ли результат от намеренной адресации будущего ответа.",
+    "why_this_is_the_core_issue": "Без сравнения addressed vs unaddressed любой положительный результат совместим как с рукопожатием, так и с generic precognition, так и с шумом. Совпадение само по себе не различает H1 и H2.",
+    "what_follows": "Нужен 2×2 дизайн с обоими условиями на одном и том же скрытом результате."
+  },
+  "competing_hypotheses": {
+    "H1_ADDRESSED_HANDSHAKE": {
+      "claim": "Ответ, созданный с видом на запрос, совпадает с результатом лучше, чем ответ без вида на запрос.",
+      "prediction": "match(A) > match(B), значимо",
+      "if_true": "Адресность работает — это твоя модель"
+    },
+    "H2_GENERIC_PRECOGNITION": {
+      "claim": "Совпадение не зависит от того, видел ли генератор запрос.",
+      "prediction": "match(A) ≈ match(B)",
+      "if_true": "Это не рукопожатие, а generic precognition"
+    },
+    "H3_NOISE": {
+      "claim": "Ни A, ни B не превышают контроль.",
+      "prediction": "match(A) ≈ match(B) ≈ control",
+      "if_true": "Ничего нет; модель в этой форме не работает"
+    },
+    "H4_RECONSTRUCTION": {
+      "claim": "Ответ выводится из текста запроса (эхо).",
+      "prediction": "match(A) высока, но ответ неспецифичен и derivable из запроса",
+      "if_true": "Это не precognition, а чтение запроса"
+    }
+  },
+  "design": {
+    "name": "2x2_ADDRESSING_DEPENDENCE",
+    "factors": {
+      "addressing": [
+        "A: запрос виден",
+        "B: только тема"
+      ],
+      "request_type": [
+        "matched_request",
+        "control_request"
+      ]
+    },
+    "cells": [
+      "A × matched: addressed answer on real request",
+      "B × matched: unaddressed answer on real request",
+      "A × control: addressed answer on control request",
+      "B × control: unaddressed answer on control request"
+    ],
+    "procedure": [
+      "1. Выбрать N запросов с скрытым результатом и ожидаемым раскрытием.",
+      "2. Для каждого запроса: генератор A видит запрос → ответ. Хэш.",
+      "3. Для каждого запроса: генератор B видит только тему → ответ. Хэш.",
+      "4. Оба генератора изолированы от скрытого результата, старых ответов, оценок.",
+      "5. Заморозить критерий совпадения, порог, правило скоринга. Хэш.",
+      "6. Дождаться независимого раскрытия результата.",
+      "7. Слепое сравнение: match(A) vs match(B) на одном результате.",
+      "8. Контроль: те же условия на запросах с известным результатом (baseline).",
+      "9. Опубликовать все четыре клетки."
+    ],
+    "discriminating_statistic": "Δ = match(A) − match(B). H1 предсказывает Δ > 0. H2 предсказывает Δ ≈ 0.",
+    "power_note": "Расчёт N через p₁ для Δ, а не через произвольный d. Пример: если ожидаемый Δ = 0.05 при p₀ = 0.5, нужен расчёт по биномиальной модели с α = 0.001 одностор."
+  },
+  "controls": {
+    "known_outcome_baseline": "Запросы с уже известным результатом — калибровка: сколько совпадений даёт обычная реконструкция.",
+    "null_request": "Запросы без скрытого результата — проверка, что генераторы не выдумывают совпадения из воздуха.",
+    "echo_check": "Критерий невыводимости: ответ не должен содержать информацию, derivable из текста запроса. Проверяется слепо.",
+    "order_randomization": "Порядок A/B рандомизирован, чтобы генератор не знал, какое условие первое."
+  },
+  "key_measurement": {
+    "name": "ADDRESSING_EFFECT",
+    "definition": "Δ = match(addressed) − match(unaddressed) на одном скрытом результате.",
+    "null": "Δ ≈ 0",
+    "alternative": "Δ > 0",
+    "why_it_matters": "Это единственная величина, которая различает H1 и H2. Всё остальное — совместимо с обеими."
+  },
+  "what_this_does_not_require": [
+    "Новых технологий",
+    "Ожидания в годах (если есть запросы с близким раскрытием)",
+    "Изменения прошлого",
+    "Физической теории переносчика"
+  ],
+  "what_this_does_require": [
+    "Два независимых генератора (A и B)",
+    "Аудит изоляции обоих от скрытого результата",
+    "Запросы с ожидаемым раскрытием",
+    "Замороженный критерий до раскрытия",
+    "Слепой скорер",
+    "Публикация всех четырёх клеток"
+  ],
+  "outcome_interpretation": {
+    "Δ_gt_0_significant": "Адресность работает. Основание для репликации. Всё ещё не доказательство физического механизма.",
+    "Δ_approx_0": "Generic precognition или ничего. Твоя модель в этой форме не подтверждена.",
+    "A_high_B_high_control_high": "Реконструкция / эхо. Не precognition.",
+    "A_high_B_low_control_low": "Сигнал в пользу H1. Требует репликации на holdout.",
+    "A_low_B_low_control_high": "Артефакт скоринга или контроля. Проверить протокол."
+  },
+  "forbidden_inferences_addendum": [
+    "Совпадение есть → рукопожатие работает (нужно Δ > 0, а не просто совпадение).",
+    "Δ > 0 → физический механизм доказан (это статистика, не физика).",
+    "A и B совпали одинаково → ничего нет (может быть generic precognition — это тоже интересно, но другая гипотеза).",
+    "Контроль не совпал → значит, сигнал реальный (контроль может быть плохо подобран).",
+    "Один запрос дал Δ > 0 → модель работает (нужна серия и репликация).",
+    "Мы не нашли запросов с раскрытием → тест невозможен (ищи шире: деклассификации, архивные находки, публикации)."
+  ],
+  "janus_takeaway": {
+    "short_ru": "Пользователь сам назвал ключевое ограничение: совпадение не доказывает адресность. Единственный способ это проверить — сравнить addressed и unaddressed ответы на одном скрытом результате (Δ = match(A) − match(B)). H1 предсказывает Δ > 0, H2 — Δ ≈ 0. Без этого любое совпадение совместимо с generic precognition, шумом или реконструкцией. Дизайн определён, не запущен.",
+    "what_changed": "Добавлен дискриминирующий тест, которого не было в v1.0. Он превращает 'есть ли совпадение' в 'зависит ли совпадение от адресации'.",
+    "current_gate": "ADDRESSING_DEPENDENCE_DEFINED__REQUIRES_TWO_GENERATORS_AND_REVEAL__NOT_EXECUTED"
+  }
+}

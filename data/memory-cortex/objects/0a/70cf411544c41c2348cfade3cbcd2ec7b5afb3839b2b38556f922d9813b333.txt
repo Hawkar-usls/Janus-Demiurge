@@ -1,0 +1,197 @@
+{
+  "id": "JANUS-SOUND-CONVERTER-PYRAMID-RESONANCE-INSTRUCTION-v1.0",
+  "version": "1.0",
+  "date": "2026-08-19",
+  "document_class": "technical_instruction_and_creative_audio_bridge",
+  "registry_role": "archival_design_pattern",
+  "status": "ACTIVE_DESIGN_SPEC",
+  "target_module": "JANUS_SOUND_CONVERTER",
+  "title": "Geometry -> Resonance -> Sound: Pyramid / Stone-Chamber Converter Instruction",
+  "purpose": "Convert real chamber geometry and measured or calculated acoustic resonances into reproducible audio parameters, while keeping physical acoustics separate from symbolic or creative interpretation.",
+  "epistemic_boundary": {
+    "confirmed_physics": [
+      "Enclosed chambers support acoustic eigenmodes / standing waves.",
+      "Hard reflective surfaces can produce strong reverberation and narrow resonant coloration.",
+      "A room has multiple resonant modes rather than one universal magical note.",
+      "Structural vibration modes and air-acoustic room modes are different physical phenomena and must not be merged without measurement."
+    ],
+    "not_established": [
+      "A pyramid spontaneously performs composed music.",
+      "A particular ancient pyramid was intentionally tuned to one modern musical frequency without archaeological and acoustic evidence.",
+      "A symbolic frequency is a physical causal mechanism merely because it is aesthetically meaningful."
+    ],
+    "registry_rule": "METAPHOR != PHYSICS",
+    "claim_policy": "Calculated modes are predictions from a model. Measured impulse-response or spectral data outrank geometry-only estimates."
+  },
+  "input_contract": {
+    "required": {
+      "geometry_m": {
+        "Lx": "room length in metres",
+        "Ly": "room width in metres",
+        "Lz": "room height in metres"
+      },
+      "speed_of_sound_m_s": "Default 343 m/s only as a nominal room-temperature value; use temperature/humidity-adjusted value when precision matters."
+    },
+    "optional": {
+      "temperature_c": "air temperature",
+      "relative_humidity_percent": "humidity",
+      "surface_materials": "stone/granite/limestone/etc. with absorption estimates",
+      "measured_impulse_response": "preferred for real reverberation and modal validation",
+      "measured_spectrum": "preferred for peak/Q validation",
+      "source_position": "x,y,z coordinates",
+      "listener_position": "x,y,z coordinates",
+      "frequency_limit_hz": "maximum mode frequency to enumerate"
+    }
+  },
+  "core_equations": {
+    "single_axis_mode": "f_n = n*c/(2*L)",
+    "rectangular_room_mode": "f_pqr = (c/2)*sqrt((p/Lx)^2 + (q/Ly)^2 + (r/Lz)^2)",
+    "wavelength": "lambda = c/f",
+    "indices": "p,q,r are non-negative integers and cannot all be zero",
+    "mode_classes": {
+      "axial": "one of p,q,r is non-zero",
+      "tangential": "two are non-zero",
+      "oblique": "all three are non-zero"
+    }
+  },
+  "converter_pipeline": [
+    {
+      "step": 1,
+      "name": "INGEST_GEOMETRY",
+      "instruction": "Read dimensions and environmental parameters with units. Reject zero/negative dimensions and ambiguous units."
+    },
+    {
+      "step": 2,
+      "name": "CALCULATE_MODAL_BANK",
+      "instruction": "Enumerate p,q,r combinations, calculate f_pqr, classify axial/tangential/oblique modes, and retain the original physical frequency."
+    },
+    {
+      "step": 3,
+      "name": "CLUSTER_NEAR_DEGENERATE_MODES",
+      "instruction": "Group modes that fall within a configurable tolerance so that several geometric modes do not masquerade as independent musical notes."
+    },
+    {
+      "step": 4,
+      "name": "MEASUREMENT_GATE",
+      "instruction": "If an impulse response or measured spectrum exists, compare predicted modes with measured peaks and attach residual error, Q estimate and confidence."
+    },
+    {
+      "step": 5,
+      "name": "PHYSICAL_AUDIO_RENDER",
+      "instruction": "Use the physical modal frequencies as resonator/EQ targets. Do not octave-shift them in the physical render. Convolution with a measured impulse response is preferred when available."
+    },
+    {
+      "step": 6,
+      "name": "CREATIVE_TRANSLATION_OPTION",
+      "instruction": "For sub-audible or musically inconvenient modes, an optional creative copy may be octave-transposed. Preserve original_hz and transformation factor so the creative result cannot be confused with the physical mode."
+    },
+    {
+      "step": 7,
+      "name": "AI_TEXTURE_LAYER",
+      "instruction": "Use generative audio for texture, orchestration and ambience, not for precision frequency synthesis. Generate exact tones/resonator banks with DSP first when exact Hz matters."
+    },
+    {
+      "step": 8,
+      "name": "EXPORT_RECEIPT",
+      "instruction": "Export geometry, environment, equations, physical modes, any measured validation, creative transformations, prompt, seed/model metadata and output hashes."
+    }
+  ],
+  "operating_modes": {
+    "MEASUREMENT_MODE": {
+      "goal": "Maximum physical fidelity",
+      "rules": [
+        "No invented tuning.",
+        "No octave folding.",
+        "Measured peaks are labelled separately from predicted peaks.",
+        "Unknown absorption/Q values remain unknown rather than being silently guessed."
+      ]
+    },
+    "RECONSTRUCTION_MODE": {
+      "goal": "Approximate how a known source could sound inside the chamber",
+      "rules": [
+        "Prefer measured impulse response.",
+        "If only geometry exists, label the result MODEL_BASED_RECONSTRUCTION.",
+        "Keep source type and source position explicit."
+      ]
+    },
+    "CREATIVE_TRANSLATION_MODE": {
+      "goal": "Turn physical resonances into music while preserving provenance",
+      "rules": [
+        "Any pitch remapping must record original_hz, rendered_hz and transform.",
+        "Creative harmonics may be added, but must not be presented as measured chamber resonances.",
+        "Symbolic interpretation belongs to metadata, not to the physics field."
+      ]
+    }
+  },
+  "audible_mapping": {
+    "physical_band_hz": [20, 20000],
+    "sub_audible_policy": {
+      "measurement": "retain original frequency even if below hearing range",
+      "creative": "multiply by powers of two until the copy enters the chosen audible range; retain the complete octave_shift receipt"
+    },
+    "example_transform": {
+      "original_hz": 16.4,
+      "creative_copy_hz": 32.8,
+      "transform": "x2 / +1 octave",
+      "warning": "32.8 Hz is a creative translation of 16.4 Hz, not the original physical mode."
+    }
+  },
+  "pyramid_calibration_preset": {
+    "name": "GREAT_PYRAMID_KINGS_CHAMBER_EXAMPLE",
+    "status": "ILLUSTRATIVE_ONLY_UNTIL_DIMENSIONS_AND_MEASUREMENTS_ARE_SOURCE_VERIFIED",
+    "concept": "Treat the chamber as a hard-walled resonant room for a first-order model, then replace the approximation with surveyed geometry and measured impulse-response data when available.",
+    "illustrative_long_axis_example": {
+      "L_m_approx": 10.45,
+      "c_m_s_nominal": 343,
+      "first_axial_mode_hz_approx": 16.4,
+      "formula": "343/(2*10.45)",
+      "claim_boundary": "Example calculation only; not a claim that the pyramid was intentionally tuned to this frequency."
+    },
+    "important_note": "The complete acoustic signature is a multi-mode spectrum affected by geometry, openings, material losses, source/listener positions and coupling to adjacent spaces."
+  },
+  "dsp_reference_algorithm": {
+    "pseudocode": [
+      "for p in 0..P:",
+      "  for q in 0..Q:",
+      "    for r in 0..R:",
+      "      if p == 0 and q == 0 and r == 0: continue",
+      "      f = (c/2) * sqrt((p/Lx)^2 + (q/Ly)^2 + (r/Lz)^2)",
+      "      if f <= frequency_limit_hz: store(mode=(p,q,r), physical_hz=f, class=mode_class(p,q,r))",
+      "sort by physical_hz",
+      "cluster near-degenerate frequencies",
+      "optionally validate against measured spectrum / impulse response",
+      "render physical resonator bank",
+      "optionally create separately-labelled creative pitch mapping"
+    ],
+    "recommended_outputs": [
+      "modes.csv",
+      "modal_bank.json",
+      "physical_resonator_render.wav",
+      "creative_translation_render.wav",
+      "impulse_response.wav if measured",
+      "provenance_receipt.json"
+    ]
+  },
+  "generative_audio_bridge": {
+    "preferred_role": "texture_and_arrangement_layer",
+    "stable_audio_note": "Text-to-audio systems may not reproduce requested frequencies with laboratory precision. Exact modal tones should be synthesized or filtered with DSP and then combined with generated ambience.",
+    "prompt_template": "Monumental ancient stone chamber ambience, long reflective granite-like reverberation, sparse low drone derived from supplied modal frequencies, restrained ritual percussion, no modern pop harmony unless requested, preserve a sense of huge enclosed architecture. Physical modal anchors: {MODE_HZ_LIST}. Creative octave translations, if any: {TRANSFORMED_MODE_LIST}. Do not describe symbolic frequencies as measured physical facts.",
+    "workflow": "DSP_MODAL_CORE -> OPTIONAL_IR_CONVOLUTION -> GENERATIVE_TEXTURE -> MIX -> RECEIPT"
+  },
+  "validation_gates": {
+    "GEOMETRY_VALID": "dimensions and units are explicit",
+    "PHYSICS_TRACEABLE": "every predicted frequency can be recomputed from saved inputs",
+    "MEASUREMENT_SEPARATED": "predicted != measured unless matched by evidence",
+    "CREATIVE_TRANSFORMS_TRACEABLE": "every remapped pitch preserves original_hz and transform",
+    "STRUCTURAL_VS_ACOUSTIC_SEPARATED": "building vibration modes are not presented as room-air acoustic modes",
+    "AI_PRECISION_BOUNDARY": "generative audio output is never treated as a precision frequency measurement"
+  },
+  "janus_operator": "GEOMETRY -> MODE_SOLVER -> EVIDENCE_GATE -> PHYSICAL_SOUND -> OPTIONAL_CREATIVE_TRANSLATION -> AI_TEXTURE -> PROVENANCE_RECEIPT",
+  "one_line_rule": "THE PYRAMID IS NOT ASSUMED TO PLAY A SONG; THE CHAMBER IS TREATED AS A RESONANT SYSTEM WHOSE PHYSICS CAN BE MEASURED, MODELLED, RENDERED AND THEN CREATIVELY TRANSLATED.",
+  "provenance": {
+    "origin": "JANUS conversation, 2026-08-19",
+    "requested_by": "Hawkar",
+    "registry": "Hawkar-usls/janus-meta-registry",
+    "notes": "Created as an instruction for a JANUS sound converter after discussion of pyramid/chamber acoustics and resonance."
+  }
+}

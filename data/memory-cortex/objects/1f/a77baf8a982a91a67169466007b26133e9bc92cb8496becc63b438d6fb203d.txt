@@ -1,0 +1,297 @@
+{
+  "schema": "JANUS/META-REGISTRY/PROJECT-STAGE/v1",
+  "record_type": "technical_project_stage_registry",
+  "id": "JANUS-A17_8-HRAIN-BUZZ-SWARM-ORCHESTRATION-RESILIENCE",
+  "title": "JANUS A17.8 HRain + Buzz Swarm Orchestration and Resilience Layer",
+  "version": "0.4.0",
+  "created_utc": "2026-06-29T00:00:00Z",
+  "prepared_for_repository": {
+    "owner": "Hawkar-usls",
+    "repository": "janus-meta-registry",
+    "branch": "main",
+    "intended_path": "data/JANUS-A17_8-HRAIN-BUZZ-SWARM-ORCHESTRATION-RESILIENCE-v0.4.0.json"
+  },
+  "author": {
+    "name": "Hawkar LoL",
+    "handle": "@hawkarlol",
+    "role": "project author / operator"
+  },
+  "project_family": [
+    "JANUS",
+    "A17",
+    "A18",
+    "HRain",
+    "Buzz",
+    "PEA4",
+    "ESP32 swarm",
+    "NAS Brain"
+  ],
+  "summary": {
+    "short": "A local observer-only swarm visibility and resilience stack connecting Buzz ESP32 roster telemetry to NAS, A18 bridge, and HRain UI.",
+    "long": "This registry entry captures the current stage of the JANUS A17.8 HRain live swarm overlay project. The project connects an ESP32/M5 swarm master named Buzz to a local Python roster sidecar, forwards sanitized roster presence into NAS Brain, bridges the data into A18, and renders the state inside HRain. The current PC-side one-click launch path is assembled and validated; the remaining active issue is device-side Buzz full-roster posting reliability after firmware changes."
+  },
+  "epistemic_status": {
+    "status": "working_prototype_with_known_device_side_gap",
+    "confidence": "medium_high_for_PC_orchestration; medium_for_device_firmware_resilience",
+    "claim_limits": [
+      "This is a local experimental telemetry and visualization stack.",
+      "This entry does not claim financial advantage, mining profitability, or protocol superiority.",
+      "Accepted-share telemetry is treated as run-local signal only, not a general proof.",
+      "No offensive, targeting, intrusion, or exploitation capability is described or claimed."
+    ]
+  },
+  "current_stage": {
+    "stage_name": "A17.8 one-click PC orchestration with Buzz roster sidecar guard",
+    "stage_date_utc": "2026-06-29",
+    "summary": "PC-side startup path is now coherent: RUN_ALL_A17 starts/verifies sidecar, miner, HRain shell, and embedded A18 bridge. Buzz roster tick still needs firmware-side diagnostics because the sidecar can start cleanly while post_count_total remains zero.",
+    "overall_verdict": "PC orchestration PASS; Buzz roster firmware tick pending"
+  },
+  "architecture": {
+    "intended_flow": [
+      "Buzz ESP32 swarm master collects local swarm visibility.",
+      "Buzz posts full roster to local buzz_roster_sidecar on port 8011.",
+      "Sidecar validates observer-only state and forwards sanitized samples to NAS Brain on port 8008.",
+      "A18 NAS Swarm Bridge reads NAS swarm state and sidecar freshness.",
+      "HRain serves visual UI on port 8797.",
+      "A17/A14.2 miner runs independently; protocol semantics remain frozen."
+    ],
+    "ports_publicly_documented_as_roles_only": {
+      "8011": "Buzz roster sidecar local/LAN health and roster ingest",
+      "8008": "NAS Brain API",
+      "8797": "HRain local UI and A18 overlay"
+    },
+    "redacted": [
+      "LAN host IPs",
+      "pool credentials",
+      "local absolute machine paths not required for public registry",
+      "secrets and keys"
+    ]
+  },
+  "components": {
+    "RUN_ALL_A17": {
+      "type": "Windows orchestration wrapper",
+      "status": "patched",
+      "changes": [
+        "Removed -NoExit from first orchestrator tab so it does not remain hanging after start.",
+        "Starts Buzz roster sidecar as a Windows Terminal tab instead of a separate CMD window.",
+        "Checks sidecar by real health JSON, not merely occupied port."
+      ],
+      "validation": [
+        "PowerShell parse PASS",
+        "One-click launch from A17.8 pack executed"
+      ]
+    },
+    "buzz_roster_sidecar": {
+      "type": "Python observer-only roster ingress sidecar",
+      "status": "working_with_health_guard",
+      "changes": [
+        "Health verifies dry_run=false.",
+        "Health verifies observer_only=true.",
+        "Health exposes nas_base_url_configured boolean without leaking NAS host.",
+        "Previously added last-roster telemetry and last-good cache remain part of resilience design."
+      ],
+      "current_health_expected": {
+        "http": 200,
+        "dry_run": false,
+        "nas_base_url_configured": true,
+        "observer_only": true
+      }
+    },
+    "NAS_Brain": {
+      "type": "local NAS swarm state API",
+      "status": "alive_not_modified",
+      "constraints": [
+        "NAS core was not touched.",
+        "NAS was not restarted during current launch fix."
+      ]
+    },
+    "HRain_A17_shell": {
+      "type": "local UI shell",
+      "status": "alive",
+      "expected_endpoint": "http://127.0.0.1:8797/index.html",
+      "validation": "HTTP 200 in current report"
+    },
+    "A18_NAS_Swarm_Bridge": {
+      "type": "observer-only bridge",
+      "status": "alive_with_state_machine",
+      "resilience_states": [
+        "fresh",
+        "grace",
+        "stale",
+        "missing"
+      ],
+      "current_reported_issue": "buzz_roster_state=missing when Buzz full roster is not posted after launch"
+    },
+    "Buzz_firmware": {
+      "type": "ESP32/M5 swarm master firmware",
+      "status": "needs_next_patch",
+      "known_regression": [
+        "After roster-sidecar firmware patch, previous hashrate-zero self-recovery behavior appears to have regressed.",
+        "Buzz may show hashrate 0 and not recover automatically.",
+        "Buzz full roster POST tick may not run after clean PC launch even though sidecar is healthy."
+      ],
+      "next_patch_scope": [
+        "Add diagnostics explaining why buzzRosterPostTick is skipped.",
+        "Keep roster POST best-effort and non-blocking.",
+        "Restore hashrate-zero deadman guard without changing WIRE/HASH/SUBMIT semantics."
+      ]
+    },
+    "Gladius_and_RFAnchorAux": {
+      "type": "ESP32 swarm worker brothers",
+      "status": "planned_hardening",
+      "observed_problem": "Buzz sometimes sees 8/10 participants overnight; after rebooting two nodes, visibility returns to 10/10.",
+      "planned_patch": [
+        "Swarm rejoin guard.",
+        "Buzz/master silence detection.",
+        "ESP-NOW soft reinit and presence burst.",
+        "Delayed hard restart fallback only after long repeated failure."
+      ]
+    }
+  },
+  "validation_snapshot": {
+    "from_current_operator_report": {
+      "sidecar_8011": {
+        "http": 200,
+        "dry_run": false,
+        "nas_base_url_configured": true
+      },
+      "NAS_8008": {
+        "http": 200
+      },
+      "HRain_8797_index": {
+        "http": 200
+      },
+      "A17_status": {
+        "http": 200,
+        "stage": "live"
+      },
+      "workers": {
+        "A17_worker": "alive",
+        "A18_bridge": "alive",
+        "A14_2_miner_launcher": "started"
+      },
+      "safety_integrity": {
+        "WIRE_HASH_SUBMIT_mirror_touched": false,
+        "NAS_core_touched": false,
+        "firmwares_touched_in_current_PC_launch_fix": false,
+        "git_pushed": false
+      },
+      "remaining_gap": {
+        "sidecar_post_count_total": 0,
+        "sidecar_last_roster_post_utc": null,
+        "A18_buzz_roster_state": "missing",
+        "interpretation": "PC orchestration is healthy; remaining problem is Buzz firmware roster tick or Buzz-side posting condition."
+      }
+    }
+  },
+  "safety_boundaries": {
+    "observer_only": true,
+    "miner_control": false,
+    "stratum_proxy": false,
+    "submit_path_touched": false,
+    "mirror_control_touched": false,
+    "wire_hash_submit_frozen": true,
+    "forbidden_in_this_stage": [
+      "Do not modify WIRE/HASH/SUBMIT semantics.",
+      "Do not modify hash algorithm.",
+      "Do not change pool credentials.",
+      "Do not auto-flash devices.",
+      "Do not touch PEA4/COM19 or BlindEYE/COM4 during Buzz-only firmware work.",
+      "Do not modify NAS core during sidecar/UI work.",
+      "Do not expose secrets or LAN host details in public registry entries."
+    ]
+  },
+  "resilience_features_completed": [
+    {
+      "feature": "sidecar auto-start guard in RUN_ALL_A17",
+      "status": "completed",
+      "details": "Launcher checks sidecar health and starts it if missing, while avoiding duplicate sidecar instances."
+    },
+    {
+      "feature": "sidecar safe health introspection",
+      "status": "completed",
+      "details": "Health exposes safety state and nas_base_url_configured without leaking internal host."
+    },
+    {
+      "feature": "A18 Buzz roster state machine",
+      "status": "completed",
+      "details": "A18 can distinguish fresh/grace/stale/missing roster state."
+    },
+    {
+      "feature": "HRain UI grace/stale messaging",
+      "status": "completed",
+      "details": "UI can show waiting/stale status instead of collapsing ambiguously."
+    },
+    {
+      "feature": "synthetic test probe filtering",
+      "status": "completed",
+      "details": "Old test probe nodes are filtered from A18 visible nodes."
+    }
+  ],
+  "open_issues": [
+    {
+      "id": "BUZZ_ROSTER_TICK_NOT_POSTING_AFTER_CLEAN_PC_START",
+      "severity": "high",
+      "status": "open",
+      "description": "After one-click PC launch, sidecar may be healthy while post_count_total remains zero and A18 reports buzz_roster_state=missing.",
+      "safe_next_step": "Patch Buzz firmware with diagnostics around buzzRosterPostTick skip reasons; compile only before flashing Buzz."
+    },
+    {
+      "id": "BUZZ_HASHRATE_ZERO_RECOVERY_REGRESSION",
+      "severity": "high",
+      "status": "open",
+      "description": "Buzz previously recovered from hashrate zero; after the roster firmware patch it may remain at H=0.",
+      "safe_next_step": "Restore non-invasive hashrate-zero deadman guard without changing wire/hash/submit semantics."
+    },
+    {
+      "id": "GLADIUS_ANCHOR_SWARM_REJOIN_GUARD",
+      "severity": "medium_high",
+      "status": "planned",
+      "description": "Two worker nodes may silently fall out of Buzz visibility overnight and return after manual reboot.",
+      "safe_next_step": "Add ESP-NOW rejoin guard, presence burst, Buzz/master silence detection, and delayed hard fallback."
+    }
+  ],
+  "recommended_next_codex_tasks": [
+    {
+      "name": "Buzz roster tick diagnostics",
+      "mode": "firmware_compile_only",
+      "target": "Buzz firmware only",
+      "must_not_touch": [
+        "A17 PC miner",
+        "NAS",
+        "sidecar",
+        "A18/HRain",
+        "PEA4/COM19",
+        "BlindEYE/COM4",
+        "WIRE/HASH/SUBMIT semantics"
+      ]
+    },
+    {
+      "name": "Buzz hashrate-zero deadman recovery",
+      "mode": "firmware_compile_only_then_manual_flash_if_PASS",
+      "target": "Buzz firmware only",
+      "purpose": "restore old self-recovery from H=0"
+    },
+    {
+      "name": "Gladius and RFAnchorAux swarm rejoin guard",
+      "mode": "firmware_compile_only_then_manual_flash_if_PASS",
+      "target": "Gladius and Anchor/RFAnchorAux firmware only",
+      "purpose": "make missing workers re-find Buzz automatically after radio/master silence"
+    }
+  ],
+  "public_notes": [
+    "This file is sanitized for public repository storage.",
+    "Internal IP addresses are intentionally omitted.",
+    "No secrets, pool credentials, or private keys are included.",
+    "This is a technical stage registry, not a performance claim."
+  ],
+  "provenance": {
+    "source": "operator reports and live troubleshooting notes in local JANUS/A17/Buzz session",
+    "prepared_by": "GPT-5.5 Thinking",
+    "preparation_note": "Generated as a JSON registry candidate for data/ in janus-meta-registry."
+  },
+  "self_check": {
+    "sha256_without_self_check": "ef1cab802364aaa19b48cefacef6ea8a100bc218d39dcb983613a6679f1a4584",
+    "json_validated": true
+  }
+}

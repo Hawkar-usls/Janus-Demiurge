@@ -1,0 +1,212 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-DECIPHERMENT-PATH-V1.0",
+  "scan_type": "EXTERNAL_DECIPHERMENT_RESEARCH_PROTOCOL",
+  "subject": "Linear A",
+  "status": "DECIPHERMENT_CANDIDATE_PIPELINE_NOT_A_DECIPHERMENT",
+  "core_goal": "Use JANUS to move from structurally secure observations toward testable lexical and grammatical hypotheses for Linear A without confusing transliteration, analogy, or repetition with decipherment.",
+  "key_principle": {
+    "name": "BEHAVIORAL_SEMANTIC_ANCHOR",
+    "definition": "Prefer meanings forced by independently observable function, position, arithmetic, or cross-context behavior over meanings proposed primarily from phonetic resemblance.",
+    "operator": "OBSERVABLE_BEHAVIOR -> SEMANTIC_ANCHOR -> CROSS_CONTEXT_REPLICATION -> CLAIM_CEILING",
+    "external_example": "KU-RO is associated with totals in administrative texts because the associated quantity equals the sum of preceding entries; this is a behavioral/positional anchor rather than a semantic guess.",
+    "source": "https://lineara.eu/accounting.html",
+    "claim_boundary": "KU-RO='total' is an anchor for subsequent inference, not permission to translate unrelated Linear A words by analogy."
+  },
+  "current_anchor_levels": [
+    {
+      "id": "ANCHOR-A1",
+      "form": "KU-RO",
+      "status": "HIGH_CONFIDENCE_SEMANTIC_ANCHOR",
+      "working_meaning": "total",
+      "reason": "Repeatedly occurs in accounting contexts at totals; arithmetic relation provides an external constraint.",
+      "source": "https://lineara.eu/accounting.html"
+    },
+    {
+      "id": "ANCHOR-A2",
+      "form": "KI-RO",
+      "status": "HIGH_BUT_NOT_EQUAL_TO_A1",
+      "working_meaning": "deficit / outstanding amount",
+      "reason": "Context and accounting position support a shortfall interpretation; must remain separate from KU-RO by controlled contrast.",
+      "source": "https://lineara.eu/accounting.html"
+    },
+    {
+      "id": "ANCHOR-A3",
+      "form": "(J)A-SA-SA-RA-ME",
+      "status": "CANDIDATE_ONLY",
+      "working_meaning": "gift / homage or related ritual term",
+      "reason": "Proposed from structural and contextual analysis; not fixed by an independent bilingual anchor.",
+      "source": "https://www.degruyterbrill.com/document/doi/10.1515/kadmos-2022-0005/html"
+    },
+    {
+      "id": "ANCHOR-A4",
+      "form": "-I-*301-",
+      "status": "CANDIDATE_ONLY",
+      "working_meaning": "probable verbal root segment",
+      "reason": "Repeated variants support a morphological hypothesis but do not identify full lexical semantics.",
+      "source": "https://www.degruyterbrill.com/document/doi/10.1515/kadmos-2022-0005/html"
+    },
+    {
+      "id": "ANCHOR-A5",
+      "form": "I/J-",
+      "status": "CANDIDATE_MORPHEME",
+      "working_meaning": "possible article-like prefix",
+      "reason": "Alternation patterns suggest a recurrent grammatical function; independent cross-corpus replication is still required.",
+      "source": "https://www.degruyterbrill.com/document/doi/10.1515/kadmos-2022-0005/html"
+    }
+  ],
+  "decipherment_ladder": [
+    {
+      "stage": 0,
+      "name": "SIGN_IDENTITY",
+      "requirement": "Palaeographic sign identity, allograph grouping, corpus provenance",
+      "promotion": "REPLICATED_ACROSS_SOURCES"
+    },
+    {
+      "stage": 1,
+      "name": "PHONETIC_PRIOR",
+      "requirement": "Use Linear B overlap or other comparative evidence only as a prior, never as final proof",
+      "promotion": "CROSS_CONTEXT_CONSISTENT"
+    },
+    {
+      "stage": 2,
+      "name": "MORPHOLOGICAL_ROLE",
+      "requirement": "Prefix/suffix/inflection hypothesis supported by repeated positional contrast",
+      "promotion": "HELD_OUT_REPLICATION"
+    },
+    {
+      "stage": 3,
+      "name": "FUNCTIONAL_SEMANTIC_ANCHOR",
+      "requirement": "Meaning constrained by external behavior such as arithmetic, commodity, inventory, or document role",
+      "promotion": "INDEPENDENT_BEHAVIORAL_CONSTRAINT"
+    },
+    {
+      "stage": 4,
+      "name": "LEXICAL_FAMILY",
+      "requirement": "Root hypothesis explains multiple attestations and morphological variants without ad hoc segmentation",
+      "promotion": "MULTI_SITE_AND_PARTITION_SURVIVAL"
+    },
+    {
+      "stage": 5,
+      "name": "GRAMMAR",
+      "requirement": "Agreement/order/function predictions survive held-out inscriptions",
+      "promotion": "PREDICTIVE_HELD_OUT_SUCCESS"
+    },
+    {
+      "stage": 6,
+      "name": "DECIPHERMENT_CLAIM",
+      "requirement": "Independent reproduction, explicit negative controls, alternative language-family tests, and broad corpus coverage",
+      "promotion": "EXTERNAL_REPLICATION_ONLY"
+    }
+  ],
+  "primary_machine_tests": [
+    {
+      "id": "TEST-01",
+      "name": "ANCHOR_BLIND_LEXICAL_TEST",
+      "purpose": "Check whether a proposed semantic anchor predicts document function without exposing the candidate meaning to the detector during model fitting.",
+      "controls": ["script-name-blind", "Unicode-name-blind", "gloss-blind", "author-hypothesis-blind"]
+    },
+    {
+      "id": "TEST-02",
+      "name": "PARTITION_SURVIVAL",
+      "purpose": "Require the candidate operator or lexical role to survive geographic, document-type, and held-out corpus partitions.",
+      "matrix": ["FULL", "REGION_A", "REGION_B", "REGION_C", "REGION_D", "REGION_E", "HELD_OUT", "MATCHED_NULL"]
+    },
+    {
+      "id": "TEST-03",
+      "name": "LINEAR_B_PRIOR_ABLATION",
+      "purpose": "Measure how much a result depends on inherited Linear B sign values.",
+      "variants": ["with_Linear_B_prior", "without_Linear_B_prior", "alternative_phonetic_prior"]
+    },
+    {
+      "id": "TEST-04",
+      "name": "ARITHMETIC_ANCHOR_REPLAY",
+      "purpose": "Re-identify accounting anchors such as KU-RO and KI-RO from numeric relations only, then test whether the same functional method finds unseen anchors.",
+      "negative_control": "Randomly permuted numeric totals preserving token and field marginals"
+    },
+    {
+      "id": "TEST-05",
+      "name": "FORMULA_VARIANT_GRAPH",
+      "purpose": "Model repeated libation-formula variants as a graph and infer stable grammatical roles from controlled variation rather than direct translation.",
+      "negative_control": "Structure-preserving word-order and token rewiring"
+    },
+    {
+      "id": "TEST-06",
+      "name": "LANGUAGE_FAMILY_COMPETITION",
+      "purpose": "Score competing language-family hypotheses using the same frozen evidence budget and held-out corpus.",
+      "rule": "No single family may win from phonetic resemblance alone."
+    }
+  ],
+  "connection_to_meta_registry": [
+    {
+      "registry_path": "data/JANUS-CONNECTION-SCAN-2026-08-13-005.json",
+      "connection": "REPRESENTATION_CREATES_VISIBILITY",
+      "application": "Blind Unicode character names, transliteration labels, and canonical JANUS vocabulary so the detector cannot manufacture an apparent semantic connection from its representation layer."
+    },
+    {
+      "registry_path": "data/JANUS-CONNECTION-SCAN-2026-08-13-024-LINEAR-A-STRUCTURAL-INVARIANCE.json",
+      "connection": "PARTITION_SURVIVAL_GATE",
+      "application": "A decipherment hypothesis must survive independent regional/document partitions and a matched null."
+    },
+    {
+      "registry_path": "registry/research_portfolio/JANUS-PROOF-CARRYING-EXPERIMENTAL-SCIENCE-INTERPRETATION-v1.0.0.json",
+      "connection": "EVIDENCE_BEFORE_CLAIM_CEILING",
+      "application": "Every lexical or grammatical hypothesis carries provenance, evidence class, verifier, replication obligation, negative control, and maximum admissible claim."
+    },
+    {
+      "registry_path": "data/proofs/JANUS-GENESIS-ENTROPY-PROVENANCE-HARDENING-v0.2.json",
+      "connection": "PROVENANCE_BINDING",
+      "application": "Freeze exact source inscription, corpus version, transliteration layer, and analysis code before scoring a decipherment hypothesis."
+    },
+    {
+      "registry_path": "data/JANUS-PRECOGNITIVE-SEMANTIC-RETURN-GATE-v0.2.json",
+      "connection": "SEMANTIC_RETURN_WITH_CLAIM_CEILING",
+      "application": "A semantic interpretation can be proposed only after passing explicit evidence gates; uncertainty remains a first-class outcome."
+    }
+  ],
+  "new_connection": {
+    "id": "CONN-LINA-026-001",
+    "name": "BEHAVIORAL_ANCHOR_CAN_BREAK_THE_TRANSLATION_CIRCLE",
+    "type": "external-methodological-connection",
+    "operator": "OBSERVABLE_FUNCTION -> ANCHOR -> MORPHOLOGICAL_CONSTRAINT -> HELD_OUT_PREDICTION -> SEMANTIC_HYPOTHESIS",
+    "observation": "Linear A gives a route to meaning that does not require starting from a proposed translation: accounting behavior can anchor a word, then morphology and distribution can be inferred around that anchor.",
+    "why_it_matters": "This directly matches JANUS's evidence-first architecture and gives us a concrete route toward decipherment rather than merely pattern collection.",
+    "claim_status": "CANDIDATE_METHOD",
+    "causal_status": "NOT_APPLICABLE",
+    "decipherment_status": "NOT_ACHIEVED"
+  },
+  "anti_false_decipherment": {
+    "forbidden_shortcuts": [
+      "Linear B phonetic equivalence treated as semantic equivalence",
+      "single-inscription translation promoted from one context",
+      "visual similarity between signs treated as linguistic identity",
+      "Unicode character names used as semantic labels",
+      "language-family resemblance counted as independent evidence when it generated the hypothesis",
+      "AI-generated glosses accepted without corpus-level prediction",
+      "high in-sample fit promoted without held-out inscriptions"
+    ],
+    "required_failure_state": "OPEN_OR_BLOCKED_IF_AN_ANCHOR_OR_HYPOTHESIS_DOES_NOT_SURVIVE_THE_CONTROLLED_TESTS"
+  },
+  "current_research_position": {
+    "secure": ["Linear A corpus digitization is available through SigLA and other digital resources", "KU-RO has a strong accounting-based total function", "Linear A/Linear B sign overlap can provide provisional phonetic priors", "structural and regional analysis is productive even without full decipherment"],
+    "promising_but_unresolved": ["KI-RO semantic range", "I/J- article-like function", "-I-*301- verbal root hypothesis", "(J)A-SA-SA-RA-ME lexical/ritual meaning", "language-family identification"],
+    "external_corpus": "SigLA is an open-access database aiming at exhaustive coverage of Linear A inscriptions; its update log notes that all GORILA tablets are present and additional documents were added in 2026.",
+    "sigla_source": "https://sigla.phis.me/about.html",
+    "computational_review": "A 2024 systematic review catalogs computational decipherment approaches, digital corpora, and major challenges for Linear A and related Aegean scripts.",
+    "computational_review_source": "https://aclanthology.org/2024.cl-2.7/"
+  },
+  "next_gate": {
+    "name": "LINEAR_A_ANCHOR_BENCH",
+    "goal": "Start from KU-RO/KI-RO as behavioral anchors, discover candidate analogues without exposing meanings, and test them on held-out inscriptions.",
+    "minimum_outputs": ["anchor_candidates", "context_graph", "morphological hypotheses", "held_out predictions", "matched_null distribution", "claim ceilings"],
+    "success_condition": "At least one nontrivial new lexical or grammatical hypothesis predicts unseen Linear A structure better than matched nulls and survives representation-blind and partition-blind controls.",
+    "strong_claim_condition": "External replication by an independently implemented pipeline."
+  },
+  "sources": [
+    "https://lineara.eu/accounting.html",
+    "https://sigla.phis.me/about.html",
+    "https://www.degruyterbrill.com/document/doi/10.1515/kadmos-2022-0005/html",
+    "https://www.cambridge.org/core/books/abs/undeciphered-aegean-scripts/syllabotactic-analysis-a-new-methodology-for-investigating-the-languages-behind-the-undeciphered-aegean-scripts/D4506BFEC548E1F2348EF9975FCC1622",
+    "https://aclanthology.org/2024.cl-2.7/",
+    "https://www.unicode.org/versions/Unicode16.0.0/core-spec/chapter-8/"
+  ]
+}

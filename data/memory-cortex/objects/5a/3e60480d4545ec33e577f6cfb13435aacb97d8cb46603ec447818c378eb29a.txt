@@ -1,0 +1,118 @@
+{
+  "schema": "janus.demihead.correction_language_gates.v1",
+  "artifact_id": "JANUS-DEMIHEAD-CORRECTION-PROPAGATOR-AND-LANGUAGE-INVARIANCE-GATES-v1.0",
+  "created_at_local": "2026-08-16T05:16:00+03:00",
+  "status": "PREIMPLEMENTATION_CONTRACT_FROZEN_FOR_STACKED_PR",
+  "parent_gap_matrix": "data/JANUS-DEMIHEAD-CALAMAR-REGISTRY-TO-RUNTIME-GAP-MATRIX-v1.0.json",
+  "portal_binding": "data/JANUS-FIRST-PORTAL-DOOR-AND-DEMIHEAD-BOUNDARY-v1.0.json",
+  "target": {
+    "repo": "Hawkar-usls/Demi_Head",
+    "base_strategy": "STACK_ON_TOP_OF_PR3_EXACT_HEAD_TO_KEEP_CRITICAL_GATES_SEPARATE_FROM_PORTAL_AND_AVOID_FALSE_MAIN_CLAIMS",
+    "pr3_head": "18d40c7c21606161af55899fa11d49aac9d55229"
+  },
+  "correction_propagator_contract": {
+    "purpose": "Given explicit root/presentation lineage and explicit correction records, mark known descendants whose bound revision is superseded while preserving all historical records.",
+    "input_classes": ["ROOT_REVISION", "PRESENTATION_DESCENDANT", "CORRECTION_RECORD"],
+    "output_classes": ["CORRECTION_PROPAGATION_RECEIPT", "AFFECTED_PRESENTATION", "CURRENT_PRESENTATION", "UNKNOWN_LINEAGE"],
+    "hard_laws": [
+      "CORRECTION != DELETION",
+      "SUPERSESSION_PRESERVES_HISTORY",
+      "KNOWN_DESCENDANT_OF_SUPERSEDED_REVISION_MUST_BE_MARKED",
+      "CURRENT_REVISION_DESCENDANT_MUST_NOT_BE_MARKED_STALE_BY_CORRECTION",
+      "UNKNOWN_DESCENDANT_REMAINS_UNKNOWN",
+      "CORRECTION_RECORD != TRUTH_PROOF",
+      "CORRECTION_PROPAGATION != SOURCE_AUTHORITY"
+    ],
+    "forbidden": [
+      "delete historical presentation",
+      "invent unknown lineage",
+      "infer correction from model confidence",
+      "rewrite source text",
+      "convert correction existence into objective truth"
+    ]
+  },
+  "language_invariance_contract": {
+    "purpose": "Compare language-specific render receipts against one canonical semantic envelope and fail closed when protected fields drift across uk/ru/en.",
+    "protected_fields": [
+      "evidence_state",
+      "uncertainty_class",
+      "urgency_class",
+      "user_rights",
+      "official_position_present",
+      "independent_evidence_present",
+      "contradictions_present",
+      "unknown_fields_present",
+      "release_control"
+    ],
+    "presentation_only_fields": ["title", "summary", "explanation", "labels"],
+    "hard_laws": [
+      "LANGUAGE_CHANGE != EVIDENCE_STATUS_CHANGE",
+      "LANGUAGE_CHANGE != UNCERTAINTY_CHANGE",
+      "LANGUAGE_CHANGE != URGENCY_CHANGE",
+      "LANGUAGE_CHANGE != USER_RIGHTS_CHANGE",
+      "TRANSLATION_STYLE != AUTHORITY",
+      "MISSING_LANGUAGE_RECEIPT != PASS"
+    ],
+    "forbidden": [
+      "judge translation literary quality as truth",
+      "silently normalize semantic drift",
+      "use language identity as evidence weight",
+      "infer user ideology from language selection"
+    ]
+  },
+  "portal_relationship": {
+    "portal_may_carry_requested_language": true,
+    "portal_may_apply_language_invariance": false,
+    "portal_may_route_to_correction_aware_destination": true,
+    "portal_may_rewrite_correction_graph": false,
+    "rule": "PORTAL_CARRIES_ROUTE_METADATA; DEMIHEAD_OWNS_EVIDENCE_SEMANTICS"
+  },
+  "test_plan": {
+    "correction_positive": [
+      "known descendant bound to superseded revision becomes AFFECTED_BY_CORRECTION",
+      "known descendant bound to current revision remains CURRENT",
+      "history remains present in output",
+      "correction does not change authority or mass-effect budget"
+    ],
+    "correction_negative": [
+      "unknown root fails closed",
+      "duplicate correction IDs fail closed",
+      "unknown presentation lineage remains UNKNOWN rather than guessed"
+    ],
+    "language_positive": [
+      "uk/ru/en receipts with equal protected semantics PASS despite different prose",
+      "protected list ordering is normalized only where explicitly set-like"
+    ],
+    "language_negative": [
+      "different evidence_state FAIL",
+      "different uncertainty FAIL",
+      "missing user right FAIL",
+      "different urgency FAIL",
+      "missing required language FAIL"
+    ]
+  },
+  "admission_target": {
+    "implementation": "L3_LOCAL_CONTRACT",
+    "exact_head_ci": "L4_TESTED",
+    "real_world_translation_quality": "NOT_TARGETED_BY_THIS_GATE",
+    "real_world_correction_completeness": "NOT_ESTABLISHED_WITHOUT_SOURCE_ACQUISITION_AND_LINEAGE_COMPLETENESS"
+  },
+  "claim_ceiling": {
+    "allowed_after_L4": [
+      "DemiHead can deterministically propagate explicit correction metadata through explicit known lineage without deleting history.",
+      "DemiHead can deterministically detect drift in protected semantic fields across frozen uk/ru/en render receipts."
+    ],
+    "forbidden": [
+      "DemiHead discovers all corrections on the web.",
+      "DemiHead guarantees translations are linguistically perfect.",
+      "A correction record proves the corrected source is objectively true.",
+      "Language invariance proves absence of all framing bias."
+    ]
+  },
+  "registry_semantics": {
+    "history_preserved": true,
+    "additive_not_replacement": true,
+    "current_authority_modified": false,
+    "demihead_main_modified": false
+  }
+}

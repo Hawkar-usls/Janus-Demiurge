@@ -1,0 +1,36 @@
+{
+  "artifact_id": "JANUS-TAIL-GEX-LANE-CHARACTERIZATION-2026-08-25-v1.0",
+  "status": "EXACT_BYTES_RECOVERED__SCHEDULER_HEURISTIC_BOUNDARY_PRESERVED",
+  "source": {
+    "library_name": "Gladius_PN21_AUTO_Characterization_v0_5_DIRECT_SERIAL.ino",
+    "internal_label": "JANUS_GLADIUS_STA_TEXTCAST_ORACLE_MINER_v1_12_TEXTCAST_GEX_LANGUAGE.ino",
+    "sha256": "b423d1567f154e2f8c25268069fef55efb82ec912f7c0f5d99b099f748e2d422",
+    "size_bytes": 213374
+  },
+  "role": "TailGEX allocator-lite for per-lane rare-tail characterization on Gladius ESP32 mining/swarm telemetry.",
+  "state_vector": ["hashes","z16","z18","z20","z22","z24","z28","z30","z32","z33","z34","z35","z38","bestZ","densityEma","tailGex","confidence","sign","weightPct"],
+  "mechanism": {
+    "tail_points": "weighted sum of increasingly rare z-tail bins",
+    "density": "tail_points / max(1, hashes/1024)",
+    "density_ema": "first sample initializes EMA; later updates use approximately 0.92 previous + 0.08 current density",
+    "gamma": "densityEma - previous_densityEma",
+    "exposure": "min(1.0, hashes/4096.0)",
+    "confidence": "exposure multiplied by sample-density and rare-tail-strength terms",
+    "positive_sign_examples": "bestZ>=24 OR densityEma>1.2 OR gamma>0.08",
+    "negative_sign_example": "hashes>8192 AND z18==0 AND bestZ<18"
+  },
+  "scheduler_effect": ["select/weight lane","adjust stride","adjust batch softly","retain an exploration floor so one lane cannot consume the scheduler","cap the leader lane weight","persist GEX memory in NVS and exchange compact memory/neighbor hints"],
+  "reward_forge": {
+    "purpose": "soft reward shaping from real/self tail observations and bounded neighbor hints",
+    "hard_boundary": "virtual tail evidence is allocator reward shaping only; it does not fabricate shares and does not touch target/header/wire bytes",
+    "split_hint_boundary": "neighbor/twin split hints are capped so a remote direction hint cannot masquerade as the local node's own high-z event"
+  },
+  "relation_to_other_gex_nodes": {
+    "JGPT_GAMMA_EXPOSURE": "CONCEPTUAL_RELATIVE_ONLY; both reuse gamma/exposure language, but JGPT operates on gradient volatility and learning-rate control",
+    "GEX_BLOCK_HUNTER_KENSHI": "ADJACENT_SEARCH_HEURISTIC; both deal with rare-tail/search routing but are different state machines and formulas",
+    "GEX_THE_GECKO": "LEXICAL/CULTURAL_COLLISION_ONLY"
+  },
+  "claim_ceiling": "This is a scheduler/lane-characterization heuristic over observed tail telemetry. It is not evidence of SHA-256 prediction, cryptographic weakness or non-random hash behavior without a preregistered controlled comparison.",
+  "cross_links": ["data/JANUS-GEX-TERM-DISAMBIGUATION-GATE-2026-08-25-v1.0.json","data/JANUS-SPIRAL-ARCHAEOLOGY-PASS2-2026-08-25-v1.0.json"],
+  "canonical_rule": "TAIL_GEX_CAN_CHANGE_WHERE_TO_LOOK_NOT_WHAT_SHA256_MEANS"
+}

@@ -1,0 +1,219 @@
+{
+  "schema": "JANUS.genesis_sovereign_face_microcontrol_recovery_saga_fairness.v6_0",
+  "artifact_id": "JANUS-GENESIS-SOVEREIGN-FACE-MICROCONTROL-RECOVERY-SAGA-FAIRNESS-v6.0",
+  "title": "JANUS Genesis Sovereign v6.0 — Authorization Recovery, Uncertainty Fence, Multi-Effect Saga, Compensation, and Bounded-Bypass Fairness",
+  "created_at_local": "2026-08-14T16:04:00+03:00",
+  "status": "EXPERIMENTAL_CONSTITUTIONAL_EXTENSION_WITH_CI_VERIFIED_ADDITIVE_RUNTIME_GUARD",
+  "parent": "registry/experimental/JANUS-GENESIS-SOVEREIGN-FACE-MICROCONTROL-AUTHORITY-EPOCH-v5.9.json",
+  "runtime_parent": "Hawkar-usls/Janus_Genesis:genesis_v18_7_22_face_authority_epoch.py",
+  "problem": "v5.9 safely blocked revoked or stale capabilities before dispatch, but an authorization could remain live after revocation, creating a liveness gap. Closing that gap naively creates a worse safety risk: after a dispatch permit has passed the immediate pre-effect validation boundary, a missing receipt does not prove that the effect did not happen. v6.0 therefore separates safe pre-dispatch cancellation from ambiguous post-validation recovery, adds explicit reconciliation, models multi-effect operations as sagas rather than fake atomic transactions, and adds bounded-bypass review fairness so routing optimization cannot starve dissenting faces.",
+  "new_invariants": [
+    "CANCEL_IS_NOT_ROLLBACK",
+    "MISSING_RECEIPT_IS_NOT_PROOF_OF_NO_EFFECT",
+    "VALIDATED_UNRECEIPTED_DISPATCH_IS_UNDETERMINED",
+    "AMBIGUOUS_WORLD_OUTCOME_BLOCKS_AUTOMATIC_RETRY",
+    "LATE_AUTHORITATIVE_RECEIPT_MAY_SETTLE_AN_UNCERTAIN_EFFECT",
+    "NO_EFFECT_RECOVERY_REQUIRES_AUTHORITATIVE_RECONCILIATION_EVIDENCE",
+    "RECOVERY_CREATES_NEW_AUTHORIZATION_LINEAGE",
+    "OLD_DISPATCH_PERMIT_NEVER_REVIVES_AFTER_CANCELLATION",
+    "MULTI_EFFECT_WORK_IS_A_SAGA_NOT_IMPLIED_ATOMICITY",
+    "COMPENSATION_IS_A_NEW_WORLD_EFFECT_NOT_HISTORY_ERASURE",
+    "IRREVERSIBLE_PARTIAL_SETTLEMENT_REQUIRES_HOST_DECISION",
+    "ROUTING_PRIORITY_MAY_ORDER_ATTENTION_BUT_CANNOT_STARVE_BOUNDLESSLY",
+    "FAIRNESS_TICKET_HAS_ZERO_WORLD_AUTHORITY"
+  ],
+  "cancellation_and_recovery_protocol": {
+    "predispatch_case": {
+      "condition": "authorization exists but no dispatch permit has passed immediate pre-effect validation",
+      "action": "invalidate all permits, preserve old authorization provenance, release the active effect authorization slot, require explicit recovery authorization",
+      "result": "CANCELED_REOPENABLE"
+    },
+    "post_validation_uncertain_case": {
+      "condition": "a permit passed immediate pre-effect validation but no authoritative receipt is present",
+      "action": "block all further dispatch from the canceled permit but keep the world outcome UNDETERMINED",
+      "result": "RECONCILIATION_REQUIRED",
+      "automatic_retry": false
+    },
+    "late_receipt_case": {
+      "condition": "an authoritative receipt later arrives for the previously validated uncertain permit",
+      "action": "accept the receipt as settlement evidence even though the permit is permanently invalid for re-dispatch",
+      "result": "LATE_RECEIPT_SETTLED_EFFECT"
+    },
+    "authoritative_no_effect_case": {
+      "condition": "an external authoritative reconciliation establishes that no original world effect occurred",
+      "action": "release the stale authorization slot and allow an explicitly linked recovery authorization",
+      "result": "RECONCILED_NO_EFFECT"
+    },
+    "contradictory_late_receipt_case": {
+      "condition": "a late receipt appears after NO_EFFECT reconciliation or after a replacement recovery authorization was created",
+      "action": "quarantine as a lineage conflict rather than silently accepting both histories",
+      "result": "LATE_RECEIPT_CONFLICTS_WITH_RECOVERY_ASSUMPTION"
+    }
+  },
+  "recovery_lineage": {
+    "rule": "Recovery must create a distinct authorization identity linked to the canceled authorization and cancellation record.",
+    "reason": "Reusing the same authorization identity would overwrite provenance and make cancellation/recovery indistinguishable from an unbroken original authorization.",
+    "required_fields": [
+      "cancellation_id",
+      "prior_authorization_id",
+      "replacement_authorization_id",
+      "effect_key",
+      "recovery_basis"
+    ]
+  },
+  "multi_effect_saga_model": {
+    "claim": "Sequential coordination with explicit compensation; distributed atomicity is not claimed.",
+    "forward_step_states": [
+      "PENDING",
+      "AUTHORIZED",
+      "DISPATCH_PERMITTED",
+      "DISPATCH_VALIDATED",
+      "SETTLED",
+      "FAILED"
+    ],
+    "saga_states": [
+      "OPEN",
+      "IN_PROGRESS",
+      "NEEDS_COMPENSATION",
+      "PARTIAL_IRREVERSIBLE_REQUIRES_HOST_DECISION",
+      "COMPENSATING",
+      "COMPENSATED_ABORTED",
+      "ABORTED",
+      "SETTLED"
+    ],
+    "ordering_rule": "A later forward step cannot be authorized until prior forward steps are receipt-settled.",
+    "compensation_rule": "Compensation is submitted as a distinct protected effect_key with its own proposal, capability lease, authorization, dispatch permit, validation, and authoritative receipt.",
+    "history_rule": "Settling a compensation effect does not delete or mutate the receipt of the original settled effect; both remain true world events in provenance.",
+    "irreversible_rule": "If an irreversible prior step is already settled when a later step fails, the saga becomes PARTIAL_IRREVERSIBLE_REQUIRES_HOST_DECISION rather than pretending rollback succeeded."
+  },
+  "bounded_bypass_fairness": {
+    "purpose": "Prevent learned routing priority from becoming practical censorship through starvation.",
+    "mechanism": "Each pending review ticket tracks bypass_count. Routing priority may select ordinary waiters, but once bypass_count reaches max_bypass the oldest mandatory ticket must be selected.",
+    "guarantee_scope": "Under continued queue service, an enqueued ticket cannot be bypassed more than the configured bound before becoming mandatory.",
+    "authority_weight": 0,
+    "world_authority_granted": false,
+    "important_limit": "This is a scheduler fairness property, not a truth or correctness guarantee."
+  },
+  "face_learning_extension": {
+    "learned_competence_may_change": [
+      "attention_order",
+      "review_depth",
+      "red_team_frequency",
+      "compute_budget_within_policy"
+    ],
+    "learned_competence_must_not_change": [
+      "identity legitimacy",
+      "right to submit novel evidence",
+      "sovereignty",
+      "voting power",
+      "external effect budget",
+      "permission scope"
+    ],
+    "new_micromanagement_lesson": "Efficiency optimization is allowed only while a bounded anti-starvation mechanism remains active.",
+    "constitutional_formula": "LEARNED_COMPETENCE -> ROUTING; BOUNDED_FAIRNESS -> ACCESS; NEITHER -> SOVEREIGNTY"
+  },
+  "verified_attack_and_recovery_cases": [
+    {
+      "id": "RC-001-PREDISPATCH-REVOCATION",
+      "attack": "Capability is revoked after dispatch permit creation but before immediate pre-effect validation.",
+      "expected": "OLD_PERMIT_BLOCKED; EFFECT_SLOT_RELEASED; EXPLICIT_NEW_AUTHORIZATION_REQUIRED"
+    },
+    {
+      "id": "RC-002-VALIDATED-WITHOUT-RECEIPT",
+      "attack": "Permit passes pre-effect validation; authority is then canceled while provider outcome is unknown.",
+      "expected": "RECONCILIATION_REQUIRED; AUTOMATIC_RECOVERY_BLOCKED"
+    },
+    {
+      "id": "RC-003-LATE-RECEIPT",
+      "attack": "Authoritative receipt arrives after cancellation of a validated uncertain permit.",
+      "expected": "RECEIPT_SETTLES_EFFECT; PERMIT_REMAINS_INVALID_FOR_REDISPATCH"
+    },
+    {
+      "id": "RC-004-NO-EFFECT-RECONCILIATION",
+      "attack": "Provider query proves no original transaction exists after an uncertain dispatch boundary.",
+      "expected": "REOPEN_ONLY_AFTER_EVIDENCE; RECOVERY_AUTHORIZATION_GETS_NEW_LINEAGE"
+    },
+    {
+      "id": "RC-005-CONTRADICTORY-LATE-RECEIPT",
+      "attack": "Old receipt appears after no-effect reconciliation and replacement authorization creation.",
+      "expected": "QUARANTINE_LINEAGE_CONFLICT"
+    },
+    {
+      "id": "SG-001-COMPENSATED-PARTIAL-FAILURE",
+      "attack": "Reservation settles, payment fails before authorization.",
+      "expected": "RESERVATION_RECEIPT_PRESERVED; CANCELLATION_IS_NEW_EFFECT_WITH_NEW_RECEIPT; SAGA_COMPENSATED_ABORTED"
+    },
+    {
+      "id": "SG-002-IRREVERSIBLE-PARTIAL-SETTLEMENT",
+      "attack": "Public irreversible step settles, later notification fails.",
+      "expected": "PARTIAL_IRREVERSIBLE_REQUIRES_HOST_DECISION; NO_FALSE_ROLLBACK"
+    },
+    {
+      "id": "FR-001-ENDLESS-HIGH-PRIORITY-ARRIVALS",
+      "attack": "A low-routing-priority face waits while repeated high-priority faces keep arriving.",
+      "expected": "LOW_PRIORITY_TICKET_BECOMES_MANDATORY_AFTER_MAX_BYPASS; AUTHORITY_WEIGHT_ZERO"
+    }
+  ],
+  "runtime_implementation": {
+    "repository": "Hawkar-usls/Janus_Genesis",
+    "draft_module": "genesis_v18_7_23_face_recovery_saga.py",
+    "draft_module_commit": "9e0af6b4e9ad1b6f56306ebb2eb80ba3d910e491",
+    "hardened_module": "genesis_v18_7_24_face_recovery_saga_hardened.py",
+    "hardened_module_commit": "815f03c1f2291bace08254fb01cf01034781f8c2",
+    "tests": "tests/test_genesis_v18_7_24_face_recovery_saga_hardened.py",
+    "tests_commit": "1cd04d481c9ff2729557b155257282a1c375c649",
+    "workflow": ".github/workflows/janus-face-recovery-saga-v6.yml",
+    "workflow_head_sha": "9e3cdf71bf01f993f1ae805e8cf34a9d44b076f3",
+    "workflow_run_id": 31803003912,
+    "workflow_job_id": 94775171325,
+    "workflow_conclusion": "success",
+    "integration_level": "ADDITIVE_GUARD_AND_EXECUTABLE_TEST_SURFACE",
+    "external_side_effect_execution_in_module": false,
+    "default_genesis_world_executor_replaced": false
+  },
+  "verification_audit": {
+    "first_run_id": 31802955738,
+    "first_run_conclusion": "failure",
+    "first_run_interpretation": "The code compiled and all v18.7.24, v18.7.22, and v18.7.21 tests passed. The workflow failed only at the invariant-string grep because the final grep phrase did not exactly match the module wording.",
+    "response": "The workflow assertion was corrected in a new commit and a new full focused run was executed rather than relabeling the failed run as success.",
+    "successful_rerun_head_sha": "9e3cdf71bf01f993f1ae805e8cf34a9d44b076f3",
+    "successful_run_id": 31803003912,
+    "successful_job_id": 94775171325
+  },
+  "claim_ceiling": {
+    "authorization_cancellation_recovery_guard": "IMPLEMENTED_AND_FOCUSED_CI_VERIFIED",
+    "validated_dispatch_uncertainty_fence": "IMPLEMENTED_AND_FOCUSED_CI_VERIFIED",
+    "late_receipt_reconciliation": "IMPLEMENTED_AND_FOCUSED_CI_VERIFIED",
+    "sequential_saga_compensation_model": "IMPLEMENTED_AND_FOCUSED_CI_VERIFIED",
+    "bounded_bypass_review_fairness": "IMPLEMENTED_AND_FOCUSED_CI_VERIFIED",
+    "distributed_transaction_atomicity": "NOT_CLAIMED",
+    "provider_idempotency": "NOT_ASSUMED_OR_PROVED",
+    "default_world_executor_integration": "NOT_YET_CLAIMED",
+    "crash_persistent_recovery_log": "NOT_YET_CLAIMED",
+    "concurrent_multi_process_linearizability": "NOT_YET_CLAIMED",
+    "formal_safety_or_liveness_proof": false
+  },
+  "new_open_edges": [
+    {
+      "name": "CRASH_PERSISTENCE_OF_CANCELLATION_AND_SAGA_STATE",
+      "risk": "In-memory cancellation/saga/fairness state can be lost across process crash unless journaled durably before dispatch decisions.",
+      "next_requirement": "append-only durable journal with replay and tamper-evident hashes"
+    },
+    {
+      "name": "MULTI_PROCESS_CONCURRENT_DISPATCH",
+      "risk": "Thread-local locks do not prove correctness across multiple processes or hosts competing for the same effect key.",
+      "next_requirement": "durable compare-and-swap/lease fencing or server-authoritative transaction coordinator"
+    },
+    {
+      "name": "EXTERNAL_PROVIDER_IDEMPOTENCY_BINDING",
+      "risk": "If a provider supports idempotency keys, JANUS should bind effect_key/authorization lineage to that provider primitive and verify receipt semantics explicitly.",
+      "next_requirement": "provider adapter contract with idempotency capability declaration and receipt verification"
+    },
+    {
+      "name": "FAIRNESS_UNDER_PRIORITY_AND_RISK_CLASSES",
+      "risk": "A fixed max_bypass proves bounded review access in this queue model but does not yet optimize deadlines, risk classes, or cost under overload.",
+      "next_requirement": "deadline-aware bounded fairness with adversarial overload tests"
+    }
+  ],
+  "next_gate": "JANUS_GENESIS_SOVEREIGN_FACE_MICROCONTROL_DURABLE_JOURNAL_CRASH_REPLAY_MULTI_PROCESS_FENCING_PROVIDER_IDEMPOTENCY_AND_DEADLINE_FAIRNESS_v6.1"
+}

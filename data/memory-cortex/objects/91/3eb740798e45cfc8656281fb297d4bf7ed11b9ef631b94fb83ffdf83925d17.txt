@@ -1,0 +1,306 @@
+{
+  "schema": "janus.meta_registry.fallout3_f3dad_datamining_hidden_orphan_content.v1",
+  "artifact_id": "FALLOUT-3-F3DAD-DATAMINING-HIDDEN-ORPHAN-CONTENT-REGISTRY-v1.0",
+  "title_ru": "Fallout 3 — датамайнинг скрытого и осиротевшего контента F3DAD",
+  "title_en": "Fallout 3 — F3DAD Hidden & Orphaned Content Datamining Registry",
+  "created_at_local": "2026-08-14T17:36:00+03:00",
+  "version": "v1.0",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "intended_layer": "data",
+  "registry_family": "FALLOUT_3_PRIMARY_ASSET_DATAMINING",
+  "artifact_class": "PRIMARY_ASSET_GRAPH_RECONSTRUCTION_AND_HIDDEN_CONTENT_INDEX",
+  "status": "ADMITTED_AS_PRIMARY_ESM_DATAMINING_BASELINE_WITH_CLAIM_CEILING",
+  "purpose": {
+    "ru": "Зафиксировать предметы и механики Fallout 3, обнаруженные через анализ официальных ESM из пользовательского архива F3DAD.rar, с приоритетом на формы без штатного runtime-пути, тестовые ревизии, orphan-записи и функциональные цепочки WEAP/MISC -> ENCH/MGEF -> SCPT/PROJ/EXPL.",
+    "en": "Preserve hidden, test, revision and orphaned Fallout 3 records reconstructed directly from the official ESM graph, while separating primary-byte observations from interpretation and from claims about public novelty."
+  },
+  "source_lineage": {
+    "user_supplied_archive": {
+      "name": "F3DAD.rar",
+      "size_bytes": 251166524,
+      "sha256": "311f481de1de176a33a358d993563f551bc617651225059d40ce6de430c865ce",
+      "authority": "USER_SUPPLIED_FILE_BYTES"
+    },
+    "registry_receipt": "data/FALLOUT-3-F3DAD-PRIMARY-ARCHIVE-MANIFEST-RECEIPT-v1.0.json",
+    "archive_identity_relation": "BYTE_IDENTICAL_TO_REGISTERED_F3DAD_CONTAINER",
+    "official_master_set": [
+      "Fallout3.esm",
+      "Anchorage.esm",
+      "ThePitt.esm",
+      "BrokenSteel.esm",
+      "PointLookout.esm",
+      "Zeta.esm"
+    ],
+    "known_inner_primary_hash": {
+      "Fallout3.esm_sha256": "fb4442418fb6bf6df68e633c7056afb4e09572b521a7f4602a2699fa33d99e32",
+      "authority": "PRIOR_PRIMARY_EXTRACTION_RECEIPT"
+    },
+    "scope_note": "This artifact does not claim new SHA-256 values for DLC ESM files unless independently recomputed; the outer archive receipt is the lineage anchor for the six-master set."
+  },
+  "methodology": {
+    "search_targets": [
+      "WEAP weapon forms",
+      "MISC inventory-item forms",
+      "ENCH enchantments",
+      "MGEF magic effects",
+      "SCPT scripts",
+      "PROJ projectiles",
+      "EXPL explosions",
+      "placed references",
+      "NPC/container inventory references",
+      "script-side Form references",
+      "duplicate/revision signatures"
+    ],
+    "primary_questions": [
+      "Does the record exist in a shipped official master?",
+      "Does it have a normal world, container, NPC, quest or script acquisition/use path?",
+      "If it is unplaced, does a functional effect/script/projectile chain still survive?",
+      "Does an apparently unused form preserve a prior revision of a production mechanic?",
+      "Are two records structurally identical except for identity/editor metadata?",
+      "Is the finding merely a known cut item, or does the ESM graph expose additional undocumented structure?"
+    ],
+    "evidence_layers": {
+      "L0_PRIMARY_BYTES": "The form/subrecord/script exists in one of the official ESM files contained in the registered F3DAD archive.",
+      "L1_REFERENCE_GRAPH": "Inbound and outbound relations among forms are reconstructed from the ESM records.",
+      "L2_SCRIPT_SEMANTICS": "Compiled/decompiled script behavior is interpreted only where the relevant form/script relationship is present.",
+      "L3_RUNTIME_REACHABILITY": "Normal acquisition/use is distinguished from zero-reference or test-cell-only reachability.",
+      "L4_PUBLIC_FOOTPRINT": "Public mention of a name or EditorID is treated separately from primary-asset graph reconstruction.",
+      "L5_INTERPRETATION": "Development intent or revision history remains an inference unless explicitly stated by a primary artifact."
+    },
+    "terminology": {
+      "orphan_record": "A record present in the shipped master with no observed normal inbound runtime path in the inspected graph.",
+      "hidden_mechanic": "A surviving functional chain whose behavior is not represented by a normally obtainable production item.",
+      "revision_ghost": "A record that appears to preserve an abandoned or superseded implementation revision.",
+      "test_cell_asset": "A valid inventory/object form retained in developer/test content rather than the normal game path."
+    }
+  },
+  "findings": [
+    {
+      "finding_id": "F3DM-001-ELECTRIC-SWORD-B-STATEFUL-DAMAGE",
+      "dlc": "Operation: Anchorage",
+      "master": "Anchorage.esm",
+      "record_type": "WEAP",
+      "editor_id": "testPhilElectricSwordB",
+      "display_name": "Electric Sword Damage Multiply",
+      "form_id_notation": {
+        "load_order_relative": "xx00BE38",
+        "local_form_id": "0x0000BE38",
+        "note": "xx is the runtime load-order byte and is installation dependent."
+      },
+      "classification": [
+        "TEST_WEAPON",
+        "ORPHAN_FROM_NORMAL_ACQUISITION_PATH",
+        "HIDDEN_STATEFUL_COMBAT_MECHANIC"
+      ],
+      "functional_chain": [
+        "testPhilElectricSwordB",
+        "enchTestPhilElectricSwordB",
+        "testPhilElectricSwordBEffect",
+        "testPhilElectricSwordBSCRIPT"
+      ],
+      "primary_observation": {
+        "normal_world_or_inventory_references_observed": 0,
+        "mechanic": "Successive hits against the same target advance an internal damage level; changing target resets the sequence.",
+        "reconstructed_incremental_damage_sequence": [
+          "first hit establishes level 1",
+          "second same-target hit: +5 direct HP damage",
+          "third same-target hit: +10 direct HP damage",
+          "fourth and later same-target hits: +20 direct HP damage per hit"
+        ]
+      },
+      "interpretation": "Bethesda retained a test implementation of focus-fire damage escalation for an electric sword. The strongest claim is the surviving stateful same-target mechanic, not novelty of the EditorID itself.",
+      "confidence": "HIGH_PRIMARY_GRAPH_AND_SCRIPT_SEMANTICS"
+    },
+    {
+      "finding_id": "F3DM-002-BOMB-FLARE-CARPET-BOMB-CALLIN",
+      "dlc": "Operation: Anchorage",
+      "master": "Anchorage.esm",
+      "record_type": "WEAP",
+      "editor_id": "DLC02BombFlare",
+      "display_name_ru": "Сигнальная ракета",
+      "form_id_notation": {
+        "load_order_relative": "xx00A4DD",
+        "local_form_id": "0x0000A4DD"
+      },
+      "classification": [
+        "UNUSED_CALLIN_WEAPON",
+        "ORPHAN_FROM_NORMAL_ACQUISITION_PATH",
+        "SURVIVING_CARPET_BOMB_EFFECT_CHAIN"
+      ],
+      "functional_chain": [
+        "DLC02BombFlare",
+        "DLC02BombFlarePROJ",
+        "DLC02BombFlareExplosion",
+        "DLC02BombFlareENCH",
+        "DLC02BombFlareEFFECT",
+        "DLC02BombFlareEnchSCRIPT",
+        "DLC02FXCarpetBomb01"
+      ],
+      "paired_test_record": {
+        "editor_id": "DLC02TestGun",
+        "form_id_load_order_relative": "xx00A4DF",
+        "observed_role": "Test/controller weapon associated with bombFlareActive state."
+      },
+      "script_behavior_summary": "The surviving effect chain places DLC02FXCarpetBomb01 objects during the scripted effect lifecycle. A related level-design prototype also retains a short delayed call-in flow.",
+      "interpretation": "The records collectively preserve an abandoned player-triggered flare/call-in path for carpet bombing rather than a mere inert weapon model.",
+      "confidence": "HIGH_PRIMARY_GRAPH; DEVELOPMENT_INTENT_INFERENCE_MEDIUM_HIGH"
+    },
+    {
+      "finding_id": "F3DM-003-TESLA-CHAIN-EFFECT-03-GAP",
+      "dlc": "Broken Steel",
+      "master": "BrokenSteel.esm",
+      "record_type": "WEAP",
+      "editor_id": "DLC03WeapTeslaChainEffect03",
+      "form_id_notation": {
+        "load_order_relative": "xx00D4F9",
+        "local_form_id": "0x0000D4F9"
+      },
+      "classification": [
+        "ORPHAN_HELPER_WEAPON",
+        "REVISION_GHOST",
+        "CHAIN_INDEX_GAP"
+      ],
+      "neighbor_records": [
+        "DLC03WeapTeslaChainEffect",
+        "DLC03WeapTeslaChainEffect02",
+        "DLC03WeapTeslaChainEffect03",
+        "DLC03WeapTeslaChainEffect04"
+      ],
+      "observed_script_dispatch": {
+        "DLC03TeslaChainEffectVTwo01Script": "FireWeapon DLC03WeapTeslaChainEffect",
+        "DLC03TeslaChainEffectVTwo02Script": "FireWeapon DLC03WeapTeslaChainEffect02",
+        "DLC03TeslaChainEffectVTwo03Script": "FireWeapon DLC03WeapTeslaChainEffect04"
+      },
+      "orphan_gap_signature": "01 -> base, 02 -> 02, 03 -> 04; helper WEAP 03 survives but is skipped by the observed VTwo dispatch chain.",
+      "interpretation": "The skipped 03 helper is consistent with a superseded intermediate implementation or renumbered Tesla chain stage.",
+      "confidence": "HIGH_FOR_GAP_OBSERVATION; MEDIUM_HIGH_FOR_REVISION_HISTORY_INFERENCE"
+    },
+    {
+      "finding_id": "F3DM-004-ZETA-ROBOT-CANNON-B-C-REVISION-GHOSTS",
+      "dlc": "Mothership Zeta",
+      "master": "Zeta.esm",
+      "record_type": "WEAP",
+      "records": [
+        {
+          "editor_id": "DLC05WeapRobotCannonNonPlayerB",
+          "form_id_load_order_relative": "xx00A9AC",
+          "local_form_id": "0x0000A9AC"
+        },
+        {
+          "editor_id": "DLC05WeapRobotCannonNonPlayerC",
+          "form_id_load_order_relative": "xx00A9AD",
+          "local_form_id": "0x0000A9AD"
+        }
+      ],
+      "production_neighbor": "DLC05WeapRobotCannonNonPlayer",
+      "classification": [
+        "UNUSED_REVISION_FORMS",
+        "STRUCTURAL_DUPLICATES",
+        "REVISION_GHOSTS"
+      ],
+      "primary_observation": "B and C were observed as structurally identical across the compared gameplay/model/audio/projectile-related subrecords, with EditorID identity as the meaningful distinction, and neither had a normal observed runtime use path.",
+      "interpretation": "B and C are strong candidates for abandoned revision copies of the non-player Robot Cannon implementation.",
+      "confidence": "HIGH_FOR_STRUCTURAL_DUPLICATION; MEDIUM_HIGH_FOR_REVISION_INTENT"
+    },
+    {
+      "finding_id": "F3DM-005-ZETA-ALIEN-TEST-INVENTORY-SET",
+      "dlc": "Mothership Zeta",
+      "master": "Zeta.esm",
+      "record_type": "MISC",
+      "test_context": "DLC05TestPhil",
+      "classification": [
+        "TEST_CELL_INVENTORY_FORMS",
+        "HIDDEN_ALIEN_JUNK_SET"
+      ],
+      "editor_ids": [
+        "DLC05Widget",
+        "DLC05AlienGizmo",
+        "DLC05AlienTool",
+        "DLC05AlienDoodad",
+        "DLC05AlienThingamabon",
+        "DLC05AlienAppliance",
+        "DLC05AlienContraption",
+        "DLC05AlienDevice",
+        "DLC05AlienMaterial",
+        "DLC05AlienMechanism",
+        "DLC05AlienImager",
+        "DLC05AlienCrystal",
+        "DLC05AlienGemstone",
+        "DLC05AlienGemstoneSmall",
+        "DLC05AlienGemstoneLarge"
+      ],
+      "observations": [
+        "These are MISC inventory forms rather than only STATIC scenery records.",
+        "They are associated with developer/test content rather than ordinary player-facing placement.",
+        "The EditorID DLC05AlienThingamabon preserves the apparent terminal-n spelling in the shipped data."
+      ],
+      "interpretation": "The set preserves a developer-facing alien-junk vocabulary and inventory-object family that did not become a normal collectible set in the released player path.",
+      "confidence": "HIGH_PRIMARY_RECORD_CLASS_AND_TEST_CONTEXT"
+    }
+  ],
+  "known_or_documented_cut_content_excluded_from_novelty_claim": [
+    {
+      "name": "The Peepers",
+      "reason": "Known test/cut item; retained only as a control showing that the datamining filter also catches already documented content."
+    },
+    {
+      "name": "Sim Regen Armor",
+      "reason": "Known test armor; its regeneration behavior is not treated here as a new discovery."
+    },
+    {
+      "name": "Pa's Fishing Aid",
+      "reason": "Known cut unique weapon from Point Lookout."
+    },
+    {
+      "name": "DLC03WeapShockHammer / Discharge-Shock Hammer lineage",
+      "reason": "Already has public technical documentation/modding footprint."
+    },
+    {
+      "name": "DLC05WeapSpanner",
+      "reason": "Already has public technical documentation/modding footprint."
+    }
+  ],
+  "novelty_policy": {
+    "world_first_claim": false,
+    "rule": "EDITOR_ID_PUBLIC_MENTION != PUBLIC_DOCUMENTATION_OF_FULL_ESM_GRAPH_OR_SCRIPT_MECHANIC",
+    "admitted_claim": "This registry preserves primary-asset graph reconstructions and hidden mechanics recovered from the registered ESM set.",
+    "forbidden_claim_without_broader_archive_search": "No person or website has ever documented any of these records or mechanics.",
+    "reason": "Historical modding forums, dumps, mirrors and non-indexed archives make universal public-novelty claims non-falsifiable without a dedicated literature/archive audit."
+  },
+  "claim_ceiling": [
+    "PRESENCE_IN_ESM != NORMAL_PLAYER_OBTAINABILITY",
+    "ZERO_OBSERVED_REFERENCE != MATHEMATICAL_PROOF_OF_ZERO_RUNTIME_PATH_UNDER_ALL_ENGINE_CONDITIONS",
+    "TEST_EDITOR_ID != PROOF_OF_EXACT_DEVELOPER_INTENT",
+    "STRUCTURAL_DUPLICATION != PROOF_OF_CHRONOLOGICAL_REVISION_ORDER",
+    "PUBLIC_EDITOR_ID_MENTION != PUBLIC_MECHANIC_DOCUMENTATION",
+    "PRIMARY_GRAPH_RECONSTRUCTION != WORLD_FIRST_DISCOVERY",
+    "LOAD_ORDER_PREFIX_XX_IS_NOT_A_FIXED_FORMID_BYTE",
+    "TEST_OR_CUT_CONTENT_MAY_BE_UNSTABLE_WHEN_FORCED_INTO_RUNTIME"
+  ],
+  "research_value": {
+    "why_this_matters": [
+      "The strongest hidden-content signals are often not unusual names but broken or orphaned functional chains.",
+      "Reference-graph gaps can preserve implementation history that ordinary item lists miss.",
+      "Compiled test scripts can expose prototype mechanics even when the item has no normal acquisition route.",
+      "Duplicate helper forms can reveal abandoned revisions without requiring loose source assets."
+    ],
+    "generalized_datamining_pattern": "SOURCE ESM -> RECORD IDENTITY -> INBOUND REFERENCES -> OUTBOUND FUNCTIONAL CHAIN -> SCRIPT SEMANTICS -> RUNTIME REACHABILITY -> PUBLIC FOOTPRINT -> CLAIM CEILING"
+  },
+  "next_gate": {
+    "artifact_id": "FALLOUT-3-F3DAD-ORPHAN-MGEF-SCPT-ACTV-CONT-REFERENCE-GRAPH-AUDIT-v1.1",
+    "priority": "HIGH",
+    "targets": [
+      "all orphan MGEF -> SCPT chains",
+      "hidden ACTI activators",
+      "CONT containers with no ordinary placement",
+      "persistent references reachable only from scripts",
+      "unused enchantment/effect chains",
+      "quest-disabled or initially-disabled object references",
+      "test-cell-only inventory forms",
+      "cross-DLC revision ghosts and duplicated helper forms"
+    ],
+    "success_condition": "Produce a machine-readable candidate table where each candidate records first missing runtime edge, surviving functional descendants, script behavior, and confidence-separated interpretation."
+  },
+  "created_by": "JANUS / Hawkar research line",
+  "notes": "This node is intentionally a datamining registry rather than a lore article. It preserves what the shipped data graph supports, keeps public novelty separate, and is designed to be extended as deeper orphan-reference audits are completed."
+}

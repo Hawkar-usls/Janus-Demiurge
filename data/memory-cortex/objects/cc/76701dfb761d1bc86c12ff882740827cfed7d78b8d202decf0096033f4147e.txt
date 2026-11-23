@@ -1,0 +1,112 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-R3C-2C-REAL-IR-PROJECTION-SPEC-2026-08-14-v0.1",
+  "timestamp": "2026-08-14T18:01:00+03:00",
+  "version": "v0.1",
+  "title": "Seven-document real-source projection into cumulative JANUS Linear A IR hardening v1.2.1",
+  "observer": "Oleksandr Ahapov / Hawkar + JANUS",
+  "node_type": "preexecution_real_source_ir_projection_spec",
+  "status": "FROZEN_BEFORE_EXECUTION",
+  "parents": {
+    "canonical_state": "data/JANUS-LINEAR-A-RESEARCH-STATE-2026-08-14-v2.8.json",
+    "coverage_audit": "data/JANUS-LINEAR-A-R3C-2B-REAL-IR-HARDENING-COVERAGE-AUDIT-RESULT-2026-08-14-v0.1.json",
+    "required_coverage_status": "V1_1_D6_COVERED_D5_BOUNDARY_COVERAGE_GAP",
+    "v1_1_validation": "data/JANUS-LINEAR-A-TRANSCRIPTION-IR-HARDENING-VALIDATION-RESULT-2026-08-14-v1.1.json",
+    "v1_2_1_validation": "data/JANUS-LINEAR-A-TRANSCRIPTION-IR-HARDENING-VALIDATION-RESULT-2026-08-14-v1.2.1.json",
+    "required_v1_2_1_status": "HARDENING_V1_2_1_ADMITTED"
+  },
+  "source": {
+    "repository": "mwenge/lineara.xyz",
+    "commit": "43fe7cf1abc8e6bb1ea3228c3a1bd5938709620a",
+    "path": "LinearAInscriptions.js",
+    "bytes": 1609137,
+    "sha256": "4da8e1f9693d30880ee505e56541fc189add70605bad88436c44a8e11a57764c",
+    "loader": "JANUS-LINEAR-A-R3C-SOURCE-LOADER-v0.4",
+    "independence_level": "L0_DERIVATIVE_TRANSFORM"
+  },
+  "scope": {
+    "projection_type": "MINIMAL_SOURCE_SPAN_PROJECTION_NOT_FULL_DOCUMENT_TRANSCRIPTION",
+    "D5_documents": ["IOZa12", "IOZa16", "KNZa10", "PKZa16"],
+    "D6_documents": ["HT132", "HTZd155", "HTZd157+156"],
+    "documents_total": 7,
+    "unselected_document_content_interpreted": false
+  },
+  "D5_projection_template": {
+    "source_parts": "Use exactly the fixed two lineage parts from the frozen R3C-2B coverage result.",
+    "part_tokenization": "Split each source part on literal hyphen into SIGN tokens while preserving the complete original part string on its SOURCE_WORD group as additive source_group_raw.",
+    "groups": "Create exactly two separate SOURCE_WORD groups for the two source parts; never merge them.",
+    "boundary_witness": "Preserve the exact intervening source transliteratedWords newline item as one SEPARATOR token with source_raw equal to the actual source string.",
+    "v1_1_extension": "Present with empty continuation/conflict collections, satisfying cumulative profile inheritance.",
+    "v1_2_1_relation": {
+      "continuation_type": "SOURCE_CONTINUATION_ACROSS_BOUNDARY",
+      "boundary_class": "UNRESOLVED_SURFACE_OR_LINE",
+      "boundary_resolution_claimed": false,
+      "evidence_class": "MECHANICAL_EXACT",
+      "source_boundaries_preserved": true,
+      "destructive_merge_performed": false,
+      "linguistic_wordhood_claimed": false
+    },
+    "claim_view": {
+      "eligible_token_types": ["SIGN"],
+      "allowed_token_fields": ["source_sign_id", "sequence_index"],
+      "required_boundary_continuation_policy": "PRESERVE_BOUNDARY_CLASS_AND_SOURCE_GROUPS",
+      "required_unresolved_boundary_policy": "NO_BOUNDARY_KIND_PROMOTION"
+    }
+  },
+  "D6_projection_template": {
+    "source_label_layer": "For every source transliteratedWords item containing substring *904, emit a LOGOGRAM_SOURCE_LABEL token preserving the full source word and source_reading_label '*904'.",
+    "encoded_glyph_layer": "Emit one SIGN token per U+1066B occurrence in parsedInscription with source_raw equal to the glyph and source_sign_id A319.",
+    "disagreement": "Emit one base SIGN_ID_CONFLICT disagreement joining the label-layer and glyph-layer token refs with status MECHANICALLY_LOCALIZED.",
+    "v1_1_binding": {
+      "resolution_state": "UNRESOLVED",
+      "assertion_1": "SOURCE_LABEL identity value *904",
+      "assertion_2": "ENCODED_GLYPH identity value U+1066B/A319",
+      "semantic_class_authority_granted": false,
+      "source_identity_overwrite_performed": false
+    },
+    "v1_2_1_extension": "Present with an empty cross_boundary_continuations collection; v1.2.1 must not alter the conflict semantics.",
+    "claim_view": {
+      "eligible_token_types": ["SIGN"],
+      "allowed_token_fields": ["source_sign_id", "sequence_index"],
+      "required_identity_conflict_policy": "EXCLUDE_CONFLICTED_TOKENS"
+    }
+  },
+  "provenance_requirements": [
+    "Every projection references the exact source file SHA and byte length.",
+    "Every source-layer token/group/conflict/continuation has a provenance ref tied to the source document ID and exact source field/array index in source_record_id.",
+    "No source field is rewritten to make a hardening validator pass.",
+    "Every IR is sealed with the base v1.0 ir_sha256 algorithm after all cumulative extensions are present."
+  ],
+  "validation_protocol": {
+    "for_each_D5": [
+      "base v1.0 validate_ir passes",
+      "v1.1 validate_hardening_v1_1 passes",
+      "v1.2.1 validate_hardening_v1_2_1 passes",
+      "claim view without v1.2.1 boundary policies fails",
+      "claim view with both frozen fail-closed boundary policies passes"
+    ],
+    "for_each_D6": [
+      "base v1.0 validate_ir passes",
+      "v1.1 validate_hardening_v1_1 passes",
+      "v1.2.1 validate_hardening_v1_2_1 passes",
+      "claim view without EXCLUDE_CONFLICTED_TOKENS fails",
+      "claim view with EXCLUDE_CONFLICTED_TOKENS passes"
+    ],
+    "all_7_required_for_admission": true
+  },
+  "decision_rule": {
+    "REAL_7_DOCUMENT_PROJECTION_PASS": "All seven source-derived projection IRs pass cumulative validation and their negative/positive scientific-view firewall canaries behave exactly as frozen.",
+    "PARTIAL_PROJECTION": "At least one source-derived projection validates but not all seven.",
+    "PROJECTION_FAILED": "No projection validates or a source symptom differs from the frozen coverage input."
+  },
+  "claim_ceiling": {
+    "technical_source_span_projection_only": true,
+    "full_document_transcription_claimed": false,
+    "D5_boundary_kind_resolved": false,
+    "D5_linguistic_wordhood_proved": false,
+    "D6_A319_semantics_assigned": false,
+    "JANUS_independent_D5_D6_discovery": false,
+    "R3B_effect": "NONE",
+    "new_anchor": false,
+    "decipherment": false
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "id": "JANUS-DEMIHEAD-VOICE-MOUTH-BRIDGE-2026-08-19-v0.1",
+  "version": "0.1",
+  "date": "2026-08-19",
+  "status": "IMPLEMENTED_TYPED_LOCAL_BRIDGE_PENDING_EXACT_HEAD_CI_CONFIRMATION",
+  "document_class": "cross_repository_implementation_bridge",
+  "repositories": {
+    "head": "Hawkar-usls/Demi_Head",
+    "voice": "Hawkar-usls/The-Voice-of-Janus",
+    "registry": "Hawkar-usls/janus-meta-registry"
+  },
+  "concept": {
+    "anatomy_metaphor": "DemiHead receives a mouth/voice tract",
+    "engineering_mapping": "DemiHead emits typed JSON audio intent; The Voice of Janus performs local Python audio rendering and returns a JSON receipt.",
+    "boundary": "ANATOMY_METAPHOR != BIOLOGICAL_CLAIM"
+  },
+  "operator": "DEMIHEAD -> VOICE_REQUEST(JSON) -> THE_VOICE_OF_JANUS(PYTHON) -> WAV + VOICE_RENDER_RECEIPT(JSON) -> DEMIHEAD",
+  "demihead_files": [
+    "contracts/NEXUS_V2_5_VOICE_MOUTH_EDGE_FROZEN_CONTRACT.json",
+    ".janus/VOICE_LINK.json",
+    "configs/voice_mouth.activation.json",
+    "tools/voice_mouth_bridge.py",
+    "tests/test_voice_mouth_bridge.py"
+  ],
+  "voice_files": [
+    "data/DEMIHEAD_MOUTH_BRIDGE-v0.1.json",
+    "src/demihead_mouth_adapter.py",
+    "tests/test_demihead_mouth_adapter.py",
+    ".github/workflows/validate.yml"
+  ],
+  "schemas": {
+    "request": "janus.demihead.voice_request.v1",
+    "receipt": "janus.voice.demihead_render_receipt.v1"
+  },
+  "initial_capability": {
+    "render_allowlisted_preset": true,
+    "geometry_to_modal_audio": true,
+    "speech_tts": false,
+    "automatic_playback": false,
+    "network_transport": false,
+    "microphone_capture": false
+  },
+  "safety_and_integrity": {
+    "request_sha256_binding": true,
+    "request_id_sha256_binding": true,
+    "preset_allowlist": true,
+    "arbitrary_request_path": false,
+    "arbitrary_shell_command": false,
+    "network_io": false,
+    "automatic_playback": false,
+    "wav_sha256_receipt": true,
+    "engine_receipt_sha256_binding": true,
+    "authority_delta": 0,
+    "mass_effect_budget_delta": 0
+  },
+  "epistemic_rules": [
+    "MOUTH != BRAIN",
+    "VOICE_RENDER != TRUTH",
+    "AUDIO_OUTPUT != EVIDENCE_PROMOTION",
+    "RENDERED != PLAYED",
+    "CAPABILITY != AUTHORITY",
+    "JSON_INTENT != SHELL_COMMAND"
+  ],
+  "verification": {
+    "github_files_written": true,
+    "demihead_existing_ci_discovers_new_unittest": true,
+    "voice_ci_added_with_unit_tests_and_end_to_end_render_smoke": true,
+    "exact_head_ci_result_observed_by_this_registry_record": false,
+    "reason": "GitHub connector confirmed writes, but no exact-head completed CI result was available to this session at freeze time."
+  },
+  "next_gate": "Observe exact-head CI for both repositories; if green, freeze a cross-repository fixture using the exact DemiHead request bytes and The-Voice-of-Janus receipt bytes. Then implement TTS only as a separate versioned capability gate.",
+  "provenance": {
+    "requested_by": "Hawkar",
+    "origin": "JANUS conversation 2026-08-19",
+    "upstream_voice_system": "data/JANUS-VOICE-OF-JANUS-IMPLEMENTATION-BRIDGE-v0.1.json"
+  }
+}

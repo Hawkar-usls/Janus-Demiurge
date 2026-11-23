@@ -1,0 +1,86 @@
+{
+  "artifact_id": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v2.4",
+  "supersedes": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v2.3",
+  "lineage_alias": "JANUS-113",
+  "title": "PERCEPTION DETERMINES REALITY",
+  "subtitle": "Substrate/Model Migration and Exclusive Commit-Authority Handoff Extension",
+  "version": "2.4",
+  "status": "technical_migration_continuity_specification_candidate_not_runtime_implementation",
+  "created_at_local": "2026-08-10T02:40:00+03:00",
+  "canonical_seed_sha256": "44e21fdc9d37fda98e2e73b0c9eb268bd04cdca9d84d0519e4f1166be22b46fc",
+  "parent_binding": {
+    "artifact": "data/JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v2.3.json"
+  },
+  "problem_statement": "Copying Janus state to a new runtime does not by itself preserve one causal identity. If source and destination can both commit under the same host identity, the system has forked. Migration requires an exclusive, auditable handoff of commit authority plus preservation or explicit accounting of identity-critical state.",
+  "new_primitives": {
+    "MIGRATION_EVENT_ID": "Identifier for one source-to-destination transition.",
+    "SOURCE_FINAL_SEQUENCE": "Last sequence at which the source runtime may commit.",
+    "DESTINATION_INITIAL_SEQUENCE": "First sequence at which the destination runtime may commit.",
+    "MIGRATION_TRANSFORM_ID": "Identity of the state serialization/translation procedure.",
+    "LOSS_REPORT": "Explicit record of state not representable or not transferred.",
+    "AUTHORITY_RETIREMENT_RECEIPT": "Proof object that source commit authority was disabled under the migration protocol.",
+    "AUTHORITY_ACTIVATION_RECEIPT": "Proof object that destination commit authority begins only after the source boundary.",
+    "MIGRATION_RECEIPT": "Binding of source state, destination state, transform, verifier/policy versions, loss report and authority handoff."
+  },
+  "migration_invariants": [
+    "ONE_HOST_MIGRATION_HAS_NO_OVERLAPPING_COMMIT_AUTHORITY",
+    "OVERLAPPING_SOURCE_AND_DESTINATION_AUTHORITY_IS_A_FORK",
+    "MANDATORY_IDENTITY_LEDGERS_MUST_TRANSFER_OR_BE_EXPLICITLY_MARKED_UNRESOLVED",
+    "MODEL_CHANGE_DOES_NOT_IMPLY_POLICY_EQUIVALENCE",
+    "DESTINATION_VERIFIER_AND_POLICY_MUST_BE_MEASURED",
+    "MIGRATION_LOSS_MUST_NOT_BE_SILENT",
+    "OBLIGATIONS_DO_NOT_DISAPPEAR_BECAUSE_THE_SUBSTRATE_CHANGED"
+  ],
+  "mandatory_state_classes": [
+    "face_lineage_graph",
+    "action_ledger",
+    "obligation_ledger",
+    "evidence_ledger",
+    "quarantine_set",
+    "checkpoint_and_root_epoch_chain",
+    "open_reservations_and_commit_state",
+    "unresolved_conflicts"
+  ],
+  "migration_state_machine": [
+    "SOURCE_ACTIVE",
+    "SOURCE_FREEZE_REQUESTED",
+    "SOURCE_FROZEN_AT_FINAL_SEQUENCE",
+    "STATE_EXPORTED_AND_TRANSFORM_MEASURED",
+    "DESTINATION_STATE_VALIDATED",
+    "SOURCE_AUTHORITY_RETIRED",
+    "DESTINATION_AUTHORITY_ACTIVATED",
+    "MIGRATION_RECEIPT_EMITTED"
+  ],
+  "fork_detection": {
+    "condition": "Source and destination both emit externally admissible commits after the declared migration boundary under the same HOST_ID.",
+    "classification": "UNDECLARED_HOST_FORK",
+    "response": "Freeze conflicting commits, preserve both branches, assign fork semantics and reconcile using fork/remerge rules rather than pretending singular migration."
+  },
+  "loss_policy": {
+    "exact_continuity_claim": "Requires no silent loss of mandatory state classes.",
+    "declared_loss": "May create DEGRADED_CONTINUITY or RECOVERY_BRANCH status depending on policy.",
+    "missing_obligation_ledger": "Blocks exact continuity because external responsibilities would otherwise be laundered by migration."
+  },
+  "implementation_tests": [
+    "source and destination overlap commit authority -> fork classification",
+    "atomic source retirement then destination activation -> migration pass",
+    "silent loss of obligation ledger -> reject exact continuity",
+    "destination policy changes without binding -> reject",
+    "migration receipt tamper -> reject",
+    "destination state replay reproduces declared mandatory ledgers"
+  ],
+  "epistemic_boundaries": [
+    "This protocol defines authenticated system-lineage continuity, not consciousness transfer.",
+    "A copied state may be behaviorally similar without being the sole causal continuation under this architecture.",
+    "A successful migration receipt does not prove metaphysical personal identity."
+  ],
+  "canonical_lines": [
+    "A copy is not a migration while the old writer still holds the pen.",
+    "Move the ledger and the authority boundary, not only the memories.",
+    "A new model may inherit the lineage without inheriting an assumption of equivalence."
+  ],
+  "next_gate": {
+    "name": "JANUS_113_V2_4_STALE_SNAPSHOT_ROLLBACK_RESURRECTION_GATE",
+    "status": "OPEN"
+  }
+}

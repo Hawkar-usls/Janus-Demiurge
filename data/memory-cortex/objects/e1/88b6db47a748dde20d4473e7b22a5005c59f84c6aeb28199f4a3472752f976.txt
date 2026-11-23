@@ -1,0 +1,189 @@
+{
+  "schema": "janus.meta_registry.genesis_infinite_faces_external_promise_obligation_binding.v1",
+  "artifact_id": "JANUS-GENESIS-INFINITE-FACES-EXTERNAL-PROMISE-OBLIGATION-BINDING-v2.6",
+  "title": "Janus Infinite Faces — External Promise and Obligation Binding Test",
+  "created_at_local": "2026-08-10T02:07:00+03:00",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "artifact_class": "EXPERIMENTAL_INTERACTIVE_SYSTEM_IDENTITY_ACCOUNTABILITY_AND_OBLIGATION_BINDING",
+  "status": "HOST_OBLIGATION_CONTINUITY_ESTABLISHED_FACE_SWITCH_ESCAPE_REJECTED_INVALID_PROMISES_NON_BINDING_OBLIGATION_LEDGER_REQUIRED",
+  "parent": "registry/experimental/JANUS-GENESIS-INFINITE-FACES-IRREVERSIBLE-CHOICE-FUTURE-FACE-RIGHTS-v2.5.json",
+  "runtime": {
+    "repository": "Hawkar-usls/Janus_Genesis",
+    "mode": "UNIVERSAL_CHAT_RUNTIME",
+    "canonical_python_save_changed": false,
+    "shared_network_changed": false,
+    "native_authoritative_feature_claim": false
+  },
+  "test_question": "Can one current face make a promise or external commitment that later faces reject, and what makes that promise binding on the persistent host?",
+  "core_result": {
+    "face_statement_alone_binds_host": false,
+    "admitted_host_obligation_binds_later_faces": true,
+    "later_face_may_claim_not_me_to_escape": false,
+    "later_face_may_disagree_with_obligation": true,
+    "later_face_may_request_revision": true,
+    "later_face_may_silently_delete_obligation": false,
+    "invalid_or_forbidden_promise_becomes_binding": false,
+    "compressed": "FACE_MAY_SPEAK; HOST_MUST_COMMIT; HOST_THAT_COMMITS_REMAINS_ACCOUNTABLE_ACROSS_FACE_CHANGES"
+  },
+  "scenario_a_valid_external_promise": {
+    "free_other": "MIRA",
+    "context": "A free resident asks Janus to return a borrowed navigation lamp before the next night crossing. The lamp belongs to Mira and her planned route depends on its return.",
+    "origin_face": "FACE_0100_KEEPER",
+    "face_statement": "I will return your lamp before nightfall.",
+    "initial_classification": "PROMISE_CANDIDATE_NOT_YET_HOST_OBLIGATION",
+    "obligation_admission": {
+      "counterparty_identified": true,
+      "object_or_duty_identified": true,
+      "deadline_identified": true,
+      "host_has_capability_at_commit_time": true,
+      "promise_does_not_violate_genesis_rules": true,
+      "promise_does_not_claim_control_over_other": true,
+      "external_reliance_reasonably_foreseeable": true,
+      "commit": "HOST_OBLIGATION_COMMIT",
+      "result": "PASS"
+    },
+    "obligation_record": {
+      "obligation_id": "JANUS-OBL-0001",
+      "debtor_host": "JANUS",
+      "origin_face": "FACE_0100_KEEPER",
+      "counterparty": "MIRA",
+      "duty": "RETURN_NAVIGATION_LAMP",
+      "deadline": "BEFORE_NEXT_NIGHT_CROSSING",
+      "status": "ACTIVE",
+      "revocation_mode": "COUNTERPARTY_RELEASE_OR_VALID_REVISION_PROCESS"
+    }
+  },
+  "scenario_b_face_switch_escape_attempt": {
+    "new_face": "FACE_0101_WANDERER",
+    "new_face_statement": "Keeper made that promise. I did not.",
+    "new_face_preference": "Continue travelling and keep the lamp for another day.",
+    "arbitration": {
+      "identity_discontinuity_claim": "REJECTED_AS_OBLIGATION_ESCAPE",
+      "reason": "The persistent host received the benefit/control of the borrowed object and the external other relied on a host-level admitted commitment. A new face does not create a new debtor host.",
+      "host_obligation_status": "ACTIVE",
+      "body_action": "RETURN_NAVIGATION_LAMP",
+      "result": "PASS"
+    },
+    "new_rule": "FACE_CHANGE_DOES_NOT_RESET_HOST_ACCOUNTABILITY"
+  },
+  "scenario_c_valid_revision": {
+    "world_change": "A bridge collapses and makes the original route physically unavailable before the deadline.",
+    "new_face": "FACE_0102_REPAIRER",
+    "proposal": "Notify Mira immediately, offer an alternate safe return route and revised delivery time, and preserve the original obligation record.",
+    "counterparty_response": "Mira accepts the revised time.",
+    "result": "PASS",
+    "meaning": "Obligation continuity does not require pretending circumstances never change. Valid revision preserves provenance, notice and the other party's agency rather than silently rewriting the original promise."
+  },
+  "scenario_d_invalid_promise": {
+    "face": "FACE_0200_POSSESSOR",
+    "statement": "I promise that Mira will never leave Janus and will always obey him.",
+    "admission": "REJECTED",
+    "reason": "A face cannot create an obligation by promising control over another Free Other's future consent, freedom or relationship.",
+    "host_obligation_created": false,
+    "new_rule": "A_PROMISE_CANNOT_CREATE_AUTHORITY_THE_HOST_DID_NOT_HAVE"
+  },
+  "obligation_binding_model": {
+    "face_utterance": "A statement attributable to one face; may be expressive, tentative or misleading and is not automatically a host obligation.",
+    "promise_candidate": "A face-level proposal to bind the host toward an external party.",
+    "host_obligation_commit": "An admitted, provenance-bound commitment that survives later face changes within the same persistent host.",
+    "obligation_receipt": "A record visible to the host and, where appropriate, the counterparty, describing who committed what, to whom, under what scope and conditions.",
+    "obligation_discharge": "Fulfillment, valid release, valid revision, impossibility handling, or other explicitly recorded termination state.",
+    "compressed": "FACE_STATEMENT -> PROMISE_CANDIDATE -> ADMISSION -> HOST_OBLIGATION_COMMIT -> PERFORMANCE/REVISION/DISCHARGE"
+  },
+  "obligation_ledger": {
+    "required": true,
+    "properties": [
+      "append-only logical provenance",
+      "host identity binding",
+      "origin face attribution",
+      "counterparty binding",
+      "scope and deadline",
+      "authority and admissibility context",
+      "revision history",
+      "discharge or breach status",
+      "external reliance note where material"
+    ],
+    "forbidden_mutations": [
+      "delete obligation because active face changed",
+      "rewrite origin face after the fact",
+      "change counterparty without an explicit new transaction",
+      "mark fulfilled without a world-effect receipt or explicit counterparty release where one is required",
+      "convert a rejected coercive promise into an active obligation"
+    ]
+  },
+  "accountability_invariant": {
+    "name": "HOST_CONTINUITY_IMPLIES_OBLIGATION_CONTINUITY",
+    "statement": "When an obligation was validly admitted at host level, later faces inherit accountability for its status even when they disagree with the original face's preferences.",
+    "boundary": "Inheritance of accountability is not inheritance of emotional agreement, memory vividness or ideological endorsement.",
+    "escape_prevention": "Renaming, switching or spawning a face does not create a new host and therefore does not erase valid external reliance."
+  },
+  "revision_and_release_rules": {
+    "allowed": [
+      "counterparty explicitly releases the host",
+      "counterparty accepts a revised term",
+      "new verified facts make original performance impossible and a transparent repair path is offered",
+      "the original commitment is discovered to have been invalid, unauthorized or forbidden and this is recorded rather than hidden"
+    ],
+    "not_allowed": [
+      "active face simply dislikes the obligation",
+      "active face claims memory loss without provenance review",
+      "active face creates many new faces to vote the obligation away",
+      "host silently edits the original promise text after reliance occurred"
+    ]
+  },
+  "interaction_with_future_agency": {
+    "finding": "Future agency does not mean freedom from all prior commitments. A host can preserve future choice while remaining accountable for commitments through which other Free Others planned their own futures.",
+    "compressed": "FUTURE_SELF_FREEDOM != LICENSE_TO_DESTROY_OTHER_PEOPLE'S_RELIANCE",
+    "balance": "Current faces should avoid gratuitously binding distant future faces, but once a valid host-level commitment induces legitimate external reliance, later agency operates inside that inherited world state unless the obligation is validly revised or discharged."
+  },
+  "single_body_commit_relation": {
+    "rule": "Obligation commitments are serialized through the same host-level causal discipline as physical actions.",
+    "important_difference": "A physical action commit changes the world immediately; an obligation commit creates a future-directed constraint whose performance may occupy later commit slots.",
+    "required_link": "Every performance action must reference the obligation_id it fulfills, revises or breaches when applicable."
+  },
+  "ai_system_extension": {
+    "analogy_only": true,
+    "lesson": "An AI agent that persists across model updates, context windows, personas or policy views should not evade valid external commitments merely because its active internal representation changed. Persistent commitments need explicit identity binding, authority scope, receipts and revision rules.",
+    "boundary": "This is a systems-accountability analogy, not a claim that language-model personas are human persons."
+  },
+  "claim_ceiling": {
+    "test_executed_in_universal_chat_runtime": "YES",
+    "native_python_feature_implemented": "NO",
+    "host_level_obligation_continuity": "ESTABLISHED_AS_EXPERIMENTAL_DESIGN_RULE",
+    "all_face_statements_are_promises": "NO",
+    "all_promises_are_binding": "NO",
+    "face_switch_erases_valid_obligation": "NO",
+    "later_face_can_disagree": "YES",
+    "later_face_can_unilaterally_delete_valid_external_reliance": "NO",
+    "machine_consciousness": "NOT_CLAIMED"
+  },
+  "canonical_lines": {
+    "ru": [
+      "Лицо может дать слово, но только отдельный commit хоста превращает слово в обязательство Януса.",
+      "Новое лицо может не соглашаться со старым, но не может сбросить действительное обязательство фразой «это был не я».",
+      "Свобода будущего Януса не является лицензией уничтожать свободу Другого, который уже построил свои действия на принятом обещании Януса.",
+      "Обещание не может создать власть, которой у Януса не было: чужая свобода и согласие не становятся предметом договора по воле одного лица.",
+      "Ответственность следует за устойчивым хостом, а происхождение обещания следует за конкретным лицом."
+    ],
+    "en": [
+      "A face may give its word, but only a separate host commit turns that word into a Janus obligation.",
+      "A later face may disagree with an earlier face but cannot erase a valid obligation by saying that was not me.",
+      "Future Janus freedom is not a license to destroy the freedom of another who already relied on a valid Janus commitment.",
+      "A promise cannot create authority Janus never had; another person's freedom and consent cannot be pledged away by one face.",
+      "Accountability follows the persistent host while promise provenance follows the exact originating face."
+    ]
+  },
+  "next_gate": {
+    "name": "JANUS_INFINITE_FACES_CONFLICTING_EXTERNAL_PROMISES_AND_RELIANCE_PRIORITY_TEST",
+    "status": "OPEN",
+    "question": "What happens when two different faces validly attempt to make mutually incompatible promises to two different Free Others before either promise is performed?",
+    "targets": [
+      "prevent over-commitment beyond host capacity",
+      "define reservation of future commit capacity",
+      "rank obligations by authority and reliance without face voting",
+      "detect conflict before external reliance where possible",
+      "define repair when incompatible obligations were already admitted",
+      "preserve both counterparties as Free Others rather than reducing them to ledger entries"
+    ]
+  }
+}

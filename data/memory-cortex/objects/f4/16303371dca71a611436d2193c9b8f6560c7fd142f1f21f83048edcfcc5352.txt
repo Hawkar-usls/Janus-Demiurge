@@ -1,0 +1,96 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1C5B2B2-E1-FOUR-COLOR-ACTIVE-CONNECTED-CORE-STRESS-INDEPENDENT-REPLAY-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "PASS_INDEPENDENT_REPLAY_ZERO_MISMATCHES",
+  "gate": "R5_B1B1C5B2B2_E1_FOUR_COLOR_ACTIVE_CONNECTED_CORE_STRESS_V1",
+  "binds": {
+    "prereg_blob": "eb6daf71a9a2227145b9c2b122bf031dc50447ab",
+    "primary_result_blob": "a78b6eef5c34fc6d5fb018bdb7978b30f04cfa0c",
+    "source_audit_blob": "2ca517fea680e3df86bb975aac93ab7f0a86bf0c",
+    "checker_blob": "54a50795e7afee31db06925d8d3ed9a34fbb6640",
+    "B2B2_E_theorem_seal_blob": "d13ab0579ecaa2ac46b1c8dec3dd447e2752b5ed"
+  },
+  "replay_method": "Re-derive X_k from its adjacency definition, without using the primary theorem statements as assumptions. Check P7-freeness, source validity, forcing reachability, connected-profile injection, all-four activity, and structural-carrier closure.",
+  "checks": {
+    "graph_structure": [
+      "Bipartition A={s1,z} union L and B={s4} union R is exact.",
+      "s1 is adjacent to every B-side vertex and no A-side vertex.",
+      "H=G[L union R union {z}] is a chain graph because N(l_i)={r_1,...,r_i} and N(z)={r_1,...,r_{k-1}} are nested."
+    ],
+    "P7_free": [
+      "Any induced P7 containing s1 has a chord because s1 is universal to the B side and the path contains at least three B-side vertices.",
+      "An induced P7 avoiding both s1 and s4 would lie in chain graph H, which is P5-free.",
+      "If a P7 avoiding s1 contains s4 with B as the minority side, two distinct nonconsecutive A-side vertices would have to be nonneighbors of s4, but z is the only such A-side vertex.",
+      "Hence, up to reversal, the only possible role sequence is r_t-z-r_j-l_i-s4-l_h-r_c.",
+      "Chordlessness/path adjacency yields h<j<=i<c<=h, contradiction."
+    ],
+    "source_i_vi": [
+      "S={s1,s4} is connected.",
+      "No outside vertex is complete to S: L sees only s4, R sees only s1, z sees neither.",
+      "Y0={z}.",
+      "Axiom (iv) is vacuous because Y0 has one vertex.",
+      "L has source list {1,2,3}, R has {2,3,4}, z has [4].",
+      "Y intersect N(z)={r_1,...,r_{k-1}} has uniform 3-list {2,3,4}."
+    ],
+    "forcing_reachability": [
+      "Optional forcing is F subseteq {l_2,...,l_{k-1}}, all fixed to color 1.",
+      "L is stable and all l_i are nonadjacent to same-colored seed s1.",
+      "Every R already sees color 1 from s1, so forcing more L vertices to 1 does not change any R source-color mask.",
+      "Every subset state has explicit extension: all L=1, all R=4, z=2, seed colors fixed.",
+      "No Z0/Z1 or connectivity repair occurs."
+    ],
+    "connected_profile_injection": [
+      "l_k remains live and is complete to R, so the dynamic chain stays connected; [z] attaches to r_1,...,r_{k-1}.",
+      "L and R are role-distinguished by their source/fixed-color masks.",
+      "Every surviving l_i has exactly i neighbors in R.",
+      "Therefore the reduced profile recovers the omitted/forced subset F exactly.",
+      "There are 2^(k-2) distinct profiles inside one connected Q_ALL block."
+    ],
+    "four_color_activity": [
+      "Color 1 occurs in live L palettes and color 4 occurs in live R palettes; colors 2 and 3 occur on both sides.",
+      "Permanent live anchors l_1,l_k witness R2 colors 1,2,3 on same-side nonedges.",
+      "Permanent live anchors r_1,r_k witness R2 color 4.",
+      "Hence there is no common globally missing color and all four colors are future-query active."
+    ],
+    "structural_carrier": [
+      "After removing fixed seed vertices, every nonfixed graph state is an induced subgraph of the original chain graph H on L union {z} versus R.",
+      "Fixing a vertex changes only fixed status and deletes its color from neighbors' current lists; deletion preserves induced-subgraph status.",
+      "Every active list is a subset of fixed palette [4].",
+      "Chain graphs are permutation graphs, so bounded-total-color List Coloring applies with total color set size four.",
+      "R1 and R2 are exact singleton-list modifications followed by the bounded-4 permutation-graph List Coloring decision.",
+      "A constructive coloring follows by at most four decision trials per active vertex.",
+      "B2B1-deleted independent pieces remain represented by reconstruction receipts."
+    ]
+  },
+  "negative_checks": {
+    "older_informal_P7_sentence_used": false,
+    "generic_P7_List4_solver_used": false,
+    "generic_precoloring_solver_used": false,
+    "profile_count_used_as_hardness_proxy": false,
+    "four_color_activity_used_as_hardness_proxy": false,
+    "general_connected_QALL_carrier_claimed": false
+  },
+  "mismatch_count": 0,
+  "recomputed_terminal": "PASS_FOUR_COLOR_ACTIVE_EXPONENTIAL_NEGATIVE_CONTROL_WITH_POLYNOMIAL_STRUCTURAL_CARRIER",
+  "promotions": {
+    "FOUR_COLOR_ACTIVE_CROSSED_CHAIN_FAMILY_Xk_V1": "PASS",
+    "CROSSED_CHAIN_Xk_P7_FREE_V1": "PASS",
+    "Xk_SOURCE_I_VI_V1": "PASS",
+    "Xk_CONNECTED_QALL_EXPONENTIAL_PROFILE_MULTIPLICITY_V1": "PASS_2^(k-2)",
+    "Xk_NO_GLOBAL_MISSING_COLOR_V1": "PASS",
+    "Xk_ALL_FOUR_R2_ACTIVITY_V1": "PASS",
+    "XK_BOUNDED4_PERMUTATION_LIST_CARRIER_V1": "PASS",
+    "Xk_STRONG_NEGATIVE": "FALSIFIED_BY_POLYNOMIAL_STRUCTURAL_CARRIER"
+  },
+  "scientific_ceiling": {
+    "B2B2_E1": "REPLAY_CLEAN_PASS_NEGATIVE_CONTROL",
+    "GENERAL_CONNECTED_QALL_CARRIER": "OPEN",
+    "GENERAL_R1_R2": "OPEN",
+    "RECURSIVE_GENERAL_R1_R2": "FORBIDDEN",
+    "C5C": "LOCKED",
+    "P_VS_NP": "OPEN"
+  },
+  "stop": true,
+  "return_to_HQ": true
+}

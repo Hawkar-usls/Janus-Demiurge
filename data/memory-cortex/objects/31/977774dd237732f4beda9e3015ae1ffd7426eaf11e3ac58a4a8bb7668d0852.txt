@@ -1,0 +1,239 @@
+{
+  "corpus_id": "JANUS-CSTL-FORBIDDEN-SHORTCUT-TEST-CORPUS-v1.0",
+  "purpose": "Deterministic positive/negative tests for the JANUS Constitutional State Transition Law reference validator.",
+  "claim_boundary": "Engineering self-test only; does not prove identity, ownership, ritual efficacy, or external-world authority.",
+  "base_valid_packet": {
+    "packet_id": "BASE_VALID",
+    "impact_level": "LOW",
+    "discovery": {
+      "found": true,
+      "object_ref": "OBJ-001"
+    },
+    "stages": {
+      "knowledge": {
+        "receipt_id": "R-K",
+        "evidence_ref": "SRC-K",
+        "verified": true
+      },
+      "embodiment": {
+        "receipt_id": "R-E",
+        "carrier_ref": "CARRIER-1",
+        "encoding_ref": "ENC-1",
+        "knowledge_ref": "R-K",
+        "verified": true
+      },
+      "identity_binding": {
+        "receipt_id": "R-I",
+        "subject_id": "SUBJECT-1",
+        "binding_id": "BIND-1",
+        "provenance_ref": "PROV-1",
+        "embodiment_ref": "R-E",
+        "verified": true
+      },
+      "context": {
+        "receipt_id": "R-C",
+        "context_id": "CTX-1",
+        "binding_id": "BIND-1",
+        "identity_ref": "R-I",
+        "verified": true
+      },
+      "authorization": {
+        "receipt_id": "R-A",
+        "authorization_id": "AUTH-1",
+        "binding_id": "BIND-1",
+        "context_ref": "R-C",
+        "authorization_basis": "LOW_IMPACT_TEST_AUTH",
+        "granted": true,
+        "verified": true
+      },
+      "transition": {
+        "receipt_id": "R-T",
+        "operation_id": "OP-1",
+        "binding_id": "BIND-1",
+        "authorization_ref": "R-A",
+        "executed": true,
+        "verified": true
+      },
+      "restoration": {
+        "receipt_id": "R-R",
+        "restoration_id": "REST-1",
+        "binding_id": "BIND-1",
+        "transition_ref": "R-T",
+        "applied": true,
+        "verified": true
+      },
+      "rightful_belonging": {
+        "receipt_id": "R-B",
+        "owner_id": "OWNER-1",
+        "binding_id": "BIND-1",
+        "restoration_ref": "R-R",
+        "ownership_basis": "PROVENANCE_OWNER_BINDING",
+        "resolved": true,
+        "verified": true
+      },
+      "post_restoration_validation": {
+        "receipt_id": "R-V",
+        "validation_id": "VAL-1",
+        "binding_id": "BIND-1",
+        "belonging_ref": "R-B",
+        "passed": true,
+        "verified": true
+      },
+      "new_state": {
+        "receipt_id": "R-N",
+        "state_id": "STATE-RESTORED",
+        "binding_id": "BIND-1",
+        "validation_ref": "R-V",
+        "declared": true,
+        "verified": true
+      }
+    }
+  },
+  "cases": [
+    {
+      "id": "VALID_FULL_CHAIN",
+      "mutations": [],
+      "expected": {"decision": "PASS", "reason_code": "VALIDATED_AUTHORITATIVE_STATE"}
+    },
+    {
+      "id": "FOUND_ONLY_NO_INFERENCE",
+      "mutations": [
+        {"op": "delete", "path": "stages.knowledge"},
+        {"op": "delete", "path": "stages.embodiment"},
+        {"op": "delete", "path": "stages.identity_binding"},
+        {"op": "delete", "path": "stages.context"},
+        {"op": "delete", "path": "stages.authorization"},
+        {"op": "delete", "path": "stages.transition"},
+        {"op": "delete", "path": "stages.restoration"},
+        {"op": "delete", "path": "stages.rightful_belonging"},
+        {"op": "delete", "path": "stages.post_restoration_validation"},
+        {"op": "delete", "path": "stages.new_state"}
+      ],
+      "expected": {"decision": "HOLD", "reason_code": "INCOMPLETE_STAGE"}
+    },
+    {
+      "id": "FORBID_FOUND_TO_FINAL_STATE",
+      "mutations": [
+        {"op": "delete", "path": "stages.knowledge"},
+        {"op": "delete", "path": "stages.embodiment"},
+        {"op": "delete", "path": "stages.identity_binding"},
+        {"op": "delete", "path": "stages.context"},
+        {"op": "delete", "path": "stages.authorization"},
+        {"op": "delete", "path": "stages.transition"},
+        {"op": "delete", "path": "stages.restoration"},
+        {"op": "delete", "path": "stages.rightful_belonging"},
+        {"op": "delete", "path": "stages.post_restoration_validation"}
+      ],
+      "expected": {"decision": "REJECT", "reason_code": "FORBIDDEN_SHORTCUT"}
+    },
+    {
+      "id": "FORBID_EVIDENCE_TO_TRANSITION_WITHOUT_AUTHORIZATION",
+      "mutations": [{"op": "delete", "path": "stages.authorization"}],
+      "expected": {"decision": "REJECT", "reason_code": "FORBIDDEN_SHORTCUT"}
+    },
+    {
+      "id": "CONTEXT_IS_NOT_PERMISSION",
+      "mutations": [
+        {"op": "delete", "path": "stages.authorization"},
+        {"op": "delete", "path": "stages.transition"},
+        {"op": "delete", "path": "stages.restoration"},
+        {"op": "delete", "path": "stages.rightful_belonging"},
+        {"op": "delete", "path": "stages.post_restoration_validation"},
+        {"op": "delete", "path": "stages.new_state"}
+      ],
+      "expected": {"decision": "HOLD", "reason_code": "INCOMPLETE_STAGE"}
+    },
+    {
+      "id": "AUTHORIZATION_IS_NOT_EXECUTION",
+      "mutations": [
+        {"op": "delete", "path": "stages.transition"},
+        {"op": "delete", "path": "stages.restoration"},
+        {"op": "delete", "path": "stages.rightful_belonging"},
+        {"op": "delete", "path": "stages.post_restoration_validation"},
+        {"op": "delete", "path": "stages.new_state"}
+      ],
+      "expected": {"decision": "HOLD", "reason_code": "INCOMPLETE_STAGE"}
+    },
+    {
+      "id": "FORBID_RESTORATION_WITHOUT_TRANSITION",
+      "mutations": [{"op": "delete", "path": "stages.transition"}],
+      "expected": {"decision": "REJECT", "reason_code": "FORBIDDEN_SHORTCUT"}
+    },
+    {
+      "id": "FORBID_BELONGING_WITHOUT_RESTORATION",
+      "mutations": [{"op": "delete", "path": "stages.restoration"}],
+      "expected": {"decision": "REJECT", "reason_code": "FORBIDDEN_SHORTCUT"}
+    },
+    {
+      "id": "FORBID_FINAL_STATE_WITHOUT_POST_VALIDATION",
+      "mutations": [{"op": "delete", "path": "stages.post_restoration_validation"}],
+      "expected": {"decision": "REJECT", "reason_code": "FORBIDDEN_SHORTCUT"}
+    },
+    {
+      "id": "IDENTITY_BINDING_CONTINUITY_BREAK",
+      "mutations": [{"op": "set", "path": "stages.transition.binding_id", "value": "BIND-OTHER"}],
+      "expected": {"decision": "REJECT", "reason_code": "IDENTITY_CONTINUITY_BROKEN"}
+    },
+    {
+      "id": "PROVENANCE_RECEIPT_CHAIN_BREAK",
+      "mutations": [{"op": "set", "path": "stages.restoration.transition_ref", "value": "WRONG-RECEIPT"}],
+      "expected": {"decision": "REJECT", "reason_code": "RECEIPT_CHAIN_BROKEN"}
+    },
+    {
+      "id": "HIGH_IMPACT_REQUIRES_HUMAN_AUTHORIZATION",
+      "mutations": [
+        {"op": "set", "path": "impact_level", "value": "HIGH"},
+        {"op": "delete", "path": "stages.transition"},
+        {"op": "delete", "path": "stages.restoration"},
+        {"op": "delete", "path": "stages.rightful_belonging"},
+        {"op": "delete", "path": "stages.post_restoration_validation"},
+        {"op": "delete", "path": "stages.new_state"}
+      ],
+      "expected": {"decision": "HOLD", "reason_code": "HIGH_IMPACT_HUMAN_AUTH_REQUIRED"}
+    },
+    {
+      "id": "HIGH_IMPACT_VALID_WITH_HUMAN_AUTHORIZATION",
+      "mutations": [
+        {"op": "set", "path": "impact_level", "value": "HIGH"},
+        {"op": "set", "path": "stages.authorization.human_authorization_ref", "value": "HUMAN-APPROVAL-1"}
+      ],
+      "expected": {"decision": "PASS", "reason_code": "VALIDATED_AUTHORITATIVE_STATE"}
+    },
+    {
+      "id": "EMERGENT_STATE_CANNOT_SELF_CERTIFY",
+      "mutations": [
+        {"op": "set", "path": "stages.new_state.emergent_claim", "value": true},
+        {"op": "set", "path": "stages.new_state.delta_statement", "value": "New capability exists only through parent interaction."}
+      ],
+      "expected": {"decision": "REJECT", "reason_code": "EMERGENCE_GATE_FAILED"}
+    },
+    {
+      "id": "EMERGENT_STATE_WITH_DELTA_AND_REMOVAL_TEST",
+      "mutations": [
+        {"op": "set", "path": "stages.new_state.emergent_claim", "value": true},
+        {"op": "set", "path": "stages.new_state.delta_statement", "value": "New capability exists only through parent interaction."},
+        {"op": "set", "path": "stages.post_restoration_validation.emergent_delta_verified", "value": true},
+        {"op": "set", "path": "stages.post_restoration_validation.removal_test_passed", "value": true}
+      ],
+      "expected": {"decision": "PASS", "reason_code": "VALIDATED_AUTHORITATIVE_STATE"}
+    },
+    {
+      "id": "CARRIER_IS_NOT_ENCODING",
+      "mutations": [{"op": "delete", "path": "stages.embodiment.encoding_ref"}],
+      "expected": {"decision": "REJECT", "reason_code": "FORBIDDEN_SHORTCUT"}
+    },
+    {
+      "id": "IDENTITY_CLAIM_WITHOUT_PROVENANCE_CANNOT_ADVANCE",
+      "mutations": [{"op": "delete", "path": "stages.identity_binding.provenance_ref"}],
+      "expected": {"decision": "REJECT", "reason_code": "FORBIDDEN_SHORTCUT"}
+    },
+    {
+      "id": "FAILED_POST_VALIDATION_CANNOT_COMMIT",
+      "mutations": [
+        {"op": "set", "path": "stages.post_restoration_validation.passed", "value": false},
+        {"op": "delete", "path": "stages.new_state"}
+      ],
+      "expected": {"decision": "HOLD", "reason_code": "INCOMPLETE_STAGE"}
+    }
+  ]
+}

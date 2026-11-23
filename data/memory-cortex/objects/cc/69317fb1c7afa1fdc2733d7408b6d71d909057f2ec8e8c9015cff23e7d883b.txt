@@ -1,0 +1,86 @@
+{
+  "artifact_id": "JANUS-PALOMAR-JPFM-2F-C1A2-MOMENT-SURROGATE-NEGATIVE-CERTIFICATE-v1.0",
+  "experiment_id": "JPFM-2F-C1A2-CLOSURE",
+  "schema_version": "1.0",
+  "date": "2026-08-15",
+  "status": "NEGATIVE_CERTIFICATE__DIRECT_MOMENT_SURROGATE_NOT_ADMITTED_AS_UPSTREAM_PSF_MORPHOLOGY",
+  "purpose": "Close the C1A/C1A2 direct central-intensity/moment surrogate branch without threshold retuning. Preserve the successfully validated exact named-plate sparse contour channel, while requiring future PSF sharpness/ellipticity analysis to use the actual upstream Source Extractor/PSFEx measurement chain or a separately calibrated estimator.",
+  "parents": [
+    "data/JANUS-PALOMAR-JPFM-2F-C1A-NAMED-PLATE-SPARSE-STAMP-DIRECT-MORPHOLOGY-RUN-001.json",
+    "data/JANUS-PALOMAR-JPFM-2F-C1A-CORRECTIVE-AUDIT-v1.0.json",
+    "data/JANUS-PALOMAR-JPFM-2F-C1A2-RAW-POLARITY-EDGE-AWARE-DIRECT-MORPHOLOGY-RUN-001.json",
+    "data/JANUS-PALOMAR-JPFM-2F-B3S-SHARD-AGGREGATE-RUN-001.json"
+  ],
+  "C1A2_frozen_result": {
+    "outcome": "FAIL_CLOSED_RAW_CENTRAL_SIGNAL_OR_LOCALIZATION",
+    "canonical_payload_sha256": "80456dbe3b6bd85ab44c276e9dadacbf41b868cb8c84312c5924fe386c5c4bc1",
+    "sidecar_csv_sha256": "a892511742ee887c3b9fcaf033b442c93caec029d360207f1bf6901020a79fa1",
+    "sidecar_gzip_sha256": "1d30256f5653618e2d62a3b39761b2dccb2381c362a5de38d5462e5f6252ca01"
+  },
+  "denominator": {
+    "full_rows": 64,
+    "geometrically_eligible_81px": 62,
+    "geometric_edge_ineligible_81px": 2,
+    "eligible_exact_named_plate_stamps": 62,
+    "eligible_transport_fraction": 1.0
+  },
+  "frozen_gate_results": {
+    "raw_snr_ge5_fraction_of_eligible": 0.9032258064516129,
+    "raw_snr_required_fraction": 0.95,
+    "raw_snr_gate_pass": false,
+    "centroid_le4_fraction_of_eligible": 0.9032258064516129,
+    "centroid_required_fraction": 0.95,
+    "all_eligible_centroid_le8": true,
+    "centroid_gate_pass": false,
+    "raw_moment_feature_coverage": 1.0,
+    "raw_moment_coverage_gate_pass": true,
+    "contour_feature_coverage": 1.0,
+    "contour_gate_pass": true,
+    "outer_texture_coverage": 1.0,
+    "outer_texture_gate_pass": true
+  },
+  "no_single_global_offset_diagnosis": {
+    "low_raw_snr_count": 6,
+    "centroid_gt4_count": 6,
+    "union_of_failed_source_ids_count": 9,
+    "interpretation": "The central-SNR and centroid failures are not the same six sources. Some sources have high raw SNR but centroid >4 px, while others have low SNR but centroid well within 4 px. Therefore the failure is not explained by one astrometric constant that could be safely subtracted or one threshold that could be lowered.",
+    "examples": [
+      {
+        "src_id": "tile_RA273.536_DECp14.834:15137",
+        "raw_peak_snr": 71.4960205045,
+        "raw_centroid_offset_px": 4.26679643517
+      },
+      {
+        "src_id": "tile_RA312.687_DECp33.758:2709",
+        "raw_peak_snr": 3.74519869078,
+        "raw_centroid_offset_px": 0.488904291619
+      }
+    ]
+  },
+  "surrogate_fidelity": {
+    "raw_moment_fwhm_proxy_vs_pass2_FWHM_IMAGE_spearman_rho": -0.22736773186270806,
+    "raw_moment_fwhm_proxy_vs_pass2_FWHM_IMAGE_pvalue": 0.07553240130387498,
+    "raw_moment_ellipticity_vs_pass2_ELONGATION_spearman_rho": -0.04439575936138602,
+    "raw_moment_ellipticity_vs_pass2_ELONGATION_pvalue": 0.731878774725356,
+    "verdict": "NOT_ADMITTED_AS_SURROGATE_FOR_UPSTREAM_FWHM_OR_ELONGATION"
+  },
+  "validated_sparse_channel": {
+    "channel": "fixed-center exact named-plate sparse contour metrics",
+    "eligible_finite_circularity_and_circle_deviation_fraction": 1.0,
+    "median_sparse_minus_B3S_circularity": -1.51256961677948e-08,
+    "median_sparse_minus_B3S_circle_deviation": 2.9042208304908e-08,
+    "verdict": "MEASUREMENT_REPRODUCIBILITY_SUPPORTED_FOR_CONTOUR_CHANNEL__PHYSICAL_INTERPRETATION_STILL_REQUIRES_CONTROLS"
+  },
+  "decision": {
+    "abandon_C1A3_threshold_or_centroid_retuning": true,
+    "do_not_use_direct_moment_fwhm_as_FWHM_IMAGE": true,
+    "do_not_use_direct_moment_ellipticity_as_SEXTRACTOR_ELLIPTICITY": true,
+    "preserve_sparse_contour_measurement_path": true,
+    "next_PSF_morphology_path": "Use actual pinned upstream pass1 -> PSFEx -> pass2 and compatibility-fixed shape/profile stages on a larger label-blind stratified tile corpus."
+  },
+  "external_label_firewall": {
+    "external_label_reveal_authorized": false
+  },
+  "next_gate": "JPFM-2F-C2A-STRATIFIED-UPSTREAM-MORPHOLOGY-CORPUS",
+  "claim_ceiling": "NEGATIVE_MEASUREMENT_SURROGATE_CERTIFICATE_ONLY__SPARSE_CONTOUR_REPRODUCIBILITY_RETAINED__EXTERNAL_LABELS_SEALED__NO_ORIGIN_CLAIM"
+}

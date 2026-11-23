@@ -1,0 +1,104 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1C5B2B1-FORCED-COLOR-CLASS-RETURN-INDEPENDENT-REPLAY-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "PASS_INDEPENDENT_REPLAY_ZERO_MISMATCHES",
+  "gate": "R5_B1B1C5B2B1_FORCED_COLOR_CLASS_RETURN_GATE_V1",
+  "binds": {
+    "prereg_blob": "0a2d91385b8df9e63d46ae8bfc9ab708edf3b022",
+    "B2B0_theorem_seal_blob": "1e27139bc05ec8b44ddab0bfe0c31a004d941b68",
+    "P7_source_transfer_audit_blob": "8b86974af812aeaadb2ecef27a579503cd764933",
+    "primary_result_blob": "d8161c9c3b976349f6465672096e98d5c1576ba8",
+    "finite_checker_blob": "11f027db4d6d999bfdd17947649c6dd2f481d112",
+    "C0_theorem_seal_blob": "0dbebe81f52a5b8411199fc44614bf8c17b6dd95",
+    "C2_theorem_seal_blob": "33d6b365728c703c43371b966d9ed26020f12b98",
+    "C3_theorem_seal_blob": "33fd966cd397ddecb173fd10797097b31921b0a5"
+  },
+  "replay_method": "Re-derive the forced successor directly from set identities, source-list color masks and connectivity. Treat the primary result only as the object being checked, not as an assumption.",
+  "checks": {
+    "source_list_repartition": [
+      "Under the enlarged seed, source-list size is four minus the number of distinct seed-neighbor colors.",
+      "Z0 is impossible in any extension because all four colors occur on seed neighbors.",
+      "A Z1 vertex has exactly one color not blocked by seed neighbors, so every extension must use that color.",
+      "If the forced Z1 coloring conflicts with an already fixed vertex or another Z1 vertex, no extension exists.",
+      "Otherwise moving Z1 to X0 and assigning Z2/Z3/Z4 to X/Y/Y0 gives axiom (v) by definition.",
+      "Because every Z1 has a seed neighbor, moving it to X0 does not alter the residual Z4 set."
+    ],
+    "vi_mask_replay": [
+      "Old X has two distinct seed colors and cannot become a 3-list Y after seed enlargement.",
+      "Old Y0 has zero old seed colors and single/equal-color forcing adds at most one distinct color; any old-Y0 vertex becoming 3-list Y lies in a whole removed old component and cannot see retained Y0.",
+      "Therefore every residual-adjacent new Y comes from old Y.",
+      "If an old Y remains 3-list, its new one-color seed mask contains its old one-color mask and therefore equals it.",
+      "The old axiom-(vi) controlling color is unchanged."
+    ],
+    "singleton_origin": [
+      "A Z1 source singleton after one/equal-color forcing cannot originate in old Y: source-list size 3 can fall by at most one.",
+      "It cannot originate in old Y0: zero old seed colors plus one distinct forced color leaves source-list size at least 3.",
+      "Hence every Z1 vertex is an old X vertex."
+    ],
+    "connectivity_repair": [
+      "After Z1 is moved to X0, every component of G minus X0_plus not containing the seed lies in residual Y0, because every non-Y0 nonfixed vertex has a seed neighbor.",
+      "Old G minus old X0 was connected, so a newly separated component C has a neighbor x in Z1.",
+      "x was old X. Old axiom (iv) applied to the connected old-Y0 component containing C makes x complete to C once x has one neighbor there.",
+      "Thus the color of x is globally forbidden on C.",
+      "C has no nonfixed outside neighbors because it is a component of G minus X0_plus. All remaining outside constraints come from fixed X0_plus neighbors.",
+      "Exact lists on C are therefore subsets of one common three-color palette, and constructive P7-free List-3 is sufficient.",
+      "Colorable C can be deleted with a stored reconstruction witness; uncolorable C makes the whole forced state UNSAT.",
+      "After all such deletions, G minus X0_plus is connected and axioms (ii)-(vi) remain true."
+    ],
+    "B0_inheritance": [
+      "Any new residual-adjacent 3-list Y is an old Y with the same source 3-list.",
+      "Hence any new competing survivor was already an old competing survivor of the same list class.",
+      "Old B0 source-Z membership is inherited; current component uniformity follows again from axiom (iv).",
+      "Residual components only disappear, so no new survivor-to-component incidence on a newly created component is introduced."
+    ],
+    "component_stack_reentry": [
+      "The repaired nonterminal state has a nonempty seed and satisfies axioms (i), (iii), (iv).",
+      "If a residual component had no dynamic complete neighbor, it would be a component of G minus X0 disjoint from the seed, contradicting axiom (i).",
+      "Therefore every remaining residual component is coupled and C0 applies.",
+      "C0 recompiles messages from the enlarged fixed-X0 base lists; C2 rebuilds the induced-path-safe dynamic/component quotient; C3 rebuilds selector gadgets and reconstruction pointers."
+    ],
+    "progress": [
+      "Define M=|V(G) minus (S union X0)|.",
+      "Single forcing moves at least one previously unprecolored vertex to S; pair forcing moves two.",
+      "Z1 promotion moves additional vertices to X0 and connectivity repair only deletes vertices.",
+      "The authorized successor relation never moves a vertex out of S or X0 and never restores a deleted component.",
+      "Hence M strictly decreases by at least one per forced successor.",
+      "There are at most 4n single-color queries and 4*binom(n,2) equal-color pair queries, so immediate forced successors are O(n^2)."
+    ],
+    "recursion_firewall": [
+      "Depth at most n plus polynomial immediate fanout is not a polynomial total-state proof.",
+      "No quotient on different forced subsets/color assignments has yet been proved.",
+      "Therefore R1/R2 decidability and recursive reseeding remain open."
+    ]
+  },
+  "negative_checks": {
+    "generic_P7_4_precoloring_solver_used": false,
+    "generic_List4_solver_used": false,
+    "full_P6_Lemma10_imported": false,
+    "recursive_R1_R2_invoked": false,
+    "global_recursion_tree_claimed_polynomial": false,
+    "C5C_unlocked": false
+  },
+  "mismatch_count": 0,
+  "recomputed_terminal": "PASS_ONE_STEP_CLASS_RETURN_WITH_STRICT_PROGRESS__GLOBAL_RECURSION_MULTIPLICITY_OPEN",
+  "promotions": {
+    "FORCED_SOURCE_LIST_REPARTITION_V1": "PASS",
+    "FORCED_VI_PRESERVATION_V1": "PASS",
+    "P7_FORCED_CONNECTIVITY_REPAIR_V1": "PASS",
+    "B0_SURVIVOR_INHERITANCE_UNDER_FORCING_V1": "PASS",
+    "FORCED_COMPONENT_STACK_REENTRY_V1": "PASS",
+    "FORCED_STEP_STRICT_UNFIXED_MEASURE_V1": "PASS",
+    "GLOBAL_RECURSION_STATE_MULTIPLICITY": "OPEN"
+  },
+  "scientific_ceiling": {
+    "B2B1": "REPLAY_CLEAN_PASS",
+    "R1_DECIDABILITY": "OPEN_GLOBAL_STATE_MULTIPLICITY",
+    "R2_DECIDABILITY": "OPEN_GLOBAL_STATE_MULTIPLICITY",
+    "C5C": "LOCKED",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "stop": true,
+  "return_to_HQ": true
+}

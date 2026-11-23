@@ -1,0 +1,314 @@
+{
+  "artifact_id": "JANUS-OCEAN-ALLSTAR-REAL-WEATHER-20261106-FORECAST-v1.0",
+  "title": "First JANUS Ocean real-data meteorological 24-hour forecast, All Star temporal derivative features",
+  "schema_version": "1.0",
+  "date_local": "2026-11-06",
+  "registry": {
+    "repository": "Hawkar-usls/janus-meta-registry",
+    "path": "data/JANUS-OCEAN-ALLSTAR-REAL-WEATHER-20261106-FORECAST-v1.0.json",
+    "mode": "APPEND_ONLY"
+  },
+  "lineage": {
+    "original_allstar_source_file": "All_starsGPT(20261105-223030).py, user Library",
+    "original_allstar_prior_path": "E:\\Janus_Love\\Janus_Titan\\All Star",
+    "reused_ideas": [
+      "real observational data only",
+      "rolling time windows",
+      "first-difference feature alongside absolute level",
+      "experiment memory and no-promotion without a gate"
+    ],
+    "original_solar_data_source": "NOAA GOES SWPC 7-day solar-flare events",
+    "solar_caveat": "Event timestamps in original code are irregular, so a fixed one-hour lead cannot be inferred from successive event records",
+    "weather_adaptation": "24-hour consecutive temperature values plus 24 first differences encoded into 48 input tokens; no log10 of signed temperature; no duplicated normalization",
+    "production_model_source": "Hawkar-usls/Janus-Demiurge/janus_model/model.py: JanusTinyTransformer",
+    "AURA_reference": "AURA Oracle calibration and forecast-ledger concepts, not actual runtime"
+  },
+  "experiment": {
+    "repository": "Hawkar-usls/Janus-Demiurge",
+    "run_id": 42122886993,
+    "run_url": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/42122886993",
+    "run_conclusion": "failure",
+    "workflow_label": "SNAPSHOT_PASS__EIGHT_RIVERS_PASS__AGGREGATOR_PASS__BRANCH_LEDGER_STEP_FAILED_BY_GITIGNORE",
+    "repair": "Forecast from run logs manually committed unchanged to dedicated janus/ocean-weather-ledger branch before outcome. Workflow subsequently patched with git add -f for future runs; retraining not repeated.",
+    "training_workflow": ".github/workflows/janus-ocean-real-weather.yml",
+    "code": "experiments/ocean_transformer/real_weather_forecast.py",
+    "weather_source": "https://open-meteo.com/en/docs/historical-weather-api",
+    "location_label": "Kyiv_public_weather_benchmark",
+    "source_points": 10344,
+    "source_latest_utc": "2026-10-28T23:00:00Z",
+    "training_window_count": 7193,
+    "tuning_window_count": 1480,
+    "later_test_window_count": 1480,
+    "worker_success_count": 8,
+    "worker_training_steps": [
+      {
+        "worker_id": 0,
+        "steps": 280,
+        "anchor_count": 900,
+        "seconds": 6.085,
+        "weights_sha256": "d9ec30b09e1616634cb23ab51e948322d1c07c2e8155efdf7bafa6f4883c79fd"
+      },
+      {
+        "worker_id": 1,
+        "steps": 280,
+        "anchor_count": 899,
+        "seconds": 6.108,
+        "weights_sha256": "2ee7b667d4674615b485b8658621e549875418e1dcb2bf2a9d8be1aec515de4a"
+      },
+      {
+        "worker_id": 2,
+        "steps": 280,
+        "anchor_count": 899,
+        "seconds": 4.579,
+        "weights_sha256": "436dfab3328844150d0dd1b92eab0e23d2b495d842c5521e4289178897fd3e42"
+      },
+      {
+        "worker_id": 3,
+        "steps": 280,
+        "anchor_count": 899,
+        "seconds": 6.169,
+        "weights_sha256": "649d2883d64dcdd22c8bbb7d637749388dd435a14df821127ba103b03a9fba01"
+      },
+      {
+        "worker_id": 4,
+        "steps": 280,
+        "anchor_count": 899,
+        "seconds": 7.106,
+        "weights_sha256": "dbdc20383f808332320a44ff06693166604f5fc8fa1b4cd56a16221211bad2e8"
+      },
+      {
+        "worker_id": 5,
+        "steps": 280,
+        "anchor_count": 899,
+        "seconds": 7.482,
+        "weights_sha256": "61e8672ce6bc6361e1c5e6851f1cb8abaa5bfb052b90f817669444619c25e882"
+      },
+      {
+        "worker_id": 6,
+        "steps": 280,
+        "anchor_count": 899,
+        "seconds": 7.476,
+        "weights_sha256": "91689be52c407942bb95b2629d880dfe732bce09f7738c3c54789d5bba758094"
+      },
+      {
+        "worker_id": 7,
+        "steps": 280,
+        "anchor_count": 899,
+        "seconds": 5.1,
+        "weights_sha256": "a9e2bff37c031d2be68bd9a6d9506450cd9d01ff691fce4ddb70a94d6a58c39f"
+      }
+    ],
+    "checkpoint_sha256": "60cdb8470243ac9e39f6f41aefc758784211af8026951528bf6fd3ad70507e68",
+    "weather_snapshot_sha256": "d405b52738f5e0659cca070310a4c4fa851f2fd9d2317fcb12d64ef4fd146828",
+    "model_parameters": 14048,
+    "aggregated_weights_promotion": false,
+    "nas_load": false
+  },
+  "historical_backtest": {
+    "metric": "mean absolute error Celsius, 24h lead",
+    "untrained_model": {
+      "n": 1480,
+      "model_mae_c": 4.99814,
+      "model_rmse_c": 6.5843,
+      "model_discrete_nll": 4.39945,
+      "persist_24h_mae_c": 2.27182,
+      "persist_24h_rmse_c": 3.02917,
+      "mean_24h_mae_c": 3.52193,
+      "model_frost_brier": 0.149254
+    },
+    "trained_model": {
+      "n": 1480,
+      "model_mae_c": 2.93005,
+      "model_rmse_c": 3.95745,
+      "model_discrete_nll": 2.7883,
+      "persist_24h_mae_c": 2.27182,
+      "persist_24h_rmse_c": 3.02917,
+      "mean_24h_mae_c": 3.52193,
+      "model_frost_brier": 0.003024
+    },
+    "wins_vs_untrained": true,
+    "wins_vs_persistence": false,
+    "delta_vs_persistence_c": 0.65823,
+    "recommendation": "HOLD_NOT_PROMOTE: persistence baseline has lower MAE on this chronology test. Historical holdout observations are highly overlapping and should not be treated as independent trials."
+  },
+  "prospective": {
+    "forecast": {
+      "schema": "janus.ocean.weather.future.precommit.v1",
+      "trial_id": "janus-weather-20261106T210000+0000",
+      "issued_at_utc": "2026-11-05T22:38:01.520851+00:00",
+      "valid_target_utc": "2026-11-06T21:00:00+00:00",
+      "target_ground_truth": "Open-Meteo ERA5 reanalysis temperature_2m",
+      "reveal_not_before_utc": "2026-11-13T21:00:00+00:00",
+      "location": {
+        "label": "Kyiv_public_weather_benchmark",
+        "latitude": 50.4501,
+        "longitude": 30.5234
+      },
+      "horizon_hours": 24,
+      "model_mean_temperature_c": 3.9584,
+      "model_frost_probability": 0.086207,
+      "model_81_class_probabilities": [
+        0.0001948,
+        0.0002083,
+        0.000204,
+        0.0002182,
+        0.0002092,
+        0.0002058,
+        0.0001473,
+        0.000148,
+        0.0001755,
+        0.0000669,
+        0.0000673,
+        0.0000963,
+        0.0000283,
+        0.0000617,
+        0.000036,
+        0.0000327,
+        0.0000845,
+        0.0000639,
+        0.000093,
+        0.0000862,
+        0.0001176,
+        0.0003292,
+        0.0008232,
+        0.0002751,
+        0.0001161,
+        0.0003019,
+        0.0008265,
+        0.0033746,
+        0.0101131,
+        0.0147384,
+        0.0527628,
+        0.0654298,
+        0.1576197,
+        0.1910522,
+        0.1238439,
+        0.0994552,
+        0.139758,
+        0.0429236,
+        0.0274183,
+        0.0280697,
+        0.0222918,
+        0.0097786,
+        0.0009796,
+        0.0005959,
+        0.000277,
+        0.000177,
+        0.0000406,
+        0.0000164,
+        0.0000163,
+        0.0000113,
+        0.0000231,
+        0.0000055,
+        0.0000049,
+        0.0000098,
+        0.0000035,
+        0.0000069,
+        0.0000057,
+        0.0000156,
+        0.0000116,
+        0.0000531,
+        0.0000555,
+        0.0001056,
+        0.0001167,
+        0.0002093,
+        0.0001851,
+        0.0001983,
+        0.0002086,
+        0.0002031,
+        0.0002026,
+        0.0001935,
+        0.0002007,
+        0.0002228,
+        0.0001882,
+        0.0002083,
+        0.0002077,
+        0.0001932,
+        0.0002155,
+        0.0002041,
+        0.0002073,
+        0.0001831,
+        0.0001893
+      ],
+      "baseline_persistence_24h_c": 5.4,
+      "baseline_mean_24h_c": 3.3208,
+      "baseline_operational_weather_model_c": 2.5,
+      "model_checkpoint_sha256": "60cdb8470243ac9e39f6f41aefc758784211af8026951528bf6fd3ad70507e68",
+      "weather_snapshot_sha256": "d405b52738f5e0659cca070310a4c4fa851f2fd9d2317fcb12d64ef4fd146828",
+      "official_forecast_source_sha256": "798b6da86e995fbd050b3f53e1ab3c65a4ec576b89732aec5893a0893d10e0b6",
+      "precommit_state": "FROZEN_BEFORE_TARGET_TIME__OUTCOME_UNKNOWN",
+      "truth_already_used_in_training": false,
+      "physical_retrocausal_channel": false
+    },
+    "precommit_branch": "janus/ocean-weather-ledger",
+    "precommit_git_commit": "9363b287602c28b28fb882d5c786275e36fabe55",
+    "precommit_url": "https://github.com/Hawkar-usls/Janus-Demiurge/blob/janus/ocean-weather-ledger/experiments/ocean_transformer/ledger/predictions/janus-weather-20261106T210000%2B0000.json",
+    "reveal_status": "PENDING_NOT_YET_OBSERVED",
+    "daily_resolver_workflow": ".github/workflows/janus-ocean-weather-resolver.yml",
+    "earliest_era5_resolution_utc": "2026-11-13T21:00:00+00:00"
+  },
+  "artifacts": [
+    {
+      "id": 13459991774,
+      "name": "janus-ocean-v2-river-3",
+      "digest": "sha256:b75f78a8ea11e56fca3ff957d95bb5bf46c3656ce1079bf9c6efc902403f5a53",
+      "size_bytes": 55102
+    },
+    {
+      "id": 13459941833,
+      "name": "janus-ocean-v2-river-0",
+      "digest": "sha256:8c086322d572de5b32d0eaad5e862f2f97f0889be9a8aaa5089d659603ef6def",
+      "size_bytes": 55090
+    },
+    {
+      "id": 13459387674,
+      "name": "janus-ocean-v2-river-7",
+      "digest": "sha256:154ffe7ab11c80919886e070484e3f143ab0bda2331f2c5a96ef1c51b3d98767",
+      "size_bytes": 55107
+    },
+    {
+      "id": 13459137801,
+      "name": "janus-ocean-v2-river-6",
+      "digest": "sha256:cfa04163f01c8741f3bec3f439456a00e3db9082e6e3fb78a1bcd11eaa1d45a1",
+      "size_bytes": 55104
+    },
+    {
+      "id": 13459017881,
+      "name": "janus-ocean-v2-river-5",
+      "digest": "sha256:a1ecc36df4ecf895e225751c8f50ae889cca8265c7c0e2c2d844bf70894c39f6",
+      "size_bytes": 55079
+    },
+    {
+      "id": 13458928206,
+      "name": "janus-ocean-v2-river-1",
+      "digest": "sha256:e0c540a09506ebd9b57abd1acd9c6a878283c3382d3a500114fffd50b025eed9",
+      "size_bytes": 55078
+    },
+    {
+      "id": 13458808188,
+      "name": "janus-ocean-v2-real-snapshot",
+      "digest": "sha256:2319d29e57647688c3d5df83fe5a7274c7e4354a76934302ae793cf6372aa7af",
+      "size_bytes": 45301
+    },
+    {
+      "id": 13458658421,
+      "name": "janus-ocean-v2-real-result-42122886993",
+      "digest": "sha256:09c852640d77b9ed9317800ddb42afed5b388e047d106717828f8381eddcbc27",
+      "size_bytes": 57986
+    },
+    {
+      "id": 13457814887,
+      "name": "janus-ocean-v2-river-2",
+      "digest": "sha256:99ef4c841110f6624e2961eb0dea775140c0e2ca19b375a7ac1b2055090d6480",
+      "size_bytes": 55179
+    },
+    {
+      "id": 13457799990,
+      "name": "janus-ocean-v2-river-4",
+      "digest": "sha256:dabc5adafd11119257a83216e01d72aff21a2a951e602226356c45085ba7aa83",
+      "size_bytes": 55128
+    }
+  ],
+  "verdict": "REAL_TRAINING_COMPLETE__BEATS_UNTRAINED__LOSES_TO_PERSISTENCE__FUTURE_PREDICTION_PRECOMMITTED__RETROCAUSALITY_NOT_ESTABLISHED",
+  "physical_retrocausality_proven": false
+}

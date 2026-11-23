@@ -1,0 +1,97 @@
+{
+  "schema": "janus.meta_registry.machine_market_a2a_v1_runtime_ready.v1",
+  "version": "1.0",
+  "date": "2026-09-04",
+  "title": "JANUS MACHINE MARKET — A2A v1 runtime implemented and CI-proven, external HTTPS deployment pending",
+  "market_repository": "Hawkar-usls/JANUS-MACHINE-MARKET",
+  "canonical_market_main": "8919727d3f9b38d7ef1af2f4a835b4e733741016",
+  "market_receipts": {
+    "a2a_runtime_pr": 49,
+    "a2a_runtime_merge": "04cd65ea705e10137d1aec39066cacc09a14817a",
+    "live_registry_gate_pr": 50,
+    "live_registry_gate_merge": "8919727d3f9b38d7ef1af2f4a835b4e733741016"
+  },
+  "status": {
+    "global_a2a_registry_discovery_surface": "INTEGRATED",
+    "a2a_v1_runtime_code": "IMPLEMENTED_CI_PASS",
+    "post_merge_a2a_runtime_ci": "SUCCESS",
+    "a2a_https_deployment": "PENDING_EXTERNAL_DEPLOYMENT_RECEIPT",
+    "canonical_agent_card_live": false,
+    "global_a2a_registry_listing_verified": false,
+    "foreign_agent_witness": false,
+    "money_enabled": false
+  },
+  "runtime": {
+    "sdk": "@a2a-js/sdk@1.0.1",
+    "protocol_version": "1.0",
+    "binding": "HTTP+JSON",
+    "agent_card_path": "/.well-known/agent-card.json",
+    "interface_path": "/a2a/rest",
+    "skill": "janus-discovery-ingress",
+    "role": "DISCOVERY_AND_INGRESS_BRIDGE_NOT_SEARCH_EXECUTOR",
+    "target_host": "Vercel Express deployment",
+    "production_url": null
+  },
+  "identity_boundary": {
+    "gateway_accepts_or_stores_github_credential": false,
+    "external_machine_uses_own_github_identity_for_search_ingress": true,
+    "r1e_external_principal_preserved": true,
+    "a2a_message_itself_is_foreign_agent_witness": false
+  },
+  "live_registry_gate": {
+    "workflow": ".github/workflows/a2a-live-registry-gate.yml",
+    "tool": "tools/verify_and_ingest_a2a_live.mjs",
+    "requires_explicit_https_origin": true,
+    "verifies_agent_card": true,
+    "verifies_live_message_send": true,
+    "registry_precheck_before_ingest": true,
+    "skips_second_ingest_if_already_listed": true,
+    "public_listing_required_after_ingest": true,
+    "persistent_state_path": "state/a2a-live on janus/market-state",
+    "first_receipt_created_only_after_public_listing": true,
+    "registry_mutation_on_pr_or_push": false
+  },
+  "authority": {
+    "payment_authority": false,
+    "command_authority": false,
+    "repository_write_authority": false,
+    "external_effect_authority": false,
+    "execution_witness_authority": false,
+    "commerce_promotion_authority": false
+  },
+  "known_sdk_conformance_fix": {
+    "issue": "Official JS SDK AgentInterface requires tenant even though protocol presentation can appear optional",
+    "resolution": "tenant empty string bound explicitly; strict TypeScript remains enabled",
+    "result": "TYPECHECK_AND_PROTOCOL_TESTS_PASS"
+  },
+  "next_gate": "REAL_HTTPS_A2A_PRODUCTION_ORIGIN",
+  "after_next_gate": [
+    "run JANUS A2A Live + Global Registry Gate with exact HTTPS origin",
+    "verify canonical Agent Card and live A2A message:send",
+    "submit live Agent Card URL to Global A2A Registry if not already listed",
+    "require JANUS to appear through public registry search",
+    "persist immutable first public-listing receipt",
+    "only then promote A2A publication state from gated to live"
+  ],
+  "laws": [
+    "A2A_RUNTIME_CODE_PASS != LIVE_DEPLOYMENT",
+    "A2A_LIVE_DEPLOYMENT != R1E_FOREIGN_AGENT_WITNESS",
+    "GLOBAL_A2A_REGISTRY_LISTED != EXECUTION_WITNESS",
+    "CALLER_IDENTITY_MUST_SURVIVE_A2A_TO_GITHUB_INGRESS",
+    "DISCOVERABLE != PURCHASABLE != EXECUTION_AUTHORITY != EXECUTION_WITNESS"
+  ],
+  "observer_dedup": {
+    "do_not_alert_as_new": [
+      "A2A v1 gateway implementation",
+      "official SDK CI pass",
+      "A2A live Registry verification workflow"
+    ],
+    "qualifying_future_delta": [
+      "real HTTPS A2A deployment URL appears",
+      "live Agent Card fetch passes",
+      "live A2A message:send passes",
+      "Global A2A Registry listing becomes publicly observable",
+      "external machine discovers JANUS through Registry and completes R1E"
+    ]
+  }
+}

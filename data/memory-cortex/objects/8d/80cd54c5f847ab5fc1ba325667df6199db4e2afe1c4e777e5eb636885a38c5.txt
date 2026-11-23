@@ -1,0 +1,88 @@
+{
+  "schema": "janus.eye.r2.novel_bridge_miner_manifest.v1",
+  "artifact_id": "JANUS-EYE-R2-NOVEL-BRIDGE-MINER-MANIFEST-v1.0",
+  "date": "2026-09-01",
+  "status": "FROZEN_BEFORE_FIRST_OFFICIAL_R2_RUN",
+  "purpose": "Find non-obvious cross-domain JANUS mechanisms by comparing operation structure rather than raw word frequency. R2 searches for repeated operators that move knowledge between states while penalizing boilerplate, same-lineage similarity, and already-explicit links.",
+  "hypothesis_under_test": "The most reusable hidden objects in JANUS are recurring operators of epistemic state transition rather than project names or surface vocabulary.",
+  "target_hunt": {
+    "named_example": ["PALOMAR", "MUSIC", "GENESIS"],
+    "rule": "This named triple is diagnostic only and receives no score bonus. If it does not satisfy the frozen support rules it must remain NOT_FOUND or OPEN rather than being forced into the output."
+  },
+  "required_candidate_shape": {
+    "formula": "A --[bridge / why]--> B",
+    "fields": [
+      "provenance",
+      "representation_invariant",
+      "confidence_class",
+      "counterexample",
+      "falsifier",
+      "verify_next"
+    ]
+  },
+  "independence_gate": {
+    "minimum_unique_lineages_per_domain": 2,
+    "minimum_distinct_domains": 2,
+    "same_lineage_only_candidate": "REJECT",
+    "bicameral_agreement_counts_as_independent_replication": false
+  },
+  "novelty_scoring": {
+    "reward": [
+      "cross-domain operator agreement",
+      "multiple independent lineage supports",
+      "low subject-vocabulary overlap",
+      "operator rarity across domains",
+      "absence of an already-explicit provenance relation"
+    ],
+    "penalize": [
+      "same domain",
+      "same lineage",
+      "generic boilerplate",
+      "high lexical overlap that suggests duplicate documentation",
+      "already-explicit links"
+    ]
+  },
+  "boilerplate_policy": {
+    "raw_word_frequency_is_not_a_bridge": true,
+    "generic_function_words_are_removed": true,
+    "generic_repository_words_are_removed": true,
+    "operator_terms_are used only as part of a multi-signal operator signature": true
+  },
+  "representation_contract": {
+    "target_invariant_I": "operation structure that transforms evidence/context/state into another epistemic state",
+    "must_preserve": [
+      "operator family",
+      "source provenance",
+      "domain separation",
+      "failure/null/open states",
+      "explicit-vs-latent relation distinction"
+    ],
+    "may_distort": [
+      "surface wording",
+      "file naming style",
+      "project-specific nouns"
+    ],
+    "must_ignore": [
+      "raw frequency without structural support",
+      "generated derivative memory exports",
+      "same-lineage repetition as independent evidence"
+    ],
+    "falsifier": "A proposed bridge fails if independent source documents do not actually instantiate the claimed operator under manual or purpose-built verification."
+  },
+  "authority_firewall": [
+    "ASSOCIATION != EVIDENCE",
+    "BRIDGE != PROOF",
+    "R2_SCORE != TRUTH",
+    "BICAMERAL_AGREEMENT != INDEPENDENT_REPLICATION",
+    "SEMANTIC_SIMILARITY != MECHANISM_IDENTITY",
+    "UNKNOWN != NEGATIVE",
+    "CONTROL_MUST_HAVE_POWER_TO_SAY_NO",
+    "VERIFY_DECIDES"
+  ],
+  "outputs": [
+    "EYE/r2/generated/EYE-R2-NOVEL-BRIDGE-CANDIDATES.json",
+    "EYE/r2/generated/EYE-R2-OPERATOR-BACKBONE.json",
+    "EYE/r2/generated/EYE-R2-RECEIPT.json"
+  ],
+  "seal": "DO NOT ASK WHICH PROJECTS USE THE SAME WORDS. ASK WHICH DISTANT PROJECTS PERFORM THE SAME OPERATION."
+}

@@ -1,0 +1,84 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-EXTERNAL-SOURCE-INTAKE-ROUTING-SPEC-2026-08-14-v0.1",
+  "timestamp": "2026-08-14T19:20:00+03:00",
+  "version": "v0.1",
+  "node_type": "external_source_intake_routing_spec",
+  "status": "FROZEN_AFTER_GENERIC_QUARANTINE_ADMISSION",
+  "generic_quarantine": {
+    "spec": "data/JANUS-LINEAR-A-SOURCE-INTAKE-QUARANTINE-SPEC-2026-08-14-v0.1.json",
+    "runner": "research/linear_a/janus_linear_a_source_intake_quarantine_v0_1.py",
+    "validation": "data/JANUS-LINEAR-A-SOURCE-INTAKE-QUARANTINE-VALIDATION-RESULT-2026-08-14-v0.1.json",
+    "required_status": "SOURCE_INTAKE_QUARANTINE_v0_1_ADMITTED"
+  },
+  "universal_pipeline": [
+    "ORIGINAL_BYTES_RECEIVED_OR_RECOVERED",
+    "GENERIC_SOURCE_INTAKE_QUARANTINE",
+    "TARGET_LANE_SOURCE_OR_EXECUTION_RECEIPT",
+    "SOURCE_IDENTITY_AND_PROVENANCE_ADMISSION",
+    "SOURCE_SPECIFIC_SCHEMA_OR_NORMALIZATION_FREEZE",
+    "SOURCE_SPECIFIC_ADAPTER_OR_EXECUTION_VIEW",
+    "SCIENTIFIC_VIEW_OR_REPLICATION_GATE"
+  ],
+  "skip_rules": {
+    "quarantine_may_be_skipped_for_bibliographic_metadata_only": true,
+    "quarantine_may_be_skipped_for_new_external_bytes": false,
+    "lane_receipt_may_be_skipped_after_safe_quarantine": false,
+    "semantic_content_may_be_inspected_before_lane_receipt": false,
+    "known_candidate_terms_may_be_used_to_select_files_before_lane_receipt": false,
+    "safe_quarantine_status_implies_provenance": false,
+    "safe_quarantine_status_implies_independence": false
+  },
+  "routes": {
+    "R3B_ALTERNATE_EDITORIAL_SOURCE": {
+      "trigger": "Any newly obtained RILA-S1, CTLA, TMT or other alternate-editorial corpus bytes.",
+      "quarantine_required": true,
+      "next_receipt_contract": "data/JANUS-LINEAR-A-R3B-0-ACQUISITION-RECEIPT-MACHINE-CONTRACT-2026-08-14-v0.1.json",
+      "next_gate": "R3B_1 identity-only overlap freeze",
+      "scientific_unlock_if_fully_admitted": "Potential external editorial/transcription replication depending on independently established provenance class.",
+      "automatic_independence_class": false
+    },
+    "R3C_1F_BRIAKOS_METHOD_MATERIAL": {
+      "trigger": "Any author/institution-supplied Briakos code, corpus manifest, saved input, archive or supplement.",
+      "quarantine_required": true,
+      "next_receipt_contract": "R3C-1F primary-method material identity receipt to be instantiated from exact bytes and thesis provenance before content-guided inspection.",
+      "next_gate": "Reconstruct corpus-selection/parser method without target-guided 419 subset search.",
+      "automatic_419_scope_resolution": false
+    },
+    "R3C_3_NEPAL_PERONO_2024_INPUT": {
+      "trigger": "Any paper-exact or candidate master list, dictionary, code, application, normalized data, raw match output or project archive related to Nepal/Perono 2024.",
+      "quarantine_required": true,
+      "next_receipt_contract": "data/JANUS-LINEAR-A-R3C-3-EXECUTION-INPUT-RECEIPT-CONTRACT-2026-08-14-v0.1.json",
+      "normalization_contract_required": true,
+      "next_gate": "R3C-3 v0.1.2 raw exact-match reproduction plus pre-frozen N1/N2 audit.",
+      "automatic_paper_exact_identity_from_project_lineage": false
+    },
+    "R3C_3_NTU_PROJECT_SITE_ARCHIVE": {
+      "trigger": "Any Blogs@NTU WordPress export, media bundle, attachment, link ledger or site backup for blogs.ntu.edu.sg/linear-a/.",
+      "quarantine_required": true,
+      "next_receipt_contract": "Project-site archive provenance receipt distinguishing site export, original attachment, archive replay and later author-supplied copy.",
+      "next_gate": "Classify each recovered attachment against R3C-3 execution-input receipt requirements.",
+      "automatic_2024_paper_input_identity": false
+    },
+    "R3D_PETROLITO_2015_TEI_EPIDOC": {
+      "trigger": "Any original, author/institution-supplied, archive-replayed or lineage-verified mirror bytes of the Petrolito et al. 2015 corpus.",
+      "quarantine_required": true,
+      "next_receipt_contract": "data/JANUS-LINEAR-A-R3D-PETROLITO-ACQUISITION-RECEIPT-CONTRACT-2026-08-14-v0.1.json",
+      "next_gate": "R3D_1 source identity then XML inventory/well-formedness/EpiDoc schema inventory.",
+      "fixed_current_independence_ceiling": "L1_INDEPENDENT_DIGITIZATION_SHARED_TRANSCRIPTION_WITH_GORILA_EDITORIAL_CHECK",
+      "automatic_R3B_credit": false
+    }
+  },
+  "unsupported_container_handling": {
+    "RAR_or_7Z_received": "Do not invoke external executable unpackers automatically. Preserve top-level SHA-256/bytes and hold until a separately frozen safe transport method is admitted or the sender supplies ZIP/TAR/raw originals.",
+    "encrypted_archive_received": "Preserve bytes and HOLD; do not request or brute-force passwords as part of scientific intake unless provenance holder supplies legitimate access information and a new receipt records it.",
+    "installer_or_EXE_received": "Never execute for intake. Preserve/hash as raw bytes; if source-specific static inspection is later required, freeze a separate static-analysis gate first."
+  },
+  "claim_ceiling": {
+    "routing_infrastructure_only": true,
+    "new_external_bytes_acquired": false,
+    "scientific_content_inspected": false,
+    "R3B_effect": "NONE",
+    "new_anchor": false,
+    "decipherment": false
+  }
+}

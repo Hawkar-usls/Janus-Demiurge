@@ -1,0 +1,85 @@
+{
+  "schema": "JANUS/registry-gateway-contract/v1.0.0",
+  "schema_id": "janus.registry_gateway.contract.v1",
+  "registry_id": "JANUS-REGISTRY-GATEWAY-CONTRACT-v1.0.0",
+  "status": "ARCHITECTURE_FROZEN__IMPLEMENTATION_PENDING",
+  "purpose": "Allow ADV_Elite and other JANUS nodes to author canonical JSON events and request durable GitHub publication without storing GitHub credentials on ESP32-class devices.",
+  "principle": "NODE_IS_AUTHOR__GATEWAY_IS_PRIVILEGED_TRANSPORT_ONLY",
+  "node_side": {
+    "authoritative_functions": [
+      "collect swarm + local observations",
+      "classify event KEEP_INTERESTING / ANOMALY / DROP",
+      "serialize JANUS/universal-event-record/v1.0.0",
+      "compute record_hash and local Witness chain",
+      "queue publication request in registry_outbox",
+      "retry until durable ACK or retention policy expires"
+    ],
+    "must_not_store": ["GitHub PAT","GitHub App private key","GitHub installation token"],
+    "gateway_auth": {
+      "recommended_first_version": "device-specific HMAC-SHA256",
+      "signed_material": "node_id || record_hash || request_nonce || timestamp/monotonic counter",
+      "secret_scope": "gateway-ingest only; cannot access GitHub directly",
+      "replay_protection": true
+    }
+  },
+  "gateway_side": {
+    "deployment": "any trusted always-on LAN host/NAS/PC capable of HTTP(S) service + GitHub API access",
+    "functions": [
+      "authenticate node request",
+      "verify canonical event schema",
+      "verify record/chunk hash",
+      "reject replay/duplicate record_id",
+      "enforce routing allowlist",
+      "queue and serialize GitHub writes",
+      "return durable publication ACK with repository/path/commit SHA",
+      "preserve failed publication debt for retry"
+    ],
+    "must_not": [
+      "rewrite node payload silently",
+      "promote PREDICTED/SIMULATED data to OBSERVED_REAL",
+      "invent anomalies",
+      "change source_node_id/provenance",
+      "hold swarm operation hostage when GitHub is offline"
+    ]
+  },
+  "routes": {
+    "interesting": {
+      "source_decision": "KEEP_INTERESTING",
+      "repository": "Hawkar-usls/janus-distributed-ai-swarm",
+      "proposed_path": "data/adv_elite/interesting/YYYY/MM/DD/<session>/<chunk_id>.json",
+      "publication": "batched chunks",
+      "batch_policy": "rotate by bounded record count/size/time; exact budget set by profiling"
+    },
+    "anomaly": {
+      "source_decision": "ANOMALY",
+      "repository": "Hawkar-usls/janus-meta-registry",
+      "proposed_path": "registry/anomalies/ADV_ELITE/YYYY/MM/DD/<anomaly_id>.json",
+      "publication": "immediate anomaly-onset record, then finalized episode bundle",
+      "debounce": "one onset publication per anomaly episode; do not commit every sample"
+    }
+  },
+  "publication_ack": {
+    "fields": ["request_id","record_or_chunk_hash","repository","path","commit_sha","published_at","gateway_id"],
+    "node_rule": "do not clear mandatory outbox entry until matching durable ACK is recorded"
+  },
+  "github_auth": {
+    "prototype": "fine-grained PAT stored only as a gateway secret and limited to required repositories with Contents:write",
+    "preferred_long_term": "GitHub App installation authentication on gateway with short-lived installation tokens",
+    "api": "GitHub REST repository contents or Git data API",
+    "writes_serialized": true
+  },
+  "availability": {
+    "gateway_optional_for_core_swarm": true,
+    "when_gateway_absent": "continue solo/swarm operation; retain registry_outbox/archive debt",
+    "fallback": "storage-capable peer may hold sealed JSON chunk until a gateway becomes reachable",
+    "multi_gateway_future": "allowed; advertise REGISTRY_GATEWAY capability and deduplicate by record_id/hash"
+  },
+  "security_truth_rules": [
+    "GitHub secret never resides in firmware image",
+    "gateway credential has minimum repository permissions",
+    "node HMAC key cannot commit to GitHub",
+    "GitHub availability never becomes a requirement for sensing/learning/mining",
+    "anomaly publication means detector fired, not that the event is physically extraordinary",
+    "record hash proves integrity, not truth"
+  ]
+}

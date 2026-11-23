@@ -1,0 +1,52 @@
+{
+  "artifact_id": "JANUS-PALOMAR-JPFM-2F-C2B1-SPATIAL-REFERENCE-SUPPORT-DEDUP-ADDENDUM-v1.0",
+  "experiment_id": "JPFM-2F-C2B1",
+  "schema_version": "1.0",
+  "date": "2026-08-17",
+  "status": "FROZEN_BEFORE_C2B1_PIXEL_REPLAY",
+  "purpose": "Make the preregistered same-plate expanding reference bank duplication-safe across overlapping tile sections without changing the strict reference filters or minimum reference count.",
+  "parent_admission_canonical_sha256": "27373cc8f40fe8a368d42e05c6541bc77a1c5f95eb589f1bc0ec9b8ceaafd751",
+  "holdout_freeze_canonical_sha256": "50c79682c53cb718067229f832587e0d5ccd5ce338b49b140a7f7d3d32187db8",
+  "dedup_contract": {
+    "duplicate_link_radius_arcsec": 2.0,
+    "scope": "within one POSS-I plate",
+    "precondition": "only detections passing the frozen strict reference-star filters enter the duplicate graph",
+    "natural_cell_assignment": "convert each detection centroid to full-plate pixel coordinates and assign it to the nearest of the 49 frozen grid centres; exact-distance ties resolve by lexicographic tile_id",
+    "duplicate_graph": "within each natural grid cell, connect strict-reference detections whose pass2 sky-coordinate separation is <=2.0 arcsec; connected components define one physical-reference candidate",
+    "representative_rule": [
+      "prefer a detection measured in the same tile_id as its assigned natural grid cell",
+      "then highest finite SNR_WIN",
+      "then lexicographically smallest source tile_id",
+      "then smallest NUMBER"
+    ],
+    "target_exclusion": "for each normalized target, exclude every reference component whose representative sky coordinate lies <=2.0 arcsec from the recovered target pass2 coordinate",
+    "support_count": "count deduplicated reference components, never raw overlapping-tile detections",
+    "conservative_boundary": "A 2 arcsec merge can under-count very close stellar pairs; under-count is preferred to duplicate inflation for this engineering gate."
+  },
+  "unchanged_contract": {
+    "minimum_reference_stars": 20,
+    "FLAGS": 0,
+    "CLASS_STAR_min": 0.8,
+    "SNR_WIN_min": 20.0,
+    "primary_features": [
+      "FWHM_IMAGE",
+      "ELONGATION",
+      "SPREAD_MODEL"
+    ],
+    "normalization": "median + 1.4826*MAD; finite positive robust sigma required",
+    "ring_order": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "cross_plate_pooling": false
+  },
+  "inference_boundary": {
+    "morphology_association_inference_authorized": false,
+    "external_label_reveal_authorized": false
+  },
+  "integrity": {
+    "canonical_payload_sha256_without_integrity": "16a93c7b515fb55685307dd3d808561882887f58e08b21d95474d6659a4da9f2"
+  }
+}

@@ -1,0 +1,133 @@
+{
+  "artifact_uuid": "JANUS-ENGINE-R0A1-ANNULAR-HOLLOW-FIBER-GILL-PACKAGE-v1.0",
+  "timestamp": "2026-08-30T01:31:00+03:00",
+  "version": "v1.0",
+  "title": "JANUS Engine R0A1 — annular hollow-fiber gill package",
+  "observer": "Hawkar / JANUS",
+  "node_type": "geometry_transport_gate",
+  "branch_name": "Janus Engine",
+  "branch_id": "JANUS_ENGINE",
+  "parent": "data/JANUS-ENGINE-R0A-GEOMETRY-FREEZE-FLOW-BUDGET-v1.0.json",
+  "status": "LITERATURE_ANCHORED_GEOMETRY_CANDIDATE_UNVERIFIED",
+  "purpose": "Replace the simple 62.3 mm frontal-ring approximation with a realizable high-area annular gas-transfer package around the Axle and quantify membrane area, water-flow area, oxygen throughput and hydraulic loss before any engine integration claim.",
+  "frozen_axle": {
+    "source_model": "JANUS_AXLE_COIN_TWO_SIDED_LAUREL_A1_v2.6_ADHESION_ROTATION_REPAIR.3mf",
+    "axle_outer_diameter_mm": 62.3,
+    "role": "central rotating mechanical core / geometry datum",
+    "boundary": "The 3MF remains a form reference only; it is not pressure-rated, oxygen-rated or cryogenic hardware."
+  },
+  "candidate_gill_crown": {
+    "architecture": "Stationary or very-slow-indexed annular membrane contactor surrounding the rotating Axle. Water flows primarily axially through many low-obstruction lanes while dissolved gas is removed through hollow-fiber-like membrane surfaces to a separate collector manifold.",
+    "outer_diameter_mm": 700.0,
+    "inner_clear_bore_mm": 62.3,
+    "axial_active_length_mm": 500.0,
+    "candidate_fiber_outer_diameter_um": 200.0,
+    "active_membrane_area_m2": 423.5294,
+    "estimated_fiber_count_if_straight_parallel_fibers": 1348136,
+    "annular_gross_flow_area_m2": 0.381797,
+    "fiber_solid_cross_section_m2": 0.042353,
+    "geometric_packing_fraction": 0.110931,
+    "open_water_flow_area_m2": 0.339444,
+    "manufacturing_note": "Fiber count is a geometric equivalence, not a commitment to one monolithic cartridge. The same area may be partitioned into cassettes, woven sheets, pleats or transverse-flow membrane panels."
+  },
+  "target_operating_point": {
+    "water_flow_m3_s": 0.1,
+    "water_flow_L_s": 100.0,
+    "dissolved_O2_mg_L": 8.0,
+    "O2_available_g_s": 0.8,
+    "target_capture_fraction": 0.5,
+    "target_O2_capture_g_s": 0.4,
+    "target_O2_capture_kg_h": 1.44
+  },
+  "mass_transfer_model": {
+    "plug_flow_relation": "eta_capture = 1 - exp(-K_overall * A_membrane / Q_water)",
+    "required_area_relation": "A_required = -Q_water * ln(1 - eta_target) / K_overall",
+    "reported_high_flux_screen": {
+      "benchmark": "A published hydrophobic hollow-fiber vacuum-degassing study reports oxygen removal as high as 3.4 g O2 per m2 membrane per hour under its experimental conditions.",
+      "screening_area_for_0p4_g_s_m2": 423.5294,
+      "boundary": "This flux is not assumed to transfer unchanged to JANUS. It is used only as a high-performance literature benchmark for geometry sizing."
+    },
+    "K_sensitivity_for_fixed_423p53_m2_and_100_L_s": [
+      {"K_overall_m_s": 0.0000037, "capture_fraction": 0.01555, "O2_capture_g_s": 0.01244},
+      {"K_overall_m_s": 0.0000100, "capture_fraction": 0.04147, "O2_capture_g_s": 0.03317},
+      {"K_overall_m_s": 0.0000300, "capture_fraction": 0.11932, "O2_capture_g_s": 0.09545},
+      {"K_overall_m_s": 0.0000660, "capture_fraction": 0.24386, "O2_capture_g_s": 0.19509},
+      {"K_overall_m_s": 0.0001000, "capture_fraction": 0.34527, "O2_capture_g_s": 0.27621},
+      {"K_overall_m_s": 0.0001640, "capture_fraction": 0.50072, "O2_capture_g_s": 0.40058}
+    ],
+    "important_result": "The real killer variable is now K_overall or directly measured oxygen flux, not merely frontal water throughput. Hundreds to thousands of square metres of membrane may be required depending on membrane material, module hydrodynamics, vacuum level and boundary-layer renewal."
+  },
+  "hydrodynamic_screen": {
+    "model": "Idealized straight parallel-fiber axial-flow friction screen using hydraulic diameter from open flow area and wetted perimeter. Entrance losses, manifolds, bends, baffles, maldistribution, fouling and fiber motion are excluded and therefore must be measured separately.",
+    "water_density_kg_m3": 998.0,
+    "dynamic_viscosity_Pa_s": 0.001,
+    "interstitial_axial_velocity_m_s": 0.29460,
+    "hydraulic_diameter_m": 0.001603,
+    "Re_screen": 471.28,
+    "laminar_Darcy_f_screen": 0.13580,
+    "DeltaP_screen_kPa": 1.8345,
+    "pump_efficiency": 0.70,
+    "hydraulic_power_screen_W": 262.07,
+    "boundary": "DeltaP is a geometry screen, not a predicted measured pressure drop. Real manifolds and transverse mixing can raise it substantially."
+  },
+  "rotation_architecture_revision": {
+    "whole_crown_at_600rpm": {
+      "outer_tip_speed_m_s": 21.991,
+      "outer_centripetal_acceleration_g": 140.90,
+      "verdict": "REJECT_AS_DEFAULT_ARCHITECTURE",
+      "reason": "Rotating the entire 700 mm high-area membrane crown at Axle RPM would create severe drag, fiber stress, sealing and manifold problems before oxygen-transfer benefit is proven."
+    },
+    "central_axle_at_600rpm": {
+      "diameter_mm": 62.3,
+      "tip_speed_m_s": 1.957,
+      "role": "Candidate drive for a small pump, sweep rotor or boundary-layer refresh mechanism rather than forcing the full membrane inventory to rotate."
+    },
+    "preferred_split": "ROTATING_AXLE_PLUS_STATIONARY_GILL_CROWN",
+    "design_lesson": "Preserve rotation where it buys boundary-layer renewal or pumping, but keep the large membrane inventory stationary unless torque measurements prove otherwise."
+  },
+  "literature_anchors": [
+    {
+      "citation": "Journal of Membrane Science 523 (2017) 235-246",
+      "doi": "10.1016/j.memsci.2016.09.049",
+      "use": "O2-removal membrane-contactor transport scaling; reported O2 diffusivity in water about 1.97e-9 m2/s and hollow-fiber scales around 190-210 um hydraulic diameter."
+    },
+    {
+      "citation": "Separation and Purification Technology 17 (1999) 1-10",
+      "doi": "10.1016/S1383-5866(99)00012-X",
+      "use": "Demonstrates strong membrane/material dependence; reported overall oxygen-transfer coefficients in one polysulfone configuration were only order 1e-6 m/s."
+    },
+    {
+      "citation": "Journal of Applied Membrane Science & Technology, hydrophobic PP vacuum-degassing study",
+      "doi": "10.11113/amst.v2i1.1",
+      "use": "High-flux screening anchor; reported oxygen removal up to 3.4 g O2 m-2 h-1 in the studied configuration."
+    },
+    {
+      "citation": "Desalination 234 (2008) 316-322",
+      "doi": "10.1016/j.desal.2007.09.100",
+      "use": "Pilot-scale PP membrane degassing; woven/transverse-flow packing improved degassing and mass transfer relative to simple fiber bundles while retaining low-pressure-drop intent."
+    }
+  ],
+  "hard_invariants": [
+    "FRONTAL_FLOW_AREA_DOES_NOT_EQUAL_ACTIVE_MEMBRANE_AREA",
+    "MEMBRANE_AREA_DOES_NOT_GUARANTEE O2_FLUX_WITHOUT_A_REAL_K_OVERALL_OR_MEASUREMENT",
+    "FRESH_WATER_O2_SUPPLY_AND_MEMBRANE_TRANSPORT_MUST_BOTH_CLOSE",
+    "VACUUM_OR_SWEEP_GAS_POWER_MUST_BE_INCLUDED",
+    "ROTATION_POWER_MUST_BE_MEASURED_SEPARATELY",
+    "CONCENTRIC_LAYERS_MAY_NOT_COUNT_THE_SAME_DEPLETED_WATER_MULTIPLE_TIMES",
+    "NO_ENGINE_PASS_IS_VALID_UNTIL_WATER_SIDE_AND_COLLECTOR_SIDE_O2_MASS_BALANCES_AGREE"
+  ],
+  "next_measurements": [
+    "Build a small non-combustion membrane cassette at the same fiber/gap philosophy and measure K_overall or direct O2 flux versus water velocity.",
+    "Measure DeltaP versus Q with actual manifolds and membrane packing.",
+    "Measure collector vacuum/sweep power per g/s gas removed.",
+    "Measure O2/N2/H2O composition of extracted dissolved-gas stream.",
+    "Measure torque of the Axle-driven water-refresh mechanism separately from membrane pressure drop."
+  ],
+  "next_gate": "JANUS_ENGINE_SIM_HOWL_CASTLE_RUN_003_GILL_PACKAGE: combine this annular package with the R2A power balance and test both optimistic high-flux and lower-K transport regimes while leaving vacuum/rotation power explicit rather than hidden.",
+  "linked_records": [
+    "data/JANUS-ENGINE-R0-ROTATING-GILL-RING-v1.0.json",
+    "data/JANUS-ENGINE-R0A-GEOMETRY-FREEZE-FLOW-BUDGET-v1.0.json",
+    "data/JANUS-ENGINE-SIM-HOWL-CASTLE-RUN-002-GEOMETRY-GROUNDED-v1.0.json",
+    "data/JANUS-ENGINE-R2A-SELF-DRIVE-NET-GENERATION-v1.0.json"
+  ]
+}

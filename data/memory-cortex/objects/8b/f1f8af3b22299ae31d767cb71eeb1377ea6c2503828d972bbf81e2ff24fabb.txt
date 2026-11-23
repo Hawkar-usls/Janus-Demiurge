@@ -1,0 +1,197 @@
+{
+  "artifact_id": "EYE-R4.4-SYNTHETIC-ROBUST-ADVANTAGE-v1",
+  "authority": "EXACT_OPTIMAL_ROBUST_POLICY_UNDER_DECLARED_FINITE_MODEL_SET_OBJECTIVE_AND_TEST_SPACE__NOT_CAUSAL_TRUTH",
+  "confidence_threshold": 0.9,
+  "exact_policy_search_completed": true,
+  "firewalls": [
+    "ROBUST_POLICY != CAUSAL_TRUTH",
+    "MODEL_SET != TRUE_WORLD",
+    "MODEL_PROVENANCE != MODEL_VALIDITY",
+    "MINIMAX_OPTIMAL != CALIBRATED",
+    "CVAR_OPTIMAL != CALIBRATED",
+    "ROBUST_STOP != FREQUENTIST_GUARANTEE",
+    "PRIOR_SET != EVIDENCE",
+    "ROBUST_NON_IDENTIFIABLE != FALSE"
+  ],
+  "model_expected_costs": {
+    "degraded": 2.0,
+    "nominal": 2.0
+  },
+  "model_ids": [
+    "degraded",
+    "nominal"
+  ],
+  "model_provenance": {
+    "degraded": "synthetic degraded calibration",
+    "nominal": "synthetic nominal calibration"
+  },
+  "policy_node_count": 3,
+  "policy_nodes": [
+    {
+      "acquired_tests": [],
+      "branches": [
+        {
+          "child_node_id": "N0001",
+          "outcome": "A_SIG",
+          "probability_by_model": {
+            "degraded": 0.5,
+            "nominal": 0.5
+          }
+        },
+        {
+          "child_node_id": "N0002",
+          "outcome": "B_SIG",
+          "probability_by_model": {
+            "degraded": 0.5,
+            "nominal": 0.5
+          }
+        }
+      ],
+      "immediate_cost": 2.0,
+      "model_expected_costs_from_state": {
+        "degraded": 2.0,
+        "nominal": 2.0
+      },
+      "model_states": {
+        "degraded": {
+          "best_target": "B",
+          "confidence": 0.5,
+          "posterior_by_cause": {
+            "A": 0.5,
+            "B": 0.5
+          },
+          "posterior_by_target": {
+            "A": 0.5,
+            "B": 0.5
+          },
+          "risk": 0.5
+        },
+        "nominal": {
+          "best_target": "B",
+          "confidence": 0.5,
+          "posterior_by_cause": {
+            "A": 0.5,
+            "B": 0.5
+          },
+          "posterior_by_target": {
+            "A": 0.5,
+            "B": 0.5
+          },
+          "risk": 0.5
+        }
+      },
+      "next_test": "t_robust",
+      "node_id": "N0000",
+      "robust_objective_value_from_state": 2.0,
+      "terminal": false
+    },
+    {
+      "acquired_tests": [
+        "t_robust"
+      ],
+      "identified_target_class": "A",
+      "maximum_model_risk": 0.03,
+      "minimum_model_confidence": 0.97,
+      "model_states": {
+        "degraded": {
+          "best_target": "A",
+          "confidence": 0.97,
+          "posterior_by_cause": {
+            "A": 0.97,
+            "B": 0.03
+          },
+          "posterior_by_target": {
+            "A": 0.97,
+            "B": 0.03
+          },
+          "risk": 0.03
+        },
+        "nominal": {
+          "best_target": "A",
+          "confidence": 0.97,
+          "posterior_by_cause": {
+            "A": 0.97,
+            "B": 0.03
+          },
+          "posterior_by_target": {
+            "A": 0.97,
+            "B": 0.03
+          },
+          "risk": 0.03
+        }
+      },
+      "node_id": "N0001",
+      "terminal": true
+    },
+    {
+      "acquired_tests": [
+        "t_robust"
+      ],
+      "identified_target_class": "B",
+      "maximum_model_risk": 0.03,
+      "minimum_model_confidence": 0.97,
+      "model_states": {
+        "degraded": {
+          "best_target": "B",
+          "confidence": 0.97,
+          "posterior_by_cause": {
+            "A": 0.03,
+            "B": 0.97
+          },
+          "posterior_by_target": {
+            "A": 0.03,
+            "B": 0.97
+          },
+          "risk": 0.03
+        },
+        "nominal": {
+          "best_target": "B",
+          "confidence": 0.97,
+          "posterior_by_cause": {
+            "A": 0.03,
+            "B": 0.97
+          },
+          "posterior_by_target": {
+            "A": 0.03,
+            "B": 0.97
+          },
+          "risk": 0.03
+        }
+      },
+      "node_id": "N0002",
+      "terminal": true
+    }
+  ],
+  "robust_cost": 2.0,
+  "robust_objective": "minimax_expected_cost",
+  "root_next_test": "t_robust",
+  "root_node_id": "N0000",
+  "root_robust_next_test_ranking": [
+    {
+      "cost": 5.0,
+      "failure_domains": [],
+      "minimum_expected_confidence_gain": 0.499,
+      "test_id": "t_gold",
+      "worst_expected_posterior_risk": 0.001
+    },
+    {
+      "cost": 2.0,
+      "failure_domains": [],
+      "minimum_expected_confidence_gain": 0.47,
+      "test_id": "t_robust",
+      "worst_expected_posterior_risk": 0.03
+    },
+    {
+      "cost": 1.0,
+      "failure_domains": [],
+      "minimum_expected_confidence_gain": 0.1,
+      "test_id": "t_fragile",
+      "worst_expected_posterior_risk": 0.4
+    }
+  ],
+  "schema": "janus.eye.r4_4.robust_policy_receipt.v1",
+  "source_git_commit": "21a4640a08569ec6f635f5d47a8add4b70277c81",
+  "states_visited": 19,
+  "status": "EXACT_ROBUST_POLICY_FOUND",
+  "worst_model_expected_cost": 2.0
+}

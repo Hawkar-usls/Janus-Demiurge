@@ -1,0 +1,88 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-R5-0-WORD-LEVEL-SELF-SUPERVISED-ROLE-LEARNING-SPEC-2026-08-14-v0.1",
+  "version": "v0.1",
+  "node_type": "frozen_word_level_self_supervised_learning_spec",
+  "parent_canonical_target": "v2.21",
+  "source": {
+    "repository": "Hawkar-usls/lineara.xyz",
+    "frozen_commit": "43fe7cf1abc8e6bb1ea3228c3a1bd5938709620a",
+    "layer": "reading-spec",
+    "translations_used": false,
+    "external_language_dictionary_used": false,
+    "Notti_readings_used": false,
+    "Linear_B_semantic_supervision_used": false
+  },
+  "unit": {
+    "prediction_target": "source word assembled mechanically by source word_index",
+    "opaque_word_identity": "sha256('R5WORD|' + exact ordered source pieces)",
+    "word_label_visible_during_training": false,
+    "numeric_only_word_as_target": false,
+    "numeric_only_word_as_context": true,
+    "numeric_context_bucket": ["FRAC", "ONE", "2_4", "5_9", "10PLUS", "UNCERTAIN"],
+    "mixed lexical_numeric_word": "opaque lexical word target/context; no semantic interpretation"
+  },
+  "certainty": {
+    "primary_evaluation_target": "all component reading statuses must be certain",
+    "none_reinterpreted_as_certain": false,
+    "doubtful_reinterpreted_as_certain": false,
+    "training_may_use_all mechanically parsed lexical words as unsupervised context": true
+  },
+  "cross_validation": {
+    "folds": 5,
+    "unit": "document_id",
+    "operator": "sha256('JANUS-LINA-R5-0-CV-v0.1|' + document_id) modulo 5",
+    "every_document_held_out_exactly_once": true
+  },
+  "representation": {
+    "directional_context_window": 2,
+    "features": ["L2", "L1", "R1", "R2"],
+    "document_boundaries": ["BOS", "EOS"],
+    "numeric_context_preserved": true
+  },
+  "models": {
+    "B0_WORD_UNIGRAM": "train lexical-word frequency ranking",
+    "B1_DIRECTIONAL_WORD_CONTEXT_COUNT": "Laplace-smoothed directional-context count model",
+    "M1_WORD_PPMI_SVD": {
+      "rank": 32,
+      "matrix": "opaque lexical word x directional word/numeric context",
+      "score": "mean reconstructed PPMI over visible contexts"
+    }
+  },
+  "vocabulary": {
+    "minimum_train_word_frequency": 4,
+    "candidate_vocabulary_train_only": true
+  },
+  "primary_admission": {
+    "minimum_aggregate_evaluable_masks": 200,
+    "B1_must_beat_B0": ["mean_reciprocal_rank", "top5_accuracy"],
+    "M1_must_beat_B0": ["mean_reciprocal_rank", "top5_accuracy"],
+    "minimum_folds_where_both_context_models_beat_B0_MRR": 4,
+    "allowed_interpretation": "word-level contextual/functional role structure is learnable"
+  },
+  "cross_fold_word_role_analogy": {
+    "minimum_train_frequency": 6,
+    "minimum_train_documents": 3,
+    "top_train_pairs_per_fold": 50,
+    "heldout_pair_each_word_min_occurrences": 2,
+    "heldout_context_cosine_threshold": 0.20,
+    "CV_ROLE_ANALOGY": {
+      "minimum_folds_selected": 3,
+      "minimum_heldout_folds_replicated": 2
+    },
+    "source_word_labels_revealed_only_after_all_fold_selection_and_scoring": true,
+    "semantic_equivalence_claimed": false
+  },
+  "postscore_role_descriptors": {
+    "for_CV_role_analogies_only": [
+      "numeric_left_bucket_set",
+      "numeric_right_bucket_set",
+      "document_region_set",
+      "document_count"
+    ],
+    "descriptors_are_semantics": false
+  },
+  "claim_ceiling": {
+    "allowed": ["cross-validated word-level predictability", "anonymous functional-role analogy candidate", "numeric-adjacency role profile"],
+    "forbidden": ["translation", "word meaning", "semantic equivalence", "phonetic assignment", "language-family identification", "grammatical label", "new anchor", "Linear A decipherment", "R3B replication"]
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "schema": "janus.meta_registry.integration_record.v1",
+  "record_id": "JANUS_AURA_ORACLE_NATIVE_MODULE_BRIDGE_2026_09_02_V1_0",
+  "date": "2026-09-02",
+  "status": "CODE_INTEGRATION_SEALED_RUNTIME_AVAILABILITY_EXTERNAL",
+  "subject": "AURA Oracle as a native bounded JANUS module using the HRain/iNaiHR branch-and-verify pattern",
+  "repositories": {
+    "janus": "Hawkar-usls/Janus",
+    "aura": "Hawkar-usls/aura-oracle-tg",
+    "registry": "Hawkar-usls/janus-meta-registry"
+  },
+  "aura_binding": {
+    "module_descriptor": ".janus/JANUS_MODULE.json",
+    "bridge_contract": ".janus/JANUS_ORACLE_BRIDGE.json",
+    "module_actuator": ".github/workflows/janus-module-actuator.yml",
+    "verification_test": "tests/test_janus_oracle_module.py",
+    "latest_integration_commit": "596d95bcb9593ad9ad702020ff88515f3c364323",
+    "actuator_run_id": 33671004913,
+    "actuator_run_conclusion": "success",
+    "pages_run_id": 33671003569,
+    "pages_run_conclusion": "success"
+  },
+  "janus_binding": {
+    "reciprocal_link": ".janus/AURA_ORACLE_LINK.json",
+    "bridge_test": "tests/test_aura_oracle_bridge_contract.py",
+    "bridge_workflow": ".github/workflows/aura-oracle-bridge-integrity.yml",
+    "latest_bridge_test_commit": "f3fddfcd72df978d01773c011551e97046d22682",
+    "runtime_implementation": "janus_core.py"
+  },
+  "runtime_api": {
+    "state": {"method": "GET", "path": "/api/get_user_state"},
+    "cards": {"method": "POST", "path": "/api/generate_cards"},
+    "interpret": {"method": "POST", "path": "/api/interpret"},
+    "reading_store": "oracle_readings",
+    "execution_law": "AURA_UI -> JANUS_GATEWAY -> PYTHIA_ORACLE -> AURA_UI"
+  },
+  "authority": {
+    "module_authority_lane": "BRANCH_AND_VERIFY",
+    "direct_main_write": false,
+    "autonomous_merge": false,
+    "evidence_authority": false,
+    "authority_delta": 0,
+    "firewalls": [
+      "AURA_OUTPUT != EVIDENCE",
+      "ORACLE_INTERPRETATION != TRUTH",
+      "SYMBOLIC_OUTPUT != PREDICTION",
+      "CONNECTIVITY != AUTHORITY",
+      "MODEL_PATCH_PROPOSAL != VERIFIED_FIX",
+      "NO_VERIFY => NO_PASS"
+    ]
+  },
+  "availability_boundary": {
+    "pages_online_does_not_imply_janus_gateway_online": true,
+    "frontend_current_backend_dependency": "hardcoded JANUS/ngrok endpoint in aura-oracle-tg/index.html",
+    "offline_ui_status": "NO_CONNECTION_WHEN_GATEWAY_OR_TUNNEL_IS_UNREACHABLE",
+    "code_integration_does_not_claim_runtime_uptime": true
+  },
+  "known_followup": {
+    "premium_invoice_compatibility": "AURA frontend currently requests GET /api/get_invoice?app=aura while Janus core exposes POST /api/slot/invoice; this does not block the core state/cards/interpret oracle path but remains a separate compatibility gap."
+  },
+  "canonical_verdict": "AURA Oracle is structurally bound to JANUS through the same bounded repository-module authority pattern used by HRain/iNaiHR, and its core reading path is routed through JANUS Pythia endpoints. Live availability remains dependent on the actual JANUS runtime and public tunnel being online."
+}

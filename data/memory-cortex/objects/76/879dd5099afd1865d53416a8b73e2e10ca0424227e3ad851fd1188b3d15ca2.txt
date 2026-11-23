@@ -1,0 +1,106 @@
+{
+  "artifact": "JANUS-NOHAND-GATE-TERMINAL-v1.4",
+  "version": "1.4",
+  "status": "CANDIDATE_VERIFIED_LIVE_NAS_NOT_YET_PROVEN",
+  "date": "2026-08-17",
+  "purpose": "Bind the read-only Habitat Gate to the NOHAND Habitat Terminal so the Terminal can request bounded file discovery from Gate, receive an attested path/fingerprint handoff, and then use the Terminal's existing guarded COPY_TO_GIT path for export.",
+  "source_basis": {
+    "uploaded_gate": "janus_habitat_gate (1).py",
+    "uploaded_gate_version": "1.3",
+    "preserved_role": "READ_ONLY_SENSOR",
+    "preserved_read_ops": ["PING", "LIST", "STAT", "HASH", "READ", "DB_INTEGRITY", "DB_SCHEMA", "DB_SELECT"]
+  },
+  "gate_candidate": {
+    "filename": "janus_habitat_gate.py",
+    "version": "1.4-READONLY-GUARDIAN-HANDOFF",
+    "sha256": "344eba1409e6bcab807426c0fe2034ad7926094d4d947d154d8699b945017982",
+    "safety_contract_sha256": "109188160c50fdab5c0cdfd07ea24cd85d671476af40de3f5983145145327e33",
+    "size_bytes": 42186,
+    "new_operation": "FIND_FILES",
+    "request_schema": "janus.habitat.gate_request.v2",
+    "response_schema": "janus.habitat.gate_response.v2",
+    "handoff_schema": "janus.habitat.gate_file_handoff.v1",
+    "properties": [
+      "NAS remains read-only",
+      "secret-like paths are denied/hidden",
+      "inbox branch is pinned to an immutable commit SHA per cycle",
+      "runtime audit fuse blocks destructive process actions",
+      "static source scan rejects destructive primitives",
+      "source and safety contract are re-verified during runtime",
+      "recursive discovery has depth/result/scan budgets",
+      "handoff carries path,size,mtime_ns,st_dev,st_ino,sha256 when within hash budget",
+      "handoff is observation only and authority_weight is zero"
+    ]
+  },
+  "terminal_candidate": {
+    "filename": "janus_habitat_terminal.py",
+    "version": "1.4-NOHAND-GUARDIAN-BEACON-DEMIHEAD-GATE",
+    "sha256": "84fd9aaa8459399c7f616495b8b4006e77e71cd7163c6695d120310ae63f8932",
+    "safety_contract_sha256": "24e378fa0612be9f4db20c9b39c3748e97a150c47829ae19d5eae241fe6f969b",
+    "size_bytes": 92987,
+    "new_read_operation": "GATE_FIND",
+    "gate_pins": {
+      "version": "1.4-READONLY-GUARDIAN-HANDOFF",
+      "source_sha256": "344eba1409e6bcab807426c0fe2034ad7926094d4d947d154d8699b945017982",
+      "safety_contract_sha256": "109188160c50fdab5c0cdfd07ea24cd85d671476af40de3f5983145145327e33"
+    },
+    "demihead_namespace": "habitat/nohand/v1_4",
+    "behavior": "GATE_FIND is observation. Export remains a separate existing COPY_TO_GIT mutation-of-Git action and therefore retains Guardian/Beacon/DemiHead barriers."
+  },
+  "exchange": {
+    "discovery_flow": "TERMINAL_GUARD -> BEACON_FORECAST(GATE_FIND) -> CREATE_ONLY_GATE_REQUEST_V2 -> GATE_PINNED_COMMIT_READ -> GATE_READONLY_SCAN -> HASH_BOUND_HANDOFF -> TERMINAL_VALIDATES_GATE_AND_HANDOFF -> BEACON_SETTLE",
+    "export_flow": "SELECT_HANDOFF_PATH -> TERMINAL_COPY_TO_GIT -> TERMINAL_GUARD -> BEACON_FORECAST -> DEMIHEAD_LOCAL_TO_GIT_BARRIER -> SENTINEL_WATCH -> EXACT_LOCAL_HASH -> CREATE_ONLY_GIT_COPY -> BEACON_SETTLE -> DEMIHEAD_OUTCOME",
+    "authority_laws": [
+      "GATE_HANDOFF != PERMISSION",
+      "GATE_OBSERVATION != AUTHORITY",
+      "PREDICTION != PERMISSION",
+      "DEMIHEAD_ADVICE != PERMISSION",
+      "COPY_TO_GIT DOES_NOT_MUTATE_SOURCE"
+    ]
+  },
+  "demihead": {
+    "repository": "Hawkar-usls/Demi_Head",
+    "branch": "feature/nohand-habitat-peer-v1",
+    "wrapper": "tools/nohand_habitat_peer_v1_4.py",
+    "wrapper_commit": "e844428ae1ded52a0b7bf45342232ef2e9952975",
+    "workflow": ".github/workflows/nohand-habitat-peer-v1-4.yml",
+    "workflow_commit": "1de6f50e6e8cff07e295a97c66dbd1305cd32199",
+    "workflow_run": 32019584788,
+    "workflow_conclusion": "success",
+    "pr": 28,
+    "pr_state": "DRAFT_OPEN",
+    "merge_permission": false
+  },
+  "verification": {
+    "gate_py_compile": "PASS",
+    "gate_guardian_static_scan": "PASS",
+    "gate_runtime_audit_fuse": "PASS",
+    "gate_find_two_same_name_files": "PASS",
+    "gate_secret_like_read_rejected": "PASS",
+    "gate_db_readonly_select": "PASS",
+    "gate_request_v2_self_hash": "PASS",
+    "terminal_py_compile": "PASS",
+    "terminal_static_destructive_surface_scan": "PASS",
+    "terminal_runtime_audit_fuse": "PASS",
+    "terminal_gate_response_pin_validation": "PASS",
+    "terminal_gate_find_synthetic_exchange": "PASS",
+    "demihead_v1_4_ci": "PASS"
+  },
+  "claim_boundaries": [
+    "CANDIDATE_VERIFIED != LIVE_NAS_DEPLOYED",
+    "CI_SUCCESS != LIVE_NAS_GATE_TERMINAL_EXCHANGE",
+    "SHA256_RECEIPT != DIGITAL_SIGNATURE",
+    "READ_ONLY_PYTHON_GUARD != KERNEL_IMMUTABILITY",
+    "DRAFT_PR != MERGE_PERMISSION"
+  ],
+  "next_gate": [
+    "replace janus_habitat_gate.py on NAS with exact v1.4 candidate",
+    "replace janus_habitat_terminal.py on NAS with exact v1.4 candidate",
+    "restart only the Gate and Terminal services",
+    "verify startup source/safety SHA pins",
+    "issue one GATE_FIND request for a known non-secret file",
+    "verify returned handoff against local source",
+    "issue COPY_TO_GIT using the selected returned path",
+    "record first live Gate-Terminal receipt"
+  ]
+}

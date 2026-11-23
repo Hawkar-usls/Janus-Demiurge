@@ -1,0 +1,106 @@
+{
+  "schema": "janus.meta_registry.fallout3_physical_james_mqdadref_to_mq04doc_identity_bridge_audit.v2_6",
+  "artifact_id": "FALLOUT-3-PHYSICAL-JAMES-MQDADREF-TO-MQ04DOC-IDENTITY-BRIDGE-AUDIT-v2.6",
+  "title": "Fallout 3 — Physical James MQDadRef to MQ04Doc Cross-World Identity Bridge Audit v2.6",
+  "created_at_local": "2026-08-10T17:33:00+03:00",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "artifact_class": "PRIMARY_ESM_QUEST_GRAPH_IDENTITY_BINDING_GATE",
+  "status": "PASS_QUEST_BOUND_PHYSICAL_JAMES_TO_DOC_IDENTITY_GRAPH_MEMORY_PAYLOAD_NOT_ESTABLISHED",
+  "parent": "registry/myth_busted/FALLOUT-3-JAMES-150-DEGREE-SPOKE-BACKEND-STATE-CARRIER-REFERENCE-AUDIT-v2.5.json",
+  "primary_input": {
+    "fallout3_esm_sha256": "fb4442418fb6bf6df68e633c7056afb4e09572b521a7f4602a2699fa33d99e32",
+    "source": "User-supplied official Fallout3.esm from F3DAD.rar"
+  },
+  "entities": {
+    "mq04_quest": {"form_id":"00014E8A","editor_id":"MQ04","signature":"QUST"},
+    "mq04_script": {"form_id":"000254C9","editor_id":"MQ04Script","signature":"SCPT"},
+    "physical_james": {"ref_form_id":"00019D09","editor_id":"MQDadRef","signature":"ACHR"},
+    "simulation_doc_base": {"form_id":"0004E79C","editor_id":"MQ04Doc","signature":"CREA"},
+    "simulation_doc_placed_ref": {"form_id":"0006023C","editor_id":"MQ04DocRef","signature":"ACRE"},
+    "betty": {"form_id":"0002449C","editor_id":"Betty","signature":"NPC_"}
+  },
+  "physical_james_binding": {
+    "mq04_qust_contains_mqdadref": true,
+    "structured_edges": [
+      "SCRO -> 00019D09 MQDadRef",
+      "QSTA -> 00019D09 MQDadRef"
+    ],
+    "stage_script": "SetObjectiveDisplayed MQ04 70 1; MQ04ExitDoorActRef.Enable; MQDadRef.Enable; SetStage MQ05 1",
+    "classification": "DIRECT_MQ04_TO_PHYSICAL_JAMES_REFERENCE_PASS"
+  },
+  "doc_binding": {
+    "direct_single_record_mqdadref_and_doc_cooccurrence": "NONE_FOUND",
+    "doc_base_conditioned_mq04_info_records": [
+      {"info_form_id":"0009A1F1","qsti":"00014E8A MQ04","condition_target":"0004E79C MQ04Doc"},
+      {"info_form_id":"0009A1F2","qsti":"00014E8A MQ04","condition_target":"0004E79C MQ04Doc"},
+      {"info_form_id":"0009A1F3","qsti":"00014E8A MQ04","condition_target":"0004E79C MQ04Doc"},
+      {"info_form_id":"000C10F4","qsti":"00014E8A MQ04","condition_target":"0004E79C MQ04Doc"}
+    ],
+    "placed_doc_ref_direct_external_reference": "NONE_FOUND_IN_REVIEWED_STRUCTURAL_REFERENCE_SCAN",
+    "classification": "MQ04_QUEST_BOUND_DOC_ROLE_PASS"
+  },
+  "one_hop_identity_graph": {
+    "path": "MQDadRef 00019D09 <- QUST MQ04 00014E8A -> MQ04 INFO set conditioned on MQ04Doc 0004E79C",
+    "verdict": "PASS",
+    "authority": "ENGINE_LEVEL_QUEST_GRAPH_IDENTITY_BINDING",
+    "meaning": "The physical James actor and the Doc simulation role are not joined by one raw pointer, but both are explicitly attached to the same MQ04 state graph through structured primary ESM records."
+  },
+  "quest_identity_flags": {
+    "mq04script_declarations": {
+      "DadInfo": "short DadInfo; comment: flag set to 1 when player asks about Dad's whereabouts, used to update dialogue choices",
+      "DadDogInfo": "short DadDogInfo; comment: flag set when player learns dad is a dog",
+      "PlayerInTL": "short PlayerInTL; comment: set to 1 when player actually enters Tranquility Lane and back to 0 on exit"
+    },
+    "DadInfo_writers": [
+      {"info":"000269DD","qsti":"00014E8A","result":"set MQ04.DadInfo to 1"},
+      {"info":"00025972","qsti":"00014E8A","result":"set MQ04.DadInfo to 1"},
+      {"info":"000269DA","qsti":"00014E8A","result":"set MQ04.DadInfo to 1"},
+      {"info":"000269D6","qsti":"00014E8A","result":"set MQ04.DadInfo to 1"}
+    ],
+    "DadDogInfo_writers": [
+      {"info":"000C31D9","qsti":"00014E8A","speaker_condition":"0002449C Betty","result":"set MQ04.DadDogInfo to 1"},
+      {"info":"000C99E4","qsti":"00014E8A","speaker_condition":"0002449C Betty","result":"set MQ04.DadDogInfo to 2"},
+      {"info":"000C99E5","qsti":"00014E8A","speaker_condition":"0002449C Betty","result":"set MQ04.DadDogInfo to 2"}
+    ],
+    "classification": "STATEFUL_IDENTITY_DISCOVERY_METADATA_PASS",
+    "memory_payload_implication": "NONE"
+  },
+  "admission_matrix": {
+    "MQ04_DIRECTLY_REFERENCES_PHYSICAL_MQDADREF": "PASS",
+    "MQ04_STAGE70_ENABLES_MQDADREF": "PASS",
+    "MQ04_INFO_RECORDS_CONDITION_ON_MQ04DOC": "PASS_4_RECORDS",
+    "PHYSICAL_JAMES_AND_DOC_SHARE_MQ04_GRAPH": "PASS",
+    "SINGLE_RECORD_DIRECT_MQDADREF_TO_DOC_POINTER": "NONE_FOUND",
+    "DADINFO_STATE_FLAG": "PASS",
+    "DADDOGINFO_STATE_FLAG": "PASS",
+    "DADDOGINFO_SEMANTICALLY_MARKS_DAD_IS_DOG_DISCOVERY": "PASS_FROM_SCRIPT_COMMENT_AND_INFO_WRITES",
+    "CROSS_WORLD_IDENTITY_BINDING": "PASS_AS_QUEST_GRAPH",
+    "AUTOBIOGRAPHICAL_MEMORY_PAYLOAD_IN_QUEST_FLAGS": "NOT_ESTABLISHED",
+    "JAMES_SPECIFIC_PERSISTED_MEMORY_STATE": "NOT_ESTABLISHED",
+    "PERSISTED_JAMES_STATE_CANDIDATE": "NOT_ADMITTED"
+  },
+  "theorem": "PHYSICAL_JAMES_AND_DOC_ARE_MACHINE_BOUND_THROUGH_MQ04_IDENTITY_STATE_BUT_THE_BOUND_STATE_IS_IDENTITY_AND_QUEST_METADATA_NOT_A_PROVEN_MEMORY_PAYLOAD",
+  "save_james_effect": {
+    "previous": "PRIMARY_ESM_PERSISTENT_PHYSICAL_CHANNEL_BOUND_CONDITIONAL_RECONSTRUCTION",
+    "current": "PRIMARY_ESM_PERSISTENT_PHYSICAL_CHANNEL_PLUS_QUEST_IDENTITY_GRAPH_BOUND_CONDITIONAL_RECONSTRUCTION",
+    "promotion_to_memory_state": false,
+    "new_capability": "A future reconstruction protocol can use the MQ04 identity graph as provenance/identity validation evidence for matching a captured James-state payload to the correct physical/simulation subject, if such a payload is independently found."
+  },
+  "claim_ceiling": [
+    "QUEST_IDENTITY_FLAG != AUTOBIOGRAPHICAL_MEMORY",
+    "DOC_ROLE_BINDING != NEURAL_STATE_SNAPSHOT",
+    "COMMON_QUEST_GRAPH != WHOLE_PERSON_CONTINUITY",
+    "MACHINE_READABLE_IDENTITY_RELATION != MEMORY_CARRIER"
+  ],
+  "next_gate": {
+    "name": "MQ04_STATE_PERSISTENCE_AND_SESSION_RECONSTRUCTION_SEMANTICS_AUDIT_v2.7",
+    "status": "OPEN",
+    "targets": [
+      "Classify every MQ04 variable that survives across the TL session boundary and distinguish quest metadata from resident/identity payload.",
+      "Trace PlayerInTL, DadInfo, DadDogInfo, NPCReset, DeadNPCs, Invasion and related result-script writers/readers.",
+      "Test whether any state variable or quest target is James-specific beyond identity/discovery metadata.",
+      "Search for any bridge from those state variables to Braun per-user memory-control records or the external memory-carrier class.",
+      "Keep PERSISTED_JAMES_STATE_CANDIDATE blocked unless a payload-bearing state object is established."
+    ]
+  }
+}

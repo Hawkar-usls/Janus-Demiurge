@@ -1,0 +1,107 @@
+{
+  "artifact_id": "JANUS-PALOMAR-JPFM-3A-CROSS-EVENT-ATLAS-ADMISSION-v1.0",
+  "experiment_id": "JPFM-3A",
+  "schema_version": "1.0",
+  "date": "2026-08-15",
+  "status": "FROZEN_BEFORE_CROSS_EVENT_OUTCOME",
+  "purpose": "Test whether the dates carrying Blue Book STARLIKE reports and public POSS-I candidate-rate structure align with other independently defined environmental or human-made event calendars, while controlling season, observation opportunity, sky footprint and multiple testing.",
+  "parents": {
+    "jpfm_2e": "data/JANUS-PALOMAR-JPFM-2E-SCHEDULE-CONFOUND-DECOMPOSITION-RUN-001.json",
+    "bluebook_result": "registry/cosmology/JANUS-BLUEBOOK-EXACT-DATE-MATCHED-CONTROL-RESULT-v1.0.json",
+    "bluebook_starlike_freeze": "data/JANUS-BLUEBOOK-STARLIKE-DAY-FREEZE-v1.0.json",
+    "bluebook_blind_index_sha256": "f3beb68121a11bab9cfe63699edbad69e027e472e1f137ad34b4373a1d16841c"
+  },
+  "study_window": ["1949-11-19", "1957-04-28"],
+  "epistemic_design": {
+    "external_event_families_frozen_before_outcome": true,
+    "no_event_family_may_be_added_to_v1_after_results_are_seen": true,
+    "newly_discovered_event_families_require_v2_preregistration": true,
+    "no_observation_is_not_observed_zero": true,
+    "calendar_overlap_and_conditional_candidate_rate_are_separate_estimands": true,
+    "human_archive_zero_means_no_reconstructed_STARLIKE_entry_not_no_human_observer": true
+  },
+  "primary_cross_channel_test": {
+    "id": "P1_BLUEBOOK_STARLIKE_TO_POSS_RATE",
+    "exposure": "exact calendar day with >=1 frozen Blue Book STARLIKE case",
+    "primary_window_days": 0,
+    "sensitivity_window_days": 1,
+    "outcome": "POSS-I S0 candidate_count conditional on an actually observed Palomar night",
+    "opportunity": "tile_count offset",
+    "model": "NB2 candidate_count ~ STARLIKE_day + month/year + sky footprint + exposure/WCS + lunar illumination + daily Ap + daily max Kp; offset log(tile_count)",
+    "schedule_test": "Separately test whether STARLIKE dates overlap Palomar observation opportunity more than year-month matched pseudo-dates.",
+    "interpretation": "A positive rate coefficient would indicate cross-channel same-day temporal association only; it would not establish the same physical object or global cause."
+  },
+  "frozen_discovery_families": [
+    {
+      "id": "D1_SOLAR_F107_HIGH",
+      "source": "GFZ Kp_ap_Ap_SN_F107_since_1932 frozen source already bound in JPFM-2E",
+      "definition": "f107_adj >= 90th percentile computed on all 2718 study-window calendar days before joining either outcome",
+      "lag_profile_days": [-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7]
+    },
+    {
+      "id": "D2_SUNSPOT_HIGH",
+      "source": "GFZ file international sunspot-number field",
+      "definition": "isn >= 90th percentile on all 2718 study-window calendar days",
+      "lag_profile_days": [-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7]
+    },
+    {
+      "id": "D3_GEOMAG_STORM",
+      "source": "GFZ/IAGA Kp",
+      "definition": "daily maximum Kp >= 5",
+      "lag_profile_days": [-4,-3,-2,-1,0,1,2,3,4]
+    },
+    {
+      "id": "D4_GEOMAG_SEVERE_SENSITIVITY",
+      "source": "GFZ/IAGA Kp",
+      "definition": "daily maximum Kp >= 7",
+      "role": "sensitivity_not_independent_primary_family"
+    },
+    {
+      "id": "D5_MAJOR_METEOR_SHOWER_PROXY",
+      "source": "IAU Meteor Data Center established-shower context",
+      "definition": "Gregorian proxy peak +/-2 days for the frozen major annual set: Quadrantids Jan-03, Lyrids Apr-22, eta Aquariids May-06, Southern delta Aquariids Jul-30, Perseids Aug-12, Orionids Oct-21, Leonids Nov-17, Geminids Dec-14",
+      "limitation": "Proxy calendar; historical solar-longitude reconstruction is a required sensitivity before any meteor attribution."
+    },
+    {
+      "id": "D6_LUNAR_DARK",
+      "source": "USNO fracillum",
+      "definition": "lunar illumination fraction <= 0.10"
+    },
+    {
+      "id": "D7_LUNAR_BRIGHT",
+      "source": "USNO fracillum",
+      "definition": "lunar illumination fraction >= 0.90"
+    }
+  ],
+  "two_layer_execution": {
+    "POSS_layer": "For every family fit candidate rate only on observed nights; never insert unobserved nights as zero candidates.",
+    "BLUEBOOK_layer": "For every family test STARLIKE case/day overlap on the 2718-day calendar with 50000 year-month blocked pseudo-event permutations when a binary event calendar exists.",
+    "cross_layer_gate": "A family is a CROSS_LAYER_PATTERN_CANDIDATE only if its direction is concordant in both layers and survives the declared multiplicity rule; otherwise record SINGLE_LAYER or NULL."
+  },
+  "multiple_testing": {
+    "primary_P1": "reported separately as preregistered primary",
+    "discovery_family": ["D1_SOLAR_F107_HIGH","D2_SUNSPOT_HIGH","D3_GEOMAG_STORM","D5_MAJOR_METEOR_SHOWER_PROXY","D6_LUNAR_DARK","D7_LUNAR_BRIGHT"],
+    "correction": "Benjamini-Hochberg FDR across the six discovery families separately for each outcome layer",
+    "candidate_threshold": "q <= 0.10",
+    "strong_threshold": "q <= 0.05",
+    "D4_role": "nested severity sensitivity; not counted as an independent discovery family"
+  },
+  "context_only_not_inferential_v1": [
+    "rocket launches",
+    "high-altitude balloon launches",
+    "air-defense exercises",
+    "major aviation incidents",
+    "bright comet visibility",
+    "press/media events"
+  ],
+  "context_only_reason": "These require a reasonably complete dated manifest before absence can be treated as a meaningful control. Individual famous dates may be displayed as context but may not enter v1 significance claims.",
+  "admission_rules": [
+    "No new v1 event family after result inspection.",
+    "A sharp lag peak is stronger evidence of timing specificity than a broad seasonal association; all frozen lag profiles must be shown.",
+    "Any signal that disappears after observation-opportunity conditioning is classified as schedule structure, not candidate-rate structure.",
+    "Any meteor signal remains provisional until the Gregorian proxy is replaced by a solar-longitude reconstruction.",
+    "Any human/POSS same-day association does not establish identical objects because Blue Book locations and Palomar sky footprints differ.",
+    "No correlation may be promoted to nuclear, extraterrestrial or non-human causality."
+  ],
+  "claim_ceiling": "PREREGISTERED_CROSS_EVENT_PATTERN_SEARCH_ONLY__NO_CAUSAL_ORIGIN_CLAIM"
+}

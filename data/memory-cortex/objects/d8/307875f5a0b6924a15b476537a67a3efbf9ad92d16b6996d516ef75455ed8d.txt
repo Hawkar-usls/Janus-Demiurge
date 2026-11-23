@@ -1,0 +1,101 @@
+{
+  "schema": "janus.meta_registry.daddy_keymaster.signed_owner_candidate.v1",
+  "artifact_id": "JANUS-DADDY-KEYMASTER-R5-OWNER-CANDIDATE-ED25519-PROOF-2026-10-31",
+  "title": "JANUS DADDY_KEYMASTER R5: SSH Ed25519 candidate proof, replay fencing, and missing 24/7 server gate",
+  "recorded_date_utc": "2026-10-31",
+  "status": "CANDIDATE_CRYPTO_VERIFIED_LAB_ONLY_NO_REMOTE_REGISTRATION",
+  "evidence_quality": "SOURCE_LINKED_GITHUB_CI_AND_PRIVATE_DEVICE_LAB_OBSERVATION",
+  "sources": {
+    "repo": "Hawkar-usls/Janus-Demiurge",
+    "merged_pr": "https://github.com/Hawkar-usls/Janus-Demiurge/pull/397",
+    "merged_commit": "e6ad6919edb80e859d93e4e59730bfe531979e37",
+    "source_ci_commit": "a70cb8b3ae77b81a9b0ad7697c50a901f858244f",
+    "ci_runs": [
+      "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/41219927475",
+      "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/41219927487",
+      "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/41219927485"
+    ],
+    "implementation": [
+      "daddy_keymaster/owner_node/signed_enrollment.py",
+      "tests/test_daddy_keymaster_signed_enrollment.py",
+      "daddy_keymaster/owner_node/SIGNED_ENROLLMENT_R5.md"
+    ]
+  },
+  "protocol": {
+    "signature": "OpenSSH Ed25519 namespace-separated",
+    "challenge": "Exact main source SHA + 256-bit nonce + 180-second candidate TTL",
+    "identity": "out-of-band pinned SSH Ed25519 public key and exact candidate ID",
+    "replay": "caller-supplied persisted nonce-ledger requirement, tested rejection when already used",
+    "resource_limits": "pure_module_eval candidate only, max_concurrent=1",
+    "output": "CRYPTOGRAPHICALLY_VERIFIED_CANDIDATE_ONLY",
+    "explicit_denials": [
+      "NO_REMOTE_EXECUTION",
+      "NO_GITHUB_WRITE_TOKEN",
+      "NO_MODEL_PROMOTION",
+      "NO_PERSISTENT_PROVIDER_CLAIM"
+    ],
+    "replay_ledger_deployed": false,
+    "independent_challenge_issuer_deployed": false,
+    "permanent_public_key_enrolled": false
+  },
+  "verified_tests": {
+    "github": "Five workflows SUCCESS on reviewed source commit, including signed candidate enrollment test suite",
+    "cases": [
+      "valid signature",
+      "valid-format forged identity rejected",
+      "unauthorized capability denied",
+      "wrong public key denied",
+      "expired challenge denied",
+      "replayed nonce denied",
+      "different challenge denied",
+      "future timestamp denied",
+      "unsafe TTL denied",
+      "unknown fields denied",
+      "tampered canary digest denied"
+    ],
+    "owner_local": "Real disposable local OpenSSH Ed25519 key created, signed and verified one local synthetic challenge; tampered canary digest and repeated nonce rejected; private test key deleted when ephemeral directory closed",
+    "owner_private_key_persisted": false,
+    "owner_key_fingerprint_published": false,
+    "canary_binding": "Existing separately verified physical backup canary receipt digest",
+    "failure_modes": "Unknown or inaccessible network server cannot be enrolled by interpreting a signature or desktop connection as continuous availability."
+  },
+  "provider_status": {
+    "owner_registry_accepted_workers": 0,
+    "nas_or_other_permanent_server_online_verified": false,
+    "local_owner_pc": "Connected during experiment but uptime not continuously attested",
+    "external_providers_activated": 0,
+    "remote_execution_authority_added": 0,
+    "user_explicit_opt_in_required_for_active_enrollment": true
+  },
+  "bounded_next_gates": [
+    "Bring owner-operated NAS/server back online and prove multiple independent observations over an agreed uptime window",
+    "Use owner-approved durable key custody (OS cryptographic store or comparably protected key), do not publish private key",
+    "Independent authenticated challenge issuing and durable anti-replay ledger",
+    "Least-privilege outbound-only worker, resource limits, re-registration and revocation",
+    "Worker lease fencing against durable central CAS store with partial failure reconciliation",
+    "Independent Witness before promoting any task result; native Demiurge R2 (#385), secure loader PR #301 and rollback remain separate HOLD"
+  ],
+  "privacy": {
+    "no_private_ip": true,
+    "no_host_name": true,
+    "no_local_device_id": true,
+    "no_secret_or_ssh_private_key": true,
+    "no_public_key_fingerprint": true,
+    "no_personal_local_path": true,
+    "no_paid_account_created": true
+  },
+  "conclusion": "Verified cryptographic candidate identity mechanism and owner-local key possession, but zero authorized continuously available workers. Self-provisioning, model training on arbitrary clouds and uncontrolled dispatch remain prohibited.",
+  "local_availability_probation": {
+    "status": "HOURLY_READONLY_LOCAL_PROBATION_STARTED_NOT_24_7_ATTESTED",
+    "observations_at_initial_test": 1,
+    "journal": "LOCAL_APPEND_ONLY_HASH_CHAIN_WITHOUT_INDEPENDENT_REMOTE_SIGNATURE",
+    "expected_cadence": "ONE_HOUR_BEST_EFFORT_WHILE_OWNER_PC_LOGGED_IN",
+    "scheduled_task_installed": true,
+    "tested_manual_scheduler_trigger_exit_code": 0,
+    "initial_scheduler_exec_path_failure": "CORRECTED_TO_ABSOLUTE_PYTHON_INTERPRETER",
+    "tasks_issued_or_models_changed": 0,
+    "no_remote_uptime_verifier_yet": true,
+    "continuous_24_hour_availability_proven": false,
+    "note": "A local schedule and one sample do not prove continuous availability. A separate trusted server and observations over time are still required."
+  }
+}

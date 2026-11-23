@@ -1,0 +1,176 @@
+{
+  "schema": "JANUS.genesis_sovereign_face_microcontrol_controlled_ai_link.v6_2",
+  "artifact_id": "JANUS-GENESIS-SOVEREIGN-FACE-MICROCONTROL-CONTROLLED-AI-LINK-CRASH-RECEIPT-v6.2",
+  "title": "JANUS Genesis Sovereign v6.2 — Controlled Canonical AI-Link, Stable Request Identity, Crash Uncertainty Fence, and Receipt Verification Contract",
+  "created_at_local": "2026-08-14T16:20:18+03:00",
+  "status": "EXPERIMENTAL_CANONICAL_RUNTIME_ADAPTER_WITH_FOCUSED_CI_VERIFICATION",
+  "parent": "registry/experimental/JANUS-GENESIS-SOVEREIGN-FACE-MICROCONTROL-DURABLE-JOURNAL-FENCING-IDEMPOTENCY-DEADLINE-FAIRNESS-v6.1.json",
+  "runtime_parent": "Hawkar-usls/Janus_Genesis:genesis_v18_7_19_ai_link_play.py",
+  "problem": "v6.1 verified a durable control plane, but it was still additive and did not wrap a canonical Genesis runtime path. Safe replay also requires a stable caller request identity. v18.7.19 AI-link already owns a stable session sequence before the canonical world call, while the ordinary CLI does not expose an equivalent retry identity. v6.2 therefore integrates the durable/crash semantics into a controlled AI-link descendant rather than pretending that every existing caller can safely replay actions.",
+  "new_invariants": [
+    "STABLE_REQUEST_IDENTITY_PRECEDES_SAFE_REPLAY",
+    "SAME_REQUEST_ID_CANNOT_BE_REDEFINED_TO_A_DIFFERENT_ACTION",
+    "SHADOW_OBSERVABILITY_MUST_NOT_BECOME_AUTHORITY",
+    "SHADOW_MODE_MUST_FORWARD_EXACTLY_ONE_CANONICAL_RUNTIME_CALL",
+    "CALL_ENTERING_WITHOUT_RECEIPT_IS_UNDETERMINED",
+    "RUNTIME_RECEIPT_MAY_REPLAY_RESULT_WITHOUT_REEXECUTION",
+    "FAILED_TEST_DESIGN_IS_EVIDENCE_ABOUT_THE_VERIFIER_NOT_THE_SYSTEM",
+    "STOCHASTIC_RUNTIME_TRANSPARENCY_MUST_BE_TESTED_ON_THE_SAME_FORWARDED_CALL",
+    "DEFAULT_EXECUTOR_CANNOT_BE_CALLED_IDEMPOTENT_WITHOUT_STABLE_CALLER_REQUEST_IDENTITY",
+    "PROVIDER_RECEIPT_VERIFICATION_POLICY_IS_NOT_PROVIDER_TRUTH"
+  ],
+  "stable_request_identity": {
+    "ai_link_source": "session_id + next_sequence",
+    "derived_request_id": "AI_LINK:SHA256(session_id,sequence)",
+    "effect_identity": "GENESIS_RUNTIME:SHA256(actor_id,request_id)",
+    "action_binding": "action_sha256 is preserved in durable runtime events; a different action under the same request identity is rejected",
+    "why_ai_link_is_suitable": "v18.7.19 computes sequence before calling the canonical runtime and writes the session turn only after the runtime returns. After a crash between those boundaries, the retry observes the same sequence and therefore the same protected runtime effect identity.",
+    "default_cli_limit": "play_genesis.py does not currently supply a stable caller request identifier for each action. Automatic enforced replay is therefore NOT enabled or claimed for that path."
+  },
+  "controlled_runtime_modes": {
+    "SHADOW": {
+      "authority": "NONE_ADDED",
+      "behavior": "best-effort PRE/POST audit surrounds exactly one existing canonical process_action call",
+      "failure_semantics": "shadow journal failure must not become an authorization dependency or suppress the canonical call",
+      "verification_rule": "transparency is checked against the exact result returned by the same forwarded call, not against a second independent stochastic run"
+    },
+    "ENFORCED": {
+      "sequence": [
+        "derive stable request/effect identity",
+        "replay durable runtime events",
+        "return cached result if a durable runtime receipt already exists",
+        "block automatic replay if CALL_ENTERING exists without receipt",
+        "acquire same-host effect fence",
+        "append durable intent",
+        "append durable RUNTIME_EFFECT_CALL_ENTERING",
+        "revalidate fence",
+        "call canonical Genesis process_action exactly once",
+        "append RUNTIME_EFFECT_RECEIPT containing internal runtime result and hash",
+        "release fence"
+      ],
+      "undetermined_rule": "Once RUNTIME_EFFECT_CALL_ENTERING is durable, a crash/exception without a durable receipt is treated as UNDETERMINED. The adapter does not automatically execute the world action again.",
+      "receipt_replay_rule": "If the runtime receipt is durable but the caller/session write did not finish, retry reconstructs the WorldResult from the receipt and does not call the canonical runtime again."
+    }
+  },
+  "canonical_integration": {
+    "runtime_module": "genesis_v18_7_26_controlled_ai_link.py",
+    "adapter": "RuntimeControlAdapter",
+    "world_proxy": "ControlledGenesisWorldProxy",
+    "gateway": "ControlledGenesisAILinkGateway",
+    "canonical_call": "PlayableGenesisV187.process_action through the inherited v18.7.19 AI-link authority path",
+    "base_gateway_mutated": false,
+    "default_cli_mutated": false,
+    "external_real_world_side_effect_execution": false,
+    "meaning": "The adapter now wraps a real canonical Genesis game-runtime path, but it does not send payments, email, publication, actuator, or other real-world effects."
+  },
+  "crash_boundaries": [
+    "BEFORE_FENCE",
+    "AFTER_FENCE_BEFORE_INTENT",
+    "AFTER_DURABLE_INTENT",
+    "AFTER_CALL_ENTERING_BEFORE_WORLD",
+    "AFTER_WORLD_BEFORE_RECEIPT",
+    "AFTER_RECEIPT_BEFORE_RELEASE"
+  ],
+  "focused_verified_crash_cases": [
+    {
+      "id": "CAI-CRASH-01",
+      "boundary": "AFTER_WORLD_BEFORE_RECEIPT",
+      "expected": "WORLD_RUNTIME_WAS_CALLED_ONCE; SESSION_TURN_NOT_WRITTEN; RETRY_IS_BLOCKED_AS_UNDETERMINED; SECOND_WORLD_CALL_DOES_NOT_OCCUR"
+    },
+    {
+      "id": "CAI-CRASH-02",
+      "boundary": "AFTER_RECEIPT_BEFORE_RELEASE",
+      "expected": "RUNTIME_RECEIPT_EXISTS; SESSION_TURN_NOT_WRITTEN; RETRY_REPLAYS_CACHED_RESULT; SECOND_WORLD_CALL_DOES_NOT_OCCUR; SESSION_CAN_COMPLETE"
+    },
+    {
+      "id": "CAI-REQUEST-01",
+      "boundary": "SAME_REQUEST_ID_DIFFERENT_ACTION",
+      "expected": "RUNTIME_REQUEST_ID_ACTION_CONFLICT"
+    }
+  ],
+  "provider_receipt_verifier_contract": {
+    "interface": "ProviderReceiptVerifier",
+    "reference_implementation": "HMACProviderReceiptVerifier",
+    "bound_fields": [
+      "provider_id",
+      "effect_key",
+      "authorization_id",
+      "idempotency_key",
+      "receipt_id",
+      "status",
+      "payload_sha256"
+    ],
+    "purpose": "Demonstrate that receipt admission can be made cryptographically bound to the provider/effect/authorization/idempotency lineage.",
+    "claim_limit": "The HMAC verifier is a reference verifier for a trusted adapter/test provider. It does not establish that any real external provider signs receipts this way. Provider-specific authenticity still requires a provider adapter/verifier."
+  },
+  "verification_history": [
+    {
+      "run_id": 31803906589,
+      "job_id": 94778083371,
+      "conclusion": "failure",
+      "cause": "CI did not install the repository's declared cryptography dependency before importing canonical Genesis modules.",
+      "treatment": "PRESERVED_AS_FAILURE; workflow dependency setup corrected; no success claim transferred from this run"
+    },
+    {
+      "run_id": 31804072296,
+      "job_id": 94778625016,
+      "conclusion": "failure",
+      "cause": "Six controlled-runtime/receipt tests passed, but the shadow verifier incorrectly compared exact narrative output from two independent stochastic Genesis runs.",
+      "lesson": "The verifier was wrong: stochastic transparency must compare the exact forwarded call/result or use a deterministic seed/projection, not independent random outputs.",
+      "treatment": "PRESERVED_AS_FAILURE; test architecture replaced with a transparent RecordingWorld spy"
+    },
+    {
+      "run_id": 31804238055,
+      "job_id": 94779183253,
+      "head_sha": "c1c206df6187f772d997372ab780fd5a39b97c83",
+      "conclusion": "success",
+      "verified_steps": [
+        "install runtime dependencies",
+        "compile controlled AI-link chain",
+        "run v18.7.26 controlled AI-link tests",
+        "re-run v18.7.19 AI-link tests",
+        "re-run v18.7.25 durable control tests",
+        "re-run v18.7.24 recovery saga tests",
+        "enforce v6.2 claim-boundary strings"
+      ]
+    }
+  ],
+  "micromanagement_learning": {
+    "new_boundary": "Face deliberation can remain rich and stochastic while replay identity and world-call uncertainty are handled below deliberation at the stable request/effect boundary.",
+    "face_rule": "A face may retry a proposal or explanation, but it cannot redefine a protected request identity or force a second world call while the first call's outcome is UNDETERMINED.",
+    "shadow_rule": "Observation is not authorization. A shadow face/control layer may audit the canonical call but cannot become a veto or duplicate executor merely by observing it.",
+    "verifier_rule": "Verification failures themselves enter learning lineage. Green CI is not the goal if the test encodes a false assumption."
+  },
+  "runtime_implementation": {
+    "repository": "Hawkar-usls/Janus_Genesis",
+    "module": "genesis_v18_7_26_controlled_ai_link.py",
+    "module_commit": "7786e22ae5349c000ab56bb6ccab823b570ea8fa",
+    "tests": "tests/test_genesis_v18_7_26_controlled_ai_link.py",
+    "tests_final_commit": "c1c206df6187f772d997372ab780fd5a39b97c83",
+    "workflow": ".github/workflows/janus-controlled-ai-link-v6-2.yml",
+    "workflow_dependency_fix_commit": "7b3dbcff51a7649e4654d1ab70da17101a1df62e",
+    "successful_run_id": 31804238055,
+    "successful_job_id": 94779183253,
+    "successful_head_sha": "c1c206df6187f772d997372ab780fd5a39b97c83",
+    "integration_level": "CONTROLLED_CANONICAL_AI_LINK_DESCENDANT",
+    "default_v18_7_19_gateway_replaced": false,
+    "default_cli_replaced": false
+  },
+  "claim_ceiling": {
+    "shadow_single_call_transparency": "FOCUSED_CI_VERIFIED",
+    "enforced_ai_link_stable_request_binding": "FOCUSED_CI_VERIFIED",
+    "after_world_before_receipt_duplicate_call_block": "FOCUSED_CI_VERIFIED",
+    "after_receipt_cached_result_replay": "FOCUSED_CI_VERIFIED",
+    "request_action_conflict_rejection": "FOCUSED_CI_VERIFIED",
+    "reference_hmac_receipt_verifier": "FOCUSED_CI_VERIFIED_AS_REFERENCE_CONTRACT",
+    "base_v18_7_19_compatibility": "FOCUSED_CI_VERIFIED",
+    "full_six_point_crash_matrix": "NOT_YET_CLAIMED",
+    "default_cli_idempotent_replay": "NOT_CLAIMED",
+    "default_gateway_global_enforcement": "NOT_CLAIMED",
+    "multi_host_fencing_implementation": "NOT_PRESENT_PROTOCOL_ONLY",
+    "real_provider_receipt_authenticity": "NOT_CLAIMED",
+    "real_world_external_effect_safety": "NOT_CLAIMED_BY_GAME_RUNTIME_ADAPTER",
+    "formal_safety_or_liveness_proof": false
+  },
+  "next_gate": "JANUS_GENESIS_SOVEREIGN_FACE_MICROCONTROL_SESSION_SEQUENCE_ATOMICITY_FULL_CRASH_MATRIX_DEFAULT_CALLER_REQUEST_IDS_AND_PROVIDER_LOOKUP_RECONCILIATION_v6.3"
+}

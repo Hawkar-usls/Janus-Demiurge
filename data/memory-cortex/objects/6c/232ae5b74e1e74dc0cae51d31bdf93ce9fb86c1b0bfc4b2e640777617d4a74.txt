@@ -1,0 +1,97 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-R4-0-SELF-SUPERVISED-STRUCTURAL-LEARNING-SPEC-2026-08-14-v0.1",
+  "version": "v0.1",
+  "node_type": "frozen_self_supervised_learning_spec",
+  "parent_canonical_state": "data/JANUS-LINEAR-A-RESEARCH-STATE-2026-08-14-v2.19.json",
+  "purpose": "Train JANUS on internal Linear A distributional structure without translations, then test whether learned context structure predicts masked source tokens on unseen documents and yields train-selected structural analogies that replicate on test.",
+  "source": {
+    "repository": "Hawkar-usls/lineara.xyz",
+    "upstream_lineage": "mwenge/lineara.xyz",
+    "frozen_commit": "43fe7cf1abc8e6bb1ea3228c3a1bd5938709620a",
+    "corpus_subdir": "items",
+    "parser_basis": "JANUS existing reading-spec/typed-token stack",
+    "translations_used": false,
+    "language_dictionary_used": false,
+    "linear_b_labels_used_as_supervision": false,
+    "known_decipherment_labels_used_as_targets": false
+  },
+  "representation": {
+    "target_unit": "source token/sign piece",
+    "target_identity_before_training": "SHA256 opaque token id",
+    "raw_source_labels_hidden_from_training_and_scoring": true,
+    "numeric_like_tokens_as_prediction_targets": false,
+    "nonlexical_tokens_as_prediction_targets": false,
+    "test_target_reading_status": "certain_only",
+    "context_window": 2,
+    "directional_context_features": ["L2", "L1", "R1", "R2"]
+  },
+  "partition": {
+    "unit": "document_id",
+    "operator": "sha256('JANUS-LINA-R4-0-v0.1|' + document_id) modulo 10",
+    "train_buckets": [0,1,2,3,4,5,6,7],
+    "dev_bucket": 8,
+    "test_bucket": 9,
+    "selection_from_test_forbidden": true,
+    "hyperparameter_tuning_after_test_forbidden": true
+  },
+  "models": {
+    "B0_UNIGRAM": "train-frequency ranking only",
+    "B1_DIRECTIONAL_CONTEXT_COUNT": "Laplace-smoothed additive directional-context log score",
+    "M1_DIRECTIONAL_PPMI_SVD": {
+      "matrix": "target token x directional-context feature",
+      "weight": "positive pointwise mutual information",
+      "rank": 32,
+      "score": "mean reconstructed PPMI over visible masked-position contexts"
+    }
+  },
+  "vocabulary": {
+    "minimum_train_target_frequency": 5,
+    "candidate_vocabulary_frozen_from_train_only": true,
+    "test_oov_targets_reported_and_excluded_from rank metrics": true
+  },
+  "evaluation": {
+    "split": "TEST_ONLY",
+    "metrics": ["top1_accuracy", "top5_accuracy", "mean_reciprocal_rank", "coverage"],
+    "mask_policy": "one eligible certain target at a time with source neighbors visible",
+    "minimum_evaluable_test_masks": 50,
+    "primary_structure_signal": "M1 test MRR and top5 both exceed B0; this is evidence of learnable internal distributional structure only",
+    "neural_or_distributional_success_is_decipherment": false
+  },
+  "structural_analogy_probe": {
+    "selection_split": "TRAIN_ONLY",
+    "minimum_train_frequency": 8,
+    "minimum_train_documents": 3,
+    "selection": "top 30 token-token cosine similarities in M1 target latent space, excluding identical tokens",
+    "test_replication_requirement": {
+      "each_token_min_test_occurrences": 2,
+      "test_directional_context_cosine_min": 0.20
+    },
+    "raw_labels_revealed_only_after_pair_selection_and_test_scoring": true,
+    "semantic_equivalence_claimed": false,
+    "translation_claimed": false
+  },
+  "leakage_firewall": {
+    "Notti_2021_2025_PH13_content_used": false,
+    "Notti_2018_readings_used": false,
+    "R3C_language_dictionary_inputs_used": false,
+    "external_semantic_labels_used": false,
+    "R3B_blind_eligibility_affected": false
+  },
+  "claim_ceiling": {
+    "allowed": [
+      "learnable internal distributional structure",
+      "held-out masked-token predictive signal",
+      "structural analogy candidate",
+      "test-replicated context-profile similarity"
+    ],
+    "forbidden": [
+      "translation",
+      "phonetic value discovery",
+      "semantic equivalence",
+      "language-family assignment",
+      "new decipherment anchor",
+      "Linear A decipherment",
+      "R3B external replication"
+    ]
+  }
+}

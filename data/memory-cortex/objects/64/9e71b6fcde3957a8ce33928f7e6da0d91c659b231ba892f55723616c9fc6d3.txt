@@ -1,0 +1,199 @@
+{
+  "artifact_id": "EYE-R4.2-SEARCH-PROOF-ADAPTIVE-v1",
+  "authority": "EXACT_OPTIMAL_POLICY_UNDER_DECLARED_DETERMINISTIC_OUTCOME_AND_PRIOR_MODEL__NOT_TRUE_CAUSE_PROOF",
+  "exact_policy_search_completed": true,
+  "expected_cost_savings_vs_nonadaptive": 1.2,
+  "expected_cost_to_identification": 2.8,
+  "firewalls": [
+    "ADAPTIVE_POLICY != CAUSAL_TRUTH",
+    "PRIOR != EVIDENCE",
+    "EXPECTED_COST_OPTIMUM != WORST_CASE_OPTIMUM",
+    "DETERMINISTIC_OUTCOME_MODEL != TRUE_WORLD",
+    "SOFT_UNCALIBRATED_TEST != BINARY_DISCRIMINATOR",
+    "GREEDY_NEXT_TEST != OPTIMAL_POLICY",
+    "NON_IDENTIFIABLE != FALSE"
+  ],
+  "nonadaptive_baseline": {
+    "additional_tests": [
+      "independent_verifier",
+      "provenance_hash_audit"
+    ],
+    "cost": 4.0,
+    "exact": true,
+    "status": "EXACT_NONADAPTIVE_MINIMUM_FOUND"
+  },
+  "objective": "expected_cost_then_worst_case_then_test_id",
+  "policy_node_count": 5,
+  "policy_nodes": [
+    {
+      "acquired_tests": [],
+      "branches": [
+        {
+          "child_node_id": "N0001",
+          "outcome": "CLEAN",
+          "probability": 0.6,
+          "remaining_causes": [
+            "valid_independent_result",
+            "verifier_specific_false_positive"
+          ],
+          "remaining_target_classes": [
+            "INVALID_VERIFIER",
+            "VALID"
+          ]
+        },
+        {
+          "child_node_id": "N0004",
+          "outcome": "PROVENANCE_BAD",
+          "probability": 0.4,
+          "remaining_causes": [
+            "derivative_duplicate_result",
+            "stale_or_cached_result"
+          ],
+          "remaining_target_classes": [
+            "INVALID_PROVENANCE"
+          ]
+        }
+      ],
+      "expected_total_cost_from_state": 2.8,
+      "immediate_cost": 1.0,
+      "next_test": "provenance_hash_audit",
+      "node_id": "N0000",
+      "remaining_causes": [
+        "derivative_duplicate_result",
+        "stale_or_cached_result",
+        "valid_independent_result",
+        "verifier_specific_false_positive"
+      ],
+      "remaining_target_classes": [
+        "INVALID_PROVENANCE",
+        "INVALID_VERIFIER",
+        "VALID"
+      ],
+      "terminal": false,
+      "worst_case_total_cost_from_state": 4.0
+    },
+    {
+      "acquired_tests": [
+        "provenance_hash_audit"
+      ],
+      "branches": [
+        {
+          "child_node_id": "N0002",
+          "outcome": "FALSE_POSITIVE",
+          "probability": 0.166666666667,
+          "remaining_causes": [
+            "verifier_specific_false_positive"
+          ],
+          "remaining_target_classes": [
+            "INVALID_VERIFIER"
+          ]
+        },
+        {
+          "child_node_id": "N0003",
+          "outcome": "MATCH",
+          "probability": 0.833333333333,
+          "remaining_causes": [
+            "valid_independent_result"
+          ],
+          "remaining_target_classes": [
+            "VALID"
+          ]
+        }
+      ],
+      "expected_total_cost_from_state": 3.0,
+      "immediate_cost": 3.0,
+      "next_test": "independent_verifier",
+      "node_id": "N0001",
+      "remaining_causes": [
+        "valid_independent_result",
+        "verifier_specific_false_positive"
+      ],
+      "remaining_target_classes": [
+        "INVALID_VERIFIER",
+        "VALID"
+      ],
+      "terminal": false,
+      "worst_case_total_cost_from_state": 3.0
+    },
+    {
+      "acquired_tests": [
+        "independent_verifier",
+        "provenance_hash_audit"
+      ],
+      "identified_target_class": "INVALID_VERIFIER",
+      "node_id": "N0002",
+      "remaining_causes": [
+        "verifier_specific_false_positive"
+      ],
+      "terminal": true
+    },
+    {
+      "acquired_tests": [
+        "independent_verifier",
+        "provenance_hash_audit"
+      ],
+      "identified_target_class": "VALID",
+      "node_id": "N0003",
+      "remaining_causes": [
+        "valid_independent_result"
+      ],
+      "terminal": true
+    },
+    {
+      "acquired_tests": [
+        "provenance_hash_audit"
+      ],
+      "identified_target_class": "INVALID_PROVENANCE",
+      "node_id": "N0004",
+      "remaining_causes": [
+        "derivative_duplicate_result",
+        "stale_or_cached_result"
+      ],
+      "terminal": true
+    }
+  ],
+  "root_greedy_next_test_ranking": [
+    {
+      "cost": 1.0,
+      "expected_information_gain_bits": 0.970950594455,
+      "gain_per_cost": 0.9709505944546687,
+      "outcome_probabilities": {
+        "CLEAN": 0.6,
+        "PROVENANCE_BAD": 0.4
+      },
+      "test_id": "provenance_hash_audit",
+      "unlocks": []
+    },
+    {
+      "cost": 5.0,
+      "expected_information_gain_bits": 1.760964047444,
+      "gain_per_cost": 0.3521928094887362,
+      "outcome_probabilities": {
+        "DUPLICATE": 0.2,
+        "FALSE_POSITIVE": 0.1,
+        "STALE": 0.2,
+        "VALID": 0.5
+      },
+      "test_id": "end_to_end_rebuild",
+      "unlocks": []
+    },
+    {
+      "cost": 3.0,
+      "expected_information_gain_bits": 0.468995593589,
+      "gain_per_cost": 0.15633186452976044,
+      "outcome_probabilities": {
+        "FALSE_POSITIVE": 0.1,
+        "MATCH": 0.9
+      },
+      "test_id": "independent_verifier",
+      "unlocks": []
+    }
+  ],
+  "root_next_test": "provenance_hash_audit",
+  "root_node_id": "N0000",
+  "schema": "janus.eye.r4_2.adaptive_policy_receipt.v1",
+  "source_git_commit": "1086a1162ece3b0714180e971b8080489945d7af",
+  "states_visited": 17,
+  "status": "EXACT_ADAPTIVE_POLICY_FOUND",
+  "worst_case_cost_to_identification": 4.0
+}

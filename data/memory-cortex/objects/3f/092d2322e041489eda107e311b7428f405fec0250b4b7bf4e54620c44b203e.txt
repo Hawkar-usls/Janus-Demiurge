@@ -1,0 +1,76 @@
+{
+  "schema": "JANUS.genesis_session_lineage_reconciliation_runtime_receipt.v1",
+  "artifact_id": "JANUS-GENESIS-SESSION-LINEAGE-RECONCILIATION-v6.3-RUNTIME-EXECUTION-RECEIPT-v1.0",
+  "title": "JANUS Genesis Session Atomicity, Lineage Review, Provider Reconciliation, and Crash Matrix v6.3 — Runtime Execution Receipt",
+  "created_at_local": "2026-08-14T16:25:11+03:00",
+  "status": "FOCUSED_V6_3_CI_VERIFIED",
+  "architecture": "registry/experimental/JANUS-GENESIS-SOVEREIGN-FACE-MICROCONTROL-SESSION-ATOMICITY-LINEAGE-REVIEW-PROVIDER-RECONCILIATION-v6.3.json",
+  "parent_receipt": "data/JANUS-GENESIS-CONTROLLED-AI-LINK-v6.2-RUNTIME-EXECUTION-RECEIPT-v1.0.json",
+  "runtime": {
+    "repository": "Hawkar-usls/Janus_Genesis",
+    "module": "genesis_v18_7_27_session_review_reconciliation.py",
+    "module_commit": "0317d86fe9f75798262c01172ed5a377daeb9bc1",
+    "tests": "tests/test_genesis_v18_7_27_session_review_reconciliation.py",
+    "tests_commit": "8a44d986a3fe76b1bc6a7a6dc62db703aa493fcb",
+    "workflow": ".github/workflows/janus-session-review-v6-3.yml",
+    "successful_head_sha": "9ccfee062da9a0a5c2324eb340fa90629c36d55c"
+  },
+  "github_actions": {
+    "run_id": 31804595130,
+    "job_id": 94780346252,
+    "workflow_name": "JANUS session review v6.3",
+    "job_name": "verify-session-review-v6-3",
+    "conclusion": "success",
+    "steps": {
+      "install_runtime_dependencies": "success",
+      "compile_v6_3_control_chain": "success",
+      "run_v18_7_27_session_review_reconciliation_tests": "success",
+      "rerun_v18_7_26_controlled_ai_link_tests": "success",
+      "rerun_v18_7_25_durable_control_tests": "success",
+      "enforce_v6_3_constitutional_semantics": "success"
+    }
+  },
+  "verified_behaviors": [
+    "two controlled gateway instances sharing one session store serialize concurrent turns into unique ordered sequence numbers 1 and 2 with next_sequence 3",
+    "multiple cloned face IDs from one lineage root cannot satisfy a two-lineage independent review requirement",
+    "the proposal-origin lineage is excluded from independent review counting",
+    "a low-routing-priority independent lineage carrying novel counterevidence is admitted into the review set",
+    "lineage review assignments retain authority_weight=0 and world_authority_granted=false",
+    "authoritative provider NO_EFFECT lookup under the adapter contract can produce a retry-safe reconciliation decision",
+    "authoritative SETTLED lookup requires a receipt ID and keeps automatic retry blocked",
+    "non-authoritative lookup cannot clear uncertainty",
+    "provider/effect/idempotency identity mismatch is rejected",
+    "BEFORE_FENCE crash leaves no world effect and no durable runtime event",
+    "AFTER_FENCE_BEFORE_INTENT crash leaves no world effect and requires fence expiry/takeover before retry",
+    "AFTER_DURABLE_INTENT crash remains pre-call and can retry after fence expiry because CALL_ENTERING was not crossed",
+    "AFTER_CALL_ENTERING_BEFORE_WORLD is conservatively UNDETERMINED on replay despite the injected test knowing the precise crash point",
+    "AFTER_WORLD_BEFORE_RECEIPT is UNDETERMINED and never auto-reexecutes the world call",
+    "AFTER_RECEIPT_BEFORE_RELEASE replays the durable result without a second world call",
+    "v18.7.26 controlled AI-link tests remain compatible",
+    "v18.7.25 durable control tests remain compatible"
+  ],
+  "preserved_failed_run": {
+    "run_id": 31804541734,
+    "job_id": 94780170783,
+    "conclusion": "failure",
+    "runtime_tests_passed": true,
+    "failure_location": "Enforce v6.3 constitutional strings",
+    "cause": "brittle line-oriented grep assertion against line-wrapped docstring text",
+    "treatment": "failed verifier run preserved; assertion rewritten as normalized-whitespace semantic check; fresh complete run executed",
+    "promoted_to_success": false
+  },
+  "claim_ceiling": {
+    "focused_v6_3_module_implemented": true,
+    "focused_tests_passed": true,
+    "ci_verified": true,
+    "two_gateway_same_store_sequence_serialization": true,
+    "lineage_independent_review_policy": true,
+    "full_declared_six_point_crash_matrix": true,
+    "provider_lookup_reconciliation_policy": true,
+    "multi_host_consensus": false,
+    "real_provider_authority_proved": false,
+    "default_cli_stable_request_identity": false,
+    "formal_full_system_proof": false
+  },
+  "next_gate": "JANUS_GENESIS_SOVEREIGN_FACE_MICROCONTROL_PERSISTENT_CLIENT_REQUEST_LEDGER_DEFAULT_CLI_CONTROLLED_MODE_LINEAGE_ATTESTATION_AND_PROVIDER_VERIFIER_BINDING_v6.4"
+}

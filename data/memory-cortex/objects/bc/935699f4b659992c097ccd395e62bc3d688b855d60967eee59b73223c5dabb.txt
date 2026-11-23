@@ -1,0 +1,140 @@
+{
+  "schema": "janus.meta_registry.fallout3_mq04_state_persistence_session_reconstruction_semantics_audit.v2_7",
+  "artifact_id": "FALLOUT-3-MQ04-STATE-PERSISTENCE-SESSION-RECONSTRUCTION-SEMANTICS-AUDIT-v2.7",
+  "title": "Fallout 3 — MQ04 State / Session Reconstruction Semantics Audit v2.7",
+  "created_at_local": "2026-08-10T17:39:00+03:00",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "artifact_class": "PRIMARY_ESM_STATE_CLASSIFICATION_AND_MEMORY_PAYLOAD_BOUNDARY_GATE",
+  "status": "PASS_STATE_CLASSES_SEPARATED_JAMES_IDENTITY_METADATA_EXISTS_AUTOBIOGRAPHICAL_MEMORY_PAYLOAD_NOT_FOUND",
+  "parent": "registry/myth_busted/FALLOUT-3-PHYSICAL-JAMES-MQDADREF-TO-MQ04DOC-IDENTITY-BRIDGE-AUDIT-v2.6.json",
+  "primary_input": {
+    "fallout3_esm_sha256": "fb4442418fb6bf6df68e633c7056afb4e09572b521a7f4602a2699fa33d99e32",
+    "mq04_quest": "00014E8A MQ04",
+    "mq04_script": "000254C9 MQ04Script"
+  },
+  "state_variables": {
+    "PlayerInTL": {
+      "declaration_comment": "flag set to 1 when player actually enters Tranquility Lane; set back to 0 when he exits",
+      "writers": [
+        "000254C9 MQ04Script sets PlayerInTL to 1",
+        "0004C255 MQ04PlayerContainerScript sets MQ04.PlayerInTL to 0 on physical return"
+      ],
+      "class": "SESSION_BOUNDARY_STATE",
+      "james_memory_payload": false
+    },
+    "DadGreet": {
+      "declaration_comment": "flag set when back in Vault 112; used to handle packages for Dad",
+      "writers": [
+        "0004C255 MQ04PlayerContainerScript sets MQ04.DadGreet to 1",
+        "0001F3C6 INFO sets MQ04.DadGreet to -1",
+        "0001F3C7 INFO sets MQ04.DadGreet to -1"
+      ],
+      "class": "PHYSICAL_RETURN_HANDOFF_STATE",
+      "james_memory_payload": false
+    },
+    "DadInfo": {
+      "declaration_comment": "flag set to 1 when player asks about Dad's whereabouts, used to update dialogue choices",
+      "writers": ["000269DD INFO","00025972 INFO","000269DA INFO","000269D6 INFO"],
+      "write_value": 1,
+      "class": "JAMES_IDENTITY_DISCOVERY_METADATA",
+      "james_specific": true,
+      "autobiographical_memory_payload": false
+    },
+    "DadDogInfo": {
+      "declaration_comment": "flag set when player learns dad is a dog",
+      "writers": [
+        "000C31D9 INFO sets MQ04.DadDogInfo to 1",
+        "000C99E4 INFO sets MQ04.DadDogInfo to 2",
+        "000C99E5 INFO sets MQ04.DadDogInfo to 2"
+      ],
+      "writer_context": "All three writer INFO records belong to MQ04 and condition on Betty 0002449C.",
+      "class": "JAMES_SIMULATION_ROLE_DISCOVERY_METADATA",
+      "james_specific": true,
+      "autobiographical_memory_payload": false
+    },
+    "NPCReset": {
+      "declaration_comment": "flag used for tracking reset updates every morning",
+      "readers_writers": "BettyScript plus resident scripts and multiple MQ04 INFO result scripts",
+      "class": "SIMULATION_RESIDENT_RESET_STATE",
+      "james_specific": false,
+      "autobiographical_memory_payload": false
+    },
+    "DeadNPCs": {
+      "declaration_comment": "incremented when anyone in TL is killed; talking to Betty after incrementing causes her to reset things so everyone is alive",
+      "readers_writers": "Multiple Tranquility Lane resident scripts increment it; BettyScript resets it to 0.",
+      "class": "SIMULATION_WORLD_COUNTER",
+      "james_specific": false,
+      "autobiographical_memory_payload": false
+    },
+    "SafetyLock": {
+      "declaration_comment": "flag for safety protocols preventing NPCs from permanent death; 0 for no permanent death, 1 to allow permanent death",
+      "reader": "0007DC71 BettyScript",
+      "class": "SIMULATION_POLICY_STATE",
+      "james_specific": false,
+      "autobiographical_memory_payload": false
+    },
+    "Invasion": {
+      "declaration_comment": "flag set when player uses failsafe terminal; triggers endstate behavior for Chinese Invasion",
+      "readers": ["TranquilityLaneExitDoorScript","TLExitDoorScript","MQ04ChineseSoldierScript","MQ04Script"],
+      "class": "SIMULATION_ENDSTATE_STATE",
+      "james_specific": false,
+      "autobiographical_memory_payload": false
+    }
+  },
+  "state_class_model": {
+    "SESSION_STATE": ["PlayerInTL"],
+    "PHYSICAL_HANDOFF_STATE": ["DadGreet"],
+    "JAMES_IDENTITY_METADATA": ["DadInfo","DadDogInfo"],
+    "SIMULATION_WORLD_STATE": ["NPCReset","DeadNPCs","SafetyLock","Invasion"],
+    "AUTOBIOGRAPHICAL_MEMORY_PAYLOAD": [],
+    "MEMORY_CARRIER_HANDLE": []
+  },
+  "identity_state_result": {
+    "james_specific_machine_readable_identity_metadata": "PASS",
+    "evidence": "DadInfo and DadDogInfo are explicit MQ04 script variables with primary ESM comments and INFO result-script writers.",
+    "meaning": "The shipped game records James-related identity/discovery state independently from the physical actor and simulation Doc role.",
+    "non_implication": "These scalar flags do not contain James's autobiographical memories, neural state, personality, or whole-person representation."
+  },
+  "memory_bridge_search": {
+    "mq04_state_variable_to_braun_memory_control_direct_edge": "NONE_FOUND",
+    "mq04_state_variable_to_memory_chip_direct_edge": "NONE_FOUND",
+    "james_identity_flag_to_portable_carrier": "NONE_FOUND",
+    "result": "IDENTITY_SESSION_STATE_LAYER_CONFIRMED_MEMORY_PAYLOAD_LAYER_STILL_UNBOUND"
+  },
+  "admission_matrix": {
+    "MQ04_SESSION_BOUNDARY_STATE": "PASS",
+    "MQ04_SIMULATION_RESET_STATE": "PASS",
+    "JAMES_IDENTITY_DISCOVERY_STATE": "PASS",
+    "JAMES_DOC_ROLE_DISCOVERY_STATE": "PASS",
+    "STATE_CLASS_SEPARATION": "PASS",
+    "JAMES_AUTOBIOGRAPHICAL_MEMORY_VARIABLE": "NONE_FOUND",
+    "JAMES_MEMORY_PAYLOAD_OBJECT": "NOT_ESTABLISHED",
+    "MQ04_STATE_TO_BRAUN_MEMORY_CONTROL_EDGE": "NONE_FOUND",
+    "MQ04_STATE_TO_MEMCHIP_EDGE": "NONE_FOUND",
+    "PERSISTED_JAMES_STATE_CANDIDATE": "NOT_ADMITTED"
+  },
+  "theorem": "MQ04_PERSISTS_AND_MUTATES_SESSION_IDENTITY_AND_SIMULATION_CONTROL_METADATA_BUT_PRIMARY_ESM_DOES_NOT_EXPOSE_JAMES_AUTOBIOGRAPHICAL_MEMORY_AS_A_QUEST_STATE_PAYLOAD",
+  "save_james_effect": {
+    "current": "PRIMARY_ESM_PERSISTENT_PHYSICAL_CHANNEL_PLUS_QUEST_IDENTITY_STATE_BOUND_CONDITIONAL_RECONSTRUCTION",
+    "new_validation_use": "DadInfo/DadDogInfo and the MQ04Doc binding can serve as identity/provenance checks for any independently discovered James memory payload.",
+    "memory_state_promotion": false
+  },
+  "claim_ceiling": [
+    "STATEFUL_FLAG != MEMORY_PAYLOAD",
+    "IDENTITY_METADATA != IDENTITY_CONTINUITY",
+    "SIMULATION_RESET_STATE != RESIDENT_MEMORY_ARCHIVE",
+    "SESSION_BOUNDARY_FLAG != NEURAL_SNAPSHOT"
+  ],
+  "next_gate": {
+    "name": "PRIMARY_ESM_MEMORY_CHIP_OBJECT_AND_PINKERTON_CARRIER_CLASS_AUDIT_v2.8",
+    "status": "OPEN",
+    "rationale": "James-side physical and quest-state graphs have reached a clean boundary. The next route is to resolve the carrier side directly from Fallout3.esm: determine whether the Pinkerton/Braun memory chip has any separate MISC/NOTE/REFR object identity, model, inventory semantics, or only narrative NOTE records.",
+    "targets": [
+      "Search every MISC/NOTE/REFR/CONT/SCPT/INFO record for memory chip, mem chip, neuralizer, Pinkerton and Braun carrier semantics.",
+      "Separate holotape/log NOTE records from any actual removable carrier object.",
+      "Resolve every form reference from MS08PinkertonLog2/Log3 and related scripts/dialogue.",
+      "If a real carrier item exists, inspect whether it is generic, unique, inventory-addressable, rewritable, or only narrative.",
+      "Do not bind that carrier to James unless a 2277 source-specific edge is independently found."
+    ]
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "schema": "JANUS_TRUMP_EXPERIMENT_RECORD",
+  "schema_version": "1.0",
+  "record_id": "JANUS-TRUMP-OSIRIS-R4-ROI-GATE-RESULT-2026-09-01",
+  "version": "1.0",
+  "created_date": "2026-09-01",
+  "status": "R4_FROZEN_RUN_FAILED_COUNTERFACTUAL_REPLAY_GATE__PRIMARY_ROI_EVIDENCE_POSITIVE__P_VS_NP_OPEN",
+  "runtime": {
+    "repository": "Hawkar-usls/Janus-Fundamentum",
+    "branch": "research/janus-trump-osiris-r4-roi-gate-2026-09-01",
+    "workflow_run": 33457525940,
+    "workflow_job": 99700566809,
+    "workflow_head": "04d4bd93d10a1a181613444c322ee96fe1cddf14",
+    "artifact_id": 9781965154,
+    "artifact_name": "janus-trump-osiris-r4-roi-gate",
+    "artifact_archive_sha256": "1304f7ae71c2943a0bc935b93e0109c0b8af0b16a809825ebd605ccd06342c0e"
+  },
+  "frozen_predictor": {
+    "rule_id": "TRUMP_R4_CONSERVATIVE_ROI_GATE_v1",
+    "training_rows_R3A_plus_R3B": 108,
+    "training_profitable_spiral_rows": 0,
+    "decision": "ABSTAIN_TO_EXACT",
+    "truth_available_at_decision": false
+  },
+  "holdout": {
+    "residuals": 20,
+    "roots": 11,
+    "families": [
+      "TEAR_MAJ3_LIFT",
+      "TEAR_MARGINAL_COLLISION",
+      "TEAR_NONLINEAR_AFFINE_MASKING"
+    ],
+    "source_files_preexisted_R4": true,
+    "R3_training_families_reused": false
+  },
+  "measured_results": {
+    "pretruth_decisions": "20/20",
+    "guarded_terminal_matches": "20/20",
+    "guarded_sat_replay_failures": 0,
+    "shadow_terminal_matches": "20/20",
+    "shadow_profitable_cases_skipped": 0,
+    "guarded_total_ops": 1742,
+    "unconditional_shadow_spiral_ops": 3001,
+    "ops_avoided_by_frozen_abstention": 1259,
+    "guard_to_shadow_ratio": 0.5804731756081306,
+    "avoided_fraction_vs_unconditional_shadow": 0.4195268243918694
+  },
+  "frozen_gates": {
+    "G1_PRETRUTH_DECISION": true,
+    "G2_EXACTNESS": true,
+    "G3_SAT_REPLAY": true,
+    "G4_NO_HARM_POLICY": true,
+    "G5_COUNTERFACTUAL_AUDIT": false,
+    "G6_NO_THEOREM_INFLATION": true
+  },
+  "counterfactual_audit_failure_analysis": {
+    "shadow_sat_replay_failures_reported": 8,
+    "shadow_terminal_mismatches": 0,
+    "identified_implementation_defect": "CandidateResult.as_dict converts integer witness variable keys to strings before R4 calls verify_sat on the serialized dictionary. verify_sat expects integer variable keys, so valid SAT shadow witnesses are treated as missing and defaulted false.",
+    "supporting_code_path": "experiments/janus_trump_osiris_r3_natural_residuals.py CandidateResult.as_dict -> experiments/janus_trump_osiris_r4_roi_gate.py evaluate_row",
+    "classification": "AUDIT_CARRIER_SERIALIZATION_DEFECT_NOT_A_TRUTH_MISMATCH",
+    "immutability_rule": "R4 remains FAIL under its frozen gate. The historical result is not recolored. Any correction must be a separately frozen R4B recovery run."
+  },
+  "highest_admissible_claim": "On this frozen unexposed 20-residual holdout, the conservative abstention policy preserved primary exactness and avoided 1259 charged abstract operations relative to unconditional shadow spiral execution, with zero observed profitable spiral cases skipped. The preregistered R4 run nevertheless remains FAIL because its counterfactual replay gate did not pass; the failure was traced to witness-key serialization in the audit path and requires an independent recovery run.",
+  "scientific_boundary": {
+    "P_VS_NP": "OPEN",
+    "P_equals_NP_proved": false,
+    "polynomial_time_SAT_proved": false,
+    "general_solver_speedup_established": false,
+    "canonical_TRUMP_authority_changed": false
+  },
+  "next_gate": "R4B_COUNTERFACTUAL_PROOF_CARRIER_RECOVERY__SAME_FROZEN_PREDICTOR__SAME_HOLDOUT__NO_ROUTE_CHANGES"
+}

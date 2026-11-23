@@ -1,0 +1,315 @@
+{
+  "artifact_id": "JANUS-TRUMP-R4-G-RQ-PAIR-FIXED-FOREST-LIFT-THEOREM-PREREG-2026-09-20-v1.0",
+  "version": "v1.0",
+  "date": "2026-09-20",
+  "status": "FROZEN_PREREGISTRATION__NO_EXECUTION",
+  "object_name": "R4_G_RQ_PAIR_FIXED_FOREST_LIFT_THEOREM_PREREG_V1",
+  "object_class": "PREREGISTRATION_ONLY",
+  "governance": {
+    "pipeline_stage": "PREREGISTER",
+    "canonical_pipeline": [
+      "SOURCE CHECK",
+      "FORMALIZE",
+      "PREREGISTER",
+      "EXECUTE",
+      "INDEPENDENT REPLAY",
+      "SEAL"
+    ],
+    "execution_authorization": "NOT_GRANTED_BY_THIS_PREREGISTRATION",
+    "theorem_execution": "NOT_AUTHORIZED",
+    "theorem_seal": "NOT_AUTHORIZED",
+    "successor": "NOT_AUTHORIZED",
+    "repair_within_V1": "FORBIDDEN",
+    "stop_after_preregistration": true,
+    "return_to_HQ": true
+  },
+  "frozen_authority_bind": {
+    "source_family": {
+      "commit": "ece366af062cac03388cfc0f90b5b89281279297",
+      "blob": "38b8f9644b9eb076a3bf026c04f06777958a452c",
+      "path": "research/TRUMP_C11_PAIR_MULTIPLICITY_FALSE_TWIN_BLOWUP_THEOREM_RESULT_2026-09-20_v1.0.json",
+      "bind_status": "PASS"
+    },
+    "source_check": {
+      "commit": "23422e8666f067e8ff3447b245d3bb5a13edce73",
+      "blob": "e502f964131d3d948a3ba523c7396da62ea608c7",
+      "path": "research/R4_G_RQ_PAIR_FIXED_FOREST_LIFT_SOURCE_CHECK_2026-09-20_v1.0.json",
+      "bind_status": "PASS"
+    },
+    "formalization": {
+      "commit": "cfedc19e652640487075ada9ea1c6bd445447eb9",
+      "blob": "0caaf72ce4ba6797c5ebdb4a992080eb8ac612c4",
+      "path": "research/R4_G_RQ_PAIR_FIXED_FOREST_LIFT_FORMALIZATION_2026-09-20_v1.0.json",
+      "bind_status": "PASS",
+      "immutable_during_execution": true
+    },
+    "all_three_pass": true
+  },
+  "frozen_theorem_target": {
+    "name": "G_RQ_PAIR_FIXED_FOREST_LIFT_CANDIDATE",
+    "quantifiers": [
+      "for every r>=1",
+      "for every q>=1",
+      "for every i in {1,...,r}",
+      "for every j in {1,...,q}",
+      "for every gamma in {3,4}",
+      "for every delta in {3,4}"
+    ],
+    "operation": [
+      "fix a_i=gamma",
+      "fix b_j=delta",
+      "apply exactly the frozen D2 pair-fixed boundary propagation and no stronger unpublished preprocessing"
+    ],
+    "claimed_residual_vertices": "{z} union (A_r \\ {a_i}) union (B_q \\ {b_j})",
+    "claimed_residual_edges": "{ z-v : v in (A_r \\ {a_i}) union (B_q \\ {b_j}) }",
+    "claimed_graph_class": "star K_{1,r+q-2}; when r=q=1 the residual is the degenerate one-vertex K1",
+    "claimed_exact_lists": {
+      "for a in A_r \\ {a_i}": [
+        2,
+        3,
+        4
+      ],
+      "for b in B_q \\ {b_j}": [
+        1,
+        3,
+        4
+      ],
+      "z": "{1,2,3,4} \\ {gamma,delta}, with ordinary set subtraction so gamma=delta deletes that color once"
+    },
+    "candidate_consequence": [
+      "all residual lists are nonempty",
+      "the residual graph is acyclic",
+      "T2_FOREST_LIST applies",
+      "the pair-fixed extension bit q_{gamma,delta}=1"
+    ],
+    "mutation_during_theorem_run": "FORBIDDEN"
+  },
+  "frozen_O1_O8": [
+    {
+      "id": "O1_VERTEX_EXACTNESS",
+      "obligation": "Starting solely from the frozen G_{r,q} source roles and the frozen D2 pair-fixed operation, prove that exactly s,t,p,m,n,a_i,b_j are fixed/removed from the undecided set and every other A/B vertex plus z remains in the residual vertex set, including r=q=1."
+    },
+    {
+      "id": "O2_EDGE_EXACTNESS",
+      "obligation": "Using the parent's no_other_edges clause, prove that after deleting/fixing the boundary vertices the only residual edges are z-a for remaining a in A_r and z-b for remaining b in B_q."
+    },
+    {
+      "id": "O3_LIST_EXACTNESS",
+      "obligation": "Prove symbolically that no remaining A/B vertex is adjacent to a_i or b_j and hence its list stays [2,3,4] or [1,3,4], while z is adjacent to both fixed pair vertices and therefore its exact list is [1,2,3,4]\\{gamma,delta}."
+    },
+    {
+      "id": "O4_NONEMPTY_LISTS",
+      "obligation": "Prove for gamma,delta in {3,4} that L_res(z) has size 3 if gamma=delta and size 2 if gamma!=delta; all leaf lists have size 3."
+    },
+    {
+      "id": "O5_FOREST",
+      "obligation": "Prove the exact residual edge set is a star (or K1), hence acyclic, for all quantified parameters."
+    },
+    {
+      "id": "O6_T2_BIND",
+      "obligation": "Bind O4/O5 to the already sealed T2_FOREST_LIST theorem without introducing a new coloring solver."
+    },
+    {
+      "id": "O7_DIRECT_CONSTRUCTIVE_EXTENSION",
+      "obligation": "Verify for all parameters and assignments the explicit full coloring: frozen seed s=1,t=2,p=3,m=2,n=4; a_i=gamma; b_j=delta; z=1; every remaining a=2; every remaining b=3. Check every exact list and every parent-family edge."
+    },
+    {
+      "id": "O8_PI_BIT",
+      "obligation": "From O7 and exact D2 semantics conclude q_{gamma,delta}=1 for every quantified tuple, without generalizing beyond G_{r,q}."
+    }
+  ],
+  "primary_symbolic_proof_route": {
+    "rule": "The primary theorem proof must be symbolic for arbitrary quantified parameters. Finite r,q enumeration, sample-based induction, and appeal to the previous 32 finite executions are forbidden as proof steps.",
+    "O1": [
+      "derive the residual vertex set directly from the frozen parent G_{r,q} source roles",
+      "apply only the frozen D2 pair-fixed removal/fixing of a_i,b_j",
+      "treat r=q=1 explicitly as a symbolic degenerate case, not as a sampled exception"
+    ],
+    "O2": [
+      "start from the parent's exact edge schema",
+      "remove/project all incidences through s,t,p,m,n,a_i,b_j",
+      "use the parent no_other_edges clause",
+      "derive exactly the remaining z-A and z-B edge relation"
+    ],
+    "O3": [
+      "derive propagated lists solely from exact adjacency to newly fixed a_i,b_j",
+      "prove no remaining A/B vertex is adjacent to a_i or b_j",
+      "derive L_res(z) from z adjacent to both fixed pair vertices"
+    ],
+    "O4": [
+      "evaluate |{1,2,3,4}\\{gamma,delta}| symbolically",
+      "case gamma=delta: size 3",
+      "case gamma!=delta: size 2",
+      "retain leaf-list size 3"
+    ],
+    "O5": [
+      "identify the exact residual edge relation as star K_{1,r+q-2}",
+      "include K1 when r=q=1",
+      "derive acyclicity symbolically"
+    ],
+    "O6": [
+      "bind only to the already frozen T2_FOREST_LIST authority inherited through the formalization",
+      "introduce no new coloring solver or terminal"
+    ],
+    "O7": {
+      "candidate_full_coloring": {
+        "s": 1,
+        "t": 2,
+        "p": 3,
+        "m": 2,
+        "n": 4,
+        "a_i": "gamma",
+        "b_j": "delta",
+        "z": 1,
+        "every remaining a in A_r": 2,
+        "every remaining b in B_q": 3
+      },
+      "mandatory_edge_type_checks": [
+        "s-t",
+        "s-p",
+        "p-m",
+        "m-n",
+        "t-n",
+        "a-s",
+        "a-z",
+        "b-t",
+        "b-m",
+        "b-z"
+      ],
+      "mandatory_list_checks": [
+        "frozen seed vertices",
+        "fixed pair a_i,b_j for gamma,delta in {3,4}",
+        "z",
+        "remaining A_r vertices",
+        "remaining B_q vertices"
+      ],
+      "no_unlisted_edge_assumption": true
+    },
+    "O8": [
+      "use only the frozen D2 pair-fixed semantics inherited through the formalization",
+      "conclude q_{gamma,delta}=1 only after O7 is established for the universally quantified tuple",
+      "do not generalize beyond G_{r,q}"
+    ]
+  },
+  "allowed_theorem_run_outcomes": [
+    {
+      "label": "PASS_G_RQ_PAIR_FIXED_FOREST_LIFT",
+      "condition": "O1-O8 all pass symbolically for the full universal quantified domain exactly as frozen.",
+      "permitted_interpretation": [
+        "The frozen G_{r,q} family has the claimed pair-fixed star residual for every quantified tuple.",
+        "The frozen G_{r,q} family routes through T2_FOREST_LIST after pair fixing.",
+        "For this frozen G_{r,q} family, q_{gamma,delta}=1 for all four assignment types and all r,q,i,j."
+      ]
+    },
+    {
+      "label": "PARAMETRIC_FOREST_LIFT_FALSIFIED",
+      "condition": "Any one of O1-O8 fails for at least one legal quantified tuple.",
+      "required_counterexample_order": [
+        "increasing r+q",
+        "then increasing r",
+        "then increasing q",
+        "then increasing i",
+        "then increasing j",
+        "then assignment order 33,34,43,44"
+      ],
+      "required_certificate": [
+        "minimal exact counterparameter under the frozen order",
+        "parent source commit/blob and exact family instantiation",
+        "pair assignment",
+        "expected symbolic residual",
+        "observed/derived conflicting residual fact",
+        "which proof obligation O1-O8 failed"
+      ],
+      "repair_within_V1": "FORBIDDEN",
+      "action": "STOP_AND_RETURN_TO_HQ"
+    }
+  ],
+  "theorem_run_outcome_vocabulary_is_closed": true,
+  "nonauthoritative_regression_control": {
+    "previous_finite_R4_router_run": {
+      "scientific_outcome": "FRESH_SOURCE_BOUND_ROUTING_PASS_FINITE_ONLY",
+      "execution_result_blob": "dc86c12a8afb8fc5f0bf4dea6c0558eaf13e8baa",
+      "independent_replay_blob": "02972b374520252ac0156dd45fd81ef221d231bb",
+      "sampled_pair_fixed_evaluations": 32
+    },
+    "role": "NONAUTHORITATIVE_REGRESSION_CONTROL",
+    "theorem_proof_weight": 0,
+    "forbidden_use": [
+      "proof step",
+      "basis for induction",
+      "evidence that the universal residual formula holds",
+      "replacement for O1-O8"
+    ]
+  },
+  "independent_replay_contract": {
+    "required_if_later_execution_is_authorized": true,
+    "derivation_independence": "Replay must derive from the symbolic parent family grammar and quantified pair-fixing operation without importing the primary proof's intermediate lemmas or proof text.",
+    "replay_input": [
+      "frozen parent G_{r,q} grammar",
+      "frozen pair-fixed operation",
+      "frozen theorem target",
+      "frozen O1-O8 statements"
+    ],
+    "mechanically_derive": [
+      "fixed/remnant vertex classes",
+      "induced residual edge relation",
+      "propagated list formula",
+      "star degree sequence including degenerate K1",
+      "full-coloring list constraints",
+      "full-coloring edge constraints",
+      "D2 q-bit consequence"
+    ],
+    "symbolic_assignment_classes": [
+      "33",
+      "34",
+      "43",
+      "44"
+    ],
+    "assignment_class_firewall": "These four are symbolic assignment types only; they are not finite sampling over r,q,i,j.",
+    "mismatch_outcome": "PARAMETRIC_FOREST_LIFT_FALSIFIED",
+    "finite_parameter_enumeration_as_replay_proof": "FORBIDDEN"
+  },
+  "forbidden_methods_and_promotions": [
+    "finite r,q enumeration as theorem proof",
+    "induction inferred only from samples",
+    "appeal to the previous 32 finite executions as proof",
+    "changing O1-O8 after a failure",
+    "repairing the theorem within V1",
+    "adding a new terminal",
+    "adding a new descriptor or width assumption",
+    "generalizing from G_{r,q} to arbitrary false-twin families",
+    "promoting C11_TERMINAL_ROUTER_COMPLETENESS",
+    "promoting P3_BYPASS",
+    "promoting P3_EXACT_PAIR_QUOTIENT",
+    "promoting PI_DISCOVERY_COMPLETE",
+    "promoting P7_FREE_4_COLOR_IN_P",
+    "P=NP or P!=NP claim"
+  ],
+  "complexity_statement_if_passes": {
+    "allowed": "For this frozen parametric G_{r,q} family, pair-fixed residual recognition/construction and T2 solution/reconstruction are polynomial.",
+    "stronger_claims_forbidden": [
+      "C11_TERMINAL_ROUTER_COMPLETENESS",
+      "P3_BYPASS",
+      "PI_DISCOVERY_COMPLETE",
+      "P7_FREE_4_COLOR_IN_P",
+      "P=NP",
+      "P!=NP"
+    ]
+  },
+  "scientific_ceiling": {
+    "G_RQ_PARAMETRIC_ROUTING": "CANDIDATE_UNTIL_PROVED_AND_REPLAYED",
+    "C11_TERMINAL_ROUTER_COMPLETENESS": "CANDIDATE__NOT_THEOREM",
+    "P3_EXACT_PAIR_QUOTIENT": "NOT_ESTABLISHED",
+    "P3_BYPASS": "NOT_ESTABLISHED",
+    "PI_DISCOVERY": "PARTIAL",
+    "LEMMA11_P7_LIFT": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "execution": "NOT_AUTHORIZED",
+  "independent_replay": "NOT_RUN",
+  "theorem_seal": "NOT_PERFORMED",
+  "successor_autoactivation": false,
+  "return_to_HQ": true,
+  "stop": true
+}

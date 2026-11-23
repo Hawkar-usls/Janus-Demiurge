@@ -1,0 +1,138 @@
+{
+  "artifact_id": "JANUS-DEMIHEAD-LOCAL-HEMISPHERE-REVERSE-PROPOSAL-GATE-v1.0",
+  "document_class": "architecture_validation_contract",
+  "date": "2026-08-16",
+  "status": "MERGED_AND_POST_MERGE_VERIFIED_REFERENCE_GATE",
+  "purpose": "Admit the first bounded reverse path from DemiHead to HRain/iNaiHR while keeping mutation ownership inside the target hemisphere and requiring a separate local acceptance event.",
+  "flow": [
+    "DEMIHEAD_HASH_BOUND_NON_MUTATING_PROPOSAL_JSON",
+    "LOCAL_FILE_HANDOFF",
+    "HEMISPHERE_OWNED_PREVIEW_OR_DECLINE",
+    "EXPLICIT_ACCEPT_LOCALLY_EVENT",
+    "FRESH_BASE_GRAPH_SHA256_RECHECK",
+    "LOCAL_ADD_NODE_MUTATION",
+    "LOCAL_MUTATION_RECEIPT"
+  ],
+  "threat_model": {
+    "shared_pages_origin": "https://hawkar-usls.github.io",
+    "law": "GITHUB_PAGES_PROJECT_PATH != ORIGIN_ISOLATION",
+    "network_or_postmessage_apply_channel": false,
+    "direct_demihead_workspace_write": false
+  },
+  "mutation_allowlist_v1": {
+    "allowed": ["ADD_NODE"],
+    "forbidden": ["EDIT_NODE","DELETE_NODE","ADD_LINK","DELETE_LINK","REPLACE_GRAPH","ARBITRARY_JSON_PATCH","EXECUTE_CODE","PROVIDER_ACTION","NETWORK_WRITE","AUTO_APPLY"],
+    "proposed_node_origin": "SYSTEM"
+  },
+  "content_bindings": {
+    "base_graph_sha256": "canonical normalized graph content binding",
+    "proposal_sha256": "canonical proposal content binding",
+    "law": "SHA256_BINDING != SIGNATURE",
+    "stale_base_state": "BASE_WORKSPACE_CHANGED_REPROPOSE_REQUIRED"
+  },
+  "hemisphere_owned_apply_gates": {
+    "HRain": {
+      "pr": 9,
+      "tested_head": "1517f989eedc47eeeb1020e0584fae598f179160",
+      "push_run": 31940548649,
+      "pull_request_run": 31940718939,
+      "merge": "ceb81210c2f70b71d6c941e0b088a68969ead7b9",
+      "post_merge_run": 31940753432,
+      "conclusion": "SUCCESS",
+      "storage_key": "hrain_v10_4_restore"
+    },
+    "iNaiHR": {
+      "pr": 7,
+      "tested_head": "916eb774257729875483bcd17ae6fca6ea73ec61",
+      "push_run": 31940680465,
+      "pull_request_run": 31940728103,
+      "merge": "b27cd8732b3137caea1036024acc1778ea02213a",
+      "post_merge_run": 31940761916,
+      "conclusion": "SUCCESS",
+      "storage_key": "inaihr_v2",
+      "provenance_metadata_key": "inaihr_demihead_provenance_v1",
+      "metadata_law": "LOCAL_METADATA != TRUSTED_ATTESTATION"
+    }
+  },
+  "DemiHead_gate": {
+    "pr": 15,
+    "final_tested_head": "a6518478fa0b7d989bc5d8a6ba37625693df976d",
+    "push_runs": {
+      "full_repository": 31941011803,
+      "local_reverse_channel": 31941011827,
+      "browser_python_proposal_parity": 31941011821
+    },
+    "pull_request_runs": {
+      "full_repository": 31941097713,
+      "local_reverse_channel": 31941097646,
+      "browser_python_proposal_parity": 31941097672
+    },
+    "merge": "fc542466279bd15bceb7171514a84d1c1d002a11",
+    "post_merge_runs": {
+      "full_repository": 31941143237,
+      "local_reverse_channel": 31941143188,
+      "browser_python_proposal_parity": 31941143211
+    },
+    "all_final_conclusions": "SUCCESS"
+  },
+  "negative_test_provenance": {
+    "run_id": 31940884989,
+    "result": "FAILED",
+    "cause": "A static guard matched wording in documentation describing a forbidden apply command; substantive schema, unit, exact-external and cross-repo steps had passed.",
+    "repair": "Separated executable-surface checks from documentation-law checks without weakening executable restrictions.",
+    "corrected_dedicated_run": 31940938491,
+    "corrected_full_repository_run": 31940938489,
+    "corrected_results": "SUCCESS"
+  },
+  "verified_properties": {
+    "proposal_is_non_mutating_in_demihead": true,
+    "add_node_only": true,
+    "explicit_local_accept_required": true,
+    "decline_performs_workspace_write": false,
+    "base_graph_rechecked_immediately_before_write": true,
+    "tampered_proposal_refused": true,
+    "wrong_target_refused": true,
+    "auto_apply_refused": true,
+    "duplicate_node_id_refused": true,
+    "stale_base_graph_refused": true,
+    "python_js_canonical_hash_compatible": true,
+    "browser_python_proposal_parity": true,
+    "system_provenance_preserved": true,
+    "inaihr_provenance_survives_current_core_serializer": true,
+    "orphan_inaihr_metadata_creates_node": false,
+    "ci_writes_real_browser_localstorage": false,
+    "direct_cross_hemisphere_write": false,
+    "network_apply": false,
+    "external_effect_permitted": false,
+    "authority_delta": 0,
+    "mass_effect_budget_delta": 0
+  },
+  "laws": [
+    "PROPOSAL != WORLD_EFFECT",
+    "DEMIHEAD_PROPOSAL != WORKSPACE_MUTATION",
+    "NO_ACCEPT_EVENT => NO_MUTATION",
+    "DECLINE != PENALTY",
+    "SHA256_BINDING != SIGNATURE",
+    "CLICK_EVENT != VERIFIED_HUMAN_IDENTITY",
+    "LOCAL_METADATA != TRUSTED_ATTESTATION",
+    "GITHUB_PAGES_PROJECT_PATH != ORIGIN_ISOLATION",
+    "DIRECT_CROSS_HEMISPHERE_WRITE = FORBIDDEN",
+    "NETWORK_APPLY = FORBIDDEN",
+    "AUTO_APPLY = false",
+    "AUTHORITY_DELTA = 0",
+    "MASS_EFFECT_BUDGET_DELTA = 0"
+  ],
+  "claim_ceiling": {
+    "authenticated_human_identity_established": false,
+    "digital_signature_established": false,
+    "trusted_attestation_established": false,
+    "production_readiness_established": false,
+    "independent_evidence_established": false,
+    "real_browser_mutation_exercised_by_ci": false,
+    "biological_equivalence_established": false,
+    "consciousness_or_personhood_established": false,
+    "measured_cognitive_gain_established": false,
+    "authority_delta": 0,
+    "mass_effect_budget_delta": 0
+  }
+}

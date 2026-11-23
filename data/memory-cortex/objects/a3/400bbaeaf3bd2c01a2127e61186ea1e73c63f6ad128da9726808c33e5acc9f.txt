@@ -1,0 +1,49 @@
+# JANUS LOGOS-001 R1.1 — observed NIST measurement test
+
+The R0 Feigenbaum example reproduced established universality in simulated maps.
+R1 recovered four **known synthetic** laws with holdout checks. R1.1 evaluates
+a constrained equation-discovery system on **actual instrument observations**:
+
+* **Pontius**: 40 measured load–deflection pairs from NIST load-cell
+  calibration: https://www.itl.nist.gov/div898/strd/lls/data/LINKS/DATA/Pontius.dat
+* **Norris**: 36 ozone-monitor calibration pairs:
+  https://www.itl.nist.gov/div898/strd/lls/data/LINKS/DATA/Norris.dat
+
+NIST information is reproduced with attribution in the research-source code;
+review NIST-specific rights and data disclaimers before any downstream re-use.
+The NIST website describes both as "Observed Data", not generated challenges.
+Original source response/predictor values are transcribed without perturbation.
+
+## Run
+
+    python research/logos_001/r11_data.py --part discover --out /tmp/r11-train-valid.json
+    python research/logos_001/r11_discover.py --input /tmp/r11-train-valid.json --out /tmp/r11-candidates.json
+    python research/logos_001/r11_witness.py --candidate /tmp/r11-candidates.json --out /tmp/r11-witness.json --self-test
+    python -m unittest discover -s research/logos_001 -p test_r11.py -v
+
+The discoverer is trained on measured points, but does not receive published
+reference-model labels or TEST observations as input. The source datasets and
+historical model classes are publicly available: this is **not** a genuinely
+secret external scientific challenge. The witness independently calculates
+out-of-sample error and fits three elementary baselines (constant, linear,
+quadratic). Baselines are selected using VALIDATION only. All outcomes,
+including losses to the simpler baseline, must be recorded.
+
+The preregistration fixes split assignments: Pontius groups both repeated
+readings from a given load into one split, preventing identical-x train/test
+leakage; Norris splits indexed observations, retaining source order.
+Two negative controls deliberately shift the validation labels relative to
+inputs. These must fail validation. Tampered model and provenance receipts
+must also fail.
+
+## David Deutsch and explanatory boundaries
+
+Deutsch's 2013 constructor theory and Deutsch–Marletto 2015 information
+theory motivate seeking robust explanations and counterfactual constraints.
+Finding a short equation with a small test error is evidence of predictive
+structure *within the tested regime*, not demonstration that reality executes
+software, that a physical law has been newly discovered, or that God exists.
+
+No change to Demiurge production model, Rowan, scheduled autonomy, budget,
+NAS, or P=NP proof authority. This is a **read-only, manually initiated
+scientific research lane** until externally blinded and cross-domain replicated.

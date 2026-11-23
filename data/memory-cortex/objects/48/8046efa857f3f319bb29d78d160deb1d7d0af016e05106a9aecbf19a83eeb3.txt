@@ -1,0 +1,54 @@
+{
+  "schema_id": "janus.slot-triad.feature-matrix-journal.v1.4",
+  "journal_id": "JANUS-SLOT-TRIAD-FEATURE-MATRIX-JOURNAL-2026-08-27-v1.4",
+  "extends": "JANUS-SLOT-TRIAD-FEATURE-MATRIX-JOURNAL-2026-08-27-v1.3",
+  "captured_at": "2026-08-27T18:00:00+03:00",
+  "status": "ACTIVE_APPEND_OR_VERSION_JOURNAL",
+  "current_focus": "JANUS_HELIOS_SALES_DEMO_POLISH",
+  "change": {
+    "feature": "TIERED_BONUS_PURCHASE_CONTRACT",
+    "source_patterns": [
+      "SSlot legacy selectable ritual concept",
+      "DIVINE_REALM legacy selectable blessing concept",
+      "HELIOS Solar Free Spins session"
+    ],
+    "promoted_parent_primitive": "REQUEST -> TIER_REVIEW -> EXACT_PRICE -> EXPLICIT_CONSENT -> CORE_AUTHORIZATION -> BONUS_SESSION",
+    "HELIOS_version": "1.14.0",
+    "implementation": {
+      "core_module": "helios-bonus.js",
+      "review_module": "helios-bonus-confirm.js",
+      "synthetic_reclick_removed": true,
+      "price_authority": "BONUS_CORE_RECALCULATES_CURRENT_BET_X_SELECTED_TIER",
+      "confirmation_per_purchase": true,
+      "tiers": [
+        {"id": "standard", "cost_bet_multiplier": 50, "free_spins": 10, "sun_retrigger": 2, "max_total_spins": 16},
+        {"id": "radiant", "cost_bet_multiplier": 100, "free_spins": 12, "sun_retrigger": 2, "max_total_spins": 20},
+        {"id": "solar_flare", "cost_bet_multiplier": 175, "free_spins": 15, "sun_retrigger": 3, "max_total_spins": 24}
+      ],
+      "tier_semantics": "Higher price buys more free-spin opportunities and a larger disclosed natural-retrigger budget; it does not guarantee a win.",
+      "real_money_value": false,
+      "production_enabled": false
+    }
+  },
+  "comparison": {
+    "HELIOS": "TIERED_DEMO_FREE_SPINS_WITH_EXPLICIT_PRICE_REVIEW_AND_CONSENT",
+    "SSlot": "LEGACY_RITUAL_SELECTION_PRESENT_BUT_NOT_PARENT_CONTRACT",
+    "DIVINE_REALM": "LEGACY_BLESSING_SELECTION_PRESENT_BUT_NOT_PARENT_CONTRACT"
+  },
+  "explicit_non_inheritance": [
+    "ONE_CLICK_UNREVIEWED_PURCHASE",
+    "FORCED_SCATTER",
+    "OUTCOME_DEPENDENT_TEASER",
+    "NEAR_MISS_DELAY",
+    "PERSONALIZED_OUTCOME_SHAPING",
+    "COMPUTE_DEPENDENT_BONUS_RESULT"
+  ],
+  "open_validation": [
+    "USER_VALIDATE_CONFIRM_MODAL_CLOSES_AFTER_CONFIRM",
+    "USER_VALIDATE_STANDARD_RADIANT_SOLAR_FLARE_SELECTION",
+    "USER_VALIDATE_EXACT_PRICE_CHANGES_WITH_BET",
+    "USER_VALIDATE_SELECTED_TIER_STARTS_EXPECTED_FREE_SPIN_COUNT",
+    "EXECUTE_FULL_CURRENT_TEST_SUITE"
+  ],
+  "journal_rule": "After every meaningful HELIOS/SSlot/DIVINE feature addition, compare all three again. Promote only universal safe primitives; preserve child identity and truth boundaries."
+}

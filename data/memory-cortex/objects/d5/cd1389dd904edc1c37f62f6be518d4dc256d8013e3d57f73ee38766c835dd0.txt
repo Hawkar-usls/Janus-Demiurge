@@ -1,0 +1,192 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-R3C-3-CORRECTIVE-LANGUAGE-MATCH-AUDIT-SPEC-2026-08-14-v0.1.1",
+  "timestamp": "2026-08-14T18:40:00+03:00",
+  "version": "v0.1.1",
+  "node_type": "corrective_language_match_audit_spec",
+  "status": "FROZEN_BEFORE_EXECUTION_CORRECTED_NORMALIZATION_GATE",
+  "lineage": {
+    "primary_method_reconstruction": "data/JANUS-LINEAR-A-R3C-3-PRIMARY-METHOD-RECONSTRUCTION-2026-08-14-v0.1.json",
+    "rejected_predecessor_spec": "data/JANUS-LINEAR-A-R3C-3-CORRECTIVE-LANGUAGE-MATCH-AUDIT-SPEC-2026-08-14-v0.1.json",
+    "rejected_predecessor_review": "data/JANUS-LINEAR-A-R3C-3-CORRECTIVE-LANGUAGE-MATCH-AUDIT-PREVALIDATION-REVIEW-2026-08-14-v0.1.json",
+    "rejected_predecessor_admitted": false,
+    "correction_scope": "UPSTREAM_NORMALIZATION_ADMISSION_ONLY",
+    "null_models_changed_after_data_inspection": false,
+    "language_set_changed_after_data_inspection": false
+  },
+  "research_question": "Does any one of the five language dictionaries used by Nepal and Perono (2024) show excess raw exact consonant-cluster overlap with the paper-exact Linear A master list beyond two pre-frozen matched chance models, before manual semantic filtering?",
+  "fixed_scope": {
+    "languages": ["Ancient Egyptian", "Luwian", "Hittite", "Proto-Celtic", "Uralic"],
+    "primary_unit": "raw exact consonant-cluster match before manual plausibility, meaning, or tablet-context filtering",
+    "languages_may_be_added_removed_or_renamed_after_input_inspection": false,
+    "published_selected_match_tables_used_for_parameter_tuning": false,
+    "semantic_filtering_allowed_in_primary_statistic": false,
+    "tablet_context_allowed_in_primary_statistic": false
+  },
+  "execution_admission_gate": {
+    "all_required_receipts_must_pass_before_scientific_execution": true,
+    "required_receipts": {
+      "PAPER_EXACT_LINEAR_A_MASTER_LIST": {
+        "required_fields": ["source_id", "original_filename", "sha256", "bytes", "mime_type", "encoding", "table_or_sheet_identity", "column_schema", "acquisition_route", "paper_provenance", "license_or_access_basis"],
+        "must_establish": ["which column is consumed as the Linear A comparison string", "row identity and ordering", "whether duplicate Linear A rows are retained"]
+      },
+      "PAPER_EXACT_FIVE_DICTIONARY_INPUTS": {
+        "required_languages": ["Ancient Egyptian", "Luwian", "Hittite", "Proto-Celtic", "Uralic"],
+        "required_fields_per_language": ["language", "dictionary_source_identity", "original_filename", "sha256", "bytes", "mime_type", "encoding", "row_count", "acquisition_route", "paper_provenance", "license_or_access_basis"],
+        "must_establish": ["dictionary row identity and ordering", "whether duplicate source rows are retained"]
+      },
+      "PAPER_PHONETIC_GRID_OR_MASTER_LIST_PROVENANCE": {
+        "must_establish": ["the admitted Linear A comparison strings correspond to the 2024 study input", "they are not silently regenerated from an alternate public-program configuration"]
+      },
+      "UPSTREAM_TEXT_NORMALIZATION_CONTRACT": {
+        "required_status": "UPSTREAM_NORMALIZATION_CONTRACT_ADMITTED",
+        "must_explicitly_freeze": [
+          "input field consumed for Linear A",
+          "vowel deletion set and deletion order",
+          "case behavior",
+          "leading/trailing whitespace behavior",
+          "internal whitespace behavior",
+          "punctuation behavior",
+          "Unicode normalization behavior",
+          "diacritic behavior",
+          "empty normalized cluster behavior",
+          "duplicate dictionary row behavior",
+          "duplicate Linear A row behavior",
+          "string equality semantics"
+        ],
+        "minimum_canary_requirement": "At least one mechanically verified input/output canary for every normalization operation that is not identity-preserving; if an operation is explicitly identity-preserving, that state must be recorded.",
+        "acceptable_evidence": ["paper-exact source code", "paper-exact executable plus mechanically verified canary inputs/outputs", "paper-exact author-supplied normalized input/output files", "author-supplied exact preprocessing specification tied to the study files"],
+        "unacceptable_evidence": ["README prose alone for unspecified behaviors", "reverse engineering published selected match tables", "best-fit behavior chosen to maximize or minimize any language score"]
+      }
+    },
+    "public_README_is_input_receipt": false,
+    "public_packaged_application_git_blob_identity_is_study_data_receipt": false,
+    "reconstructed_or_guessed_dictionary_entries_permitted": false,
+    "published_selected_tables_reverse_engineering_permitted": false,
+    "current_expected_state": "BLOCKED_MISSING_PAPER_EXACT_INPUT_RECEIPTS_AND_NORMALIZATION_CONTRACT"
+  },
+  "admitted_normalized_record_contract": {
+    "rule": "JANUS corrective statistics consume admitted normalized clusters; they do not perform undocumented upstream text normalization.",
+    "Linear_A_record_required_fields": ["linear_a_row_id", "source_locator", "raw_comparison_string", "admitted_normalized_linear_a_cluster", "normalization_contract_id"],
+    "dictionary_record_required_fields": ["language", "dictionary_row_id", "dictionary_raw_word", "admitted_normalized_dictionary_cluster", "normalization_contract_id"],
+    "cluster_length_unit": "Unicode code-point length of the admitted normalized cluster",
+    "empty_cluster_policy": "DEFINED_BY_ADMITTED_UPSTREAM_NORMALIZATION_CONTRACT; JANUS MUST NOT INVENT IT",
+    "normalization_contract_id_must_match_across_all_records": true
+  },
+  "upstream_raw_match_reproduction_layer": {
+    "operation": "exact string equality between admitted normalized Linear A cluster and admitted normalized dictionary cluster",
+    "manual_filtering": false,
+    "preserve_Linear_A_row_multiplicity": true,
+    "preserve_dictionary_row_multiplicity": true,
+    "required_raw_ledger_fields": [
+      "language",
+      "linear_a_row_id",
+      "linear_a_source_locator",
+      "linear_a_raw_comparison_string",
+      "linear_a_cluster",
+      "dictionary_row_id",
+      "dictionary_raw_word",
+      "dictionary_cluster",
+      "normalization_contract_id"
+    ],
+    "required_inventory_outputs": ["unique Linear A clusters", "unique dictionary clusters per language", "cluster-length histograms", "duplicate multiplicity ledgers"],
+    "published_manually_filtered_tables_are_primary_reproduction_target": false
+  },
+  "frozen_metrics": [
+    {
+      "metric_id": "UNIQUE_LINEAR_A_CLUSTER_HIT_COUNT",
+      "definition": "Number of distinct eligible admitted normalized Linear A clusters having at least one exact match in a language dictionary.",
+      "primary": true
+    },
+    {
+      "metric_id": "TOTAL_PAIRWISE_EXACT_MATCH_COUNT",
+      "definition": "Number of admitted Linear A row x dictionary row exact cluster matches, retaining source-row multiplicity.",
+      "primary": false
+    },
+    {
+      "metric_id": "UNIQUE_DICTIONARY_CLUSTER_HIT_COUNT",
+      "definition": "Number of distinct admitted normalized dictionary clusters having at least one eligible Linear A exact match.",
+      "primary": false
+    }
+  ],
+  "corrective_null_families": {
+    "N1_WITHIN_LANGUAGE_COMPOSITION_PRESERVING": {
+      "input": "admitted normalized dictionary clusters only",
+      "preserves": ["language-specific dictionary row count", "ordered normalized cluster-length sequence", "global Unicode code-point multiset across admitted normalized clusters"],
+      "algorithm": [
+        "For one language, concatenate the Unicode code points of all admitted normalized non-empty dictionary clusters in source-row order.",
+        "Apply the deterministic iteration-specific random permutation to that exact code-point multiset.",
+        "Redistribute the permuted code points according to the original ordered admitted cluster-length sequence.",
+        "Keep admitted normalized Linear A clusters fixed.",
+        "Recompute all frozen metrics without meanings or published-match protection."
+      ],
+      "meaning_labels_used": false,
+      "published_matches_protected": false
+    },
+    "N2_POOLED_LENGTH_STRATIFIED_LANGUAGE_LABEL": {
+      "input": "admitted normalized dictionary clusters only",
+      "preserves": ["each observed cluster string", "exact Unicode code-point cluster length", "each language row count within every exact length stratum"],
+      "algorithm": [
+        "Pool all admitted normalized dictionary rows from the five fixed languages.",
+        "Within each exact code-point-length stratum, deterministically permute language labels while preserving observed language row counts in that stratum.",
+        "Keep cluster strings, row multiplicity, and admitted normalized Linear A clusters fixed.",
+        "Recompute all frozen metrics for all five languages within the same permutation."
+      ],
+      "meaning_labels_used": false
+    }
+  },
+  "permutation_protocol": {
+    "iterations_per_null_family": 10000,
+    "exact_enumeration_rule": "If the number of distinct admissible permutations for a null family is less than 10000, enumerate all distinct admissible permutations instead of resampling duplicates.",
+    "deterministic_seed_rule": "Interpret SHA256(artifact_uuid || '|' || null_family_id || '|' || zero_based_iteration) as an unsigned big-endian integer.",
+    "empirical_one_sided_p": "(1 + count(null_stat >= observed_stat)) / (B + 1) for sampled permutations; exact tail proportion for complete exact enumeration.",
+    "primary_family": "Five fixed languages for UNIQUE_LINEAR_A_CLUSTER_HIT_COUNT.",
+    "familywise_control": {
+      "method": "within-null-family permutation max-statistic across all five languages",
+      "alpha": 0.05,
+      "unadjusted_empirical_p_reported": true,
+      "FWER_adjusted_p_reported": true
+    },
+    "effect_summary": ["observed", "null_mean", "null_sd", "standardized_excess_if_sd_positive", "empirical_percentile"]
+  },
+  "decision_rule": {
+    "BLOCKED": "One or more required exact-input/normalization receipts are absent or invalid.",
+    "UPSTREAM_RAW_MATCH_REPRODUCTION_MISMATCH": "Paper-exact admitted inputs are present but the mechanically reconstructed raw exact-match layer disagrees with any paper-exact raw-output canaries or counts that were frozen before corrective statistics.",
+    "EXECUTED_NO_EXCESS": "No language has positive excess and FWER-adjusted p <= 0.05 under both N1 and N2 for the primary metric.",
+    "EXECUTED_DISCORDANT_NULLS": "At least one language clears the frozen primary threshold under only one of N1/N2, with no language clearing both.",
+    "EXECUTED_TECHNICAL_OVERLAP_EXCESS_SIGNAL": "At least one language has positive observed-minus-null-mean and FWER-adjusted p <= 0.05 under both N1 and N2 for UNIQUE_LINEAR_A_CLUSTER_HIT_COUNT.",
+    "technical_signal_does_not_establish": ["language-family relationship", "cognacy", "translation", "phonetic-grid correctness", "script decipherment"]
+  },
+  "secondary_descriptive_layer": {
+    "allowed_only_after_primary_statistics_are_computed": true,
+    "published_manual matches_may_be_replayed_descriptively": true,
+    "new_manual_meaning_selection_can_change_primary_statistics": false,
+    "tablet_context_can_change_primary_statistics": false,
+    "output_class": "DESCRIPTIVE_CONTEXT_ONLY"
+  },
+  "contamination_firewall": {
+    "published_selected_matches_seen_before_execution": true,
+    "JANUS_blind_discovery_credit": false,
+    "select_normalization_by_best_language_forbidden": true,
+    "drop_languages_after_results_forbidden": true,
+    "tune_nulls_to_make_published_claims_pass_or_fail_forbidden": true,
+    "promote_manually_filtered_subset_to_primary_test_forbidden": true
+  },
+  "allowed_result_statuses": [
+    "BLOCKED_MISSING_PAPER_EXACT_INPUT_RECEIPTS_AND_NORMALIZATION_CONTRACT",
+    "BLOCKED_NORMALIZATION_CONTRACT_NOT_ADMITTED",
+    "UPSTREAM_RAW_MATCH_REPRODUCTION_MISMATCH",
+    "EXECUTED_NO_EXCESS",
+    "EXECUTED_DISCORDANT_NULLS",
+    "EXECUTED_TECHNICAL_OVERLAP_EXCESS_SIGNAL"
+  ],
+  "claim_ceiling": {
+    "corrected_method_frozen": true,
+    "rejected_v0_1_preserved": true,
+    "execution_performed": false,
+    "paper_raw_matches_reproduced": false,
+    "language_family_relationship_established": false,
+    "R3B_effect": "NONE",
+    "new_anchor": false,
+    "decipherment": false
+  }
+}

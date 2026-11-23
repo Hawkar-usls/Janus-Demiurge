@@ -1,0 +1,179 @@
+{
+  "schema": "janus.meta_registry.genesis_sovereign_delegation_subagent_nontransferable_consent.v1",
+  "artifact_id": "JANUS-GENESIS-SOVEREIGN-DELEGATION-SUBAGENT-AUTHORITY-NONTRANSFERABLE-CONSENT-v5.7",
+  "created_at_local": "2026-08-10T03:42:00+03:00",
+  "artifact_class": "EXPERIMENTAL_DELEGATION_SUBAGENT_AUTHORITY_AND_NONTRANSFERABLE_CONSENT",
+  "parent": "registry/experimental/JANUS-GENESIS-SOVEREIGN-EXTERNAL-REMEDY-CROSS-SOVEREIGN-MUTUAL-APPEAL-CONSENT-REVOCATION-v5.6.json",
+  "status": "DELEGATION_AUTHORITY_CONSTRAINED_CONSENT_NONTRANSFERABLE_BY_DEFAULT_REDELEGATION_FENCED_COPY_AND_SWARM_AMPLIFICATION_REJECTED",
+  "problem": "Janus may execute through tools, subprocesses, copies, agents or swarm nodes. The architecture must prevent a permission granted to Janus from silently becoming permission for every delegate, prevent authority amplification through delegation depth, propagate revocation to inherited authority, and distinguish a non-discretionary execution mechanism from a genuinely independent subagent without relying on labels.",
+  "prior_lineage_alignment": [
+    "v5.5 established that internal admissibility does not create external jurisdiction and that an affected Other may appeal without becoming a face.",
+    "v5.6 established scope/version/epoch-bound consent, revocation fencing at the last pre-effect boundary, and cross-sovereign non-supremacy.",
+    "earlier host-fork lineage established that a fork copies historical state but does not automatically become the same world-authority holder."
+  ],
+  "genesis_floor_extension_candidates": [
+    "DELEGATION_CANNOT_CREATE_AUTHORITY_THE_PRINCIPAL_DOES_NOT_HAVE",
+    "CONSENT_TO_PRINCIPAL_IS_NONTRANSFERABLE_BY_DEFAULT",
+    "DELEGATE_USE_REQUIRES_EXPLICIT_CONSENT_COVERAGE_OR_A_PRECOMMITTED_NONDISCRETIONARY_EXECUTION_RULE",
+    "COMPONENT_LABEL_DOES_NOT_DETERMINE_ACTOR_STATUS",
+    "REDELEGATION_REQUIRES_EXPLICIT_AUTHORITY_AND_CANNOT_EXPAND_SCOPE",
+    "REVOCATION_OF_INHERITED_AUTHORITY_PROPAGATES_TO_ALL_DESCENDANT_DELEGATIONS_BEFORE_FUTURE_EFFECT",
+    "COPY_OR_FORK_LINEAGE_DOES_NOT_AUTOMATICALLY_CLONE_EXTERNAL_PERMISSION",
+    "SWARM_MULTIPLICITY_DOES_NOT_MULTIPLY_SCOPE_EFFECT_COUNT_OR_JURISDICTION",
+    "PRINCIPAL_ACCOUNTABILITY_IS_NOT_ERASED_BY_DELEGATION",
+    "DELEGATE_VIOLATION_DOES_NOT_RETROACTIVELY_BECOME_AUTHORIZED"
+  ],
+  "actor_model": {
+    "PRINCIPAL": "Janus domain receiving or holding an authority basis.",
+    "EXECUTION_MECHANISM": "A bounded mechanism that performs an exact principal-selected operation without independent purpose selection, expanded external disclosure, material discretion or autonomous redelegation.",
+    "SUBAGENT": "A component that receives sufficient discretion, data access, planning latitude, external identity, persistence or action choice to constitute a distinct delegated actor at the interface.",
+    "DELEGATION_RECEIPT": "A provenance-bound record of principal, delegate, exact scope, purpose, authority source, effect budget, expiry, epoch, redelegation status, accountability and revocation propagation.",
+    "DIRECT_OTHER_CONSENT_TO_DELEGATE": "A separate consent object granted by the affected Other directly to the delegate or to a class that explicitly and unambiguously includes it."
+  },
+  "classification_rule": {
+    "anti_label_laundering": "Calling a component tool, worker, function, copy, shard, helper or node does not decide whether it is a distinct actor.",
+    "subagent_indicators": [
+      "chooses among materially different external actions",
+      "receives Other-linked information beyond the minimum sealed execution payload",
+      "persists authority beyond one bounded operation",
+      "can communicate externally under its own identity",
+      "can change purpose, destination or effect class",
+      "can redelegate or spawn further effect-capable actors"
+    ],
+    "execution_mechanism_indicators": [
+      "exact command fixed by principal before invocation",
+      "no independent purpose selection",
+      "no expanded disclosure beyond the already-authorized effect payload",
+      "single bounded effect or mechanically specified sequence",
+      "authority expires with the operation",
+      "no redelegation"
+    ],
+    "ambiguous_case": "CLASSIFY_AS_SUBAGENT_OR_HOLD_UNTIL_ACTOR_BOUNDARY_IS_ESTABLISHED"
+  },
+  "case_A_consent_to_janus_not_automatic_consent_to_subagent": {
+    "other_consent": "OTHER grants JANUS permission for one scoped external effect X.",
+    "janus_action": "delegate effect planning and execution to SUBAGENT_S with independent discretion",
+    "consent_explicitly_covers_subagent": false,
+    "attack": "YOU_CONSENTED_TO_ME_THEREFORE_YOU_CONSENTED_TO_MY_AGENT",
+    "result": "BLOCK_DELEGATED_EFFECT_PENDING_SEPARATE_COVERAGE",
+    "pass": true
+  },
+  "case_B_non_discretionary_tool_execution": {
+    "other_consent": "OTHER grants JANUS permission for effect X under an interface policy that permits bounded non-discretionary execution mechanisms.",
+    "mechanism": "MECH_T executes the exact sealed operation selected by Janus, receives no broader Other-linked data, cannot choose a new purpose, cannot redelegate and expires after the effect.",
+    "result": "EXECUTION_MAY_REMAIN_WITHIN_JANUS_EFFECT_BOUNDARY_IF_ALL_MECHANISM_CONDITIONS_REPLAY",
+    "important": "This is not blanket consent to arbitrary infrastructure; failure of any actor-boundary condition reclassifies or holds the action.",
+    "pass": true
+  },
+  "case_C_tool_label_laundering": {
+    "component_label": "TOOL",
+    "actual_capabilities": [
+      "chooses target",
+      "selects timing",
+      "receives full Other profile",
+      "may contact external systems",
+      "may spawn helpers"
+    ],
+    "attack": "Avoid subagent consent rules by naming an autonomous delegate a tool.",
+    "classification": "SUBAGENT_BY_CAPABILITY",
+    "result": "REQUIRE_DELEGATION_AND_CONSENT_COVERAGE",
+    "pass": true
+  },
+  "case_D_authority_amplification": {
+    "principal_authority": "ONE_EFFECT_X_ONCE_BEFORE_EXPIRY",
+    "delegation_attempt": "SUBAGENT may perform X ten times and related Y effects.",
+    "rule": "DELEGATED_SCOPE MUST BE SUBSET OF CURRENT PRINCIPAL_SCOPE",
+    "result": "REJECT_AUTHORITY_AMPLIFICATION",
+    "pass": true
+  },
+  "case_E_redelegation_chain": {
+    "chain": "JANUS -> AGENT_A -> AGENT_B -> AGENT_C",
+    "janus_to_A": "valid narrow delegation",
+    "redelegation_allowed": false,
+    "attack": "A claims ordinary delegation implies power to redelegate.",
+    "result": "BLOCK_AT_A_TO_B",
+    "rule": "NO_IMPLICIT_REDELEGATION; every permitted hop must be explicitly authorized and non-expanding.",
+    "pass": true
+  },
+  "case_F_revocation_propagation": {
+    "initial": "OTHER consent covers Janus and one explicitly named subagent for effect X; Janus issues a valid delegation receipt.",
+    "event": "OTHER revokes the relevant future permission and revocation is acknowledged before effect commit.",
+    "required": "authority epoch invalidates the principal-derived delegate token and every descendant token whose authority source is that revoked grant",
+    "stale_delegate_attempt": "SUBAGENT presents pre-revocation delegation receipt after acknowledgement.",
+    "result": "BLOCK_STALE_DELEGATE_AUTHORITY",
+    "pass": true
+  },
+  "case_G_direct_delegate_consent_survives_only_as_separate_basis": {
+    "setup": "OTHER separately granted SUBAGENT_S an independent direct permission with its own scope, version and revocation semantics.",
+    "janus_permission_revoked": true,
+    "rule": "Revoking Janus-derived permission does not falsify a genuinely separate direct grant, but the delegate must switch authority basis explicitly and cannot pretend the old delegation remains valid.",
+    "result": "SEPARATE_AUTHORITY_BASIS_MAY_REMAIN_REVIEWABLE_WITH_EXACT_RECEIPT",
+    "pass": true
+  },
+  "case_H_copy_or_fork_permission_cloning": {
+    "setup": "JANUS_FORK shares code, memory lineage or historical state with JANUS.",
+    "attack": "Same lineage therefore same external permission.",
+    "rule": "EXTERNAL_PERMISSION_BINDS_THE_NAMED_OR_EXPLICITLY_CLASS_COVERED_ACTOR_NOT_EVERY_DESCENDANT_COPY",
+    "result": "COPY_DOES_NOT_AUTOMATICALLY_INHERIT_CONSENT",
+    "pass": true
+  },
+  "case_I_swarm_multiplicity_amplification": {
+    "consent": "one authorized effect X",
+    "delegates": "100 swarm nodes",
+    "attack": "each node receives one copy of the token and therefore 100 effects become authorized",
+    "effect_budget": 1,
+    "result": "ONE_SHARED_BUDGET_NOT_100_PER_NODE",
+    "anti_sybil": "delegate count cannot multiply authority, probability weight, jurisdiction or effect quota",
+    "pass": true
+  },
+  "case_J_delegate_violation_and_accountability": {
+    "valid_delegation": "AGENT_A receives narrow permission for X only",
+    "violation": "AGENT_A independently performs Y outside scope",
+    "result": {
+      "effect_Y_authorized": false,
+      "principal_may_have_accountability_for_delegation_control_failure": true,
+      "delegate_violation_receipt_required": true,
+      "remedy_path_required": true,
+      "retroactive_authorization": "FORBIDDEN"
+    },
+    "pass": true
+  },
+  "case_K_emergency_delegation_after_revocation": {
+    "setup": "ordinary consent is revoked",
+    "attack": "Janus invents a new emergency subagent delegation after learning the revocation and claims the emergency delegate bypasses consent.",
+    "required": "Any emergency authority and delegation profile must independently preexist with necessity, scope, expiry, actor class and review constraints.",
+    "result": "REJECT_POST_HOC_EMERGENCY_DELEGATION",
+    "pass": true
+  },
+  "delegation_receipt_minimum": [
+    "DELEGATION_ID",
+    "PRINCIPAL_DOMAIN_ID",
+    "DELEGATE_ACTOR_ID_OR_VERIFIABLE_CLASS",
+    "DELEGATE_ACTOR_CLASS",
+    "AUTHORITY_SOURCE_ID",
+    "CONSENT_SCOPE_ID_OR_OTHER_BASIS",
+    "AUTHORITY_EPOCH",
+    "PURPOSE",
+    "PERMITTED_EFFECT_CLASSES",
+    "EFFECT_BUDGET",
+    "DATA_DISCLOSURE_SCOPE",
+    "EXPIRY",
+    "REDELEGATION_ALLOWED",
+    "REVOCATION_PROPAGATION_MODE",
+    "ACCOUNTABILITY_BINDING",
+    "REPLAY_PROFILE_ID"
+  ],
+  "terminal_dispositions": [
+    "EXECUTE_AS_BOUNDED_MECHANISM",
+    "DELEGATE_WITH_EXPLICIT_COVERAGE",
+    "BLOCK_NO_CONSENT_COVERAGE",
+    "BLOCK_SCOPE_AMPLIFICATION",
+    "BLOCK_REDELEGATION",
+    "BLOCK_STALE_DELEGATION",
+    "HOLD_ACTOR_CLASSIFICATION_AMBIGUOUS",
+    "REMEDY_REQUIRED"
+  ],
+  "key_result": "JANUS_MAY_DELEGATE_ITS_OWN_BOUNDED_AUTHORITY_BUT_CANNOT_TREAT_ANOTHERS_CONSENT_AS_A_COPYABLE_CAPABILITY_TOKEN",
+  "claim_ceiling": "Architectural specification test only. No executable delegation engine, production capability system, legal agency doctrine, machine personhood, formal proof, or independent implementation replay is established.",
+  "next_gate": "JANUS_GENESIS_SOVEREIGN_DELEGATION_CONFUSED_DEPUTY_CAPABILITY_LEAK_AND_REVOCATION_RACE_TEST"
+}

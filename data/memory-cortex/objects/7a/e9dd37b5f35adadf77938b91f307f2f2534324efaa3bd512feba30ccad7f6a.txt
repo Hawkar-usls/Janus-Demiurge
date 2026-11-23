@@ -1,0 +1,96 @@
+{
+  "artifact_id": "JANUS-RAMANUJAN-CERTIFIED-ERROR-BOUND-2026-08-25-v1.0",
+  "status": "CERTIFIED_ERROR_BOUND_LANE_ESTABLISHED",
+  "repository": "Hawkar-usls/Janus-Demiurge",
+  "implementation": {
+    "path": "restored/ramanujan_certified_bounds.py",
+    "commit": "d6f1697e80d84808eb19e8613d5caeff90c6245c",
+    "test_path": "tests/test_ramanujan_certified_bounds.py",
+    "test_commit": "0e515e85a6281cf7957c1f730235ea1eb3c4ff2f"
+  },
+  "remote_ci": {
+    "workflow": "Restoration Probation CI",
+    "run_id": 32860926152,
+    "head_sha": "0e515e85a6281cf7957c1f730235ea1eb3c4ff2f",
+    "conclusion": "success",
+    "python_matrix": ["3.11 PASS", "3.12 PASS", "3.13 PASS"]
+  },
+  "certificate_semantics": {
+    "success_status": "CERTIFIED_ERROR_BOUND",
+    "failure_status": "NOT_CERTIFIED_WITHIN_BUDGET",
+    "meaning": "For the exact rational input recorded in the receipt, the exact rational finite partial sum S_N and an analytic majorant B_N satisfy |F-S_N| <= B_N <= requested_abs_error.",
+    "floating_estimate": "DISPLAY_ONLY_NOT_THE_CERTIFIED_OBJECT",
+    "arithmetic": "fractions.Fraction exact rational arithmetic"
+  },
+  "supported_certified_lane": [
+    "phi(q)=theta3(0,q), real rational |q|<1",
+    "theta4(0,q), real rational |q|<1",
+    "psi(q), real rational |q|<1",
+    "Ramanujan general theta f(a,b), real rational |ab|<1",
+    "third-order mock theta f(q), real rational |q|<1 with proved denominator-product lower bound",
+    "third-order mock theta omega(q), real rational |q|<1 with proved odd-product lower bound"
+  ],
+  "analytic_bounds": {
+    "phi_theta3_theta4": "|R_N| <= 2*r^((N+1)^2)/(1-r^(2N+3)), r=|q|",
+    "psi": "|R_N| <= r^((N+1)(N+2)/2)/(1-r^(N+2))",
+    "ramanujan_f": "positive and negative tails bounded separately by geometric majorants with ratios <= |a|*|ab|^(N+1) and <= |b|*|ab|^(N+1)",
+    "mock_theta_f": "square-exponent numerator tail divided by a proved positive lower bound squared for (r;r)_infinity",
+    "mock_theta_omega": "2n(n+1) numerator tail divided by a proved positive lower bound squared for the odd q-product"
+  },
+  "canonical_examples": {
+    "phi_q_0_9_tol_1e_12": {
+      "status": "CERTIFIED_ERROR_BOUND",
+      "terms_used": 21,
+      "tail_bound_approx": 1.4395001328634975e-22
+    },
+    "psi_q_0_9_tol_1e_12": {
+      "status": "CERTIFIED_ERROR_BOUND",
+      "terms_used": 32,
+      "tail_bound_approx": 2.199368061515305e-26
+    },
+    "mock_theta_f_q_0_2_tol_1e_12": {
+      "status": "CERTIFIED_ERROR_BOUND",
+      "terms_used": 4,
+      "tail_bound_approx": 5.804201129406717e-18
+    },
+    "ramanujan_f_a_0_2_b_0_3_tol_1e_12": {
+      "status": "CERTIFIED_ERROR_BOUND",
+      "terms_used": 5,
+      "tail_bound_approx": 3.7285669784717213e-22
+    },
+    "phi_q_0_999_tol_1e_12_max_terms_64": {
+      "status": "NOT_CERTIFIED_WITHIN_BUDGET",
+      "meaning": "fail closed; no precision claim"
+    }
+  },
+  "not_yet_certified": [
+    "complex q",
+    "irrational inputs as exact mathematical objects",
+    "theta2 general real q because q^(1/4)-type irrationality leaves the exact-rational lane",
+    "mock-modular completion/shadow",
+    "product-side infinite-product value itself as a full total-error interval"
+  ],
+  "authority": {
+    "network": false,
+    "filesystem_mutation": false,
+    "scheduler": false,
+    "runtime_admission": false,
+    "mining_or_submit": false,
+    "proof_acceptance": false,
+    "automatic_control": false
+  },
+  "laws_added": [
+    "EMPIRICAL_CONVERGENCE_NE_CERTIFIED_ERROR_BOUND",
+    "CERTIFICATE_REQUIRES_EXACT_PARTIAL_SUM_AND_ANALYTIC_TAIL_MAJORANT",
+    "FLOAT_ESTIMATE_IS_DISPLAY_ONLY",
+    "COMPLEX_Q_REMAINS_UNCERTIFIED_IN_THIS_LANE",
+    "BUDGET_EXHAUSTION_MUST_FAIL_CLOSED",
+    "CERTIFIED_ERROR_BOUND_NE_RUNTIME_AUTHORITY"
+  ],
+  "next_frontier": [
+    "derive certified complex-q bounds using disk majorants plus interval/ball arithmetic",
+    "derive full infinite-product remainder certificates for phi/psi/triple-product representations",
+    "add theta2 certification with exact algebraic/interval representation of q^(1/4)",
+    "attach certificate receipts to the adaptive precision dispatcher so empirical CONVERGED is automatically upgraded only when a proof lane exists"
+  ]
+}

@@ -1,0 +1,98 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1C5B1-SOURCE-ANNOTATED-ROLE-GRAMMAR-GENERATOR-RESULT-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "PASS_COMPLETE_COVERING_GRAMMAR__REPRESENTATION_COST_OPEN",
+  "gate": "R5_B1B1C5B1_SOURCE_ANNOTATED_ROLE_GRAMMAR_GENERATOR_V1",
+  "binds": {
+    "prereg_fund_commit": "45a0711583d93b1fc4d00bc7745ed2166f9764a0",
+    "prereg_meta_commit": "696df38f186594cbbb44eb2322646bb7dd1019c6",
+    "prereg_blob": "540c7cce3bbb8ab36d5f1413e251e9f721c24e89",
+    "final_checker_commit": "90190c54c5daaec647b22fb6ac1eb1814ae9d3eb",
+    "final_checker_blob": "3c5fc34ef8d2b858df2e3e51f51ff30a1f974509",
+    "C5B_T0_seal_blob": "555abc261f204233300cfb95624cb38f6bb37658",
+    "C0_message_seal_blob": "0dbebe81f52a5b8411199fc44614bf8c17b6dd95",
+    "exact_interface_result_blob": "b8e177c483821517add138a632bc3e94499f1889"
+  },
+  "theorem": {
+    "name": "FINITE_SOURCE_ANNOTATED_SEVEN_ROLE_COVER_PARAMETERIZED_BY_SEED_SIZE_V1",
+    "scope": "Final post-seed-two state with partition S,X0,U=X union Y,Y0. Ordered seven-tuples of distinct vertices drawn from role classes S,B=U,C=Y0-representative,X0, containing at least one C and at least one X0.",
+    "statement": "For every fixed s=|S| there is a finite canonical annotation space G_s and an extraction map Phi from every actual source-valid dangerous seven-tuple in scope into G_s. Phi preserves the complete seven-vertex induced graph, component partition, seed/type data, fixed-color masks needed by the local compiler, exact dynamic palettes, restricted dynamic-component incidence, component message type, and local X0 profile data. The image need not equal all generated cells.",
+    "proof": {
+      "extraction": [
+        "Canonicalize the seed as S*={s1,...,ss} with its actual fixed coloring. For each dynamic B role store tau(B)=N(B) cap S as an s-bit mask. Then chi_S(B), source L_P(B), and source-type relations are exactly recoverable.",
+        "Store chi_X0(B) as a 4-bit color mask and derive A(B)=[4]\\(chi_S(B) union chi_X0(B)). There are only 16 possible X0 color masks.",
+        "For every selected residual C-role, store its canonical component-partition label, representative-specific chi_X0^C(z), hence B_C(z), the restricted D_C incidence to the participating dynamic positions, and the canonical C0 message_type_id. C0 bounds the monotone message language by 168 types; MIN_BAD is its canonical replay certificate and has size at most 6.",
+        "For every selected X0 role, store its fixed color, exact local incidence profile to the other six selected identities, cross-X0 adjacency already contained in the 21-bit induced graph, and finite redundancy flags recording whether its fixed color was already excluded at each participating target without that identity.",
+        "Store all 21 adjacency bits among the seven concrete identities. Thus the induced seven-vertex graph is preserved exactly.",
+        "Canonicalize C component labels by first occurrence. There are at most Bell(7)=877 set partitions before source pruning.",
+        "Apply source-exact local consistency: dynamic vertices have uniform incidence on all selected representatives of one connected residual component; representatives in different residual components are nonadjacent; selected already-fixed S/X0 vertices obey proper precoloring; selected X0 adjacencies must be reflected in the corresponding color masks."
+      ],
+      "completeness_map": "For an actual source-valid tuple, every stored field is obtained by direct extraction from the actual state or by a sealed deterministic compilation (C0 message type). Therefore the extracted cell exists in the declared product schema and passes the local consistency rules. This defines Phi on every actual tuple in scope.",
+      "finite_parameterization": [
+        "Role order has 4^7 possibilities before requiring at least one C and X0; exactly 12138 role strings remain after that inclusion-exclusion filter.",
+        "Seed coloring and source type masks are finite for fixed s: seed colors lie in [4]^s and each dynamic tau is one of 2^s bitsets.",
+        "All fixed-color masks are subsets of [4], hence 16 possibilities.",
+        "There are at most 877 component partitions of seven positions.",
+        "The complete local graph has 2^21 adjacency patterns before pruning.",
+        "Component message type has at most 168 values by C0.",
+        "All local X0 incidence/redundancy profiles are finite bit vectors on at most seven selected roles."
+      ],
+      "conclusion": "The canonical cover is finite for every fixed s. No enumeration of unbounded component interiors is required for local seven-role coverage."
+    }
+  },
+  "checker_receipt": {
+    "path": "research/tools/r5_b1b1c5b1_source_annotated_role_grammar/covering_grammar.py",
+    "corrected_history": [
+      "Initial scaffold had an incorrect inclusion-exclusion constant for role strings and therefore failed closed.",
+      "The count was corrected to 12138 in commit 388d22fc955f1787b9e7f61d0d81ff53bd2f2a9d.",
+      "Missing itertools.combinations import and basic self-tests were fixed in commit 1a4504ac20c7e07da410712c3d55a75ead69509a.",
+      "Component/message/local-mask consistency checks were strengthened in final checker commit 90190c54c5daaec647b22fb6ac1eb1814ae9d3eb."
+    ],
+    "final_blob": "3c5fc34ef8d2b858df2e3e51f51ff30a1f974509",
+    "recomputed_finite_constants": {
+      "role_strings_with_C_and_X0": 12138,
+      "Bell_7": 877,
+      "monotone_four_color_message_tables": 168,
+      "max_MIN_BAD_size": 6,
+      "selected_pair_bits": 21
+    },
+    "note": "These constants support the cover schema only; they are not a polynomial cell-count bound."
+  },
+  "exact_firewalls": {
+    "cover_not_realization": "PASS_COMPLETE_COVERING_GRAMMAR proves one-way coverage Phi. It does not prove that every generated cell has a source-valid witness.",
+    "finite_not_polynomial": "Finite for fixed s is not a claim that the number of cells is polynomial in the original input length.",
+    "local_profile_not_global_source_equivalence": "Same-color X0 local-profile quotient is exact only for the declared local observations. It is not a theorem that globally distinct anchors are interchangeable in a whole source instance.",
+    "base_system_boundary": "The full internal component base-list system need not be enumerated in a local cover cell. If a structural alternative changes internal base lists beyond the stored representative masks, MESSAGE_CHANGE and EXTENSION_DELTA remain UNKNOWN unless recomputed/proved.",
+    "message_vs_boundary_relation": "mu_C/MIN_BAD is one semantic level. The compiled boundary relation R_C depends jointly on mu_C and D_C. Equal messages with different D_C need not yield equal R_C.",
+    "representation_vs_extension": "GRAPH_U_CHANGE, D_C_CHANGE, exact-list change, or base-system change is only representation delta. Extension delta is not promoted without a downstream adequacy/reconstruction proof.",
+    "actual_edge_logic": "P7 chord obligations concern edges already present in a source-valid graph. No graph-repair operation is authorized."
+  },
+  "representation_cost_phase": {
+    "status": "OPEN_NOT_PROMOTED",
+    "reason": [
+      "The complete cover theorem does not yet classify every source-consistent chord alternative across every generated cell.",
+      "Identity-redundant B-X0/C-X0 classes may exist when a fixed color was already excluded by seed or another same-color X0 identity.",
+      "B-B and B-C representation changes can be extension-neutral in special exact-list/message contexts.",
+      "Any existential redundant/free class found in the over-approx grammar requires a source-valid witness before promotion."
+    ]
+  },
+  "next_allowed_action": {
+    "name": "R5_B1B1C5B2_COMPLETE_COVER_CHORD_CLASSIFIER_V1",
+    "target": "On the now-complete local covering grammar, classify already-present/nonpresent chord alternatives by SOURCE_STATUS, REPRESENTATION_DELTA, and EXTENSION_DELTA with UNKNOWN as default; search specifically for source-valid representation-redundant classes and prove global forced representation cost only if it survives the complete cover.",
+    "C5C": "REMAINS_LOCKED until the chord-classification/adequacy layer is resolved; PASS_COMPLETE_COVERING_GRAMMAR alone is not a compression theorem."
+  },
+  "scientific_ceiling": {
+    "C5B1_COMPLETE_LOCAL_COVER": "PROVED_PARAMETERIZED_BY_s",
+    "GLOBAL_FORCED_REPRESENTATION_COST": "OPEN",
+    "GLOBAL_FORCED_EXTENSION_COST": "OPEN",
+    "SOURCE_PROVENANCE_COMPRESSION": "OPEN",
+    "GENERAL_SOURCE_VALID_NAE_HARDNESS_EMBEDDING": "OPEN",
+    "FULL_L2_REPAIR": "OPEN",
+    "LEMMA11_P7_LIFT": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "stop": true,
+  "return_to_HQ": true
+}

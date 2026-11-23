@@ -1,0 +1,90 @@
+{
+  "schema": "janus.meta_registry.simptomat_diagnostic_reasoning_architecture.v1",
+  "artifact_id": "SIMPTOMAT-ADAPTIVE-DIAGNOSTIC-REASONING-ARCHITECTURE-2026-08-26-v1.0",
+  "created_at_local": "2026-08-26T16:58:00+03:00",
+  "timezone": "Europe/Zaporozhye",
+  "registry_class": "experimental_health_information_adaptive_differential_diagnostic_reasoning_architecture",
+  "source_repository": "Hawkar-usls/Simptomat",
+  "source_core_contract": "protocols/SIMPTOMAT_DIAGNOSTIC_REASONING_CORE-v1.0.json",
+  "status": "ACTIVE_PROTOTYPE_ARCHITECTURE",
+  "purpose": "Record the clarified Simptomat design: adaptive symptom screening and differential-diagnostic reasoning occur in the same loop, while consented case accumulation forms a separate calibration/provenance loop.",
+  "canonical_loop": [
+    "SCREEN",
+    "DIFFERENTIATE",
+    "HYPOTHESIZE",
+    "TEST",
+    "LEARN"
+  ],
+  "capabilities": {
+    "adaptive_questioning": true,
+    "differential_diagnosis_reasoning": true,
+    "ranked_disease_hypotheses": true,
+    "support_contradiction_uncertainty_tracking": true,
+    "next_best_question_selection": true,
+    "next_confirmation_step_suggestion": true,
+    "consented_case_calibration": true,
+    "clinically_validated_diagnosis": false,
+    "calibrated_clinical_probabilities": false
+  },
+  "reasoning_contract": {
+    "initial_state": "Maintain a broad admissible set of disease/syndrome hypotheses.",
+    "update": "Each answer may support, weaken, contradict, or leave unresolved one or more candidates.",
+    "question_policy": "Prefer questions with high discriminatory value among live candidates, except when urgent safety screening should override information gain.",
+    "ranking": "Rank candidates using evidence states unless separately validated calibration supports numeric clinical probabilities.",
+    "falsification": "Favored hypotheses must be exposed to questions or measurements that could weaken them.",
+    "measurement_handoff": "When conversation is insufficient, identify an external examination/test/measurement capable of discriminating candidates."
+  },
+  "candidate_states": [
+    "SUPPORTED",
+    "COMPATIBLE",
+    "WEAKLY_COMPATIBLE",
+    "CONTRADICTED",
+    "INSUFFICIENT_DATA",
+    "ESCALATE_FOR_REAL_WORLD_EVALUATION"
+  ],
+  "epistemic_constitution": "registry/epistemic/JANUS-GLOBAL-EPISTEMIC-SELF-DECEPTION-TRUTH-CONSTITUTION-v1.0.json",
+  "epistemic_laws": [
+    "DIAGNOSTIC_HYPOTHESIS != CLINICALLY_CONFIRMED_DIAGNOSIS",
+    "RANKING != CERTAINTY",
+    "MODEL_SCORE != CLINICAL_PROBABILITY_UNLESS_CALIBRATED",
+    "SELF_REPORT != CLINICAL_MEASUREMENT",
+    "SUGGESTED_TEST != MEDICAL_ORDER",
+    "PATTERN_NOT_DETECTED != DISEASE_PROVEN_ABSENT",
+    "REPEATED_CASES != CLINICAL_VALIDATION",
+    "REGISTRY_PRESENCE != MEDICAL_TRUTH"
+  ],
+  "authority_ceiling": {
+    "may_form_diagnostic_hypotheses": true,
+    "may_rank_disease_candidates": true,
+    "may_suggest_confirmation_steps": true,
+    "clinical_diagnostic_authority": false,
+    "treatment_authority": false,
+    "emergency_triage_substitute": false,
+    "external_effect_default": "DENY"
+  },
+  "calibration_loop": {
+    "case_storage_requires_explicit_consent": true,
+    "public_case_default": "PSEUDONYMIZED_AND_MINIMIZED",
+    "self_report_cases_may_improve": [
+      "question wording",
+      "branching logic",
+      "candidate discrimination",
+      "ranking behavior",
+      "uncertainty handling",
+      "next-measurement selection"
+    ],
+    "performance_metrics_blocked_until": [
+      "frozen protocol/model",
+      "independent reference-standard labels",
+      "development/holdout separation",
+      "predefined endpoints",
+      "appropriate statistical and clinical review"
+    ]
+  },
+  "founding_case_relationship": {
+    "case": "SIM-P0001-2026-08-26-PRION",
+    "source_path": "Hawkar-usls/Simptomat/cases/consented/SIM-P0001-2026-08-26-PRION.json",
+    "founding_protocol": "PRION_SYMPTOMATIC_PATTERN_SCREEN-v1.0",
+    "preservation_rule": "The frozen founding protocol and founding case are not retroactively rewritten. The diagnostic-reasoning core clarifies project-wide semantics for current and future use."
+  }
+}

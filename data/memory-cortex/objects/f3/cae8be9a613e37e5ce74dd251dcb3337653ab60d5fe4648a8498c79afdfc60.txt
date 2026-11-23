@@ -1,0 +1,93 @@
+{
+  "schema": "janus.meta.nexus_voice_runtime_gate.v1",
+  "artifact_id": "JANUS-NEXUS-V2-7-LOCAL-NEURAL-VOICE-RUNTIME-2026-08-19-v1.0",
+  "recorded_at_local": "2026-08-19T16:31:00+03:00",
+  "status": "IMPLEMENTED_CANDIDATE_PENDING_EXACT_HEAD_CI_AND_LOCAL_MODEL_RENDER",
+  "contract": "NEXUS_V2_7_LOCAL_NEURAL_VOICE_RUNTIME_FROZEN_CONTRACT",
+  "repositories": {
+    "demihead": {
+      "repository": "Hawkar-usls/Demi_Head",
+      "observed_head": "fb6ec6de9d40caee94d85e2b761e35a442c72144",
+      "contract": "contracts/NEXUS_V2_7_LOCAL_NEURAL_VOICE_RUNTIME_FROZEN_CONTRACT.json",
+      "handler": "tools/nexus_voice_handler.py",
+      "endpoint": "configs/nexus_voice_runtime.endpoint.json",
+      "tests": "tests/test_nexus_voice_handler.py",
+      "runbook": "docs/NEXUS_VOICE_RUNTIME_V2_7.md"
+    },
+    "voice": {
+      "repository": "Hawkar-usls/The-Voice-of-Janus",
+      "observed_head": "4ac7fefb9be7183689e59a257c0f4280dcdf82c9",
+      "adapter": "src/nexus_voice_runtime_adapter.py",
+      "runner": "src/semantic_recitation_v4.py",
+      "runner_blob_sha": "85b30261ee7a071655ac6c42cfbb85fc4ae5eed4",
+      "config": "configs/osiris_origin_prime_recitation.v4_neural_human.json",
+      "config_blob_sha": "8d18ed86e65e036200f7afa14d62b27fe7c4a0a4",
+      "activation_blob_sha": "70016b9b1ad0ce2b20efd980f14859d66af0a7bd",
+      "tests": "tests/test_nexus_voice_runtime_adapter.py"
+    },
+    "habitat": {
+      "repository": "Hawkar-usls/Janus_Genesis",
+      "branch": "janus/habitat",
+      "observed_head": "d22d99db23c1ee4cc2dd5c1d5a29aead2887dfa6",
+      "gate": "habitat/state/NEXUS_VOICE_RUNTIME_GATE_v2.7.json",
+      "voice_edge": "habitat/state/VOICE_OF_JANUS_EDGE.json",
+      "physical_edge": "habitat/state/ECHO_PYRAMID_PHYSICAL_VOICE_EDGE.json"
+    },
+    "echo_pyramid": {
+      "repository": "Hawkar-usls/Echo-Pyramid",
+      "observed_head": "ab1b11d4354991b85138f3ae62b1e3ddd3951d7b",
+      "runtime_lock": "config/the_voice_of_janus.runtime_lock.json",
+      "role": "PHYSICAL_VOICE_BODY"
+    }
+  },
+  "runtime_route": [
+    "HABITAT_INTENT",
+    "NEXUS_AUTHENTICATED_LOCAL_DISPATCH",
+    "VOICE_RUNTIME_PURE_PREPARE",
+    "EXPLICIT_THE_VOICE_OF_JANUS_EXECUTE",
+    "SILERO_V5_5_RU_HUMAN_LIKE_PCM",
+    "PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3",
+    "WAV_PLUS_RECEIPT",
+    "OPTIONAL_EXPLICIT_ECHO_PYRAMID_OUTPUT"
+  ],
+  "canonical_semantics": {
+    "artifact_id": "OSIRIS-SEMANTIC-TEXT-CORE-FOR-THE-VOICE-OF-JANUS-2026-08-19-v1.1",
+    "field": "semantic_projection_ru",
+    "required_formula": "ORIGIN → EXPERIENCE → RETURN → ORIGIN_PRIME",
+    "semantic_content_preserved": true
+  },
+  "larynx": {
+    "backend": "silero_v5_5_ru",
+    "default_speaker": "aidar",
+    "model_relative_path": "models/v5_5_ru.pt",
+    "model_download_during_render": false,
+    "model_presence_on_target_machine": "NOT_ESTABLISHED"
+  },
+  "language": {
+    "profile": "PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3",
+    "anchor_band_hz": [117.0, 121.0],
+    "source_audio_replaced_by_synthetic_tones": false,
+    "measured_chamber_ir_used": false
+  },
+  "safety": {
+    "nexus_prepare_filesystem_io": false,
+    "nexus_prepare_network_io": false,
+    "nexus_prepare_external_effect": false,
+    "voice_execute_requires_explicit_flag": true,
+    "automatic_playback": false,
+    "automatic_bluetooth": false,
+    "automatic_firmware_flash": false,
+    "physical_output_requires_explicit_authorization": true,
+    "authority_delta": 0,
+    "mass_effect_budget_delta": 0
+  },
+  "verification": {
+    "demihead_workflow_discovers_new_tests": true,
+    "voice_workflow_discovers_new_tests": true,
+    "exact_head_ci_pass_observed": false,
+    "local_neural_wav_receipt_observed": false,
+    "physical_echo_pyramid_playback_observed": false,
+    "note": "Implementation and CI discovery are committed. A PASS must not be asserted until exact-head CI and a local model-backed render receipt are observed."
+  },
+  "next_gate": "EXACT_HEAD_CI_CONFIRMATION_THEN_LOCAL_MODEL_PRESENT_OSIRIS_RENDER_RECEIPT"
+}

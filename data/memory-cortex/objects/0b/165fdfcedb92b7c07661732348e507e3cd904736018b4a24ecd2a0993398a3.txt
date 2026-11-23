@@ -1,0 +1,85 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1C5B2B2-E-CONNECTED-FUTURE-DISTINGUISHABILITY-INDEPENDENT-REPLAY-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "PASS_INDEPENDENT_REPLAY_ZERO_MISMATCHES",
+  "gate": "R5_B1B1C5B2B2_E_CONNECTED_FUTURE_DISTINGUISHABILITY_V1",
+  "binds": {
+    "prereg_blob": "0cfe92b69bc78e540f879c969d6bb1c8d1c023ea",
+    "primary_result_blob": "fc3f76e3c09380eb006d8f1d8179cb15ce9a4a3a",
+    "B2B2_D_theorem_seal_blob": "c3e18ca190ec5b21eefec305d702b58aa867e51b",
+    "checker_blob": "9c8345307bcfa3d9947386f4919f8158818a147d"
+  },
+  "replay_method": "Re-derive K_k future behavior from the static graph, fixed seed and exact palette semantics. Treat the primary carrier theorem as the object under test, not an assumption.",
+  "checks": {
+    "current_profile_palettes": [
+      "Every live l_i sees fixed s4=4 and no forced L neighbor, so A(l_i)={1,2,3}.",
+      "Let m=max(F), m=0 for F empty. r_j sees forced color 1 iff j<=m, hence A(r_j)={2,3} for j<=m and {1,2,3} otherwise."
+    ],
+    "R1": [
+      "If u=l_i, every c in {1,2,3} is extendable by choosing a different uniform color on R.",
+      "If u=r_j and c=2 or 3, color all live L by a different color and all R by c.",
+      "If u=r_j and c=1, palette admissibility implies j>m, so no forced l_h is adjacent to r_j. Set r_j=1, all other R=2 and all live L=3.",
+      "Thus R1(u,c)=1 exactly for c in A(u)."
+    ],
+    "R2_same_side": [
+      "For two live L vertices, assign both the query color and color R uniformly with a different color chosen to avoid fixed L=1 where necessary.",
+      "For two live R vertices, colors 2/3 extend by a uniform opposite-side color; color 1 is palette-admissible only when both indices exceed m, and then no forced L is adjacent to either target. Set targets 1, other R 2 and live L 3.",
+      "Hence every same-side nonedge query with c in both palettes is extendable."
+    ],
+    "R2_cross_nonedge": [
+      "A cross nonedge is l_i-r_j with j>i.",
+      "For c=1, palette admissibility at r_j gives j>m. Set r_j and all live l_h with h<j to 1, all live l_h with h>=j to 3, and all other R to 2.",
+      "For c=2, use color 2 below threshold j and color 1 at/above j on L, with all other R=3.",
+      "For c=3, use color 3 below threshold j and color 1 at/above j on L, with all other R=2.",
+      "Every chain edge has differently colored endpoints. Thus R2 equals nonedge plus palette intersection."
+    ],
+    "behavior_collapse": [
+      "On coordinates live in two D-profiles with the same m, the R1/R2 truth tables coincide.",
+      "If m<m', then R1(r_j,1) for any m<j<=m' separates the profiles.",
+      "Different forced subsets with the same m may remain distinct only through live-domain/reconstruction identity information, which is encoded by an O(k)-bit vector."
+    ],
+    "carrier": [
+      "Every L/R vertex is adjacent to fixed s4=4, so color 4 is globally unavailable on the entire chain core for every future state.",
+      "If z is unfixed, assigning z=4 is always legal relative to R because R can never use 4.",
+      "If z is fixed to 1,2 or 3, its color is merely deleted from every active R list.",
+      "After any fixed assignments, each remaining active L/R list is therefore a subset of common palette {1,2,3}.",
+      "The active L/R graph is an induced subgraph of the original chain graph and hence P7-free.",
+      "Constructive P7-free List-3 exactly decides the remaining extension problem and returns a witness."
+    ],
+    "update_reconstruction": [
+      "A legal future R1/R2 update changes only O(1) fixed-status entries before the sealed B2B1 canonicalizer runs.",
+      "Any canonical deletion is stored by an independent receipt; deleted vertices cannot be future query targets.",
+      "The carrier stores ACTIVE/FIXED/DELETED plus fixed color/receipt pointer per original vertex, so its description is O(k).",
+      "Reconstruction concatenates fixed assignments, the List-3 witness, z=4 when unfixed, and deleted-component receipts."
+    ]
+  },
+  "negative_checks": {
+    "generic_P7_precoloring_solver_used": false,
+    "generic_List4_solver_used": false,
+    "profile_count_used_as_representation_lower_bound": false,
+    "behavioral_class_count_used_as_representation_lower_bound": false,
+    "general_connected_QALL_carrier_claimed": false,
+    "recursive_general_R1_R2_authorized": false
+  },
+  "mismatch_count": 0,
+  "recomputed_terminal": "PASS_POLYNOMIAL_BEHAVIORAL_CARRIER_FOR_KK_NEGATIVE_CONTROL",
+  "promotions": {
+    "KK_R1_PALETTE_IFF": "PASS",
+    "KK_R2_NONEDGE_PALETTE_IFF": "PASS",
+    "KK_CHAIN_PRECOLORING_CARRIER_V1": "PASS_POLYNOMIAL",
+    "KK_STRONG_NEGATIVE": "FALSIFIED",
+    "GENERAL_CONNECTED_QALL_CARRIER": "OPEN"
+  },
+  "scientific_ceiling": {
+    "B2B2_E_KK": "REPLAY_CLEAN_PASS",
+    "GENERAL_CONNECTED_QALL_POLYNOMIAL_CARRIER": "OPEN",
+    "STRONG_CONNECTED_MULTIPLICITY_NEGATIVE": "OPEN",
+    "R1_DECIDABILITY_GENERAL": "OPEN",
+    "R2_DECIDABILITY_GENERAL": "OPEN",
+    "C5C": "LOCKED",
+    "P_VS_NP": "OPEN"
+  },
+  "stop": true,
+  "return_to_HQ": true
+}

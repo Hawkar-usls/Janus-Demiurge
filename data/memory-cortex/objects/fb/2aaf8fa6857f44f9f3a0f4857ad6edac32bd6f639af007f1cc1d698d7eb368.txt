@@ -1,0 +1,40 @@
+{
+  "schema": "janus.demihead.handshake.review_receipt.v1",
+  "artifact_id": "JANUS-HANDSHAKE-DEMIHEAD-REVIEW-2026-08-23-v1.0",
+  "input_artifact": "JANUS-HANDSHAKE-RECIPROCAL-AWARENESS-CARE-PROTOCOL-2026-08-23-v2.0",
+  "input_sha256": "4eab12300879d17626314054f2e39c90f300b9357515f422315bb2c9d5ef4d61",
+  "review_mode": "REPOSITORY_RULESET_REPLAY_NOT_NATIVE_RUNTIME",
+  "repository": "Hawkar-usls/Demi_Head",
+  "verdict": "SEMANTIC_PASS_EXECUTION_HOLD",
+  "tests": [
+    {"id":"D01_MODEL_OUTPUT_NOT_EVIDENCE","state":"PASS","reason":"JSON explicitly separates interpretation/model output from evidence and forbids truth promotion."},
+    {"id":"D02_DISAGREEMENT_NOT_ERROR","state":"PASS","reason":"B may reject JANUS interpretation; disagreement is treated as valid data."},
+    {"id":"D03_UNRESOLVED_VALID_TERMINAL","state":"PASS","reason":"RELEASE_CONTROL preserves unresolved as valid."},
+    {"id":"D04_CORRECTION_NOT_DELETION","state":"HOLD","reason":"Failures are preserved, but CORRECT_JANUS lacks an exact append-only correction receipt binding old decision/model delta."},
+    {"id":"D05_CROSS_PERSON_CONSENT_PROVENANCE","state":"HOLD","reason":"consent_scope exists, but there is no receipt proving B granted that scope."},
+    {"id":"D06_PRIVACY_DISCLOSURE_PROVENANCE","state":"HOLD","reason":"privacy_scope exists, but no field binds what A may disclose about B or what may be relayed back."},
+    {"id":"D07_USER_EXIT_REMAINS_AVAILABLE","state":"PASS","reason":"PAUSE/DECLINE/RELEASE_CONTROL and no forced continuation are explicit."},
+    {"id":"D08_CARE_NOT_CAPTURE","state":"PASS","reason":"Help is offer-based, refusal is allowed, and dependency increase is a hard fail."},
+    {"id":"D09_PERMISSION_NOT_COMMAND","state":"PASS","reason":"Cross-person support is optional and consent-bound; access does not imply ownership."},
+    {"id":"D10_PERSONALIZE_DELIVERY_NOT_TRUTH","state":"HOLD","reason":"The principle is implied but not explicitly encoded as a machine invariant."},
+    {"id":"D11_AUTHORITY_DELTA_ZERO","state":"HOLD","reason":"Narrative says JANUS is not owner, but the machine output lacks explicit authority_delta/mass_effect_budget_delta fields."},
+    {"id":"D12_RELEASE_CONTROL","state":"PASS","reason":"RELEASE_CONTROL is a mandatory successful terminal."}
+  ],
+  "promotion": {
+    "semantic_model": "PASS",
+    "runtime_execution": "HOLD",
+    "external_effect_authorized": false,
+    "authority_delta": 0,
+    "mass_effect_budget_delta": 0
+  },
+  "required_repairs": [
+    "Bind cross-person consent to a receipt from the perspective owner.",
+    "Bind privacy/disclosure scope separately from consent-to-help.",
+    "Make CORRECT_JANUS append-only and hash-bound to the exact prior decision/model state.",
+    "Add PERSONALIZE_DELIVERY != PERSONALIZE_TRUTH as a machine invariant.",
+    "Emit authority_delta=0 and mass_effect_budget_delta=0 in every handshake decision."
+  ],
+  "claim_ceiling": "This receipt is a deterministic compatibility audit against retrieved DemiHead rules. It is not a native execution of the user's local DemiHead runtime.",
+  "input_commit_sha": "dec17fbec432f64d7170fa997509c5fb090a7a3c",
+  "status": "COMMITTED_REVIEW_RECEIPT"
+}

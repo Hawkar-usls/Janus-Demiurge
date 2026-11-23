@@ -1,0 +1,111 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-TRANSCRIPTION-IR-HARDENING-SPEC-2026-08-14-v1.1",
+  "timestamp": "2026-08-14T17:42:00+03:00",
+  "version": "v1.1",
+  "title": "Backward-compatible Linear A transcription IR hardening for cross-surface continuations and unresolved sign-identity conflicts",
+  "observer": "Oleksandr Ahapov / Hawkar + JANUS",
+  "node_type": "transcription_ir_hardening_spec",
+  "status": "FROZEN_BEFORE_IMPLEMENTATION_VALIDATION",
+  "base": {
+    "ir_format": "JANUS-LINEAR-TRANSCRIPTION-IR-v1.0",
+    "core": "research/linear_a/janus_linear_a_transcription_ir_v1_0.py",
+    "base_format_changed": false,
+    "backward_compatibility_rule": "A v1.0 IR that does not declare janus_hardening_v1_1 remains governed solely by v1.0. The v1.1 validator first requires a valid sealed v1.0 IR, then validates only the additive hardening extension."
+  },
+  "external_prior_art_basis": {
+    "logos_corrective_result": "data/JANUS-LINEAR-A-R3C-2A-LOGOS-D6-CORRECTIVE-REPLAY-RESULT-2026-08-14-v0.1.json",
+    "logos_parent_result": "data/JANUS-LINEAR-A-R3C-2-LOGOS-DEFECT-CONFORMANCE-RESULT-2026-08-14-v0.1.1.json",
+    "D5": {
+      "confirmed_seeded_cases": 4,
+      "generic_failure_mode": "A source-native word or sequence may be split by a physical/surface boundary and must be representable as a continuation relation without destructively merging the original source groups."
+    },
+    "D6": {
+      "confirmed_seeded_documents_after_corrective_predicate": 3,
+      "generic_failure_mode": "A source label and encoded glyph/sign identity may conflict. The label must not silently overwrite glyph identity or acquire semantic authority merely because it appears in a transliteration field."
+    },
+    "JANUS_blind_discovery_credit": false
+  },
+  "extension_profile": {
+    "profile_id": "JANUS-LINEAR-TRANSCRIPTION-IR-HARDENING-v1.1",
+    "top_level_field": "janus_hardening_v1_1",
+    "required_collections": ["cross_surface_continuations", "identity_conflict_bindings"],
+    "cross_surface_continuation": {
+      "allowed_type": "SOURCE_CONTINUATION_ACROSS_SURFACE",
+      "required_fields": [
+        "continuation_id",
+        "continuation_type",
+        "source_group_ref",
+        "target_group_ref",
+        "source_surface_ref",
+        "target_surface_ref",
+        "evidence_class",
+        "provenance_refs",
+        "source_boundaries_preserved",
+        "destructive_merge_performed"
+      ],
+      "requirements": [
+        "source and target group refs resolve to base v1.0 groups",
+        "source and target surface refs resolve to distinct base v1.0 surfaces",
+        "provenance refs resolve",
+        "source_boundaries_preserved == true",
+        "destructive_merge_performed == false",
+        "relation supplies adjacency/continuation evidence but does not create a universal linguistic word claim"
+      ]
+    },
+    "identity_conflict_binding": {
+      "required_fields": [
+        "conflict_binding_id",
+        "disagreement_ref",
+        "token_refs",
+        "assertions",
+        "resolution_state",
+        "semantic_class_authority_granted",
+        "provenance_refs"
+      ],
+      "requirements": [
+        "disagreement_ref resolves to a base v1.0 disagreement of type SIGN_ID_CONFLICT",
+        "at least two assertions with distinct identity values are preserved",
+        "each token ref and provenance ref resolves",
+        "resolution_state is UNRESOLVED unless the base disagreement itself has a resolved technical status",
+        "semantic_class_authority_granted == false for unresolved conflicts",
+        "no source label overwrites source_raw, source_sign_id, or encoded glyph identity"
+      ]
+    }
+  },
+  "scientific_view_firewall_v1_1": {
+    "base_v1_0_firewall_still_required": true,
+    "when_cross_surface_continuations_exist": {
+      "required_view_field": "continuation_policy",
+      "allowed_claim_bearing_value": "PRESERVE_SOURCE_BOUNDARIES_RELATION_ONLY"
+    },
+    "when_unresolved_identity_conflicts_exist": {
+      "required_view_field": "identity_conflict_policy",
+      "allowed_claim_bearing_value": "EXCLUDE_CONFLICTED_TOKENS",
+      "forbidden": [
+        "silently use source label as sign identity",
+        "silently use glyph as source-label identity",
+        "assign semantic class from unresolved label/glyph conflict"
+      ]
+    }
+  },
+  "validation_canaries": [
+    "valid two-surface continuation fixture passes",
+    "same-surface continuation fixture fails",
+    "destructive merge fixture fails",
+    "valid unresolved SIGN_ID_CONFLICT binding passes",
+    "semantic-authority-on-unresolved-conflict fixture fails",
+    "claim-bearing scientific view without identity conflict policy fails",
+    "same view with EXCLUDE_CONFLICTED_TOKENS passes",
+    "base v1.0 fixture remains valid and unchanged under base validator"
+  ],
+  "claim_ceiling": {
+    "generic_source_fidelity_hardening": true,
+    "logos_external_prior_art_reused": true,
+    "JANUS_independent_discovery": false,
+    "linguistic_word_continuation_proved": false,
+    "A319_semantics_assigned": false,
+    "R3B_effect": "NONE",
+    "new_anchor": false,
+    "decipherment": false
+  }
+}

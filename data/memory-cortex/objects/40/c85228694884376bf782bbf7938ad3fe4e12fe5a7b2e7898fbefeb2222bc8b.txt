@@ -1,0 +1,124 @@
+{
+  "schema": "JANUS/meta-registry/a18-43-through-the-horizon/v1.0.0",
+  "registry_id": "JANUS-A18_43-V0_2-THROUGH-THE-HORIZON-EVENT-HORIZON-AIRLOCK-20260715",
+  "canonical_name": "JANUS A18.43 V0.2 — Through the Horizon",
+  "protocol_name": "Event-Horizon Airlock Protocol",
+  "internal_name": "UNDINA_TIMESHIFT_AIRLOCK",
+  "status": "CANONICAL_ARCHITECTURE; OFFLINE_PROTOCOL_CORE_IMPLEMENTED; LIVE_ADAPTER_PENDING",
+  "founder": "Hawkar",
+  "inspiration": {
+    "source": "The airlock and controlled-decompression imagery of the film Event Horizon",
+    "tribute": "Recorded with affection and respect for actor Sam Neill and the film's lasting impact on the founder.",
+    "boundary": "Cultural naming reference only; no endorsement, affiliation or scientific authority is implied."
+  },
+  "problem": "TimeShift whole-process FREEZE and the Native Admission Gate were previously capable of acting at different moments. A snapshot-to-suspend race could produce lead debt, and independent asynchronous controllers could accept stale or out-of-order acknowledgements.",
+  "core_idea": "Treat TimeShift and Undina as two interlocked hatches of one computational airlock: freeze and seal the chamber, close admissions while frozen, commit the horizon only after all acknowledgements, thaw only toward drain, confirm a stable vacuum valley, and then reopen exactly one new admission epoch.",
+  "canonical_principle": "Asynchronous work inside each phase; a strict rendezvous barrier between phases.",
+  "airlock_mapping": {
+    "inlet_hatch": "Undina Native Admission Gate",
+    "chamber": "current in-flight computational cohort",
+    "freeze_seal": "TimeShift whole-process FREEZE with quiescence proof",
+    "decompression": "THAW_TO_DRAIN while admissions remain closed",
+    "vacuum": "two stable observations with in_flight=0 and queued=0",
+    "repressurization": "REOPEN to exactly one incremented wave epoch"
+  },
+  "state_machine": [
+    "OPEN",
+    "FREEZE_REQUESTED",
+    "FROZEN",
+    "SNAPSHOT_SEALED",
+    "GATE_CLOSE_REQUESTED",
+    "GATE_CLOSED",
+    "HORIZON_COMMITTED",
+    "THAWED_DRAINING",
+    "VACUUM_CANDIDATE",
+    "VACUUM_VALLEY_CONFIRMED",
+    "REOPENED"
+  ],
+  "alternate_terminal_states": [
+    "TOO_LATE_ABORTED",
+    "FAIL_CLOSED"
+  ],
+  "horizon_commit": {
+    "requires": [
+      "FROZEN_ACK",
+      "SNAPSHOT_SEALED",
+      "GATE_CLOSED_ACK"
+    ],
+    "meaning": "The chamber is motionless, its state is durably sealed, and new admissions are proven closed before TimeShift releases the old cohort to drain."
+  },
+  "two_phase_timeshift": {
+    "old_order": "observe moving state → decide → send suspend → state may advance",
+    "new_order": "FREEZE first → read frozen state → validate latest-safe horizon → TOO_LATE_ABORT or close admissions",
+    "goal": "Remove snapshot-to-suspend lead debt from the decision boundary."
+  },
+  "hard_interlocks": [
+    "no snapshot before frozen acknowledgement",
+    "no gate close before sealed snapshot",
+    "no thaw-to-drain before horizon commit",
+    "no admissions during controlled decompression",
+    "no reopen before stable vacuum valley",
+    "no stale control_epoch or wave_epoch acknowledgement",
+    "no PID, session or reconnect change across a boundary",
+    "duplicate action_id is idempotent; conflicting reuse is rejected"
+  ],
+  "controlled_decompression": {
+    "required": [
+      "admitted_total equals gate-close baseline",
+      "in_flight is monotonically non-increasing",
+      "queued is monotonically non-increasing",
+      "old completions remain classified as foam/drain",
+      "two-phase zero observation before vacuum confirmation"
+    ],
+    "failure": "Any violation transitions to FAIL_CLOSED."
+  },
+  "offline_implementation": {
+    "repository": "Hawkar-usls/janus-io-public",
+    "branch": "codex/a18-43-v02-through-the-horizon-airlock-20260715",
+    "path": "experiments/a18-43/hardware-preservation/v0.2-through-the-horizon/",
+    "python_compile": "PASS_2_OF_2",
+    "fault_injection": "PASS_22_OF_22",
+    "delay_matrix_ms": [0, 10, 25, 50, 100, 250],
+    "network_used": false,
+    "miner_launched": false,
+    "hardware_control_performed": false
+  },
+  "next_live_sequence": [
+    "write a read-only adapter for frozen A18.42 counters and identity",
+    "write a TimeShift FREEZE/THAW adapter with quiescence acknowledgement",
+    "write a Native Gate CLOSE/REOPEN adapter with epoch acknowledgement",
+    "run offline adapter-contract tests",
+    "run one live Windows BEACON only after preflight review",
+    "do not run a matrix before BEACON validation"
+  ],
+  "research_after_airlock": [
+    "Persistent Wave Memory Atlas",
+    "phase-lag cartography",
+    "foam-cost challenge",
+    "healthy-crest frozen challenge",
+    "memory-guided Wave Rider"
+  ],
+  "frozen_predecessor": {
+    "stage": "A18.42",
+    "result": "REPLICATED_NATIVE_WAVE_SEGMENTATION",
+    "wave_pump_claim_emitted": false
+  },
+  "claim_limits": [
+    "The offline state machine does not prove live synchronization.",
+    "No confirmed Wave Pump is claimed.",
+    "No energy saving is claimed before matched live telemetry.",
+    "No hardware-lifetime extension is claimed from a short experiment.",
+    "No SHA-256 prediction, weakness, mining advantage or profitability is claimed."
+  ],
+  "frozen_semantics": [
+    "SHA-256",
+    "verifier",
+    "nonce traversal",
+    "candidate selection",
+    "WIRE",
+    "HASH",
+    "SUBMIT",
+    "pool-valid proof semantics"
+  ],
+  "canonical_seed_sha256": "44e21fdc9d37fda98e2e73b0c9eb268bd04cdca9d84d0519e4f1166be22b46fc"
+}

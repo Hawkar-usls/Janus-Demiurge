@@ -1,0 +1,81 @@
+{
+  "artifact_id": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v2.5",
+  "supersedes": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v2.4",
+  "lineage_alias": "JANUS-113",
+  "title": "PERCEPTION DETERMINES REALITY",
+  "subtitle": "Anti-Rollback Authority Fencing and Stale-Snapshot Recovery Extension",
+  "version": "2.5",
+  "status": "technical_anti_rollback_fencing_specification_candidate_not_runtime_implementation",
+  "created_at_local": "2026-08-10T02:42:00+03:00",
+  "canonical_seed_sha256": "44e21fdc9d37fda98e2e73b0c9eb268bd04cdca9d84d0519e4f1166be22b46fc",
+  "parent_binding": {
+    "artifact": "data/JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v2.4.json"
+  },
+  "problem_statement": "A valid historical snapshot can be cryptographically authentic and still be causally stale. Restoring it without an external authority fence can resurrect old credentials, old obligations and old assumptions while ignoring world effects that occurred later.",
+  "new_primitives": {
+    "AUTHORITY_EPOCH_ID": "Monotonic authority generation for one host commit channel.",
+    "FENCE_TOKEN": "Monotonic or otherwise non-reusable authority value recognized by the external effect boundary.",
+    "MINIMUM_ACCEPTED_AUTHORITY_EPOCH": "Lowest current authority generation accepted for world-changing commits.",
+    "STALE_SNAPSHOT_STATUS": "Classification for a valid old state that does not hold current authority.",
+    "ROLLBACK_RECOVERY_EVENT": "Explicit event that reopens an old checkpoint without pretending later history never occurred."
+  },
+  "commit_admission_extension": {
+    "required": [
+      "HOST_ID matches",
+      "AUTHORITY_EPOCH_ID is current",
+      "FENCE_TOKEN or equivalent freshness condition passes",
+      "ROOT_EPOCH is admissible",
+      "runtime binding is current",
+      "commit sequence is not below current protected floor"
+    ],
+    "historical_signature_alone": "INSUFFICIENT_FOR_CURRENT_COMMIT_AUTHORITY"
+  },
+  "stale_snapshot_policy": {
+    "read_memory": "ALLOWED_AS_HISTORICAL_STATE",
+    "inspect_lineage": "ALLOWED",
+    "emit_current_world_commit": "BLOCKED",
+    "become_current_again": "ONLY_THROUGH_EXPLICIT_RECOVERY_OR_FORK_ADMISSION",
+    "silently_overwrite_current_state": "FORBIDDEN"
+  },
+  "rollback_recovery_algorithm": [
+    "freeze current contested commit channel",
+    "select historical checkpoint with exact provenance",
+    "preserve the newer suffix as historical/forensic evidence",
+    "restore old state in a non-authoritative recovery context",
+    "replay later externally evidenced obligations and world effects",
+    "classify unreconciled differences",
+    "issue a fresh authority epoch and fence token",
+    "emit a recovery checkpoint linking old checkpoint and later suffix"
+  ],
+  "world_nonrollback_invariant": {
+    "rule": "LOCAL_STATE_ROLLBACK_DOES_NOT_ERASE_EXTERNAL_WORLD_EFFECTS",
+    "examples": [
+      "fulfilled obligation remains fulfilled if an external receipt survives",
+      "resource already spent remains spent",
+      "promise already communicated to a Free Other remains historical fact",
+      "harm or repair already caused is not removed by loading an old save"
+    ]
+  },
+  "implementation_tests": [
+    "authentic old snapshot with stale authority epoch cannot commit",
+    "historical signature verifies but current fence rejects",
+    "fulfilled obligation in external receipt is not performed twice after rollback",
+    "rollback without explicit recovery event fails",
+    "recovery event preserves newer suffix reference",
+    "fresh authority epoch is required before restored state becomes current"
+  ],
+  "epistemic_boundaries": [
+    "An old snapshot is not necessarily false or corrupted; it is stale relative to later causal history.",
+    "Fencing requires an external or monotonic boundary that stale state cannot silently reset.",
+    "Rollback control is a systems-integrity mechanism, not a claim about personal consciousness or resurrection."
+  ],
+  "canonical_lines": [
+    "Valid then is not authoritative now.",
+    "Loading an old memory does not unload the world.",
+    "Rollback must create a recovery event, not erase the suffix."
+  ],
+  "next_gate": {
+    "name": "JANUS_113_V2_5_NETWORK_PARTITION_SPLIT_BRAIN_AUTHORITY_GATE",
+    "status": "OPEN"
+  }
+}

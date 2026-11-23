@@ -1,0 +1,111 @@
+{
+  "schema": "JANUS/P-VS-NP/R5-E9/HETEROGENEOUS-INTERACTION-SOURCE-AUDIT/v1.0.0",
+  "artifact_id": "JANUS-P-VS-NP-R5-E9-HETEROGENEOUS-INTERACTION-SOURCE-AUDIT-2026-09-23-v1.0",
+  "date_local": "2026-09-23",
+  "status": "SOURCE_AUDIT_COMPLETE__NEW_TYPED_COMPOSITION_GATE_OPEN",
+  "mission": "Find a polynomial exact law for composing heterogeneous tractable islands in arbitrary SAT/CSP without unbounded assignment/interface enumeration.",
+  "source_native_positive_controls": [
+    {
+      "id": "JOINWIDTH_RELATIONAL_COMPOSITION",
+      "source": "Ganian–Ordyniak–Szeider, A Join-Based Hybrid Parameter for Constraint Satisfaction, arXiv:1907.12335",
+      "fact": "Exact CSP solving can be organized as join + projection + pruning along a join decomposition; bounded joinwidth with a supplied decomposition yields polynomial solving.",
+      "limitation": "Width is measured by explicit intermediate relation cardinality; bounded joinwidth is not universal and finding optimal decompositions is hard in general."
+    },
+    {
+      "id": "ALGEBRAIC_CIRCUIT_SUPPORT_COMPATIBILITY",
+      "source": "Wang–Mauá–Van den Broeck–Choi, A Compositional Atlas for Algebraic Circuits, arXiv:2412.05481",
+      "fact": "Over the Boolean semiring, conjunction is product and existential projection is aggregation. Smooth decomposable circuits support linear-time aggregation. Compatible products are polynomial; X-support-compatible products are linear in max input size, and compatibility properties are preserved through suitable compositions.",
+      "role": "Published exact interaction law at the representation level."
+    },
+    {
+      "id": "QHORN_HETEROGENEOUS_CERTIFICATE",
+      "sources": [
+        "Boros–Hammer–Sun, Recognition of q-Horn formulae in linear time, Discrete Applied Mathematics 55 (1994)",
+        "Backdoors to q-Horn, STACS 2013"
+      ],
+      "fact": "q-Horn properly contains Horn and Krom/2CNF and has linear-time recognition/solving; its tractability is certified by a global literal/variable decomposition rather than enumeration of all assignments.",
+      "role": "Concrete positive example that heterogeneous local clause types can compose polynomially when supplied with a compact compatibility certificate."
+    }
+  ],
+  "negative_controls": [
+    {
+      "id": "NAIVE_HORN_PLUS_2CNF_MIX",
+      "source": "Satisfiability of mixed Horn formulas, Discrete Applied Mathematics 155 (2007)",
+      "fact": "A formula consisting of a Horn part plus a 2-CNF part is NP-complete in general.",
+      "lesson": "Simply tagging each constraint by a tractable carrier is insufficient; a cross-carrier compatibility law is mandatory."
+    },
+    {
+      "id": "ONE_DNNF_CURRENCY",
+      "source": "Expander CNFs have Exponential DNNF Size",
+      "fact": "There are monotone read-3 2-CNF formulas requiring exponential DNNF size.",
+      "lesson": "Even a polynomial-time SAT carrier such as Krom cannot always be converted to polynomial-size DNNF; generic DNNF cannot be the universal summary currency."
+    },
+    {
+      "id": "INCOMPATIBLE_CIRCUIT_PRODUCT",
+      "source": "A Compositional Atlas of Tractable Circuit Operations",
+      "fact": "Exact product of two structured-decomposable deterministic circuits is hard without compatibility, whereas compatibility yields a polynomial product construction.",
+      "lesson": "Small local representations alone do not imply cheap composition."
+    },
+    {
+      "id": "BACKDOOR_ENUMERATION",
+      "sources": [
+        "Backdoors into heterogeneous classes of SAT and CSP",
+        "Discovering Archipelagos of Tractability for Constraint Satisfaction and Counting",
+        "SAT backdoors: Depth beats size"
+      ],
+      "fact": "Known heterogeneous/scattered backdoor methods obtain FPT tractability by controlling a parameter and normally enumerate assignments or otherwise pay parameter dependence.",
+      "lesson": "These are architecture donors, not a universal polynomial interaction certificate."
+    }
+  ],
+  "derived_synthesis": {
+    "name": "TYPED_NATIVE_SUMMARY_JOIN_CALCULUS",
+    "status": "CANDIDATE_FRAMEWORK__NOT_A_UNIVERSAL_THEOREM",
+    "principle": "Do not convert every island into one universal representation. Keep each island in its native compact calculus and require a polynomial bridge certificate at every join/projection boundary.",
+    "node_state": {
+      "relation": "exact extendability relation of the processed subinstance on its live boundary",
+      "representation": "one tagged native format from a finite library",
+      "certificate": "proof that the next join/projection between the two tagged formats is exact and polynomial"
+    },
+    "admitted_native_formats": [
+      "Horn/q-Horn native implication structure",
+      "Krom implication graph / 2SAT structure",
+      "affine linear systems",
+      "few-subpowers / edge-term compact representations",
+      "residually-small cube effective-pp candidate",
+      "support-compatible smooth decomposable Boolean circuits",
+      "factorized independent products"
+    ],
+    "admitted_bridge_examples": [
+      "same-carrier native closure",
+      "q-Horn certified Horn/Krom interaction",
+      "X-support-compatible Boolean-circuit product",
+      "disjoint/factorized product",
+      "edge-term join/projection where a common edge polymorphism is preserved"
+    ]
+  },
+  "new_gate": {
+    "id": "R5_E9_TYPED_NATIVE_SUMMARY_JOIN_DECOMPOSITION_UNIVERSALITY_GATE_V1",
+    "question": "Does every 3CNF admit, in polynomial time, a join decomposition in which every intermediate boundary relation has a polynomial-size tagged native summary and every internal join/projection has a polynomial-size exact bridge certificate from the admitted library?",
+    "pass_contract": [
+      "decomposition construction polynomial in original L",
+      "number of nodes polynomial in L",
+      "every native summary size polynomial in L",
+      "every bridge certificate size polynomial in L",
+      "join/project/prune exact and polynomial",
+      "total cumulative state/history polynomial in L",
+      "root nonemptiness and witness reconstruction polynomial"
+    ],
+    "immediate_fail_conditions": [
+      "any family forcing exponential summary in every admitted native format",
+      "any required mixed join equivalent to unrestricted mixed Horn+Krom or another known NP-hard mixed core",
+      "any hidden conversion to generic DNNF/OBDD with known exponential lower bound",
+      "any unbounded 2^k backdoor/interface enumeration",
+      "semantic/SAT oracle used to choose the representation or bridge"
+    ]
+  },
+  "scientific_boundary": {
+    "D1": "EMPTY",
+    "P_VS_NP": "OPEN",
+    "P_EQ_NP": "NOT_PROVED"
+  }
+}

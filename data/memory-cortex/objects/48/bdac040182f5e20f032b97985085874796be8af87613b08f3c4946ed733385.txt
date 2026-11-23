@@ -1,0 +1,72 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-R4-3-CROSS-REGION-TRANSFER-SPEC-2026-08-15-v0.1",
+  "version": "v0.1",
+  "node_type": "cross_region_self_supervised_transfer_spec",
+  "parent_canonical": "data/JANUS-LINEAR-A-RESEARCH-STATE-2026-08-14-v2.23.json",
+  "source": {
+    "repository": "Hawkar-usls/lineara.xyz",
+    "upstream_lineage": "mwenge/lineara.xyz",
+    "frozen_commit": "43fe7cf1abc8e6bb1ea3228c3a1bd5938709620a"
+  },
+  "question": "Does the cross-validated sign-context structure admitted in R4-1 transfer to completely held-out archaeological regions rather than relying mainly on within-region formulae?",
+  "region_selection": {
+    "rule": "Select exactly the three regions with the largest parsed-document counts; ties are broken lexicographically by region code.",
+    "selection_uses_target_labels": false,
+    "selection_uses_prediction_metrics": false,
+    "selection_uses_external_knowledge": false,
+    "selected_region_count": 3
+  },
+  "transfer_protocol": {
+    "for_each_selected_region": "Hold out every parsed document from that region as TEST and train only on documents from all other regions.",
+    "target_reading_status": "certain_only",
+    "source_status_none_reinterpreted": false,
+    "source_status_doubtful_reinterpreted": false,
+    "model_hyperparameters": {
+      "minimum_train_token_frequency": 5,
+      "directional_window": [-2, -1, 1, 2],
+      "svd_rank": 32,
+      "count_smoothing_alpha": 1.0
+    },
+    "hyperparameters_changed_after_R4_1": false
+  },
+  "models": [
+    "B0_UNIGRAM",
+    "B1_DIRECTIONAL_CONTEXT_COUNT",
+    "M1_DIRECTIONAL_PPMI_SVD"
+  ],
+  "admission_gate": {
+    "minimum_aggregate_evaluable_masks": 200,
+    "minimum_regions_where_both_context_models_beat_unigram_MRR": 2,
+    "aggregate_requirements": [
+      "B1 MRR > B0 MRR",
+      "B1 top5 > B0 top5",
+      "M1 MRR > B0 MRR",
+      "M1 top5 > B0 top5"
+    ],
+    "no_threshold_relaxation_after_results": true
+  },
+  "leakage_firewall": {
+    "Notti_2018_readings_used": false,
+    "Notti_2021_2025_PH13_content_used": false,
+    "R3C_language_dictionary_inputs_used": false,
+    "external_dictionaries_used": false,
+    "translations_used": false,
+    "Linear_B_supervision_used": false,
+    "heldout_region_documents_used_for_training": false,
+    "heldout_metrics_used_for_region_selection": false,
+    "R3B_blind_eligibility_affected": false
+  },
+  "claim_ceiling": {
+    "allowed": "Cross-region transferability or non-transferability of internal sign-context predictability only.",
+    "forbidden": [
+      "translation",
+      "semantic equivalence",
+      "phonetic assignment",
+      "language-family identification",
+      "grammatical label",
+      "new anchor",
+      "Linear A decipherment",
+      "R3B external replication"
+    ]
+  }
+}

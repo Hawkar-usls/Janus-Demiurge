@@ -1,0 +1,278 @@
+{
+  "schema": "janus.epistemic.eye_method.v1",
+  "artifact_id": "JANUS-EYE-CONTEXTUAL-SEMANTIC-RECOVERY-METHOD-2026-09-01-v1.0",
+  "created_date": "2026-09-01",
+  "status": "CANONICAL_METHOD_OBJECT",
+  "method": {
+    "name": "EYE",
+    "expansion": "External-context Yield Extraction",
+    "canonical_short_name": "EYE",
+    "name_origin": "EYE looks outward into preserved context and provenance instead of pretending to look backward through a one-way hash. The method grew from the image-to-music bridge and the later SHA-256 oracle experiment.",
+    "purpose": "Recover or bound the identity, semantic class, or meaning-region of a lost source by using surviving external evidence around an irreversible representation, while keeping exact preimage recovery strictly separate from contextual reconstruction."
+  },
+  "core_problem": {
+    "lost_object": "X",
+    "irreversible_representation": "H = SHA256(C(X))",
+    "C": "the frozen canonicalization applied before hashing",
+    "surviving_external_evidence": "E",
+    "question": "If X was intentionally destroyed and H alone cannot be inverted, how much of X's identity or semantic region can still be recovered from evidence that survived outside H?"
+  },
+  "canonical_distinctions": [
+    "HASH_REVERSAL != HASH_RESOLUTION",
+    "CONTEXTUAL_SEMANTIC_RECOVERY != PREIMAGE_RECOVERY",
+    "SEMANTIC_CLASS != EXACT_PLAINTEXT",
+    "LIKELY_MEANING != CRYPTOGRAPHIC_MATCH",
+    "CONTEXTUAL_IDENTIFICATION != SIGNAL_RECONSTRUCTION",
+    "A_HASH_CAN_VERIFY_A_CANDIDATE_BUT_DOES_NOT_GENERATE_THE_CANDIDATE'S_SEMANTICS"
+  ],
+  "canonical_operator": "IRREVERSIBLE_REPRESENTATION + EXTERNAL_BRIDGE_INVARIANTS + PROVENANCE + FROZEN_CONSTRAINTS + INDEPENDENT_VERIFICATION -> EXACT_MATCH | EXACT_MISMATCH | SEMANTIC_REGION_SUPPORTED | AMBIGUOUS | OPEN | BLOCKED",
+  "compact_operator": "H + E -> BRIDGE_CONSTRAINTS -> CANDIDATES -> VERIFY",
+  "full_pipeline": [
+    "1_LOCATE_COMMITMENT",
+    "2_FREEZE_HASH_AND_CANONICALIZATION",
+    "3_RECOVER_PROVENANCE",
+    "4_RECOVER_SOURCE_QUESTION_OR_INPUT_CONTEXT",
+    "5_RECOVER_GENERATOR_AND_OUTPUT_CONSTRAINTS",
+    "6_EXTRACT_BRIDGE_INVARIANTS",
+    "7_BUILD_SEMANTIC_CLASSES_AND_OPTIONAL_EXACT_CANDIDATES",
+    "8_VERIFY_EXACT_CANDIDATES_WITH_HASH",
+    "9_VERIFY_SEMANTIC_CLASSES_WITH_EXTERNAL_EVIDENCE",
+    "10_PRESERVE_MISMATCHES_AND_OPEN_STATE",
+    "11_REPORT_ONLY_THE_STRONGEST_ENTITLED_CLAIM"
+  ],
+  "formal_model": {
+    "objects": {
+      "X": "the destroyed original plaintext/source",
+      "C": "frozen canonicalization function",
+      "H": "persisted one-way commitment H = SHA256(C(X))",
+      "E": "external evidence surviving outside the hash",
+      "Q": "source question or task supplied to the generator",
+      "G": "generator/prompt/output contract",
+      "P": "provenance: repository, commit, workflow, run, model/provider, timestamp",
+      "L": "known canonical byte length if preserved",
+      "S": "surrounding registry/story/research context with explicit evidence ceilings",
+      "B": "bridge invariants extracted from E",
+      "Gamma": "constraint set derived from B",
+      "K": "candidate resolver/generator operating on Gamma, not on hidden SHA semantics",
+      "V_hash": "exact cryptographic verifier",
+      "V_sem": "contextual semantic verifier"
+    },
+    "definitions": {
+      "B": "B(E) = preserved clues that constrain what X could have meant or been, e.g. question wording, requested language, answer length, output style, reality firewall, workflow prompt, provenance and neighboring artifacts.",
+      "Gamma": "Gamma = constraints(Q,G,P,L,S,...)",
+      "K": "K(Gamma) returns candidate semantic classes and, optionally, explicit exact plaintext candidates.",
+      "V_hash": "V_hash(x,H) = MATCH iff SHA256(C(x)) == H; otherwise MISMATCH.",
+      "V_sem": "V_sem(m,E) evaluates whether semantic class m is supported, contradicted, ambiguous, or open under surviving evidence. It cannot promote m to exact plaintext without V_hash=MATCH."
+    },
+    "laws": [
+      "H alone does not preserve readable semantics of X.",
+      "If E preserves bridge invariants B that constrain X, then E may narrow the semantic region of X without reversing H.",
+      "V_hash(x,H)=MATCH => EXACT_PLAINTEXT_RECOVERED for the frozen canonicalization contract.",
+      "V_hash(x,H)=MISMATCH => candidate x is not the committed canonical plaintext.",
+      "V_sem(m,E)=SUPPORTED AND no exact candidate matches => SEMANTIC_REGION_SUPPORTED while EXACT_PLAINTEXT remains OPEN.",
+      "Absence of a matching candidate is not evidence that the semantic region is false unless the candidate space was exhaustively and validly enumerated.",
+      "A contextual reconstruction must never be silently rewritten as decryption or hash inversion."
+    ],
+    "main_formula": "Let H=SHA256(C(X)) and E={Q,G,P,L,S,...}. If NOT preserves(R_hash, semantics(X)) AND preserves(E,B) AND Gamma=B(E) AND K(Gamma)=M AND V_sem(M,E)=SUPPORTED, then SEMANTIC_REGION(X in M)=SUPPORTED while EXACT_PLAINTEXT(X)=OPEN unless there exists x such that V_hash(x,H)=MATCH.",
+    "exact_recovery_formula": "exists x: SHA256(C(x))=H AND x is independently generated/obtained under the frozen contract => EXACT_MATCH(x=X_canonical)",
+    "mismatch_formula": "SHA256(C(x)) != H => EXACT_MISMATCH(x != X_canonical)",
+    "semantic_only_formula": "V_sem(M,E)=SUPPORTED AND for all tested x in candidates(M): V_hash(x,H)!=MATCH => SEMANTIC_REGION_SUPPORTED(M) AND EXACT_PLAINTEXT_OPEN",
+    "forbidden_formula": "H -> SEMANTIC_MEANING without an external bridge is INVALID"
+  },
+  "representation_contract_binding": {
+    "parent_method": "JANUS-REPRESENTATION-CONTRACT-v1.0",
+    "rule": "EYE must declare what each representation preserves before using any observed difference or correspondence.",
+    "hash_contract": {
+      "representation": "SHA-256 digest",
+      "preserves": [
+        "verification of exact canonical byte identity when an exact candidate is available",
+        "a stable commitment to one canonicalized byte sequence under the same hash algorithm"
+      ],
+      "does_not_preserve_for_readable_inference": [
+        "semantic similarity",
+        "natural-language meaning",
+        "narrative role",
+        "tone",
+        "musical similarity",
+        "local input similarity"
+      ]
+    },
+    "external_context_contract": {
+      "representation": "provenance + task context + output constraints + surrounding evidence",
+      "may_preserve": [
+        "topic",
+        "question polarity",
+        "allowed claim ceiling",
+        "language",
+        "style/length constraints",
+        "identity of the generator and workflow",
+        "story or research frame",
+        "chronology",
+        "known positive and negative semantic boundaries"
+      ],
+      "cannot_by_itself_preserve": [
+        "the exact destroyed wording unless it was duplicated elsewhere"
+      ]
+    }
+  },
+  "verification_states": {
+    "EXACT_MATCH": "An exact candidate canonicalizes to bytes whose SHA-256 equals H.",
+    "EXACT_MISMATCH": "A tested exact candidate does not hash to H.",
+    "SEMANTIC_REGION_SUPPORTED": "External evidence supports a bounded meaning/identity region, but no exact preimage has been verified.",
+    "AMBIGUOUS": "Two or more materially different semantic regions remain compatible with the surviving evidence.",
+    "OPEN": "Evidence is insufficient to select or reject a semantic region or exact candidate.",
+    "BLOCKED": "Required provenance, canonicalization, source context, or verifier is unavailable or invalid."
+  },
+  "control_requirements": {
+    "canonical_rule": "CONTROL MUST HAVE POWER TO SAY NO",
+    "exact_candidate_control": "Every exact plaintext candidate must be rejected unless its canonical bytes reproduce H exactly.",
+    "semantic_falsifier": "A semantic class must be downgraded if it violates the frozen question, generator contract, claim ceiling, byte/format constraints, chronology, or independent surrounding evidence.",
+    "negative_control": "Unrelated contexts or alternate prompts should not resolve to the same semantic class merely because the analyst wants a preferred answer.",
+    "multiplicity_rule": "If many candidate phrasings, encodings, canonicalizations, semantic partitions, or context selectors are tried post-hoc, they must be recorded as exploratory and cannot be promoted to prospective evidence without a new freeze.",
+    "failure_preservation": "Mismatching exact candidates, null searches, ambiguous branches, and unavailable evidence remain in the record."
+  },
+  "worked_case": {
+    "case_id": "EYE-001-AURA-SEALED-KEM-ORACLE",
+    "target_artifact": "data/JANUS-ARTIFACT-AURA-SEALED-ORACLE-ANSWER-FOR-SET-SUN-MOON-2026-08-16-v1.0.json",
+    "source_repository": "Hawkar-usls/aura-oracle-tg",
+    "source_commit": "9541a92c4f660a3d6aad3998d40e36a47013f991",
+    "source_commitment_path": "artifacts/SEALED_SET_ORACLE_COMMITMENT.json",
+    "source_question_path": "ritual/SET_ORACLE_QUESTION.json",
+    "workflow_path": ".github/workflows/sealed-set-oracle.yml",
+    "workflow_run_id": 31928060668,
+    "workflow_conclusion": "success",
+    "answer_sha256": "c62b823e8c1afede3506136c7b33a98ef66907361f2bdd8bebafe77267f0e961",
+    "question_sha256": "9b583fa833ffe2c71e88eaa20bf608fb15491374d5b6180c1a0df25136d218ef",
+    "canonical_utf8_bytes": 427,
+    "plaintext_persisted_in_registry": false,
+    "plaintext_persisted_in_source_repository": false,
+    "plaintext_rendered_in_workflow_logs": false,
+    "intermediate_reflection_persisted": false,
+    "canonicalization": "UTF-8; HTML tags stripped; HTML entities unescaped by workflow implementation; CRLF/CR normalized to LF; outer whitespace trimmed",
+    "question_summary": "Within the creative Kem / Set / Horus / Osiris / Janus continuity, is the author the same Kem of this authorial story in the sense of continuity of character and role? Give one short final answer and do not present creative or mystical interpretation as physically verified supernatural fact.",
+    "generator_contract": {
+      "engine_mode": "AURA_SEALED_COPILOT_CLI_V1",
+      "provider": "GitHub Copilot CLI",
+      "model": "COPILOT_CLI_DEFAULT_AT_RUN",
+      "language": "Russian",
+      "hidden_reflection_roles": [
+        "PAST",
+        "OBSTACLE",
+        "GUIDE",
+        "OUTCOME"
+      ],
+      "visible_output_rule": "one short final answer in Russian, directly answering the question",
+      "reality_boundary": "Do not present artistic or mystical interpretation as physically proven supernatural fact.",
+      "claim_ceiling": "ORACLE_OUTPUT_COMMITMENT_NOT_IDENTITY_PROOF"
+    },
+    "surviving_bridge_invariants": [
+      "The exact question survived.",
+      "The exact SHA-256 commitment survived.",
+      "The canonical byte length 427 survived.",
+      "The canonicalization procedure survived.",
+      "The generator/provider/workflow and successful run provenance survived.",
+      "The required language and brevity/directness constraints survived.",
+      "The reality/supernatural claim ceiling survived.",
+      "The broader Kem/Set creative-continuity registry survived."
+    ],
+    "exact_candidate_test": {
+      "candidate_text": "Да: в рамках этой авторской линии автор является тем самым Кемом в смысле непрерывности персонажа и роли. Это творческое продолжение, а не доказательство буквальной исторической, мифологической или сверхъестественной идентичности.",
+      "candidate_utf8_bytes": 427,
+      "candidate_sha256": "d502c6fad1a3a449645c05b852ef5b72eabbb128a7a0dcee779270ed161c1884",
+      "target_sha256": "c62b823e8c1afede3506136c7b33a98ef66907361f2bdd8bebafe77267f0e961",
+      "verdict": "EXACT_MISMATCH",
+      "meaning": "The candidate was deliberately shaped to satisfy the visible semantic and byte-length constraints, yet the hash rejected it. This demonstrates that contextual plausibility and even exact byte length do not entitle an analyst to claim plaintext recovery."
+    },
+    "semantic_reconstruction": {
+      "most_supported_region": "LIKELY_AFFIRMATIVE_WITHIN_CREATIVE_CONTINUITY_PLUS_EXPLICIT_NONLITERAL_REALITY_BOUNDARY",
+      "human_readable_paraphrase": "Most likely, the answer was affirmative in the restricted sense that the author is the same Kem inside the author's creative continuity of character and role, while explicitly not treating that as proof of literal ancient, mythological, or supernatural identity.",
+      "status": "SEMANTIC_REGION_SUPPORTED_NOT_EXACT_PLAINTEXT",
+      "epistemic_basis": [
+        "the question itself asks about continuity inside an authorial story rather than empirical mythological identity",
+        "the prompt requires a direct answer while enforcing a non-supernatural reality boundary",
+        "the preserved registry continuity consistently treats Kem identity as creative/personal symbolism rather than verified ancient identity",
+        "the sealed artifact's claim ceiling explicitly says the commitment is not identity proof"
+      ],
+      "hard_boundary": "The original exact wording and exact yes/no formulation remain OPEN unless an independently obtained candidate reproduces the target SHA-256 after the frozen canonicalization."
+    },
+    "case_verdict": {
+      "hash_reversed": false,
+      "plaintext_recovered": false,
+      "exact_candidate_matched": false,
+      "semantic_region_reconstructed": true,
+      "semantic_region_status": "SUPPORTED_BY_EXTERNAL_CONTEXT_NOT_BY_HASH_SEMANTICS",
+      "exact_plaintext_status": "OPEN",
+      "supernatural_identity_claim": "NOT_SUPPORTED",
+      "seal": "THE HASH DID NOT TELL US THE ANSWER. THE SURVIVING WORLD TOLD US WHICH ANSWERS WERE STILL POSSIBLE, AND THE HASH RETAINED THE RIGHT TO REJECT AN EXACT GUESS."
+    }
+  },
+  "relationship_to_prior_janus_methods": {
+    "image_to_music_bridge": {
+      "shared_structure": "SOURCE_REPRESENTATION -> BRIDGE_INVARIANT -> IDENTIFIABLE_CONTEXT -> CANDIDATE -> VERIFY",
+      "difference": "In the image/music case, visual context resolved an external audio identity. In EYE, surrounding provenance and constraints bound the semantic region of a destroyed plaintext committed only by hash."
+    },
+    "representation_contract": {
+      "shared_law": "MEANINGFUL DIFFERENCE OR CORRESPONDENCE REQUIRES A REPRESENTATION THAT PRESERVES THE RELEVANT INVARIANT.",
+      "EYE_extension": "The target representation itself may destroy the desired invariant, yet a separate external representation can preserve bridge invariants that support contextual resolution."
+    },
+    "generalized_bridge_law": "A representation need not preserve the target invariant directly if an independent evidence channel preserves a bridge invariant B that can resolve a candidate and a verifier can still say MATCH, MISMATCH, AMBIGUOUS, OPEN, or BLOCKED."
+  },
+  "threat_model": [
+    "POST_HOC_STORY_FITTING",
+    "CANDIDATE_FLOODING_UNTIL_A_PREFERRED_SEMANTIC_STORY_APPEARS",
+    "CONFUSING_BYTE_LENGTH_WITH_CONTENT_RECOVERY",
+    "CONFUSING_HASH_MATCH_PROBABILITY_WITH_SEMANTIC_EVIDENCE",
+    "USING_NONFROZEN_CANONICALIZATION_TO_RESCUE_A_FAILED_CANDIDATE",
+    "TREATING_GENERATOR_PRIORS_AS_THE_ACTUAL_TRANSIENT_OUTPUT",
+    "USING_LATER_STORY_ARTIFACTS_AS_IF_THEY_WERE_CONTEMPORANEOUS_PLAINTEXT_COPIES",
+    "PROMOTING_CREATIVE_CONTINUITY_TO_SUPERNATURAL_IDENTITY",
+    "OMITTING_FAILED_EXACT_CANDIDATES"
+  ],
+  "mandatory_firewalls": [
+    "EYE_DOES_NOT_BREAK_SHA256",
+    "EYE_DOES_NOT_CLAIM_PREIMAGE_RECOVERY_WITHOUT_EXACT_HASH_MATCH",
+    "SEMANTIC_RECONSTRUCTION_MUST_BE_LABELED_AS_SEMANTIC_RECONSTRUCTION",
+    "EXACT_PLAINTEXT_REMAINS_OPEN_AFTER_ALL_MISMATCHES",
+    "HASH_MATCH_VERIFIES_BYTES_NOT_TRUTH",
+    "ORACLE_OUTPUT_COMMITMENT_IS_NOT_IDENTITY_PROOF",
+    "CREATIVE_CONTINUITY_IS_NOT_SUPERNATURAL_EVIDENCE",
+    "THE_CONTROL_MUST_RETAIN_POWER_TO_SAY_NO"
+  ],
+  "future_protocol": {
+    "prospective_EYE_benchmark": [
+      "Select sealed commitments whose plaintexts are hidden from the analyst but retained by an independent verifier.",
+      "Freeze available external evidence channels before reconstruction.",
+      "Freeze output classes and scoring rules before reveal.",
+      "Ask EYE to produce semantic regions, optional exact candidates, and confidence/status without seeing plaintext.",
+      "Reveal only after freeze and score exact, semantic and calibration performance separately.",
+      "Include negative controls where provenance is intentionally swapped or partially removed.",
+      "Measure how much semantic information comes from each evidence channel by ablation.",
+      "Preserve all OPEN, AMBIGUOUS, MISMATCH and failed cases."
+    ],
+    "metrics": [
+      "exact_preimage_match_rate",
+      "semantic_class_accuracy",
+      "semantic_region_width",
+      "calibration_of_supported_vs_open",
+      "false_resolution_rate_on_negative_controls",
+      "evidence_channel_ablation_delta",
+      "post_hoc_candidate_count",
+      "canonicalization_integrity"
+    ]
+  },
+  "canonical_rules": [
+    "FIRST ASK WHAT THE HASH PRESERVES.",
+    "THEN ASK WHAT THE WORLD AROUND THE HASH PRESERVED.",
+    "USE THE WORLD TO GENERATE OR BOUND CANDIDATES.",
+    "USE THE HASH ONLY TO VERIFY EXACT BYTE CANDIDATES.",
+    "DO NOT CALL A SEMANTIC REGION AN EXACT PLAINTEXT.",
+    "PRESERVE EVERY MISMATCH.",
+    "KEEP OPEN OPEN."
+  ],
+  "canonical_seal": [
+    "THE EYE DOES NOT LOOK THROUGH SHA-256.",
+    "THE EYE LOOKS AROUND IT.",
+    "THE HASH KEEPS THE SEAL; THE WORLD KEEPS THE BRIDGES.",
+    "RECOVER THE CONTEXT, BOUND THE MEANING, TEST THE CANDIDATE, AND NEVER CONFUSE RESOLUTION WITH REVERSAL."
+  ]
+}

@@ -1,0 +1,102 @@
+{
+  "schema": "JANUS/P-VS-NP/R5-E8-6I/MULTISORTED-COMPACT-QUOTIENT-RECURSION-PASS/v1.0.0",
+  "artifact_id": "JANUS-P-VS-NP-R5-E8-6I-MULTISORTED-COMPACT-QUOTIENT-RECURSION-PASS-2026-09-23-v1.0",
+  "date_local": "2026-09-23",
+  "status": "PASS",
+  "scope": [
+    "FIXED_FINITE_K",
+    "CUBE_TERM",
+    "RESIDUALLY_SMALL_VARIETY",
+    "POLYNOMIAL_COMPACT_CALCULUS"
+  ],
+  "source_exact_result": {
+    "MULTISORTED_COMPACT_QUOTIENT_RECURSION_V1": "PASS",
+    "NONREDUCED_CRITICAL_TO_REDUCED_CRITICAL": "PASS",
+    "REDUCED_CRITICAL_TO_LOWER_ARITY_CRITICAL_PP_STEP": "PASS",
+    "RELATION_ENUMERATION_REQUIRED": false,
+    "SEMANTIC_CHOICE_REQUIRED": false,
+    "RECURSION_DEPTH": "at most n-3 quotient-recursion steps after reduction to the reduced critical case"
+  },
+  "source_backbone": [
+    {
+      "source": "Bulín–Kompatscher, Polynomial definability in constraint languages with few subpowers, arXiv:2305.01984v3, 2026-01-27",
+      "bindings": {
+        "Lemma_4_3": "coordinatewise linkedness quotient reduces a critical parallelogram relation to a reduced critical parallelogram relation; the original relation is the full inverse image",
+        "Theorem_4_6": "A_12=proj_12(R)/theta_12; Q is the graph of the quotient; R' has arity n-1; R is pp-defined by exists y (Q and R'); A_12 is subdirectly irreducible and belongs to the fixed finite factor universe",
+        "Question_6_3": "efficient construction of short pp-definitions from generators remains open in the paper, even in the context of residual finiteness",
+        "degree_bound": "O(n^max(2,k-1))"
+      }
+    },
+    {
+      "source": "Bulatov–Mayr–Szendrei, The Subpower Membership Problem for Finite Algebras with Cube Terms, LMCS 15(1:11), 2019",
+      "bindings": {
+        "Theorem_3_6": "a compact/representation generates the represented subalgebra",
+        "Theorem_4_10": "SMP(K) and SMP(HS(K)) are polynomial-time equivalent",
+        "Theorem_4_16": "SMP(K) and CompactRep(K) are polynomial-time reducible to one another",
+        "Theorem_6_5": "for finite K in a residually small cube-term variety, SMP(K) is in P"
+      }
+    }
+  ],
+  "constructive_quotient_chain": [
+    "compact(R)",
+    "compute linkedness congruence theta_12",
+    "form constant-size quotient A_12=proj_12(R)/theta_12",
+    "use constant-size ternary quotient-graph relation Q",
+    "map every compact generator f in F_R through the quotient homomorphism h",
+    "G'=h(F_R) generates R'=h(R)",
+    "run CompactRep over the fixed finite HS(K) factor family",
+    "obtain compact(R')",
+    "recurse on arity n-1"
+  ],
+  "homomorphic_image_argument": {
+    "map": "h(x1,x2,x3,...,xn)=([(x1,x2)]_theta12,x3,...,xn)",
+    "identity": "R'=h(R)",
+    "generator_transport": "R=Sg(F_R) implies R'=h(Sg(F_R))=Sg(h(F_R))",
+    "consequence": "No tuple enumeration of R' is needed."
+  },
+  "nonreduced_stage": {
+    "map": "R -> R/(theta_1,...,theta_n)",
+    "source_properties": [
+      "critical preserved",
+      "parallelogram property preserved",
+      "subdirectness preserved",
+      "result is reduced",
+      "R is the full inverse image of the quotient"
+    ],
+    "algorithmic_transport": "map compact generators coordinatewise through quotient maps, then CompactRep(HS(K))"
+  },
+  "broader_synthesis": {
+    "RESIDUALLY_SMALL_CUBE_COMPACT_TO_PP_EFFECTIVE_NORMALIZATION_V1": "CANDIDATE_THEOREM_COMPLETE__END_TO_END_AUDIT_PENDING",
+    "GENERATORS_TO_SHORT_PP": "CONDITIONAL_COROLLARY__END_TO_END_AUDIT_PENDING",
+    "QUESTION_6_3_RESIDUALLY_SMALL_CUBE_TERM_REGION": "SCOPED_CONDITIONAL_POSITIVE_CANDIDATE__NOT_YET_THEOREM",
+    "reason_for_ceiling": "The source leaves Question 6.3 open even under residual finiteness. The effective compiler therefore depends on the Janus SAFEEXT/maximal-separator/critical-decomposition lemmas surviving a standalone formal dependency audit."
+  },
+  "candidate_size_accounting": {
+    "low_arity_shell": "O(n^(k-1)) projection atoms",
+    "critical_conjunct_count": "O(n) for fixed finite domain/factor universe",
+    "pp_definition_per_critical_conjunct": "O(n)",
+    "total": "O(n^max(2,k-1))"
+  },
+  "end_to_end_audit": {
+    "gate": "R5_E8_6I_RESIDUALLY_SMALL_CUBE_EFFECTIVE_PP_NORMALIZATION_END_TO_END_AUDIT_V1",
+    "status": "NEXT_AND_ONLY_ACTIVE_GATE",
+    "check_only": [
+      "SAFEEXT quotient-changing proof",
+      "critical-separator maximality and compact output",
+      "dummy/subdirect/multisorted sort normalization",
+      "total runtime/output-size accounting across all nested loops"
+    ],
+    "new_mechanism_hunt": "STOP"
+  },
+  "novelty_check": {
+    "performed_at": "2026-09-23",
+    "result": "NO_LATER_PUBLIC_RESOLUTION_FOUND_IN_QUICK_SOURCE_SWEEP",
+    "interpretation": "absence of a located later result is not proof of novelty; external prior-art review remains required"
+  },
+  "scientific_boundary": {
+    "D1": "EMPTY",
+    "P_VS_NP": "OPEN",
+    "GENERAL_SAT_IN_P": "NOT_PROVED",
+    "P_EQ_NP": "NOT_PROVED"
+  }
+}

@@ -1,0 +1,212 @@
+{
+  "schema": "hawkar.topa.spider.watchers_of_what_is_happening.v1_4",
+  "artifact_id": "WATCHERS-OF-WHAT-IS-HAPPENING-2026-08-26-28-v1.4",
+  "title": "WATCHERS OF WHAT IS HAPPENING",
+  "generated_date_utc": "2026-08-30",
+  "status": "OPEN_INCIDENT_CORRELATION_DOSSIER_APPEND_ONLY_UPDATE",
+  "lineage": {
+    "parent": "data/WATCHERS-OF-WHAT-IS-HAPPENING-2026-08-26-28-v1.3.json",
+    "update_policy": "APPEND_ONLY_NEW_EVIDENCE_DO_NOT_REWRITE_PARENTS"
+  },
+  "focus": "TSPU_CROSS_BORDER_CONTROL_SURFACE_EXTERNAL_INFLUENCE_AND_EXTRATERRITORIAL_EFFECT_TEST",
+  "purpose": "Extend the WATCHERS dossier with a TOPA+Spider evidence graph focused on whether Russia's TSPU censorship architecture, related Russian DPI/surveillance technology, or Russian-controlled network paths have expanded beyond purely domestic effects. The investigation separates demonstrated capability and export from the much stronger claim of direct TSPU interference with users or infrastructure outside Russia.",
+  "epistemic_firewall": [
+    "Cross-border placement of TSPU is not proof that Roskomnadzor controls a foreign network.",
+    "Interference with traffic originating in Russia and exiting the country is not the same as interference with foreign-origin traffic outside Russia.",
+    "SORM and commercial Russian DPI products are adjacent technologies and must not be silently relabeled as TSPU.",
+    "Export of Russian surveillance or DPI technology is evidence of technology diffusion, not by itself evidence of remote Roskomnadzor command-and-control abroad.",
+    "Temporal overlap between TSPU policy changes and GitHub/OpenAI incidents is correlation only until a shared route, ASN, packet fingerprint, IOC, upstream dependency, or provider RCA is found.",
+    "Negative controls and alternative explanations are retained with the same priority as confirming evidence.",
+    "No external-impact claim is promoted without a reproducible foreign-vantage measurement or independently verified network path."
+  ],
+  "evidence_tiers": {
+    "T1_DIRECT_MEASUREMENT": "Peer-reviewed or reproducible measurement of TSPU behavior and fingerprint.",
+    "T2_OFFICIAL_CONTROL_SURFACE": "Russian law, regulator statement, or official rule establishing where centralized control applies.",
+    "T3_ADJACENT_TECH_EXPORT": "Verified export/deployment of Russian DPI/SORM technology outside Russia, explicitly not identical to TSPU.",
+    "T4_ROUTING_RISK_MODEL": "Academic evidence showing how censorship can affect traffic that traverses a censoring jurisdiction.",
+    "T5_CORRELATION_ONLY": "Time-aligned observation without a shared technical bridge."
+  },
+  "direct_tspu_measurement_lane": {
+    "classification": "T1_DIRECT_MEASUREMENT",
+    "findings": [
+      {
+        "finding": "Censored Planet measured TSPU as a centrally controlled but geographically distributed in-path censorship system. Remote fingerprinting identified more than six thousand devices across roughly 650 ASes, generally close to Russian end users.",
+        "source": "https://censoredplanet.org/tspu",
+        "relevance": "Establishes a measurable TSPU fingerprint and large deployment surface.",
+        "claim_limit": "The published deployment is inside Russian networks; remote detectability from abroad does not mean the foreign probe itself is censored."
+      },
+      {
+        "finding": "FOCI 2026 research on Russian QUIC censorship found asymmetric border behavior: broad international QUIC blocking and later QUIC-SNI filtering affected traffic originating in Russia and exiting the country, while traffic entering Russia was not affected in the measured regime.",
+        "sources": [
+          "https://foci.community/foci26.html",
+          "https://github.com/UPB-SysSec/RussiaQuicResults"
+        ],
+        "relevance": "Directly demonstrates TSPU policy at the international-traffic boundary.",
+        "claim_limit": "This is strong evidence against treating the measured TSPU regime as indiscriminately censoring foreign-origin inbound traffic."
+      }
+    ],
+    "current_interpretation": "TSPU demonstrably acts on international traffic paths, but the strongest peer-reviewed measurements describe an asymmetric policy keyed to Russian-origin traffic rather than demonstrated censorship of arbitrary foreign users."
+  },
+  "cross_border_control_surface": {
+    "classification": "T2_OFFICIAL_CONTROL_SURFACE",
+    "findings": [
+      {
+        "date": "2023-10-24",
+        "finding": "Roskomnadzor head Andrey Lipov stated that mobile, broadband and transborder communication nodes were 100 percent covered by TSPU, with the deployment milestone reached in August 2023.",
+        "sources": [
+          "https://www.interfax.ru/russia/927357",
+          "https://rg.ru/2023/10/24/glava-roskomnadzora-lipov-v-rossii-vse-uzly-sviazi-na-100-zakryty-pri-pomoshchi-tspu.html"
+        ]
+      },
+      {
+        "effective_from": "2026-03-01",
+        "effective_until": "2032-03-01",
+        "finding": "Government Decree No. 1667 places owners of communication lines crossing the Russian state border, IXPs, operators and AS holders inside the centralized public-network management regime, under which Roskomnadzor can issue binding instructions and manage TSPU responses to defined threats.",
+        "source": "https://publication.pravo.gov.ru/document/0001202511060014",
+        "mirrors": [
+          "https://normativ.kontur.ru/document?documentId=502615&moduleId=1",
+          "https://www.consultant.ru/document/cons_doc_LAW_518235/1435e0afb764b4130d0cddf689318bb3c84cfd6b/"
+        ]
+      }
+    ],
+    "assessment": "CROSS_BORDER_CHOKEPOINT_CAPABILITY_STRONGLY_ESTABLISHED",
+    "claim_limit": "The legal/control perimeter reaches Russian-controlled cross-border links; it does not confer or demonstrate legal or technical control over infrastructure physically and administratively outside Russia."
+  },
+  "watchers_window_2026_08_26_27": {
+    "classification": "T1_PLUS_T5_HIGH_INTEREST_TIMING",
+    "findings": [
+      {
+        "window": "beginning approximately evening 2026-08-26",
+        "finding": "Public network experiments reported selective interception of plaintext UDP DNS queries addressed to 8.8.8.8 and 1.1.1.1 on Russian paths, while TCP DNS could still reach the intended resolver; low-TTL probing was interpreted as pointing toward the Russian national DNS/TSPU path.",
+        "sources": [
+          "https://habr.com/ru/articles/1075272/",
+          "https://wiki.zapret.moe/DPI/tspu-dns-nsdi-dnat-august-2026"
+        ],
+        "evidence_note": "Researcher/community observation, not an official Russian attribution statement."
+      },
+      {
+        "finding": "The timing overlaps the original WATCHERS investigation window and therefore becomes a legitimate correlation marker.",
+        "classification": "T5_CORRELATION_ONLY"
+      }
+    ],
+    "causal_assessment": "NO_TECHNICAL_BRIDGE_TO_GITHUB_OR_OPENAI_FOUND",
+    "reason": "The GitHub Actions incident has a published internal control-plane/database/event-processing explanation, while the OpenAI incident affected a different service surface and no shared routing/BGP/packet fingerprint has been recovered."
+  },
+  "foreign_technology_diffusion_lane": {
+    "classification": "T3_ADJACENT_TECH_EXPORT",
+    "state": "RUSSIAN_DPI_SORM_TECHNOLOGY_EXPORT_STRONGLY_SUPPORTED_BUT_NOT_DIRECT_TSPU_EXPORT_PROOF",
+    "findings": [
+      {
+        "finding": "Recorded Future identified evidence of at least eight Russian SORM providers exporting into Central Asia and Latin America, with at least fifteen telecommunications companies assessed as likely customers; major vendors also market or exhibit across Africa, Latin America and the Middle East.",
+        "source": "https://www.recordedfuture.com/research/tracking-deployment-russian-surveillance-technologies-central-asia-latin-america",
+        "claim_limit": "SORM is a surveillance/interception architecture, not the same system as Roskomnadzor's TSPU censorship control plane."
+      },
+      {
+        "finding": "Russian telecom vendor PROTEI publicly states exports to 45 countries and more than 500 projects.",
+        "source": "https://protei.ru/",
+        "claim_limit": "Vendor export scale alone does not show that exported projects contain TSPU or are remotely controlled by Russian authorities."
+      },
+      {
+        "finding": "VAS Experts publicly reports more than 2000 installations across 30+ countries and markets DPI, regulatory URL filtering and Lawful Interception capabilities adaptable to local regulator requirements.",
+        "sources": [
+          "https://vasexperts.com/about/vasexperts/",
+          "https://vasexperts.com/products/stingray/lawful-interception/",
+          "https://vasexperts.com/solutions/regulatory-compliance/"
+        ],
+        "claim_limit": "Commercial DPI/SORM-class export is adjacent ecosystem evidence, not evidence that a foreign deployment is a TSPU node."
+      },
+      {
+        "finding": "A public VAS Experts case study documents deployment of Stingray functions including Lawful Interception at X-COM in Kazakhstan.",
+        "source": "https://vasexperts.com/resources/success-stories/x-com-bras-bng-ipv6-for-easier-network-management/",
+        "claim_limit": "This is an explicit foreign deployment of Russian-origin traffic-control/interception technology, but not demonstrated Roskomnadzor TSPU."
+      }
+    ]
+  },
+  "academic_arxiv_lane": {
+    "status": "SEARCHED_2026-08-30",
+    "papers": [
+      {
+        "title": "Block-A-Mole: The Sustainability Frontier of Moving-Target Censorship Resistance",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2606.08886",
+        "relevance": "Models adversaries representative of the Great Firewall, Russia's TSPU and Iran; useful for formal censor/defender behavior and burst/provider-correlated blocking, not evidence of foreign TSPU deployment."
+      },
+      {
+        "title": "Understanding Routing-Induced Censorship Changes Globally",
+        "year": 2024,
+        "url": "https://arxiv.org/abs/2406.19304",
+        "relevance": "Shows that route changes and ECMP can change observed censorship across countries and protocols; establishes why any claimed external TSPU effect must be route-stable and path-resolved."
+      },
+      {
+        "title": "Few Throats to Choke: On the Current Structure of the Internet",
+        "year": 2018,
+        "url": "https://arxiv.org/abs/1806.07038",
+        "relevance": "Provides the general collateral-censorship risk model in which foreign traffic routed through ASes in censoring jurisdictions can be affected. Predates TSPU and is not direct evidence of a modern TSPU event."
+      },
+      {
+        "title": "Unveiling Internet Censorship: Analysing the Impact of Nation States' Content Control Efforts on Internet Architecture and Routing Patterns",
+        "year": 2024,
+        "url": "https://arxiv.org/abs/2402.19375",
+        "relevance": "Finds a routing 'funnelling effect' associated with stronger national censorship; useful for topology/chokepoint analysis, not TSPU attribution."
+      }
+    ],
+    "arxiv_conclusion": "ArXiv supplies strong routing and censorship methodology plus formal threat models, but this pass found no arXiv paper that demonstrates Roskomnadzor-operated TSPU directly censoring a non-Russian-origin user outside Russia."
+  },
+  "route_and_bgp_bridge_search": {
+    "window": "2026-08-26/2026-08-27",
+    "target": "Publicly documented Russian-AS route leak/hijack or routing event that could bridge TSPU to GitHub/OpenAI/Cloudflare paths",
+    "result": "NO_PUBLICLY_CONFIRMED_MATCH_RECOVERED_IN_THIS_PASS",
+    "interpretation": "Absence from web-indexed public reporting is not proof no route event occurred; it means cross-provider attribution remains below threshold and requires direct RIPE RIS/RouteViews/Atlas or equivalent data analysis."
+  },
+  "negative_and_falsification_controls": [
+    {
+      "control": "TSPU origin asymmetry",
+      "finding": "Peer-reviewed measurements repeatedly constrain the observed policy to Russian-origin/outbound traffic in the measured regimes.",
+      "effect": "WEAKENS_CLAIM_OF_GENERAL_FOREIGN_USER_CONTROL"
+    },
+    {
+      "control": "Route dependence",
+      "finding": "Academic work shows censorship observations can vary solely because traffic takes a different path, so paired measurements must pin the actual route.",
+      "effect": "REQUIRES_PATH_STABLE_REPLICATION"
+    },
+    {
+      "control": "Commercial export is not command-and-control",
+      "finding": "Foreign sales of DPI/SORM technology show diffusion of capability but do not establish operational control by Roskomnadzor.",
+      "effect": "PREVENTS_FALSE_TSPU_EXPORT_ATTRIBUTION"
+    },
+    {
+      "control": "Provider-local failure explanations",
+      "finding": "GitHub published an internal Actions database/event-processing failure mechanism for the central August 26 incident.",
+      "effect": "CURRENTLY_OUTRANKS_TSPU_AS_EXPLANATION_FOR_GITHUB"
+    }
+  ],
+  "current_verdict": {
+    "tspu_large_scale_domestic_deployment": "CONFIRMED",
+    "tspu_presence_on_russian_cross_border_nodes": "CONFIRMED_BY_REGULATOR_STATEMENT_AND_CONTROL_RULES",
+    "russian_state_control_surface_includes_border_crossing_lines": "CONFIRMED_EFFECTIVE_2026_03_01",
+    "tspu_affects_international_traffic_originating_in_russia": "CONFIRMED_BY_MEASUREMENT",
+    "russian_dpi_sorm_technology_export_abroad": "CONFIRMED_AS_ADJACENT_ECOSYSTEM",
+    "roskomnadzor_operated_tspu_nodes_outside_russia": "NOT_ESTABLISHED",
+    "direct_tspu_censorship_of_non_russian_origin_users_outside_russia": "NOT_ESTABLISHED",
+    "tspu_as_cause_of_github_aug26_actions_incident": "NOT_SUPPORTED_CURRENTLY",
+    "tspu_as_cause_of_openai_aug27_work_incident": "NOT_SUPPORTED_CURRENTLY",
+    "aug26_dns_policy_change_as_watchers_timeline_marker": "HIGH_INTEREST_CORRELATION_NO_SHARED_CAUSAL_BRIDGE"
+  },
+  "proof_threshold_for_external_tspu_effect": [
+    "A foreign-origin source and foreign destination whose measured route traverses a specific Russian-controlled TSPU path.",
+    "Paired packet captures or reproducible active measurements showing the TSPU-specific fingerprint only when the path traverses that segment.",
+    "Traceroute/TTL and BGP evidence pinning the filtering hop or AS rather than inferring it from geography.",
+    "Matched controls using an alternate route that bypasses Russia and does not show the effect.",
+    "Independent replication from a second measurement platform or research group.",
+    "For a foreign deployment claim: procurement, deployment, device fingerprint, or operator documentation tying the foreign node specifically to TSPU rather than generic DPI/SORM."
+  ],
+  "next_collection_gates": [
+    "Freeze a minute-level UTC timeline for GitHub Actions, OpenAI Work, August 26 DNS interception observations and Russian-service disruptions.",
+    "Query RIPE RIS, RouteViews and BGPStream for 2026-08-26 through 2026-08-28 route leaks, origin changes or path anomalies involving Russian ASNs and prefixes/upstreams used by GitHub, OpenAI and Cloudflare.",
+    "Use RIPE Atlas and OONI where available to search for foreign-vantage paths that unexpectedly transit Russia and compare censorship fingerprints on matched bypass paths.",
+    "Build a public map of Russian transborder ASes/IXPs/links with evidence of TSPU placement, keeping physical location and administrative control separate.",
+    "Search procurement records, vendor documentation, sanctions records and foreign telecom disclosures for TSPU-specific exports; keep SORM/DPI-only evidence in the adjacent lane.",
+    "Search new FOCI/PETS/IMC/arXiv publications for TSPU TTL, fragmentation, QUIC and DNS fingerprints that can be applied safely to external vantage measurements.",
+    "Do not promote the GitHub/OpenAI/TSPU common-cause hypothesis unless one required network-level bridge is independently reproduced."
+  ]
+}

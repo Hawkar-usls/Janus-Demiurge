@@ -1,0 +1,61 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1-A0-AND-CONDITIONAL-D1-RESULT-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "PASS_A0_COMMON_LAYER_UNION_EQUIVALENCE__PASS_CONDITIONAL_D1_COUNT__A1_OPEN",
+  "gate": "R5_B1B1_COMMON_D1_NEIGHBORHOOD_SYNCHRONIZATION_GATE_V1",
+  "binds": {
+    "source_audit_blob": "bcc0cad31236aa88284655d837bbdfcc4645261e",
+    "prereg_blob": "b930545f9013a308e6667c30e25cceea575bc62f",
+    "B1A_seal_blob": "3729fb85fe388d99df42e185cd23aaa9e188bf28",
+    "full_component_quotient_seal_blob": "bd8a42511a1d64ac4295f0f3815adcf95f4ddbc9"
+  },
+  "theorem_A0": {
+    "name": "COMMON_LAYER_MIM_UNION_EQUIVALENCE_V1",
+    "setup": "Extend each layer I_{sigma,i} to the common vertex universe U=S_sigma union C_sigma by making survivor vertices of other layers isolated. Let I_sigma be the union of the three layer edge sets.",
+    "cut_statement": "For every cut A subset U, max_i mim_{I_{sigma,i}}(A) <= mim_{I_sigma}(A) <= sum_i mim_{I_{sigma,i}}(A) <= 3*max_i mim_{I_{sigma,i}}(A).",
+    "proof": [
+      "Every induced matching M in one layer I_{sigma,i} remains induced in I_sigma: its endpoints lie in R_i union C_sigma, while every edge added by another layer has its survivor endpoint in R_j with j!=i and therefore cannot join two endpoints of M.",
+      "Let M be an induced matching of I_sigma across A. Every edge of M belongs uniquely to one layer according to its survivor endpoint. Partition M=M_1 disjoint_union M_2 disjoint_union M_3.",
+      "Each M_i remains an induced matching in I_{sigma,i}; hence |M_i|<=mim_{I_{sigma,i}}(A).",
+      "Therefore |M|<=sum_i mim_{I_{sigma,i}}(A)<=3*max_i mim_{I_{sigma,i}}(A)."
+    ],
+    "decomposition_statement": "For every common branch decomposition T, COMMON_LAYER_MIM(T) <= mim_{I_sigma}(T) <= 3*COMMON_LAYER_MIM(T).",
+    "consequence": "Existence of a q(|S|)-bounded common layout is equivalent up to a factor 3 to existence of a q(|S|)-bounded mim-width decomposition of the single incidence-union graph I_sigma, using the same decomposition tree.",
+    "constructibility_consequence": "Any explicitly constructed bounded-width decomposition of I_sigma is immediately a common layout for all three layers. Conversely any explicitly constructed common layout is a decomposition of I_sigma with at most triple width."
+  },
+  "theorem_B_conditional": {
+    "name": "COMMON_LAYOUT_D1_BOUND_V1",
+    "hypothesis": "A common decomposition T satisfies mim_{I_{sigma,i}}(e)<=w for every cut e and every i in {1,2,3}.",
+    "external_lemma_import": "For any cut A with mim(A)<=w, every vertex subset X on one side has a representative R subset X of size <=w with the same external neighborhood.",
+    "one_set_count": "Hence the number of 1-neighborhood equivalence classes for one processed survivor subset is at most sum_{j=0}^w binom(n,j)=n^{O(w)}.",
+    "color_layer_count": "For each of 3 auxiliary layers and each of 4 actual colors, retain the 1-neighborhood class of processed vertices in that layer receiving that actual color. This is at most 12 sets (and at most 9 can be nonempty for one fixed 3-list class).",
+    "joint_bound_per_sigma": "At most (sum_{j=0}^w binom(n,j))^12 = n^{O(12w)} joint neighborhood signatures.",
+    "all_coarse_classes_bound": "Across at most B(s)=9*2^(s+3*2^(2s)) B0 coarse classes, a conservative product bound is n^{O(12*w*B(s))}.",
+    "component_mask_absorption": "For every external component-node and actual color c, the d=1 signature records whether it sees at least one processed neighbor of color c; therefore the survivor-induced forbidden-color mask F(C) subseteq {1,2,3,4} is determined without storing one independent 4-bit mask per component.",
+    "firewall": "This is only a boundary-signature counting theorem. It does not prove that equal signatures preserve internal Y0-component feasibility, other source objects, or global reconstruction."
+  },
+  "phase_A1_reduction": {
+    "previous_question": "Find one common cut tree simultaneously good for the three layers.",
+    "reduced_question": "Construct a bounded-mim-width branch decomposition of the single bipartite incidence-union graph I_sigma.",
+    "relation_to_Q_sigma": "I_sigma is obtained from the sealed P7-free full quotient Q_sigma by deleting all survivor-survivor edges.",
+    "probe_interpretation": "Thus I_sigma is a partitioned probe P7-free graph with non-probe side S_sigma and completion edges G[S_sigma].",
+    "warning": "General probe P_t-free structure is not enough for bounded mim-width or coloring tractability; source/B0 restrictions remain essential."
+  },
+  "simultaneous_2026_subcheck": {
+    "verdict": "NO_DIRECT_TRANSFER_ESTABLISHED",
+    "reason": "The theorem concerns one graph represented by a bounded-mim base graph plus constant labels. No such constant-label representation of I_sigma over a bounded-mim base class has been proved. The available abstract explicitly certifies mim-width, not sim-width."
+  },
+  "phase_status": {
+    "A0_COMMON_LAYER_UNION_EQUIVALENCE": "PASS_PROVED",
+    "A1_BOUNDED_MIM_DECOMPOSITION_OF_I_sigma": "OPEN",
+    "B_CONDITIONAL_D1_COUNT": "PASS_PROVED_CONDITIONAL",
+    "C_SOURCE_SUFFICIENCY": "LOCKED"
+  },
+  "scientific_ceiling": {
+    "FULL_L2_REPAIR": "OPEN",
+    "LEMMA11_P7_LIFT": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  }
+}

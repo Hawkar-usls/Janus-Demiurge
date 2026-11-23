@@ -1,0 +1,114 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-SIGLA-SOURCE-ADAPTER-CONTRACT-2026-08-14-v0.1",
+  "timestamp": "2026-08-14T14:09:00+03:00",
+  "version": "v0.1",
+  "title": "JANUS Linear A SigLA fail-closed source-adapter contract",
+  "observer": "Oleksandr Ahapov / Hawkar + JANUS",
+  "node_type": "frozen_source_adapter_contract",
+  "status": "FROZEN_BEFORE_CONTENT_AUDIT",
+  "scientific_claim_bearing": false,
+  "evidence_chain": {
+    "root_interface_probe": {
+      "path": "data/JANUS-LINEAR-A-SIGLA-INTERFACE-PROBE-RESULT-2026-08-14-v0.1.json",
+      "commit": "242cd6170e2e09bea3f9ef7cdcb1c2416fbb0ba6",
+      "observed_root_word_view_anchor": "[word view]",
+      "observed_word_view_relative_route": "index-word.html"
+    },
+    "word_view_probe": {
+      "path": "data/JANUS-LINEAR-A-SIGLA-WORD-VIEW-INTERFACE-PROBE-RESULT-2026-08-14-v0.1.json",
+      "commit": "df321d2e7a3e546a1477d95442943a3afb79134e",
+      "workflow_run_id": 31794720800,
+      "artifact_id": 9216887259,
+      "artifact_digest": "sha256:d3c1bbbe4f1a4a2591c67c4998a8f0098eccc5d4ac89c9a7442343e43bd8f4bb"
+    },
+    "mechanical_candidate": {
+      "path": "data/JANUS-LINEAR-A-SIGLA-SOURCE-ADAPTER-CONTRACT-CANDIDATE-2026-08-14-v0.1.json",
+      "commit": "d5e829c57ce5cc401fe2f2da2ead68e50f4e693e",
+      "derivation_rule": "THREE_WAY_EXACT_SET_INTERSECTION_ONLY"
+    }
+  },
+  "contract_scope": {
+    "source": "SigLA — The Signs of Linear A",
+    "source_independence_level": "L1_INDEPENDENT_DIGITIZATION_SHARED_TRANSCRIPTION",
+    "purpose": "Validate the technical identity of SigLA document root and native word-view pages before extracting any content observables.",
+    "not_a_transcription_model": true,
+    "not_a_lexical_model": true,
+    "not_external_replication": true
+  },
+  "root_page_contract": {
+    "route": "https://sigla.phis.me/document/{URL_ENCODED_SIGLA_ID}/",
+    "required_http_status": 200,
+    "required_anchor": {
+      "normalized_visible_text": "[word view]",
+      "required_href_suffix": "index-word.html"
+    },
+    "failure_action": "FAIL_CLOSED_NO_WORD_VIEW_FETCH"
+  },
+  "word_view_contract": {
+    "relative_route": "index-word.html",
+    "required_http_status": 200,
+    "required_common_script_src": [
+      "../../database.js",
+      "../../sigilWeb.bc.js"
+    ],
+    "required_common_stylesheet_href": [
+      "../../style.css"
+    ],
+    "required_common_classes": [
+      "document-metadata",
+      "document-view"
+    ],
+    "required_reciprocal_anchor_text": "[sign view]",
+    "source_native_text_order_required": true,
+    "failure_action": "FAIL_CLOSED_NO_CONTENT_EXTRACTION"
+  },
+  "minimality_rationale": {
+    "admitted": [
+      "Exact route grammar because it was observed on all three deterministic root probes and frozen before the word-view execution.",
+      "Two script sources and one stylesheet because they are exact three-way intersections across frozen word-view snapshots.",
+      "document-metadata and document-view classes because they are source-structural three-way intersections and directly describe page containers rather than inscription semantics.",
+      "[sign view] because it is a three-way common reciprocal navigation anchor that distinguishes native word view from the root/sign view."
+    ],
+    "not_required_even_though_common": [
+      "Generic HTML tags such as body/div/span because they are non-discriminative.",
+      "Branding/navigation anchors such as Home/About/Help because they are interface decoration rather than word-view identity.",
+      "logo/search-content/sidebar-icon/title classes because they are not necessary to validate the transcription-view container."
+    ],
+    "posthoc_new_feature_added": false
+  },
+  "preservation_rules": [
+    "Preserve source-native ordering.",
+    "Preserve punctuation, numeric, fraction and uncertainty markers exactly as presented by SigLA until a separately frozen normalization rule exists.",
+    "Preserve source-specific sign IDs and document IDs without coercion into mwenge identifiers except through the already frozen document identity bridge.",
+    "Preserve disagreements as disagreements; never silently replace SigLA content with mwenge content."
+  ],
+  "forbidden": [
+    "fallback to guessed DOM selectors when the contract fails",
+    "automatic a↔r or b↔v side/orientation remapping",
+    "semantic interpretation during adapter validation",
+    "using known Linear A candidates to choose documents",
+    "calling SigLA agreement external transcription replication",
+    "relaxing contract requirements after observing a desired content comparison"
+  ],
+  "adapter_state": {
+    "contract_frozen": true,
+    "implementation_written": false,
+    "content_extraction_grammar_frozen": false,
+    "content_audit_sample_frozen": false
+  },
+  "next_gate": {
+    "id": "R3A_3C_SIGLA_WORD_VIEW_STRUCTURAL_SCHEMA_PROBE",
+    "status": "NEXT",
+    "goal": "Using only the exact frozen three-page word-view artifact, derive a content-extraction schema candidate from DOM ancestry and repeated source-native structures without reading mwenge content or assigning sign/word semantics.",
+    "why_before_content_audit": "The interface is now identifiable, but a page-level adapter contract does not yet prove which DOM nodes correspond to source-native word units. A separate structural schema gate prevents content extraction from becoming an undocumented parser guess."
+  },
+  "claim_ceiling": {
+    "sigla_source_adapter_contract_frozen": true,
+    "content_extraction_grammar_frozen": false,
+    "cross_digitization_content_replication_established": false,
+    "external_transcription_replication_established": false,
+    "new_anchor_established": false,
+    "decipherment_established": false,
+    "promotion": "BLOCKED"
+  }
+}

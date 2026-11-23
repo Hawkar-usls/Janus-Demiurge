@@ -1,0 +1,163 @@
+{
+  "schema": "janus.research.preregistration.public_causality_009.v1",
+  "record_id": "JANUS-OPEN-CAUSALITY-009-PREREG-2026-11-10-v1",
+  "experiment": "JANUS-OPEN-CAUSALITY-009",
+  "date": "2026-11-10",
+  "record_type": "APPEND_ONLY_PROSPECTIVE_PREREGISTRATION_BEFORE_TARGET_OBSERVATIONS",
+  "status": "FROZEN_DESIGN__NO_TARGET_FORECAST_SCORED_YET",
+  "scientific_scope": "Prospective mathematical forecast evaluation on later PUBLIC physical NOAA observations and future publicly BLS-verified drand randomness, with a separate uncalibrated SUNLU glow phosphor memory scenario. Not an experiment coupling a physically isolated early detector to a late free quantum choice.",
+  "independent_lanes": [
+    {
+      "name": "OPEN-LIGHT-009A",
+      "source": "NOAA SURFRAD Bondville Illinois, station bon",
+      "unit": "W/m^2",
+      "target_dates_utc": [
+        "2026-11-12",
+        "2026-11-13",
+        "2026-11-14",
+        "2026-11-15",
+        "2026-11-16",
+        "2026-11-17",
+        "2026-11-18",
+        "2026-11-19"
+      ],
+      "target_hour_count_each": 24,
+      "total_target_hours": 192,
+      "train_window": "Four source days D-7 through D-4 for a forecast prepared on date D; target D+2. No target NOAA values fetched before GitHub artifact publication.",
+      "input": "Official 1-minute SURFRAD GHI and adjacent QC; 1440 unique UTC minute entries per day; at least 45 QC=0 valid minute values per hour, otherwise fail that day.",
+      "precommit": "03:17 UTC about 2 days before target; SHA-bound predicted 24 hourly GHI values and 3 fixed baseline sequences uploaded to an immutable GitHub Actions artifact.",
+      "late_check": "03:17 UTC about 3 days after the target; require unique original artifact and GitHub server creation time earlier than target day; download target NOAA daily file only at assessment.",
+      "model": "JANUS_PHYSICS_HEURISTIC_FIXED_NOT_TRAINED_TRANSFORMER_V1: equal mix of four historical same-hour means and clear-sky geometrical reference scaled by historical transparency.",
+      "baselines": [
+        "last available historical same hour (persistence)",
+        "mean same hour over four historical days (diurnal)",
+        "Haurwitz clear-sky GHI estimate"
+      ],
+      "primary": "Aggregate MAE over 24 hourly targets per date and means across all 8 fixed dates; predeclared hybrid improvement only if its aggregate MAE strictly lower than each of the 3 aggregate baseline MAEs.",
+      "missing_policy": "No imputation of unknown NOAA values, no cohort substitution, no retroactive model change. Incomplete data remain unavailable and scientific pooled claim is withheld.",
+      "inferential_scope": "Classical forward forecast skill, not retrocausality or causation of solar irradiance."
+    },
+    {
+      "name": "OPEN-FUTURE-009B",
+      "source": "drand Quicknet",
+      "target_dates_utc": [
+        "2026-11-12",
+        "2026-11-13",
+        "2026-11-14",
+        "2026-11-15",
+        "2026-11-16",
+        "2026-11-17",
+        "2026-11-18",
+        "2026-11-19"
+      ],
+      "quicknet_hash": "52db9ba70e0cc0f6eaf7803dd07447a1f5477735fd3f661792ba94600c84e971",
+      "quicknet_genesis_unix": 1692803367,
+      "beacon_period_seconds": 3,
+      "per_day_rounds": 128,
+      "distinct_round_spacing_seconds": 60,
+      "total_target_bits": 1024,
+      "first_target_nominal_local": "08:00:00 UTC, each target date; first exact Quicknet round not earlier than that timestamp.",
+      "last_target_nominal": "10:07 UTC approximately; assessor runs at 12:48 UTC after all releases.",
+      "precommit": "11:37 UTC about 2 days before target; full original 128 probability-1 values and binary decisions, target round IDs, SHA256, model/report checkpoint hashes archived in unique GitHub Action artifact.",
+      "model": "Previously trained (synthetic Born-rule) frozen JanusTinyTransformer from GitHub Actions run 42596763409; no drand training or changing weights during planned eight cohorts.",
+      "model_checkpoint_artifact_id": 13663149173,
+      "model_artifact_sha256": "45c8b063b08973b06b88ec843e9a5d16976c983a8e35b39ef33e9304201e5515",
+      "frozen_checkpoint_sha256": "45a623b90a98d36c399fbe63fb3845022d90171b7ba5bca17bec780ecb1be63b",
+      "fixed_features": "Known future round integer and within-cohort index encoded using original JanusTinyTransformer public-token encoder; no future beacon/randomness input.",
+      "label_definition": "Highest-order bit of SHA-256 of BLS signature for each of the 128 verified distinct Quicknet rounds.",
+      "verifier": "drand-client@1.4.2 official pinned Quicknet chain public key BLS verification enabled; compare SHA-256(signature) with published randomness; reject any missing or altered round.",
+      "primary": "Only after eight full cohorts, pool all 1024 binary matches; under independent fair-bit null, report one-sided exact binomial tail P(X>=observed) and fixed >=562 successes (p<0.001).",
+      "secondary": [
+        "overall Brier score versus fair .25",
+        "each day's 128-bit accuracy and p purely descriptive, not stopping or promotion criteria"
+      ],
+      "missing_policy": "No bit removal, drand round replacement, early-stopping, threshold shifting, model retraining, or selective reruns. Incomplete eight-cohort trial not called positive.",
+      "interpretation": "Even an unusual prospective score is NOT evidence of retrocausality, because there is no physically linked early receiver, no independent late intervention, and leakage/statistical alternatives still require testing."
+    },
+    {
+      "name": "OPEN-GLOW-009C",
+      "source": "NOAA 009A GHI forecast and eventual NOAA GHI measurements passed separately through an illustrative phosphor dynamics model",
+      "material": "SUNLU PLA Glow, putative SrAl2O4:Eu2+,Dy3+ phosphor (specific formulation / concentrations not verified in sample).",
+      "example_composition": "2023 SUNLU SDS reports 5 wt.% strontium aluminate for a specific filament formulation; not a certified assay of user's spool.",
+      "sample_dimensions_mm": [
+        10,
+        10,
+        1
+      ],
+      "assumed_density_g_per_cm3": 1.23,
+      "predicted_sample_mass_g": 0.123,
+      "assumed_phosphor_mass_mg": 6.15,
+      "model_constants": {
+        "excitation_wavelength_nm": 365,
+        "emission_wavelength_nm": 520,
+        "absorbed_photon_fraction": 0.1,
+        "delayed_photon_yield": 0.05,
+        "effective_single_time_constant_seconds": 900,
+        "broadband_ghi_to_effective_365nm_fraction": 0.03
+      },
+      "model": "Forward-causal trapped-state optical memory: dN/dt=absorbed photon rate*delayed yield-N/tau, green emission power=N*hc/(520nm*tau).",
+      "comparison": "Early 24-hour VIRTUAL green power computed from frozen NOAA forecast vs later VIRTUAL green power computed from observed NOAA GHI, all parameters fixed before target.",
+      "example_benchtop": "Assumed 1 mW 365-nm illumination for 300 s yields around 0.995 microW immediately after switch-off; calibrated physical sample values are unknown.",
+      "strict_limit": "NO measured SUNLU phosphor absorption, actual spectrum, optical output or delayed emission. No inference about physical retrocausality."
+    }
+  ],
+  "fixed_cohort_rule": {
+    "target_dates_first": "2026-11-12",
+    "target_dates_last": "2026-11-19",
+    "n_days": 8,
+    "weather_target_hours": 192,
+    "random_bits": 1024,
+    "stop_after_last_day": true,
+    "do_not_modify_original_protocol": true,
+    "archive_failures_and_missing": true,
+    "not_a_continuous_search_until_success": true
+  },
+  "source_lineage": {
+    "historical_banana_original": "data/proofs/banana_dna_decoder.json",
+    "historical_light_original": "data/proofs/stochastic_light_interface_model.json",
+    "banana_006_evidence": "data/experiments/BANANA-TO-JANUS-CAUSALITY-CONTROLS-006-OFFLINE-RESULT-2026-11-09.json",
+    "light_007_evidence": "data/experiments/LIGHT-TO-JANUS-OCEAN-CAUSALITY-CONTROLS-007-2026-11-09.json",
+    "light_008_original_prereg": "data/experiments/JANUS-LIGHT-PHYSICAL-008-PREREG-2026-11-09-v1.json",
+    "independent_qpu005_prereg": "data/experiments/JANUS-RETRO-PHYSICAL-005-PREREG-2026-11-09-v1.json"
+  },
+  "implementation": {
+    "repo": "Hawkar-usls/Janus-Demiurge",
+    "candidate_branch": "janus/open-causality-009-noaa-drand-20261109",
+    "core_sha_by_path": {
+      "experiments/ocean_transformer/open_causality_009/noaa_009a.py": "5424cad061198038a8dc21ac5b6d42250be02d25",
+      "experiments/ocean_transformer/open_causality_009/future_009b.py": "d9bcef596207488594453a01755a16a97606cba7",
+      "experiments/ocean_transformer/open_causality_009/glow_009c.py": "2713293f74e49b51cf43eed066bc2e58d61b77a8",
+      "experiments/ocean_transformer/open_causality_009/aggregate_009.py": "4cc57653c6fefe49fcb9968c7bb8553acf550dff",
+      "experiments/ocean_transformer/drand_pilot/signed_rounds_009.mjs": "b4a3772ab1871f9befca1f3e8503d2f59c0c8edf"
+    },
+    "workflow_sha_by_path": {
+      ".github/workflows/janus-ocean-open-light-009a.yml": "5fac7a1eb05ebc025039e3187c6282c470b1fdf0",
+      ".github/workflows/janus-ocean-open-future-009b-precommit.yml": "1a8e5bca87b00b22638b6b6de3fe7967b27c7cc3",
+      ".github/workflows/janus-ocean-open-future-009b-assess.yml": "c3648bde087221a53ed0cd2802602a15d20e1746",
+      ".github/workflows/janus-ocean-open-causality-009-final-pool.yml": "5cc9b39015bc0537f5d21435e6f12158e5928c98"
+    }
+  },
+  "preflight_verified": {
+    "noaa_history_smoke_run": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/42711702411",
+    "noaa_2026_11_06_source_sha256": "f893c550341b9fa4afdd2e32ed60111d728eea1c2c331c708efa956da9cc1846",
+    "real_frozen_model_cpu_smoke_run": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/42712498115",
+    "drand_latest_BLS_source_smoke_run": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/42712779842",
+    "original_model_actual_inference_128_produced": true,
+    "real_future_model_beacon_pairs_scored": false,
+    "future_noaa_target_009a_scored": false,
+    "sunlu_glow_physical_measurements": 0,
+    "independent_external_retrocausal_receiver": false
+  },
+  "safety": {
+    "original_qpu005_code_or_prereg_edited": false,
+    "original_light_007_or_light_008_protocol_edited": false,
+    "user_esp32_nas_or_other_hardware_operated": false,
+    "ibm_quantum_credentials_accessed": false,
+    "real_QPU_minutes_used": 0,
+    "real_future_target_results_known_at_prereg": false,
+    "independent_external_custodian_is_not_the_same_as_github_server_timestamp": true,
+    "no_retrocausality_conclusion_permitted_without_new_proof": true,
+    "source_code_nor_workflows_should_be_silently_changed_after_prereg": true
+  },
+  "next_gate": "Require checks/CI green and reference Git SHA immutable; merge preregistration before enabling scheduled Actions. Perform exactly eight timed forecast cohorts with preserved failures and full terminal aggregation; do not claim physical retrocausality from public forecast skill."
+}

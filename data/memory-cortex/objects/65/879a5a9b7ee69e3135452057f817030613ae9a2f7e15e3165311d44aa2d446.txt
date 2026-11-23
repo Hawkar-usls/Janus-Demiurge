@@ -1,0 +1,85 @@
+{
+  "schema": "janus.connection.hidden_pattern_heldout_classification_rubric.v0.1",
+  "artifact_uuid": "JANUS-CONNECTION-HIDDEN-PATTERN-HELDOUT-CLASSIFICATION-RUBRIC-2026-08-14-V0.1",
+  "status": "FROZEN_BEFORE_HELDOUT_SOURCE_INSPECTION",
+  "selection_run_id": 31798941254,
+  "selection_job_id": 94762135168,
+  "selection_conclusion_known": "success",
+  "selected_paths_inspected_before_this_freeze": false,
+  "purpose": "Precommit the domain-neutral classification rules applied to the already-frozen held-out panel. The rubric must not be changed after selected source bodies are inspected merely to improve support rates.",
+  "global_rules": {
+    "source_body_required": true,
+    "connection_labels_as_evidence": false,
+    "filename_or_title_as_support": false,
+    "shared_authoring_style_as_support": false,
+    "semantic_similarity_alone_as_support": false,
+    "direct_parent_child_lineage_as_independent_support": false,
+    "negative_and_not_applicable_results_must_be_retained": true,
+    "support_requires_exact_source_fields_or_explicit_source_statements": true,
+    "contradiction_requires_exact_source_fields_or_explicit_source_statements": true,
+    "unknown_or_insufficient_evidence_defaults_to": "NOT_APPLICABLE_OR_UNRESOLVED",
+    "no_post_hoc_panel_replacement": true,
+    "no_post_hoc_rubric_relaxation": true
+  },
+  "HIDDEN-001": {
+    "name": "NON_TRANSITIVE_EVIDENCE_BINDING_LADDER",
+    "support_definition": "SUPPORT only when the held-out record itself distinguishes at least two adjacent evidence/binding layers and explicitly prevents lower-layer evidence from automatically establishing a stronger upper-layer claim, OR contains a lower-layer PASS/ESTABLISHED state while a logically stronger upper-layer state remains OPEN/BLOCKED/NOT_ESTABLISHED under the same record.",
+    "strong_support": "At least three ordered evidence layers are explicitly represented and one or more no-auto-promotion boundaries are encoded between them.",
+    "weak_support": "Exactly two distinguishable evidence layers with an explicit no-auto-promotion rule.",
+    "contradiction_definition": "CONTRADICTION only when the record explicitly treats evidence at a weaker layer as sufficient by itself to establish a stronger layer that the rubric treats as distinct, without an additional discriminator or gate.",
+    "not_applicable": "No ordered or strength-distinct evidence/binding layers can be established from the source body without semantic invention.",
+    "forbidden_inference": "Do not infer a ladder solely from several keys named stage, gate, level, state or status. The source must encode an evidential-strength or binding distinction."
+  },
+  "HIDDEN-002": {
+    "name": "AMBIGUITY_IS_A_FIRST_CLASS_STATE",
+    "support_definition": "SUPPORT only when the held-out record explicitly preserves OPEN/UNKNOWN/UNRESOLVED/UNDETERMINED/null/a candidate set/multiple alternatives because available evidence does not select a unique answer, or explicitly forbids guessing/forcing a singleton until an additional discriminator is supplied.",
+    "strong_support": "The record both preserves ambiguity and names the future evidence/gate capable of resolving it.",
+    "weak_support": "The record preserves ambiguity or null rather than forcing a value, but does not specify a resolving discriminator.",
+    "contradiction_definition": "CONTRADICTION only when the record explicitly mandates selecting a unique candidate despite declaring that the available evidence does not discriminate among multiple live candidates.",
+    "not_applicable": "OPEN/PENDING states are merely workflow incompleteness, missing execution, or future scheduling and are not epistemic ambiguity among live alternatives.",
+    "forbidden_inference": "Do not count every OPEN, PENDING or null field as ambiguity. The reason must be insufficient discriminating evidence or unresolved competing bindings/hypotheses."
+  },
+  "HIDDEN-003": {
+    "name": "FIRST_BREAK_LOCALIZATION_GENERALIZES_BEYOND_VISUAL_SCORING",
+    "applicability_definition": "APPLICABLE only when the record contains an ordered chain of at least three evidence/gate boundaries whose downstream admissibility depends on preceding boundaries.",
+    "support_definition": "SUPPORT only when the record itself localizes or preserves the earliest blocking/failed/unresolved boundary, or explicitly prevents a later/aggregate success from masking an earlier failed prerequisite.",
+    "formal_applicability_only": "Use when an ordered >=3 boundary chain exists but the source does not itself encode first-failure localization semantics.",
+    "contradiction_definition": "CONTRADICTION only when the record explicitly defines downstream or aggregate success as sufficient to override an earlier failed prerequisite in the same ordered chain.",
+    "not_applicable": "Lists of independent checks, unordered requirement sets, or chronology without prerequisite semantics do not qualify as boundary chains.",
+    "forbidden_inference": "Do not transform an arbitrary list into a causal or prerequisite ordering simply because JSON preserves list order."
+  },
+  "record_level_output_schema": {
+    "path": "string",
+    "blob_sha1": "string",
+    "HIDDEN-001": {
+      "classification": ["STRONG_SUPPORT", "WEAK_SUPPORT", "CONTRADICTION", "NOT_APPLICABLE", "UNRESOLVED"],
+      "evidence_locations": "array of exact JSON pointers or concise field paths",
+      "reason": "bounded source-grounded explanation"
+    },
+    "HIDDEN-002": {
+      "classification": ["STRONG_SUPPORT", "WEAK_SUPPORT", "CONTRADICTION", "NOT_APPLICABLE", "UNRESOLVED"],
+      "evidence_locations": "array of exact JSON pointers or concise field paths",
+      "reason": "bounded source-grounded explanation"
+    },
+    "HIDDEN-003": {
+      "classification": ["STRONG_SUPPORT", "FORMAL_APPLICABILITY_ONLY", "CONTRADICTION", "NOT_APPLICABLE", "UNRESOLVED"],
+      "evidence_locations": "array of exact JSON pointers or concise field paths",
+      "reason": "bounded source-grounded explanation"
+    }
+  },
+  "panel_level_promotion_rule": {
+    "heldout_transport_candidate": "May be asserted for a hidden pattern only if at least 3 held-out source families receive SUPPORT under the frozen rubric, at least 2 distinct top-level repository domains/families are represented, no more than half of supporting records belong to one normalized family, and all contradictions/not-applicable records are retained.",
+    "heldout_transport_strong": "Requires at least 5 supporting held-out families, at least 3 distinct source-family/domain buckets, zero explicit contradictions, and a subsequent adjacency/assignment rewire test showing loss of the target relation under matched destructive controls.",
+    "failure_rule": "If support threshold is not reached, record FAIL_OR_INSUFFICIENT_HELDOUT_TRANSPORT; do not replace panel members or weaken the rubric.",
+    "external_replication": "Never granted by this internal held-out panel because all records remain inside the same repository/common authorship environment."
+  },
+  "claim_ceiling": {
+    "rubric_is_preregistered_relative_to_selected_source_inspection": true,
+    "selection_success_was_known_before_rubric_freeze": true,
+    "selected_source_paths_were_not_inspected_before_rubric_freeze": true,
+    "heldout_transport_result_known": false,
+    "external_replication": false,
+    "causal_law": false,
+    "scientific_novelty": false
+  }
+}

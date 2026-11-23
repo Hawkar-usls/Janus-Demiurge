@@ -1,0 +1,268 @@
+{
+  "artifact_id": "EYE-R4.2-SYNTHETIC-ADAPTIVE-ADVANTAGE-v1",
+  "authority": "EXACT_OPTIMAL_POLICY_UNDER_DECLARED_DETERMINISTIC_OUTCOME_AND_PRIOR_MODEL__NOT_TRUE_CAUSE_PROOF",
+  "exact_policy_search_completed": true,
+  "expected_cost_savings_vs_nonadaptive": 1.0,
+  "expected_cost_to_identification": 4.0,
+  "firewalls": [
+    "ADAPTIVE_POLICY != CAUSAL_TRUTH",
+    "PRIOR != EVIDENCE",
+    "EXPECTED_COST_OPTIMUM != WORST_CASE_OPTIMUM",
+    "DETERMINISTIC_OUTCOME_MODEL != TRUE_WORLD",
+    "SOFT_UNCALIBRATED_TEST != BINARY_DISCRIMINATOR",
+    "GREEDY_NEXT_TEST != OPTIMAL_POLICY",
+    "NON_IDENTIFIABLE != FALSE"
+  ],
+  "nonadaptive_baseline": {
+    "additional_tests": [
+      "t_universal"
+    ],
+    "cost": 5.0,
+    "exact": true,
+    "status": "EXACT_NONADAPTIVE_MINIMUM_FOUND"
+  },
+  "objective": "expected_cost_then_worst_case_then_test_id",
+  "policy_node_count": 7,
+  "policy_nodes": [
+    {
+      "acquired_tests": [],
+      "branches": [
+        {
+          "child_node_id": "N0001",
+          "outcome": "L",
+          "probability": 0.5,
+          "remaining_causes": [
+            "A",
+            "B"
+          ],
+          "remaining_target_classes": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "child_node_id": "N0004",
+          "outcome": "R",
+          "probability": 0.5,
+          "remaining_causes": [
+            "C",
+            "D"
+          ],
+          "remaining_target_classes": [
+            "C",
+            "D"
+          ]
+        }
+      ],
+      "expected_total_cost_from_state": 4.0,
+      "immediate_cost": 1.0,
+      "next_test": "t_root",
+      "node_id": "N0000",
+      "remaining_causes": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "remaining_target_classes": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "terminal": false,
+      "worst_case_total_cost_from_state": 5.0
+    },
+    {
+      "acquired_tests": [
+        "t_root"
+      ],
+      "branches": [
+        {
+          "child_node_id": "N0002",
+          "outcome": "A",
+          "probability": 0.5,
+          "remaining_causes": [
+            "A"
+          ],
+          "remaining_target_classes": [
+            "A"
+          ]
+        },
+        {
+          "child_node_id": "N0003",
+          "outcome": "B",
+          "probability": 0.5,
+          "remaining_causes": [
+            "B"
+          ],
+          "remaining_target_classes": [
+            "B"
+          ]
+        }
+      ],
+      "expected_total_cost_from_state": 2.0,
+      "immediate_cost": 2.0,
+      "next_test": "t_left",
+      "node_id": "N0001",
+      "remaining_causes": [
+        "A",
+        "B"
+      ],
+      "remaining_target_classes": [
+        "A",
+        "B"
+      ],
+      "terminal": false,
+      "worst_case_total_cost_from_state": 2.0
+    },
+    {
+      "acquired_tests": [
+        "t_left",
+        "t_root"
+      ],
+      "identified_target_class": "A",
+      "node_id": "N0002",
+      "remaining_causes": [
+        "A"
+      ],
+      "terminal": true
+    },
+    {
+      "acquired_tests": [
+        "t_left",
+        "t_root"
+      ],
+      "identified_target_class": "B",
+      "node_id": "N0003",
+      "remaining_causes": [
+        "B"
+      ],
+      "terminal": true
+    },
+    {
+      "acquired_tests": [
+        "t_root"
+      ],
+      "branches": [
+        {
+          "child_node_id": "N0005",
+          "outcome": "C",
+          "probability": 0.5,
+          "remaining_causes": [
+            "C"
+          ],
+          "remaining_target_classes": [
+            "C"
+          ]
+        },
+        {
+          "child_node_id": "N0006",
+          "outcome": "D",
+          "probability": 0.5,
+          "remaining_causes": [
+            "D"
+          ],
+          "remaining_target_classes": [
+            "D"
+          ]
+        }
+      ],
+      "expected_total_cost_from_state": 4.0,
+      "immediate_cost": 4.0,
+      "next_test": "t_right",
+      "node_id": "N0004",
+      "remaining_causes": [
+        "C",
+        "D"
+      ],
+      "remaining_target_classes": [
+        "C",
+        "D"
+      ],
+      "terminal": false,
+      "worst_case_total_cost_from_state": 4.0
+    },
+    {
+      "acquired_tests": [
+        "t_right",
+        "t_root"
+      ],
+      "identified_target_class": "C",
+      "node_id": "N0005",
+      "remaining_causes": [
+        "C"
+      ],
+      "terminal": true
+    },
+    {
+      "acquired_tests": [
+        "t_right",
+        "t_root"
+      ],
+      "identified_target_class": "D",
+      "node_id": "N0006",
+      "remaining_causes": [
+        "D"
+      ],
+      "terminal": true
+    }
+  ],
+  "root_greedy_next_test_ranking": [
+    {
+      "cost": 1.0,
+      "expected_information_gain_bits": 1.0,
+      "gain_per_cost": 1.0,
+      "outcome_probabilities": {
+        "L": 0.5,
+        "R": 0.5
+      },
+      "test_id": "t_root",
+      "unlocks": []
+    },
+    {
+      "cost": 2.0,
+      "expected_information_gain_bits": 1.5,
+      "gain_per_cost": 0.75,
+      "outcome_probabilities": {
+        "A": 0.25,
+        "B": 0.25,
+        "OTHER": 0.5
+      },
+      "test_id": "t_left",
+      "unlocks": []
+    },
+    {
+      "cost": 5.0,
+      "expected_information_gain_bits": 2.0,
+      "gain_per_cost": 0.4,
+      "outcome_probabilities": {
+        "A": 0.25,
+        "B": 0.25,
+        "C": 0.25,
+        "D": 0.25
+      },
+      "test_id": "t_universal",
+      "unlocks": []
+    },
+    {
+      "cost": 4.0,
+      "expected_information_gain_bits": 1.5,
+      "gain_per_cost": 0.375,
+      "outcome_probabilities": {
+        "C": 0.25,
+        "D": 0.25,
+        "OTHER": 0.5
+      },
+      "test_id": "t_right",
+      "unlocks": []
+    }
+  ],
+  "root_next_test": "t_root",
+  "root_node_id": "N0000",
+  "schema": "janus.eye.r4_2.adaptive_policy_receipt.v1",
+  "source_git_commit": "1086a1162ece3b0714180e971b8080489945d7af",
+  "states_visited": 29,
+  "status": "EXACT_ADAPTIVE_POLICY_FOUND",
+  "worst_case_cost_to_identification": 5.0
+}

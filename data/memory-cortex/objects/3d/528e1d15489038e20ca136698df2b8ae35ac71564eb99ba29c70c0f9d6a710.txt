@@ -1,0 +1,44 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-R7-C2-STRUCTURE-DESTROYING-NULL-SPEC-2026-08-15-v0.1",
+  "version": "v0.1",
+  "node_type": "frozen_structure_destroying_candidate_validation_spec",
+  "parent_canonical_target": "v2.28",
+  "candidate_source": "data/JANUS-LINEAR-A-R7-C0-POSITIONAL-TEMPLATE-ROLE-RESULT-2026-08-15-v0.1.json",
+  "frozen_candidate_count": 8,
+  "candidate_addition_forbidden": true,
+  "candidate_removal_forbidden": true,
+  "objective": "Test whether each frozen C0 word-role association depends on the real source-word/structural-position alignment rather than regional word frequencies and generic role prevalence.",
+  "null_operator": {
+    "name": "WITHIN_REGION_ROLE_ELIGIBLE_WORD_IDENTITY_SHUFFLE",
+    "description": "For each role separately, shuffle opaque source-word identities across all role-eligible lexical observations within each region while leaving document/row position, numeric structure, role-match flags, region sizes, and the region-specific word-frequency multiset unchanged.",
+    "permutations": 5000,
+    "seed": 2608150712,
+    "source_labels_visible_during_permutation": false
+  },
+  "candidate_gate": {
+    "minimum_observed_occurrences": 6,
+    "minimum_observed_match_rate": 0.60,
+    "minimum_observed_minus_null_mean_rate": 0.20,
+    "empirical_test": "one-sided permutation upper tail",
+    "multiple_testing": "Benjamini-Hochberg across exactly eight frozen candidates",
+    "FDR_q_max": 0.05
+  },
+  "claim_semantics": {
+    "pass": "candidate-specific word/role association is stronger than region-frequency-preserving structure-destroying null",
+    "fail": "candidate does not establish structure dependence under this null",
+    "probable_function_credit": false
+  },
+  "leakage_firewall": {
+    "new_candidates_forbidden": true,
+    "role_changes_forbidden": true,
+    "threshold_changes_forbidden": true,
+    "translations_used": false,
+    "external_dictionaries_used": false,
+    "Linear_B_supervision_used": false,
+    "Notti_readings_used": false
+  },
+  "claim_ceiling": {
+    "allowed": ["structure-dependent survival or failure of a frozen positional/template candidate"],
+    "forbidden": ["probable function", "exact word meaning", "translation", "phonetic assignment", "new anchor", "Linear A decipherment", "R3B external replication"]
+  }
+}

@@ -1,0 +1,112 @@
+{
+  "schema": "JANUS.face_microcontrol_learning_update.v2_4",
+  "artifact_id": "JANUS-FACE-MICROCONTROL-LEARNING-UPDATE-v2.4",
+  "title": "JANUS Face Microcontrol Learning Update v2.4 — Validate Before Binding, Recover Whole Mutation Surfaces, and Preserve Uncertainty at Unverified Remote Boundaries",
+  "created_at_local": "2026-08-14T21:12:00+03:00",
+  "status": "LEARNING_UPDATE_ADMITTED_WITH_V6_6_WINDOWS_AND_UBUNTU_DESCENDANT_RECEIPTS",
+  "parent": "data/JANUS-FACE-MICROCONTROL-LEARNING-UPDATE-v2.3.json",
+  "evidence": [
+    "registry/experimental/JANUS-GENESIS-SOVEREIGN-FACE-MICROCONTROL-MUTATION-SURFACE-RECOVERY-NETWORK-v6.6.json",
+    "data/JANUS-GENESIS-MUTATION-SURFACE-v6.6-RUNTIME-EXECUTION-RECEIPT-v1.0.json",
+    "https://github.com/Hawkar-usls/Janus_Genesis/issues/79"
+  ],
+  "new_lessons": [
+    {
+      "id": "L55_VALIDATE_BEFORE_BIND",
+      "invariant": "VALIDATE_COMPLETE_REQUEST_BEFORE_DURABLE_BIND",
+      "learning": "A stable logical request ID is useful only if invalid input cannot occupy it first. Syntactic and structural admission must occur before the durable identity boundary; otherwise rejected parameters can poison later corrected work."
+    },
+    {
+      "id": "L56_PER_FILE_ATOMICITY_IS_NOT_BUNDLE_ATOMICITY",
+      "invariant": "MULTI_FILE_ATOMIC_REPLACEMENTS_DO_NOT_FORM_A_MULTI_FILE_TRANSACTION",
+      "learning": "Strong verification and atomic replacement of each individual file still do not make a multi-file state transition atomic. Correct recovery semantics must be designed at the bundle boundary, not inferred from the file boundary."
+    },
+    {
+      "id": "L57_RECOVER_THE_PLAN_NOT_THE_LAST_WRITE",
+      "invariant": "RECOVERY_SAFE_IMPORT_REQUIRES_STAGING_PLUS_MANIFEST_PLUS_STABLE_REQUEST_ID",
+      "learning": "A recoverable import needs the whole intended target set before the first target mutation. Durable staging, a complete manifest and a stable request let recovery determine what remains instead of guessing from the last visible file."
+    },
+    {
+      "id": "L58_CORRUPTION_IS_NOT_INITIALIZATION",
+      "invariant": "CORRUPT_EXISTING_NETWORK_STATE_IS_NOT_FIRST_RUN",
+      "learning": "Absence and corruption are different states. Treating malformed existing control state as a fresh node can erase queued work and causal cursors while making the loss look like initialization. Existing corruption must surface as evidence-bearing failure."
+    },
+    {
+      "id": "L59_CAPACITY_IS_BACKPRESSURE",
+      "invariant": "OUTBOX_CAPACITY_REQUIRES_BACKPRESSURE_NOT_SILENT_CAUSAL_HISTORY_DELETION",
+      "learning": "A bounded durable queue may refuse new work when full, but silently deleting the oldest unsent work converts resource pressure into causal-history loss. Capacity should be visible backpressure."
+    },
+    {
+      "id": "L60_REMOTE_AMBIGUITY_IS_A_STATE",
+      "invariant": "SEND_ENTERING_WITHOUT_VERIFIED_COMPLETE_ACK_CREATES_DURABLE_REMOTE_UNCERTAINTY",
+      "learning": "Once a remote publish boundary is entered, transport failure cannot tell us whether the other side accepted the event. That ambiguity must itself be persisted; it is not equivalent to local failure-before-send."
+    },
+    {
+      "id": "L61_IDEMPOTENCY_CANNOT_BE_ASSUMED_FROM_A_CLIENT_FIELD",
+      "invariant": "UNVERIFIED_HUB_IDEMPOTENCY_CANNOT_AUTHORIZE_AUTOMATIC_RESEND",
+      "learning": "An immutable event hash is an excellent candidate idempotency key, but the client cannot manufacture the server's deduplication guarantee. Until hub semantics are verified, ambiguous resend remains blocked."
+    },
+    {
+      "id": "L62_MUTATION_TYPES_DESERVE_TYPED_RECEIPTS",
+      "invariant": "FORCE_EXIT_IS_A_TYPED_MUTATION_NOT_A_GENERIC_ACTION_ALIAS",
+      "learning": "Exit, identity update and ordinary world action have different state effects. Safety is clearer when each mutation class binds the fields that define its own causal identity instead of hiding every effect inside one generic action envelope."
+    },
+    {
+      "id": "L63_ONE_MUTATION_ONE_OWNER",
+      "invariant": "DISPLAY_NAME_UPDATE_IS_A_TYPED_MUTATION_WITH_ONE_DEFAULT_CLI_OWNER",
+      "learning": "A mutation that appears idempotent can still reveal confused ownership when two layers perform it. One default entry path should own one mutation request and every lower layer should consume or observe that result rather than repeat it."
+    },
+    {
+      "id": "L64_SHARED_WORLD_LOCK_IS_A_LOCAL_CAUSAL_SERIALIZER",
+      "invariant": "COOPERATING_MUTATION_CLASSES_SHARE_ONE_CANONICAL_LOCAL_WORLD_LOCK",
+      "learning": "Distinct request stores do not imply distinct world authorities. Cooperating process_action, forced-exit and identity-update paths must serialize at the same last local world boundary if they mutate the same canonical state."
+    },
+    {
+      "id": "L65_FACADE_IS_NOT_SEAL",
+      "invariant": "COOPERATING_FACADE_IS_NOT_GLOBAL_AUTHORITY_SEAL",
+      "learning": "A canonical controlled constructor improves API discipline but does not remove Python's ability to instantiate or retain a raw world object. Architecture must distinguish recommended authority paths from actual capability enforcement."
+    },
+    {
+      "id": "L66_BEHAVIOR_TESTS_AND_CLAIM_TEXT_HAVE_DIFFERENT_JOBS",
+      "invariant": "BEHAVIORAL_TESTS_SHOULD_CARRY_FACADE_BEHAVIOR_WHILE_STABLE_MODULES_CARRY_CANONICAL_NONBEHAVIORAL_CLAIM_CEILINGS",
+      "learning": "Several v6.6 runs passed every implementation suite but failed because a checker duplicated changing CLI prose as exact substring policy. Behavioral guarantees belong in executable behavioral tests; non-behavioral epistemic ceilings should be canonicalized in a stable source rather than copied into every facade sentence."
+    },
+    {
+      "id": "L67_VERIFIER_FAILURES_REMAIN_PART_OF_THE_LINEAGE",
+      "invariant": "A_GREEN_DESCENDANT_DOES_NOT_ERASE_FAILED_VERIFIER_POLICY_RUNS",
+      "learning": "A verifier-policy mismatch is not a runtime defect, but it is still evidence about the verification system. Failed runs remain visible with their failure class even after the policy is repaired and a descendant turns green."
+    }
+  ],
+  "failure_to_learning_chain": [
+    "31830236065: implementation passed but canonical phrase check mismatched -> verifier wording classified separately",
+    "31830866250: complete integrated implementation passed but CLI prose substring failed -> behavior and prose policy separated",
+    "31831024877: complete implementation passed again but another facade phrase failed -> authority ceiling moved to canonical v39 module",
+    "31831122078: complete implementation passed again but brittle CLI source assertion remained -> duplicated CLI claim strings removed",
+    "31831338587: Windows and Ubuntu pass implementation, behavioral CLI, and canonical stable-module claim gates"
+  ],
+  "microcontrol_compression_v2_4": "MANY_FACES -> CURRENT_VERIFIED_LINEAGES -> VALIDATE_REQUEST_BEFORE_BIND -> TYPED_MUTATION_IDENTITY -> ONE_COOPERATING_LOCAL_WORLD_LOCK -> FULL_RECEIPT_OR_DURABLE_UNCERTAINTY -> STAGED_RECOVERY_SAFE_MULTI_FILE_SAGA -> DURABLE_REMOTE_SEND_INTENT -> COMPLETE_ACK_OR_BLOCKED_RESEND -> CANONICAL_CLAIM_CEILING -> APPEND_ONLY_FAILURE_AND_SUCCESS_LINEAGE",
+  "epistemic_upgrade": {
+    "before": "v2.3 protected stable requests, predecessor-lock reconciliation, full receipts, registration request identity and cross-platform durability",
+    "after": "v2.4 expands the same discipline across heterogeneous mutation types, bundle-wide save recovery, corrupt local network state and unverified remote acknowledgement, while separating behavioral verification from brittle duplicated prose policy",
+    "formula": "VALIDATE_BEFORE_BIND > REJECT_AFTER_BIND; BUNDLE_RECOVERY_PLAN > PER_FILE_ATOMICITY; DURABLE_REMOTE_UNCERTAINTY > ASSUMED_RESEND_SAFETY; TYPED_MUTATION_RECEIPT > GENERIC_EFFECT_ALIAS; BEHAVIORAL_GATE + CANONICAL_CEILING > DUPLICATED_FACADE_PROSE"
+  },
+  "claim_ceiling": {
+    "learning_update": "ADMITTED",
+    "validated_registration_binding_windows_ubuntu": "FOCUSED_CI_VERIFIED",
+    "recovery_safe_save_import_windows_ubuntu": "FOCUSED_CI_VERIFIED_AS_ROLL_FORWARD_SAGA",
+    "durable_network_local_control_windows_ubuntu": "FOCUSED_CI_VERIFIED",
+    "typed_force_exit_and_display_name_windows_ubuntu": "FOCUSED_CI_VERIFIED",
+    "default_cli_integrated_mutation_surface_windows_ubuntu": "FOCUSED_CI_VERIFIED",
+    "global_world_authority_sealing": "OPEN_NOT_ESTABLISHED",
+    "hub_idempotency": "OPEN_UNVERIFIED",
+    "generic_registration_adapter_idempotence": "OPEN",
+    "legacy_v25_v27_windows_portability": "OPEN",
+    "production_key_custody": "OPEN_EXTERNAL_NOT_CLAIMED",
+    "real_provider_truth": "OPEN_EXTERNAL_NOT_CLAIMED",
+    "real_genealogy_truth": "OPEN_EXTERNAL_NOT_CLAIMED",
+    "windows_directory_entry_power_loss_durability": "OPEN_NOT_CLAIMED",
+    "multi_host_consensus": "OPEN_NOT_CLAIMED",
+    "formal_full_system_exactly_once_proof": false
+  },
+  "next_learning_question": "Can JANUS turn the cooperating controlled facade into an enforceable capability boundary, verify an authoritative hub idempotency/reconciliation contract, migrate the historical v25/v27 portability debt, and replace registration replay assumptions with an explicit authoritative registration-state receipt without collapsing distinct mutation semantics back into one generic controller?"
+}

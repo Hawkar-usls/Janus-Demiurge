@@ -1,0 +1,62 @@
+{
+  "artifact_id": "JANUS-OSIRIS-V1-CONTENT-SENSITIVITY-REVEALED-CONTROLS-2026-08-18-v1.0",
+  "created_at_local": "2026-08-18T20:14:00+03:00",
+  "status": "DIAGNOSTIC_PASS_OSIRIS_V1_INPUT_ANCHOR_ONLY_CONTENT_GENERALIZATION_NOT_ESTABLISHED",
+  "osiris_identity": {
+    "release": "OSIRIS v1.0",
+    "branch": "osiris-v1.0",
+    "identity_sha": "108ceb0e6ca875517bcf17ef503ee0e0c6455c57",
+    "canonical_result_sha256": "0e03c64e38919b2022642786825fc43d52f60ac8d4acf36aa9150c0fa21989fa"
+  },
+  "diagnostic": {
+    "pr": 203,
+    "branch": "osiris-v1-content-sensitivity-revealed-controls",
+    "frozen_contract_commit": "e24405680eb952709e454a4463bdeef89d7be59a",
+    "implementation_commit": "0a1c89c7c15959236e2531d603e5601897115a20",
+    "head_sha": "f1325d35442c1a7ee831299f119aee5b5d8d0fbf",
+    "workflow_run_id": 32164497303,
+    "job_id": 95800801964,
+    "artifact_id": 9334861624,
+    "artifact_zip_sha256": "0c30320af22a234111d754da768adf6b2d1182b6336b62a2b1824da45c60ab64",
+    "result_integrity_sha256": "62014d77732272393273b1b4ef8b95b7f5b4da27b8d32e5a5b6a68e6ce0a864c"
+  },
+  "revealed_controls": {
+    "total": 13,
+    "families": [
+      "TOROIDAL_TSEITIN_LOCAL_TWINS radii 0,1,2 SAT+UNSAT",
+      "CONNECTED_TOROIDAL_TSEITIN_TWINS radii 0,1,2 SAT+UNSAT",
+      "EQUALITY_BASELINE n=14"
+    ],
+    "distinct_input_anchors": 13,
+    "distinct_forward_terminal_commitments": 13,
+    "distinct_behavior_vectors": 1,
+    "behavior_sha256": "8f57c62729ef3240194e65caebb70846ff42f60db7b160df5c14c4c3fac81a5b"
+  },
+  "result": {
+    "content_channel_observed": "INITIAL_ANCHOR_ONLY",
+    "sat_unsat_twin_pairs_checked": 6,
+    "sat_unsat_stage_behavior_identical_all_pairs": true,
+    "semantic_sat_unsat_discrimination": false,
+    "forced_same_anchor_exact_chain_equality": true,
+    "forward_back_orders_exact_all_inputs": true,
+    "no_unauthorized_sat_unsat_verdict": true,
+    "solver_promotion": false
+  },
+  "interpretation": [
+    "OSIRIS v1 preserves the 31-stage proof-carrying/provenance composition across these revealed CNF inputs.",
+    "The current linker consumes CNF content only through an externally supplied SHA-256 initial anchor.",
+    "Different CNFs therefore produce different commitments but the same stage-decision behavior vector.",
+    "SAT and UNSAT Tseitin twins are not distinguished by the 31-stage stage logic.",
+    "This diagnostic identifies the next engineering bottleneck: introduce a frozen, certificate-bearing content channel into early stages before any solver/generalization claim can be tested.",
+    "This is a limitation certificate, not a negative result about every possible future OSIRIS implementation."
+  ],
+  "scientific_boundary": [
+    "Revealed controls only; no untouched holdout.",
+    "No semantic SAT/UNSAT oracle is authorized.",
+    "ANCIENT_TEXT != MODERN_ALGORITHM",
+    "P_EQUALS_NP = NOT_ESTABLISHED",
+    "P_NOT_EQUALS_NP = NOT_ESTABLISHED",
+    "P_VS_NP = OPEN"
+  ],
+  "next_required_gate": "OSIRIS_V1_CONTENT_CHANNEL_PREREGISTRATION: bind an independently verifiable CNF-derived witness into an early stage (prefer PT350/PT351/PT352) and test whether stage behavior changes on the same revealed SAT/UNSAT controls without using a SAT/UNSAT oracle; fully charge witness discovery/verification cost before any untouched holdout."
+}

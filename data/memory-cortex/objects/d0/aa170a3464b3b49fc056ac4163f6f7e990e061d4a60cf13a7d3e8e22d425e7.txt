@@ -1,0 +1,79 @@
+{
+  "schema": "janus.meta_registry.nexus.exact_head_ci_certificate.v1",
+  "artifact_id": "JANUS-NEXUS-WRITE-SIDE-PERSISTENCE-FAILURE-EXACT-HEAD-CI-CERTIFICATE-v1.13",
+  "certified_at_local": "2026-08-17T02:57:00+03:00",
+  "repository": "Hawkar-usls/Demi_Head",
+  "exact_head": "cd77fcb7c2819c5f5e3bafa916537ec1ed5d7dc6",
+  "head_message": "Add Nexus write-side persistence failure holdout",
+  "parent_storage_authority": {
+    "artifact": "registry/experimental/JANUS-NEXUS-CURRENT-STORAGE-AUTHORITY-v1.json",
+    "exact_head": "7bbacfdc78766638572f00ea0ac1f71fc1a5672c"
+  },
+  "status": "EXACT_HEAD_CI_PASS_WRITE_SIDE_PERSISTENCE_FAILURE_REFERENCE",
+  "github_actions": [
+    {"workflow": "Validate repository contracts", "run_id": 31980503414, "conclusion": "success"},
+    {"workflow": "Validate local acceptance browser holdout", "run_id": 31980503408, "conclusion": "success"},
+    {"workflow": "Validate local hemisphere proposal gate", "run_id": 31980503425, "conclusion": "success"},
+    {"workflow": "Verify proposal lab parity", "run_id": 31980503403, "conclusion": "success"}
+  ],
+  "supporting_regression_ci": {
+    "workflow": "Diagnose Nexus storage fault gate",
+    "run_id": 31980503405,
+    "conclusion": "success",
+    "role": "CONFIRM_PARENT_STORAGE_GATE_REMAINS_GREEN"
+  },
+  "frozen_adversarial_corpus": {
+    "path": "fixtures/nexus_write_side_failure_holdout_v1.json",
+    "case_count": 10,
+    "frozen_before_first_execution": true,
+    "freeze_sha256": "4297fd48ccff1d32fee9d9729759afba37345b69fe51c0cc40e0647ef3dcb41e"
+  },
+  "certified_semantics": {
+    "fault_injection_adapters_test_only": true,
+    "real_sqlite_write_lock_case": true,
+    "lifecycle_begin_write_failure_creates_no_listener": true,
+    "dispatch_begin_injected_failure_prevents_handler_invocation": true,
+    "dispatch_begin_real_sqlite_lock_prevents_handler_invocation": true,
+    "handler_failure_with_durable_failed_ambiguous_state": true,
+    "handler_failure_plus_failed_ambiguous_write_failure_preserves_started_state": true,
+    "handler_success_plus_completed_write_failure_preserves_started_state": true,
+    "lifecycle_dispatch_started_write_failure_prevents_dispatch_entry": true,
+    "lifecycle_dispatch_completed_write_failure_after_handler_preserves_durable_dispatch_completed": true,
+    "lifecycle_receipt_pending_write_failure_after_handler_preserves_durable_dispatch_completed": true,
+    "post_invocation_write_failure_never_grants_retry": true,
+    "durable_dispatch_completed_is_monotonic_across_later_lifecycle_failure": true,
+    "automatic_recovery": false,
+    "automatic_restart": false,
+    "automatic_retry": false,
+    "cross_host_transport": false,
+    "persistent_daemon": false,
+    "external_effect_authority": false,
+    "authority_delta": 0,
+    "mass_effect_budget_delta": 0
+  },
+  "laws": [
+    "DISPATCH_BEGIN_NOT_DURABLE -> NO_HANDLER_INVOCATION",
+    "HANDLER_MAY_HAVE_RUN + FINALIZATION_WRITE_FAILURE -> AMBIGUITY_NOT_RETRY",
+    "DURABLE_COMPLETED + LATER_LIFECYCLE_WRITE_FAILURE -> COMPLETED_EVIDENCE_REMAINS",
+    "DATABASE_LOCK != RETRY_PERMISSION",
+    "STORAGE_WRITE_FAILURE != EXECUTION_ROLLBACK",
+    "FAULT_INJECTION_TEST_CAPABILITY != RUNTIME_FAULT_MODE"
+  ],
+  "claim_ceiling": {
+    "real_enospc_tested": false,
+    "real_read_only_filesystem_tested": false,
+    "real_device_io_error_tested": false,
+    "physical_wal_corruption_tested": false,
+    "power_loss_atomicity": false,
+    "kernel_panic_durability": false,
+    "exactly_once_delivery": false,
+    "automatic_recovery": false,
+    "automatic_restart": false,
+    "automatic_retry": false,
+    "persistent_daemon": false,
+    "cross_host_transport": false,
+    "external_effect_authority": false,
+    "production_write_fault_readiness": false
+  },
+  "next_gate": "PHYSICAL_WAL_SIDECAR_FAIL_CLOSED_HOLDOUT"
+}

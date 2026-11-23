@@ -1,0 +1,105 @@
+{
+  "artifact": "JANUS-NOHAND-GATE-TERMINAL-v1.4.1",
+  "version": "1.4.1",
+  "date": "2026-08-17",
+  "status": "GATE_V1_4_LIVE_OBSERVED_TERMINAL_V1_4_1_CANDIDATE_VERIFIED_LIVE_PAIR_NOT_YET_PROVEN",
+  "supersedes_for_new_terminal_deployments": "JANUS-NOHAND-GATE-TERMINAL-v1.4",
+  "live_observation_from_user_screenshots": {
+    "gate": {
+      "status": "LIVE_STARTED_AND_POLLING",
+      "version": "1.4-READONLY-GUARDIAN-HANDOFF",
+      "source_sha256": "344eba1409e6bcab807426c0fe2034ad7926094d4d947d154d8699b945017982",
+      "safety_contract_sha256": "109188160c50fdab5c0cdfd07ea24cd85d671476af40de3f5983145145327e33",
+      "observed_behavior": [
+        "one transient GitHub TLS handshake timeout entered HOLD for one cycle",
+        "next cycle recovered",
+        "inbox and outbox lists both returned 88",
+        "historical requests were SKIP_EXISTING",
+        "processed=0"
+      ]
+    },
+    "terminal": {
+      "status": "STALE_V1_3_RUNTIME_OBSERVED",
+      "version": "1.3-NOHAND-GUARDIAN-BEACON-DEMIHEAD",
+      "source_sha256_prefix": "3ee6137b3192e01b7ec96f77d8cb7c55",
+      "errors_observed": [
+        "PRESERVATION_TOPLEVEL_MISSING:janus.db-wal",
+        "CROSS_REPO_CREATE_ONLY_COLLISION"
+      ],
+      "interpretation": "The live Terminal process had not loaded the v1.4 artifact shown in the prior candidate record."
+    }
+  },
+  "live_fix_analysis": {
+    "sqlite_sidecar_issue": {
+      "root_cause": "Preservation baseline v1 could capture a transient SQLite WAL/SHM/journal sidecar and later treat its normal disappearance or inode rotation as destructive loss.",
+      "fix": "Recognized top-level SQLite sidecars are excluded from new baselines and are narrowly treated as volatile compatibility exemptions in historical baselines; ordinary persistent files retain strict identity preservation.",
+      "law": "SQLITE_VOLATILE_SIDECARS_ARE_NOT_PERSISTENT_ANCHORS"
+    },
+    "create_only_collision_issue": {
+      "root_cause": "A settled startup forecast can produce new forecast evidence while the DemiHead create-only request path was derived only from stable base/context fields, causing a legitimate retry to reuse a path with different bytes.",
+      "fix": "The immutable peer request ID now binds the predictor_forecast_receipt_sha256 prefix so every distinct forecast evidence package gets a distinct create-only path.",
+      "history_policy": "No old v1_3 or v1_4 peer artifacts are deleted, renamed, moved, or overwritten."
+    }
+  },
+  "gate_live_artifact": {
+    "filename": "janus_habitat_gate.py",
+    "version": "1.4-READONLY-GUARDIAN-HANDOFF",
+    "sha256": "344eba1409e6bcab807426c0fe2034ad7926094d4d947d154d8699b945017982",
+    "safety_contract_sha256": "109188160c50fdab5c0cdfd07ea24cd85d671476af40de3f5983145145327e33",
+    "size_bytes": 42186,
+    "change_required_now": false
+  },
+  "terminal_candidate": {
+    "filename": "janus_habitat_terminal.py",
+    "version": "1.4.1-NOHAND-GUARDIAN-BEACON-DEMIHEAD-GATE",
+    "sha256": "7afd155eb56a3233467544bd3dbbcab574d93bef85e68e0a64c3461ace7a3e75",
+    "safety_contract_sha256": "36a39094325616720dc89aaa2652671e1c8d1edd4c414fdf27ffb5454418fd3c",
+    "size_bytes": 95255,
+    "demihead_namespace": "habitat/nohand/v1_4_1",
+    "gate_pins": {
+      "version": "1.4-READONLY-GUARDIAN-HANDOFF",
+      "source_sha256": "344eba1409e6bcab807426c0fe2034ad7926094d4d947d154d8699b945017982",
+      "safety_contract_sha256": "109188160c50fdab5c0cdfd07ea24cd85d671476af40de3f5983145145327e33"
+    }
+  },
+  "verification": {
+    "terminal_py_compile": "PASS",
+    "terminal_static_destructive_surface_scan": "PASS",
+    "terminal_runtime_audit_fuse": "PASS",
+    "old_baseline_missing_janus_db_wal_compatibility_test": "PASS",
+    "persistent_file_missing_still_rejected": "PASS",
+    "demihead_retry_request_id_uniqueness": "PASS",
+    "gate_source_pin_unchanged": "PASS",
+    "demihead_v1_4_1_ci_run": 32020521962,
+    "demihead_v1_4_1_ci_conclusion": "success"
+  },
+  "demihead": {
+    "repository": "Hawkar-usls/Demi_Head",
+    "branch": "feature/nohand-habitat-peer-v1",
+    "wrapper": "tools/nohand_habitat_peer_v1_4_1.py",
+    "wrapper_commit": "6e905b3bf96a103f871ca88e475a2728605aaef7",
+    "workflow": ".github/workflows/nohand-habitat-peer-v1-4-1.yml",
+    "workflow_commit": "ecf3d9d15b8cf1ae9a5996db5a2df22161ea6472",
+    "workflow_run": 32020521962,
+    "workflow_conclusion": "success",
+    "pr": 28,
+    "pr_state": "DRAFT_OPEN",
+    "merge_permission": false
+  },
+  "claim_boundaries": [
+    "USER_SCREENSHOT_OBSERVATION != REMOTE_NAS_SHELL_VERIFICATION",
+    "GATE_LIVE_OBSERVED != GATE_TERMINAL_LIVE_PAIR_PROVEN",
+    "TERMINAL_CANDIDATE_VERIFIED != TERMINAL_LIVE_DEPLOYED",
+    "CI_SUCCESS != LIVE_NAS_DEMIHEAD_HANDSHAKE",
+    "SHA256_RECEIPT != DIGITAL_SIGNATURE"
+  ],
+  "next_gate": [
+    "replace only the live Terminal source with exact v1.4.1 candidate",
+    "restart only janus_habitat_terminal",
+    "verify live terminal version/source/safety pins",
+    "verify preservation guardian reports PASS with volatile_top_level_exemptions for legacy WAL if present in baseline",
+    "verify startup handshake PASS in habitat/nohand/v1_4_1",
+    "issue one GATE_FIND known-file request and validate handoff",
+    "optionally issue COPY_TO_GIT using the selected Gate path"
+  ]
+}

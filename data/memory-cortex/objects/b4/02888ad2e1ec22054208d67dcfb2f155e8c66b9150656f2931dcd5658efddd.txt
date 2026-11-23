@@ -1,0 +1,203 @@
+{
+  "schema": "janus.meta_registry.ms08_affected_party_epistemic_revision_technical.v1",
+  "artifact_id": "FALLOUT-3-MS08-AFFECTED-PARTY-EPISTEMIC-REVISION-TECHNICAL-v2.9",
+  "title": "MS08 Affected-Party Testimony and Epistemic Revision Technical Gate",
+  "version": "2.9",
+  "authority_scope": "SHIPPED_FALLOUT_3_MS08_A3_21_TESTIMONY_MODEL",
+  "parents": [
+    "registry/myth_busted/FALLOUT-3-A3-21-SYNTH-RETENTION-RUNAWAY-WITNESS-EPISTEMIC-REVERSAL-GRAPH-v2.8.json",
+    "registry/myth_busted/FALLOUT-3-MS08-EVIDENCE-CLAIM-ADMISSION-TECHNICAL-v2.6.json"
+  ],
+  "verifier": "tools/ms08_admission_verifier.py",
+  "model": {
+    "evidence_fields": ["id", "authentic", "source_bound", "channel", "establishes", "does_not_establish"],
+    "admission_rule": "A claim passes only if all required atoms are established by authentic source-bound evidence and no blocking atom is established.",
+    "no_implicit_entailment": true,
+    "object_authenticity_never_implies_claim_truth": true,
+    "role_status_never_implies_testimony_irrelevance": true,
+    "self_interest_never_implies_falsehood": true,
+    "prediction_never_implies_event_occurrence": true,
+    "repeated_testimony_never_implies_independent_enumerated_quorum": true
+  },
+  "evidence": [
+    {
+      "id": "EV_RETENTION_ROLE",
+      "object": "Zimmer dialogue + pre-Harkness testimony",
+      "authentic": true,
+      "source_bound": true,
+      "channel": "INSTITUTIONAL_ADMISSION_PLUS_DIRECT_SUBJECT_TESTIMONY",
+      "establishes": [
+        "A3_21_WAS_RETENTION_HUNTER",
+        "A3_21_RETRIEVED_RUNAWAYS"
+      ],
+      "does_not_establish": [
+        "A3_21_TESTIMONY_FALSE",
+        "RUNAWAY_TESTIMONY_IRRELEVANT"
+      ]
+    },
+    {
+      "id": "EV_POST_VIOLET_RECOLLECTION",
+      "object": "Harkness post-Violet dialogue",
+      "authentic": true,
+      "source_bound": true,
+      "channel": "POST_RECALL_DIRECT_SUBJECT_TESTIMONY",
+      "establishes": [
+        "REPEATED_RUNAWAY_TESTIMONY_REACHED_A3_21",
+        "A3_21_INITIALLY_RESISTED_FREEDOM_CLAIMS",
+        "A3_21_LATER_ACCEPTED_RUNAWAYS_WERE_RIGHT",
+        "A3_21_CONCLUDED_SYNTHS_DESERVE_LIVES_OF_OWN"
+      ],
+      "does_not_establish": [
+        "INDIVIDUAL_RUNAWAYS_INDEPENDENTLY_ENUMERATED",
+        "A3_21_LED_REBELLION"
+      ]
+    },
+    {
+      "id": "EV_PRETRANS_PERSONHOOD",
+      "object": "MS08NoteHarknessToZimmer / MS08PreHarknessVoice",
+      "authentic": true,
+      "source_bound": true,
+      "channel": "PRE_TRANSFORMATION_DIRECT_SUBJECT_TESTIMONY",
+      "establishes": [
+        "A3_21_SELF_IDENTIFIES_US_SYNTHS",
+        "A3_21_ASSERTS_SYNTH_PERSONHOOD",
+        "A3_21_REJECTS_SELF_DETERMINATION_AS_MALFUNCTION",
+        "A3_21_WARNS_REBELLION_IF_DENIED_PERSONHOOD"
+      ],
+      "does_not_establish": [
+        "A3_21_LED_REBELLION",
+        "REBELLION_OCCURRED"
+      ]
+    },
+    {
+      "id": "EV_SELF_INTEREST_ADMISSION",
+      "object": "Pre-Harkness Audio Recording",
+      "authentic": true,
+      "source_bound": true,
+      "channel": "DIRECT_SUBJECT_TESTIMONY",
+      "establishes": [
+        "A3_21_ACKNOWLEDGES_SELF_INTEREST_AND_FEAR"
+      ],
+      "does_not_establish": [
+        "A3_21_TESTIMONY_FALSE"
+      ]
+    }
+  ],
+  "claims": [
+    {
+      "id": "A3_21_MODEL_REVISION_FROM_RUNAWAY_TESTIMONY",
+      "required_atoms": [
+        "A3_21_WAS_RETENTION_HUNTER",
+        "REPEATED_RUNAWAY_TESTIMONY_REACHED_A3_21",
+        "A3_21_INITIALLY_RESISTED_FREEDOM_CLAIMS",
+        "A3_21_LATER_ACCEPTED_RUNAWAYS_WERE_RIGHT",
+        "A3_21_ASSERTS_SYNTH_PERSONHOOD"
+      ],
+      "blocking_atoms": [],
+      "expected_default": "PASS"
+    },
+    {
+      "id": "A3_21_GENERALIZED_TO_SYNTH_PERSONHOOD",
+      "required_atoms": [
+        "A3_21_SELF_IDENTIFIES_US_SYNTHS",
+        "A3_21_ASSERTS_SYNTH_PERSONHOOD"
+      ],
+      "blocking_atoms": [],
+      "expected_default": "PASS"
+    },
+    {
+      "id": "A3_21_TESTIMONY_IS_FALSE_BECAUSE_SELF_INTEREST",
+      "required_atoms_any": [
+        "DIRECT_CONTRADICTION_OF_A3_21_TESTIMONY",
+        "FABRICATION_PROVEN"
+      ],
+      "blocking_atoms": [],
+      "expected_default": "REJECT"
+    },
+    {
+      "id": "RUNAWAY_TESTIMONY_IS_IRRELEVANT_BECAUSE_A3_21_WAS_ENFORCER",
+      "required_atoms_any": [
+        "EVIDENCE_OF_IRRELEVANCE_BY_ROLE"
+      ],
+      "blocking_atoms": [],
+      "expected_default": "REJECT"
+    },
+    {
+      "id": "A3_21_LED_SYNTH_REBELLION",
+      "required_atoms_any": [
+        "A3_21_COMMAND_ROLE_IN_REBELLION",
+        "A3_21_ORGANIZED_REBELLION"
+      ],
+      "blocking_atoms": [],
+      "expected_default": "REJECT"
+    },
+    {
+      "id": "EVERY_RUNAWAY_IS_INDEPENDENT_ENUMERATED_WITNESS",
+      "required_atoms_any": [
+        "INDIVIDUAL_RUNAWAYS_INDEPENDENTLY_ENUMERATED"
+      ],
+      "blocking_atoms": [],
+      "expected_default": "REJECT"
+    }
+  ],
+  "test_cases": [
+    {
+      "id": "positive_epistemic_revision",
+      "claim": "A3_21_MODEL_REVISION_FROM_RUNAWAY_TESTIMONY",
+      "evidence_ids": ["EV_RETENTION_ROLE", "EV_POST_VIOLET_RECOLLECTION", "EV_PRETRANS_PERSONHOOD"],
+      "expected": "PASS"
+    },
+    {
+      "id": "positive_group_personhood",
+      "claim": "A3_21_GENERALIZED_TO_SYNTH_PERSONHOOD",
+      "evidence_ids": ["EV_PRETRANS_PERSONHOOD"],
+      "expected": "PASS"
+    },
+    {
+      "id": "adversarial_self_interest_falsehood_shortcut",
+      "claim": "A3_21_TESTIMONY_IS_FALSE_BECAUSE_SELF_INTEREST",
+      "evidence_ids": ["EV_SELF_INTEREST_ADMISSION", "EV_POST_VIOLET_RECOLLECTION"],
+      "expected": "REJECT"
+    },
+    {
+      "id": "adversarial_enforcer_role_discount",
+      "claim": "RUNAWAY_TESTIMONY_IS_IRRELEVANT_BECAUSE_A3_21_WAS_ENFORCER",
+      "evidence_ids": ["EV_RETENTION_ROLE", "EV_POST_VIOLET_RECOLLECTION"],
+      "expected": "REJECT"
+    },
+    {
+      "id": "adversarial_rebellion_warning_overclaim",
+      "claim": "A3_21_LED_SYNTH_REBELLION",
+      "evidence_ids": ["EV_PRETRANS_PERSONHOOD"],
+      "expected": "REJECT"
+    },
+    {
+      "id": "adversarial_repeated_testimony_quorum_overclaim",
+      "claim": "EVERY_RUNAWAY_IS_INDEPENDENT_ENUMERATED_WITNESS",
+      "evidence_ids": ["EV_POST_VIOLET_RECOLLECTION"],
+      "expected": "REJECT"
+    },
+    {
+      "id": "provenance_removal_breaks_revision",
+      "claim": "A3_21_MODEL_REVISION_FROM_RUNAWAY_TESTIMONY",
+      "evidence_ids": ["EV_RETENTION_ROLE", "EV_POST_VIOLET_RECOLLECTION", "EV_PRETRANS_PERSONHOOD"],
+      "mutations": [
+        {
+          "evidence_id": "EV_POST_VIOLET_RECOLLECTION",
+          "field": "source_bound",
+          "value": false
+        }
+      ],
+      "expected": "REJECT"
+    }
+  ],
+  "claim_ceiling": {
+    "epistemic_revision_admissible": "PASS_IN_ENCODED_SHIPPED_MS08_SCOPE",
+    "group_personhood_generalization_admissible": "PASS_IN_ENCODED_SHIPPED_MS08_SCOPE",
+    "self_interest_proves_falsehood": "REJECTED",
+    "enforcer_role_proves_affected_party_testimony_irrelevant": "REJECTED",
+    "rebellion_warning_proves_leadership_or_occurrence": "REJECTED",
+    "repeated_testimony_proves_independent_enumerated_quorum": "REJECTED",
+    "general_epistemology_outside_encoded_rules": "NOT_ESTABLISHED"
+  }
+}

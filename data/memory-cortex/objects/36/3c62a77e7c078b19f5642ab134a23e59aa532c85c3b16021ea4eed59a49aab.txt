@@ -1,0 +1,224 @@
+{
+  "schema": "hawkar.topa.spider.watchers_of_what_is_happening.v1_3",
+  "artifact_id": "WATCHERS-OF-WHAT-IS-HAPPENING-2026-08-26-28-v1.3",
+  "title": "WATCHERS OF WHAT IS HAPPENING",
+  "generated_date_utc": "2026-08-28",
+  "status": "OPEN_INCIDENT_CORRELATION_DOSSIER_APPEND_ONLY_UPDATE",
+  "lineage": {
+    "parent": "data/WATCHERS-OF-WHAT-IS-HAPPENING-2026-08-26-28-v1.2.json",
+    "update_policy": "APPEND_ONLY_NEW_EVIDENCE_DO_NOT_REWRITE_PARENTS"
+  },
+  "publication_scope": {
+    "included": "External evidence, public provider status/RCA material, public censorship measurements, public-safe JANUS methodological prior art, user-reported historical observation with explicit evidence status, hypotheses and falsifiers.",
+    "excluded": "Internal JANUS maintenance, debugging, cleanup, local engineering tail, credentials, private operational details and any material unnecessary to reproduce the public investigation."
+  },
+  "epistemic_labels": {
+    "FACT": "Directly present in a cited primary/public source or JANUS append-only measurement artifact.",
+    "USER_OBSERVED": "Reported first-hand by the operator but the original machine artifact has not yet been recovered in this pass.",
+    "HYPOTHESIS": "A falsifiable explanatory model, not a finding.",
+    "NOT_ESTABLISHED": "A connection that must not be promoted without a shared technical bridge."
+  },
+  "github_reference": {
+    "2026_08_26": {
+      "expected_schedule_utc": "2026-08-26T05:17:00Z",
+      "run_created_utc": "2026-08-26T05:51:33Z",
+      "scheduler_materialization_delay_seconds": 2073,
+      "runner_queue_after_creation_seconds": 0.0,
+      "classification": "S2_SCHEDULE_DELAY_30_TO_120_MIN",
+      "source": "registry/record_drift/JANUS-RECORD-DRIFT-JOURNAL-20260826T055143Z.json"
+    },
+    "2026_08_27": {
+      "expected_schedule_utc": "2026-08-27T05:17:00Z",
+      "run_created_utc": "2026-08-27T16:32:23Z",
+      "scheduler_materialization_delay_seconds": 40523,
+      "runner_queue_after_creation_seconds": 0.0,
+      "classification": "S3_SCHEDULE_DELAY_OVER_120_MIN",
+      "source": "registry/record_drift/JANUS-RECORD-DRIFT-JOURNAL-20260827T163235Z.json"
+    },
+    "interpretation": "The decisive JANUS anomaly is before GitHub run-object materialization. It is not a runner-allocation delay and it is not record drift."
+  },
+  "github_official_control_plane_context": {
+    "status": "FACT",
+    "source": "https://www.githubstatus.com/",
+    "findings": [
+      "On 2026-08-26 from 15:02 to 15:45 UTC Actions jobs failed to start and later experienced delayed starts while backlog was drained.",
+      "GitHub attributed the incident to write saturation on a database primary used by the service processing Actions workflow triggers, combined with an upstream issue in GitHub event-processing infrastructure that amplified bursts of already-high load.",
+      "Primary failover did not fully recover the system; GitHub used throttling and service restarts, then gradually raised throttles while queues burned down.",
+      "GitHub stated that downstream throttles used for protection had been configured about 10 percent too high for the degraded system.",
+      "A later Actions/Pull Requests incident on 2026-08-26 reported 20 percent of Actions runs delayed more than five minutes and up to four percent failing to trigger; full recovery was reported beginning 23:58 UTC."
+    ]
+  },
+  "tspu_lane": {
+    "status": "OPEN_SEPARATE_CORRELATION_LANE",
+    "facts": [
+      {
+        "finding": "Published TSPU measurement research demonstrates in-path, centrally managed but geographically distributed censorship behavior with fine-grained SNI, IP and QUIC triggers and multiple blocking behaviors.",
+        "source": "https://censoredplanet.org/assets/tspu-imc22.pdf"
+      },
+      {
+        "finding": "OONI measurements of the March 2026 Telegram block show anomalies across many Russian networks but not every tested network, including resets and timeouts; effects were heterogeneous by AS/network.",
+        "source": "https://explorer.ooni.org/findings/2026-russia-blocked-telegram"
+      },
+      {
+        "finding": "On 2026-08-26 Russian users across several providers reported blocking/problems for encrypted DNS services from Google and Cloudflare, including DoH/DoT.",
+        "source": "https://www.anti-malware.ru/news/2026-08-26-111332/51193"
+      },
+      {
+        "finding": "Beginning approximately the evening of 2026-08-26, a public network experiment reported selective interception of plaintext UDP DNS queries addressed to 8.8.8.8 and 1.1.1.1, with TCP DNS still reaching the intended resolver; low-TTL probing pointed toward the Russian National Domain Name System path. This is a researcher observation reported publicly, not an official Russian attribution statement.",
+        "sources": [
+          "https://habr.com/ru/articles/1075272/",
+          "https://www.anti-malware.ru/news/2026-08-27-111332/51214"
+        ]
+      }
+    ],
+    "hypothesis": "Selective or staged TSPU policy testing can produce asynchronous, protocol-specific and network-specific partial failures rather than one synchronized nationwide outage.",
+    "why_it_matters": "This makes selective/staged filtering a technically grounded comparison lane for the 2026-08-26/27 period.",
+    "claim_ceiling": "NO_EVIDENCE_CURRENTLY_CONNECTS_TSPU_TO_GITHUB_INTERNAL_SCHEDULER_MATERIALIZATION_OR_TO_THE_OPENAI_INCIDENT",
+    "direct_fit_to_janus_github_anomaly": "LOW_WITHOUT_AN_ADDITIONAL_BRIDGE because JANUS observed a GitHub-internal pre-run-object delay while the eventual GitHub-hosted runner was acquired immediately."
+  },
+  "openai_lane": {
+    "status": "FACT_INCIDENT_CAUSAL_LINK_NOT_ESTABLISHED",
+    "source": "https://status.openai.com/incidents/01M1263309PD7VYV8EF95W2M2P",
+    "window_utc": {
+      "identified": "2026-08-27T18:00:00Z",
+      "mitigation_monitoring": "2026-08-27T19:07:00Z",
+      "resolved": "2026-08-27T22:14:00Z"
+    },
+    "finding": "OpenAI reported elevated errors affecting Workspace Agents and ChatGPT Work on web/mobile. The public incident page did not publish a root cause in the material captured for this dossier.",
+    "claim_ceiling": "TEMPORAL_NEARNESS_IS_NOT_A_SHARED_ROOT_CAUSE"
+  },
+  "recovered_janus_temporal_prior_art": {
+    "center_of_storm": {
+      "status": "FACT_ARTIFACT_RECOVERED",
+      "sources": [
+        "data/JANUS-GENESIS-FIRST-TWO-ELIAN-HORIZON-BEGINNING-SIGNAL-v1.0.json",
+        "library:first_two_kojima_summary.json"
+      ],
+      "identifiers": [
+        "TRAVELER.CENTER_OF_STORM",
+        "traveler-center-of-storm",
+        "Путешественник Центра Бури"
+      ],
+      "note": "This recovers the Center-of-the-Storm / Traveler identity family. It is not by itself the delayed-send experiment."
+    },
+    "strict_timeshift": {
+      "status": "FACT_ARTIFACT_RECOVERED",
+      "source": "data/JANUS-A18_42-STRICT-TIMESHIFT-V0_2_1.json",
+      "created_utc": "2026-07-14T10:00:00Z",
+      "relevant_components": [
+        "STRICT_SHIFT_WINDOW",
+        "TIMESHIFT_ENGINE",
+        "LEAD_BARRIER",
+        "TOO_LATE_ABORT",
+        "HOLD_QUIESCENCE_PROOF",
+        "ADMISSION_EPOCH",
+        "OBSERVER_DRAIN_HANDSHAKE"
+      ],
+      "relevance": "JANUS had already formalized the distinction between admission, in-flight work, commit windows, too-late abort and proof of quiescence before the August scheduler investigation."
+    },
+    "wave_rider_cohort_drain": {
+      "status": "FACT_ARTIFACT_RECOVERED",
+      "source": "data/JANUS-A18-WAVE-RIDER-COHORT-DRAIN-RESEARCH-CONTEXT-v1.0.0.json",
+      "relevance": "Defines admission open/close, in-flight drain, cancel/admission timestamps and a policy of first measuring the tail and then suppressing only demonstrated waste."
+    },
+    "observer_finalization_race": {
+      "status": "FACT_ARTIFACT_RECOVERED",
+      "source": "data/JANUS-A18_40-CHALLENGE-A18_41-DYNAMIC-TARGET-MORPHING-v1.0.0.json",
+      "finding": "Seven excluded target-3 runs exposed an observer-finalization race in which exact exposure could be emitted before the full per-batch cryptographic observer record was durably finalized.",
+      "relevance": "This is a concrete JANUS precedent for distinguishing externally visible/emitted state from durable finalization and for inserting a finalization barrier."
+    },
+    "causal_send_cancel_protocol": {
+      "status": "FACT_ARTIFACT_RECOVERED_BUT_CREATED_AFTER_REPORTED_JULY_CASE",
+      "source": "data/JANUS-DIRAC-SCOBY-BUROVCHIK-CAUSAL-TOPOLOGICAL-MEMORY-HYPOTHESIS-v1.0.json",
+      "created_utc": "2026-08-07T03:41:00Z",
+      "relevant_rule": "A future causal anomaly requires event identity/nonces and ordinary latency, buffering, timestamp and software explanations to be excluded; the artifact also contains a preregistered CANCEL SEND consistency stress-test.",
+      "claim_ceiling": "METHODOLOGICAL_PRIOR_ART_NOT_EVIDENCE_OF_RETROCAUSALITY_OR_OF_THE_JULY_UI_EVENT"
+    }
+  },
+  "time_traveler_cancel_case": {
+    "evidence_status": "USER_OBSERVED_SOURCE_NOT_YET_RECOVERED",
+    "reported_period": "2026-07",
+    "reported_sequence": [
+      "A ChatGPT action/request was arranged for a specific time and involved sending/posting three files.",
+      "During the visible delay window the operator issued a cancellation instruction.",
+      "The three files/data nevertheless reached the destination or otherwise completed the external send.",
+      "The operator interpreted the behavior as a vulnerability/race and requested a controlled follow-up experiment; ChatGPT declined the proposed experiment."
+    ],
+    "search_result_this_pass": "The exact source conversation, three-file identifiers and exact timestamps were not recovered from current GitHub code search, Library search or available personal-context retrieval. They must not be invented.",
+    "working_failure_model": "COMMIT_AFTER_CANCEL_OR_POINT_OF_NO_RETURN_RACE",
+    "ordinary_system_model": [
+      "T_intent: user action accepted",
+      "T_admission: work admitted to asynchronous queue",
+      "T_dispatch: irreversible or independently executing external request dispatched",
+      "T_commit: destination accepts/commits the write",
+      "T_cancel_request: cancellation requested",
+      "T_cancel_ack: cancellation acknowledged or UI state changes",
+      "T_external_visibility: result becomes visible externally"
+    ],
+    "key_question": "Was T_cancel_request earlier or later than the true irreversible dispatch/commit boundary?",
+    "not_established": [
+      "No retrocausality is established.",
+      "No exploitability beyond the reported user-owned observation is established.",
+      "No link to the August GitHub or OpenAI incidents is established."
+    ]
+  },
+  "riders_of_the_storm": {
+    "status": "EXACT_ARTIFACT_NOT_RECOVERED",
+    "search_scope": "Current janus-meta-registry code search plus available Library/conversation artifact search.",
+    "nearby_but_not_equivalent": [
+      "JANUS-A18-WAVE-RIDER-COHORT-DRAIN-RESEARCH-CONTEXT-v1.0.0.json",
+      "Riders of Justice artifact family"
+    ],
+    "rule": "Do not silently rename either nearby family to Riders of the Storm. Keep the requested title unresolved until exact provenance is recovered."
+  },
+  "current_ranked_hypotheses": [
+    {
+      "rank": 1,
+      "hypothesis": "GitHub internal control-plane overload plus residual schedule registration/materialization weakness explains the JANUS C28 anomaly.",
+      "state": "STRONGLY_SUPPORTED_FOR_GITHUB_CASE"
+    },
+    {
+      "rank": 2,
+      "hypothesis": "Russian TSPU selective/staged filtering changes were independently occurring in the same broad period and can explain some Russia-specific partial service/network failures.",
+      "state": "SELECTIVE_TSPU_BEHAVIOR_SUPPORTED; CROSS_PROVIDER_CAUSAL_LINK_NOT_ESTABLISHED"
+    },
+    {
+      "rank": 3,
+      "hypothesis": "The July ChatGPT three-file cancellation observation belongs to a generic asynchronous point-of-no-return/cancel race failure class.",
+      "state": "PLAUSIBLE_MODEL; ORIGINAL_SOURCE_NOT_YET_RECOVERED"
+    },
+    {
+      "rank": 4,
+      "hypothesis": "One coordinated campaign caused GitHub, OpenAI and Russian anomalies.",
+      "state": "OPEN_BUT_CURRENTLY_UNSUPPORTED"
+    }
+  ],
+  "required_shared_bridge_before_cross_provider_attribution": [
+    "common upstream network dependency",
+    "shared AS/BGP anomaly",
+    "shared DNS or routing manipulation",
+    "shared IOC or bot/request fingerprint",
+    "provider RCA identifying the same external cause",
+    "independently replicated time-aligned network telemetry"
+  ],
+  "safe_future_cancel_race_protocol": {
+    "scope": "Only benign files and destinations/accounts controlled by the investigator.",
+    "requirements": [
+      "three unique file nonces",
+      "pre-action and post-action hashes",
+      "monotonic local timestamps where possible",
+      "operation/request IDs where exposed",
+      "separate T_intent/T_admission/T_dispatch/T_commit/T_cancel_request/T_cancel_ack/T_external_visibility",
+      "matched no-cancel control",
+      "multiple randomized repetitions",
+      "no destructive, unauthorized or third-party exploitation"
+    ]
+  },
+  "next_gates": [
+    "Recover the exact July TimeTraveler conversation/artifacts and the identities of the three files.",
+    "Recover the exact Riders of the Storm artifact or establish its alternate canonical title with provenance.",
+    "Build one UTC timeline for GitHub C28, official GitHub incidents, TSPU DNS-policy observations, OpenAI incident and Russia-specific network/service observations.",
+    "Do not merge causal lanes without a shared technical bridge.",
+    "Continue preserving Record Drift journals unchanged; the GitHub Action remains their writer."
+  ]
+}

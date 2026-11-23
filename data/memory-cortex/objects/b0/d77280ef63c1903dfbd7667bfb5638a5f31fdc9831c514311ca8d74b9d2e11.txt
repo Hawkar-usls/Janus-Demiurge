@@ -1,0 +1,84 @@
+{
+  "schema": "janus.meta_registry.nexus.exact_head_ci_certificate.v1",
+  "artifact_id": "JANUS-NEXUS-PHYSICAL-WAL-SIDECAR-FAIL-CLOSED-EXACT-HEAD-CI-CERTIFICATE-v1.14",
+  "certified_at_local": "2026-08-17T03:02:00+03:00",
+  "repository": "Hawkar-usls/Demi_Head",
+  "exact_head": "bbb2d88af6d3ffcaf1a0182f39539f80e513bdfe",
+  "head_message": "Add physical SQLite WAL sidecar fail-closed gate",
+  "parent_write_safety_authority": {
+    "artifact": "registry/experimental/JANUS-NEXUS-CURRENT-WRITE-SAFETY-AUTHORITY-v1.json",
+    "exact_head": "cd77fcb7c2819c5f5e3bafa916537ec1ed5d7dc6"
+  },
+  "status": "EXACT_HEAD_CI_PASS_PHYSICAL_WAL_SIDECAR_FAIL_CLOSED_REFERENCE",
+  "github_actions": [
+    {"workflow": "Validate repository contracts", "run_id": 31980687143, "conclusion": "success"},
+    {"workflow": "Validate local acceptance browser holdout", "run_id": 31980687163, "conclusion": "success"},
+    {"workflow": "Validate local hemisphere proposal gate", "run_id": 31980687166, "conclusion": "success"},
+    {"workflow": "Verify proposal lab parity", "run_id": 31980687179, "conclusion": "success"}
+  ],
+  "supporting_regression_ci": {
+    "workflow": "Diagnose Nexus storage fault gate",
+    "run_id": 31980687126,
+    "conclusion": "success",
+    "role": "CONFIRM_PARENT_STORAGE_GATE_REMAINS_GREEN"
+  },
+  "frozen_adversarial_corpus": {
+    "path": "fixtures/nexus_wal_sidecar_holdout_v1.json",
+    "case_count": 8,
+    "frozen_before_first_execution": true,
+    "freeze_sha256": "e8b1b689525ae09ed95f631ae2aa89514d794acd4761bebb036ab98b3e07dfc3"
+  },
+  "certified_semantics": {
+    "wal_absent_permitted_as_checkpointed_state": true,
+    "wal_present_requires_physical_envelope": true,
+    "real_sqlite_generated_wal_accepted_by_parser": true,
+    "wal_header_bytes_required": 32,
+    "wal_magic_checked": true,
+    "accepted_magic": ["0x377f0682", "0x377f0683"],
+    "wal_format_version_checked": true,
+    "accepted_format_version": 3007000,
+    "wal_page_size_checked": true,
+    "wal_main_page_size_consistency_checked": true,
+    "wal_frame_alignment_checked": true,
+    "wal_frame_page_number_checked": true,
+    "damaged_replay_wal_blocks_otherwise_recoverable_lifecycle_mutation": true,
+    "wal_inspection_read_only": true,
+    "wal_repair": false,
+    "wal_delete_on_failure": false,
+    "automatic_recovery": false,
+    "automatic_restart": false,
+    "automatic_retry": false,
+    "cross_host_transport": false,
+    "persistent_daemon": false,
+    "external_effect_authority": false,
+    "authority_delta": 0,
+    "mass_effect_budget_delta": 0
+  },
+  "laws": [
+    "WAL_ABSENT != WAL_DAMAGED",
+    "WAL_PRESENT -> PHYSICAL_ENVELOPE_REQUIRED",
+    "WAL_PAGE_SIZE != MAIN_PAGE_SIZE -> HOLD",
+    "WAL_FRAME_ALIGNMENT_ERROR -> HOLD",
+    "PHYSICAL_WAL_PASS != CHECKSUM_CHAIN_PASS",
+    "PHYSICAL_WAL_PASS != SALT_CHAIN_PASS",
+    "WAL_GATE != WAL_REPAIR"
+  ],
+  "claim_ceiling": {
+    "wal_checksum_chain_verified": false,
+    "wal_salt_chain_verified": false,
+    "semantic_correctness_of_every_wal_frame": false,
+    "wal_repair": false,
+    "power_loss_recovery": false,
+    "kernel_panic_recovery": false,
+    "filesystem_repair": false,
+    "cross_version_sqlite_compatibility": false,
+    "automatic_recovery": false,
+    "automatic_restart": false,
+    "automatic_retry": false,
+    "persistent_daemon": false,
+    "cross_host_transport": false,
+    "external_effect_authority": false,
+    "production_database_recovery_readiness": false
+  },
+  "next_gate": "WAL_CHECKSUM_AND_SALT_CHAIN_FAIL_CLOSED_HOLDOUT"
+}

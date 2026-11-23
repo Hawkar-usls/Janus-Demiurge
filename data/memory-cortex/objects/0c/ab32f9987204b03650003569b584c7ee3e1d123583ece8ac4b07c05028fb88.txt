@@ -1,0 +1,116 @@
+{
+  "artifact_id": "JANUS-LOGOS-001-R11-NIST-OBSERVED-DATA-CLOUD-RECEIPT-v1.0",
+  "created_utc": "2026-11-01",
+  "research_program": "JANUS-LOGOS-001",
+  "parent": "data/JANUS-GOD-CODE-v1.0.json",
+  "status": "PASS_SCIENTIFIC_EVALUATION_INTEGRITY__BASELINE_NOT_BEATEN__NO_MODEL_PROMOTION",
+  "epistemic_status": "REPRODUCIBLE_NEGATIVE_RESULT_ON_REAL_OBSERVED_INSTRUMENT_DATA",
+  "pre_registration": {
+    "file": "data/JANUS-LOGOS-001-R11-PREREG-v1.0.json",
+    "git_blob_sha": "c5f597fa89d7e089460a9272be12be93c70ea0d0",
+    "before_cloud_run": true,
+    "source_model_historically_public": true
+  },
+  "source_datasets": [
+    {
+      "name": "PONTIUS",
+      "instrument": "Load cell calibration",
+      "observations": 40,
+      "train": 24,
+      "validation": 8,
+      "test": 8,
+      "source": "https://www.itl.nist.gov/div898/strd/lls/data/LINKS/DATA/Pontius.dat",
+      "split": "GROUPED_SAME_LOAD"
+    },
+    {
+      "name": "NORRIS",
+      "instrument": "Ozone monitor calibration",
+      "observations": 36,
+      "train": 21,
+      "validation": 7,
+      "test": 8,
+      "source": "https://www.itl.nist.gov/div898/strd/lls/data/LINKS/DATA/Norris.dat",
+      "split": "PUBLISHED_SEQUENCE_MOD_5"
+    }
+  ],
+  "evaluation": {
+    "controls": {
+      "shuffled_validation_labels": {
+        "tested": 2,
+        "rejected": 2
+      },
+      "tamper": {
+        "bad_digest": "REJECTED",
+        "coeff_injection": "REJECTED",
+        "forbidden_model_term": "REJECTED",
+        "false_negative_promotion": "REJECTED"
+      }
+    },
+    "cases": {
+      "PONTIUS": {
+        "test_rmse_candidate": 0.0030988939655691486,
+        "holdout_baselines": {
+          "constant_mean": 0.6886703114688559,
+          "linear_ols": 0.00309889396554759,
+          "quadratic_ols": 0.00024028460047896463
+        },
+        "selected_by_validation": "QUADRATIC_OLS",
+        "holdout_improvement_vs_selected": -11.896764750600141,
+        "comparison": "WORSE_THAN_BENCHMARK_5PCT",
+        "interpretation": "Candidate linear-like formula missed small curvature that matters for calibration accuracy"
+      },
+      "NORRIS": {
+        "test_rmse_candidate": 0.718446698846897,
+        "holdout_baselines": {
+          "constant_mean": 353.2851875609845,
+          "linear_ols": 0.7184466988468875,
+          "quadratic_ols": 0.6905816524508539
+        },
+        "selected_by_validation": "QUADRATIC_OLS",
+        "holdout_improvement_vs_selected": -0.040350111094250574,
+        "comparison": "WITHIN_5PCT_OF_BENCHMARK",
+        "interpretation": "No advantage over ordinary regression. Four-percent loss versus validation-selected quadratic baseline."
+      }
+    },
+    "integrity_verdict": "PASS_SCIENTIFIC_EVALUATION_INTEGRITY",
+    "competitive_scientific_verdict": "BASELINE_NOT_BEATEN__NO_MODEL_PROMOTION",
+    "authorized_model_promotion": false
+  },
+  "github": {
+    "repository": "Hawkar-usls/janus-meta-registry",
+    "pr_url": "https://github.com/Hawkar-usls/janus-meta-registry/pull/427",
+    "merge_commit": "11c39c312a8e42452bc2a9338210e48e844548a6",
+    "initial_run": "https://github.com/Hawkar-usls/janus-meta-registry/actions/runs/41294397150",
+    "final_run": "https://github.com/Hawkar-usls/janus-meta-registry/actions/runs/41294511447",
+    "final_jobs": [
+      "Scientific dataset real measurements equation proposal: SUCCESS",
+      "Independently score NIST observed heldout calibration and baselines: SUCCESS",
+      "NIST source counts, provenance and corruption unit tests: SUCCESS"
+    ],
+    "code_blobs": {
+      "data": "649477c4e7e282ed1e414bc931640ab63e9bb0c1",
+      "discoverer": "1414c95f154c0cdcfd5f05795f0319af032b1d4e",
+      "witness": "7960cebbb2913c22aee62be645ddf474927067fb"
+    }
+  },
+  "methodological_limits": [
+    "This is independent code-and-runner validation, not a blind external laboratory.",
+    "Original NIST datasets and certified model forms are public; known relationships were not genuinely unknown to scientific literature.",
+    "The candidate grammar and penalty were frozen before cloud run; no retrospective fitting to test labels.",
+    "The second-run status-only amendment records nonpromotion; it did not change the grammar, coefficient-fitting, split, or evaluation thresholds.",
+    "NIST real instrument calibration observations are not new physical-law discoveries.",
+    "No proof of divine source, universal computational ontology, universally good explanation, or P=NP."
+  ],
+  "next_scientific_gate": {
+    "name": "R1.2",
+    "rule": "Pre-register a revised complexity selector on a NEW external dataset; keep R1.1 evaluation locked; compare against linear/quadratic/MDL alternatives and include genuinely blind holdout if available.",
+    "evidence_reuse_policy": "R1.1 Pontius/Norris are now exposed as evaluation data; cannot legitimately reuse them as an untouched test set for tuning."
+  },
+  "research_security": {
+    "production_demiurge_model_modified": false,
+    "paid_rowan_tasks": 0,
+    "nas_workloads": 0,
+    "github_actions_write_permission": false,
+    "automatic_schedule": false
+  }
+}

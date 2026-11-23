@@ -1,0 +1,167 @@
+{
+  "artifact_uuid": "JANUS-NUCLEAR-EMULATION-REGISTRY-V1.4",
+  "timestamp": "2026-02-26T18:00:00Z",
+  "version": "v1.4",
+  "description": "Реестр для эмуляции ядерных процессов с изотопами, всплесками, коллапсом, параметрами гомеостатического управления и слоем динамического вмешательства ArtMoney.",
+  "observer": "Hawkar Yaks / JANUS Quantum Observer",
+  "node_type": "nuclear_sim",
+
+  "warning": {
+    "text": "Эксперимент проводится в зоне активных боевых действий (Украина, Запорожье). Физическое присутствие крайне опасно. Наблюдение только через удалённые сенсоры.",
+    "coordinates": [47.8388, 35.1396],
+    "risk_level": "critical"
+  },
+
+  "emulation_parameters": {
+    "vocab_size": 1000,
+    "isotopes": [
+      {"name": "neutron", "range": [0, 99], "group": 0},
+      {"name": "stable", "range": [100, 299], "group": 1},
+      {"name": "unstable", "range": [300, 499], "group": 2},
+      {"name": "fragment", "range": [500, 699], "group": 3},
+      {"name": "hydrogen", "range": [700, 799], "group": 4},
+      {"name": "strontium", "range": [800, 899], "group": 5},
+      {"name": "plutonium", "range": [900, 999], "group": 6}
+    ],
+    "transition_probabilities": {
+      "from_neutron": [0.3, 0.2, 0.2, 0.1, 0.1, 0.05, 0.05],
+      "from_stable": [0.1, 0.5, 0.1, 0.1, 0.1, 0.05, 0.05],
+      "from_unstable": [0.2, 0.1, 0.3, 0.2, 0.1, 0.05, 0.05],
+      "from_fragment": [0.2, 0.2, 0.1, 0.2, 0.1, 0.1, 0.1],
+      "from_hydrogen": [0.1, 0.1, 0.1, 0.1, 0.3, 0.1, 0.2],
+      "from_strontium": [0.1, 0.2, 0.1, 0.1, 0.1, 0.3, 0.1],
+      "from_plutonium": [0.1, 0.1, 0.1, 0.2, 0.2, 0.1, 0.2]
+    },
+    "spike_prob": 0.01,
+    "collapse_prob": 0.005,
+    "decay_steps": 5,
+    "notes": "Вероятности можно настраивать для моделирования редких событий."
+  },
+
+  "homeostatic_control": {
+    "enrichment": {
+      "lr_mult": 1.2,
+      "gain_add": 0.1,
+      "mi_growth_threshold": 0.01,
+      "score_growth_threshold": 0.01
+    },
+    "depletion": {
+      "lr_mult": 0.5,
+      "temp_mult": 0.9,
+      "best_score_ratio": 0.95,
+      "gap_threshold": 0.05
+    },
+    "limits": {
+      "lr_min": 0.0001,
+      "lr_max": 0.01,
+      "gain_min": 0.3,
+      "gain_max": 2.5,
+      "temp_min": 0.3,
+      "temp_max": 2.0
+    },
+    "notes": "Параметры автоматического обогащения/обеднения (гомеостатический реактор). Используются в цикле Демиурга."
+  },
+
+  "artmoney_layer": {
+    "description": "Слой динамического вмешательства, вдохновлённый принципами ArtMoney – ручная подстройка параметров эволюции и устройств в реальном времени для преодоления застоев и экспериментов с системой.",
+    "components": {
+      "titan_intervention": {
+        "mechanism": "Ручное изменение гиперпараметров (lr, gain, temperature) текущего цикла на Titan через эндпоинт /api/artmoney/set_param или через интерфейс HRAIN. Изменения логируются и могут быть отменены.",
+        "use_cases": [
+          "ручное увеличение learning rate при застое",
+          "принудительное изменение gain для усиления сигнала",
+          "коррекция температуры для увеличения разнообразия"
+        ],
+        "parameters": {
+          "lr_override": "float (опционально)",
+          "gain_override": "float (опционально)",
+          "temperature_override": "float (опционально)"
+        }
+      },
+      "device_intervention": {
+        "mechanism": "Отправка команд на Android и M5Cardputer через стандартный эндпоинт /api/device/command/{device_id} для изменения их поведения в реальном времени.",
+        "examples": {
+          "android": "изменение lr_base, количества сидов, включение/выключение магнитометра",
+          "m5": "ручная установка current_f1, current_f2, включение/выключение платинового режима, регулировка яркости и громкости"
+        }
+      },
+      "automatic_cheat": {
+        "mechanism": "При обнаружении застоя (отсутствие улучшений > N циклов) система автоматически применяет «читерские» мутации – более сильные изменения параметров, чем обычно, или принудительный перезапуск с другими начальными условиями.",
+        "parameters": {
+          "stagnation_threshold": 20,
+          "cheat_mutation_strength": 0.5,
+          "cheat_lr_mult": 2.0,
+          "cheat_gain_add": 0.3,
+          "cheat_temp_mult": 1.5
+        }
+      },
+      "logging": {
+        "enabled": true,
+        "log_file": "artmoney_interventions.log",
+        "fields": ["timestamp", "cycle", "type", "param", "old_value", "new_value", "source"]
+      }
+    },
+    "status": "active_in_development",
+    "integration_with_homeostasis": "ArtMoney-команды имеют приоритет над автоматическими гомеостатическими корректировками, но при этом все изменения записываются и учитываются в анализе."
+  },
+
+  "metrics": {
+    "val_loss": "Кросс-энтропия на валидации. Базовый шум: ln(1000) ≈ 6.907.",
+    "diversity": "Доля уникальных последовательностей.",
+    "mutual_info_unbiased": "Взаимная информация с поправкой Миллера-Мэдоу.",
+    "gap": "Разница train_loss - val_loss.",
+    "composite_score": "-val_loss - 0.1*gap + 1.0*MI + 0.5*diversity",
+    "p_value": "Вероятность получить такое же MI при нулевой гипотезе.",
+    "artmoney_intervention_count": "Счётчик вмешательств ArtMoney за цикл."
+  },
+
+  "hypotheses": [
+    {
+      "id": "HYP_SPIKE_DETECTION",
+      "node_type": "nuclear_sim",
+      "description": "Модель, обученная на данных с частыми всплесками, будет показывать повышенную чувствительность к редким событиям (аномальные пики MI).",
+      "status": "PROPOSED"
+    },
+    {
+      "id": "HYP_COLLAPSE_MARKER",
+      "node_type": "nuclear_sim",
+      "description": "Наличие схлопываний в данных приведёт к появлению специальных паттернов в генерации (например, длинные последовательности нулевых токенов).",
+      "status": "PROPOSED"
+    },
+    {
+      "id": "HYP_ISOTOPE_COMPOSITION",
+      "node_type": "nuclear_sim",
+      "description": "Различные соотношения изотопов влияют на скорость обучения и максимальную сложность, которую может освоить модель.",
+      "status": "PROPOSED"
+    },
+    {
+      "id": "HYP_ARTMONEY_BOOST",
+      "node_type": "artmoney",
+      "description": "Ручное вмешательство через ArtMoney может вывести эволюцию из локального минимума быстрее, чем автоматические гомеостатические механизмы.",
+      "status": "TO_BE_TESTED"
+    }
+  ],
+
+  "observations": [],
+
+  "next_steps": [
+    "1. Запустить pc_deep_optimizer.py с параметрами по умолчанию, собрать наблюдения.",
+    "2. Проанализировать влияние spike_prob и collapse_prob на MI.",
+    "3. Добавить в observations реальные результаты из логов.",
+    "4. Реализовать эндпоинт /api/artmoney/set_param на сервере HRAIN.",
+    "5. Написать модуль автоматических «читерских» мутаций при застое.",
+    "6. Интегрировать панель ArtMoney в веб-интерфейс HRAIN."
+  ],
+
+  "provenance": {
+    "created_by": "Hawkar Yaks with JANUS assistant",
+    "date": "2026-02-26",
+    "based_on": [
+      "pc_deep_optimizer_v6.4.py",
+      "android_deep_optimizer_v3.1.py",
+      "Теория о наблюдателях",
+      "JANUS-ARCHITECTURE-V26.4.json (ArtMoney Layer)"
+    ],
+    "notes": "Версия v1.4: добавлена секция artmoney_layer для ручного и автоматического вмешательства в эволюционный процесс, а также новые гипотезы и шаги."
+  }
+}

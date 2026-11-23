@@ -1,0 +1,88 @@
+{
+  "artifact": "JANUS-NOHAND-GATE-TERMINAL-v1.4.2-LIVE-HANDOFF-2026-08-17",
+  "date": "2026-08-17",
+  "status": "LIVE_GATE_TERMINAL_EXCHANGE_PASS",
+  "purpose": "First live proof that the running NAS Habitat Terminal can issue a bounded GATE_FIND request, the running read-only Habitat Gate can discover and attest a real NAS file, and the Terminal can validate the returned Gate/handoff pins without NAS mutation.",
+  "terminal": {
+    "version": "1.4.2-NOHAND-GUARDIAN-BEACON-DEMIHEAD-GATE-BOOTSAFE",
+    "expected_source_sha256": "c7ee6233c698ccb5541b7ab1d914f982a6abc33e7dbcb21796cbbfc657864e49",
+    "request_id": "LIVE-GATE-FIND-20260817T1423-001",
+    "terminal_inbox_branch": "gate/terminal-inbox-v1",
+    "terminal_request_commit": "34198444a8a1e2d0ee893204c1c03e5fe82b33dc",
+    "terminal_outbox_branch": "gate/terminal-outbox-v1",
+    "terminal_response_receipt_sha256": "125b400a25fccca1737e92a7bb5c8b6534714114c3b0d207c1a5dfd72e62eeef",
+    "status": "OK",
+    "operation": "GATE_FIND",
+    "nas_mutation": false,
+    "docker_control": false
+  },
+  "gate": {
+    "version": "1.4-READONLY-GUARDIAN-HANDOFF",
+    "source_sha256": "344eba1409e6bcab807426c0fe2034ad7926094d4d947d154d8699b945017982",
+    "safety_contract_sha256": "109188160c50fdab5c0cdfd07ea24cd85d671476af40de3f5983145145327e33",
+    "request_id": "TV14-LIVE-GATE-FIND-20260817T1423-001-5332856f4de6fdde-18cc9401ec0e2aa4",
+    "request_schema": "janus.habitat.gate_request.v2",
+    "request_blob_sha": "1d37a19029a2b6c784ee676fa046d1ebb2bb2b27",
+    "inbox_commit_sha": "af37d21c2a8a7ca760976fe2dbf858e1a6f7bb18",
+    "response_schema": "janus.habitat.gate_response.v2",
+    "response_receipt_sha256": "715e30a4b5ff659b8b424ce7e4bbde123db4f6147dd635f2f56552cb0c23a6af",
+    "status": "OK",
+    "operation": "FIND_FILES",
+    "nas_mutation": false,
+    "db_write": false,
+    "docker_control": false,
+    "handoff_is_permission": false
+  },
+  "query": {
+    "under": "services",
+    "exact_name": "janus_habitat_gate.py",
+    "suffixes": [".py"],
+    "max_depth": 2,
+    "max_results": 5,
+    "min_size": 1,
+    "max_size": 1048576,
+    "case_sensitive": true,
+    "include_hash": true,
+    "newest_first": true
+  },
+  "result": {
+    "candidate_count": 1,
+    "total_matches_before_limit": 1,
+    "scanned_entries": 1503,
+    "scan_budget_exhausted": false,
+    "denied_entries_hidden": 1,
+    "symlinks_skipped": 0,
+    "candidate": {
+      "schema": "janus.habitat.gate_file_handoff.v1",
+      "path": "services/janus_habitat_gate.py",
+      "basename": "janus_habitat_gate.py",
+      "size": 42186,
+      "mtime_ns": 1786962196272736901,
+      "st_dev": 64768,
+      "st_ino": 45489524,
+      "sha256": "344eba1409e6bcab807426c0fe2034ad7926094d4d947d154d8699b945017982",
+      "hash_status": "FULL_SHA256",
+      "handoff_sha256": "f21529ef1eef5b3220851c4f09e29ab0a5bca12520271207a7f24be8b99bcb11",
+      "terminal_copy_to_git_compatible": true,
+      "observation_only": true,
+      "authority_weight": 0
+    }
+  },
+  "beacon": {
+    "forecast_receipt_sha256": "6264dac6fce5f304bfc715e213259f7462c71bd1d82897387b6efe253bbdddd7",
+    "forecast_probability": 0.5,
+    "outcome_receipt_sha256": "b45c512e3854a027043a5e2a66e589a41d6e90a9c07b8e33206ea4118a5c7df8",
+    "outcome_success": true,
+    "prediction_is_permission": false,
+    "authority_delta": 0
+  },
+  "proof_statement": "A live NAS Terminal request traversed Terminal -> Git terminal inbox -> Gate request -> live read-only NAS search -> hash-bound Gate handoff -> Terminal validation -> Terminal outbox receipt. The discovered file hash exactly equals the pinned Gate source hash.",
+  "claim_boundaries": [
+    "LIVE_GATE_TERMINAL_EXCHANGE_PASS != COPY_TO_GIT_PASS",
+    "HANDOFF != PERMISSION",
+    "OBSERVATION != AUTHORITY",
+    "SHA256_RECEIPT != DIGITAL_SIGNATURE",
+    "PYTHON_GUARD != KERNEL_IMMUTABILITY"
+  ],
+  "next_gate": "HANDOFF_PATH -> TERMINAL COPY_TO_GIT -> GUARDIAN -> BEACON -> DEMIHEAD -> CREATE_ONLY_GIT_COPY -> RECEIPT"
+}

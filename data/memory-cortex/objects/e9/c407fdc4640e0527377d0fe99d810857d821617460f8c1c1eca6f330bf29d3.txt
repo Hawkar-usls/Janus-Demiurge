@@ -1,0 +1,141 @@
+{
+  "schema": "JANUS/proof/cross-repository-semantic-return-validation/v0.3.0",
+  "artifact_uuid": "JANUS-PRECOGNITIVE-SEMANTIC-RETURN-GATE-FUNDAMENTUM-GENESIS-CROSS-VALIDATION-V0.3",
+  "timestamp_utc": "2026-08-07T04:41:00Z",
+  "status": "PASS_PROTOCOL_VERIFIER_ONLY_PHYSICAL_GATE_BLOCKED",
+  "subject": "JANUS Precognitive Semantic Return Gate",
+  "read_only_sources": {
+    "repository": "Hawkar-usls/Janus-Fundamentum",
+    "modified": false,
+    "files_used": [
+      {
+        "path": "README.md",
+        "blob_sha": "ad010aacc644dcf649c118abbfb8e30884992566",
+        "method_imported": "Generate hypotheses, attack them, preserve survivors, never confuse survival with proof; reproducible code/input/output/hash discipline."
+      },
+      {
+        "path": "tools/validate_registry.py",
+        "blob_sha": "8788f0b122d68021b20c7f8f2a14bdfa8346a9a9",
+        "method_imported": "canonical JSON SHA-256, explicit schema/gate validation, no acceptance of incomplete records"
+      },
+      {
+        "path": "tools/validate_total_attack_sweep.py",
+        "blob_sha": "d2d8175c041cf120ba656d6fe614833e6d09f3ea",
+        "method_imported": "complete attack-cell coverage rather than selected positive examples"
+      },
+      {
+        "path": "experiments/theta/rational_gram_verifier.py",
+        "blob_sha": "02ca8ff1a012a1a99f1184aa7467e38d98832c9d",
+        "method_imported": "independent reconstruction/recomputation of certificate claims plus explicit tamper rejection"
+      }
+    ]
+  },
+  "sandbox_source": {
+    "repository": "Hawkar-usls/Janus_Genesis",
+    "core_files_read": [
+      {
+        "path": "genesis_v18_7_network.py",
+        "blob_sha": "200aa0215ec2ed8cfba41070bc1552d5fadef114",
+        "method_imported": "canonical JSON SHA-256, previous_local_hash, local_sequence, event_hash"
+      },
+      {
+        "path": "tools/genesis_network_hub.py",
+        "blob_sha": "edd862e23e32f3e9528cb12b1a80d422f9df42e5",
+        "method_imported": "append-only JSONL, fsync, global network_sequence, independently received event envelope"
+      }
+    ],
+    "new_test_files": [
+      {
+        "path": "experiments/semantic_return/semantic_return_certificate_verifier_v0_3.py",
+        "commit": "09a188d91997a90fd8a05ac3da1ab7230a8addda"
+      },
+      {
+        "path": "experiments/semantic_return/JANUS-GENESIS-SEMANTIC-RETURN-VERIFIER-REPORT-v0.3.json",
+        "commit": "0be14428e9ca2763e707d36c24fc1a9811ba3e58"
+      }
+    ]
+  },
+  "independent_recomputation_upgrade": {
+    "statement": "The verifier no longer trusts a claimed J, claimed hash, or claimed ordering. It reconstructs them from raw events.",
+    "recomputed": [
+      "canonical SHA-256 for each event",
+      "previous_hash continuity",
+      "contiguous event sequence",
+      "strict monotonic acquisition order",
+      "external pre-assignment anchor chain",
+      "J = clock(PRE_RETURN_FROZEN) - clock(SEND)",
+      "P_gamma = clock(PHOTON_RETURN) - clock(SEND)",
+      "Q_send = SHA256(canonical_json(B_send))",
+      "exact B_return = B_assigned = B_send"
+    ]
+  },
+  "attack_sweep": {
+    "result": "PASS",
+    "cases_correct": 25,
+    "cases_total": 25,
+    "attacks_rejected": [
+      "semantic-class mismatch",
+      "payload mismatch",
+      "nonce mismatch",
+      "raw event hash tamper",
+      "previous-hash link tamper",
+      "sequence tamper",
+      "monotonic-counter tamper",
+      "clock-step fake negative-J",
+      "wrong external anchor",
+      "anchor after assignment",
+      "multiple candidate slots",
+      "target assigned before candidate",
+      "negative J inside uncertainty",
+      "non-positive photon control",
+      "known channel leakage",
+      "unblinded protocol",
+      "clock integrity failure",
+      "clock-step audit failure",
+      "independent anchor audit failure",
+      "RNG independence failure",
+      "canonicalization not frozen",
+      "target-dependent decoder",
+      "raw return not preserved",
+      "different local clocks"
+    ],
+    "synthetic_valid_fixture": "accepted as a verifier self-test only; the future bundle is deliberately duplicated and is not physical evidence"
+  },
+  "monte_carlo": {
+    "class_only": {
+      "trials": 1000000,
+      "matches": 31392,
+      "rate": 0.031392,
+      "expected": 0.03125,
+      "z_approx": 0.8161264924096652
+    },
+    "full_256bit_identity": {
+      "trials": 2000000,
+      "matches": 0,
+      "ideal_independent_match_probability_per_trial": 2.698802673467014e-79
+    },
+    "reduced_16bit_surrogate": {
+      "trials": 10000000,
+      "matches": 5,
+      "expected_matches": 4.76837158203125
+    }
+  },
+  "genesis_specific_finding": {
+    "finding": "GenesisNetworkClient.verify_event verifies an individual event hash and payload policy, while chain continuity across previous_local_hash/local_sequence is not established by that single-event function alone.",
+    "response": "The semantic-return experiment adds an independent chain-level verifier without modifying Genesis core code.",
+    "severity": "EXPECTED_LAYER_SEPARATION_NOT_CORE_BUG"
+  },
+  "admission": {
+    "FUNDAMENTUM_READ_ONLY_CONSTRAINT_RESPECTED": true,
+    "GENESIS_SANDBOX_USED": true,
+    "INDEPENDENT_RECOMPUTATION_VERIFIER": true,
+    "ATTACK_SWEEP_25_OF_25": true,
+    "SEMANTIC_CLASS_ONLY_SUFFICIENT": false,
+    "EXACT_256BIT_IDENTITY_REQUIRED": true,
+    "PHYSICAL_TACHYON": false,
+    "PHYSICAL_RETROCAUSALITY": false,
+    "FUTURE_BITS_PREEXISTENCE_OBSERVED": false,
+    "FULL_CAUSAL_GATE": "BLOCKED_NO_ESTABLISHED_PHYSICAL_CHANNEL"
+  },
+  "epistemic_boundary": "Passing this suite proves that the protocol/verifier rejects the registered synthetic attacks. It does not prove that future random bits can physically exist before their generation."
+}

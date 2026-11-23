@@ -1,0 +1,41 @@
+{
+  "artifact_id": "JANUS-GENESIS-BLOODCORE-BYTE-FAMILY-SECOND-PASS-2026-08-25-v1.0",
+  "status": "PASS_WITH_NEGATIVE_ENGINEERING_FINDINGS",
+  "scope": {
+    "method": "Library materialization -> exact SHA-256/MD5 -> Python AST parse -> static method inspection; no historical runtime execution",
+    "genesis_protocol_files_materialized": 12,
+    "blood_core_files_materialized": 4,
+    "boundary": "High-coverage over the recoverable named variants inspected in this pass; not proof that every historical copy ever created is present."
+  },
+  "genesis_protocol_byte_families": [
+    {"sha256":"dc12dba9d97164befa47290d274e9a15af53037b5a69e5f028fded794ef94065","md5":"f6fc60bfd8693010a96c08ea9084fd28","size_bytes":110982,"variants":["genesis_protocol(2).py","genesis_protocol(3).py","genesis_protocol(4).py","genesis_protocol(5).py"],"byte_identity":"ALL_IDENTICAL","ast_parse":"PASS","major_mechanisms":["SALOLogger","HRAINAsyncDaemon","homeostatic state save/load","finite-metric validation","instability detection","TachyonField","SymbiosisController","model save/restore","Demiurge loop"]},
+    {"sha256":"89f7d0b4c054b3d55820a4fb1e495a2a604bcad19ee24912d7253d1c10dcdd6a","md5":"0dad50c7d1b0d6f965950a7cadd5d187","size_bytes":51508,"variants":["genesis_protocol(6).py","genesis_protocol(7).py","genesis_protocol(10).py"],"byte_identity":"ALL_IDENTICAL","ast_parse":"PASS","major_mechanisms":["atomic_save_state","DBBuffer","WorldEventManager","ComputeOrbitalDispatcher","JanusMirror","NeuroRewardSystem","HRAIN event sender","NP-task helpers"]},
+    {"sha256":"2262e18508de0c09d774864c1288fef416f9071fa2de6bdd6121c808e26fd42a","md5":"1dde208bf7c5edba1a170e8fa55ff318","size_bytes":41885,"variants":["genesis_protocol(8).py","genesis_protocol(9).py","genesis_protocol(11).py","genesis_protocol(12).py"],"byte_identity":"ALL_IDENTICAL","ast_parse":"PASS","major_mechanisms":["atomic_save_state","DBBuffer","WorldEventManager","ComputeOrbitalDispatcher","JanusMirror","NeuroRewardSystem","HRAIN event sender"]},
+    {"sha256":"db19c9407a617dc94f2bf3df17a3aab268628e642f7269d855bbc16f816aa3b0","md5":"a757a67981e2c8cc005d5592d81ba2a7","size_bytes":49811,"variants":["genesis_protocol(13).py"],"byte_identity":"UNIQUE_IN_THIS_PASS","ast_parse":"PASS","major_mechanisms":["atomic_save_state","DBBuffer","WorldEventManager","ComputeOrbitalDispatcher","JanusMirror","NeuroRewardSystem","HRAIN event sender","NP-task helpers"]}
+  ],
+  "blood_core_byte_families": [
+    {"sha256":"27630cdcc61678a6b4bee05cf29b38602824d4fc43d8b7adbb187ec6f66a2dc6","md5":"4a7f3fe64b805b83ca221962f9a55257","size_bytes":20286,"variants":["blood_core (1).py"],"ast_parse":"PASS","major_mechanisms":["SyslogEarProtocol","HippocampusLink","Chronos","Hypnos","Ouroboros","ModelNavigator","JanusFace","SingularityEngine"]},
+    {"sha256":"db5952052825649648d83335ebe8c685dfd281c8a10873e0739fd1e67fdfaa79","md5":"aee1a67a83fd07144cf01e6faf81a187","size_bytes":18939,"variants":["blood_core (2).py"],"ast_parse":"PASS","major_mechanisms":["SyslogEarProtocol","HippocampusLink recent-metrics reader","Chronos","Hypnos","Ouroboros","local-model metric training loop","SingularityEngine"]},
+    {"sha256":"c6ed38a87963a204dd999445b4168fdf7646cb75db97ca8b06ef2d24c7dc8c74","md5":"ffc8febe25c3d1fc9fb8ffa841f22ddd","size_bytes":21458,"variants":["blood_core (5).py","blood_core (5)(1).py"],"byte_identity":"IDENTICAL_PAIR","ast_parse":"PASS","major_mechanisms":["Titan candidate builder","SyslogEarProtocol","HippocampusLink","Chronos","Hypnos","Ouroboros","ModelNavigator","JanusFace","SingularityEngine"]}
+  ],
+  "negative_engineering_findings": [
+    {"id":"GENESIS_DBBUFFER_SELF_DEADLOCK_RISK","source_family_sha256":"89f7d0b4c054b3d55820a4fb1e495a2a604bcad19ee24912d7253d1c10dcdd6a","finding":"DBBuffer.add acquires a non-reentrant threading.Lock and, when the buffer reaches max_size, calls flush while still holding that lock; flush attempts to acquire the same lock again.","classification":"STATIC_SELF_DEADLOCK_RISK","runtime_execution_required_for_finding":false},
+    {"id":"GENESIS_BACKUP_AFTER_REPLACE_NOT_PRIOR_STATE","source_family_sha256":"89f7d0b4c054b3d55820a4fb1e495a2a604bcad19ee24912d7253d1c10dcdd6a","finding":"atomic_save_state writes a temporary file, replaces the canonical state, and only then copies the canonical file to .bak. The backup therefore reflects the newly written state rather than preserving the previous state.","classification":"ROLLBACK_ANCHOR_SEMANTICS_BROKEN"},
+    {"id":"BLOODCORE_HTTP_LT_500_FALSE_ACK","source_family_sha256":"c6ed38a87963a204dd999445b4168fdf7646cb75db97ca8b06ef2d24c7dc8c74","finding":"send_to_titan treated any HTTP status below 500 as a successful target and updated active_titan_url, so 4xx client/auth/rejection responses were accepted as transport success.","modern_repair":"Hawkar-usls/Janus-Demiurge::restored/transport_failover_planner.py","modern_rule":"ACK_REQUIRES_2XX"},
+    {"id":"BLOODCORE_RESPONSE_STATUS_IGNORED","source_family_sha256":"db5952052825649648d83335ebe8c685dfd281c8a10873e0739fd1e67fdfaa79","finding":"An older send_to_titan variant performed POST and ignored response status entirely.","classification":"NO_ACK_SEMANTICS"},
+    {"id":"BLOODCORE_UNAUTHENTICATED_SYSLOG_WAKE","finding":"SyslogEarProtocol marked network activity and could wake the engine from anabiosis on receipt of any UDP datagram; no source authentication or authorization was present in the inspected handler.","classification":"UNAUTHENTICATED_LIVENESS_SIGNAL"},
+    {"id":"BLOODCORE_HYPNOS_DESTRUCTIVE_CONSUME","finding":"Hypnos loaded dreams.json, injected its entries, then removed the source file. This destroys the original replay artifact after ingestion.","modern_rule":"NOTHING_DISAPPEARS_NE_EVERYTHING_IS_TRUE","restoration_decision":"DO_NOT_RESTORE_SOURCE_DELETE_SEMANTICS"},
+    {"id":"BLOODCORE_DIRECT_MODULES_LIVE_GENERATION","finding":"Ouroboros generated Python from model output and wrote it directly into modules_live without static audit, fresh-process import smoke, ABI test, fake-core test, or Nexus probation.","modern_repairs":["module auditor","module integration planner","Sovereign Lock","Nexus probation","modules_live evidence classifier"],"modern_rule":"PROBATION_BEFORE_MODULES_LIVE"},
+    {"id":"BLOODCORE_METRIC_TRAINING_NO_FROZEN_HOLDOUT","source_family_sha256":"db5952052825649648d83335ebe8c685dfd281c8a10873e0739fd1e67fdfaa79","finding":"The hourly metrics-learning loop tokenized recent operational metrics using hard-coded ranges and trained directly; no frozen holdout, prospective replay certificate, or independent validation step is visible in the inspected loop.","classification":"HISTORICAL_LEARNING_PRECURSOR_NOT_CURRENT_EVIDENCE_PIPELINE"}
+  ],
+  "safe_lineage_map": {
+    "homeostasis_and_metric_validity":"Hawkar-usls/Janus-Demiurge::restored/homeostasis_guard.py",
+    "symbiosis_resource_adaptation":"Hawkar-usls/Janus-Demiurge::restored/symbiosis_resource_planner.py",
+    "transport_ack_and_failover":"Hawkar-usls/Janus-Demiurge::restored/transport_failover_planner.py",
+    "chronos_memory_archaeology":"Hawkar-usls/Janus-Demiurge::restored/chronos_backup_scavenger.py",
+    "modules_live_truth_ladder":"Hawkar-usls/Janus-Demiurge::restored/modules_live_evidence_classifier.py",
+    "historical_generated_module_admission":"absorbed into auditor/integration/Sovereign-Lock/Nexus-probation chain"
+  },
+  "decisions": {"publish_raw_historical_sources":false,"reactivate_historical_runtime_loops":false,"promote_copy_suffixes_to_chronology":false,"preserve_hash_families_and_failure_lineage":true,"new_executable_restoration_from_this_pass":"NONE_REQUIRED_YET"},
+  "laws": ["COPY_SUFFIX_NE_CHRONOLOGY","BYTE_FAMILY_BEATS_FILENAME_COUNT","STATIC_DEFECT_CAN_BE_VALUABLE_NEGATIVE_EVIDENCE","BACKUP_AFTER_REPLACE_NE_PRIOR_STATE_ROLLBACK","ACK_REQUIRES_2XX","LIVENESS_SIGNAL_REQUIRES_SOURCE_TRUST_IF_IT_CHANGES_STATE","GENERATED_CODE_NE_LIVE_MODULE","PROBATION_BEFORE_MODULES_LIVE","TRAINING_ON_RECENT_METRICS_NE_VALIDATED_LEARNING"]
+}

@@ -1,0 +1,80 @@
+{
+  "schema": "janus.eye.training_concurrency_failure_receipt.v1",
+  "artifact_id": "JANUS-EYE-FIRST-RUN-CONCURRENCY-FAILURE-RECEIPT-2026-09-01-v1.0",
+  "date": "2026-09-01",
+  "status": "PRESERVED_FAILED_DELIVERY_AFTER_SUCCESSFUL_TRAINING__ROOT_CAUSE_REMEDIATED",
+  "failed_run": {
+    "workflow": "EYE Meta Registry Training",
+    "run_id": 33523221797,
+    "job_id": 99907419722,
+    "source_head": "5c531d74c2ce424ebfe6803b3f9c9c2db5a24732",
+    "steps": {
+      "compile_trainer": "SUCCESS",
+      "train_complete_registry_snapshot": "SUCCESS",
+      "validate_generated_json": "SUCCESS",
+      "upload_training_artifact": "SUCCESS",
+      "commit_rebuildable_eye_state": "FAILURE"
+    },
+    "artifact": {
+      "artifact_id": 9806558953,
+      "name": "eye-meta-registry-training-33523221797",
+      "archive_sha256": "9a771d51ecd2af6427bf0757ab97e0961c715c60aec2b06e7bfa4788c5c8b90a"
+    },
+    "training_receipt_snapshot": {
+      "status": "PASS",
+      "files_indexed": 3540,
+      "hard_indexing_errors": 0,
+      "parse_error_records": 2,
+      "relation_edges": 3489,
+      "resolved_relation_edges": 1410,
+      "slime_association_clusters": 1000,
+      "corpus_root_digest_sha256": "3a864a4df08edff3d5e5155e08fbd4961811400c2127d7dd89bab4d552fadf0d"
+    }
+  },
+  "concurrent_witness": {
+    "commit": "22e44a0741cbc4a8da726de582e707db85e3107d",
+    "parent": "5c531d74c2ce424ebfe6803b3f9c9c2db5a24732",
+    "actor": "JANUS HRAiN Memory",
+    "message": "chore(hrain): refresh full current Meta Registry memory catalog",
+    "affected_family": "assets/hrain-full-memory/",
+    "timing_relation": "The HRAiN derivative-memory commit advanced main while EYE was training from the same parent snapshot, so the later EYE generated-state push was correctly rejected as non-fast-forward."
+  },
+  "root_cause": {
+    "primary": "CONCURRENT_DERIVATIVE_MEMORY_WRITERS_ON_MAIN",
+    "secondary": "EYE_FIRST_RUN_TREATED_HRAIN_FULL_MEMORY_EXPORT_AS_INGESTIBLE_REPOSITORY_CONTENT",
+    "risk_if_unfixed": "EYE and HRAiN could recursively learn each other's generated memory exports and repeatedly advance main, creating derivative feedback and push races without adding source evidence."
+  },
+  "remediation": {
+    "workflow_commit": "001d47a7abcef2bb0fa3fead8431f48d97752f85",
+    "manifest_commit": "0b96e841e7bcc5bab91eb2454cf7a7e0e536d03b",
+    "rules": [
+      "EYE workflow does not trigger on EYE/generated/**",
+      "EYE workflow does not trigger on assets/hrain-full-memory/**",
+      "assets/hrain-full-memory is removed from the ephemeral checkout before EYE derives its corpus",
+      "EYE generated state is never rebased stale across source drift",
+      "before commit, origin/main is compared with the trained snapshot",
+      "if source drift is observed, the runner resets to current origin/main and rebuilds EYE from that newer snapshot",
+      "push races are retried only after a full rebuild from the new source snapshot"
+    ]
+  },
+  "successful_recovery_witness": {
+    "run_id": 33523660218,
+    "job_id": 99908897630,
+    "conclusion": "SUCCESS",
+    "generated_commit": "ea022c845f9e43e8f55a58a6def49526bfd02ad9",
+    "artifact_id": 9806740265,
+    "artifact_archive_sha256": "ff16ddb7be4b17602279d633bb0dd04d2ab973bcc3f8fc9ef872a41ca5cb8f7b",
+    "source_head": "001d47a7abcef2bb0fa3fead8431f48d97752f85",
+    "files_indexed_after_derivative_exclusion": 3521,
+    "corpus_root_digest_sha256": "bfd42e02243b43793a1f80df2be940de4c88640c33023089f6415e78bab74156"
+  },
+  "epistemic_laws": [
+    "FAILED_RUN_IS_EVIDENCE",
+    "DERIVATIVE_MEMORY != FRESH_SOURCE",
+    "SUCCESSFUL_COMPUTATION != SUCCESSFUL_PERSISTENCE",
+    "STALE_GENERATED_STATE_MUST_NOT_BE_REBASED_ONTO_A_NEWER_CORPUS",
+    "A_MEMORY_SYSTEM_MUST_NOT_TRAIN_ON_ITS_OWN_REBUILDABLE_EXPORT_AS_IF_IT WERE_NEW_WORLD_EVIDENCE",
+    "PRESERVE_FAILURE_BEFORE_PROMOTION"
+  ],
+  "seal": "THE FIRST EYE SAW THE REGISTRY BUT LOST THE WRITE RACE. WE KEPT THE FAILURE, REMOVED THE MIRROR-OF-A-MIRROR, AND TAUGHT THE NEXT EYE TO REBUILD BEFORE IT SPEAKS."
+}

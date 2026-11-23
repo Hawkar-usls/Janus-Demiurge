@@ -1,0 +1,84 @@
+{
+  "schema": "JANUS.genesis_runtime_execution_receipt.v1",
+  "artifact_id": "JANUS-GENESIS-PORTABLE-RECEIPT-DURABLE-SESSION-v6.5-RUNTIME-EXECUTION-RECEIPT-v1.0",
+  "created_at_local": "2026-08-14T21:32:00+03:00",
+  "subject": "JANUS Genesis v6.5 portable receipt runtime and durable-session descendant chain",
+  "repository": "Hawkar-usls/Janus_Genesis",
+  "audit_issue": "https://github.com/Hawkar-usls/Janus_Genesis/issues/78",
+  "final_verified_head": "549e4d96f77b0af196e34840aa3adeecbb4afb7c",
+  "final_workflow_run": {
+    "run_id": 31829033820,
+    "workflow": "JANUS client control v6.5",
+    "conclusion": "SUCCESS",
+    "jobs": [
+      {
+        "job_id": 94860077745,
+        "platform": "ubuntu-latest",
+        "conclusion": "SUCCESS"
+      },
+      {
+        "job_id": 94860077956,
+        "platform": "windows-latest",
+        "conclusion": "SUCCESS"
+      }
+    ],
+    "gates": [
+      "compile v6.5 descendants and default CLI",
+      "isolated portable lock v2 same-process and spawned-process gates",
+      "v18.7.33 in-flight duplicate reconciliation",
+      "real v18.7.31 canonical crash/replay integration",
+      "v18.7.35 Windows-safe durable registration and fresh evidence gates",
+      "default CLI stable request receipt gates",
+      "executable claim and failure-memory boundary assertions"
+    ]
+  },
+  "preserved_failed_receipts": [
+    {
+      "run_id": 31828030265,
+      "classification": "IMPLEMENTATION_BEHAVIOR_FAILURE",
+      "finding": "active duplicate saw CALL_ENTERING before waiting for predecessor lock and was over-pessimistically classified UNDETERMINED",
+      "descendant_response": "v18.7.33"
+    },
+    {
+      "run_id": 31828656420,
+      "classification": "VERIFIER_CONFIGURATION_FAILURE",
+      "finding": "real runtime test matrix omitted requirements installation and failed importing cryptography",
+      "descendant_response": "workflow installs requirements.txt"
+    },
+    {
+      "run_id": 31828707866,
+      "classification": "IMPLEMENTATION_FAILURE",
+      "finding": "registration request identity could evade the intended conflict boundary through session-id derivation; provider outcome was stored as string rather than enum",
+      "descendant_response": "v18.7.34"
+    },
+    {
+      "run_id": 31828864663,
+      "classification": "PLATFORM_SPECIFIC_IMPLEMENTATION_FAILURE",
+      "finding": "Windows rejected final-file fsync through a read-only descriptor while Ubuntu passed",
+      "descendant_response": "v18.7.35"
+    }
+  ],
+  "verified_semantics": {
+    "same_request_same_action": "REPLAY_STORED_HASH_VERIFIED_RESULT_WITHOUT_SECOND_WORLD_ENTRY",
+    "same_request_different_action": "FAIL_CLOSED",
+    "same_text_different_request_id": "DISTINCT_INTENT_AND_DISTINCT_WORLD_ENTRY",
+    "active_duplicate": "WAIT_FOR_PREDECESSOR_LOCK_THEN_REPLAY_SETTLED_RECEIPT",
+    "call_entering_residue_after_lock_release": "UNDETERMINED_NO_AUTOMATIC_REEXECUTION",
+    "after_world_before_receipt_crash": "UNDETERMINED_NO_AUTOMATIC_REEXECUTION",
+    "pending_registration": "DURABLY_VISIBLE_AND_RECONCILABLE",
+    "registration_request_rebinding": "FAIL_CLOSED",
+    "fresh_verified_no_effect": "MAY_OPEN_RETRY_UNDER_REFERENCE_PROVIDER_CONTRACT",
+    "stale_expired_or_revoked_provider_evidence": "CANNOT_CLEAR_UNCERTAINTY",
+    "revoked_lineage_key": "CANNOT_ESTABLISH_CURRENT_REVIEW_LINEAGE",
+    "windows_final_file_fsync": "VERIFIED_WITH_EXPLICIT_READ_WRITE_DESCRIPTOR",
+    "windows_directory_entry_fsync": "NOT_AVAILABLE_OR_CLAIMED_BY_THIS_IMPLEMENTATION"
+  },
+  "claim_ceiling": {
+    "receipt": "FOCUSED_EXECUTION_EVIDENCE_FOR_LISTED_COMMITS_AND_RUNS_ONLY",
+    "real_external_provider_truth": false,
+    "real_genealogy_truth": false,
+    "cross_store_atomicity": false,
+    "multi_host_consensus": false,
+    "formal_exactly_once_proof": false
+  }
+}

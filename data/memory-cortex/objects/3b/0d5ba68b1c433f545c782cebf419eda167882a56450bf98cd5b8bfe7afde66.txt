@@ -1,0 +1,37 @@
+{
+  "artifact_id": "JANUS-HOLOGPT-TEST2-METHOD-AUDIT-2026-08-25-v1.0",
+  "status": "METHOD_PROTOTYPE_RETAINED__SCIENTIFIC_CLAIM_REJECTED_AS_CURRENTLY_DESIGNED",
+  "source": "HoloGPT_TEST2(4).py",
+  "sha256": "bf26689525cdd1be7677a2ab72700a408c83053d7babc86d5290ffe3bc20bbbe",
+  "size_bytes": 19115,
+  "python_compile": "PASS",
+  "what_is_real": [
+    "downloads an H(z) compilation from astrobengaly/cosmo_model_independent_tests",
+    "uses hard-coded Planck-2018 fiducial parameters as part of observed inputs"
+  ],
+  "method_failures": [
+    "H(z) measurement errors are parsed but discarded; uncertainty is not propagated",
+    "the supposed hidden cosmological target is manufactured by extending observed vectors with deterministic transforms plus random noise",
+    "test_seqs are taken from train_seqs[-5:], so there is no independent holdout",
+    "no explicit shuffled/null-control benchmark exists in the inspected source",
+    "median discrepancy threshold 0.1 is fixed rather than calibrated against a null distribution",
+    "train_on_sequences accepts steps_per_epoch but the inspected loop performs one random train_step per epoch; caller value 30 does not create 30 updates",
+    "real-data download failure silently falls back to synthetic sequences while the surrounding experiment remains labeled as real-data cosmology",
+    "a positive internal threshold prints a statement that the Universe is holographic, which the design cannot establish"
+  ],
+  "admissible_legacy_value": [
+    "latent/observed reconstruction toy architecture",
+    "historical example of why data provenance and holdout separation matter",
+    "testbed for a future preregistered null/holdout repair"
+  ],
+  "repair_gate": [
+    "immutable real dataset bytes + hash",
+    "retain observational uncertainties",
+    "predeclared train/calibration/holdout split",
+    "appropriate nulls/shuffles and simple non-neural baselines",
+    "threshold calibrated without holdout leakage",
+    "claim only held-out predictive comparison, not cosmological truth"
+  ],
+  "cross_link": "Hawkar-usls/Janus-Demiurge::audits/JANUS_SPIRAL_ARCHAEOLOGY_PASS2_AIENGINE_GEX_TRIUMVIRATE_YAKSA_JGPT_HOLOGPT_2026-08-25.json",
+  "canonical_rule": "REAL_INPUT_BYTES_DO_NOT_RESCUE_A_SYNTHETIC_TARGET_OR_LEAKED_EVALUATION"
+}

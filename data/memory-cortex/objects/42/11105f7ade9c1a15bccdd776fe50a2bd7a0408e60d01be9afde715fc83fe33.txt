@@ -1,0 +1,359 @@
+{
+  "artifact_id": "JANUS-TRUMP-R4-G-RQ-PAIR-FIXED-FOREST-LIFT-THEOREM-PROOF-2026-09-20-v1.0",
+  "version": "v1.0",
+  "date": "2026-09-20",
+  "gate": "R4_G_RQ_PAIR_FIXED_FOREST_LIFT_THEOREM_GATE_V1",
+  "status": "PASS_G_RQ_PAIR_FIXED_FOREST_LIFT",
+  "object_class": "SYMBOLIC_THEOREM_EXECUTION_RESULT__UNSEALED",
+  "authority_bind": {
+    "execution_authorization": "HQ_CURRENT_CHAT__EXPLICIT",
+    "parent": {
+      "commit": "ece366af062cac03388cfc0f90b5b89281279297",
+      "blob": "38b8f9644b9eb076a3bf026c04f06777958a452c",
+      "status": "PASS"
+    },
+    "source_check": {
+      "commit": "23422e8666f067e8ff3447b245d3bb5a13edce73",
+      "blob": "e502f964131d3d948a3ba523c7396da62ea608c7",
+      "status": "PASS"
+    },
+    "formalization": {
+      "commit": "cfedc19e652640487075ada9ea1c6bd445447eb9",
+      "blob": "0caaf72ce4ba6797c5ebdb4a992080eb8ac612c4",
+      "status": "PASS"
+    },
+    "prereg": {
+      "commit": "995332d489244193cab1a1681118c6f844768ba8",
+      "blob": "6add5b8f2f4d183f31a9b92d556740ccb3c4fdf5",
+      "status": "PASS"
+    },
+    "frozen_outcome_vocabulary": [
+      "PASS_G_RQ_PAIR_FIXED_FOREST_LIFT",
+      "PARAMETRIC_FOREST_LIFT_FALSIFIED"
+    ],
+    "O1_O8_mutated": false,
+    "previous_32_run_proof_weight": 0
+  },
+  "theorem_domain": {
+    "quantifiers": [
+      "for all integers r,q >= 1",
+      "for all i in {1,...,r}",
+      "for all j in {1,...,q}",
+      "for all gamma,delta in {3,4}"
+    ],
+    "parent_vertices": "{s,t,p,m,n,z} union A_r union B_q",
+    "parent_edge_schema": [
+      "s-t",
+      "s-p",
+      "p-m",
+      "m-n",
+      "t-n",
+      "for each a in A_r: a-s, a-z",
+      "for each b in B_q: b-t, b-m, b-z"
+    ],
+    "no_other_edges": true,
+    "frozen_seed_coloring": {
+      "s": 1,
+      "t": 2,
+      "p": 3,
+      "m": 2,
+      "n": 4
+    },
+    "pre_pair_lists": {
+      "a in A_r": [
+        2,
+        3,
+        4
+      ],
+      "b in B_q": [
+        1,
+        3,
+        4
+      ],
+      "z": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    "pair_fix": {
+      "a_i": "gamma",
+      "b_j": "delta"
+    }
+  },
+  "O1_VERTEX_EXACTNESS": {
+    "verdict": "PASS",
+    "symbolic_derivation": [
+      "Before pair fixing, the frozen post-constructor fixed set is S'={s,t,p,m,n}; X0'=X'=empty; the undecided vertices are {z} union A_r union B_q.",
+      "The theorem operation additionally fixes exactly a_i and b_j.",
+      "For every a in A_r\\{a_i}, the parent no_other_edges schema gives no edge a-a_i and no edge a-b_j; its list therefore receives no deletion from the newly fixed pair and remains [2,3,4], hence is not singleton.",
+      "For every b in B_q\\{b_j}, there is no edge b-a_i and no edge b-b_j; its list remains [1,3,4], hence is not singleton.",
+      "z is adjacent to both a_i and b_j, so its list becomes [1,2,3,4]\\{gamma,delta}; because gamma,delta are in {3,4}, this list has size 3 when equal and size 2 when unequal, hence is never singleton or empty.",
+      "Thus exact frozen boundary propagation fixes no further vertex."
+    ],
+    "fixed_removed_exactly": [
+      "s",
+      "t",
+      "p",
+      "m",
+      "n",
+      "a_i",
+      "b_j"
+    ],
+    "residual_vertices": "{z} union (A_r\\{a_i}) union (B_q\\{b_j})",
+    "degenerate_case": "If r=q=1, both A_r\\{a_i} and B_q\\{b_j} are empty, so the residual vertex set is exactly {z}."
+  },
+  "O2_EDGE_EXACTNESS": {
+    "verdict": "PASS",
+    "symbolic_derivation": [
+      "Project the exact parent edge set onto the residual vertex set from O1.",
+      "All five fixed-base edges s-t,s-p,p-m,m-n,t-n have both endpoints removed.",
+      "For any remaining a, edge a-s is removed because s is fixed, while edge a-z survives because both a and z are residual.",
+      "For a_i, both a_i-s and a_i-z are removed because a_i is fixed.",
+      "For any remaining b, edges b-t and b-m are removed because t,m are fixed, while edge b-z survives.",
+      "For b_j, b_j-t,b_j-m,b_j-z are removed because b_j is fixed.",
+      "The parent explicitly has no other edges, so no additional residual edge exists."
+    ],
+    "residual_edges": "{z-a : a in A_r\\{a_i}} union {z-b : b in B_q\\{b_j}}",
+    "omitted_edges": "NONE_BY_NO_OTHER_EDGES"
+  },
+  "O3_LIST_EXACTNESS": {
+    "verdict": "PASS",
+    "propagation_rule": "For residual v, delete from its exact pre-pair list the colors of newly fixed adjacent pair vertices a_i,b_j and perform no stronger unpublished preprocessing.",
+    "classes": [
+      {
+        "class": "A_r\\{a_i}",
+        "adjacency_to_new_pair": "none",
+        "pre_list": [
+          2,
+          3,
+          4
+        ],
+        "residual_list": [
+          2,
+          3,
+          4
+        ]
+      },
+      {
+        "class": "B_q\\{b_j}",
+        "adjacency_to_new_pair": "none",
+        "pre_list": [
+          1,
+          3,
+          4
+        ],
+        "residual_list": [
+          1,
+          3,
+          4
+        ]
+      },
+      {
+        "class": "z",
+        "adjacency_to_new_pair": [
+          "a_i",
+          "b_j"
+        ],
+        "pre_list": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "residual_list": "{1,2,3,4}\\{gamma,delta}"
+      }
+    ],
+    "exactness_reason": "Parent no_other_edges prevents any other pair-induced adjacency/list deletion."
+  },
+  "O4_NONEMPTY_LISTS": {
+    "verdict": "PASS",
+    "cases": [
+      {
+        "condition": "gamma=delta",
+        "symbolic_list": "{1,2,3,4}\\{gamma}",
+        "size": 3,
+        "nonempty": true
+      },
+      {
+        "condition": "gamma!=delta",
+        "symbolic_list": "{1,2,3,4}\\{gamma,delta}",
+        "size": 2,
+        "nonempty": true
+      }
+    ],
+    "leaf_list_sizes": 3,
+    "conclusion": "Every residual list is nonempty; no residual list is singleton."
+  },
+  "O5_FOREST": {
+    "verdict": "PASS",
+    "derivation": [
+      "By O2 every residual edge is incident with z.",
+      "Every residual A/B vertex has exactly one residual neighbor z.",
+      "z has exactly (r-1)+(q-1)=r+q-2 residual neighbors.",
+      "Hence for r+q-2>0 the residual graph is K_{1,r+q-2}.",
+      "When r=q=1, r+q-2=0 and the residual graph is the isolated single vertex K1.",
+      "A star and K1 are acyclic."
+    ],
+    "exact_graph": "K_{1,r+q-2}, with K1 at r=q=1",
+    "acyclic_for_all_quantified_parameters": true
+  },
+  "O6_T2_BIND": {
+    "verdict": "PASS",
+    "authority": {
+      "commit": "83d009ca9eb13261ab49eceb4d130cebfc64fb29",
+      "blob": "1b42d6f6a43556213b6ca9c9f11baeb4432bd519",
+      "status": "PASS_FOREST_LIST_COLORING_POLYNOMIAL_TERMINAL"
+    },
+    "binding": "O4 supplies finite nonempty exact lists and O5 supplies a forest. The sealed T2 theorem accepts arbitrary finite lists on forests and reconstructs a coloring in polynomial time.",
+    "new_solver_introduced": false,
+    "stronger_claim": false
+  },
+  "O7_DIRECT_CONSTRUCTIVE_EXTENSION": {
+    "verdict": "PASS",
+    "universal_coloring": {
+      "s": 1,
+      "t": 2,
+      "p": 3,
+      "m": 2,
+      "n": 4,
+      "a_i": "gamma",
+      "b_j": "delta",
+      "z": 1,
+      "a in A_r\\{a_i}": 2,
+      "b in B_q\\{b_j}": 3
+    },
+    "list_membership_checks": [
+      {
+        "vertex_class": "s,t,p,m,n",
+        "verdict": "PASS",
+        "reason": "These are exactly the frozen seed/post-constructor fixed colors."
+      },
+      {
+        "vertex_class": "a_i",
+        "verdict": "PASS",
+        "reason": "gamma in {3,4} subset of [2,3,4]."
+      },
+      {
+        "vertex_class": "b_j",
+        "verdict": "PASS",
+        "reason": "delta in {3,4} subset of [1,3,4]."
+      },
+      {
+        "vertex_class": "z",
+        "verdict": "PASS",
+        "reason": "Assigned color 1 is never deleted because gamma,delta are only 3 or 4; thus 1 belongs to [1,2,3,4]\\{gamma,delta}."
+      },
+      {
+        "vertex_class": "remaining A",
+        "verdict": "PASS",
+        "reason": "Assigned 2 belongs to [2,3,4]."
+      },
+      {
+        "vertex_class": "remaining B",
+        "verdict": "PASS",
+        "reason": "Assigned 3 belongs to [1,3,4]."
+      }
+    ],
+    "edge_type_checks": [
+      {
+        "edge_type": "s-t",
+        "colors": "1 vs 2",
+        "verdict": "PASS"
+      },
+      {
+        "edge_type": "s-p",
+        "colors": "1 vs 3",
+        "verdict": "PASS"
+      },
+      {
+        "edge_type": "p-m",
+        "colors": "3 vs 2",
+        "verdict": "PASS"
+      },
+      {
+        "edge_type": "m-n",
+        "colors": "2 vs 4",
+        "verdict": "PASS"
+      },
+      {
+        "edge_type": "t-n",
+        "colors": "2 vs 4",
+        "verdict": "PASS"
+      },
+      {
+        "edge_type": "a-s",
+        "selected": "gamma in {3,4} vs 1",
+        "remaining": "2 vs 1",
+        "verdict": "PASS"
+      },
+      {
+        "edge_type": "a-z",
+        "selected": "gamma in {3,4} vs 1",
+        "remaining": "2 vs 1",
+        "verdict": "PASS"
+      },
+      {
+        "edge_type": "b-t",
+        "selected": "delta in {3,4} vs 2",
+        "remaining": "3 vs 2",
+        "verdict": "PASS"
+      },
+      {
+        "edge_type": "b-m",
+        "selected": "delta in {3,4} vs 2",
+        "remaining": "3 vs 2",
+        "verdict": "PASS"
+      },
+      {
+        "edge_type": "b-z",
+        "selected": "delta in {3,4} vs 1",
+        "remaining": "3 vs 1",
+        "verdict": "PASS"
+      }
+    ],
+    "all_parent_edge_types_checked": true,
+    "no_unlisted_edge_assumed": true,
+    "conclusion": "For every quantified tuple the fixed pair assignment extends to an explicit proper list-respecting coloring of the entire frozen G_{r,q} instance."
+  },
+  "O8_PI_BIT": {
+    "verdict": "PASS",
+    "D2_semantics": {
+      "authority_commit": "bdec8439613b1eaf3d20f44095137241a431689b",
+      "authority_blob": "13747aaec73ee646b710a68fcef76d666a23f69b",
+      "statement": "For a fixed survivor pair and assignment (gamma,delta), q_{gamma,delta}=1 exactly when the pair-fixed exact state has a valid extension."
+    },
+    "derivation": "O7 constructs such an extension for every r,q,i,j,gamma,delta in the frozen domain; therefore q_{gamma,delta}=1 universally on this family.",
+    "consequence": "Pi(a_i,b_j)={33,34,43,44}={3,4}^2 for every (a_i,b_j) in A_r x B_q."
+  },
+  "theorem_conclusion": {
+    "verdict": "PASS_G_RQ_PAIR_FIXED_FOREST_LIFT",
+    "proved_for": "THE_FROZEN_G_RQ_FAMILY_ONLY",
+    "statements": [
+      "For all r,q>=1, all i in [r], j in [q], and gamma,delta in {3,4}, the exact pair-fixed residual is K_{1,r+q-2}, with K1 when r=q=1.",
+      "The exact residual lists are [2,3,4] on remaining A, [1,3,4] on remaining B, and [1,2,3,4]\\{gamma,delta} on z.",
+      "Every such residual routes through the already sealed T2_FOREST_LIST terminal.",
+      "Every fixed assignment extends; hence every survivor pair has Pi={3,4}^2."
+    ],
+    "complexity_statement": "For this frozen parametric G_{r,q} family, pair-fixed residual recognition/construction and T2 solution/reconstruction are polynomial.",
+    "semantic_quotient_note": "Within this frozen family all survivor pairs have the same Pi mask {3,4}^2, so the family-specific semantic Pi quotient has one class; this does not establish a universal exact pair quotient for arbitrary C11/PI residuals."
+  },
+  "scientific_ceiling": {
+    "G_RQ_PAIR_FIXED_FOREST_LIFT": "PROVED_FOR_FROZEN_G_RQ_FAMILY__PENDING_INDEPENDENT_REPLAY",
+    "G_RQ_PARAMETRIC_ROUTING": "PRIMARY_PROOF_PASS__PENDING_REPLAY",
+    "C11_TERMINAL_ROUTER_COMPLETENESS": "CANDIDATE__NOT_THEOREM",
+    "P3_EXACT_PAIR_QUOTIENT": "NOT_ESTABLISHED",
+    "P3_BYPASS": "NOT_ESTABLISHED",
+    "PI_DISCOVERY": "PARTIAL",
+    "LEMMA11_P7_LIFT": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "previous_32_finite_execution_used_as_proof": false,
+  "repair_attempted": false,
+  "independent_replay": "REQUIRED_NEXT_BY_PREREG",
+  "theorem_seal": "NOT_AUTHORIZED",
+  "successor_autoactivation": false,
+  "stop_after_replay": true
+}

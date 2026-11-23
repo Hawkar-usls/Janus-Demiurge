@@ -1,0 +1,62 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-R7-C1-NESTED-REGION-TRANSFER-SPEC-2026-08-15-v0.1",
+  "version": "v0.1",
+  "node_type": "frozen_nested_leave_one_region_out_validation_spec",
+  "parent_canonical_target": "v2.28",
+  "candidate_source": "data/JANUS-LINEAR-A-R7-C0-POSITIONAL-TEMPLATE-ROLE-RESULT-2026-08-15-v0.1.json",
+  "frozen_candidate_count": 8,
+  "candidate_addition_forbidden": true,
+  "candidate_removal_forbidden": true,
+  "objective": "Validate each frozen C0 word-role pair by nested leave-one-region-out replay: the pair must satisfy the original C0 train gate without region R before its behavior in R is scored.",
+  "source": {
+    "repository": "Hawkar-usls/lineara.xyz",
+    "frozen_commit": "43fe7cf1abc8e6bb1ea3228c3a1bd5938709620a"
+  },
+  "nonregion_replay_gate": {
+    "minimum_eligible_occurrences": 6,
+    "minimum_documents": 4,
+    "minimum_role_match_rate": 0.60,
+    "minimum_absolute_rate_lift_over_role_background": 0.25,
+    "must_match_R7_C0_train_gate": true
+  },
+  "heldout_region_support_gate": {
+    "minimum_candidate_occurrences": 4,
+    "minimum_candidate_documents": 3,
+    "support_eligibility_uses_only_candidate_occurrence_and_document_counts_not_match_outcomes": true
+  },
+  "heldout_region_confirmation_gate": {
+    "minimum_match_rate": 0.60,
+    "null": "one-sided exact binomial upper tail against same-region same-role background computed from all other source-word identities",
+    "multiple_testing": "Benjamini-Hochberg across all eligible frozen candidate x region tests",
+    "FDR_q_max": 0.05
+  },
+  "candidate_survival_gate": {
+    "minimum_confirmed_regions": 2,
+    "region_must_pass_nonregion_replay_before_confirmation": true,
+    "insufficient_regions_is_not_a_negative_function_claim": true
+  },
+  "leakage_firewall": {
+    "new_candidates_forbidden": true,
+    "role_changes_forbidden": true,
+    "threshold_changes_forbidden": true,
+    "translations_used": false,
+    "external_dictionaries_used": false,
+    "Linear_B_supervision_used": false,
+    "Notti_readings_used": false
+  },
+  "claim_ceiling": {
+    "allowed": [
+      "nested cross-region survival or non-survival of a frozen positional/template candidate",
+      "region-independent structural-role evidence candidate"
+    ],
+    "forbidden": [
+      "probable function",
+      "exact word meaning",
+      "translation",
+      "phonetic assignment",
+      "new anchor",
+      "Linear A decipherment",
+      "R3B external replication"
+    ]
+  }
+}

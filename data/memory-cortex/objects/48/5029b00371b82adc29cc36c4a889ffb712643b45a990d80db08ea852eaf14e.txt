@@ -1,0 +1,63 @@
+{
+  "schema": "janus.hrain.meta_registry_bridge.v1_0",
+  "artifact_id": "JANUS-HRAIN-META-REGISTRY-BRIDGE-v1.0",
+  "status": "IMPLEMENTED_BRIDGE_CONTRACT_PENDING_PRODUCTION_DEPLOYMENT",
+  "purpose": "Connect the JANUS Meta Registry search surface to HRaiN as a read-only graph/navigation consumer while preserving versioned registry objects as the only source authority.",
+  "network": {
+    "meta_registry": "https://hawkar-usls.github.io/janus-meta-registry/",
+    "hrain": "https://hawkar-usls.github.io/Hrain/janus.html",
+    "inaihr": "https://hawkar-usls.github.io/iNaiHR/"
+  },
+  "presentation": {
+    "header_layout": "JANUS_META_REGISTRY_LEFT__HRAIN_LARGE_CENTER__INAIHR_RIGHT",
+    "hrain_is_primary_graph_gateway": true,
+    "inaihr_is_semantic_interface_gateway": true,
+    "site_navigation_is_scientific_authority": false
+  },
+  "data_contract": {
+    "source_repository": "Hawkar-usls/janus-meta-registry",
+    "source_policy": "data/JANUS-SITE-CURATOR-POLICY-v1.2.json",
+    "generator": "research/site/janus_hrain_registry_export.py",
+    "generated_index": "assets/hrain-registry-index.json",
+    "mode": "READ_ONLY_ACTIVE_REGISTRY_PROJECTION",
+    "source_objects_are_fetched_by_url": true,
+    "writes_back_to_registry": false,
+    "replaces_current_authority": false,
+    "complete_historical_dump": false
+  },
+  "hrain_graph_contract": {
+    "root": "JANUS Meta Registry",
+    "level_1": "research surfaces",
+    "level_2": "versioned registry objects",
+    "node_source_fields": [
+      "path",
+      "sourceUrl",
+      "sourceSha256",
+      "commitSha",
+      "modifiedAt",
+      "status",
+      "gate",
+      "summary",
+      "lineageKey"
+    ],
+    "read_only": true,
+    "dedicated_viewer": "Hawkar-usls/Hrain/janus.html",
+    "ordinary_hrain_workspace_is_preserved": true
+  },
+  "autonomy": {
+    "index_refreshes_with_site_curator": true,
+    "pages_rebuild_after_index_refresh": true,
+    "hrain_may_render_new_objects_without_manual_html_edits": true,
+    "hrain_may_modify_source_registry_objects": false,
+    "inaihr_may_modify_source_registry_objects": false
+  },
+  "claim_ceiling": [
+    "HRAIN_GRAPH != REGISTRY_AUTHORITY",
+    "REGISTRY_INDEX != SOURCE_OBJECT",
+    "ACTIVE_PROJECTION != COMPLETE_HISTORICAL_DATABASE_DUMP",
+    "GRAPH_POSITION != EVIDENCE_STRENGTH",
+    "SEMANTIC_SUGGESTION != REGISTRY_FACT",
+    "READ_ONLY_PRESENTATION != WRITE_AUTHORITY"
+  ],
+  "next_gate": "Deploy generated index, activate HRaiN janus.html registry viewer, and verify end-to-end refresh from a new Meta Registry object to a visible HRaiN node."
+}

@@ -1,0 +1,67 @@
+{
+  "id": "EYE-R4.1-SEARCH-PROOF-CROSS-DOMAIN-v1",
+  "description": "Cross-domain operational benchmark showing the same solver on a search/proof verification problem rather than an optical detector problem.",
+  "cause_classes": [
+    {"id": "valid_independent_result", "target_class": "VALID"},
+    {"id": "stale_or_cached_result", "target_class": "INVALID_PROVENANCE"},
+    {"id": "derivative_duplicate_result", "target_class": "INVALID_PROVENANCE"},
+    {"id": "verifier_specific_false_positive", "target_class": "INVALID_VERIFIER"}
+  ],
+  "already_acquired": [],
+  "requirements": {
+    "required_independent_separators_per_pair": 1,
+    "unknown_independence_conflicts": true,
+    "max_exact_tests": 20,
+    "objective": "incremental_cost_then_cardinality"
+  },
+  "tests": [
+    {
+      "id": "provenance_hash_audit",
+      "cost": 1,
+      "failure_domains": ["provenance_parser"],
+      "distinguishes": [
+        ["valid_independent_result","stale_or_cached_result"],
+        ["valid_independent_result","derivative_duplicate_result"],
+        ["verifier_specific_false_positive","stale_or_cached_result"],
+        ["verifier_specific_false_positive","derivative_duplicate_result"]
+      ]
+    },
+    {
+      "id": "fresh_checkout_replay",
+      "cost": 2,
+      "failure_domains": ["fresh_runtime"],
+      "distinguishes": [
+        ["valid_independent_result","stale_or_cached_result"],
+        ["derivative_duplicate_result","stale_or_cached_result"]
+      ]
+    },
+    {
+      "id": "independent_verifier",
+      "cost": 3,
+      "failure_domains": ["verifier_B"],
+      "distinguishes": [
+        ["valid_independent_result","verifier_specific_false_positive"],
+        ["stale_or_cached_result","verifier_specific_false_positive"],
+        ["derivative_duplicate_result","verifier_specific_false_positive"]
+      ]
+    },
+    {
+      "id": "expensive_end_to_end_rebuild",
+      "cost": 12,
+      "failure_domains": ["rebuild_pipeline"],
+      "distinguishes": [
+        ["valid_independent_result","stale_or_cached_result"],
+        ["valid_independent_result","derivative_duplicate_result"],
+        ["valid_independent_result","verifier_specific_false_positive"],
+        ["stale_or_cached_result","verifier_specific_false_positive"],
+        ["derivative_duplicate_result","verifier_specific_false_positive"]
+      ]
+    }
+  ],
+  "expected": {
+    "status": "IDENTIFIABILITY_CANDIDATE",
+    "search_status": "EXACT_MINIMUM_FOUND",
+    "minimum_additional_tests": ["independent_verifier", "provenance_hash_audit"],
+    "minimum_cost": 4
+  }
+}

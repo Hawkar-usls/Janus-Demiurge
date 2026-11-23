@@ -1,0 +1,47 @@
+{
+  "artifact_id": "Angel",
+  "title_ru": "Angel — самолёт-ангел как исходное изображение для Rhino string art",
+  "title_en": "Angel — ANGEL aircraft source image for Rhino string art",
+  "version": "1.0",
+  "status": "admitted_code_artifact_static_not_executed",
+  "created_at": "2026-08-15",
+  "category": [
+    "code_artifact",
+    "rhino_python",
+    "string_art",
+    "image_based_geometry",
+    "creative_archive"
+  ],
+  "source_image": {
+    "registry_asset_name": "Angel.jpg",
+    "source": "user_supplied_image_in_conversation",
+    "sha256": "325465dd684bebb49b544a437637ff516b0fb459487365d1b3b2ce3b638599cf",
+    "size_bytes": 11367,
+    "description": "Front/rear view of an aircraft deploying bright flare-like trails, used by the user as the visual reference named Angel.",
+    "embedding_policy": "The binary image is not embedded in this JSON. The script resolves Angel.jpg beside the script and falls back to a manual image chooser."
+  },
+  "code_change_summary": [
+    "Replaced generic image-only workflow with an explicit ANGEL image binding via ANGEL_IMAGE_FILENAME = 'Angel.jpg'.",
+    "Added automatic lookup of Angel.jpg beside the Rhino script, with manual fallback if the asset is absent.",
+    "Passed contrast explicitly into draw_string_art instead of relying on a global variable.",
+    "Disposed the System.Drawing.Bitmap after reading pixels.",
+    "Changed the pin-circle radius to min(width,height)/2 so non-square ANGEL images remain inside image bounds.",
+    "Protected line sampling from division by zero with max(1, int(length))."
+  ],
+  "runtime": {
+    "environment": "Rhino Python / rhinoscriptsyntax / RhinoCommon",
+    "execution_status": "NOT_EXECUTED_IN_META_REGISTRY",
+    "required_asset": "Angel.jpg"
+  },
+  "script": {
+    "filename": "Angel_rhino_string_art.py",
+    "sha256": "23e7ee9e7b7d353d428f76f49ea11a7c229b9d552cf489876d1fbdb2a3b387ae",
+    "language": "Python",
+    "content": "# -*- coding: utf-8 -*-\nimport rhinoscriptsyntax as rs\nimport math\nimport Rhino\nimport scriptcontext as sc\nimport random\nimport os\nfrom System.Drawing import Bitmap\n\nANGEL_IMAGE_FILENAME = \"Angel.jpg\"\n\ndef grayscale(color):\n    return (color.R + color.G + color.B) / 3\n\ndef get_image_pixels(image_path):\n    img = Bitmap(image_path)\n    width, height = img.Width, img.Height\n    pixels = []\n    for y in range(height):\n        row = []\n        for x in range(width):\n            color = img.GetPixel(x, height - 1 - y)\n            gray = grayscale(color)\n            row.append(gray)\n        pixels.append(row)\n    img.Dispose()\n    return pixels, width, height\n\ndef mask_circle(pixels, width, height):\n    cx, cy = width / 2.0, height / 2.0\n    r = min(width, height) / 2.0\n    masked = []\n    for y in range(height):\n        row = []\n        for x in range(width):\n            d = math.hypot(x - cx, y - cy)\n            row.append(pixels[y][x] if d <= r else 255)\n        masked.append(row)\n    return masked\n\npin_points = []\n\ndef create_pin_points(center, radius, count):\n    global pin_points\n    pin_points = []\n    for i in range(count):\n        angle = 2 * math.pi * i / count\n        x = center[0] + radius * math.cos(angle)\n        y = center[1] + radius * math.sin(angle)\n        z = center[2]\n        pt = Rhino.Geometry.Point3d(x, y, z)\n        pin_points.append((pt, i + 1))\n        if count <= 200 or i % 10 == 0:\n            rs.AddTextDot(str(i + 1), pt)\n\ndef average_grayscale_on_line(p1, p2, pixels, width, height):\n    dx, dy = p2.X - p1.X, p2.Y - p1.Y\n    length = math.hypot(dx, dy)\n    samples = int(length)\n    if samples == 0:\n        return 255\n    inv = 1.0 / samples\n    total, count = 0, 0\n    for i in range(samples):\n        t = i * inv\n        x = (1 - t) * p1.X + t * p2.X\n        y = (1 - t) * p1.Y + t * p2.Y\n        px, py = int(x + 0.5), int(y + 0.5)\n        if 0 <= px < width and 0 <= py < height:\n            total += pixels[py][px]\n            count += 1\n    return total / count if count > 0 else 255\n\ndef lighten_pixel(pixels, x, y, strength=0.02):\n    if 0 <= x < len(pixels[0]) and 0 <= y < len(pixels):\n        g = pixels[y][x]\n        pixels[y][x] = min(255, g + (255 - g) * strength)\n\ndef draw_string_art(pixels, pin_points, width, height, contrast, total_lines=500, min_dist_ratio=None):\n    sequence = []\n    radius = min(width, height) / 2.0\n    if min_dist_ratio is None:\n        min_dist_ratio = max(0.1, 10.0 / len(pin_points))\n    min_dist = radius * min_dist_ratio\n    used_lines = set()\n    current_pt, _ = random.choice(pin_points)\n    poly_pts = [current_pt]\n    lines_drawn = 0\n\n    while lines_drawn < total_lines:\n        min_gray = float(\"inf\")\n        next_pt = None\n        for pt, _ in pin_points:\n            if pt == current_pt:\n                continue\n            dist = current_pt.DistanceTo(pt)\n            if dist < min_dist:\n                continue\n            key = tuple(sorted([(current_pt.X, current_pt.Y), (pt.X, pt.Y)]))\n            if key in used_lines:\n                continue\n            avg = average_grayscale_on_line(current_pt, pt, pixels, width, height)\n            if avg < min_gray:\n                min_gray = avg\n                next_pt = pt\n\n        if next_pt:\n            key = tuple(sorted([(current_pt.X, current_pt.Y), (next_pt.X, next_pt.Y)]))\n            used_lines.add(key)\n            length = current_pt.DistanceTo(next_pt)\n            samples = max(1, int(length))\n            for i in range(samples):\n                t = i / float(samples)\n                x = int((1 - t) * current_pt.X + t * next_pt.X + 0.5)\n                y = int((1 - t) * current_pt.Y + t * next_pt.Y + 0.5)\n                lighten_pixel(pixels, x, y, strength=contrast)\n            poly_pts.append(next_pt)\n            current_pt = next_pt\n            for pt, idx in pin_points:\n                if pt == next_pt:\n                    sequence.append(idx)\n                    break\n            lines_drawn += 1\n        else:\n            current_pt, _ = random.choice(pin_points)\n            poly_pts.append(current_pt)\n\n    polyline = Rhino.Geometry.Polyline(poly_pts)\n    sc.doc.Objects.AddPolyline(polyline)\n    sc.doc.Views.Redraw()\n    print(\"Done. Here is the ordered list of pin IDs:\")\n    print(sequence)\n\ndef resolve_angel_image():\n    script_dir = os.path.dirname(__file__) if \"__file__\" in globals() else \"\"\n    default_image_path = os.path.join(script_dir, ANGEL_IMAGE_FILENAME) if script_dir else ANGEL_IMAGE_FILENAME\n    if os.path.exists(default_image_path):\n        print(\"Using ANGEL aircraft image:\", default_image_path)\n        return default_image_path\n    return rs.OpenFileName(\n        \"Choose the ANGEL aircraft image file\",\n        \"Image Files (*.jpg;*.jpeg;*.png)|*.jpg;*.jpeg;*.png||\"\n    )\n\nimage_path = resolve_angel_image()\ncontrast = rs.GetReal(\"Contrast level (0.00-1.00)\", 0.25)\nline_count = rs.GetInteger(\"Number of lines\", 700)\npin_count = rs.GetInteger(\"Number of pins\", 200)\n\nif image_path and contrast is not None and line_count and pin_count:\n    print(\"Calculating string art for ANGEL aircraft...\")\n    pixels, img_w, img_h = get_image_pixels(image_path)\n    masked = mask_circle(pixels, img_w, img_h)\n    create_pin_points(\n        center=(img_w / 2.0, img_h / 2.0, 0),\n        radius=min(img_w, img_h) / 2.0,\n        count=pin_count\n    )\n    max_lines = min(line_count, pin_count * 6)\n    draw_string_art(masked, pin_points, img_w, img_h, contrast, total_lines=max_lines)\nelse:\n    print(\"ANGEL string-art generation cancelled.\")\n"
+  },
+  "claim_ceiling": [
+    "This record preserves the modified source code and its intended image binding.",
+    "The meta-registry has not executed Rhino or validated output geometry from this script.",
+    "Image identity is bound here by SHA-256 of the user-supplied conversation image; the binary image itself is not published by this JSON."
+  ]
+}

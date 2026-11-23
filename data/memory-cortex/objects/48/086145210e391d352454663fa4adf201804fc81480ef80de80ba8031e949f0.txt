@@ -1,0 +1,57 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1C3-COMPONENT-MESSAGE-SELECTOR-COMPILATION-INDEPENDENT-REPLAY-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "PASS_INDEPENDENT_REPLAY_ZERO_MISMATCHES",
+  "gate": "R5_B1B1C3_COMPONENT_MESSAGE_SELECTOR_COMPILATION_V1",
+  "method": "Recompute local selector semantics, global extension equivalence, reconstruction, and P7 preservation from C0+C2 only.",
+  "binds": {
+    "prereg_blob": "3b44b4ca3b2651e4d9fe7a56b0e8d743128fc5b5",
+    "primary_result_commit": "30701872f70141c4ee5af5d96e98f54632496a40",
+    "primary_result_blob": "1a9a5d00ef2b3cca8fc36237efba8b4b370002cd",
+    "C0_message_seal_blob": "0dbebe81f52a5b8411199fc44614bf8c17b6dd95",
+    "C2_QALL_seal_blob": "33d6b365728c703c43371b966d9ed26020f12b98"
+  },
+  "replay": {
+    "local_selector": [
+      "Selector h_{C,M} has list M and neighborhood D_C.",
+      "Given outside coloring c, proper selector color exists iff some alpha in M is absent from colors(D_C)=F_C(c).",
+      "Therefore h_{C,M} is colorable iff M is not a subset of F_C(c)."
+    ],
+    "min_bad_logic": [
+      "C0 good masks form a down-set and bad masks an upset.",
+      "Every bad mask contains an inclusion-minimal bad mask.",
+      "Thus mu_C(F)=1 iff no M in MIN_BAD(C) is contained in F.",
+      "Hence all selectors of C are simultaneously colorable iff mu_C(F_C)=1."
+    ],
+    "global_forward": [
+      "Restrict an original extension to U.",
+      "For every selector choose alpha in M\\F_C; such alpha exists because the original extension makes F_C good.",
+      "Selector independence makes these choices mutually compatible."
+    ],
+    "global_reverse": [
+      "Restrict any H* list-coloring to U.",
+      "For each C, selector properness implies F_C is good.",
+      "All residual components are coupled by C2, so actual F_C is nonempty and has a stored C0 witness.",
+      "Insert that witness; X0 compatibility is already encoded in B_C, seed is anticomplete, dynamic complete-neighbor colors are excluded by F_C, and different Y0 components are anticomplete."
+    ],
+    "exact_outside_lists": "A(u)=[4]\\f(N(u)∩(S∪X0)) is required for semantic equivalence; replacing it by source L_P(u) would violate the B1B0 firewall.",
+    "p7": [
+      "H* is obtained from an induced subgraph of Q_ALL by independent false-twin blowups of component nodes.",
+      "An induced path on at least four vertices contains at most one vertex of an independent false-twin class.",
+      "Collapse each selector used by a hypothetical P7 to its Q_ALL component node; all path adjacencies/nonadjacencies are preserved.",
+      "This would produce an induced P7 in Q_ALL, contradiction."
+    ],
+    "size": "At most six selectors per residual component, hence O(n) selector vertices.",
+    "four_list": "[4] can coexist with no other MIN_BAD mask for the same component because MIN_BAD is an antichain."
+  },
+  "mismatch_count": 0,
+  "recomputed_terminal": "PASS_COMPONENT_MESSAGE_SELECTOR_COMPILATION",
+  "limitations": [
+    "No solver for the resulting P7-free mixed-list graph is proved.",
+    "No transfer from ordinary P7-free List-3 to mixed 3-subsets of [4].",
+    "No full L2 repair."
+  ],
+  "stop": true,
+  "return_to_HQ": true
+}

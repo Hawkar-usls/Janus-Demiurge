@@ -1,0 +1,72 @@
+{
+  "schema": "janus.hrain.meta_registry_bridge.v1_1",
+  "artifact_id": "JANUS-HRAIN-META-REGISTRY-BRIDGE-v1.1",
+  "status": "ACTIVE_PRODUCTION_BRIDGE_WITH_INTERFACE_DELETION_FIREWALL",
+  "supersedes": "data/JANUS-HRAIN-META-REGISTRY-BRIDGE-v1.0.json",
+  "purpose": "Connect JANUS Meta Registry to HRaiN and iNaiHR while making source-object write and deletion authority unavailable to those interfaces by contract.",
+  "network": {
+    "meta_registry": "https://hawkar-usls.github.io/janus-meta-registry/",
+    "hrain": "https://hawkar-usls.github.io/Hrain/janus.html",
+    "inaihr": "https://hawkar-usls.github.io/iNaiHR/"
+  },
+  "data_contract": {
+    "source_repository": "Hawkar-usls/janus-meta-registry",
+    "source_policy": "data/JANUS-SITE-CURATOR-POLICY-v1.2.json",
+    "generator": "research/site/janus_hrain_registry_export.py",
+    "generated_index": "assets/hrain-registry-index.json",
+    "mode": "READ_ONLY_ACTIVE_REGISTRY_PROJECTION",
+    "writes_back_to_registry": false,
+    "deletes_from_registry": false,
+    "source_mutation_endpoint_exposed": false,
+    "replaces_current_authority": false,
+    "complete_historical_dump": false
+  },
+  "interface_deletion_firewall": {
+    "hrain_write_authority": false,
+    "hrain_delete_authority": false,
+    "inaihr_write_authority": false,
+    "inaihr_delete_authority": false,
+    "append_only_from_interface_perspective": true,
+    "wipe_meaning": "LOCAL_VIEW_OR_WORKSPACE_RESET_ONLY",
+    "local_clear_may_delete_source_registry_object": false,
+    "local_node_delete_may_delete_source_registry_object": false,
+    "future_ui_may_promote_wipe_to_registry_delete": false,
+    "source_object_delete_requires_separate_registry_maintenance_process": true
+  },
+  "generated_index_contract": {
+    "schema": "janus.hrain.registry_graph_index.v1_0",
+    "every_node_read_only": true,
+    "every_node_delete_allowed": false,
+    "mutation_policy_required": true,
+    "interface_delete_authority": "NONE",
+    "source_mutation_endpoint": null
+  },
+  "hrain_runtime_contract": {
+    "dedicated_viewer": "Hawkar-usls/Hrain/janus.html",
+    "ordinary_hrain_workspace_is_preserved": true,
+    "registry_viewer_may_relayout_nodes_in_memory": true,
+    "registry_viewer_may_clear_local_runtime_layout": true,
+    "registry_viewer_may_persist_registry_mutations": false,
+    "registry_viewer_may_issue_registry_write_requests": false,
+    "registry_viewer_may_issue_registry_delete_requests": false
+  },
+  "inaihr_runtime_contract": {
+    "workspace": "BROWSER_LOCAL_USER_GRAPH",
+    "local_clear_is_registry_operation": false,
+    "local_node_delete_is_registry_operation": false,
+    "semantic_suggestion_is_registry_fact": false
+  },
+  "claim_ceiling": [
+    "HRAIN_GRAPH != REGISTRY_AUTHORITY",
+    "REGISTRY_INDEX != SOURCE_OBJECT",
+    "ACTIVE_PROJECTION != COMPLETE_HISTORICAL_DATABASE_DUMP",
+    "GRAPH_POSITION != EVIDENCE_STRENGTH",
+    "SEMANTIC_SUGGESTION != REGISTRY_FACT",
+    "READ_ONLY_PRESENTATION != WRITE_AUTHORITY",
+    "HRAIN_WIPE != REGISTRY_DELETE",
+    "LOCAL_DESK_RESET != SOURCE_MUTATION",
+    "LOCAL_NODE_DELETE != REGISTRY_DELETE",
+    "INTERFACE_DELETE_AUTHORITY = NONE"
+  ],
+  "next_gate": "Verify production generated index exposes mutationPolicy with zero write/delete authority and HRaiN/iNaiHR public builds enforce local-only clear semantics."
+}

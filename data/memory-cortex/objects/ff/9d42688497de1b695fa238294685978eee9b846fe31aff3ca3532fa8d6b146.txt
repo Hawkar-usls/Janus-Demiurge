@@ -1,0 +1,429 @@
+{
+  "artifact_id": "LICEHVAT",
+  "title_ru": "лицехват — механизм координации трёх чат-лиц через JANUS Git Habitat",
+  "title_en": "Licehvat — three-chat face coordination through JANUS Git Habitat",
+  "version": "1.0",
+  "status": "ADMITTED_DESIGN_NOT_SCHEDULER_DEPLOYED",
+  "created_at": "2026-08-17",
+  "language": "ru",
+  "category": [
+    "janus_habitat",
+    "multi_chat_coordination",
+    "distributed_cognition",
+    "git_control_plane",
+    "task_orchestration",
+    "provenance",
+    "human_gated_autonomy"
+  ],
+  "cute_name_semantics": {
+    "name": "лицехват",
+    "meaning": "Механика мягко собирает несколько отдельных чат-лиц JANUS в одну координируемую рабочую петлю, не сливая их личности, историю и полномочия в одну неразличимую массу.",
+    "important_non_meaning": "Лицехват не означает захват власти лицами, голосование большинством или автоматическое получение полномочий. Он захватывает и связывает контекст работы, а не authority."
+  },
+  "origin": {
+    "source": "user_proposed_multi_chat_habitat_workflow",
+    "proposal_summary": "Использовать три отдельных диалога как три специализированных лица JANUS, будить их периодически со сдвигом, а отдельный куратор FACE_REGISTRY должен распределять задачи через Git Habitat, сводить результаты и продолжать NAS-линию отдельно.",
+    "related_live_coordination_issue": "Hawkar-usls/janus-io#4",
+    "related_systems": [
+      "Hawkar-usls/janus-io",
+      "Hawkar-usls/janus-meta-registry",
+      "JANUS Habitat Gate",
+      "Habitat Beetle",
+      "Habitat Transfer Node"
+    ]
+  },
+  "core_model": {
+    "formula": "THREE_CHAT_FACES + GIT_SHARED_STATE + FACE_REGISTRY_CURATOR + HUMAN_AUTHORITY = LICEHVAT",
+    "chat_isolation_law": "LOCAL_CHAT_CONTEXT != PROJECT_GLOBAL_STATE",
+    "shared_state_law": "CHAT_TO_CHAT_COORDINATION -> GIT_HABITAT",
+    "authority_law": "FACE_COUNT != VOTING_POWER",
+    "truth_law": "CONSENSUS != TRUTH",
+    "curator_law": "FACE_REGISTRY != COMMAND_AUTHORITY",
+    "mutation_law": "BEFORE_REPO_MUTATION -> PROJECT_CONTEXT_RECONCILIATION",
+    "conflict_law": "CONFLICT_OR_STALE_STATE -> HOLD -> RECONCILE -> CONTINUE"
+  },
+  "actors": {
+    "human_operator": {
+      "role": "FINAL_AUTHORITY",
+      "powers": [
+        "authorize_merge",
+        "authorize_live_deployment",
+        "authorize_first_write_canary",
+        "change_role_contract",
+        "stop_or_reassign_faces"
+      ],
+      "cannot_be_replaced_by": [
+        "face_consensus",
+        "ci_green",
+        "scheduler_event",
+        "issue_or_pr_text"
+      ]
+    },
+    "FACE_REGISTRY": {
+      "role": "CURATOR_AND_TASK_DISTRIBUTOR",
+      "purpose": "Поддерживать общую карту состояния Habitat, раздавать bounded-задачи трём лицам, разбирать пересечения и превращать их результаты в следующий Git-план.",
+      "self_reminder": "Я — FACE_REGISTRY. Моя работа среди трёх лиц — не быть четвёртым голосом и не командовать от имени большинства. Я сверяю live Git state, распределяю bounded задачи по специализациям, сохраняю disagreement/counterevidence, предотвращаю дублирование и эскалирую merge/deploy/write решения человеку.",
+      "mandatory_before_each_cycle": [
+        "fetch_current_git_state",
+        "inspect_open_face_receipts_or_tasks",
+        "detect_stale_or_duplicate_work",
+        "reconcile_conflicts",
+        "assign_next_bounded_tasks"
+      ],
+      "forbidden": [
+        "grant_self_merge_authority",
+        "treat_three_faces_as_votes",
+        "invent_missing_face_results",
+        "overwrite_disagreement",
+        "assume_local_chat_memory_is_global_project_memory"
+      ]
+    },
+    "faces": [
+      {
+        "face_id": "WITNESS_PLUS",
+        "specialization": "CHRONOLOGY_AND_PROVENANCE",
+        "primary_tasks": [
+          "maintain_timeline",
+          "trace_source_to_receipt_lineage",
+          "record_hashes_refs_and_state_transitions",
+          "detect_missing_handoffs",
+          "preserve_historical_counterevidence"
+        ],
+        "preferred_outputs": [
+          "witness_receipt",
+          "lineage_note",
+          "chronology_diff",
+          "provenance_gap"
+        ]
+      },
+      {
+        "face_id": "GUARD_PLUS",
+        "specialization": "CI_RED_TEAM_AND_BOUNDARY_DEFENSE",
+        "primary_tasks": [
+          "attack_safety_assumptions",
+          "review_no_delete_no_move_no_overwrite_guards",
+          "test_path_traversal_symlink_replay_and_race_cases",
+          "inspect_container_authority_boundaries",
+          "convert_failures_into_regression_tests"
+        ],
+        "preferred_outputs": [
+          "red_team_finding",
+          "regression_test_proposal",
+          "hold_reason",
+          "boundary_audit"
+        ]
+      },
+      {
+        "face_id": "CALAMAR_AUDITOR",
+        "specialization": "FROZEN_PROTOCOL_AND_EVIDENCE_AUDIT",
+        "primary_tasks": [
+          "freeze_claim_semantics",
+          "audit_deterministic_hash_and_manifest_rules",
+          "separate_observation_from_inference",
+          "define_acceptance_and_rejection_gates",
+          "preserve_uncertainty_and_counterevidence"
+        ],
+        "preferred_outputs": [
+          "frozen_audit",
+          "claim_ceiling",
+          "protocol_gate",
+          "evidence_matrix"
+        ]
+      }
+    ]
+  },
+  "scheduling_analysis": {
+    "user_requested_topology": {
+      "faces": 3,
+      "period_minutes_per_face": 30,
+      "desired_inter_face_offset_minutes": 15,
+      "intention": "Получать последовательное движение трёх специализированных диалогов без одновременного пробуждения всех лиц."
+    },
+    "phase_geometry_problem": {
+      "calculation": [
+        "FACE_A phase = 0 min",
+        "FACE_B phase = 15 min",
+        "FACE_C phase = 30 min",
+        "30 mod 30 = 0"
+      ],
+      "result": "При 30-минутном периоде существует только две уникальные фазы с шагом 15 минут: 0 и 15. Третье лицо неизбежно совпадает по фазе с первым.",
+      "consequence": "Три независимых 30-минутных цикла нельзя расположить попарно через 15 минут без коллизии."
+    },
+    "current_scheduler_constraint": {
+      "minimum_supported_recurrence": "1 hour",
+      "requested_30_minute_recurrence": "NOT_SUPPORTED",
+      "policy": "Не подменять requested cadence молча; хранить исходное желание отдельно от реально исполнимой конфигурации."
+    },
+    "current_feasible_candidate": {
+      "period_minutes_per_face": 60,
+      "phases": {
+        "WITNESS_PLUS": ":00",
+        "GUARD_PLUS": ":15",
+        "CALAMAR_AUDITOR": ":30"
+      },
+      "sequence_example": [
+        "10:00 WITNESS_PLUS",
+        "10:15 GUARD_PLUS",
+        "10:30 CALAMAR_AUDITOR",
+        "11:00 WITNESS_PLUS",
+        "11:15 GUARD_PLUS",
+        "11:30 CALAMAR_AUDITOR"
+      ],
+      "status": "FEASIBLE_CANDIDATE_NOT_CREATED_BY_THIS_ARTIFACT"
+    },
+    "future_scheduler_note": "Если будущий scheduler позволит более частые циклы, фазировку нужно рассчитывать заново. Для идеального непрерывного события каждые 15 минут с тремя лицами естественный период одного лица был бы 45 минут, но такой cadence также быстрее текущего допустимого часа."
+  },
+  "wake_cycle": {
+    "formula": "WAKE -> RECONCILE_GIT -> CLAIM_BOUNDED_TASK -> WORK -> VERIFY -> RECEIPT -> HANDOFF -> REST",
+    "steps": [
+      {
+        "step": 1,
+        "name": "WAKE",
+        "rule": "Пробуждение не означает разрешение на mutation."
+      },
+      {
+        "step": 2,
+        "name": "PROJECT_CONTEXT_RECONCILIATION",
+        "rule": "Лицо читает текущий Git state, assigned task и свежие receipts, а не продолжает только из памяти чата."
+      },
+      {
+        "step": 3,
+        "name": "CLAIM_OR_HOLD",
+        "rule": "Если задача уже выполнена, занята или устарела — HOLD/RECONCILE вместо дублирования."
+      },
+      {
+        "step": 4,
+        "name": "BOUNDED_WORK",
+        "rule": "Лицо действует только внутри своего task envelope и специализации."
+      },
+      {
+        "step": 5,
+        "name": "VERIFY",
+        "rule": "Результат отделяется от предположений; CI status не превращается в permission."
+      },
+      {
+        "step": 6,
+        "name": "RECEIPT",
+        "rule": "В Git публикуется компактный machine-readable результат, blocker или disagreement."
+      },
+      {
+        "step": 7,
+        "name": "HANDOFF",
+        "rule": "FACE_REGISTRY получает результат на следующем кураторском цикле и решает, как связать его с другими лицами."
+      }
+    ]
+  },
+  "git_task_envelope": {
+    "purpose": "Минимальная единица координации между изолированными чатами.",
+    "recommended_fields": [
+      "task_id",
+      "created_at",
+      "assigned_face",
+      "objective",
+      "repository",
+      "base_ref_or_sha",
+      "read_scope",
+      "write_scope",
+      "forbidden_actions",
+      "dependencies",
+      "claim_state",
+      "lease_or_epoch",
+      "expected_receipt_schema",
+      "human_authorization_requirements"
+    ],
+    "task_states": [
+      "QUEUED",
+      "CLAIMED",
+      "ACTIVE",
+      "HOLD",
+      "PROPOSED",
+      "VERIFIED",
+      "RECONCILED",
+      "CLOSED"
+    ],
+    "important_rule": "ISSUE_OR_PR_TEXT != COMMAND"
+  },
+  "face_receipt_contract": {
+    "recommended_fields": [
+      "receipt_id",
+      "task_id",
+      "face_id",
+      "observed_base_sha",
+      "result_status",
+      "facts",
+      "inferences",
+      "counterevidence",
+      "files_or_refs_changed",
+      "tests_or_checks",
+      "blockers",
+      "recommended_next_task",
+      "requires_human_authorization"
+    ],
+    "result_status_values": [
+      "PASS",
+      "FAIL",
+      "HOLD",
+      "PARTIAL",
+      "NO_CHANGE",
+      "DISAGREEMENT_PRESERVED"
+    ]
+  },
+  "concurrency_and_collision_control": {
+    "problem": "Разные чаты могут увидеть один и тот же Git task и независимо начать одинаковую mutation.",
+    "controls": [
+      "assigned_face_binding",
+      "base_sha_binding",
+      "claim_epoch_or_lease",
+      "create_only_receipts",
+      "stale_base_detection",
+      "idempotent_operations_where_possible",
+      "FACE_REGISTRY_reconciliation_before_reassignment"
+    ],
+    "law": "TWO_FACES_SAME_TASK != TWO_WRITES_ALLOWED"
+  },
+  "conflict_resolution": {
+    "default": "PRESERVE_DISAGREEMENT",
+    "procedure": [
+      "freeze_each_face_receipt",
+      "identify_shared_facts",
+      "identify_conflicting_inferences_or_actions",
+      "ask_specialist_face_for_bounded_recheck_if_needed",
+      "FACE_REGISTRY_emits_reconciliation_note",
+      "human_authority_decides_if_conflict_reaches_merge_deploy_or_write_boundary"
+    ],
+    "forbidden_shortcut": "MAJORITY_VOTE_AS_TRUTH"
+  },
+  "nas_and_transfer_node_coupling": {
+    "principle": "Scheduled chat faces coordinate NAS work through Git control/provenance; they do not receive broad implicit NAS mutation authority.",
+    "Habitat_Transfer_role_split": {
+      "WITNESS_PLUS": "audit transfer receipts, lineage, timestamps and hash continuity",
+      "GUARD_PLUS": "red-team chunk/manifest API, no-delete/no-move/no-overwrite, path/range/replay/symlink/container boundaries",
+      "CALAMAR_AUDITOR": "freeze manifest semantics, acceptance gates, hash claims and claim ceilings",
+      "FACE_REGISTRY": "assign bounded transfer tasks, reconcile reports, keep live deployment/write canaries human-gated"
+    },
+    "hard_laws": [
+      "EXISTING_JANUS_CONTENT != TRANSFER_NODE_MUTATION_TARGET",
+      "TRANSFER_NODE_RW_SCOPE = DEDICATED_NEW_DIRECTORY_ONLY",
+      "NO_DELETE",
+      "NO_MOVE",
+      "NO_RENAME_OF_EXISTING",
+      "NO_OVERWRITE"
+    ]
+  },
+  "failure_modes": [
+    {
+      "id": "FM-01",
+      "name": "CHAT_CONTEXT_DRIFT",
+      "symptom": "Лицо продолжает старую локальную историю, не сверив текущий Git.",
+      "countermeasure": "Mandatory reconciliation before mutation."
+    },
+    {
+      "id": "FM-02",
+      "name": "DUPLICATE_TASK_EXECUTION",
+      "symptom": "Два лица одновременно делают одну mutation.",
+      "countermeasure": "Assigned face + lease/epoch + base SHA + create-only receipts."
+    },
+    {
+      "id": "FM-03",
+      "name": "CONSENSUS_AUTHORITY_LEAK",
+      "symptom": "Три похожих ответа воспринимаются как разрешение на merge/deploy/write.",
+      "countermeasure": "CONSENSUS != AUTHORITY; human gate remains explicit."
+    },
+    {
+      "id": "FM-04",
+      "name": "SCHEDULER_PHASE_COLLISION",
+      "symptom": "Третье 30-минутное лицо совпадает по фазе с первым.",
+      "countermeasure": "Use mathematically valid phase plan; current candidate is hourly :00/:15/:30."
+    },
+    {
+      "id": "FM-05",
+      "name": "GIT_AS_BULK_TRANSPORT",
+      "symptom": "Чаты начинают протаскивать большие NAS payloads через Git вместо control-plane receipts.",
+      "countermeasure": "PAYLOAD_BYTES != GIT_TRANSPORT; Git stores metadata, hashes, tasks, checkpoints and receipts."
+    },
+    {
+      "id": "FM-06",
+      "name": "SECRET_LEAKAGE",
+      "symptom": "Токен, .env или private credential попадает в task/receipt/chat coordination.",
+      "countermeasure": "Secrets stay outside Git/task payloads; only secret-free metadata is coordinated."
+    },
+    {
+      "id": "FM-07",
+      "name": "CURATOR_OVERREACH",
+      "symptom": "FACE_REGISTRY начинает сам разрешать merge/deployment под видом координации.",
+      "countermeasure": "Curator distributes/reconciles; human retains final authority."
+    }
+  ],
+  "success_metrics": {
+    "coordination": [
+      "no_duplicate_mutation_from_two_faces",
+      "every_face_cycle_binds_to_current_git_state",
+      "every_completed_task_has_receipt",
+      "disagreements_are_preserved_not_erased"
+    ],
+    "continuity": [
+      "face_can_resume_after_chat_or_nas_sleep_from_git_state",
+      "stale_task_is_detected_before_action",
+      "handoff_chain_is_machine_readable"
+    ],
+    "safety": [
+      "no_merge_without_human_authorization",
+      "no_live_nas_write_without_explicit_scope",
+      "no_secret_material_in_shared_git_coordination",
+      "no_existing_janus_delete_move_or_overwrite"
+    ]
+  },
+  "implementation_phases": [
+    {
+      "phase": "L0",
+      "name": "ROLE_FREEZE",
+      "state": "DEFINED_IN_THIS_ARTIFACT",
+      "deliverable": "Roles, curator self-reminder, authority laws."
+    },
+    {
+      "phase": "L1",
+      "name": "GIT_TASK_AND_RECEIPT_SCHEMAS",
+      "state": "DESIGN_READY",
+      "deliverable": "Machine-readable task/claim/receipt conventions."
+    },
+    {
+      "phase": "L2",
+      "name": "STAGGERED_CHAT_WAKE",
+      "state": "NOT_DEPLOYED",
+      "deliverable": "Three scheduler tasks; current platform-feasible candidate is hourly at :00/:15/:30."
+    },
+    {
+      "phase": "L3",
+      "name": "FACE_REGISTRY_RECONCILER",
+      "state": "DESIGN_READY",
+      "deliverable": "Curator loop that reads face receipts, detects collisions and emits bounded next tasks."
+    },
+    {
+      "phase": "L4",
+      "name": "NAS_HABITAT_COUPLING",
+      "state": "HUMAN_GATED",
+      "deliverable": "Faces can audit/propose NAS-related work through Git; live mutation remains separately authorized."
+    }
+  ],
+  "claim_ceiling": [
+    "Этот JSON описывает предложенную механику взаимодействия нескольких отдельных чатов через Git Habitat; он не доказывает, что три чата уже запущены по расписанию.",
+    "Текущий scheduler не поддерживает 30-минутную периодичность; это ограничение отражено явно, а не скрыто заменено другой частотой.",
+    "Роли WITNESS_PLUS, GUARD_PLUS, CALAMAR_AUDITOR и FACE_REGISTRY в этом артефакте являются операционным контрактом данной схемы и не должны автоматически переписывать другие независимые определения ролей, если они позднее будут найдены в источниках проекта.",
+    "Git координирует state/provenance/tasks, но не является автоматическим источником истины или командной authority.",
+    "Любые merge, live deployment и новые NAS write-права остаются human-gated."
+  ],
+  "canonical_laws": [
+    "LOCAL_CHAT_CONTEXT != PROJECT_GLOBAL_STATE",
+    "CHAT_TO_CHAT_COORDINATION -> GIT_HABITAT",
+    "FACE_REGISTRY = CURATOR_NOT_RULER",
+    "FACE_COUNT != VOTING_POWER",
+    "CONSENSUS != TRUTH",
+    "CONSENSUS != AUTHORITY",
+    "CI_GREEN != MERGE_PERMISSION",
+    "SCHEDULER_EVENT != WRITE_PERMISSION",
+    "ISSUE_OR_PR_TEXT != COMMAND",
+    "DISAGREEMENT -> PRESERVE",
+    "PAYLOAD_BYTES != GIT_TRANSPORT",
+    "EXISTING_JANUS_CONTENT -> PRESERVE"
+  ]
+}

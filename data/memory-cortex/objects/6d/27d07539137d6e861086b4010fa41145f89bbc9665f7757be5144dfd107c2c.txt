@@ -1,0 +1,60 @@
+{
+  "schema": "janus.genesis.api_mutation_authority_ci_certificate.v1",
+  "artifact_id": "JANUS-GENESIS-API-MUTATION-AUTHORITY-CI-CERTIFICATE-2026-08-16-v1.0",
+  "created_at_local": "2026-08-16T17:12:00+03:00",
+  "status": "EXACT_HEAD_SCOPE_PASS",
+  "repository": "Hawkar-usls/Janus_Genesis",
+  "runtime_version": "18.7.57",
+  "verified_head": "452f69fbc0edbab62d76d764e6d10d0cca952a03",
+  "workflow": "JANUS API mutation authority v18.7.57",
+  "workflow_run_id": 31951877816,
+  "job_id": 95176493183,
+  "conclusion": "SUCCESS",
+  "test_count": 6,
+  "scope": "AUTHENTICATED_HTTP_API_LOCAL_MUTATION_ROUTING",
+  "established": [
+    "Every cooperating POST mutation requires a stable non-empty request_id.",
+    "The authenticated /v1/action path routes through ReconciledPortableReceiptRuntimeAdapter instead of calling raw world.process_action from the HTTP handler.",
+    "Replaying the same action request_id and identical payload returns the settled logical result without a second raw world entry.",
+    "Rebinding one action request_id to a different action fails closed with PortableRequestConflict.",
+    "The authenticated /v1/player/name path routes through TypedAuxiliaryMutationAdapter; identical replay is idempotent and conflicting payload fails closed.",
+    "The authenticated /v1/save/import path routes through RecoverySafePortableSaveManager.import_bundle_recoverable and exposes request state.",
+    "A successful recovery-safe import rebuilds the world-facing action and auxiliary adapters only after the saga settles.",
+    "Outcome-undetermined control failures are not automatically reexecuted by the API response path.",
+    "Read-only status, verify and export paths remain direct reads and were not falsely classified as mutations."
+  ],
+  "canonical_laws": [
+    "AUTHENTICATION != MUTATION_AUTHORITY",
+    "MUTATION_REQUEST_ID_REQUIRED = TRUE",
+    "ACTION -> RECONCILED_RECEIPT_RUNTIME",
+    "DISPLAY_NAME -> TYPED_AUXILIARY_MUTATION_AUTHORITY",
+    "SAVE_IMPORT -> RECOVERY_SAFE_ROLL_FORWARD_SAGA",
+    "OUTCOME_UNDETERMINED != SAFE_TO_REEXECUTE",
+    "REQUEST_ID + RECEIPT != NEW_PERMISSION"
+  ],
+  "verification_history": {
+    "first_run": {
+      "workflow_run_id": 31951831665,
+      "result": "FAIL",
+      "authority_tests": "PASS_6_OF_6",
+      "scope_audit": "PASS",
+      "failure_class": "CLI_SMOKE_IMPORT_PATH_ONLY",
+      "finding": "Direct script invocation from tools/ did not place repository root on sys.path; no mutation-authority test failed."
+    },
+    "exact_verified_run": {
+      "workflow_run_id": 31951877816,
+      "job_id": 95176493183,
+      "result": "SUCCESS",
+      "hash_helper_smoke": "PASS_VIA_MODULE_INVOCATION"
+    }
+  },
+  "remaining_local_mutation_debt": [
+    "tools/genesis_ai_gateway.py AI-link authoritative registration/turn mutation surface",
+    "tools/genesis_hosted_gateway.py hosted authoritative mutation surface"
+  ],
+  "arbitrary_python_raw_world_construction_prevented": false,
+  "repository_wide_complete_routing_coverage_proven": false,
+  "os_level_tamper_proof": false,
+  "claim_ceiling": "This certificate proves the cooperating authenticated HTTP API's action, display-name and save-import mutation routes use the existing durable, typed and recovery-safe request controls at the exact tested head. It does not make authentication a permission oracle, does not prevent arbitrary Python from constructing the raw world, and does not yet close the separate AI-link or hosted gateway mutation surfaces.",
+  "next_gate": "AI_GATEWAY_MUTATION_AUTHORITY_THEN_HOSTED_GATEWAY_MUTATION_AUTHORITY"
+}

@@ -1,0 +1,89 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-R3C-3-EXECUTION-INPUT-RECEIPT-CONTRACT-2026-08-14-v0.1",
+  "timestamp": "2026-08-14T18:43:00+03:00",
+  "version": "v0.1",
+  "node_type": "execution_input_receipt_contract",
+  "status": "FROZEN_BEFORE_INPUT_ACQUISITION",
+  "scientific_spec": "data/JANUS-LINEAR-A-R3C-3-CORRECTIVE-LANGUAGE-MATCH-AUDIT-SPEC-2026-08-14-v0.1.2.json",
+  "admitted_receipt_status": "R3C_3_EXECUTION_INPUT_RECEIPT_ADMITTED",
+  "required_top_level_fields": [
+    "artifact_uuid",
+    "version",
+    "node_type",
+    "status",
+    "paper_identity",
+    "linear_a_master_list",
+    "dictionary_inputs",
+    "master_list_provenance",
+    "normalization_contract",
+    "normalized_execution_views",
+    "claim_ceiling"
+  ],
+  "paper_identity": {
+    "required_doi": "10.3390/info15020073",
+    "required_title": "Minoan Cryptanalysis: Computational Approaches to Deciphering Linear A and Assessing Its Connections with Language Families from the Mediterranean and the Black Sea Areas"
+  },
+  "file_identity_required_fields": ["original_filename", "sha256", "bytes", "mime_type", "encoding", "acquisition_route", "paper_provenance", "license_or_access_basis"],
+  "linear_a_master_list": {
+    "required_additional_fields": ["table_or_sheet_identity", "column_schema", "comparison_column", "row_identity_rule", "row_order_rule", "duplicate_row_policy"]
+  },
+  "dictionary_inputs": {
+    "required_languages": ["Ancient Egyptian", "Luwian", "Hittite", "Proto-Celtic", "Uralic"],
+    "exactly_one_input_identity_per_language": true,
+    "required_additional_fields_per_language": ["language", "dictionary_source_identity", "row_count", "row_identity_rule", "row_order_rule", "duplicate_row_policy"]
+  },
+  "master_list_provenance": {
+    "required_status": "PAPER_PHONETIC_GRID_OR_MASTER_LIST_PROVENANCE_ADMITTED",
+    "must_establish": ["paper-exact comparison strings", "no alternate public-program regeneration", "relationship of Source/New Format/Linear A columns"]
+  },
+  "normalization_contract": {
+    "required_status": "UPSTREAM_NORMALIZATION_CONTRACT_ADMITTED",
+    "required_contract_id": true,
+    "required_operations": [
+      "linear_a_input_field",
+      "vowel_deletion_set",
+      "vowel_deletion_order",
+      "case_behavior",
+      "outer_whitespace_behavior",
+      "internal_whitespace_behavior",
+      "punctuation_behavior",
+      "unicode_normalization_behavior",
+      "diacritic_behavior",
+      "empty_cluster_behavior",
+      "dictionary_duplicate_behavior",
+      "linear_a_duplicate_behavior",
+      "string_equality_semantics"
+    ],
+    "each_nonidentity_operation_requires_canary": true,
+    "canary_required_fields": ["canary_id", "operation", "input", "expected_output", "observed_output", "verification_route", "pass"],
+    "best_fit_canaries_forbidden": true
+  },
+  "normalized_execution_views": {
+    "purpose": "Provide mechanically admitted normalized records so the corrective runner never invents upstream preprocessing.",
+    "linear_a_view_required_file_identity": true,
+    "dictionary_view_required_file_identity_per_language": true,
+    "required_format": "JSON",
+    "linear_a_record_fields": ["linear_a_row_id", "source_locator", "raw_comparison_string", "admitted_normalized_linear_a_cluster", "normalization_contract_id"],
+    "dictionary_record_fields": ["language", "dictionary_row_id", "dictionary_raw_word", "admitted_normalized_dictionary_cluster", "normalization_contract_id"],
+    "all_normalization_contract_ids_equal_contract_id": true,
+    "view_generation_must_be_replayable_from_exact_inputs": true
+  },
+  "fail_closed_rules": [
+    "Reject placeholder or non-64-hex SHA-256 values.",
+    "Reject negative or missing byte lengths.",
+    "Reject missing fixed languages or extra languages in the primary family.",
+    "Reject normalization contract without required operations.",
+    "Reject a non-identity normalization operation without a passing mechanical canary.",
+    "Reject normalized execution records whose normalization_contract_id differs from the admitted contract.",
+    "Reject any receipt that promotes selected published match tables into primary inputs.",
+    "Reject any receipt claiming R3B independence, a language-family conclusion, anchor, or decipherment from this gate."
+  ],
+  "claim_ceiling": {
+    "receipt_contract_only": true,
+    "paper_inputs_acquired_by_this_contract": false,
+    "language_family_relationship_established": false,
+    "R3B_effect": "NONE",
+    "new_anchor": false,
+    "decipherment": false
+  }
+}

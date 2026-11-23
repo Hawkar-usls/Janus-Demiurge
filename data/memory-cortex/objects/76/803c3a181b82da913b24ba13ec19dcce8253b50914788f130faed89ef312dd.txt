@@ -1,0 +1,314 @@
+{
+  "artifact_id": "JANUS-TRUMP-C11-P7-FULL-H8-KERNEL-RIGIDITY-GATE-RESULT-2026-09-20-v1.0",
+  "version": "v1.0",
+  "date": "2026-09-20",
+  "status": "PASS_C11_P7_FULL_H8_KERNEL_RIGIDITY",
+  "authority": "STATIC_THEOREM_LEVEL_PROOF_AUDIT_FROM_FROZEN_C11_AND_SURVIVOR_FACTS",
+  "preregistration": {
+    "path": "research/TRUMP_C11_P7_FULL_H8_KERNEL_RIGIDITY_GATE_PREREG_2026-09-20_v1.0.json",
+    "commit": "36931981bff48a04fee4a38333d3016749d95dd0"
+  },
+  "parents": {
+    "c11_escape_commit": "14ce4fc00529464d6304e9fed5974e86c5289b8c",
+    "c11_survivor_rigidity_commit": "0197e21e2b0b66a4515b248a78c7f2e2d82943df"
+  },
+  "notation": {
+    "alpha": "f(T)",
+    "beta": "f(T')",
+    "alpha_not_equal_beta": true
+  },
+  "theorem": {
+    "H1_T_COMPLETE_TO_TPRIME": {
+      "verdict": "PASS",
+      "claim": "For every s in T and t in T', st is an edge; hence T is complete to T'.",
+      "proof": [
+        "Fix arbitrary s in T and t in T'.",
+        "Consider the ordered seven vertices z-y-s-p-m-n-t.",
+        "Consecutive edges zy, ys, sp, pm, mn, nt hold from the C11/source/type/111 facts.",
+        "z is nonadjacent to s,p,m,n,t because z lies in descendant Y0' and is anticomplete to the enlarged seed, which contains old S and stored support.",
+        "y is nonadjacent to p,n by the frozen stable set, to m by the source orientation, and to t because y has old type T while t lies in disjoint T'.",
+        "s is nonadjacent to m because m lies in old Y0 and old axiom (iii) makes Y0 anticomplete to old seed S; s is nonadjacent to n because n has type T' and s is not in T'.",
+        "p is nonadjacent to n by stored 111/stability and to t because p has type T.",
+        "m is nonadjacent to t because m lies in old Y0 and t lies in old seed.",
+        "Thus the only possible chord is st.",
+        "If st were absent, z-y-s-p-m-n-t would be an induced P7, contradicting P7-freeness.",
+        "Therefore st is forced for arbitrary s,t."
+      ]
+    },
+    "H2_TYPES_ARE_STABLE": {
+      "verdict": "PASS",
+      "claim": "T and T' are stable sets.",
+      "proof": [
+        "All vertices of T receive the same seed color alpha because f(T) is a singleton.",
+        "All vertices of T' receive the same seed color beta because f(T') is a singleton.",
+        "The seed coloring f is proper.",
+        "Hence no two vertices of T are adjacent, and no two vertices of T' are adjacent."
+      ],
+      "consequence": "G[T union T'] is the complete bipartite graph K_{|T|,|T'|}."
+    },
+    "H3_CANONICAL_H8": {
+      "verdict": "PASS",
+      "claim": "For every s in T and t in T', the eight vertices {s,t,p,m,n,y,y',z} induce one canonical labeled graph H8.",
+      "exact_edges": [
+        "s-t",
+        "s-p",
+        "s-y",
+        "t-n",
+        "t-y'",
+        "p-m",
+        "m-n",
+        "m-y'",
+        "z-y",
+        "z-y'"
+      ],
+      "exact_nonedges": [
+        "s-m",
+        "s-n",
+        "s-y'",
+        "s-z",
+        "t-p",
+        "t-m",
+        "t-y",
+        "t-z",
+        "p-n",
+        "p-y",
+        "p-y'",
+        "p-z",
+        "m-y",
+        "m-z",
+        "n-y",
+        "n-y'",
+        "n-z",
+        "y-y'"
+      ],
+      "proof_notes": [
+        "s-t comes from H1.",
+        "s-p,s-y and t-n,t-y' are exact type adjacencies.",
+        "p-m,m-n are stored 111 edges.",
+        "m-y' is the forced closing edge from PASS_C11_P7_SURVIVOR_RIGIDITY.",
+        "z-y,z-y' are the residual COMMON attachments.",
+        "m-z is absent because z in descendant Y0' is anticomplete to the enlarged seed and m is in that seed.",
+        "All other nonedges follow from exact types, old Y0 anticompleteness to old seed, the frozen stable set {y,y',p,n}, z anticomplete to stored support, and the source orientation ym nonedge."
+      ]
+    },
+    "H4_FORCED_CYCLES": {
+      "verdict": "PASS",
+      "cycles": [
+        {
+          "kind": "C6",
+          "order": [
+            "y_prime",
+            "z",
+            "y",
+            "s",
+            "p",
+            "m",
+            "y_prime"
+          ],
+          "induced": true
+        },
+        {
+          "kind": "C5",
+          "order": [
+            "z",
+            "y",
+            "s",
+            "t",
+            "y_prime",
+            "z"
+          ],
+          "induced": true
+        },
+        {
+          "kind": "C5",
+          "order": [
+            "n",
+            "m",
+            "p",
+            "s",
+            "t",
+            "n"
+          ],
+          "induced": true
+        }
+      ],
+      "proof": "All cycle edges and all absent chords are read directly from the exact H8 edge/nonedge table."
+    },
+    "H5_M_COLOR_EQUALS_OPPOSITE_TYPE_COLOR": {
+      "verdict": "PASS",
+      "claim": "f'(m)=beta=f(T').",
+      "proof": [
+        "Because y has old type T with singleton seed color alpha, L(y)=[4]\\{alpha}.",
+        "Because y' has old type T' with singleton seed color beta, L(y')=[4]\\{beta}.",
+        "The previously proved survivor rigidity gives L(y)\\L(y')={f'(m)}.",
+        "But [4]\\{alpha} minus [4]\\{beta} is exactly {beta}.",
+        "Therefore f'(m)=beta."
+      ]
+    },
+    "H6_ENDPOINT_COLORS_IN_INTERSECTION": {
+      "verdict": "PASS",
+      "claim": "f'(p),f'(n) are in [4]\\{alpha,beta}=L(y) intersect L(y').",
+      "proof": [
+        "Legacy 111 Q-admissibility requires f'(p),f'(n) to avoid f(T) union f(T')={alpha,beta}.",
+        "Since L(y)=[4]\\{alpha} and L(y')=[4]\\{beta}, their intersection is [4]\\{alpha,beta}."
+      ]
+    }
+  },
+  "canonical_H8": {
+    "vertices": [
+      "s",
+      "t",
+      "p",
+      "m",
+      "n",
+      "y",
+      "y_prime",
+      "z"
+    ],
+    "edges": [
+      [
+        "s",
+        "t"
+      ],
+      [
+        "s",
+        "p"
+      ],
+      [
+        "s",
+        "y"
+      ],
+      [
+        "t",
+        "n"
+      ],
+      [
+        "t",
+        "y_prime"
+      ],
+      [
+        "p",
+        "m"
+      ],
+      [
+        "m",
+        "n"
+      ],
+      [
+        "m",
+        "y_prime"
+      ],
+      [
+        "z",
+        "y"
+      ],
+      [
+        "z",
+        "y_prime"
+      ]
+    ],
+    "induced_substructures": {
+      "C6": [
+        "y_prime",
+        "z",
+        "y",
+        "s",
+        "p",
+        "m"
+      ],
+      "C5_1": [
+        "z",
+        "y",
+        "s",
+        "t",
+        "y_prime"
+      ],
+      "C5_2": [
+        "n",
+        "m",
+        "p",
+        "s",
+        "t"
+      ]
+    },
+    "pendant_description_from_prior_kernel": "Within the prior seven-vertex survivor subset {y',z,y,s,p,m,n}, n is pendant at m; adding arbitrary t in T' forces the complete T-T' bridge and closes the full H8."
+  },
+  "color_kernel": {
+    "general_form": {
+      "color(s)": "alpha",
+      "color(t)": "beta",
+      "f'(m)": "beta",
+      "L(y)": "[4]\\{alpha}",
+      "L(y_prime)": "[4]\\{beta}",
+      "L(y)\\L(y_prime)": "{beta}",
+      "L(y_prime)\\L(y)": "{alpha}",
+      "f'(p),f'(n)": "members of [4]\\{alpha,beta}",
+      "c(y),c(y_prime)": "members of [4]\\{alpha,beta} in any acceptability-violation extension"
+    },
+    "S4_normal_form": {
+      "alpha": 1,
+      "beta": 2,
+      "color(s)": 1,
+      "color(t)": 2,
+      "f'(m)": 2,
+      "L(y)": [
+        2,
+        3,
+        4
+      ],
+      "L(y_prime)": [
+        1,
+        3,
+        4
+      ],
+      "f'(p),f'(n)": "in {3,4}",
+      "c(y),c(y_prime)": "in {3,4}"
+    },
+    "interpretation": "m is a duplicate opposite-type color anchor: its color beta is already excluded from y' by the old seed-neighbors of type T', so the forced edge m-y' preserves y' list while closing the forbidden P7."
+  },
+  "global_type_structure": {
+    "T_complete_to_Tprime": true,
+    "T_stable": true,
+    "Tprime_stable": true,
+    "induced_on_union": "K_{|T|,|T'|}"
+  },
+  "scientific_interpretation": {
+    "strongest_supported_statement": "Every frozen-authority C11 P7 survivor contains, for every choice s in T and t in T', the same canonical induced H8. The old type sets form a complete bipartite bridge, H8 contains one forced C6 and two forced C5s, f'(m) equals the opposite type color beta, and the stored endpoints p,n are colored from the common two-color intersection of the two 3-lists.",
+    "not_claimed": [
+      "that H8 alone yields a repair",
+      "that quotienting H8 is sound or polynomially complete",
+      "that C1S, CS1 or CSS are reachable or unreachable",
+      "full Lemma 11 P7 lift",
+      "P7-free 4-COLOR in P",
+      "hardness localization",
+      "P=NP evidence"
+    ]
+  },
+  "gate_verdict": {
+    "H1": "PASS",
+    "H2": "PASS",
+    "H3": "PASS",
+    "H4": "PASS",
+    "H5": "PASS",
+    "H6": "PASS",
+    "overall": "PASS_C11_P7_FULL_H8_KERNEL_RIGIDITY"
+  },
+  "scientific_ceiling": {
+    "FIRST_REAL_ACCEPTABILITY_ESCAPE": "C11",
+    "C11_MIN_WITNESS": "8_VERTICES",
+    "C11_P7_SURVIVOR_KERNEL": "VERIFIED_CANONICAL_INDUCED_H8_WITH_COMPLETE_T_TPRIME_BRIDGE_AND_NEAR_FIXED_COLOR_PATTERN",
+    "REPAIR": "NOT_STARTED",
+    "NEW_DESCRIPTOR": "NOT_DEFINED",
+    "C1S_CS1_CSS": "NOT_REACHED",
+    "LEMMA11_P7_LIFT": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "HARDNESS_LOCALIZED": "NOT_CLAIMED",
+    "P_VS_NP": "OPEN"
+  },
+  "next_allowed_object": {
+    "name": "C11_H8_REPAIR_INTERFACE_PREREGISTRATION",
+    "status": "NOT_OPENED",
+    "auto_open": false
+  },
+  "stop": true
+}

@@ -1,0 +1,144 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-V0.8-IMPLEMENTATION-B-EXECUTION-SPEC-2026-08-14-v1.0",
+  "timestamp": "2026-08-14T12:54:00+03:00",
+  "version": "v1.0",
+  "title": "JANUS Linear A v0.8 Implementation B: higher-order typed neighborhoods with triple-null max-T",
+  "observer": "Oleksandr Ahapov / Hawkar + JANUS",
+  "node_type": "frozen_execution_specification",
+  "status": "FROZEN_BEFORE_IMPLEMENTATION_B_EXECUTION",
+  "canonical_parent": {
+    "path": "data/JANUS-LINEAR-A-RESEARCH-STATE-2026-08-14-v2.2.json",
+    "blob_sha": "bda9e9d9d3d882a080d959425b59aa7902d3bb2c"
+  },
+  "implementation_A_context": {
+    "classification": "VALID_PARTIAL_IMPLEMENTATION_NOT_FULL_R2_COMPLETION",
+    "guard_node": "data/JANUS-LINEAR-A-V0.8-IMPLEMENTATION-A-CLASSIFICATION-2026-08-14-v1.0.json",
+    "guard_commit": "1dd36d624caaac2a335ab7ada6402e314047b892",
+    "rule": "Implementation B must not privilege the v0.8-A GRA -> 10PLUS -> *304 screen signal. It may rediscover it only if the frozen B hypothesis family and nulls independently select it."
+  },
+  "representation_precondition": {
+    "token_typing_policy": "JANUS-LINA-TOKEN-TYPING-POLICY-v0.6.2",
+    "representation": "WORD_ONLY_ROW_AWARE",
+    "eligible_candidate_type": "SEMANTIC_CANDIDATE_ONLY",
+    "known_control_operation": "FIXED_MASK_GEOMETRY",
+    "known_controls": ["KI-RO", "KU-RO", "PO-TO-KU-RO", "VIR*", "GRA*"],
+    "rule": "Known controls remain as non-endpoint MASK/K slots; they are never deleted from row geometry and never used as nominally new endpoints."
+  },
+  "partition_protocol": {
+    "HT_SCREEN": "deterministic document-hash partition, candidate discovery only",
+    "HT_CONFIRM": "disjoint deterministic HT partition, locked candidate confirmation only",
+    "NON_HT": "all non-HT documents, cross-region replication only after HT_CONFIRM",
+    "pristine_external_holdout": false,
+    "semantic_reveal": "FORBIDDEN_UNTIL_SCREEN_CONFIRM_AND_REPLICATION_OUTCOMES_ARE_FROZEN"
+  },
+  "predeclared_hypothesis_families": [
+    {
+      "id": "TTT_CONTEXT_EDGE",
+      "definition": "T_left -> T_middle -> T_right; the blind middle-token identity defines a context class and the tested directed edge is left -> right conditional on that middle context."
+    },
+    {
+      "id": "TBT_NUMERIC_BUCKET_EDGE",
+      "definition": "T_left -> numeric_bucket -> T_right with exact buckets FRAC/ONE/2_4/5_9/10PLUS and UNCERTAIN kept distinct."
+    },
+    {
+      "id": "ROW_PREFIX_TT",
+      "definition": "First two row slots must both be eligible semantic candidates; MASK/numeric slots prevent the hypothesis rather than being deleted."
+    },
+    {
+      "id": "ROW_SUFFIX_TT",
+      "definition": "Last two row slots must both be eligible semantic candidates; MASK/numeric slots prevent the hypothesis rather than being deleted."
+    },
+    {
+      "id": "IN_NEIGHBOR_SPECIALIZATION",
+      "definition": "Candidate-level concentration of semantic predecessor identities among direct within-row TT adjacency events."
+    },
+    {
+      "id": "OUT_NEIGHBOR_SPECIALIZATION",
+      "definition": "Candidate-level concentration of semantic successor identities among direct within-row TT adjacency events."
+    }
+  ],
+  "numeric_buckets": {
+    "FRAC": "0 < value < 1",
+    "ONE": "value == 1",
+    "2_4": "1 < value < 5",
+    "5_9": "5 <= value < 10",
+    "10PLUS": "value >= 10",
+    "UNCERTAIN": "typed numeric-like marker without licensed exact scalar"
+  },
+  "endpoint_eligibility_HT_SCREEN": {
+    "min_occurrences": 8,
+    "min_documents": 5
+  },
+  "screen_minimums": {
+    "pair_or_specialization_events": 4,
+    "documents": 3,
+    "effect_direction": "ENRICHED_OR_MORE_SPECIALIZED_ONLY",
+    "self_edges": "EXCLUDED_FOR_PAIR_HYPOTHESES"
+  },
+  "HT_CONFIRM_minimums": {
+    "events": 2,
+    "documents": 2
+  },
+  "NON_HT_replication_minimums": {
+    "events": 3,
+    "documents": 2,
+    "distinct_regions": 2
+  },
+  "destructive_nulls": [
+    {
+      "id": "N1_WITHIN_ROW_IDENTITY_SHUFFLE",
+      "operator": "WITHIN_ROW_SEMANTIC_IDENTITY_SHUFFLE_PRESERVING_TYPED_SLOTS_MASKS_AND_ROW_TOKEN_MULTISET",
+      "preserves": ["row geometry", "typed numeric slots", "MASK/K slots", "semantic-token multiset within each row"],
+      "destroys": "candidate-specific higher-order row neighborhood identity"
+    },
+    {
+      "id": "N2_WITHIN_DOCUMENT_IDENTITY_SHUFFLE",
+      "operator": "WITHIN_DOCUMENT_SEMANTIC_IDENTITY_SHUFFLE_PRESERVING_TYPED_SLOTS_MASKS_AND_DOCUMENT_TOKEN_MULTISET",
+      "preserves": ["document membership", "row boundaries", "typed numeric slots", "MASK/K slots", "semantic-token multiset per document"],
+      "destroys": "candidate-specific row-local identity coupling while retaining document composition"
+    },
+    {
+      "id": "N3_GRAPH_ENDPOINT_REWIRE",
+      "operator": "GRAPH_ENDPOINT_REWIRE_PRESERVING_RELATION_CONTEXT_AND_ENDPOINT_MARGINALS",
+      "preserves": ["relation/context class", "edge count per class", "left endpoint marginals", "right endpoint marginals"],
+      "destroys": "specific endpoint coupling within TTT-middle, numeric-bucket, row-boundary, and direct-TT adjacency classes"
+    }
+  ],
+  "statistic": {
+    "pair_hypotheses": "log2((observed_pair_count + 0.5)/(independence_expected_count_from_relation-specific left/right marginals + 0.5))",
+    "specialization_hypotheses": "Herfindahl concentration sum((neighbor_count/total_neighbor_events)^2) for incoming or outgoing semantic neighbors",
+    "family_scope": "pair hypotheses and candidate specialization hypotheses are included in the same stage-level max-T family for each destructive null"
+  },
+  "error_control": {
+    "HT_SCREEN": {
+      "permutations_per_null": 3000,
+      "alpha": 0.05,
+      "rule": "A hypothesis locks only if it meets support minima, has positive enrichment/specialization, and max-T FWER p <= 0.05 under every one of the three destructive nulls."
+    },
+    "HT_CONFIRM": {
+      "permutations_per_null": 5000,
+      "alpha": 0.05,
+      "rule": "Locked screen hypotheses are tested only in the disjoint HT_CONFIRM partition. Family-wise max-T across the locked set is required independently under all three nulls. Non-evaluable support is recorded separately from statistical failure."
+    },
+    "NON_HT": {
+      "permutations_per_null": 5000,
+      "alpha": 0.05,
+      "rule": "Only HT-confirmed hypotheses reach non-HT. Locked one-sided p-values are Bonferroni-corrected over confirmed hypotheses x three null families; all three corrected p-values must pass plus support/region minima."
+    }
+  },
+  "anti_p_hacking_constraints": [
+    "do not lower v0.7/v0.8-A support minima because earlier results were negative",
+    "do not change numeric bucket boundaries after seeing outcomes",
+    "do not privilege or force-test the v0.8-A GRA -> 10PLUS -> *304 screen signal",
+    "do not remove MASK/K positions and create synthetic adjacency",
+    "do not call same-corpus A/B agreement external replication",
+    "do not advance a non-evaluable candidate as a failed or successful replication"
+  ],
+  "claim_ceiling": {
+    "new_anchor_established": false,
+    "decipherment_established": false,
+    "external_replication_established": false,
+    "maximum_if_survivor": "INTERNALLY_REPLICATED_STRUCTURAL_RELATION_CANDIDATE",
+    "promotion": "BLOCKED_PENDING_A_B_RECONCILIATION_AND_FRESH_SOURCE"
+  }
+}

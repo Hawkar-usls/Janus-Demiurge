@@ -1,0 +1,126 @@
+{
+  "schema": "janus.meta_registry.nexus_local_transport.exact_head_ci_certificate.v1",
+  "artifact_id": "JANUS-NEXUS-LOCAL-TRANSPORT-EXACT-HEAD-CI-CERTIFICATE-v1.3",
+  "created_at_local": "2026-08-16T21:56:00+03:00",
+  "status": "EXACT_HEAD_CI_PASS_OFFLINE_TRANSPORT_REFERENCE",
+  "subject": "Principal-bound, secret-externalized, replay-protected offline transport admission layer for JANUS Nexus Habitat.",
+  "repository": "Hawkar-usls/Demi_Head",
+  "exact_head": "81a8884097885c4ee78248bbf0333e2e375d0745",
+  "contracts": {
+    "nexus": "JANUS_NEXUS_HABITAT_V1",
+    "transport": "JANUS_NEXUS_LOCAL_TRANSPORT_V1",
+    "frame_schema": "janus.demihead.nexus_transport_frame.v1",
+    "keyring_schema": "janus.demihead.nexus_transport_keyring.v1",
+    "replay_ledger_schema": "janus.demihead.nexus_replay_ledger.v1"
+  },
+  "github_actions_evidence": {
+    "repository_validation": {
+      "workflow": "Validate repository contracts",
+      "run_id": 31965920190,
+      "job_id": 95210965977,
+      "head_sha": "81a8884097885c4ee78248bbf0333e2e375d0745",
+      "status": "completed",
+      "conclusion": "success",
+      "important_steps": {
+        "validate_contracts_and_documentation": "success",
+        "run_reference_tests": "success"
+      }
+    },
+    "local_proposal_validation": {
+      "workflow": "Validate local hemisphere proposal gate",
+      "run_id": 31965920160,
+      "head_sha": "81a8884097885c4ee78248bbf0333e2e375d0745",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  },
+  "implemented_surfaces": [
+    "tools/nexus_local_transport.py",
+    "tools/nexus_transport_keyring.py",
+    "tools/nexus_replay_ledger.py",
+    "schemas/nexus-transport-frame.schema.json",
+    "configs/nexus_transport.principals.example.json",
+    "docs/NEXUS_LOCAL_TRANSPORT.md",
+    "tests/test_nexus_local_transport.py",
+    "tests/test_nexus_transport_keyring.py",
+    "tests/test_nexus_replay_ledger.py"
+  ],
+  "established_by_exact_head_ci": {
+    "nexus_envelope_semantic_validation_before_transport_admission": true,
+    "hmac_sha256_frame_binding": true,
+    "key_id_bound_to_sender_id": true,
+    "key_id_bound_to_allowed_source_heads": true,
+    "disabled_principal_rejected": true,
+    "inline_secret_fields_rejected_from_public_policy": true,
+    "enabled_secret_loaded_from_external_environment_reference": true,
+    "missing_or_short_secret_fails_closed": true,
+    "frame_size_cap_bytes": 65536,
+    "freshness_ttl_gate": true,
+    "future_clock_skew_gate": true,
+    "atomic_replay_consume_required": true,
+    "memory_replay_guard_reference": true,
+    "sqlite_crash_safe_local_replay_reference": true,
+    "sqlite_replay_survives_process_restart_in_tests": true,
+    "replay_key_stored_as_sha256_not_raw": true,
+    "consumed_replay_rejected_before_backpressure_classification": true,
+    "fresh_backpressure_does_not_consume_nonce": true,
+    "automatic_retry_permitted": false,
+    "socket_listener_enabled": false,
+    "network_io_performed_by_reference": false,
+    "delivery_performed_by_transport_reference": false,
+    "target_execution_performed_by_transport_reference": false,
+    "authority_delta": 0,
+    "mass_effect_budget_delta": 0
+  },
+  "authentication_boundary": {
+    "hmac_establishes_possession_of_bound_local_key": true,
+    "principal_sender_binding_established": true,
+    "principal_source_head_binding_established": true,
+    "human_identity_established": false,
+    "world_effect_authorization_established": false,
+    "route_authority_established": false
+  },
+  "secret_boundary": {
+    "production_key_material_committed": false,
+    "public_policy_contains_secret_environment_variable_names_only": true,
+    "os_keychain_adapter": false,
+    "dedicated_secret_manager_adapter": false,
+    "hardware_backed_keys": false
+  },
+  "replay_boundary": {
+    "local_persistent_sqlite_reference": true,
+    "final_nonce_consumption_atomic": true,
+    "early_seen_check_atomic_with_final_consume": false,
+    "race_closed_by_final_atomic_consume": true,
+    "distributed_replay_consensus": false,
+    "multi_host_replay_protection": false
+  },
+  "not_established": [
+    "live socket transport",
+    "live cross-repository delivery",
+    "destination acceptance receipt",
+    "delivery acknowledgement",
+    "process attestation",
+    "mTLS",
+    "human identity from HMAC",
+    "external effect authorization from HMAC",
+    "distributed replay consensus",
+    "production secret-manager integration",
+    "durable key rotation epochs",
+    "durable revocation rollout across multiple hosts",
+    "production database tuning",
+    "production readiness",
+    "external independent security audit"
+  ],
+  "laws": [
+    "AUTHENTICATION != AUTHORITY",
+    "KEY_POSSESSION != HUMAN_IDENTITY",
+    "LOCAL_PRINCIPAL_BINDING != WORLD_EFFECT_AUTHORIZATION",
+    "AUTHENTICATED_FRAME != DELIVERED_FRAME",
+    "ROUTE_RECEIPT != DELIVERY_RECEIPT",
+    "BACKPRESSURE != FAILURE",
+    "AMBIGUOUS_DELIVERY != RETRY_PERMISSION",
+    "CI_PASS != EXTERNAL_SECURITY_AUDIT"
+  ],
+  "next_gate": "Add versioned key epochs/revocation metadata and destination acceptance receipts, then red-team partial delivery and restart behavior before any loopback listener is admitted."
+}

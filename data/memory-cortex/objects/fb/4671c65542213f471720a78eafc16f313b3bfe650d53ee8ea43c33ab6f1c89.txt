@@ -1,0 +1,198 @@
+{
+  "schema": "janus.research_diagnostic.nearest_missing_link.v1_0",
+  "artifact_id": "JANUS-CAPTAIN-OBVIOUS-NEAREST-MISSING-LINK-DIAGNOSTIC-MECHANISM-2026-09-11-v1.0",
+  "version": "v1.0",
+  "created_at_utc": "2026-09-11T00:00:00Z",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "path": "data/JANUS-CAPTAIN-OBVIOUS-NEAREST-MISSING-LINK-DIAGNOSTIC-MECHANISM-2026-09-11-v1.0.json",
+  "title": {
+    "ru": "Капитан Очевидность: механизм ближайшего недостающего звена",
+    "en": "Captain Obvious: Nearest Missing Link Diagnostic Mechanism"
+  },
+  "aliases": [
+    "CAPTAIN_OBVIOUS",
+    "NEAREST_MISSING_LINK_DIAGNOSTIC",
+    "STATUS_FIRST_RED_TEAM_NEXT_GATE_SELECTOR"
+  ],
+  "document_class": "RESEARCH_DIAGNOSTIC_AND_GATE_SELECTION_MECHANISM",
+  "status": "FORMAL_DIAGNOSTIC_MECHANISM__NO_PROOF_AUTHORITY__NOT_A_SOLVER_RULE",
+  "purpose": "After a research step is completed, identify the nearest necessary unresolved proposition separating the current proved state from the next desired scientific claim, then attack that proposition with the simplest decisive falsifier before opening a broader or more speculative gate.",
+  "core_idea_ru": "Сначала точно зафиксировать, что уже доказано и что именно хочется утверждать следующим. Затем не искать новую красивую идею, а найти ближайшее обязательное недостающее звено между этими состояниями. Перед попыткой доказать его сначала искать самый простой контрпример, верхнюю оценку, скрытое допущение или уже существующий результат, который может это звено разрушить или ограничить. Только после этого открывать один следующий gate.",
+  "superpower_translation": {
+    "informal_name": "суперсила Капитана Очевидность",
+    "formal_name": "UNCERTAINTY_COMPRESSION_TO_NEAREST_REQUIRED_OBLIGATION",
+    "definition": "Compress a broad research uncertainty into one proof-relevant unresolved obligation whose prerequisites are already available and whose resolution would most directly change the admissible next claim.",
+    "what_makes_it_useful": [
+      "It prevents repeated work on already closed gates.",
+      "It prevents jumping from a local theorem to a distant complexity claim while intermediate bridges remain unproved.",
+      "It turns vague progress questions into a falsifiable next proposition.",
+      "It prefers cheap decisive failure information before expensive positive construction.",
+      "It updates the claim ceiling when a red-team result blocks the stronger target instead of patching the target after the fact."
+    ],
+    "nonclaim": "The mechanism does not discover truth by obviousness, intuition, naming, or rhetorical force. Obviousness has zero proof authority."
+  },
+  "formal_inputs": {
+    "P": "Set of currently established claims, certificates, exact program facts and frozen negative results with provenance.",
+    "T": "One precisely stated next scientific target claim.",
+    "D": "A finite claim-obligation dependency DAG for one admitted proof route to T. Each edge u->v means v requires u on that route. Alternative proof routes are represented separately rather than merged into one conjunctive DAG.",
+    "S": "Current canonical repository/history state used for status-first deduplication.",
+    "F": "Explicit forbidden actions, sealed lanes, frozen components and promotion firewalls.",
+    "B": "Optional resource and scope budget for the next gate."
+  },
+  "formal_objects": {
+    "ancestors_of_target": "A_T = ancestor_closure_D(T) union {T}.",
+    "unresolved": "U = {v in A_T : v is not established by P under the required scope}.",
+    "proof_ready_frontier": "R = {v in U : every prerequisite parent of v in D is already established in P}.",
+    "decisive_candidate": "A member r of R is decisive when PASS, FAIL, or a rigorous bound on r would change which next claims or proof routes remain admissible.",
+    "selection_rule": "Choose one decisive candidate requiring the fewest new assumptions and the narrowest scope while remaining directly relevant to T. If several remain incomparable, preserve them as alternatives and freeze only one gate at a time."
+  },
+  "operations": [
+    {
+      "id": "CO01",
+      "name": "STATUS_FIRST_SNAPSHOT",
+      "action": "Read canonical history before doing new work. Bind exact completed gates, commits, artifacts, proven claims, open claims, sealed lanes and forbidden actions.",
+      "output": "CURRENT_ESTABLISHED_STATE",
+      "stop_rule": "If the requested gate/result already exists canonically, do not rerun or recreate it. Return ALREADY_EXISTS and continue only from the first unresolved successor."
+    },
+    {
+      "id": "CO02",
+      "name": "STATE_NEXT_TARGET_EXACTLY",
+      "action": "Rewrite the desired next advancement as one explicit scoped claim T. Separate program-semantics claims, structural claims, satisfiability claims and complexity claims.",
+      "output": "FROZEN_TARGET_CLAIM",
+      "failure_state": "OPEN_TARGET_AMBIGUOUS"
+    },
+    {
+      "id": "CO03",
+      "name": "BUILD_MISSING_LINK_DAG",
+      "action": "List the required intermediate obligations for one admitted route from the established state to T. Mark each node PROVED, FALSIFIED, OPEN, RESOURCE_LIMIT or OUT_OF_SCOPE with provenance.",
+      "output": "CLAIM_OBLIGATION_DAG",
+      "boundary": "The DAG records an admitted proof route, not all logically possible routes."
+    },
+    {
+      "id": "CO04",
+      "name": "EXTRACT_NEAREST_ACTIONABLE_MISSING_LINK",
+      "action": "Compute the proof-ready unresolved frontier and select one decisive candidate with the smallest new-assumption burden and narrowest sufficient scope.",
+      "output": "NEXT_MISSING_LINK",
+      "rule": "Prefer a statement whose resolution directly changes the claim ceiling over a statement that merely produces more descriptive data."
+    },
+    {
+      "id": "CO05",
+      "name": "RED_TEAM_FIRST",
+      "action": "Before trying to prove the selected positive claim, formulate its cheapest decisive falsifier: counterexample, upper bound, alternative decomposition, hidden assumption, provenance failure, stronger known theorem collision, or exact implementation mismatch.",
+      "output": "FROZEN_POSITIVE_CLAIM_AND_FALSIFIER_PAIR",
+      "principle": "FAILURE_INFORMATION_BEFORE_CONFIRMATION_EXPENSE"
+    },
+    {
+      "id": "CO06",
+      "name": "UPDATE_CLAIM_CEILING",
+      "action": "If the falsifier or upper bound succeeds, reduce or redirect the permitted target. Do not repair the failed claim post hoc. Preserve the failed version and its reason.",
+      "output": "CLAIM_CEILING_AND_BRANCH_DECISION"
+    },
+    {
+      "id": "CO07",
+      "name": "FREEZE_ONE_NEXT_GATE",
+      "action": "Open exactly one next analytic, proof, certificate or empirical gate that resolves the selected missing link. State permitted and forbidden actions before execution.",
+      "output": "NEXT_SINGLE_GATE",
+      "rule": "ONE_UNRESOLVED_BRIDGE_AT_A_TIME_UNLESS_PARALLELISM_IS_EXPLICITLY_PREREGISTERED"
+    },
+    {
+      "id": "CO08",
+      "name": "PROMOTION_FIREWALL",
+      "action": "After the gate, promote only the exact claim directly certified by its evidence/proof. Recompute the nearest missing link before any further promotion.",
+      "output": "SCOPED_PROMOTION_OR_NO_PROMOTION"
+    }
+  ],
+  "ranking_criteria": {
+    "preferred": [
+      "logically required on the chosen route",
+      "not already established",
+      "prerequisites already available",
+      "has a crisp PASS/FAIL/OPEN criterion",
+      "has a cheap or strong falsifier",
+      "resolution changes the admissible next claim",
+      "requires no unnecessary new mechanism"
+    ],
+    "deprioritized": [
+      "another measurement of an already established phenomenon",
+      "a larger instance without a new discriminating prediction",
+      "a distant theorem with several missing bridges",
+      "a new analogy before the current formal obligation is resolved",
+      "a proof attempt whose stronger contrary upper bound has not been checked",
+      "a duplicate gate already present in canonical history"
+    ]
+  },
+  "typed_outcomes": [
+    "NEXT_LINK_IDENTIFIED",
+    "ALREADY_EXISTS_NO_RERUN",
+    "POSITIVE_CLAIM_CERTIFIED",
+    "POSITIVE_CLAIM_FALSIFIED",
+    "CLAIM_CEILING_LOWERED",
+    "ALTERNATIVE_ROUTE_REQUIRED",
+    "OPEN_MISSING_PREREQUISITE",
+    "OPEN_RESOURCE_LIMIT",
+    "OPEN_TARGET_AMBIGUOUS"
+  ],
+  "scientific_firewalls": [
+    "OBVIOUS != TRUE",
+    "NEAREST_MISSING_LINK != UNIQUE_LOGICAL_ROUTE",
+    "DIAGNOSTIC_PRIORITY != PROOF",
+    "FAILED_STRONG_CLAIM != FAILED_PROGRAM",
+    "LOCAL_THEOREM != GLOBAL_COMPLEXITY_RESULT",
+    "MORE_DATA != MORE_PROGRESS_UNLESS_IT_DISCRIMINATES",
+    "ALREADY_PROVED != RUN_AGAIN",
+    "COUNTEREXAMPLE_OR_UPPER_BOUND_IS_PROGRESS_WHEN_IT_SHARPENS_THE_CLAIM_CEILING",
+    "DISCOVERY_LEDGER != PROOF_LEDGER"
+  ],
+  "application_pattern": {
+    "generic": "ESTABLISHED_STATE -> EXACT_NEXT_TARGET -> REQUIRED_BRIDGES -> PROOF_READY_FRONTIER -> ONE_DECISIVE_MISSING_LINK -> RED_TEAM_FALSIFIER -> ONE_FROZEN_GATE -> SCOPED_PROMOTION -> REPEAT",
+    "compact": "STATUS -> TARGET -> GAP -> KILLER_TEST -> GATE -> CERTIFY -> PROMOTE_ONLY_WHAT_WAS_PROVED"
+  },
+  "current_trump_example": {
+    "role": "ILLUSTRATIVE_APPLICATION_ONLY_NOT_PART_OF_THE_GENERAL_MECHANISM",
+    "canonical_project": "Hawkar-usls/Janus-Fundamentum",
+    "observed_live_commit": "17cd09d8a9e6dbe36ba5b4b3b21dc008cfa09d02",
+    "established": [
+      "HASH_FREE_ONE_CYCLE_FROZEN_REDUCER_FIXPOINT_LEMMA",
+      "EXPLICIT_INFINITE_HASH_FREE_FROZEN_REDUCER_FIXPOINT_FAMILY"
+    ],
+    "not_established": [
+      "large residual treewidth",
+      "expansion lower bound",
+      "H3",
+      "SAT_IN_P",
+      "P_VS_NP"
+    ],
+    "captain_obvious_missing_link": "STRUCTURAL_WIDTH_OF_THE_PROVED_EXPLICIT_FIXPOINT_FAMILY",
+    "red_team_first_example": "Before seeking a strong treewidth lower bound, test whether the cyclic fixed-shift construction admits a rigorous small-separator, bandwidth, pathwidth or other structural upper bound.",
+    "boundary": "This example selects the next question; it does not assert the answer or any particular asymptotic width bound."
+  },
+  "relation_to_other_janus_mechanisms": {
+    "discovery_formalization_proof_firewall": "Compatible: Captain Obvious selects an obligation; it does not promote it.",
+    "enigma_exact_boundary_relation": "Orthogonal: ENIGMA is a candidate representation/substitution mechanism; Captain Obvious decides whether such a mechanism is actually the nearest missing bridge before it is opened.",
+    "trump_frozen_reducer": "External research-control diagnostic only. It does not alter R33/R34/R35B/R37B or any frozen solver semantics."
+  },
+  "implementation_notes": {
+    "minimal_machine_readable_fields_per_use": [
+      "canonical_state",
+      "target_claim",
+      "proved_claims",
+      "open_required_obligations",
+      "selected_missing_link",
+      "positive_claim",
+      "killer_falsifier",
+      "claim_ceiling",
+      "next_single_gate",
+      "forbidden_actions",
+      "promotion_boundary"
+    ],
+    "recommended_behavior": "Run status-first every time a research agent resumes a branch or receives a request to repeat a completed gate."
+  },
+  "proof_authority": "NONE_BY_ITSELF",
+  "runtime_integration": "RESEARCH_ORCHESTRATION_CANDIDATE_NOT_SOLVER_TRANSFORMATION",
+  "final_definition_ru": "Капитан Очевидность — это дисциплина выбора следующего научного шага: зафиксировать уже доказанное, назвать следующий желаемый claim, найти ближайшее обязательное недоказанное звено, сначала попытаться его разрушить самым простым строгим тестом и только затем открыть один gate, который действительно меняет границу допустимого утверждения. Его сила не в том, что очевидное истинно, а в том, что он не позволяет перепрыгивать через незакрытые мосты или повторять уже закрытые этапы.",
+  "provenance": {
+    "user_intent": "Preserve the essence of the Captain Obvious method as a real JANUS mechanism without absurd personification.",
+    "meta_registry_main_observed_before_write": "ed383204c2cdc2cf9db86e7383d97768bdb3c02e",
+    "origin": "Research-control pattern developed during JANUS/TRUMP progression and explicitly requested for canonical preservation on 2026-09-11."
+  }
+}

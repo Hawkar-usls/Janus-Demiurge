@@ -1,0 +1,150 @@
+{
+  "artifact_id": "HA10-ASCENSION-MAIL-TRIAD-SCOUT-SWARM-RUN-001-2026-08-22-v1.0",
+  "schema": "janus.meta_registry.public_research_receipt.v1",
+  "date": "2026-08-22",
+  "status": "PUBLIC_EVIDENCE_ARCHIVED__FOLLOWUP_OPEN",
+  "controller": "Hawkar-usls/Janus-Demiurge",
+  "mission_id": "HA10_ASCENSION_MAIL_TRIAD_2026_08_22",
+  "demiurge_run": {
+    "run_id": "32568943866",
+    "agents_expected": 17,
+    "agents_observed": 17,
+    "agents_missing": [],
+    "unique_public_sources": 19,
+    "canonical_summary": "Hawkar-usls/Janus-Demiurge:scout_swarm/outbox/public_research/HA10_ASCENSION_MAIL_TRIAD_2026_08_22/32568943866/SUMMARY.json",
+    "note": "The first run collected public evidence successfully, while optional Copilot interpretation was unavailable because of provider quota. Raw/public-source evidence was preserved and is not invalidated by model unavailability."
+  },
+  "mail_tracks": {
+    "EARTHSCOPE_DH_2635": {
+      "topic": "HA10 H10N1/H10S2 metadata, calibration, geometry and archive provenance",
+      "external_status": "ACKNOWLEDGED__HUMAN_RESPONSE_PENDING",
+      "targets": {
+        "H10N1": {"station": "IM.H10N1..EDH", "latitude": -7.845673, "longitude": -14.48023},
+        "H10S2": {"station": "IM.H10S2..EDH", "latitude": -8.9591, "longitude": -14.64531}
+      }
+    },
+    "PDC_3872": {
+      "topic": "source/high-resolution material underlying GB/NERC/BAS/PDC/01236",
+      "external_status": "REQUEST_LOGGED__HUMAN_RESPONSE_PENDING",
+      "dataset": "GB/NERC/BAS/PDC/01236"
+    },
+    "BGS_OFFSHORE": {
+      "topic": "Ascension/HA10 bathymetry, backscatter and subseafloor coverage",
+      "external_status": "FORWARDED_TO_RELEVANT_TEAM__HUMAN_RESPONSE_PENDING"
+    }
+  },
+  "admitted_public_findings": [
+    {
+      "id": "EARTHSCOPE_FDSN_METADATA_ROUTE",
+      "status": "FOUND",
+      "claim": "EarthScope FDSN Station service exposes station metadata at network, station, channel and response levels. Channel output can contain coordinates, depth, azimuth, dip, instrument description, sensitivity, sample rate and epoch; response level provides complete channel response information.",
+      "source_url": "https://service.earthscope.org/fdsnws/station/docs/1/help/",
+      "source_text_sha256": "e0dd443fdc378f1b65a38934dce11a0cb9da11465b95e7918b072681c69b266d",
+      "implication": "A substantial part of the HA10 metadata/calibration request can be machine-queried and independently archived while the custodian reply is pending."
+    },
+    {
+      "id": "CTBTO_HA10_H10S_CALIBRATION_CROSSTALK",
+      "status": "FOUND",
+      "claim": "CTBTO workshop material states that CTBT IMS hydrophone stations receive laboratory end-to-end calibration before deployment and can perform deployed digitizer calibration using a known injected waveform. It specifically reports an H10S HA10 case where electronic noise in one hydrophone channel was followed by calibration-response changes and cross-talk to the other two channels.",
+      "source_url": "https://conferences-test.ctbto.org/event/25/contributions/4421/",
+      "source_text_sha256": "334be683297b36ba5dd9437fbaa1447afc4c24752174114d100df5754c9331ba",
+      "implication": "H10S channel comparisons require an explicit electronics-noise/cross-talk control and calibration-history check."
+    },
+    {
+      "id": "PDC_01236_CANONICAL_ASCENSION_GRID",
+      "status": "FOUND",
+      "claim": "BAS/PDC dataset GB/NERC/BAS/PDC/01236 is an Ascension Island bathymetric compilation from four multibeam cruises, published at approximately 50 m resolution in NetCDF and ASCII forms.",
+      "source_url": "https://data.bas.ac.uk/full-record.php?id=GB%2FNERC%2FBAS%2FPDC%2F01236",
+      "source_text_sha256": "7e49d519c2c25bbe00917bb4d8bc3b794b04c2641d0f2e3249cb96e677940b1a",
+      "facts": {
+        "doi": "10.5285/afba710f-dab1-4a63-867b-520177388224",
+        "bounding_box_wgs84": {"west": -14.57, "east": -14.17, "south": -8.12, "north": -7.75},
+        "grid_spacing_degrees": 0.0005,
+        "approx_horizontal_resolution_m": 50,
+        "source_cruises": ["JR53-AMT11", "JR287", "JR15001", "JR16-NG"],
+        "formats": ["GMT-compatible 2-D NetCDF", "Arc/Info and ArcView ASCII grid"],
+        "licence": "UK Open Government Licence"
+      }
+    },
+    {
+      "id": "PDC_01236_PROCESSING_LINEAGE",
+      "status": "FOUND",
+      "claim": "The PDC/01236 source data were manually cleaned with mbedit and gridded with MB-System 5.5.2336 mbgrid using a Gaussian weighted mean; the dataset record publishes the mbgrid parameters.",
+      "source_url": "https://data.bas.ac.uk/full-record.php?id=GB%2FNERC%2FBAS%2FPDC%2F01236",
+      "source_text_sha256": "7e49d519c2c25bbe00917bb4d8bc3b794b04c2641d0f2e3249cb96e677940b1a",
+      "facts": {
+        "ascii_mbgrid": "-E0.0005/0.0005/degrees! -G4 -A2 -F1 -R-14.57/-14.17/-8.12/-7.75",
+        "netcdf_mbgrid": "-E0.0005/0.0005/degrees! -G3 -A2 -F1 -R-14.57/-14.17/-8.12/-7.75",
+        "topography_sign": "positive_upwards"
+      }
+    },
+    {
+      "id": "PDC_01236_TARGET_COVERAGE",
+      "status": "FOUND",
+      "claim": "H10N1 lies inside the published PDC/01236 bounding box, while H10S2 lies south of it and therefore requires a different survey/source lineage for direct bathymetric coverage.",
+      "source_url": "https://data.bas.ac.uk/full-record.php?id=GB%2FNERC%2FBAS%2FPDC%2F01236",
+      "source_text_sha256": "7e49d519c2c25bbe00917bb4d8bc3b794b04c2641d0f2e3249cb96e677940b1a",
+      "facts": {
+        "H10N1_inside": true,
+        "H10S2_inside": false
+      }
+    },
+    {
+      "id": "BGS_MEDIN_OFFSHORE_QUERY_SURFACE",
+      "status": "FOUND",
+      "claim": "BGS Offshore GeoIndex states that BGS is the MEDIN data archive centre for marine geology, geophysics and backscatter. The service documents survey-area geometry, cruise/data URLs, geophysical survey-line/shot-point layers, WMS and OGC API Features access.",
+      "source_url": "https://www.bgs.ac.uk/map-viewers/geoindex-offshore/",
+      "source_text_sha256": "374b545eef70fb7cfef873067116c17b1837e8851ffaa31513a73f316db16a68",
+      "implication": "The next deterministic gate is a point/polygon and line-intersection query for H10N1 and H10S2, returning concrete cruise/survey/line identifiers instead of proximity-only evidence."
+    }
+  ],
+  "public_source_inventory_run_001": [
+    {"url":"https://academic.oup.com/gji/article-abstract/223/1/289/5873668","status":"FETCH_FAILED"},
+    {"url":"https://agupubs.onlinelibrary.wiley.com/doi/10.1002/2015GL067259","status":"FETCH_FAILED"},
+    {"url":"https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024GL112891","status":"FETCH_FAILED"},
+    {"url":"https://conferences-test.ctbto.org/event/25/contributions/4421/","status":"FETCHED","text_sha256":"334be683297b36ba5dd9437fbaa1447afc4c24752174114d100df5754c9331ba"},
+    {"url":"https://conferences.ctbto.org/event/30/contributions/6129/","status":"FETCHED","text_sha256":"b8dda5a70ee9ea803165197b9a98bcde08ceee58ff6c4c6d611e27ed0068c584"},
+    {"url":"https://conferences.ctbto.org/event/7/contributions/879/","status":"FETCHED","text_sha256":"d86d6d5ce5344407a6cd941afbcdaa945e76f9b5c77e8f7f43dcae71f3914a03"},
+    {"url":"https://data.bas.ac.uk/full-record.php?id=GB%2FNERC%2FBAS%2FPDC%2F01236","status":"FETCHED","text_sha256":"7e49d519c2c25bbe00917bb4d8bc3b794b04c2641d0f2e3249cb96e677940b1a"},
+    {"url":"https://service.earthscope.org/fdsnws/station/docs/1/help/","status":"FETCHED","text_sha256":"e0dd443fdc378f1b65a38934dce11a0cb9da11465b95e7918b072681c69b266d"},
+    {"url":"https://www.bgs.ac.uk/geological-data/national-geoscience-data-centre/ngdc-data-management/marine-geoscience-data-management/","status":"FETCH_FAILED"},
+    {"url":"https://www.bgs.ac.uk/map-viewers/geoindex-offshore/","status":"FETCHED","text_sha256":"374b545eef70fb7cfef873067116c17b1837e8851ffaa31513a73f316db16a68"},
+    {"url":"https://www.bodc.ac.uk/data/documents/cruise/5627/","status":"FETCH_FAILED"},
+    {"url":"https://www.bodc.ac.uk/resources/inventories/cruise_inventory/reports/cd169.pdf","status":"FETCH_FAILED"},
+    {"url":"https://www.bodc.ac.uk/resources/inventories/cruise_inventory/reports/jr15001.pdf","status":"FETCH_FAILED"},
+    {"url":"https://www.bodc.ac.uk/resources/inventories/cruise_inventory/reports/jr287.pdf","status":"FETCH_FAILED"},
+    {"url":"https://www.ctbto.org/our-work/monitoring-technologies/hydroacoustic-monitoring","status":"FETCH_FAILED"},
+    {"url":"https://www.ctbto.org/our-work/station-profiles","status":"FETCH_FAILED"},
+    {"url":"https://www.fdsn.org/networks/detail/IM/","status":"FETCHED","text_sha256":"a85895ffbee81e26489e9db4888caa59ec8371e79e3ae814f8280f7d5edd984a"},
+    {"url":"https://www.frontiersin.org/journals/marine-science/articles/10.3389/fmars.2021.660648/full","status":"FETCHED","text_sha256":"a652cc496fa933b7742e88f9d6a9c94af2837b40f42239130637c0d9bd978722"}
+  ],
+  "open_gates": [
+    "DIRECT_EARTHSCOPE_FDSN_H10N1_CHANNEL_AND_RESPONSE_QUERY",
+    "DIRECT_EARTHSCOPE_FDSN_H10S2_CHANNEL_AND_RESPONSE_QUERY",
+    "EXACT_HYDROPHONE_GEOMETRY_AND_DEPLOYMENT_HISTORY",
+    "H10S_CALIBRATION_EPOCH_AND_NOISE_CROSSTALK_TIMELINE",
+    "PDC_NATIVE_SWATH_AND_TRACKLINES_JR53_AMT11",
+    "PDC_NATIVE_SWATH_AND_TRACKLINES_JR287",
+    "PDC_NATIVE_SWATH_AND_TRACKLINES_JR15001",
+    "PDC_NATIVE_SWATH_AND_TRACKLINES_JR16_NG",
+    "BGS_GEOINDEX_POINT_POLYGON_QUERY_H10N1",
+    "BGS_GEOINDEX_POINT_POLYGON_QUERY_H10S2",
+    "BGS_SEISMIC_SONAR_LINE_INTERSECTION_QUERY_H10N1_H10S2",
+    "CUSTODIAN_REPLIES_PENDING"
+  ],
+  "evidence_policy": {
+    "model_output_is_not_evidence": true,
+    "failed_fetch_is_not_absence": true,
+    "positive_claim_requires_source_url": true,
+    "duplicate_url_is_not_independent_confirmation": true,
+    "negative_results_are_preserved": true,
+    "mail_persistence_is_sanitized": true,
+    "email_addresses_persisted": false,
+    "authenticated_ticket_urls_persisted": false
+  },
+  "links": {
+    "pointing_council": "data/JANUS-FULL-SYSTEM-POINTING-COUNCIL-RUN-001-2026-08-22-v1.0.json",
+    "demiurge_controller": "https://github.com/Hawkar-usls/Janus-Demiurge",
+    "cosmos": "https://github.com/Hawkar-usls/Janus-Cosmos"
+  }
+}

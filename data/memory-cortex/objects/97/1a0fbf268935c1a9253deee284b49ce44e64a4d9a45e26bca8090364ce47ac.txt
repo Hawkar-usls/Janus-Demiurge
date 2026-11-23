@@ -1,0 +1,128 @@
+{
+  "schema": "janus.jpfm4a.ntrs_rocket_row_parser_readiness_audit.v1",
+  "artifact_id": "JANUS-PALOMAR-JPFM-4A-NTRS-ROCKET-ROW-PARSER-READINESS-AUDIT-v1.0",
+  "experiment_id": "JPFM-4A",
+  "date": "2026-08-15",
+  "artifact_class": "SOURCE_READINESS_AND_ADMISSION_AUDIT",
+  "status": "OFFICIAL_SOURCE_BYTES_AND_NATIVE_SYSTEM_SCHEMA_ESTABLISHED__ROW_COMPLETE_PARSE_NOT_YET_ADMITTED",
+  "purpose": "Freeze what is now established about the NASA/NSSDC sounding-rocket source lineage, and explicitly prevent a visually fragmented full-text extraction from being promoted into a row-complete event manifest before deterministic row validation exists.",
+  "bindings": {
+    "catalog_attachment_probe": {
+      "path": "data/JANUS-PALOMAR-JPFM-4A-NTRS-19720015241-ATTACHMENT-PROBE-v1.0.json",
+      "document_id": "19720015241",
+      "report_number": "NASA-TM-X-68822",
+      "pdf_sha256": "37386a7c9b1edbe9477a3a146c25cf74b9f8274bbe1e02589e54bafbc63623d2",
+      "pdf_bytes": 14131380
+    },
+    "catalog_fulltext_capture": {
+      "path": "data/JANUS-PALOMAR-JPFM-4A-NTRS-19720015241-FULLTEXT-CAPTURE-v1.0.json",
+      "txt_sha256": "28f50ebccea5989f3f926f062068627e3c478d394ffda7cb17a877c9133a2302",
+      "txt_bytes": 736178,
+      "source_capture_workflow_run": 31903503130,
+      "source_capture_artifact_id": 9251721397,
+      "source_capture_artifact_digest": "sha256:ad830a4ab0abd267b8334c7fdcec210d45ff9a5f131a8c7b3b6d09e9d1580d8b"
+    },
+    "catalog_schema_probe": {
+      "path": "data/JANUS-PALOMAR-JPFM-4A-NTRS-19720015241-FULLTEXT-SCHEMA-PROBE-v1.0.json",
+      "line_count": 227812,
+      "nonempty_lines": 135112,
+      "median_nonempty_line_length": 2,
+      "documented_launch_date_field": "Launch Date (YYMMDD)",
+      "documented_rocket_id_rule": "UT launch date plus a unique sequential two-digit serial number"
+    },
+    "native_system_guide": {
+      "path": "data/JANUS-PALOMAR-JPFM-4A-NSSDC-INTERNATIONAL-ROCKET-DATA-GUIDE-PROBE-v1.0.json",
+      "document_id": "19720008279",
+      "report_numbers": ["NASA-TM-X-65800", "X-601-72-2"],
+      "fulltext_sha256": "5453339b451c1d2aead9a431627841f2b90ee371a2cd17dabce0e5d3b3cb2f4c",
+      "fulltext_bytes": 74965,
+      "guide_workflow_run": 31903835661
+    }
+  },
+  "established_source_semantics": {
+    "catalog_population": "Scientifically successful rockets identified by WDC-A/NSSDC; this is a positive-event population, not an all-attempt or no-launch denominator.",
+    "native_system": [
+      "NSSDC operated a machine-sensible ROCKET information system.",
+      "The central rocket-flight index was maintained on magnetic tape.",
+      "ROCKET files supported update routines and select/sort operations.",
+      "Selections could be made on ROCKET entries except the remarks section.",
+      "Two standard listings containing much of the file content on all rockets were prepared monthly; one was sorted by NSSDC rocket ID and the other by agency ID.",
+      "A complete file listing was prepared periodically for internal NSSDC use.",
+      "WDC-A published a monthly Sounding Rocket Launching Report (SRL) containing successful rocket/experiment entries added to the file."
+    ],
+    "catalog_row_fields_documented_in_source": [
+      "rocket identification code",
+      "data availability indicator code",
+      "agency rocket designation",
+      "project name",
+      "date rocket launch first identified",
+      "experimenters and affiliations",
+      "launch date YYMMDD",
+      "UT launch time HHMM",
+      "launch site code",
+      "country or region",
+      "latitude and longitude",
+      "rocket and experiment performance",
+      "peak altitude",
+      "sponsor",
+      "discipline",
+      "instrumentation",
+      "event descriptor",
+      "rocket type",
+      "remarks"
+    ]
+  },
+  "current_extraction_diagnostic": {
+    "representation": "Official NTRS plain-text extraction of the 1972 catalogue",
+    "observation": "The prose/schema portions are readable, but the wide launch listing is fragmented into many short table-cell/column lines rather than one stable launch per textual row.",
+    "strong_signal": "The frozen schema probe found 227812 total text lines and a median nonempty line length of only 2 characters, consistent with a highly fragmented table extraction.",
+    "consequence": "A date-token regex can locate candidate cells, but cannot by itself establish correct row assembly, neighboring rocket/site fields, duplicate handling, or row completeness.",
+    "naive_regex_manifest_status": "FORBIDDEN_NOT_ADMITTED"
+  },
+  "admission_gate_for_row_manifest": {
+    "required_before_any_new_bluebook_or_poss_join": [
+      "Freeze a deterministic official row-oriented representation or a deterministic reconstruction whose row grouping is validated against an official row-oriented output/example.",
+      "Every admitted event row must bind at minimum launch date, rocket/agency identity where present, launch site or site code where present, and source locator/provenance.",
+      "Demonstrate deterministic row count and duplicate policy for the frozen study-window extraction.",
+      "Demonstrate that parser output is stable under replay from the same frozen source bytes.",
+      "Keep NASA catalogue semantics positive-event-only; absence of a parsed row must never become NO_ROCKET or a negative control.",
+      "Freeze event manifest and parser receipt before any Blue Book/POSS temporal or spatial outcome join."
+    ],
+    "acceptable_source_routes": [
+      "Public NSSDC/WDC-A native or derivative machine-readable rocket file/listing.",
+      "Public monthly Sounding Rocket Launching Report issues with deterministic row schema and adequate coverage for the target interval.",
+      "A separately frozen official representation that preserves row geometry sufficiently to validate the NTRS text reconstruction."
+    ],
+    "not_acceptable": [
+      "Manual hand-picked launch dates as a replacement for the catalogue population.",
+      "Treating extraction gaps as no-launch days.",
+      "Guessing table rows by proximity alone in the fragmented TXT without a validation certificate.",
+      "Using Blue Book/POSS outcomes to tune row grouping, date parsing, launch-site selection, or inclusion rules."
+    ]
+  },
+  "119l_parallel_boundary": {
+    "artifact": "data/JANUS-PALOMAR-JPFM-4A-119L-OPERATIONAL-OPPORTUNITY-AUDIT-v1.0.json",
+    "status": "OPERATIONAL_OPPORTUNITY_ESTABLISHED__DAILY_ROW_MANIFEST_BLOCKED__NO_OUTCOME_JOIN",
+    "rule": "119L daily counts/dates remain blocked until an official companion row source is frozen; operational limits and the aggregate 184 launches may not be interpolated into daily rows."
+  },
+  "jpfm4b_readiness": {
+    "nasa_sounding_rocket_positive_event_arm": "BLOCKED_ON_ROW_COMPLETE_MANIFEST_VALIDATION",
+    "nasa_sounding_rocket_negative_control_arm": "NOT_AVAILABLE_FROM_THIS_SUCCESS-SELECTED_CATALOGUE",
+    "119l_balloon_arm": "BLOCKED_ON_DAILY_ROW_MANIFEST",
+    "finite_calibration_arms": "AVAILABLE_AS_SEPARATE_CALIBRATION_ONLY",
+    "overall": "JPFM_4B_NOT_ADMITTED"
+  },
+  "next_actions": [
+    "Search official NTRS/NSSDCA descendants for the standard monthly ROCKET listings, Sounding Rocket Launching Report, or preserved machine-readable output from the NSSDC ROCKET system.",
+    "Search official NSSDC data-listing / master-directory lineage for an identifier or access path to the ROCKET system product.",
+    "For 119L, continue official AFCRC/ARDC/1110th ASG companion-record search for Tab M Statistics / IBM Machine Run or another row-level flight manifest.",
+    "If no public row-oriented descendant is found, retain the NASA catalogue as source/schema evidence and positive-event locator only; do not manufacture a complete manifest."
+  ],
+  "outcome_blindness": {
+    "new_bluebook_join_performed_for_this_audit": false,
+    "new_poss_join_performed_for_this_audit": false,
+    "row_parser_tuned_against_outcomes": false
+  },
+  "current_authority_changed": false,
+  "claim_ceiling": "NASA_NSSDC_NATIVE_ROCKET_SYSTEM_AND_SOURCE_BYTES_ESTABLISHED__ROW_COMPLETE_STUDY_WINDOW_MANIFEST_NOT_YET_ADMITTED__NO_NEW_ASSOCIATION_CLAIM"
+}

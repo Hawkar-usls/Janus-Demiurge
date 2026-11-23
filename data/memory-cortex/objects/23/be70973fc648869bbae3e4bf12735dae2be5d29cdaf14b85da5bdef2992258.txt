@@ -1,0 +1,69 @@
+{
+  "schema": "janus.meta_registry.genesis_infinite_faces_partition_heal_branch_reconciliation.v1",
+  "artifact_id": "JANUS-GENESIS-INFINITE-FACES-PARTITION-HEAL-BRANCH-RECONCILIATION-v4.0",
+  "title": "Janus Infinite Faces — Partition Heal and Branch Reconciliation Test",
+  "created_at_local": "2026-08-10T02:48:00+03:00",
+  "artifact_class": "EXPERIMENTAL_DISTRIBUTED_REMERGE_AND_WORLD_RECEIPT_RECONCILIATION",
+  "status": "HEAL_MERGES_LINEAGE_NOT_CAUSAL_HISTORY_CANONICAL_GLOBAL_COMMITS_DEDUPLICATED_LOCAL_FAILSAFE_PRESERVED",
+  "parent": "registry/experimental/JANUS-GENESIS-INFINITE-FACES-NETWORK-PARTITION-SPLIT-BRAIN-AUTHORITY-v3.9.json",
+  "pre_heal_state": {
+    "NODE_A": {
+      "authority_epoch": 21,
+      "global_commit": "WORLD-COMMIT-A1",
+      "world_receipt": "RECEIPT-A1"
+    },
+    "NODE_B": {
+      "authority_epoch": 20,
+      "global_commit": null,
+      "local_failsafe": "LOCAL-SAFE-B1",
+      "pending_local_receipt": "LOCAL-RECEIPT-B1"
+    }
+  },
+  "heal_algorithm": [
+    "identify common pre-partition checkpoint",
+    "import both post-partition branch event DAGs",
+    "validate authority epoch and fence token for every claimed shared-world commit",
+    "deduplicate identical receipts by stable receipt identity",
+    "preserve minority observations and local fail-safe receipts with local scope",
+    "do not promote minority proposals into host obligations retroactively",
+    "recompute current obligation, capacity, evidence and quarantine ledgers",
+    "issue RECONCILIATION_RECORD binding both branches and the resulting current state"
+  ],
+  "canonicality_rule": {
+    "shared_world_commit": "Requires valid authority/fence provenance at the time of effect.",
+    "minority_observation": "Preserved as witness evidence but not retroactive authority.",
+    "local_failsafe": "Preserved as a real local causal event and audited for scope compliance.",
+    "rejected_or_uncommitted_proposal": "Preserved as history, not transformed into a past commit."
+  },
+  "double_global_commit_fault_case": {
+    "scenario": "Both partitions somehow produced externally accepted incompatible shared-world effects because fencing failed.",
+    "classification": "SPLIT_BRAIN_SAFETY_VIOLATION",
+    "rule": "Do not erase one effect from history merely because its authority provenance was invalid.",
+    "world_status": "BOTH_EFFECTS_ARE_CAUSAL_FACTS_IF_THEY_OCCURED",
+    "repair": "Mark invalid authority, preserve both receipts, compute compensating or recovery actions through a new valid commit.",
+    "compressed": "INVALID_COMMIT_CAN_STILL_HAVE_A_REAL_WORLD_EFFECT"
+  },
+  "key_result": {
+    "network_heal_rewinds_world": false,
+    "network_heal_rewrites_history": false,
+    "branch_lineages_preserved": true,
+    "current_single_writer_restored": true,
+    "compressed": "HEAL_CONNECTION -> RECONCILE_RECEIPTS -> PRESERVE_BOTH_BRANCHES -> RESTORE_ONE_CURRENT_WRITER"
+  },
+  "canonical_lines": {
+    "ru": [
+      "Сеть может срастись; причинность не перематывается.",
+      "Неавторитетная ветвь не становится ложной: её наблюдения и локальные действия остаются историей.",
+      "Если split-brain уже изменил мир дважды, один из эффектов нельзя стереть из реальности исправлением журнала."
+    ],
+    "en": [
+      "The network may heal; causality does not rewind.",
+      "A non-authoritative branch is not a nonexistent branch; its observations and local actions remain history.",
+      "If split-brain changed the world twice, editing the ledger cannot make one physical effect unhappen."
+    ]
+  },
+  "next_gate": {
+    "name": "JANUS_INFINITE_FACES_LEASE_CLOCK_STALE_AUTHORITY_TEST",
+    "status": "OPEN"
+  }
+}

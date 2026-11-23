@@ -1,0 +1,42 @@
+{
+  "artifact_id": "JANUS-TRUMP-FIXED-PALETTE-TWO-VERTEX-SEPARATOR-LIST-FACTORIZATION-RESULT-2026-09-20-v1.0",
+  "version": "v1.0",
+  "date": "2026-09-20",
+  "status": "PASS_FIXED_PALETTE_TWO_VERTEX_SEPARATOR_LIST_FACTORIZATION",
+  "theorem": {
+    "input": "Graph C with exact lists L(v) subseteq [4] and a two-vertex separator S={u,v} such that C-S has connected components Q1,...,Qt with t>=2.",
+    "separator_state_space": "Col_L(C[S]) = all proper list-respecting colorings sigma:S->[4]. Because |S|=2 and palette=[4], |Col_L(C[S])|<=4^2=16.",
+    "boundary_lists": "For sigma in Col_L(C[S]), define L_i^sigma(x)=L(x) minus the colors sigma(s) of all separator vertices s in S adjacent to x.",
+    "equivalence": "C is list-colorable iff there exists sigma in Col_L(C[S]) such that every (Qi,L_i^sigma) is list-colorable.",
+    "proof": {
+      "forward": "Restrict any proper list-coloring of C to S and to each component Qi. The restriction sigma is proper and list-respecting on C[S]; every neighbor x of s must avoid sigma(s), so the component restrictions respect L_i^sigma.",
+      "reverse": "Choose one proper list-respecting separator state sigma and independently color every component Qi from L_i^sigma. Distinct components of C-S have no edges between them, and every edge from a component to S is already enforced by the restricted lists, so the colorings glue with sigma to a proper list-coloring of C."
+    },
+    "reconstruction": "Union all independently reconstructed Qi colorings with the fixed boundary assignment sigma.",
+    "UNSAT_logic": "C is uncolorable iff every sigma in Col_L(C[S]) is rejected because at least one downstream component is uncolorable.",
+    "complexity_overhead": "At most 16 boundary states, plus polynomial propagation/component decomposition and the sum of authorized downstream component solvers."
+  },
+  "proof_carrying_certificate": {
+    "separator": "Verify |S|=2 and C-S has at least two connected components.",
+    "component_partition": "Verify the Qi partition V(C)\\S and no original edge joins different Qi.",
+    "state_validity": "Verify each enumerated sigma is proper on C[S] and respects both exact lists.",
+    "per_state": "Preserve exact boundary-restricted/propagated lists and downstream terminal certificates.",
+    "aggregation": "A sigma branch is SAT iff all components are SAT; global SAT is existential over sigma."
+  },
+  "distinctions": {
+    "not_backdoor": "This is exact graph-separator factorization. It does not assert that choosing two arbitrary vertices destroys complexity inside one coupled component.",
+    "no_treewidth_claim": "The theorem does not require bounded treewidth of C."
+  },
+  "source_alignment": {
+    "Paper_II": "The source framework explicitly treats separating connected components into different instances as a normal-subcase simplification; this theorem is a separate exact list-coloring composition fact, not a theorem claimed by Paper II."
+  },
+  "oracle_use": false,
+  "scientific_ceiling": {
+    "TWO_VERTEX_SEPARATOR_FACTORIZATION": "VERIFIED",
+    "DOWNSTREAM_SOLVABILITY": "DEPENDS_ON_AUTHORIZED_COMPONENT_TERMINALS",
+    "SEPARATOR_SIZE_3": "NOT_OPENED",
+    "BACKDOOR_SIZE_2": "NOT_OPENED",
+    "REPAIR": "NOT_STARTED"
+  },
+  "stop": true
+}

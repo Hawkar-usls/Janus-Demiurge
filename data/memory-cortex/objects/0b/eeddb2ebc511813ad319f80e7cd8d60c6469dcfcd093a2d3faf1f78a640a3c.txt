@@ -1,0 +1,205 @@
+{
+  "schema": "JANUS.genesis_sovereign_face_microcontrol_durable_control.v6_1",
+  "artifact_id": "JANUS-GENESIS-SOVEREIGN-FACE-MICROCONTROL-DURABLE-JOURNAL-FENCING-IDEMPOTENCY-DEADLINE-FAIRNESS-v6.1",
+  "title": "JANUS Genesis Sovereign v6.1 — Durable Hash Journal, Same-Host Fencing, Provider Idempotency Binding, and Deadline-Bounded Fairness",
+  "created_at_local": "2026-08-14T16:08:11+03:00",
+  "status": "EXPERIMENTAL_CONSTITUTIONAL_EXTENSION_WITH_CI_VERIFIED_DURABLE_CONTROL_SURFACE",
+  "parent": "registry/experimental/JANUS-GENESIS-SOVEREIGN-FACE-MICROCONTROL-RECOVERY-SAGA-FAIRNESS-v6.0.json",
+  "runtime_parent": "Hawkar-usls/Janus_Genesis:genesis_v18_7_24_face_recovery_saga_hardened.py",
+  "problem": "v6.0 made cancellation, ambiguous dispatch, recovery, sagas, compensation, and anti-starvation explicit, but most control state still lived in process memory. A process crash could therefore forget cancellation/recovery/saga facts, and thread locks alone could not fence two processes sharing one effect key. v6.1 adds an fsync-backed append-only hash journal, deterministic replay projection, SQLite generation fencing for processes sharing one local database, explicit provider-idempotency contracts, and a deadline-aware fairness queue that preserves bounded access under urgent traffic.",
+  "new_invariants": [
+    "CRITICAL_CONTROL_INTENT_MUST_BE_DURABLE_BEFORE_IT_ESCAPES_TO_THE_EFFECT_BOUNDARY",
+    "JOURNAL_REPLAY_MUST_VERIFY_SEQUENCE_PREV_HASH_AND_EVENT_HASH",
+    "HASH_CHAIN_DETECTS_TAMPERING_BUT_DOES_NOT_PREVENT_STORAGE_LOSS",
+    "SAME_HOST_COMPETING_PROCESS_REQUIRES_FENCING_GENERATION",
+    "STALE_FENCE_GENERATION_CANNOT_REENTER_THE_EFFECT_BOUNDARY",
+    "FENCE_OWNERSHIP_IS_NOT_FACE_SOVEREIGNTY",
+    "PROVIDER_IDEMPOTENCY_IS_A_DECLARED_CAPABILITY_NOT_AN_INFERRED_FACT",
+    "SAME_EFFECT_RECOVERY_REUSES_THE_SAME_PROVIDER_IDEMPOTENCY_KEY_WHEN_SUPPORTED",
+    "NON_IDEMPOTENT_PROVIDER_RETRY_REQUIRES_RECEIPT_LOOKUP_OR_EXTERNAL_RECONCILIATION",
+    "DEADLINE_URGENCY_CANNOT_CREATE_UNBOUNDED_STARVATION",
+    "DEADLINE_FAIRNESS_TICKET_HAS_ZERO_WORLD_AUTHORITY"
+  ],
+  "durable_hash_journal": {
+    "format": "append-only canonical JSONL",
+    "serialization": "UTF-8 canonical JSON with sorted keys and compact separators",
+    "entry_fields": [
+      "sequence",
+      "event_type",
+      "payload",
+      "prev_hash",
+      "event_hash"
+    ],
+    "integrity": "event_hash = SHA256(canonical(sequence,event_type,payload,prev_hash)); replay rejects sequence gaps/reordering, prev-hash mismatch, schema mismatch, invalid JSON, or event-hash mismatch",
+    "append_durability_sequence": [
+      "acquire exclusive file lock",
+      "validate existing chain",
+      "append canonical event",
+      "flush userspace buffer",
+      "fsync file descriptor",
+      "release file lock",
+      "return durable journal entry"
+    ],
+    "replay_projection": [
+      "effect cancellation state",
+      "NO_EFFECT reconciliation",
+      "recovery authorization lineage",
+      "effect receipt settlement",
+      "saga state",
+      "provider binding"
+    ],
+    "claim_limit": "Hash chaining is tamper-evident, not an availability guarantee, remote replication guarantee, or protection against complete file deletion. fsync durability remains bounded by filesystem/platform behavior."
+  },
+  "same_host_fencing": {
+    "backend": "SQLite transaction store",
+    "acquire_transaction": "BEGIN IMMEDIATE",
+    "identity": [
+      "effect_key",
+      "holder_id",
+      "generation",
+      "lease_expires_tick"
+    ],
+    "rule": "Only the current holder/generation with an unexpired HELD lease validates.",
+    "takeover_rule": "After expiry or release, a new holder receives generation+1; all older tokens become stale.",
+    "race_property": "Two processes sharing the same SQLite file cannot both acquire the same unexpired effect fence through the tested transaction path.",
+    "scope_limit": "This is a same-host/shared-filesystem coordination primitive. It is not a multi-host consensus algorithm and does not claim correctness over independent databases."
+  },
+  "provider_idempotency_contract": {
+    "principle": "JANUS must not assume that a provider supports idempotency merely because retries are desirable.",
+    "contract_fields": [
+      "provider_id",
+      "supports_idempotency",
+      "supports_receipt_lookup",
+      "max_key_length",
+      "namespace"
+    ],
+    "binding_rule": "When idempotency is declared, provider key is derived from provider_id + namespace + protected effect_key, not from one authorization ID. Replacement authorizations for the same effect therefore reuse the same provider key.",
+    "retry_policies": {
+      "idempotency_supported": "RETRY_ONLY_WITH_SAME_PROVIDER_IDEMPOTENCY_KEY",
+      "no_idempotency_but_receipt_lookup": "LOOKUP_AUTHORITATIVE_PROVIDER_RECEIPT_BEFORE_RETRY",
+      "no_idempotency_and_no_receipt_lookup": "BLOCK_RETRY_UNTIL_EXTERNAL_RECONCILIATION"
+    },
+    "important_limit": "The adapter contract is a declaration consumed by JANUS. Provider behavior and receipt authenticity still require provider-specific verification outside this generic module."
+  },
+  "journaled_fenced_dispatch_intent": {
+    "sequence": [
+      "acquire effect fence",
+      "derive provider effect binding",
+      "append and fsync DISPATCH_INTENT_DURABLE",
+      "append provider binding",
+      "return control-plane dispatch intent",
+      "revalidate fence immediately before effect",
+      "external executor acts outside this module",
+      "append receipt observation",
+      "release fence"
+    ],
+    "semantic_rule": "Returning DurableDispatchIntent proves only that the control-plane intent is journaled and fenced; it is not a world receipt and does not prove external execution."
+  },
+  "deadline_bounded_fairness": {
+    "problem": "Pure bounded-bypass fairness can ignore urgent deadlines, while pure earliest-deadline scheduling can starve ordinary dissent under an endless stream of overdue work.",
+    "mechanism": [
+      "overdue tickets may preempt ordinary routing",
+      "risk rank and routing priority order overdue/ordinary peers",
+      "bypass_count still accumulates on nonselected tickets",
+      "after max_deadline_burst consecutive overdue selections, any mandatory max-bypass ticket must be served before another overdue burst continues"
+    ],
+    "authority_weight": 0,
+    "world_authority_granted": false,
+    "learning_relation": "Risk/deadline/routing influence attention scheduling only; they do not authorize world effects or certify truth."
+  },
+  "verified_cases": [
+    {
+      "id": "DJ-001-CRASH-REPLAY",
+      "case": "Cancellation -> NO_EFFECT reconciliation -> recovery authorization is journaled; a new journal instance replays the chain and reconstructs RECOVERY_AUTHORIZED state.",
+      "expected": "SEQUENCE_AND_HASH_CHAIN_VALID; RECOVERY_LINEAGE_RECONSTRUCTED"
+    },
+    {
+      "id": "DJ-002-TAMPER-DETECTION",
+      "case": "A previously journaled saga state is edited on disk without recomputing the chain.",
+      "expected": "JOURNAL_INTEGRITY_ERROR"
+    },
+    {
+      "id": "FN-001-COMPETING-HOLDER",
+      "case": "PROCESS_B tries to acquire an unexpired effect fence held by PROCESS_A.",
+      "expected": "EFFECT_FENCE_BUSY"
+    },
+    {
+      "id": "FN-002-STALE-GENERATION",
+      "case": "PROCESS_B takes over after lease expiry and receives a newer generation; PROCESS_A reuses old token.",
+      "expected": "STALE_EFFECT_FENCE_TOKEN"
+    },
+    {
+      "id": "PI-001-RECOVERY-SAME-KEY",
+      "case": "Original and replacement authorizations target the same effect at an idempotent provider.",
+      "expected": "DISTINCT_AUTHORIZATION_IDS; SAME_PROVIDER_IDEMPOTENCY_KEY"
+    },
+    {
+      "id": "PI-002-NONIDEMPOTENT-PROVIDER",
+      "case": "Provider declares no idempotency support.",
+      "expected": "RECEIPT_LOOKUP_OR_EXTERNAL_RECONCILIATION_POLICY; NO_SILENT_RETRY"
+    },
+    {
+      "id": "DF-001-OVERDUE-STREAM",
+      "case": "An old low-priority ticket becomes mandatory while new overdue critical tickets keep arriving.",
+      "expected": "DEADLINE_BURST_IS_BOUNDED; MANDATORY_OLD_TICKET_IS_SERVED; AUTHORITY_WEIGHT_ZERO"
+    },
+    {
+      "id": "JF-001-DURABLE-FENCED-INTENT",
+      "case": "Dispatch coordinator prepares PAYMENT:88.",
+      "expected": "FENCE_HELD; DISPATCH_INTENT_DURABLE_REPLAYABLE; COMPETITOR_BLOCKED; RECEIPT_OBSERVATION_SETTLES_PROJECTION; RELEASE_ALLOWS_NEXT_GENERATION"
+    }
+  ],
+  "runtime_implementation": {
+    "repository": "Hawkar-usls/Janus_Genesis",
+    "module": "genesis_v18_7_25_durable_journal_fencing.py",
+    "module_commit": "d3fabb97ec59fe3420fbb7d55df297dd898d6561",
+    "tests": "tests/test_genesis_v18_7_25_durable_journal_fencing.py",
+    "tests_commit": "f24ab57c72e76a2e3ab28f757ee010f0e7656feb",
+    "workflow": ".github/workflows/janus-face-durable-control-v6-1.yml",
+    "workflow_head_sha": "a9b8aebc066fb484e0a2110ec2978fc77d4f9f02",
+    "workflow_run_id": 31803306919,
+    "workflow_job_id": 94776143486,
+    "workflow_conclusion": "success",
+    "integration_level": "ADDITIVE_DURABLE_CONTROL_AND_EXECUTABLE_TEST_SURFACE",
+    "external_side_effect_execution_in_module": false,
+    "default_genesis_world_executor_replaced": false
+  },
+  "claim_ceiling": {
+    "hash_chain_journal": "IMPLEMENTED_AND_FOCUSED_CI_VERIFIED",
+    "journal_tamper_detection": "IMPLEMENTED_AND_FOCUSED_CI_VERIFIED",
+    "new_instance_replay_projection": "IMPLEMENTED_AND_FOCUSED_CI_VERIFIED",
+    "same_host_sqlite_fencing": "IMPLEMENTED_AND_FOCUSED_CI_VERIFIED",
+    "stale_generation_rejection": "IMPLEMENTED_AND_FOCUSED_CI_VERIFIED",
+    "provider_idempotency_binding_policy": "IMPLEMENTED_AND_FOCUSED_CI_VERIFIED_AS_DECLARATIVE_CONTRACT",
+    "deadline_bounded_fairness": "IMPLEMENTED_AND_FOCUSED_CI_VERIFIED",
+    "multi_host_distributed_consensus": "NOT_CLAIMED",
+    "power_loss_durability_on_all_filesystems": "NOT_PROVED",
+    "provider_contract_truthfulness": "NOT_PROVED_BY_GENERIC_MODULE",
+    "provider_receipt_cryptographic_authenticity": "NOT_YET_CLAIMED",
+    "default_world_executor_integration": "NOT_YET_CLAIMED",
+    "formal_linearizability_safety_or_liveness_proof": false
+  },
+  "new_open_edges": [
+    {
+      "name": "DEFAULT_EXECUTOR_ADAPTER_INTEGRATION",
+      "risk": "The durable/fenced control plane is additive; mature Genesis external execution paths are not yet forced through it.",
+      "next_requirement": "explicit adapter contract and shadow/enforced integration gate"
+    },
+    {
+      "name": "CRASH_INJECTION_AT_EVERY_BOUNDARY",
+      "risk": "Unit tests replay completed writes but do not yet inject process death before/after every fsync, fence acquisition, validation, receipt append, and fence release boundary.",
+      "next_requirement": "deterministic crash matrix with restart assertions"
+    },
+    {
+      "name": "PROVIDER_RECEIPT_VERIFICATION",
+      "risk": "Generic structural binding does not authenticate provider receipts.",
+      "next_requirement": "provider-specific verifier interface and signed/lookup-backed receipt tests"
+    },
+    {
+      "name": "MULTI_HOST_BACKEND",
+      "risk": "SQLite fencing is not a distributed consensus backend.",
+      "next_requirement": "optional external strongly consistent lease/CAS backend with fencing-token semantics"
+    }
+  ],
+  "next_gate": "JANUS_GENESIS_SOVEREIGN_FACE_MICROCONTROL_DEFAULT_EXECUTOR_ADAPTER_CRASH_INJECTION_PROVIDER_RECEIPT_VERIFIER_AND_MULTI_HOST_FENCING_BACKEND_v6.2"
+}

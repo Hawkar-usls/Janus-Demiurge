@@ -1,0 +1,48 @@
+{
+  "schema": "janus.open_contribution_access_policy.v1",
+  "recorded_at_utc": "2026-08-22T10:12:00Z",
+  "owner": "Hawkar-usls",
+  "intent": "Allow any good-faith contributor to help develop JANUS while preserving maintainer-only authority over destructive repository changes.",
+  "access_model": {
+    "public_read": "ALLOW",
+    "fork": "ALLOW",
+    "pull_request_proposal": "ALLOW",
+    "issue_discussion": "ALLOW",
+    "code_review_participation": "ALLOW_WHEN_GITHUB_PERMITS",
+    "direct_admin": "DENY",
+    "direct_maintain": "DENY_BY_DEFAULT",
+    "direct_write": "DENY_BY_DEFAULT_BECAUSE_GITHUB_WRITE_CANNOT_ENFORCE_NO_DELETE_RENAME_MOVE",
+    "delete": "MAINTAINER_ONLY",
+    "rename": "MAINTAINER_ONLY",
+    "move": "MAINTAINER_ONLY",
+    "force_push": "DENY",
+    "history_rewrite": "DENY",
+    "branch_protection_bypass": "DENY",
+    "oauth_auto_approval": "DENY",
+    "unknown_third_party_app": "REVIEW_REQUIRED"
+  },
+  "contributor_gate": {
+    "principle": "CONTRIBUTION_IS_OPEN; AUTHORITY_IS_NOT_TRANSITIVE",
+    "default_path": "FORK_OR_BRANCH -> PULL_REQUEST -> REVIEW -> MERGE_BY_MAINTAINER",
+    "good_faith_helpers": "WELCOME",
+    "expired_or_missed_requests": "NO_EXPLICIT_HUMAN_ACCESS_REQUESTS_SURFACED_IN_CONNECTED_GITHUB_OR_GMAIL_EVIDENCE_AS_OF_RECORD_TIME",
+    "future_requests": "ACCEPT_CONTRIBUTION_VIA_PR_WITHOUT_GRANTING_DESTRUCTIVE_REPOSITORY_AUTHORITY"
+  },
+  "technical_constraint": {
+    "statement": "GitHub repository write/maintain roles do not provide a fine-grained guarantee that a collaborator can edit while being technically unable to delete, rename, or move repository paths. Therefore direct write access would violate the requested authority ceiling.",
+    "safe_equivalent": "Public fork/PR contribution permits unlimited proposals while actual repository mutation remains behind maintainer review and merge authority."
+  },
+  "security_boundary": {
+    "oauth_apps_are_not_contributors": true,
+    "oauth_authorizations_are_not_auto_reactivated": true,
+    "credential_or_secret_scanning_findings_do_not_grant_access": true,
+    "authority_delta_from_contribution_request": 0
+  },
+  "invariants": [
+    "VERIFY THE SAME THING YOU PROMOTE",
+    "FUNCTION MAY TRANSFORM — IDENTITY MUST CROSS EVERY GATE",
+    "CI GREEN IS NOT MERGE PERMISSION",
+    "CONTRIBUTOR PROPOSAL IS NOT DESTRUCTIVE AUTHORITY"
+  ],
+  "status": "ACTIVE"
+}

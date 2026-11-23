@@ -1,0 +1,130 @@
+{
+  "artifact_uuid":"JANUS-LINEAR-A-R3C-3-HISTORICAL-FOUR-LANGUAGE-STRESS-TEST-SPEC-2026-08-14-v0.1",
+  "version":"v0.1",
+  "node_type":"preexecution_historical_prior_art_language_match_stress_test_spec",
+  "status":"FROZEN_BEFORE_EXECUTION",
+  "timestamp":"2026-08-14T21:47:00+03:00",
+  "lane":"R3C_3_HISTORICAL_SOFTWARE_STRESS_TEST",
+  "parents":{
+    "bundle_acquisition":"data/JANUS-LINEAR-A-R3C-3-HISTORICAL-MAC-BUNDLE-ACQUISITION-RESULT-2026-08-14-v0.1.json",
+    "static_method":"data/JANUS-LINEAR-A-R3C-3-HISTORICAL-BUNDLE-STATIC-METHOD-INSPECTION-RESULT-2026-08-14-v0.1.json",
+    "semantic_ir":"data/JANUS-LINEAR-A-R3C-3-HISTORICAL-METHOD-SEMANTIC-EXTRACTION-RESULT-2026-08-14-v0.1.1.json",
+    "dataflow":"data/JANUS-LINEAR-A-R3C-3-HISTORICAL-DATAFLOW-RECONSTRUCTION-RESULT-2026-08-14-v0.1.json",
+    "complied_list_probe":"data/JANUS-LINEAR-A-R3C-3-COMPLIED-LIST-CONSTRUCTION-PROBE-RESULT-2026-08-14-v0.1.json",
+    "paper_exact_corrective_spec":"data/JANUS-LINEAR-A-R3C-3-CORRECTIVE-LANGUAGE-MATCH-AUDIT-SPEC-2026-08-14-v0.1.2.json"
+  },
+  "scope":{
+    "historical_bundle_commit":"fab66e715b18607c4b383782e7f4d1b86a26d725",
+    "bundle_sha256":"a4627d4c2e26668593e8f6f9c8a004ae75bb3f1bbf497a39c0d4a772c9012850",
+    "historical_software_period":"2021 bundle lineage",
+    "paper_2024_reproduction_claimed":false,
+    "languages_fixed":["Ancient Egyptian","Luwian","Hittite","Proto-Celtic"],
+    "paper_fixed_language_missing_from_bundle":"Uralic",
+    "drop_or_add_languages_after_results":false
+  },
+  "linear_a_input":{
+    "member":"LinearADecipherment/misc/Complied_Gorilla.csv",
+    "sha256":"fe1ea31109325aa038a00be97905e7aabfd721830b33d90dcc79d56a60f43019",
+    "read_semantics":"CSV with header=None and source-assigned columns R1..R11,LOWER",
+    "comparison_column_index_zero_based":11,
+    "comparison_column_source_name":"LOWER",
+    "source_locator_column_index_zero_based":1,
+    "without_gaps_column_index_zero_based":6,
+    "complied_list_tuple_order":["LOWER","R7","R2"],
+    "normalization":"IDENTITY_PRESERVE_SOURCE_LOWER_STRING",
+    "row_multiplicity_preserved":true,
+    "empty_rows_preserved":true
+  },
+  "dictionary_inputs":[
+    {"language":"Ancient Egyptian","member":"LinearADecipherment/misc/AncientEgyptian_NumberedWords.csv","sha256":"081cda37ac9af805bc55151fa4bec52f41528cca5bd0531a5628d96153f9f6e7"},
+    {"language":"Luwian","member":"LinearADecipherment/misc/Luwian_NumberedWords.csv","sha256":"960b6d32b8f8c5aff01be21e4011a40c04523a5ef1e9341a083974510a013e2a"},
+    {"language":"Hittite","member":"LinearADecipherment/misc/Hittite_NumberedWords.csv","sha256":"897f18f9455579b670fe0753ed0de6753b89d8d44bf193651b91a60bc88df9c4"},
+    {"language":"Proto-Celtic","member":"LinearADecipherment/misc/Proto_Celtic_NumberedWords.csv","sha256":"0c5ca9b0c17bcb0f39209a11f21bd3e31a62dd3c9b0e08f6d28704dc4d780e66"}
+  ],
+  "dictionary_schema":{
+    "header_row_present":true,
+    "required_headers":["Numbered_Words","Matched_Words"],
+    "row_order_preserved":true,
+    "row_multiplicity_preserved":true,
+    "raw_lexical_rows_persisted":false
+  },
+  "profiles_fixed_before_execution":[
+    {
+      "profile_id":"P1_NUMBERED_RAW_LOWER",
+      "input_column":"Numbered_Words",
+      "operation":"str(value).lower()",
+      "reason":"source-native processed column; evaluated without assuming semantic role"
+    },
+    {
+      "profile_id":"P2_MATCHED_RAW_LOWER",
+      "input_column":"Matched_Words",
+      "operation":"str(value).lower()",
+      "reason":"source-native matched column; evaluated without selecting it post hoc"
+    },
+    {
+      "profile_id":"P3_MATCHED_HISTORICAL_GENERAL_DECIPHERMENT",
+      "input_column":"Matched_Words",
+      "operation":"Remove only exact lowercase characters a,e,i,o,u from the original string, preserving all other characters, then lowercase the resulting skeleton before equality comparison.",
+      "vowel_set":["a","e","i","o","u"],
+      "case_order":"lowercase is applied after lowercase-vowel deletion; uppercase vowels therefore survive deletion and become lowercase vowels at comparison",
+      "reason":"clean-room reconstruction of openFileDialog + updateGeneralDeciphermentTable comparison path"
+    }
+  ],
+  "observed_metrics":{
+    "primary":"UNIQUE_LINEAR_A_CLUSTER_HIT_COUNT",
+    "secondary":["TOTAL_PAIRWISE_EXACT_MATCH_COUNT","UNIQUE_DICTIONARY_CLUSTER_HIT_COUNT"],
+    "equality":"exact Python Unicode string equality after the frozen profile operation",
+    "manual_filtering":false,
+    "semantic_filtering":false,
+    "tablet_context_filtering":false
+  },
+  "multiple_testing_family":{
+    "cells":12,
+    "definition":"4 fixed languages x 3 pre-frozen profiles",
+    "post_result_profile_selection_for_primary_claim":false,
+    "post_result_language_selection_for_primary_claim":false
+  },
+  "null_families":{
+    "N1_WITHIN_LANGUAGE_COMPOSITION_PRESERVING":{
+      "copied_from_R3C3_v0_1_2":true,
+      "preserves":["profile-language row count","ordered cluster-length sequence","profile-language global Unicode code-point multiset"],
+      "algorithm":"For each profile-language cell, concatenate clusters in row order, deterministically permute the exact code-point multiset, redistribute by original ordered cluster lengths, keep Linear A fixed, recompute primary metric."
+    },
+    "N2_POOLED_LENGTH_STRATIFIED_LANGUAGE_LABEL":{
+      "copied_from_R3C3_v0_1_2_with_four_languages_only":true,
+      "preserves":["cluster strings within profile","exact code-point length","each language row count per length stratum"],
+      "algorithm":"Within each profile independently, pool all four languages and deterministically permute language labels inside each exact cluster-length stratum while preserving observed per-language counts; keep Linear A fixed."
+    }
+  },
+  "permutation_protocol":{
+    "iterations_per_null_family":10000,
+    "seed_rule":"unsigned_big_endian(SHA256(artifact_uuid || '|' || null_family_id || '|' || profile_id || '|' || zero_based_iteration))",
+    "unadjusted_empirical_one_sided_p":"(1 + count(null_stat >= observed)) / (B + 1)",
+    "FWER_method":"permutation max-statistic across all 12 profile-language cells within each null family",
+    "alpha":0.05,
+    "require_positive_observed_minus_null_mean":true
+  },
+  "decision_rule":{
+    "EXECUTED_HISTORICAL_NO_FWER_EXCESS":"No profile-language cell has positive excess and FWER-adjusted p <= 0.05 under both N1 and N2.",
+    "EXECUTED_HISTORICAL_DISCORDANT_NULLS":"At least one cell clears exactly one null family and none clears both.",
+    "EXECUTED_HISTORICAL_TECHNICAL_OVERLAP_EXCESS":"At least one cell has positive excess and FWER-adjusted p <= 0.05 under both N1 and N2."
+  },
+  "reporting":{
+    "persist_raw_dictionary_words":false,
+    "persist_raw_match_pairs":false,
+    "persist_cluster_values":false,
+    "persist_counts_hashes_effects_and_p_values":true,
+    "persist_top_cell_ids_only":true
+  },
+  "claim_ceiling":{
+    "historical_public_bundle_stress_test_only":true,
+    "paper_exact_2024_reproduction":false,
+    "language_family_relationship_established":false,
+    "cognacy_established":false,
+    "translation_established":false,
+    "phonetic_grid_correctness_established":false,
+    "R3B_effect":"NONE",
+    "new_anchor":false,
+    "decipherment":false
+  }
+}

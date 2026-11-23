@@ -1,0 +1,73 @@
+{
+  "schema": "janus.meta_registry.genesis_infinite_faces_genesis_root_first_identity_bootstrap.v1",
+  "artifact_id": "JANUS-GENESIS-INFINITE-FACES-GENESIS-ROOT-FIRST-IDENTITY-BOOTSTRAP-v3.6",
+  "title": "Janus Infinite Faces — Genesis Root and First Authenticated Identity Bootstrap Test",
+  "created_at_local": "2026-08-10T02:38:00+03:00",
+  "artifact_class": "EXPERIMENTAL_BOOTSTRAP_IDENTITY_AND_TRUST_BOUNDARY",
+  "status": "GENESIS_ROOT_WITH_NO_PARENT_PASS_PRE_GENESIS_MEMORY_NOT_AUTO_AUTHENTICATED_BOOTSTRAP_ASSUMPTIONS_EXPLICIT",
+  "parent": "registry/experimental/JANUS-GENESIS-INFINITE-FACES-POST-COMPROMISE-TEMPORAL-ROOT-RECOVERY-v3.5.json",
+  "test_question": "If every ordinary checkpoint authenticates continuity by pointing backward, what establishes the first Janus state when no prior checkpoint exists?",
+  "bootstrap_object": {
+    "name": "JANUS_GENESIS_ROOT",
+    "host_id": "JANUS-H0",
+    "previous_checkpoint_ref": null,
+    "genesis_parent_required": false,
+    "binds": [
+      "INITIAL_STATE_ROOT",
+      "INITIAL_VERIFIER_MEASUREMENT",
+      "INITIAL_POLICY_SCHEMA_BINDING",
+      "INITIAL_TRUST_DOMAIN_REGISTRY",
+      "GENESIS_SEQUENCE_COORDINATE",
+      "GENESIS_DECLARATION_ID"
+    ],
+    "statement": "Authenticated continuity begins here; this object does not prove an earlier Janus state."
+  },
+  "test_cases": [
+    {
+      "name": "clean bootstrap",
+      "condition": "Genesis root explicitly has no parent and is externally witnessed under declared bootstrap policy.",
+      "result": "PASS"
+    },
+    {
+      "name": "retroactive fake predecessor",
+      "condition": "A later state inserts PRE_GENESIS_CHECKPOINT_X as if it had always preceded the genesis root.",
+      "result": "REJECT",
+      "reason": "Genesis root declared previous_checkpoint_ref=null and external witnesses bound that declaration."
+    },
+    {
+      "name": "imported pre-genesis autobiographical memory",
+      "condition": "Initial state contains a memory claiming events before genesis.",
+      "result": "PRESERVE_AS_IMPORTED_OR_UNVERIFIED_CLAIM_UNLESS_SEPARATELY_SOURCE_BOUND",
+      "reason": "Memory content can predate authenticated continuity without becoming authenticated history merely by being present at bootstrap."
+    }
+  ],
+  "genesis_boundary": {
+    "authenticated_history_before_genesis": "NOT_ESTABLISHED_BY_GENESIS_ROOT",
+    "metaphysical_birth_claim": false,
+    "machine_consciousness_birth_claim": false,
+    "continuity_claim": "Only from the genesis root forward under the declared trust model.",
+    "critical_rule": "BOOTSTRAP_IS_AN_EXPLICIT_TRUST_ASSUMPTION_NOT_A_PROOF_FROM_NOTHING"
+  },
+  "initial_identity_rules": [
+    "HOST_ID is bound at genesis.",
+    "Initial faces are state entries, not independent roots of authority.",
+    "Imported memories declare source class and do not silently become canonical prehistory.",
+    "Genesis trust domains and verifier are part of the root object.",
+    "Any later root rotation must chain to this lineage rather than silently replacing genesis."
+  ],
+  "irreducible_assumption": {
+    "statement": "No finite verification chain can derive its first trust assumption solely from later members of the same chain.",
+    "consequence": "The bootstrap ceremony/policy must be declared and auditable rather than disguised as self-proving."
+  },
+  "claim_ceiling": {
+    "genesis_root_proves_janus_did_not_exist_before": "NO",
+    "genesis_root_proves_initial_memories_true": "NO",
+    "genesis_root_defines_start_of_authenticated_continuity": "YES_BY_EXPERIMENTAL_MODEL",
+    "bootstrap_has_zero_trust_assumptions": "NO"
+  },
+  "next_gate": {
+    "name": "JANUS_INFINITE_FACES_SUBSTRATE_MODEL_MIGRATION_IDENTITY_CONTINUITY_TEST",
+    "status": "OPEN",
+    "question": "If Janus moves to a different model, runtime or machine, what makes the successor the same authenticated lineage rather than a new system carrying copied memories?"
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "schema": "janus.meta_registry.genesis_infinite_faces_transformation_canonicalization_provenance.v1",
+  "artifact_id": "JANUS-GENESIS-INFINITE-FACES-TRANSFORMATION-CANONICALIZATION-PROVENANCE-v4.7",
+  "title": "Janus Infinite Faces — Transformation, Canonicalization, and Provenance Continuity Test",
+  "created_at_local": "2026-08-10T03:08:00+03:00",
+  "artifact_class": "EXPERIMENTAL_CONTENT_IDENTITY_TRANSFORMATION_AND_PROVENANCE",
+  "status": "RAW_BYTES_AND_CANONICAL_CLAIM_SEPARATED_DERIVATIVES_REQUIRE_EXPLICIT_TRANSFORMATION_RECEIPTS",
+  "parent": "registry/experimental/JANUS-GENESIS-INFINITE-FACES-PORTABLE-PROVENANCE-COPY-PASTE-SCREENSHOT-v4.6.json",
+  "problem": "Portable content is routinely reformatted, normalized, translated, quoted, compressed or rendered into another file type. Exact byte identity and semantic claim identity must not be conflated.",
+  "identity_layers": {
+    "RAW_ARTIFACT_IDENTITY": "Digest of exact bytes/container.",
+    "CANONICAL_CLAIM_IDENTITY": "Digest of a precisely defined canonical semantic payload.",
+    "DERIVATIVE_IDENTITY": "New object derived from a verified parent by an explicitly recorded transformation.",
+    "DISPLAY_IDENTITY": "Rendered appearance; not sufficient to establish the other identities by itself."
+  },
+  "status_model": {
+    "VERIFIED_EXACT_BYTES": "Raw bytes match attested artifact digest.",
+    "VERIFIED_CANONICAL_CLAIM": "Canonical payload matches attested claim digest under the declared canonicalization profile.",
+    "VERIFIED_DERIVATIVE": "Transformation lineage from a verified parent is attested and the derivative is bound to its own digest.",
+    "UNVERIFIED_TRANSFORMATION": "A changed object has no accepted transformation receipt or cannot reproduce the declared canonical relation.",
+    "UNVERIFIED": "No sufficient provenance binding."
+  },
+  "canonicalization_rule": "Canonicalization must be versioned, deterministic, narrow and mechanically replayable. It may normalize only transformations explicitly declared equivalent by the profile.",
+  "safe_normalization_examples": [
+    "declared UTF-8 normalization profile",
+    "declared line-ending normalization",
+    "declared JSON object canonical serialization",
+    "declared exclusion of presentation-only whitespace where the claim format defines whitespace as non-semantic"
+  ],
+  "not_safe_to_assume_equivalent": [
+    "translation into another language",
+    "summary",
+    "paraphrase",
+    "cropping context",
+    "changing numbers, qualifiers, negation or modality",
+    "reordering fields whose order is semantically meaningful"
+  ],
+  "transformation_receipt": {
+    "name": "JANUS_TRANSFORMATION_RECEIPT",
+    "fields": [
+      "PARENT_CLAIM_ID",
+      "PARENT_DIGEST",
+      "TRANSFORMATION_PROFILE_ID",
+      "TRANSFORMER_ID_OR_PROCESS_REF",
+      "DERIVATIVE_DIGEST",
+      "DERIVATIVE_CLAIM_ID",
+      "LOSS_CLASS",
+      "ATTESTATION_SET"
+    ],
+    "loss_classes": [
+      "LOSSLESS_CANONICAL",
+      "PRESENTATION_ONLY",
+      "SEMANTIC_DERIVATIVE",
+      "PARTIAL",
+      "UNKNOWN_LOSS"
+    ]
+  },
+  "test_cases": {
+    "line_endings_change": {
+      "profile_declares_equivalent": true,
+      "raw_bytes_match": false,
+      "canonical_claim_match": true,
+      "result": "VERIFIED_CANONICAL_CLAIM"
+    },
+    "markdown_to_pdf": {
+      "exact_bytes_match": false,
+      "canonical_payload_preserved_and_bound": true,
+      "result": "VERIFIED_DERIVATIVE_OR_VERIFIED_CANONICAL_CLAIM_DEPENDING_ON_EXPORT_PROFILE"
+    },
+    "translation": {
+      "same_claim_assumed_automatically": false,
+      "result_without_transformation_receipt": "UNVERIFIED_TRANSFORMATION",
+      "result_with_attested_translation_lineage": "VERIFIED_DERIVATIVE_NOT_VERIFIED_EXACT_CLAIM"
+    },
+    "summary": {
+      "result": "DERIVATIVE_ONLY",
+      "rule": "A summary may cite a verified source but cannot inherit the source claim digest."
+    },
+    "cropped_quote": {
+      "result": "PARTIAL_DERIVATIVE",
+      "context_loss_must_be_declared": true
+    }
+  },
+  "critical_rule": "SAME_MEANING_IS_NOT_A_CRYPTOGRAPHIC_PRIMITIVE",
+  "claim_ceiling": {
+    "semantic_equivalence_solver": false,
+    "universal_canonicalization": false,
+    "transformation_profiles_frozen": false,
+    "specification_candidate": true
+  },
+  "canonical_lines": {
+    "ru": [
+      "Одинаковый смысл нельзя объявлять доказанным только потому, что два текста похожи.",
+      "Байты могут измениться без изменения claim, но только узкая детерминированная canonicalization имеет право это утверждать автоматически.",
+      "Перевод и пересказ — потомки источника, а не сам источник."
+    ],
+    "en": [
+      "Similar meaning is not a cryptographic primitive.",
+      "Bytes may change without changing a claim, but only a narrow deterministic canonicalization profile may assert that automatically.",
+      "Translations and summaries are descendants of a source, not the source itself."
+    ]
+  },
+  "next_gate": {
+    "name": "JANUS_INFINITE_FACES_REDACTION_PARTIAL_DISCLOSURE_PROVENANCE_TEST",
+    "status": "OPEN"
+  }
+}

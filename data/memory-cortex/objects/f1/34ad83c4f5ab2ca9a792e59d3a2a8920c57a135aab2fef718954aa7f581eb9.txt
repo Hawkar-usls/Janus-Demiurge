@@ -1,0 +1,90 @@
+{
+  "artifact_id": "JANUS-TRUMP-EXACT-CHANNEL-FORCED-FLEXIBLE-SCC-NORMAL-FORM-2026-09-20-v1.0",
+  "version": "v1.0",
+  "date": "2026-09-20",
+  "status": "PASS_EXACT_CHANNEL_FORCED_FLEXIBLE_SCC_NORMAL_FORM",
+  "scope": "PURE_GRAPH_NORMAL_FORM__NO_C11_NO_P7_ASSUMPTIONS",
+  "parents": {
+    "reachability": {
+      "path": "research/TRUMP_EXACT_CHANNEL_DISCOVERY_IMPLICATION_REACHABILITY_NORMAL_FORM_2026-09-20_v1.0.json",
+      "commit": "c84d11a559d7b697a31434282193b339bf170bfb",
+      "blob": "eb7fd3d28b1a9658bb4714fa8aaa274fff83e57d"
+    },
+    "unique_hub": {
+      "path": "research/TRUMP_EXACT_CHANNEL_UNIQUE_HUB_ANCHOR_NORMAL_FORM_2026-09-20_v1.0.json",
+      "commit": "25a3df866ec5ac4ae96e3ae0c457645fc8991cbd",
+      "blob": "7dc88baf048c91814aef161fa5a09c5e1910a5ed"
+    }
+  },
+  "setup": {
+    "fixed_feasible_anchor_pair": "Fix a representable anchor pair (c,f), its unique hub z, and the implication graph D=D_{z,c,f}.",
+    "forced_sets": {
+      "F_R": "Reach_D(R0)",
+      "F_L": "Pred_D(L0)",
+      "F_star": "V(G)\\({z} union F_R union F_L)"
+    },
+    "feasibility": "F_R intersect F_L is empty."
+  },
+  "exact_forcedness": {
+    "forced_R": {
+      "theorem": "v belongs to F_R iff v is assigned R in every feasible representation.",
+      "proof": [
+        "If v is reachable from R0, every feasible implication-closed R-side containing R0 must contain v.",
+        "If v is not in F_R, the canonical bottom R_min=F_R is feasible and assigns v to L."
+      ]
+    },
+    "forced_L": {
+      "theorem": "v belongs to F_L iff v is assigned L in every feasible representation.",
+      "proof": [
+        "If v can reach L0 and v were assigned R, implication closure would force a vertex of L0 into R, contradiction.",
+        "If v is not in F_L, the canonical top R_max=V\\({z} union F_L) is feasible and assigns v to R."
+      ]
+    },
+    "flexible": {
+      "theorem": "v belongs to F_star iff v takes both values across valid representations.",
+      "witnesses": [
+        "Bottom representation R_min=F_R assigns every v in F_star to L.",
+        "Top representation R_max=V\\({z} union F_L) assigns every v in F_star to R."
+      ]
+    }
+  },
+  "flexible_scc_poset": {
+    "induced_implication_graph": "D[F_star]",
+    "SCC_contraction": "Contract strongly connected components of D[F_star] to obtain a DAG H.",
+    "representation_map": "Every feasible R-side is uniquely R=F_R union U, where U is a union of SCCs forming a successor-closed / upper set of H.",
+    "converse": "Every upper set U of H yields a feasible R=F_R union U.",
+    "lattice_isomorphism": "The exact-channel representation lattice is isomorphic to the upper-set lattice Up(H).",
+    "distributive": true,
+    "bottom": "empty upper set -> R_min=F_R",
+    "top": "all SCCs -> R_max=V\\({z} union F_L)"
+  },
+  "uniqueness_criterion": {
+    "equivalent_conditions": [
+      "The exact-channel representation is unique.",
+      "F_star is empty.",
+      "R_min=R_max.",
+      "The flexible SCC DAG H has no vertices."
+    ]
+  },
+  "SCC_semantics": {
+    "statement": "Vertices in one flexible SCC cannot be chosen independently: implication reachability both ways forces them to move together between L and R.",
+    "freedom_granularity": "The atomic degrees of freedom are flexible SCCs, not individual vertices."
+  },
+  "algorithmic_outputs": {
+    "FORCED_R": "Reach_D(R0)",
+    "FORCED_L": "Pred_D(L0) by reverse-graph reachability",
+    "FLEXIBLE": "Complement of {z} union FORCED_R union FORCED_L",
+    "SCC_POSET": "Condensation DAG of D[F_star]",
+    "UNIQUE_REPRESENTATION": "F_star=empty",
+    "complexity": "O(n+m) for a fixed feasible anchor pair after D is constructed."
+  },
+  "scientific_ceiling": {
+    "REPRESENTATION_GEOMETRY": "COMPLETELY_LOCALIZED_TO_FLEXIBLE_SCC_POSET",
+    "HUB": "UNIQUE",
+    "CAPACITY": "REPRESENTATION_INVARIANT",
+    "FUTURE_C11_EXTRA_SEMANTICS": "NOT_AUTOMATICALLY_COVERED",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "stop": true
+}

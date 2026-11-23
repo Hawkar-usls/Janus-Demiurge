@@ -1,0 +1,91 @@
+{
+  "schema": "hawkar.topa.spider.storm_investigation_journal.addendum.v1",
+  "artifact_id": "SPIDER-STORM-INVESTIGATION-JOURNAL-2026-08-28-v1.1",
+  "version": "1.1",
+  "status": "OPEN_ADDENDUM",
+  "append_only": true,
+  "predecessor": {
+    "path": "registry/investigations/SPIDER-STORM-INVESTIGATION-JOURNAL-2026-08-28-v1.0.json",
+    "commit_sha": "3fcf0284aa7232aafcf7ec338af5ea14cb555782"
+  },
+  "publication_scope": {
+    "mode": "PUBLIC_EVIDENCE_ONLY",
+    "excluded": ["JANUS_TAIL_INTERNAL_MAINTENANCE", "private_debug_details"]
+  },
+  "new_external_evidence": {
+    "tspu_architecture_peer_reviewed_control": {
+      "source": "Censored Planet / IMC 2022: TSPU: Russia's Decentralized Censorship System",
+      "url": "https://censoredplanet.org/tspu",
+      "findings_relevant_to_this_investigation": [
+        "TSPU is deployed in-path across many Russian ISP networks while policy can be centrally controlled.",
+        "Measured triggers include SNI-based, IP-based and QUIC-based mechanisms.",
+        "Measured outcomes include RST modification, selective packet dropping and throttling rather than only total connectivity loss.",
+        "Behavior is asymmetric: Russian-originating connections can trigger interference while outside-originating controls may remain normal.",
+        "Devices are often close to end users, so geographically or ISP-scoped partial failure is technically plausible."
+      ],
+      "interpretation_boundary": "These capabilities establish plausibility of selective/staggered Russian client-path disruption. They do not establish that the 2026-08-26 DNS change was malicious probing or that TSPU caused GitHub/OpenAI provider-side incidents."
+    },
+    "tspu_throttling_historical_control": {
+      "source": "Censored Planet / IMC 2021 Twitter throttling study",
+      "url": "https://censoredplanet.org/throttling",
+      "findings_relevant_to_this_investigation": [
+        "Traffic policing could be triggered by TLS SNI and selectively drop packets after a rate threshold.",
+        "The same target behavior was observed across multiple Russian fixed and mobile ISPs.",
+        "Collateral effects from relaxed matching rules were experimentally observed.",
+        "Different filtering components can be separately administered, so not every failure surface needs to appear simultaneously."
+      ]
+    },
+    "aug26_2026_dns_interception_report": {
+      "reported_start": "evening 2026-08-26",
+      "sources": [
+        "https://habr.com/ru/articles/1075272/",
+        "https://www.anti-malware.ru/news/2026-08-27-111332/51214"
+      ],
+      "reported_signature": [
+        "UDP DNS toward 8.8.8.8 and 1.1.1.1 returned selected NXDOMAIN responses.",
+        "Equivalent DNS over TCP could reach the original public resolver in the reported experiment.",
+        "Low-TTL probing exposed 195.208.5.1 in an ICMP TTL Exceeded response despite an original destination of 8.8.8.8.",
+        "Arbitrary UDP was reported not to undergo the same destination substitution, suggesting protocol-aware handling."
+      ],
+      "confidence": "MODERATE_FOR_OBSERVED_NETWORK_BEHAVIOR_LOW_FOR_MOTIVE",
+      "official_confirmation": false
+    }
+  },
+  "historical_telegram_2018_control": {
+    "finding": "Roskomnadzor blocked very large AWS/Google address ranges while attempting to block Telegram, causing collateral failures in unrelated services.",
+    "sources": [
+      "https://meduza.io/en/news/2018/04/17/russia-s-federal-censor-blocks-millions-of-ip-addresses-in-crackdown-on-telegram-disrupting-internet-services-across-the-country",
+      "https://www.interfax.ru/russia/608921"
+    ],
+    "boundary": "This event predates the 2019 legal basis and subsequent pervasive TSPU deployment. It demonstrates collateral-damage precedent, not technical identity with modern TSPU operation."
+  },
+  "cross_layer_discriminator": {
+    "russian_client_path_layer": [
+      "DNS interception or poisoning",
+      "SNI/IP/QUIC filtering",
+      "traffic policing",
+      "ISP/ASN/geographic partial loss"
+    ],
+    "github_provider_control_plane_layer": [
+      "scheduled-event registration",
+      "trigger processing",
+      "run-object materialization",
+      "job creation",
+      "runner assignment"
+    ],
+    "current_result": "The layers can coexist in the same time window without sharing a cause. JANUS C28 S3 remains most directly explained by GitHub's provider-side trigger/control-plane degradation unless a bridge between these layers is found."
+  },
+  "hypothesis_update": {
+    "H_TSPU_SELECTIVE_FILTERING": "SUPPORTED_AS_TECHNICALLY_PLAUSIBLE_AND_TEMPORALLY_RELEVANT_FOR_RUSSIAN_CLIENT_PATHS",
+    "H_TSPU_STAGED_PROBING_FOR_FUTURE_ATTACK": "OPEN_UNCONFIRMED_MOTIVE_NOT_OBSERVED",
+    "H_TSPU_DIRECT_CAUSE_OF_GITHUB_C28_S3": "CURRENTLY_WEAK",
+    "H_MULTIPLE_SIMULTANEOUS_OR_STAGGERED_FAILURE_DOMAINS": "PLAUSIBLE_DO_NOT_FORCE_SINGLE_ROOT_CAUSE"
+  },
+  "next_measurement_priority": [
+    "Build a UTC event matrix with layer labels: client-path, provider control-plane, DNS, routing, identity/auth, payment/mobile, application API.",
+    "Seek Russian versus non-Russian differential measurements around 2026-08-26/27.",
+    "Search for BGP/route anomalies separately from DPI/DNS evidence.",
+    "Search OpenAI/GitHub/provider RCA updates for explicit common upstreams or attack indicators.",
+    "Continue locating the user-recalled exactly-three-file cancel event; keep it non-verified until a preserved witness is found."
+  ]
+}

@@ -1,0 +1,432 @@
+{
+  "artifact_id": "JANUS-PALOMAR-FORWARD-MODEL-JPFM-1-RUN-001",
+  "experiment_id": "JPFM-1",
+  "artifact_type": "simulation_result",
+  "schema_version": "1.0",
+  "date": "2026-08-14",
+  "timestamp_local": "2026-08-14T23:36:00+03:00",
+  "status": "EXECUTED",
+  "repository": {
+    "name": "Hawkar-usls/janus-meta-registry",
+    "target_branch": "main",
+    "target_directory": "data",
+    "registry_context": {
+      "artifact": "data/JANUS_META_REGISTRY_v21.4_FINAL.json",
+      "linked_event_id": "GLOBAL_PALOMAR_1951_1957",
+      "note": "The older registry contains a broader Palomar/POSS-I research line. This run tests the April 12 1950 nine-source morphology/rate problem and does not validate the older nuclear-correlation claim."
+    },
+    "experiment_style_reference": "experiments/SCOBY-D1-STAGE1-SCREENING-01-v1.1.json"
+  },
+  "claim_ceiling": "FEASIBILITY_AND_NULL_STRESS_TEST_ONLY__ORIGIN_UNRESOLVED",
+  "target": {
+    "event": "nine apparent simultaneous transients on 1950-04-12",
+    "survey": "POSS-I",
+    "discovery_plate_designation": "XE 325",
+    "sss_field_designation_used_in_2024_reanalysis": "E0070",
+    "field_center_j2000": {
+      "ra_deg": 212.9291,
+      "dec_deg": 26.8311
+    },
+    "field_size_arcmin": [
+      10.0,
+      10.0
+    ],
+    "field_area_deg2": 0.027777777777777776,
+    "source_count": 9,
+    "reported_composition": "eight star-like detections plus one with possible elongation",
+    "red_plate_limit_mag_approx": 20.0,
+    "red_exposure_minutes_used": 50.0,
+    "blue_preceding_exposure_offset_minutes_approx": -30.0,
+    "later_red_plate_offset_days": 6,
+    "average_fwhm_arcsec_used_for_motion_gate": 7.0,
+    "digitized_pixel_scale_arcsec_per_pixel_used": 1.7
+  },
+  "source_inputs": [
+    {
+      "id": "VILLARROEL_ET_AL_2021",
+      "type": "peer_reviewed",
+      "title": "Exploring nine simultaneously occurring transients on April 12th 1950",
+      "journal": "Scientific Reports",
+      "doi": "10.1038/s41598-021-92162-7",
+      "used_for": [
+        "9-source count",
+        "10x10 arcmin field",
+        "50 min exposure",
+        "POSS-I limiting magnitude approximately 20",
+        "average FWHM approximately 7 arcsec for glint gate",
+        "near-geosynchronous angular speed example approximately 15 arcsec/s",
+        "natural fast-transient rate example 1.63 deg^-2 day^-1",
+        "sub-0.5 s point-like glint constraint"
+      ]
+    },
+    {
+      "id": "HAMBLY_BLAIR_2024",
+      "type": "peer_reviewed",
+      "title": "On the nature of apparent transient sources on the National Geographic Society-Palomar Observatory Sky Survey glass copy plates",
+      "journal": "RAS Techniques and Instruments",
+      "doi": "10.1093/rasti/rzae004",
+      "used_for": [
+        "profile-statistic stellar null N(0,1)",
+        "all nine transient profile statistics on negative/sharp side with eta approximately -3 to -1",
+        "approximately 8000 classifier-bad detections brighter than E=19.5 on E0070",
+        "all nine classified bad by the random-forest analysis",
+        "DSS and SSS copy-plate provenance dependency",
+        "copy-positive emulsion-hole hypothesis"
+      ]
+    },
+    {
+      "id": "VILLARROEL_SOLANO_MARCY_2025",
+      "type": "preprint_not_used_as_authoritative_input",
+      "title": "On the Image Profiles of Transients in the Palomar Sky Survey",
+      "arxiv": "2507.15896",
+      "role": "competing interpretation only",
+      "note": "Recorded because it argues that sub-second flashes can be sharper/rounder than long-exposure stellar images; no numeric gate in this run depends on it."
+    }
+  ],
+  "models": {
+    "natural_fast_transient_null": {
+      "distribution": "Poisson",
+      "rate_deg2_day": 1.63,
+      "assumption": "independent uniform events in sky area and time at the quoted literature rate",
+      "conservative_note": "The quoted rate reaches substantially fainter limits than POSS-I; using it at face value does not make the null artificially stricter for POSS-I."
+    },
+    "stellar_profile_null": {
+      "distribution": "standard normal",
+      "profile_statistic": "eta",
+      "test_event": "all 9 eta <= -1",
+      "assumption": "the nine detections are independent random draws from the dominant stellar-profile N(0,1) population"
+    },
+    "moving_glint_forward_gate": {
+      "angular_speed_arcsec_per_s": 15.0,
+      "pointlike_rule": "angular trail <= 7 arcsec FWHM",
+      "flux_dilution_formula_mag": "2.5*log10(exposure_seconds/glint_duration_seconds)",
+      "note": "This is a kinematic/photometric feasibility gate, not a population or historical-origin model."
+    },
+    "broad_copy_plate_artifact_spatial_null": {
+      "distribution": "Binomial for a fixed pre-specified 10x10 arcmin window",
+      "plate_area_deg2_nominal": 36.0,
+      "bad_detection_count_approx": 8000,
+      "window_probability": 0.0007716049382716049,
+      "critical_caveat": "The approximately 8000 'bad' detections are a broad classifier class and are not all demonstrated to be morphology-matched analogues of the nine transients. Treat the f=1 calculation as a deliberately broad upper-envelope artifact null, not as the probability of the emulsion-hole hypothesis."
+    }
+  },
+  "execution": {
+    "engine": "Python numerical forward/null model",
+    "libraries": [
+      "numpy",
+      "scipy"
+    ],
+    "monte_carlo": {
+      "test": "broad_copy_plate_artifact_spatial_null",
+      "total_trials": 1000000,
+      "parallel_block_semantics": "10 independent seed blocks x 100000 trials",
+      "seed_blocks": [
+        {
+          "seed": 20260814,
+          "trials": 100000,
+          "hits_ge9": 17100,
+          "p_hat": 0.171
+        },
+        {
+          "seed": 20260815,
+          "trials": 100000,
+          "hits_ge9": 17222,
+          "p_hat": 0.17222
+        },
+        {
+          "seed": 20260816,
+          "trials": 100000,
+          "hits_ge9": 17019,
+          "p_hat": 0.17019
+        },
+        {
+          "seed": 20260817,
+          "trials": 100000,
+          "hits_ge9": 16993,
+          "p_hat": 0.16993
+        },
+        {
+          "seed": 20260818,
+          "trials": 100000,
+          "hits_ge9": 17019,
+          "p_hat": 0.17019
+        },
+        {
+          "seed": 20260819,
+          "trials": 100000,
+          "hits_ge9": 16958,
+          "p_hat": 0.16958
+        },
+        {
+          "seed": 20260820,
+          "trials": 100000,
+          "hits_ge9": 17191,
+          "p_hat": 0.17191
+        },
+        {
+          "seed": 20260821,
+          "trials": 100000,
+          "hits_ge9": 16798,
+          "p_hat": 0.16798
+        },
+        {
+          "seed": 20260822,
+          "trials": 100000,
+          "hits_ge9": 17158,
+          "p_hat": 0.17158
+        },
+        {
+          "seed": 20260823,
+          "trials": 100000,
+          "hits_ge9": 17043,
+          "p_hat": 0.17043
+        }
+      ]
+    },
+    "analytic_cross_checks": [
+      "Poisson survival probability for natural-transient null",
+      "standard-normal tail product for morphology null",
+      "exact Binomial survival probability for broad artifact spatial null",
+      "closed-form angular-trail and magnitude-dilution gate"
+    ]
+  },
+  "results": {
+    "T1_natural_fast_transient_rate_null": {
+      "field_area_deg2": 0.027777777777777776,
+      "exposure_days": 0.034722222222222224,
+      "expected_count_lambda": 0.0015721450617283948,
+      "observed_count": 9,
+      "p_n_ge_9": 1.6145667998019004e-31,
+      "log10_p_n_ge_9": -30.79194398212082,
+      "verdict": "REJECTED_UNDER_STATED_POISSON_NULL",
+      "interpretation": "Nine independent ordinary fast transients in this field and exposure are not reproduced by the quoted natural-event-rate null."
+    },
+    "T2_stellar_profile_null": {
+      "single_draw_p_eta_le_minus_1": 0.15865525393145707,
+      "p_all_9_eta_le_minus_1": 6.369276850395584e-08,
+      "log10_probability": -7.195909873427734,
+      "verdict": "REJECTED_UNDER_STANDARD_STELLAR_PROFILE_NULL",
+      "interpretation": "The nine-source sharp-profile pattern is not consistent with nine ordinary random stellar-profile draws. This does not distinguish a short real flash from a plate/copy artifact."
+    },
+    "T3_moving_glint_kinematic_gate": {
+      "angular_speed_arcsec_per_s": 15.0,
+      "fwhm_arcsec": 7.0,
+      "max_duration_s_for_trail_le_fwhm": 0.4666666666666667,
+      "max_duration_ms_for_trail_le_fwhm": 466.6666666666667,
+      "flux_dilution_mag_at_threshold_for_50min": 9.520286184402718,
+      "published_half_second_crosscheck": {
+        "duration_s": 0.5,
+        "trail_arcsec": 7.5,
+        "trail_to_fwhm_ratio": 1.0714285714285714,
+        "flux_dilution_mag": 9.44537812595911
+      },
+      "duration_sweep": [
+        {
+          "duration_s": 0.001,
+          "trail_arcsec": 0.015,
+          "trail_pixels_at_1p7_arcsec_per_pixel": 0.008824,
+          "trail_to_fwhm_ratio": 0.002143,
+          "flux_dilution_mag": 16.192803,
+          "paper_style_pointlike_gate_trail_le_fwhm": true
+        },
+        {
+          "duration_s": 0.01,
+          "trail_arcsec": 0.15,
+          "trail_pixels_at_1p7_arcsec_per_pixel": 0.088235,
+          "trail_to_fwhm_ratio": 0.021429,
+          "flux_dilution_mag": 13.692803,
+          "paper_style_pointlike_gate_trail_le_fwhm": true
+        },
+        {
+          "duration_s": 0.05,
+          "trail_arcsec": 0.75,
+          "trail_pixels_at_1p7_arcsec_per_pixel": 0.441176,
+          "trail_to_fwhm_ratio": 0.107143,
+          "flux_dilution_mag": 11.945378,
+          "paper_style_pointlike_gate_trail_le_fwhm": true
+        },
+        {
+          "duration_s": 0.1,
+          "trail_arcsec": 1.5,
+          "trail_pixels_at_1p7_arcsec_per_pixel": 0.882353,
+          "trail_to_fwhm_ratio": 0.214286,
+          "flux_dilution_mag": 11.192803,
+          "paper_style_pointlike_gate_trail_le_fwhm": true
+        },
+        {
+          "duration_s": 0.2,
+          "trail_arcsec": 3.0,
+          "trail_pixels_at_1p7_arcsec_per_pixel": 1.764706,
+          "trail_to_fwhm_ratio": 0.428571,
+          "flux_dilution_mag": 10.440228,
+          "paper_style_pointlike_gate_trail_le_fwhm": true
+        },
+        {
+          "duration_s": 0.3,
+          "trail_arcsec": 4.5,
+          "trail_pixels_at_1p7_arcsec_per_pixel": 2.647059,
+          "trail_to_fwhm_ratio": 0.642857,
+          "flux_dilution_mag": 10.0,
+          "paper_style_pointlike_gate_trail_le_fwhm": true
+        },
+        {
+          "duration_s": 0.466666667,
+          "trail_arcsec": 7.0,
+          "trail_pixels_at_1p7_arcsec_per_pixel": 4.117647,
+          "trail_to_fwhm_ratio": 1.0,
+          "flux_dilution_mag": 9.520286,
+          "paper_style_pointlike_gate_trail_le_fwhm": true
+        },
+        {
+          "duration_s": 0.5,
+          "trail_arcsec": 7.5,
+          "trail_pixels_at_1p7_arcsec_per_pixel": 4.411765,
+          "trail_to_fwhm_ratio": 1.071429,
+          "flux_dilution_mag": 9.445378,
+          "paper_style_pointlike_gate_trail_le_fwhm": false
+        },
+        {
+          "duration_s": 1.0,
+          "trail_arcsec": 15.0,
+          "trail_pixels_at_1p7_arcsec_per_pixel": 8.823529,
+          "trail_to_fwhm_ratio": 2.142857,
+          "flux_dilution_mag": 8.692803,
+          "paper_style_pointlike_gate_trail_le_fwhm": false
+        },
+        {
+          "duration_s": 10.0,
+          "trail_arcsec": 150.0,
+          "trail_pixels_at_1p7_arcsec_per_pixel": 88.235294,
+          "trail_to_fwhm_ratio": 21.428571,
+          "flux_dilution_mag": 6.192803,
+          "paper_style_pointlike_gate_trail_le_fwhm": false
+        }
+      ],
+      "verdict": "KINEMATICALLY_FEASIBLE_ONLY_FOR_SUBSECOND_GLINTS_AT_THE_STATED_SPEED",
+      "interpretation": "The point-like appearance can be forward-reproduced for sufficiently short flashes; this establishes feasibility, not that such an object existed in 1950."
+    },
+    "T4_broad_copy_plate_artifact_spatial_null": {
+      "nominal_plate_area_deg2": 36.0,
+      "approx_bad_detections": 8000,
+      "expected_bad_detections_in_fixed_10x10_window_if_all_bad_are_eligible": 6.172839506172839,
+      "exact_p_n_ge_9_if_all_bad_are_eligible": 0.171036443700031,
+      "monte_carlo_p_n_ge_9": 0.170501,
+      "monte_carlo_standard_error": 0.0003760723454323649,
+      "monte_carlo_95pct_normal_interval": [
+        0.16976389820295256,
+        0.17123810179704743
+      ],
+      "exact_inside_mc_95pct_interval": true,
+      "eligible_fraction_sensitivity": [
+        {
+          "eligible_fraction_of_8000_bad": 0.01,
+          "eligible_count": 80,
+          "mean_in_10x10": 0.06172839506172839,
+          "p_ge9_fixed_window": 2.1401341599635438e-17
+        },
+        {
+          "eligible_fraction_of_8000_bad": 0.02,
+          "eligible_count": 160,
+          "mean_in_10x10": 0.12345679012345678,
+          "p_ge9_fixed_window": 1.3147571127316663e-14
+        },
+        {
+          "eligible_fraction_of_8000_bad": 0.05,
+          "eligible_count": 400,
+          "mean_in_10x10": 0.30864197530864196,
+          "p_ge9_fixed_window": 4.877140490128626e-11
+        },
+        {
+          "eligible_fraction_of_8000_bad": 0.1,
+          "eligible_count": 800,
+          "mean_in_10x10": 0.6172839506172839,
+          "p_ge9_fixed_window": 1.981645761224647e-08
+        },
+        {
+          "eligible_fraction_of_8000_bad": 0.2,
+          "eligible_count": 1600,
+          "mean_in_10x10": 1.2345679012345678,
+          "p_ge9_fixed_window": 5.982930403802306e-06
+        },
+        {
+          "eligible_fraction_of_8000_bad": 0.25,
+          "eligible_count": 2000,
+          "mean_in_10x10": 1.5432098765432098,
+          "p_ge9_fixed_window": 3.404502379180281e-05
+        },
+        {
+          "eligible_fraction_of_8000_bad": 0.5,
+          "eligible_count": 4000,
+          "mean_in_10x10": 3.0864197530864197,
+          "p_ge9_fixed_window": 0.004537538001489383
+        },
+        {
+          "eligible_fraction_of_8000_bad": 1.0,
+          "eligible_count": 8000,
+          "mean_in_10x10": 6.172839506172839,
+          "p_ge9_fixed_window": 0.171036443700031
+        }
+      ],
+      "verdict": "NOT_REJECTED_FOR_THE_DELIBERATELY_BROAD_F_EQUALS_1_ARTIFACT_CLASS",
+      "interpretation": "Cluster count by itself cannot reject a broad copy/plate-artifact population if every classifier-bad detection is treated as eligible. The result changes by many orders of magnitude if only a small fraction of those detections are true morphology-matched analogues, so an empirical matched-artifact density is a required next measurement.",
+      "look_elsewhere_warning": "The 10x10 window was discovered because it contains the cluster rather than frozen a priori. A rigorous plate-wide scan requires a frozen search algorithm and an explicit look-elsewhere correction."
+    },
+    "T5_copy_provenance_independence_gate": {
+      "DSS_and_SSS_are_independent_digitizations": true,
+      "independent_scan_artifact_excluded_by_two_scans": true,
+      "independent_original_negative_evidence_established": false,
+      "reason": "The 2024 reanalysis reports that the DSS and SSS POSSI glass copy negatives descend from a common intermediate copy positive, so the two scans are not independent with respect to flaws introduced before the split.",
+      "verdict": "COPY_CHAIN_ARTIFACT_NOT_EXCLUDED"
+    },
+    "T6_45_vs_50_min_exposure_sensitivity": {
+      "purpose": "robustness to the 45/50 min wording difference across papers",
+      "natural_lambda_45min": 0.0014149305555555553,
+      "natural_p_n_ge_9_45min": 6.256047703690368e-32,
+      "glint_dilution_mag_at_kinematic_threshold_45min": 9.405892458001029,
+      "glint_dilution_mag_at_0p5s_45min": 9.33098439955742,
+      "verdict": "PRIMARY_CONCLUSIONS_UNCHANGED"
+    }
+  },
+  "validation_gates": {
+    "json_parse": "PASS",
+    "mc_exact_agreement_within_95pct_mc_interval": "PASS",
+    "published_sub_half_second_scale_reproduced": true,
+    "published_approximately_9p4_mag_dilution_at_0p5s_reproduced_within_0p1_mag": true,
+    "ordinary_natural_rate_null_reproduces_nine": "FAIL",
+    "ordinary_stellar_profile_null_reproduces_sharpness_pattern": "FAIL",
+    "copy_artifact_hypothesis_excluded": "NO",
+    "glint_hypothesis_proven": "NO"
+  },
+  "aggregate_verdict": {
+    "code": "ORIGIN_UNRESOLVED__ORDINARY_NATURAL_NULL_REJECTED__SUBSECOND_FLASH_OR_GLINT_FEASIBLE__COPY_ARTIFACT_NOT_EXCLUDED",
+    "summary": [
+      "The ordinary independent fast-transient-rate null fails by an extreme margin under the stated inputs.",
+      "The nine detections are collectively too sharp to behave like ordinary stellar-profile draws.",
+      "A moving flash at approximately 15 arcsec/s can remain point-like only on a sub-second timescale; the simple forward gate reproduces the published scale.",
+      "The copy-plate artifact explanation remains viable because copy-chain provenance is shared and because a broad population of bad detections exists.",
+      "The present run cannot choose between a real sub-second optical flash/glint and a copy/emulsion artifact."
+    ]
+  },
+  "next_required_evidence": [
+    "Original POSS-I negative plate or a trustworthy scan of the original negative, not only a descendant copy plate.",
+    "Intermediate copy-positive inspection or equivalent provenance-resolving evidence.",
+    "Empirical density of morphology-matched sharp transient-like defects, rather than the whole approximately 8000-object 'bad' classifier class.",
+    "Blind plate-wide search with frozen detection thresholds and explicit look-elsewhere correction.",
+    "Forward injection into real POSS-I backgrounds with empirical PSF, plate response, valid-pixel mask, scanner response and source-recovery pipeline.",
+    "Use the exact nine source coordinates and measured per-source morphology/magnitude vector for posterior predictive scoring.",
+    "At least 20 pre-frozen blind POSS-I control fields before any detector-specific threshold tuning."
+  ],
+  "limitations": [
+    "No original photographic plate pixels were available to this run.",
+    "No live SuperCOSMOS/MAST catalogue query was ingested; literature summary statistics were used.",
+    "The broad artifact spatial null uses the nominal 6x6 degree plate area and treats all classifier-bad detections as eligible only for a sensitivity envelope.",
+    "The simple moving-glint gate is kinematic and does not model a specific reflector geometry, phase function, attitude history, atmosphere or material.",
+    "No claim about artificial technology, extraterrestrial origin, UAP identity or a nuclear causal mechanism is admitted by this result."
+  ],
+  "execution_policy": "Numbers labeled as results are computed from explicitly listed source inputs or deterministic formulas. Literature observations are kept separate from simulated outcomes. Unavailable evidence is marked unavailable rather than backfilled.",
+  "integrity": {
+    "canonical_payload_sha256": "869a1a855777f165f21dd1bac4a94d5920f8424ea413ae873131afe00fb458b2",
+    "canonicalization": "UTF-8 JSON, sort_keys=true, separators=(',',':'), integrity field omitted",
+    "monte_carlo_seed_manifest_sha256": "f491039b82214acb76610f94ef45ebd3e8bf53439565719280180049329c6fd9"
+  }
+}

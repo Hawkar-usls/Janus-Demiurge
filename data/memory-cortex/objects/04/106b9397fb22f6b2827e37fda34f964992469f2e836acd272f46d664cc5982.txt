@@ -1,0 +1,114 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1C5B-ANCHOR-TRANSITION-TEMPLATE-CENSUS-RESULT-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "PARTIAL_T0_THEOREM_GENERAL_CENSUS_OPEN",
+  "gate": "R5_B1B1C5B_ANCHOR_TRANSITION_TEMPLATE_CENSUS_V1",
+  "binds": {
+    "prereg_fund_commit": "736c9d908c20b500dbb56971b56fd7a175234644",
+    "prereg_meta_commit": "429107b2b176ad39faec06dc8166208e11328830",
+    "prereg_blob": "00c12d43ec5c438cb74c3f1e6546f1120d3b6ede",
+    "C5A_seal_blob": "bfd060045075bee2881f43778096b76f07e2d32e",
+    "checker_commit": "0e9ff7ecb16af8ce46320b7762c0f651bc42941f"
+  },
+  "phase_A_T0": {
+    "template": {
+      "abstract_roles": [
+        "B1",
+        "C1",
+        "B2",
+        "C2",
+        "X0",
+        "C3",
+        "B3"
+      ],
+      "frozen_roles": [
+        "b1",
+        "z2",
+        "b2",
+        "z3",
+        "x0c4",
+        "zp3",
+        "bp2"
+      ],
+      "consecutive_edges": 6,
+      "nonconsecutive_pairs": 15
+    },
+    "theorem_1": {
+      "name": "ONE_ANCHOR_P7_CHORD_FORCING_V1",
+      "scope": "Any graph containing seven distinct roles B1,C1,B2,C2,X0,C3,B3 with exactly the six consecutive template edges and no nonconsecutive edge on those seven vertices.",
+      "statement": "The seven roles induce P7. Therefore any P7-free graph realizing the six consecutive edges must contain at least one chord among the 15 nonconsecutive pairs.",
+      "proof": "Definition of induced P7."
+    },
+    "frozen_semantic_census": {
+      "total_pairs": 15,
+      "source_optional_legal_chords": 12,
+      "source_forbidden_chords": 3,
+      "semantics_neutral_chords": 0,
+      "counts": {
+        "HARD_CORE_CHANGING": 3,
+        "SELECTOR_NEIGHBORHOOD_CHANGING": 5,
+        "LIST_CHANGING": 3,
+        "COMPONENT_BASE_LIST_CHANGING": 1,
+        "COMPONENT_MERGING_SOURCE_FORBIDDEN": 3
+      },
+      "detailed_logic": [
+        "B-B chord: source-optional in the frozen T0 state and changes G[U], the dynamic hard core.",
+        "B-C chord: C is singleton residual Y0, so insertion is source-legal in isolation and changes whether B belongs to D_C, hence the selector neighborhood.",
+        "B-X0 chord: X0 has fixed color 4 and every frozen T0 B exact list is {1,4}; adding the edge removes color 4 from A(B), so the exact dynamic list changes.",
+        "C-X0 chord: the unique nonconsecutive pair is C1=z2 with B_C1={1,3,4}; adding x0c4 removes color 4 from the component base list.",
+        "C-C chord: each of the three pairs creates a Y0 edge with an explicit dynamic vertex adjacent to exactly one endpoint, violating source axiom (iv). Thus each is SOURCE_FORBIDDEN; it would also merge two residual components."
+      ]
+    },
+    "theorem_2": {
+      "name": "FROZEN_T0_ONE_ANCHOR_P7_SEMANTIC_CHORD_FORCING_V1",
+      "statement": "In the frozen inverse-Golovach T0 annotation, P7-freeness cannot be restored by any single chord without either violating source axiom (iv) or changing at least one tracked semantic object among G[U], D_C, A(u), B_C/mu_C/MIN_BAD, or the residual-component partition.",
+      "proof_basis": [
+        "ONE_ANCHOR_P7_CHORD_FORCING_V1 requires at least one of the 15 chords.",
+        "The complete 15-pair census classifies all 15 with no SEMANTICS_NEUTRAL case.",
+        "Three C-C candidates are source-forbidden; all 12 source-legal candidates change a tracked object."
+      ],
+      "firewall": "Changing a tracked object does not by itself prove that extension existence changes. Such a chord is only a repair candidate after a separate exact-equivalence/reconstruction theorem."
+    },
+    "color_mask_redundancy_firewall": {
+      "statement": "The endpoint-type map B-X0 -> LIST_CHANGING and C-X0 -> COMPONENT_BASE_LIST_CHANGING is not unconditional in arbitrary source states.",
+      "reason": "If another same-color X0 neighbor already excludes f(X0) from A(B) or the relevant base list, adding an identity-level B-X0 or C-X0 edge can leave the color mask unchanged.",
+      "consequence": "General C5B completeness requires color-annotated masks and identity-vs-color redundancy, not only role names.",
+      "frozen_T0": "No such redundancy exists for the three B-X0 candidates or the one C-X0 candidate, so the frozen theorem is exact."
+    }
+  },
+  "phase_B_general_census": {
+    "status": "OPEN_NO_COMPLETE_SOURCE_DERIVED_GENERATOR_YET",
+    "reason": [
+      "A complete general source census cannot be certified from the role alphabet alone.",
+      "X0 may be mixed on a connected Y0 component because source axiom (iv) excludes X0 from its outside-vertex condition, so a generic C-X0 role needs representative/internal-list annotations.",
+      "Source types depend on the current seed and exact dynamic lists depend on color masks from S union X0.",
+      "Same-color X0 identity redundancy can make some identity-edge insertions color-mask neutral."
+    ],
+    "required_next_step": "Construct an explicit source-derived annotated-template generator before claiming PASS_FINITE_SEMANTIC_CHORD_GRAMMAR for all source-valid 7-role templates."
+  },
+  "gate_verdict": {
+    "terminal": "PARTIAL_T0_THEOREM_GENERAL_CENSUS_OPEN",
+    "T0_one_anchor_census": "PASS_COMPLETE",
+    "T0_forced_nonneutrality": "PASS",
+    "all_source_valid_template_census": "OPEN"
+  },
+  "next_frontier": {
+    "name": "R5_B1B1C5B1_SOURCE_ANNOTATED_ROLE_GRAMMAR_GENERATOR_V1",
+    "target": "Generate all declared dangerous 7-role templates from exact source annotations (partition role, seed type, exact color mask, X0 color, component representative/base-list data, complete/anticomplete incidence) and prove generator completeness before any global C5B theorem.",
+    "no_solver": true,
+    "no_width": true
+  },
+  "scientific_ceiling": {
+    "C5A_X0_INTERNAL_REPAIR": "SEALED_IMPOSSIBLE",
+    "T0_ONE_ANCHOR_FORCED_SEMANTIC_COST": "PROVED",
+    "GENERAL_FORCED_NONNEUTRALITY": "OPEN",
+    "SOURCE_PROVENANCE_COMPRESSION": "OPEN",
+    "GENERAL_SOURCE_VALID_NAE_HARDNESS_EMBEDDING": "OPEN",
+    "FULL_L2_REPAIR": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "stop": true,
+  "return_to_HQ": true
+}

@@ -1,0 +1,60 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-R4-1-FIVE-FOLD-CROSS-VALIDATED-STRUCTURAL-LEARNING-SPEC-2026-08-14-v0.1",
+  "version": "v0.1",
+  "node_type": "frozen_cross_validated_self_supervised_learning_spec",
+  "parent_result": "data/JANUS-LINEAR-A-R4-0-SELF-SUPERVISED-STRUCTURAL-LEARNING-RESULT-2026-08-14-v0.1.1.json",
+  "parent_status_required": "BLOCKED_INSUFFICIENT_EVALUABLE_TEST_MASKS",
+  "reason": "Increase held-out evidence without reinterpreting source reading-status semantics or tuning model hyperparameters.",
+  "source": {
+    "repository": "Hawkar-usls/lineara.xyz",
+    "frozen_commit": "43fe7cf1abc8e6bb1ea3228c3a1bd5938709620a"
+  },
+  "cross_validation": {
+    "folds": 5,
+    "unit": "document_id",
+    "fold_operator": "sha256('JANUS-LINA-R4-1-CV-v0.1|' + document_id) modulo 5",
+    "each_document_held_out_exactly_once": true,
+    "evaluation_target_status": "certain_only",
+    "source_status_none_reinterpreted": false,
+    "source_status_doubtful_reinterpreted": false
+  },
+  "model_frozen_from_R4_0": {
+    "minimum_train_target_frequency": 5,
+    "directional_context_window": 2,
+    "svd_rank": 32,
+    "B0_UNIGRAM": true,
+    "B1_DIRECTIONAL_CONTEXT_COUNT": true,
+    "M1_DIRECTIONAL_PPMI_SVD": true,
+    "hyperparameter_changes_after_R4_0_result": false
+  },
+  "primary_admission": {
+    "minimum_aggregate_evaluable_masks": 200,
+    "B1_must_beat_B0_on": ["mean_reciprocal_rank", "top5_accuracy"],
+    "M1_must_beat_B0_on": ["mean_reciprocal_rank", "top5_accuracy"],
+    "minimum_folds_where_both_context_models_beat_B0_MRR": 4,
+    "interpretation_if_pass": "cross-validated internal context structure is learnable",
+    "interpretation_if_fail": "cross-validated internal context structure not admitted under frozen R4-1 criterion"
+  },
+  "cross_fold_structural_analogy": {
+    "top_train_pairs_per_fold": 30,
+    "per_fold_test_context_cosine_threshold": 0.20,
+    "CV_REPLICATED_STRUCTURAL_ANALOGY": {
+      "minimum_folds_selected": 3,
+      "minimum_heldout_folds_replicated": 2
+    },
+    "semantic_equivalence_claimed": false,
+    "source_labels_revealed_only_after_all_fold_scoring": true
+  },
+  "leakage_firewall": {
+    "translations": false,
+    "language_dictionaries": false,
+    "Notti_2018_readings": false,
+    "Notti_2021_2025_PH13_content": false,
+    "Linear_B_semantic_supervision": false,
+    "R3B_blind_eligibility_affected": false
+  },
+  "claim_ceiling": {
+    "allowed": ["cross-validated masked-token predictability", "cross-fold structural analogy candidate"],
+    "forbidden": ["translation", "semantic equivalence", "phonetic assignment", "language-family identification", "new anchor", "decipherment", "R3B replication"]
+  }
+}

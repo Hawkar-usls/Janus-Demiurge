@@ -1,0 +1,70 @@
+{
+  "id": "PROTEI-DMAP-PROBE-ENGINE-READY-v1.0",
+  "date": "2026-08-31",
+  "status": "PUBLIC_PROBE_ENGINE_FOUND_ACTIVE_MEASUREMENT_NOT_RUN",
+  "purpose": "Bind the published dMAP/CenDPI implementation-fingerprinting method to confirmed PROTEI_DPI reference deployments without performing unauthorized active measurements.",
+  "upstream_project": {
+    "repository": "censoredplanet/CenDPI",
+    "paper": "Fingerprinting Deep Packet Inspection Devices by Their Ambiguities, CCS 2025",
+    "public_code": true,
+    "requirements": ["Go 1.23.2", "root privileges for raw socket access"],
+    "measurement_model": "remote black-box probes with TestDomain and ControlDomain comparisons",
+    "pcap_writer_branch_present": true
+  },
+  "observed_probe_families_in_public_repo": [
+    "IP fragment count",
+    "IP maxDist",
+    "out-of-order IP fragments",
+    "overlapping IP fragments",
+    "TCP fragment count",
+    "TCP fragment size",
+    "overlapping TCP segments",
+    "additional malformed/parser-ambiguity probes defined by the published implementation"
+  ],
+  "method_claim": "The CCS 2025 work reports that 20-40 discriminative probes can distinguish DPI implementations even when different products use the same visible enforcement action such as generic TCP resets.",
+  "anchor_asns": [
+    {"asn":"AS50223","operator":"MegaCom / Alfa Telecom","country":"Kyrgyzstan","protei_deployment":"confirmed"},
+    {"asn":"AS43197","operator":"TT-Mobile / MegaFon Tajikistan","country":"Tajikistan","protei_deployment":"confirmed"},
+    {"asn":"AS37385","operator":"Niger Telecoms","country":"Niger","protei_deployment":"confirmed"},
+    {"asn":"AS36939","operator":"Comores Telecom","country":"Comoros","protei_deployment":"confirmed"},
+    {"asn":"AS35568","operator":"Nuetel Communications","country":"Bahrain","protei_deployment":"confirmed_by_vendor_reference_catalog"}
+  ],
+  "measurement_gate": {
+    "active_scanning": "NOT_RUN",
+    "reason": "A true vendor fingerprint requires controlled active measurements or equivalent published raw results from appropriate vantage points; ordinary public blocking observations are insufficient.",
+    "ethical_constraint": "Use authorized/research-compliant targets and rate limits. Do not infer vendor identity from blocklists or generic RST/timeouts."
+  },
+  "success_condition": [
+    "Obtain a stable 20-40 bit ambiguity-probe vector from at least two confirmed PROTEI deployments in different countries.",
+    "Show low Hamming distance between those independent PROTEI vectors.",
+    "Show materially larger distance to same-country non-PROTEI controls and unrelated DPI implementations.",
+    "Localize the effect so a shared upstream cannot explain the match.",
+    "Only then search the global corpus for the derived PROTEI vector."
+  ],
+  "important_negative_results": [
+    "MegaCom 2024 TikTok post-ClientHello timeout is not a PROTEI fingerprint because similar behavior occurred across multiple Kyrgyz ISPs.",
+    "AS43197 2019 censorship events are not a PROTEI fingerprint because the operator attributed at least one restriction to its upstream provider.",
+    "Cuba is excluded from fingerprint derivation because a stronger Huawei-family censorship fingerprint was independently identified there."
+  ],
+  "data_availability": {
+    "cendpi_source_code": "PUBLIC",
+    "probe_configs": "PUBLIC",
+    "example_targets": "PUBLIC_EXAMPLES_ONLY",
+    "paper_large_scale_fingerprint_result_dataset_in_repo": "NOT_FOUND",
+    "censored_planet_hyperquack_raw_data": "PUBLIC_BUT_BULK_DOWNLOAD_MAY_REQUIRE_REQUESTER_PAYS_CLOUD_ACCESS",
+    "existing_AS43197_censorship_event_evidence": "PUBLIC_PUBLISHED",
+    "vendor_unique_PROTEI_vector": "NOT_YET_PUBLICLY_IDENTIFIED"
+  },
+  "next_research_step": "Search published/raw Censored Planet data and research artifacts for the confirmed PROTEI ASNs first; if no existing ambiguity-probe vectors are available, the remaining step is a controlled research measurement campaign using the public CenDPI probe battery.",
+  "claim_ceiling": "WE NOW HAVE THE PUBLIC SCIENTIFIC FINGERPRINTING ENGINE AND A MULTI-COUNTRY PROTEI REFERENCE SET, BUT NOT YET THE PROTEI FINGERPRINT ITSELF.",
+  "sources": [
+    "https://github.com/censoredplanet/CenDPI",
+    "https://ramakrishnansr.com/assets/fingerprinting_dpis.pdf",
+    "https://docs.censoredplanet.org/http.html",
+    "https://data.censoredplanet.org/raw",
+    "https://protei.ru/news/dpi-platforma-protey-upravlyaet-trafikom-v-seti-megacom",
+    "https://protei.ru/news/dpi-platforma-protey-upravlyaet-trafikom-v-tadzhikistane",
+    "https://protei.ru/news/dpi-niger",
+    "https://www.protei.me/protei-has-launched-dpi-platform-and-pcrf-for-comores-telecom/"
+  ]
+}

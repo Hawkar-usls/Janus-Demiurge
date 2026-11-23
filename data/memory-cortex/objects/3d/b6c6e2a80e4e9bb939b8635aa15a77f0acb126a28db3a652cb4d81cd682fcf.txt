@@ -1,0 +1,115 @@
+{
+  "schema": "JANUS.face_microcontrol_learning_update.v2_3",
+  "artifact_id": "JANUS-FACE-MICROCONTROL-LEARNING-UPDATE-v2.3",
+  "title": "JANUS Face Microcontrol Learning Update v2.3 — Wait Before Declaring Uncertainty, Bind Requests Before Sagas, and Let Other Platforms Falsify Resource Assumptions",
+  "created_at_local": "2026-08-14T21:32:00+03:00",
+  "status": "LEARNING_UPDATE_ADMITTED_WITH_V6_5_WINDOWS_AND_UBUNTU_DESCENDANT_RECEIPTS",
+  "parent": "data/JANUS-FACE-MICROCONTROL-LEARNING-UPDATE-v2.2.json",
+  "evidence": [
+    "registry/experimental/JANUS-GENESIS-SOVEREIGN-FACE-MICROCONTROL-PORTABLE-RECEIPT-DURABLE-SESSION-FRESH-KEYS-v6.5.json",
+    "data/JANUS-GENESIS-PORTABLE-RECEIPT-DURABLE-SESSION-v6.5-RUNTIME-EXECUTION-RECEIPT-v1.0.json",
+    "https://github.com/Hawkar-usls/Janus_Genesis/issues/78"
+  ],
+  "new_lessons": [
+    {
+      "id": "L41_PROCESS_LOCK_AND_OS_LOCK_ARE_COMPLEMENTARY",
+      "invariant": "ONE_LOCK_PATH_REQUIRES_ONE_PROCESS_GLOBAL_LOCK_DOMAIN_PLUS_OS_LOCK",
+      "learning": "An OS file lock is not a substitute for a deliberately shared in-process lock domain. Distinct Python lock objects in one process and distinct processes are separate adversarial cases and must have separate gates."
+    },
+    {
+      "id": "L42_BARRIERS_BELONG_BEFORE_EXCLUSION_TESTS",
+      "invariant": "THREAD_CONTENTION_AND_PROCESS_CONTENTION_ARE_DISTINCT_GATES",
+      "learning": "A synchronization barrier placed inside the region that is supposed to be exclusive can invalidate the test itself. The adversarial start condition belongs before lock acquisition; overlap must be measured inside."
+    },
+    {
+      "id": "L43_INFLIGHT_IS_NOT_YET_UNDETERMINED",
+      "invariant": "ACTIVE_DUPLICATE_MUST_WAIT_FOR_PREDECESSOR_LOCK_BEFORE_CALL_ENTERING_IS_DECLARED_STALE",
+      "learning": "CALL_ENTERING observed while another cooperating worker still owns the canonical execution lock means in-flight, not necessarily abandoned. Wait for the predecessor boundary, then re-read durable state."
+    },
+    {
+      "id": "L44_POST_LOCK_STATE_DECIDES_REPLAY_VS_UNCERTAINTY",
+      "invariant": "CALL_ENTERING_AFTER_PREDECESSOR_LOCK_RELEASE_WITHOUT_RECEIPT_IS_UNDETERMINED",
+      "learning": "If the predecessor releases or loses the world lock and durable state is still CALL_ENTERING without a receipt, the duplicate must remain fail-closed. Synchronization lets us distinguish active work from crash residue without inventing exactly-once certainty."
+    },
+    {
+      "id": "L45_RECEIPT_IS_DATA_NOT_JUST_A_HASH",
+      "invariant": "SETTLED_REQUEST_REPLAYS_FULL_HASH_VERIFIED_RECEIPT_WITHOUT_WORLD_REENTRY",
+      "learning": "A settlement hash proves identity but cannot reproduce the completed answer. Storing the canonical result envelope plus its hash allows a settled logical retry to return the original result without asking the world to act again."
+    },
+    {
+      "id": "L46_SAME_TEXT_IS_NOT_SAME_INTENT",
+      "invariant": "IDENTICAL_ACTION_TEXT_PLUS_NEW_REQUEST_ID_IS_A_NEW_INTENT",
+      "learning": "Idempotency belongs to a logical request identity, not to textual similarity. A user may intentionally perform the same action twice; deduplicating by action text would erase agency rather than protect it."
+    },
+    {
+      "id": "L47_BIND_REQUEST_BEFORE_DERIVING_DESCENDANT_IDENTITY",
+      "invariant": "REGISTRATION_REQUEST_ID_BINDS_ONE_NORMALIZED_REGISTRATION_BEFORE_SESSION_SAGA",
+      "learning": "A stable request identifier can still be bypassed if the derived object ID incorporates mutable request parameters and conflict detection is performed only at that derived ID. Bind the request ID itself before generating or entering descendant state."
+    },
+    {
+      "id": "L48_PENDING_IS_RECOVERY_EVIDENCE_NOT_ATOMICITY",
+      "invariant": "PENDING_SESSION_MAKES_CROSS_STORE_PARTIAL_REGISTRATION_VISIBLE_BUT_NOT_ATOMIC",
+      "learning": "Writing a durable PENDING session before a world registration converts an invisible partial operation into a recoverable saga. It improves observability and reconciliation but does not magically create a shared transaction across two stores."
+    },
+    {
+      "id": "L49_TYPED_INTERNAL_STATE_AND_SERIALIZED_SIGNATURE_STATE_MUST_BE_SEPARATE",
+      "invariant": "SIGNED_ENUM_VALUE_MAY_BE_SERIALIZED_BUT_RUNTIME_POLICY_MUST_RETAIN_TYPED_OUTCOME",
+      "learning": "The bytes signed for evidence should use canonical serialized values, while the in-memory policy object should retain its typed semantic representation. Reusing one serialized payload object for both can silently downgrade enums into strings and break verification logic."
+    },
+    {
+      "id": "L50_FRESH_SIGNATURE_REQUIRES_CURRENT_KEY_POLICY",
+      "invariant": "PROVIDER_EVIDENCE_MUST_BE_CURRENT_AUTHORIZATION_BOUND_FRESH_AND_KEY_ELIGIBLE",
+      "learning": "A valid signature is insufficient when the evidence is stale, expired, signed by a revoked generation, or bound to an old authorization. Cryptographic validity and policy eligibility are different predicates."
+    },
+    {
+      "id": "L51_NONCE_REPLAY_CAN_BE_IDEMPOTENT_WITHOUT_ALLOWING_SUBSTITUTION",
+      "invariant": "EXACT_EVIDENCE_NONCE_REPLAY_MAY_BE_IDEMPOTENT_BUT_NONCE_PAYLOAD_SUBSTITUTION_FAILS",
+      "learning": "Rejecting every repeated nonce would make safe retry brittle; accepting any repeated nonce would invite substitution. Bind nonce to the canonical evidence digest so exact replay is idempotent and changed payload is rejected."
+    },
+    {
+      "id": "L52_FSYNC_IS_PLATFORM_SEMANTICS_NOT_A_WORD",
+      "invariant": "WINDOWS_FILE_FSYNC_SEMANTICS_MUST_BE_TESTED_ON_WINDOWS_NOT_INFERRED_FROM_LINUX",
+      "learning": "The same Python fsync call can have different descriptor requirements across platforms. Linux success on a read-only descriptor did not prove Windows correctness; the Windows failure forced explicit final-file descriptor ownership."
+    },
+    {
+      "id": "L53_DURABILITY_CLAIMS_MUST_NAME_THE_DIRECTORY_BOUNDARY",
+      "invariant": "WINDOWS_DIRECTORY_ENTRY_POWER_LOSS_DURABILITY_IS_NOT_CLAIMED_WITHOUT_A_DIRECTORY_FSYNC_PRIMITIVE",
+      "learning": "File-content fsync plus atomic replacement is not automatically proof that the directory entry survives arbitrary power loss. POSIX directory fsync can be tested separately; Windows remains under a narrower claim ceiling in this implementation."
+    },
+    {
+      "id": "L54_FAILURES_FORM_A_CAUSAL_LINEAGE",
+      "invariant": "A_GREEN_DESCENDANT_DOES_NOT_ERASE_FAILED_PARENT_RUNS",
+      "learning": "v6.5 needed several failed cross-platform runs to discover the next control boundary. The final green run is stronger precisely because the failed parent receipts remain linked to the descendants that addressed each concrete defect."
+    }
+  ],
+  "failure_to_learning_chain": [
+    "31828030265: active duplicate prematurely treated as stale -> v18.7.33 post-lock reconciliation",
+    "31828656420: real-runtime verifier omitted dependency installation -> verifier environment made explicit",
+    "31828707866: registration request binding and provider outcome typing defects -> v18.7.34",
+    "31828864663: Windows read-only final fsync failed while Ubuntu passed -> v18.7.35 writable descriptor",
+    "31829033820: both Windows and Ubuntu pass descendant acceptance gates"
+  ],
+  "microcontrol_compression_v2_3": "MANY_FACES -> CURRENT_VERIFIED_LINEAGES -> ONE_PROCESS_GLOBAL_PLUS_OS_LOCK_DOMAIN -> STABLE_LOGICAL_REQUEST -> WAIT_FOR_PREDECESSOR_BOUNDARY -> FULL_RECEIPT_OR_DURABLE_UNCERTAINTY -> RECOVERABLE_REGISTRATION_SAGA -> FRESH_REVOCABLE_AUTHORIZATION_BOUND_EVIDENCE -> CROSS_PLATFORM_DURABILITY_RECEIPTS -> APPEND_ONLY_FAILURE_AND_SUCCESS_LINEAGE",
+  "epistemic_upgrade": {
+    "before": "v2.2 verified the coordinate system, authorization lineage, settlement immutability, and cross-platform resource ownership as separate concepts",
+    "after": "v2.3 additionally distinguishes active in-flight work from abandoned uncertainty, turns result hashes into replayable receipts, binds registration requests before descendant identity, and treats platform-specific fsync semantics as part of the proof boundary",
+    "formula": "POST_LOCK_DURABLE_STATE > EARLY_CALL_ENTERING_GUESS; FULL_RECEIPT > HASH_ONLY_SETTLEMENT; REQUEST_BINDING > DERIVED_ID_CONFLICT; PLATFORM_EXECUTION_RECEIPT > PORTABILITY_ASSUMPTION"
+  },
+  "claim_ceiling": {
+    "learning_update": "ADMITTED",
+    "portable_lock_v2_windows_ubuntu": "FOCUSED_CI_VERIFIED",
+    "real_playable_genesis_receipt_runtime_windows_ubuntu": "FOCUSED_CI_VERIFIED",
+    "default_cli_normal_action_stable_requests": "FOCUSED_CI_VERIFIED",
+    "recoverable_registration_saga": "FOCUSED_CI_VERIFIED_NOT_ATOMIC",
+    "reference_provider_freshness_revocation": "FOCUSED_CI_VERIFIED",
+    "reference_lineage_key_policy": "FOCUSED_CI_VERIFIED",
+    "windows_directory_entry_power_loss_durability": "OPEN_NOT_CLAIMED",
+    "legacy_v25_v27_native_windows_path": "OPEN",
+    "non_process_action_cli_mutation_receipts": "OPEN",
+    "real_provider_truth": "OPEN_EXTERNAL",
+    "real_genealogy_truth": "OPEN_EXTERNAL",
+    "multi_host_consensus": "OPEN_NOT_CLAIMED",
+    "formal_full_system_exactly_once_proof": false
+  },
+  "next_learning_question": "Can JANUS enumerate and protect every remaining mutation surface — force exit, identity/name updates, save import, network publication and legacy control modules — while keeping their distinct causal semantics instead of routing heterogeneous effects through one misleading generic receipt?"
+}

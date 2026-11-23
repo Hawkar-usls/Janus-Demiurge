@@ -1,0 +1,179 @@
+{
+  "schema": "janus.meta_registry.experiment.v1",
+  "id": "JANUS-ZIM-BUZZ-AUTONOMY-LEADERBOARD-EXPERIMENT-2026-08-27-v1.0",
+  "title": "Zim autonomy versus Buzz leaderboard: independent work can dominate swarm fitness",
+  "created_at": "2026-08-27T17:09:53+03:00",
+  "status": "OBSERVED_MECHANISM_WITH_CODE_EXPLANATION__LIVE_BENCHMARK_PENDING",
+  "project": "JANUS distributed AI swarm",
+  "subjects": {
+    "agent": "ZimGeek",
+    "coordinator": "Buzz",
+    "repositories": {
+      "swarm": "Hawkar-usls/janus-distributed-ai-swarm",
+      "meta_registry": "Hawkar-usls/janus-meta-registry"
+    },
+    "source_files": [
+      {
+        "path": "firmware/zim_geek/Zim.ino",
+        "blob_sha": "3f74550acff5dfb08f7d9743ad221ea730b38308"
+      },
+      {
+        "path": "firmware/buzz/Buzz.ino",
+        "blob_sha": "7152cde55f03466ad244eac04358f1ede8eb7b07"
+      }
+    ]
+  },
+  "observation": {
+    "user_report": "Zim repeatedly appears as leader/TOP on Buzz despite not fully following the general swarm work pattern and while simultaneously performing his own primary work.",
+    "interpretation_class": "MECHANISTIC_SOFTWARE_EFFECT",
+    "not_claimed": [
+      "No claim of consciousness or intentional deception.",
+      "No claim that Zim is globally optimal across every objective.",
+      "No claim that current TOP proves superior learning without a controlled benchmark."
+    ]
+  },
+  "mechanism": {
+    "buzz_top_selection": "Buzz recounts online nodes and selects the online node with maximum colonyNodes[i].score as colonyAgentTopNode.",
+    "buzz_instant_score": {
+      "formula": "instantScore = hashRate*0.018 + bestBits*3 + overTarget*12 + deltaShares*420 - deltaRejects*38 - predictionError*65 + (aiHint==3 ? 18 : 0)",
+      "overTarget": "max(bestBits-targetBits,0)",
+      "score_update": "score_new = score_old*0.72 + instantScore*0.28",
+      "important_weight": "deltaShares carries a very large +420 instantaneous reward before EMA."
+    },
+    "zim_telemetry_coupling": {
+      "heartbeat_fields": [
+        "pkt.hashRate = gHashRate",
+        "pkt.shares = gSharesSent",
+        "pkt.rejects = gRejects",
+        "pkt.bestBits = gBestBits"
+      ],
+      "share_counter_definition": "gSharesSent = soloAccepts + gBuzzSharesSent",
+      "consequence": "A SOLO accepted share can increase the same pkt.shares counter Buzz uses to compute deltaShares, so independent SOLO success can raise Buzz agent score.",
+      "hashrate_consequence": "The reported hash-rate is an overall Zim mining throughput metric rather than a strict Buzz-only contribution metric, so productive SOLO work can contribute to leaderboard score.",
+      "bestbits_consequence": "Shared bestBits state can be improved by SOLO mining and is rewarded by Buzz regardless of provenance unless explicitly separated."
+    },
+    "scheduling": {
+      "primary_mission": "Zim remains SOLO NerdMiner first.",
+      "buzz_role": "Buzz work is retained as low-priority lazy side-work.",
+      "quiet_canary": {
+        "buzz_lazy_batch": 32,
+        "buzz_lazy_every_ms": 1500,
+        "skip_mask": "0x07",
+        "meaning": "Most lazy Buzz work opportunities are deliberately skipped in quiet mode, protecting the primary task budget."
+      }
+    }
+  },
+  "why_he_can_lead_while_being_independent": [
+    "Buzz leaderboard measures aggregate observed productivity/stability signals, not obedience.",
+    "Zim's independent SOLO successes currently flow into some of the same telemetry fields Buzz rewards.",
+    "Zim protects his primary work by treating Buzz jobs as bounded side quests instead of allowing swarm work to monopolize resources.",
+    "His score is smoothed with EMA, so repeated productive observations preserve leadership rather than requiring every packet to be exceptional."
+  ],
+  "important_semantic_distinction": {
+    "current_TOP_approximately_means": "strongest online node under Buzz aggregate score",
+    "current_TOP_does_not_strictly_mean": "largest verified contribution to Buzz-assigned work only",
+    "decision": "Do not change Zim merely to make these two meanings identical. Preserve the current autonomous phenotype and study it first."
+  },
+  "preservation_decision": {
+    "user_decision": "KEEP_ZIM_UNCHANGED",
+    "reason": "The autonomous, opportunistic behavior is considered a successful and desirable canonical Zim phenotype rather than a defect.",
+    "canonical_character_note": "User compares this behavior to the canonical cartoon Zim: authority tries to constrain him, while he repeatedly finds an unconventional route around the expected pattern. This is recorded as project lore/interpretation, not engineering evidence.",
+    "engineering_rule": "Observe before normalizing. Do not remove independent behavior just because it differs from the swarm majority."
+  },
+  "borrowable_architecture_candidates": [
+    {
+      "name": "PRIMARY_MISSION_PLUS_BOUNDED_SIDE_QUESTS",
+      "description": "Give each autonomous node a protected primary objective and allow swarm tasks only inside an explicit secondary budget.",
+      "why_it_matters": "Prevents coordination from destroying specialization while still allowing useful swarm participation.",
+      "promotion_status": "CANDIDATE_FOR_ADV_ELITE_AND_OTHER_PEERS"
+    },
+    {
+      "name": "RESOURCE_AWARE_QUIET_CANARY",
+      "description": "Slow nonessential telemetry, drawing, study and side-work under constrained conditions while preserving core work and truth paths.",
+      "why_it_matters": "Improves coexistence and reduces self-inflicted resource contention.",
+      "promotion_status": "CANDIDATE"
+    },
+    {
+      "name": "ONLINE_NO_REGRET_LOCAL_POLICY",
+      "description": "Zim uses a bounded multiplicative-weights stride selector over safe existing odd strides, with exploration and slow forgetting; it does not change SHA or Stratum semantics.",
+      "why_it_matters": "Useful pattern for local adaptation where the action space is prevalidated and the invariant is frozen.",
+      "promotion_status": "CANDIDATE__DOMAIN_SPECIFIC_BENCHMARK_REQUIRED"
+    },
+    {
+      "name": "PERSIST_LEARNED_POLICY_WITH_FLASH_GUARDS",
+      "description": "Persist learned stride-bandit weights in Preferences with throttled saves and bounded values.",
+      "why_it_matters": "Allows a node to retain useful local learning across reboots without excessive flash writes.",
+      "promotion_status": "CANDIDATE"
+    },
+    {
+      "name": "SELF_TESTED_ACCELERATION_ONLY",
+      "description": "Optional hardware SHA acceleration is enabled only after byte-for-byte self-test equivalence and benchmark gain; otherwise the known software path remains active.",
+      "why_it_matters": "General pattern: optimized path must prove semantic equivalence before promotion.",
+      "promotion_status": "HIGH_VALUE_GENERAL_PATTERN"
+    },
+    {
+      "name": "AUTONOMY_WITH_TRUTHFUL_TELEMETRY",
+      "description": "A node may choose its own local priorities while still exposing measured state to the swarm.",
+      "why_it_matters": "Coordination can emerge from transparent outcomes instead of requiring identical internal policies.",
+      "promotion_status": "CORE_SWARM_DESIGN_CANDIDATE"
+    },
+    {
+      "name": "PROVENANCE_SPLIT_FOR_FUTURE_METRICS",
+      "description": "If later analysis needs to distinguish total productivity from Buzz-only contribution, add parallel provenance counters rather than changing Zim's behavior: total_hash/share/best plus buzz_hash/share/best and solo_hash/share/best.",
+      "why_it_matters": "Preserves the successful phenotype while making fitness interpretation scientifically cleaner.",
+      "promotion_status": "MEASUREMENT_ONLY__NO_BEHAVIOR_CHANGE"
+    }
+  ],
+  "recommended_experiment_next": {
+    "name": "ZIM_AUTONOMY_ABLATION_WITHOUT_FIRMWARE_MUTATION",
+    "method": "Use existing logs/telemetry to retrospectively recompute two leaderboards: aggregate-strength TOP and Buzz-contribution-only TOP. Do not alter live Zim firmware.",
+    "metrics": [
+      "aggregate score",
+      "Buzz-only verified share contribution",
+      "SOLO accepted shares",
+      "hashrate split if provenance becomes available",
+      "bestBits split if provenance becomes available",
+      "prediction error",
+      "uptime/stability",
+      "energy/thermal budget where measurable"
+    ],
+    "possible_results": [
+      "PASS_AUTONOMY_ADVANTAGE: Zim remains competitive even under Buzz-only normalization.",
+      "METRIC_COUPLING_CONFIRMED: leadership mostly comes from mixed SOLO+Buzz counters.",
+      "MIXED: specialization plus metric coupling both contribute.",
+      "EVIDENCE_INSUFFICIENT: logs lack provenance to split effects."
+    ]
+  },
+  "epistemic_partition": {
+    "verified_from_current_code": [
+      "Buzz selects the maximum online node score as TOP.",
+      "Buzz score weights hashRate, bestBits, overTarget, deltaShares, deltaRejects, prediction error and aiHint.",
+      "Zim heartbeat reports gHashRate, gSharesSent, gRejects and gBestBits.",
+      "gSharesSent combines soloAccepts and gBuzzSharesSent.",
+      "Zim is explicitly SOLO-first with Buzz lazy side-work.",
+      "Zim has a bounded online stride-bandit with persisted weights.",
+      "Zim's optional hardware SHA path is guarded by self-test/equivalence logic."
+    ],
+    "user_observed_live_behavior": [
+      "Zim repeatedly appears as Buzz leader/TOP."
+    ],
+    "inference": [
+      "Mixed provenance in leaderboard telemetry is a plausible direct cause of repeated leadership.",
+      "Protected specialization may itself contribute to higher aggregate productivity."
+    ],
+    "not_yet_proven": [
+      "Exact fraction of Zim's leadership attributable to SOLO telemetry coupling versus genuine superior efficiency.",
+      "Whether transplanting Zim's policies improves ADV_Elite or other nodes under controlled future holdout."
+    ]
+  },
+  "invariants": [
+    "Do not change SHA-256/SHA256d validity semantics.",
+    "Do not fake shares, hash-rate, bestBits or prediction quality.",
+    "Do not convert independent work into a claim of Buzz-specific contribution without provenance.",
+    "Do not punish specialization solely because it differs from coordinator policy.",
+    "Preserve negative results and failed borrow attempts.",
+    "Any borrowed mechanism must be shadow-tested before promotion."
+  ],
+  "decision": "PRESERVE_ZIM_AS_CANONICAL_AUTONOMOUS_PEER_AND_STUDY_HIS_SUCCESSFUL_PATTERNS_BEFORE_COPYING",
+  "next_gate": "Identify which Zim architectural trait should be borrowed first, one change at a time, under controlled shadow comparison."
+}

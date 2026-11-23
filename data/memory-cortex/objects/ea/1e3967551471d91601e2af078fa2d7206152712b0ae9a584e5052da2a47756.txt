@@ -1,0 +1,33 @@
+# JANUS-LOGOS-001 R1.3 — new observed instruments, strong baselines, uncertainty
+
+## Pre-frozen hypothesis
+
+R1.3 continues after R1.2's 1-of-2 partial gain, with **no reuse** of R1.1 or R1.2 holdout measurements for tuning. The [protocol](../../data/JANUS-LOGOS-001-R13-PREREG-v1.0.json) was committed before the first evaluation of holdout labels. The R1.2 model-family learner is reused without threshold or search-space changes. All negative and inconclusive outcomes are permanent evidence.
+
+## New actual observed instruments
+
+All original ASCII source files are mirrored exactly (Git blob SHA verified) from [Ceres Solver's NIST benchmark mirror](https://github.com/ceres-solver/ceres-solver/tree/master/data/nist), with direct NIST references:
+
+- Hahn1 — 236 NIST observed copper thermal expansion readings: https://www.itl.nist.gov/div898/strd/nls/data/LINKS/DATA/Hahn1.dat
+- Thurber — 37 NIST observed semiconductor electron mobility readings: https://www.itl.nist.gov/div898/strd/nls/data/LINKS/DATA/Thurber.dat
+- Bennett5 — 154 NIST observed superconductivity magnetization readings: https://www.itl.nist.gov/div898/strd/nls/data/LINKS/DATA/Bennett5.dat
+
+All repeated x values are kept in the same group. The discovery worker sees only TRAIN and VALIDATION measurements, whereas the independent verifier reconstructs the TEST set from source files and keeps it unavailable to the discoverer's input. NIST certified reference functional forms and source values are publicly known; **this is not a cryptographically blinded unknown-physics challenge**.
+
+## Strong comparison
+
+A separate witness runner fits and selects baselines from TRAIN/VALIDATION using pinned NumPy, SciPy and scikit-learn: OLS polynomial degrees 0–5, ridge polynomial, PCHIP interpolation, smoothing splines (three smoothing levels), random forest (three leaf sizes) and RBF kernel ridge (12 parameter settings). The strongest validation-selected baseline is evaluated on TEST without retuning.
+
+A paired 2,000-repeat cluster bootstrap resamples independent TEST x-groups and reports a 95% percentile interval for relative RMSE gain over the selected baseline; this is a *conditional descriptive interval* for fixed trained models, not independent-lab evidence or guaranteed inference about all possible physical systems. Two population-level limitations are group correlation and potentially low holdout sample sizes.
+
+The pre-frozen success condition requires all three tasks to produce a candidate with >5% TEST error reduction and CI lower bound >0. Three shuffled-validation-label negative controls must ABSTAIN. Four evidence tamper mutations must be rejected. All outputs must record their scientific competitiveness separately from protocol execution success.
+
+## Local/cloud replication
+
+    python research/logos_001/r13_data.py --out /tmp/r13-input.json
+    python research/logos_001/r13_discover.py --input /tmp/r13-input.json --out /tmp/r13-proposal.json
+    python -m pip install numpy==1.26.4 scipy==1.14.1 scikit-learn==1.5.2
+    python research/logos_001/r13_witness.py --candidate /tmp/r13-proposal.json --out /tmp/r13-witness.json --self-test
+    python -m unittest discover -s research/logos_001 -p test_r13.py -v
+
+Read-only jobs. No paid Rowan experiments, no NAS, no automatic schedule and no promotion of Demiurge's production model. Philosophical God Code interpretations and David Deutsch's explanatory theories motivate questions, not the empirical results.

@@ -1,0 +1,96 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-SIGLA-FORMULA-NEIGHBORHOOD-SPEC-2026-08-14-v0.1",
+  "timestamp": "2026-08-14T14:33:00+03:00",
+  "version": "v0.1",
+  "title": "JANUS Linear A SigLA-native directed formula-neighborhood discovery",
+  "node_type": "frozen_execution_specification",
+  "status": "FROZEN_BEFORE_CLAIM_BEARING_EXECUTION",
+  "parent_result": {
+    "path": "data/JANUS-LINEAR-A-SIGLA-MINIMAL-PAIR-MORPHOLOGY-RESULT-2026-08-14-v0.1.json",
+    "commit": "dcea935c6bc48ea52bb876bc0f3f0818cb3f7a34"
+  },
+  "research_question": "Do any directed adjacent SigLA word-identity pairs recur across multiple documents more strongly than both document-composition-preserving identity shuffles and endpoint-marginal-preserving rewires predict, and do locked pairs reproduce in disjoint partitions?",
+  "source_and_blinding": {
+    "source": "SigLA word-view seq-pattern sign IDs",
+    "source_class": "L1_INDEPENDENT_DIGITIZATION_SHARED_TRANSCRIPTION",
+    "frozen_database_js_sha256": "cc624f148fd84c94fd2910b0adf92ecace25f52f9175664122bdf8384a8f1b9d",
+    "eligible_word": "Fully resolved sign-ID sequence only; ambiguous/nonstandard word forms become fixed MASK slots rather than being deleted.",
+    "candidate_identity": "SHA256 of exact sign-ID word sequence; transliteration unavailable until statistical state is frozen.",
+    "known_gloss_used_for_discovery": false,
+    "Linear_B_values_used_for_discovery": false
+  },
+  "relation": {
+    "family": "DIRECTED_ADJACENT_WORD_PAIR",
+    "edge": "A→B only when A and B occupy immediately adjacent eligible word slots in the original SigLA document word order; MASK prevents adjacency across unresolved forms.",
+    "self_edges": "excluded",
+    "statistic": "observed directed edge occurrence count; enrichment effect = observed count - mean null count"
+  },
+  "partition": {
+    "operator": "bucket=int(SHA256('SIGLA-FORMULA-PARTITION-v0.1|' + bridge_key),16) mod 10",
+    "SCREEN": [0,1,2,3,4,5],
+    "CONFIRM": [6,7],
+    "TEST": [8,9],
+    "fixed_before_content_scoring": true
+  },
+  "endpoint_eligibility_SCREEN": {
+    "minimum_word_occurrences": 8,
+    "minimum_documents": 5
+  },
+  "edge_eligibility_SCREEN": {
+    "minimum_edge_occurrences": 4,
+    "minimum_edge_documents": 3
+  },
+  "destructive_nulls": [
+    {
+      "id": "N1_WITHIN_DOCUMENT_IDENTITY_SHUFFLE",
+      "operator": "Shuffle eligible word identities only among eligible slots within each document; preserve document membership, eligible-word multiset, word count, MASK slots and adjacency geometry.",
+      "destroys": "specific directed identity adjacency"
+    },
+    {
+      "id": "N2_ENDPOINT_REWIRE",
+      "operator": "Across observed eligible adjacency edge instances, preserve the multiset of left endpoints and right endpoints while randomly permuting right endpoints.",
+      "destroys": "specific A→B endpoint coupling while preserving endpoint marginals"
+    }
+  ],
+  "SCREEN": {
+    "permutations_per_null": 3000,
+    "alpha": 0.05,
+    "multiplicity": "For each null separately, Bonferroni over all eligible directed-pair hypotheses; pair selected only if effect>0 and corrected p<=0.05 under BOTH nulls.",
+    "direction": "ENRICHED_ONLY"
+  },
+  "CONFIRM": {
+    "locked_pair": true,
+    "minimum_edge_occurrences": 2,
+    "minimum_edge_documents": 2,
+    "permutations_per_null": 5000,
+    "alpha": 0.05,
+    "multiplicity": "Bonferroni over SCREEN-selected pairs under each null; survivor requires both nulls.",
+    "non_evaluability_is_not_failure": true
+  },
+  "TEST": {
+    "locked_pair": true,
+    "minimum_edge_occurrences": 2,
+    "minimum_edge_documents": 2,
+    "minimum_distinct_locations": 2,
+    "permutations_per_null": 5000,
+    "alpha": 0.05,
+    "multiplicity": "Bonferroni over CONFIRM survivors under each null; survivor requires both nulls.",
+    "non_evaluability_is_not_failure": true
+  },
+  "post_score_reveal": {
+    "allowed_only_after": "SCREEN/CONFIRM/TEST states frozen",
+    "reveal": ["left/right sign-ID sequences", "visible transliterations", "representative documents"],
+    "classification": ["KNOWN_FORMULA_REDISCOVERY", "NOVEL_CROSS_DIGITIZATION_FORMULA_RELATION_CANDIDATE", "NO_SURVIVOR", "NOT_EVALUABLE"]
+  },
+  "claim_ceiling": {
+    "maximum_if_full_survivor": "NOVEL_CROSS_DIGITIZATION_FORMULA_RELATION_CANDIDATE",
+    "new_lexical_anchor_established": false,
+    "external_transcription_replication_established": false,
+    "decipherment_established": false,
+    "forbidden": "Assigning lexical meaning or grammatical translation from adjacency alone."
+  },
+  "roadmap_after_execution": {
+    "if_full_survivor": "Post-score novelty audit + known-formula subtraction in a separately frozen test + independent implementation replay.",
+    "if_no_full_survivor": "Preserve negative result and elevate canonical state; next scientific bottleneck becomes genuinely independent L3 transcription or a new behavioral channel, not threshold relaxation."
+  }
+}

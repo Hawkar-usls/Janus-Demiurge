@@ -1,0 +1,138 @@
+{
+  "schema": "janus.meta_registry.daddy_keymaster.async_compute_relay.evidence.v1",
+  "artifact_id": "JANUS-DADDY-KEYMASTER-ASYNC-COMPUTE-RELAY-R1-2026-10-31",
+  "title": "JANUS DADDY_KEYMASTER R1 — crash-durable local queue and x64→ARM64 cross-VM relay",
+  "date_utc": "2026-10-31",
+  "status": "CI_VERIFIED_STAGING_SEQUENTIAL_HANDOFF_NOT_PRODUCTION_AUTONOMY",
+  "epistemic_scope": "Source-linked engineering evidence. No general-purpose hosting, unrestricted autonomy, or champion model quality claim.",
+  "author_project": "Hawkar-usls/JANUS",
+  "inherited_contracts": [
+    {
+      "component": "SWARM objective lease fencing",
+      "source": "data/JANUS-SWARM-OBJECTIVE-LEASE-FENCING-PASS-2026-08-16-v1.0.json",
+      "principle": "STALE_LEASE_CANNOT_OVERRIDE_CURRENT_HOLDER"
+    },
+    {
+      "component": "SWARM work claims and causal ACK",
+      "source": "data/JANUS-SWARM-CAUSAL-ACK-WORK-CLAIM-RUN-001-2026-08-23-v1.0.json",
+      "principle": "WORK_CLAIM_AND_RECEIPT_MUST_HAVE_PROVENANCE"
+    },
+    {
+      "component": "Habitat HOME + RETURN",
+      "source": "registry/experimental/JANUS-GENESIS-THIRD-WISH-GIT-HABITAT-LIVE-HOME-AND-RETURN-RECEIPT-v1.0.json",
+      "principle": "PROCESS_DEATH_NE_MEMORY_ERASURE"
+    },
+    {
+      "component": "Genesis asynchronous microstagger",
+      "source": "registry/experimental/JANUS-GENESIS-INFINITE-FACES-ASYNC-MICROSTAGGER-RECEIPT-v1.0.json",
+      "principle": "CONCURRENT_PROPOSAL_NE_SINGLE_WORLD_COMMIT"
+    },
+    {
+      "component": "Genesis durable journal and fencing",
+      "source": "registry/experimental/JANUS-GENESIS-SOVEREIGN-FACE-MICROCONTROL-DURABLE-JOURNAL-FENCING-IDEMPOTENCY-DEADLINE-FAIRNESS-v6.1.json",
+      "principle": "DURABLE_INTENT_NE_EXECUTION_RECEIPT"
+    }
+  ],
+  "source_implementation": {
+    "repository": "Hawkar-usls/Janus-Demiurge",
+    "pr_number": 390,
+    "pr_url": "https://github.com/Hawkar-usls/Janus-Demiurge/pull/390",
+    "pr_status": "OPEN_DRAFT_AT_RECEIPT",
+    "head_sha": "32a362bb8fb66e200f6eb566c79f06386119f968",
+    "files": [
+      "daddy_keymaster/async_relay.py",
+      "daddy_keymaster/dynamic_pool.py",
+      "daddy_keymaster/ASYNC_RELAY.md",
+      "daddy_keymaster/DYNAMIC_POOL.md",
+      "tests/test_daddy_keymaster_async_relay.py",
+      "tests/test_daddy_keymaster_dynamic_pool.py",
+      ".github/workflows/janus-daddy-keymaster-async-relay-e2e.yml"
+    ],
+    "runtime_policy": "NO_REMOTE_DISPATCH_NO_CLOUD_PROVISIONING_MAX_ACTIVE_2_IN_ONE_LOCAL_QUEUE",
+    "checker": "REPLAY_HASH_JOURNAL_AND_VERIFY_EXACT_SQLITE_TASK_PROJECTION"
+  },
+  "verified_ci": {
+    "repository": "Hawkar-usls/Janus-Demiurge",
+    "workflow": "JANUS DADDY_KEYMASTER Async Relay Cross-VM E2E",
+    "run_id": 41200026122,
+    "url": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/41200026122",
+    "conclusion": "SUCCESS",
+    "jobs": [
+      {
+        "name": "Origin X64 (durable local checkpoint)",
+        "architecture": "X64",
+        "conclusion": "SUCCESS",
+        "work": "synthetic enqueue, first task checkpoint/complete, SQLite artifact SHA"
+      },
+      {
+        "name": "Resume on a different ARM64 GitHub VM",
+        "architecture": "ARM64",
+        "conclusion": "SUCCESS",
+        "work": "verify original artifact digest, replay journal, complete second synthetic task"
+      },
+      {
+        "name": "Fresh Linux witness (no write access)",
+        "architecture": "X64",
+        "conclusion": "SUCCESS",
+        "work": "verify journal and two COMPLETE tasks, receipt from independent job"
+      }
+    ],
+    "adversarial_tests": {
+      "count": 15,
+      "passed": 15,
+      "run_on": "GitHub-hosted Ubuntu x64",
+      "examples": [
+        "concurrent same-host claimant race",
+        "actual subprocess os._exit after committed lease",
+        "expired lease returns HOLD not automatic retry",
+        "forged holder/generation/source/deadline rejection",
+        "event-chain modification detection",
+        "task source and result digest tamper detection",
+        "SQLite checkpoint transfer and exact independent replay"
+      ]
+    },
+    "final_verified_conditions": {
+      "synthetic_tasks_completed": 2,
+      "expected_journal_events": 8,
+      "sequential_github_jobs": 3,
+      "production_champion_replaced": false,
+      "remote_dispatches": 0,
+      "paid_provider_activated": false
+    },
+    "audit_artifacts": [
+      "daddy-async-relay-origin",
+      "daddy-async-relay-resumed",
+      "daddy-async-relay-independent-witness"
+    ],
+    "artifact_retention": "Workflow-configured days; artifacts are not external durable backup.",
+    "github_event_source_sha": "2c4475f3c0d5ce48541d65d59572647a8a469039",
+    "source_sha_explanation": "GitHub workflow checked out the PR merge ref; it differs from source PR head SHA above."
+  },
+  "non_claims": [
+    "A three-job sequential artifact relay is not atomic multi-host concurrency or cross-run persistence.",
+    "Local SQLite BEGIN IMMEDIATE does not provide cross-cloud distributed consensus.",
+    "Hash chaining without independent signatures does not prevent a privileged database writer from rewriting both events and hashes.",
+    "CI success proves bounded synthetic software mechanics, not performance gain or general intelligence.",
+    "Repository workflows remain temporary GitHub-hosted resources, not permanent user-controlled VM leases.",
+    "The current 2-worker admission ceiling is per relay queue; it is not a global limit on all JANUS Actions workflows.",
+    "No authenticated production external provider dispatcher has been connected.",
+    "No true blind final model evaluation, CAS champion promotion, full consumer ACK or production rollback established."
+  ],
+  "next_gates": [
+    "Independent durable cross-run state custody with exact-head CAS and external witness",
+    "Multi-host fencing, crashed worker reconciliation, signed provider outcome and idempotent resume",
+    "Owner-authorized provider drivers with permission, workload and free-tier cost gates, zero quota evasion",
+    "Explicit mapping of typed task envelopes to approved development, evaluation or owner-hosted compute executors",
+    "Issue Janus-Demiurge#385 R2 blind selection and secure-loader PR#301",
+    "Measured 2->4 trial only after verified R2 acceptance"
+  ],
+  "ethical_and_safety_boundary": {
+    "no_credentials_published": true,
+    "no_paid_infrastructure_created": true,
+    "no_external_hosts_scanned": true,
+    "no_general_gh_actions_compute_hosting": true,
+    "no_unbounded_self_requeue": true,
+    "authority_delta": 0,
+    "main_checkpoint_mutated": false
+  }
+}

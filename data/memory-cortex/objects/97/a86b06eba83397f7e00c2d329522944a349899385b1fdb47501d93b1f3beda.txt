@@ -1,0 +1,86 @@
+{
+  "schema_id": "janus.demihead.cosmos.proof_gate.integration_receipt.v1",
+  "artifact_id": "JANUS-DEMIHEAD-COSMOS-OSIRIS-PROOF-GATE-INTEGRATION-2026-08-19-v1.0",
+  "created_at_local": "2026-08-19T01:36:00+03:00",
+  "status": "MERGED_AND_CI_VERIFIED",
+  "repositories": {
+    "consumer": "Hawkar-usls/Demi_Head",
+    "provider": "Hawkar-usls/Janus-Cosmos"
+  },
+  "demihead": {
+    "base_sha": "1803061c9e984677f9441debbbaf9b67ab716ff0",
+    "pr": 30,
+    "tested_head_sha": "d04602251214bdc3b9fe38881b80140cf5b89ca2",
+    "merge_commit_sha": "7c5e19f9ce3f4274cf6b83987f2204651b032eb0",
+    "bridge_files": [
+      "tools/cosmos_proof_adapter.py",
+      "tests/test_cosmos_proof_adapter.py",
+      "schemas/cosmos-proof-request.schema.json",
+      "schemas/cosmos-proof-receipt.schema.json",
+      ".janus/COSMOS_PROOF_LINK.json",
+      "docs/COSMOS_PROOF_GATE.md",
+      ".github/workflows/cosmos-proof-gate.yml"
+    ]
+  },
+  "cosmos": {
+    "exact_provider_sha": "c77f920d764229efb6932bc4ea522a4ec0342c64",
+    "canonical_gate": "S𓂸ḥ/2",
+    "operation_exposed_to_demihead": "VERIFY_CANONICAL_GATE",
+    "general_arbitrary_cnf_remote_api_implemented": false
+  },
+  "intent_binding": {
+    "schema": "janus.goldprompt.intent_anchor.v1",
+    "same_intent_required": true,
+    "provider_handoff_role": "COSMOS_PROOF_PROVIDER",
+    "law": "PROOF_OF_TASK_B != PROOF_OF_TASK_A"
+  },
+  "receipt_boundary": {
+    "provider_role": "SPECIALIZED_PROOF_PROVIDER_NOT_TRUTH_ARBITER",
+    "provider_sha_exact": true,
+    "input_hash_bound": true,
+    "execution_result_integrity_bound": true,
+    "replay_verification_required": true,
+    "authority_delta": 0,
+    "mass_effect_budget_delta": 0
+  },
+  "adversarial_controls": [
+    "intent_substitution_rejected",
+    "provider_sha_substitution_rejected",
+    "input_hash_substitution_rejected",
+    "execution_result_bitflip_rejected",
+    "P_vs_NP_promotion_rejected",
+    "authority_escalation_rejected"
+  ],
+  "ci": {
+    "cosmos_proof_gate_run": 32193284820,
+    "cosmos_proof_gate": "PASS",
+    "repository_contracts_run": 32193284827,
+    "repository_contracts": "PASS",
+    "proposal_lab_parity": "PASS",
+    "hemisphere_proposal_gate": "PASS",
+    "local_acceptance_browser_holdout": "PASS"
+  },
+  "incidental_reliability_repair": {
+    "component": "SqliteReplayGuard",
+    "problem": "sqlite3.Connection context manager does not close the connection; a late GC finalizer could checkpoint/remove a WAL sidecar after a later evidence snapshot was created",
+    "repair": "explicit deterministic close in initialize/seen/count paths",
+    "scientific_contract_relaxed": false,
+    "wal_failure_bypass_added": false
+  },
+  "claim_ceiling": {
+    "P_VS_NP": "OPEN",
+    "P_EQUALS_NP": "NOT_ESTABLISHED",
+    "P_NOT_EQUALS_NP": "NOT_ESTABLISHED",
+    "arbitrary_cnf_polynomial_solver": "NOT_ESTABLISHED",
+    "world_truth_from_cosmos_pass": false,
+    "external_authority_from_cosmos_pass": false
+  },
+  "laws": [
+    "MODEL_OUTPUT != EXECUTION_RECEIPT",
+    "COSMOS_PASS != WORLD_TRUTH",
+    "COSMOS_PASS != P_EQUALS_NP",
+    "COSMOS_PASS != AUTHORITY",
+    "SAME_INTENT_REQUIRED_ACROSS_DEMIHEAD_AND_COSMOS",
+    "P_VS_NP = OPEN"
+  ]
+}

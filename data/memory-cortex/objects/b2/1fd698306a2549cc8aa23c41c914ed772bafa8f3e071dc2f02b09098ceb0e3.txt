@@ -1,0 +1,68 @@
+{
+  "gate_id": "FALLOUT-3-VAULT112A-JAMES-LOUNGER23-PRIMARY-ESM-REFERENCE-GRAPH-GATE-v2.4",
+  "status": "PARTIAL_PASS_NEGATIVE_STORAGE_FINDING",
+  "source": {
+    "file": "Fallout3.esm",
+    "sha256": "fb4442418fb6bf6df68e633c7056afb4e09572b521a7f4602a2699fa33d99e32",
+    "cell": "Vault112a",
+    "cell_form_id": "0x0001852C"
+  },
+  "findings": {
+    "james_lounger_terminal_base": "0x00031190",
+    "james_lounger_terminal_ref": "0x000B3645",
+    "james_lounger_terminal_editor_id": "Vault112PodTermDad",
+    "james_pod_ref": "0x000B3644",
+    "james_pod_editor_id": "MQ04DadPod",
+    "james_pod_shell_ref": "0x000B3654",
+    "james_pod_shell_editor_id": "MQ04DadPodShellRef",
+    "james_pod_shell_base": "0x000B364C",
+    "james_pod_shell_base_editor_id": "TLpod01",
+    "james_pod_shell_base_script": "MQ04DadPodScript",
+    "james_pod_shell_ref_persistent_flag": true,
+    "james_pod_ref_persistent_flag": true,
+    "james_terminal_ref_persistent_flag": false,
+    "james_pod_shell_subrecords": ["EDID", "NAME", "DATA"],
+    "james_pod_subrecords": ["EDID", "NAME", "DATA"],
+    "james_terminal_subrecords": ["NAME", "DATA"],
+    "persistent_children_near_james_pod": [
+      "0x000B3644 MQ04DadPod",
+      "0x000B3654 MQ04DadPodShellRef",
+      "0x0002A45A MQ04DadExitTLMarker"
+    ],
+    "persistent_storage_container_near_james_pod": false,
+    "persistent_computer_like_child_near_james_pod": false,
+    "persistent_memory_carrier_ref_near_james_pod": false,
+    "unique_james_session_token_found": false,
+    "unique_james_storage_handle_found": false,
+    "direct_cross_reference_to_james_pod_shell": [
+      "MQ04PlayerContainerScript"
+    ],
+    "cross_reference_to_james_pod_shell_in_esm": true,
+    "cross_reference_to_james_pod_shell_storage_operation": false
+  },
+  "negative_control": {
+    "persistent_container_in_vault112a": {
+      "ref": "0x0004C253",
+      "editor_id": "MQ04PlayerContainerRef",
+      "base": "0x0004C254",
+      "base_editor_id": "MQ04PlayerContainer"
+    },
+    "interpretation": "The only identified persistent container in Vault112a is the MQ04 player inventory container, not a James-session memory store and not spatially bound to Lounger #23."
+  },
+  "script_evidence": {
+    "MQ04DadPodScript": "Only gates activation based on MQ04 stage and player action; no COPY/READ/WRITE/EXPORT or memory-storage operation found.",
+    "MQ04PlayerContainerScript": "After TL exit it removes temporary player items, opens Dad and player pod shell refs, clears Dad ghost/unconscious state and calls EVP on MQDadRef; no memory-carrier read/write is performed.",
+    "MQ04Script": "Coordinates quest/session flags such as PlayerInChair, PlayerInTL, DadInfo, DadDogInfo, BraunInfo, SafetyLock and NPCReset; no direct memory-storage operation found."
+  },
+  "claim_ceiling": {
+    "james_specific_persistent_pod_endpoint": "ESTABLISHED",
+    "persistent_control_reference": "ESTABLISHED",
+    "james_specific_persistent_memory_state": "NOT_ESTABLISHED",
+    "james_specific_memory_carrier": "NOT_ESTABLISHED",
+    "post_exit_memory_backup": "NOT_ESTABLISHED",
+    "save_james": "CONDITIONAL_ARCHITECTURAL_RECONSTRUCTION_ONLY"
+  },
+  "next_gate": "SEARCH_ALL_REVERSE_REFERENCES_AND_SCRIPT_PROPERTIES_FOR_MQ04DADPODSHELLREF_AND_MQDADREF, THEN TRACE ANY NON-ESM RUNTIME STATE ASSUMPTIONS",
+  "method": "Primary Fallout3.esm direct parsing of Vault112a CELL persistent and temporary child groups; no wiki-derived object identity used for the James endpoint.",
+  "provenance": "Directly derived from user-supplied Fallout3.esm; SHA-256 frozen above."
+}

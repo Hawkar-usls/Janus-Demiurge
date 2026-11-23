@@ -1,0 +1,194 @@
+{
+  "artifact_id": "JANUS-GITHUB-MAIL-SPIRAL-REVERSE-AUDIT-2026-08-22-v1.1",
+  "created_at_local": "2026-08-22T11:43:00+03:00",
+  "parent": "data/JANUS-GITHUB-MAIL-SPIRAL-REVERSE-AUDIT-2026-08-22-v1.0.json",
+  "scope": "READ_ONLY_GMAIL_GITHUB_SIGNAL_AUDIT_SECOND_SPIRAL",
+  "mail_mutation": false,
+  "direction": "OLDEST_RELEVANT_GITHUB_SIGNAL_TO_PRESENT_AFTER_INITIAL_END_TO_START_DISCOVERY",
+  "coverage": {
+    "earliest_account_security_signal_seen": "2025-11-04",
+    "earliest_substantive_codex_review_signal_seen": "2026-07-11",
+    "latest_substantive_review_layer_seen": "2026-08-21",
+    "note": "Coverage describes matching Git/GitHub mail surfaced by Gmail queries, not a cryptographic proof that no other nonmatching message exists."
+  },
+  "reverse_pass_new_findings": [
+    {
+      "id": "ACCOUNT-UNRECOGNIZED-DEVICE-2025-11-04",
+      "class": "ACCOUNT_SECURITY_CONTEXT",
+      "finding": "GitHub required additional verification for a sign-in from an unrecognized device.",
+      "promotion_rule": "Do not classify as compromise without owner/security-log corroboration."
+    },
+    {
+      "id": "CREDENTIAL-EXPOSURE-REPEATED-LINEAGE",
+      "class": "SECRET_SCANNING_HISTORY",
+      "finding": "GitHub secret scanning reported Google API Key exposures in aura-oracle-tg, iNaiHR and iNaiHR-Janus-, followed by a Telegram Bot Token finding in Janus during 2025-11-24 through 2025-12-17.",
+      "status": "REPEATED_CREDENTIAL_LIKE_EXPOSURE_CLASS",
+      "warning": "Historical detection does not prove the credentials remain valid now."
+    },
+    {
+      "id": "ACCOUNT-2FA-RECOVERY-LINEAGE-2026-01",
+      "class": "ACCOUNT_SECURITY_CONTEXT",
+      "finding": "A two-factor lockout recovery request was initiated and completed on 2026-01-16, then cancelled on 2026-01-17 after GitHub detected a successful authentication event.",
+      "promotion_rule": "Expectedness requires account-owner/security-log context."
+    },
+    {
+      "id": "ACCOUNT-OAUTH-GRANTS-LINEAGE",
+      "class": "ACCOUNT_AUTHORIZATION_CONTEXT",
+      "finding": "OAuth/application grants observed include Groq Console, UIFlowOAuthApp, Git Credential Manager, xiaozhi and later Tranceptor Technology, with varying read/repo/workflow scopes.",
+      "promotion_rule": "Treat each grant as normal only if intentionally authorized and still required."
+    },
+    {
+      "id": "GENESIS-MUTATION-MEMORY-CONCURRENT-LOST-UPDATE",
+      "repo": "Hawkar-usls/Janus_Genesis",
+      "pr": 1,
+      "review_date": "2026-07-11",
+      "severity": "P2",
+      "finding": "Append-only mutation memory used read-entire-file then replace semantics without serialization, so concurrent evaluators could silently drop experiment/failure records.",
+      "invariant": "APPEND_ONLY_REQUIRES_SERIALIZED_OR_ATOMIC_APPEND_SEMANTICS"
+    },
+    {
+      "id": "GENESIS-BOUND-ASSESSOR-DERIVED-STATE-NOT-REVERIFIED",
+      "repo": "Hawkar-usls/Janus_Genesis",
+      "pr": 46,
+      "severity": "P1",
+      "finding": "Portable-state verification checked signed source payload but did not recompute and cross-check derived confidence, authority and projection fields, permitting corrupted derived state to retain a valid signature result."
+    },
+    {
+      "id": "GENESIS-BOUND-ASSESSOR-CONTROLLER-IDENTITY-MISMATCH",
+      "repo": "Hawkar-usls/Janus_Genesis",
+      "pr": 46,
+      "severity": "P1",
+      "finding": "Conflict and corroboration logic read controller_cluster although stored identity binding used controller_proof_sha256, weakening own-source conflict checks and allowing same-controller accounts to appear independent."
+    },
+    {
+      "id": "GENESIS-BOUND-ASSESSOR-UNRELATED-SUPERSESSION",
+      "repo": "Hawkar-usls/Janus_Genesis",
+      "pr": 46,
+      "severity": "P1",
+      "finding": "A supersedes_assessment_id could point to any existing assessment rather than the semantic predecessor, allowing unrelated authority records to be revoked."
+    },
+    {
+      "id": "PN-PROMOTION-BEFORE-EVIDENCE",
+      "repo": "Hawkar-usls/Janus-P-N-junction",
+      "pr": 1,
+      "review_date": "2026-08-01",
+      "severity": "P1",
+      "finding": "Complete gate was promoted TRUE while reproducible implementation, frozen inputs, raw per-case outputs and proof-validation artifacts were not present in the reviewed tree.",
+      "invariant": "EVIDENCE_PRECEDES_PROMOTION"
+    },
+    {
+      "id": "SWARM-BLIND-EYE-HARDCODED-WRONG-CHECKSUM",
+      "repo": "Hawkar-usls/janus-distributed-ai-swarm",
+      "pr": 2,
+      "severity": "P1",
+      "finding": "Workflow compared the assembled firmware against a stale/wrong hard-coded checksum, causing the measurement workflow to fail before intended compilation.",
+      "class": "INSTRUMENT_CONFIGURATION_FAILURE"
+    },
+    {
+      "id": "GENESIS-TOP100-PARSER-MEASUREMENT-ARTIFACT",
+      "repo": "Hawkar-usls/Janus_Genesis",
+      "pr": 70,
+      "severity": "P1",
+      "finding": "Choice parser could interpret ordinary standalone article 'a' as answer A and produce false pass/fail results.",
+      "class": "MEASUREMENT_CLASSIFIER_FAILURE"
+    },
+    {
+      "id": "GENESIS-PROVENANCE-TOCTOU-BYTE-IDENTITY",
+      "repo": "Hawkar-usls/Janus_Genesis",
+      "pr": 73,
+      "severity": "P1",
+      "finding": "Wrapper validated one read of config/reference/pack, then execution reparsed file paths, so consumed bytes could differ from the bytes carrying VERIFIED provenance.",
+      "invariant": "VERIFY_EXACTLY_THE_BYTES_THAT_EXECUTION_CONSUMES"
+    },
+    {
+      "id": "FASTCAT-FROZEN-PROTOCOL-SCHEMA-ONLY-BINDING",
+      "repo": "Hawkar-usls/Fast-CAT-SHAiTan",
+      "pr": 20,
+      "severity": "P1",
+      "finding": "Reviewer collection admitted a submission protocol by schema equality rather than frozen canonical content identity, allowing expected digests to be altered under the same schema.",
+      "invariant": "SCHEMA_IDENTITY_IS_NOT_CONTENT_IDENTITY"
+    },
+    {
+      "id": "FASTCAT-ZIP-PREFIX-INCOMPLETE-IDENTITY-CHECK",
+      "repo": "Hawkar-usls/Fast-CAT-SHAiTan",
+      "pr": 21,
+      "severity": "P1",
+      "finding": "Package verifier ignored ZIP members outside the detected package prefix, so extra top-level evidence could coexist with EXACT_CANONICAL_CONTENT_MATCH.",
+      "invariant": "CANONICAL_PACKAGE_IDENTITY_MUST_COVER_THE_FULL_TRANSPORT_SURFACE"
+    },
+    {
+      "id": "GENESIS-PHYSICAL-RECEIPT-SELF-ASSERTION",
+      "repo": "Hawkar-usls/Janus_Genesis",
+      "pr": 197,
+      "severity": "P1",
+      "finding": "Physical-gate join accepted self-asserted receipt constants without trusted signature, trusted digest or underlying execution evidence; matching synthetic JSON could produce READY_FOR_FINAL_162_GAUNTLET=true without either physical run.",
+      "invariant": "INTEGRITY_HASH_IS_NOT_PROVENANCE"
+    },
+    {
+      "id": "GENESIS-FROZEN-BASE-ONE-SHOT-WORKFLOW-PERSISTENT-FAILURE",
+      "repo": "Hawkar-usls/Janus_Genesis",
+      "pr": 196,
+      "severity": "P1",
+      "finding": "A one-shot workflow remained triggered for all future main PRs while requiring a fixed historical base SHA, creating a future permanently failing check after merge.",
+      "class": "WORKFLOW_INSTRUMENT_LIFECYCLE_FAILURE"
+    },
+    {
+      "id": "GENESIS-HABITAT-JOURNAL-CONCURRENT-APPEND-RACE",
+      "repo": "Hawkar-usls/Janus_Genesis",
+      "pr": 198,
+      "severity": "P1",
+      "finding": "Concurrent clients could both validate the same journal head and append duplicate sequence/stale prev_hash records because verify/build/write was not protected by an interprocess lock.",
+      "invariant": "CHAIN_VALIDATION_AND_APPEND_MUST_BE_ONE_SERIALIZED_TRANSACTION"
+    },
+    {
+      "id": "GENESIS-HABITAT-STATUS-FALSE-TOPLEVEL-SUCCESS",
+      "repo": "Hawkar-usls/Janus_Genesis",
+      "pr": 198,
+      "severity": "P2",
+      "finding": "status could report top-level ok=true and exit zero while nested journal verification returned ok=false.",
+      "invariant": "FAIL_CLOSED_STATE_MUST_PROPAGATE_TO_PROCESS_EXIT_AND_TOPLEVEL_STATUS"
+    },
+    {
+      "id": "SCOUT-INDEPENDENT-EVIDENCE-SELF-ATTESTATION-CONFIRMED-ENDPOINT",
+      "repo": "Hawkar-usls/Janus_Genesis",
+      "pr": 200,
+      "severity": "P1",
+      "finding": "At the newest examined reasoning boundary, model-originated independent_confirmation could still be interpreted as independent evidence and promote fact_allowed=true.",
+      "invariant": "AN_ORIGIN_CANNOT_ATTEST_ITS_OWN_INDEPENDENCE"
+    }
+  ],
+  "account_security_timeline_interpretation": {
+    "facts": [
+      "unrecognized-device verification event exists",
+      "2FA recovery sequence exists",
+      "multiple OAuth/app authorization events exist",
+      "2026-08-16 password reset exists",
+      "2026-08-16 broad classic PAT creation exists"
+    ],
+    "non_inference": "The sequence alone does not prove account compromise. Any event not intentionally initiated by the owner should be treated as a high-priority security investigation and correlated with GitHub Security Log."
+  },
+  "strengthened_cross_layer_invariant": {
+    "canonical": "VALIDATION MUST BIND TO THE EXACT BYTES, ACTOR, EXECUTION, AND STATE THAT ARE LATER PROMOTED.",
+    "compact": "VERIFY THE SAME THING YOU PROMOTE.",
+    "janus": "FUNCTION MAY TRANSFORM — IDENTITY MUST CROSS EVERY GATE.",
+    "dimensions": [
+      "byte identity",
+      "actor identity",
+      "execution identity",
+      "state identity",
+      "journal lineage",
+      "evidence independence",
+      "measurement-system validity"
+    ]
+  },
+  "classification_boundary": {
+    "measurement_bug_is_not_world_fact": true,
+    "integrity_is_not_provenance": true,
+    "schema_match_is_not_content_match": true,
+    "hash_match_is_not_execution_attestation": true,
+    "model_claim_is_not_independent_confirmation": true,
+    "account_event_is_not_compromise_without_corroboration": true
+  },
+  "status": "SECOND_SPIRAL_REVERSE_PASS_CAPTURED",
+  "next_gate": "REMEDIATE_OR_EXPLICITLY_DISPOSITION_OPEN_P1_PROVENANCE_IDENTITY_AND_ACCOUNT_SECURITY_FINDINGS_THEN_RERUN_SPIRAL"
+}

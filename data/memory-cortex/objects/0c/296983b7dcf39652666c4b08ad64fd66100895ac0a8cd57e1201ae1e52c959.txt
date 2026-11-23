@@ -1,0 +1,106 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1C5B2-COMPLETE-COVER-CHORD-CLASSIFIER-RESULT-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "PASS_SYMBOLIC_COMPLETE_CHORD_CLASSIFIER__GLOBAL_NONREDUNDANT_QUOTIENT_OPEN",
+  "gate": "R5_B1B1C5B2_COMPLETE_COVER_CHORD_CLASSIFIER_V1",
+  "binds": {
+    "prereg_fund_commit": "fe921a1ad9e353f8002b0cd84ed45f767cf2ee84",
+    "prereg_meta_commit": "18099747824a99e7b47a0615b56087f2115187cc",
+    "prereg_blob": "c7d3cc96469bc7ccec5da570114b92d95e4f5a9c",
+    "prereg_binding_repair_fund_commit": "62ad5b8677014fcdd4e0ca0c29a3b3fb9f9583b9",
+    "prereg_binding_repair_meta_commit": "d22ae18cd54b4183c2de05cde66cc99443d805f7",
+    "B1_cover_seal_blob": "046ae80d568da9349fc80e870d119da37bf5d419",
+    "B1_checker_repair_commit": "469db7da0ff8f54c01b2641ef55aa6af45edc975",
+    "B1_repaired_checker_blob": "819ad7921be539d0fc66f0cf9a3304ad803e63ed",
+    "classifier_commit": "fdc23c521d8d413316c337daee74ff4610537c78",
+    "classifier_blob": "acd2dc154d687385fae8a91a9ec5ff9efc9ff2e9",
+    "exact_interface_result_blob": "b8e177c483821517add138a632bc3e94499f1889",
+    "C0_message_seal_blob": "0dbebe81f52a5b8411199fc44614bf8c17b6dd95"
+  },
+  "theorem_bundle": [
+    {
+      "name": "SYMBOLIC_COMPLETE_LOCAL_CHORD_CLASSIFIER_V1",
+      "statement": "For every locally consistent B1 canonical cell and every unordered pair of its seven positions, classification(cell,pair) terminates without materializing the global B1 grammar and returns a sound SOURCE_STATUS, REPRESENTATION_DELTA, EXTENSION_DELTA in {PROVED_NEUTRAL,PROVED_NONNEUTRAL,UNKNOWN}, plus a replay certificate. Unsupported semantic classes return UNKNOWN.",
+      "proof": [
+        "B1 cell validation touches only seven positions, at most 21 adjacency bits, and constant-size finite annotations.",
+        "Pair dispatch has finitely many endpoint-type cases.",
+        "The only component-message computation in the built-in B-C rule decodes one of 168 sealed four-color message tables and compares at most 16*4 mask/color pairs.",
+        "All other built-in rules inspect constant-size masks and local redundancy bits.",
+        "Therefore runtime is O(poly(serialized local cell)) and is independent of the size of the full grammar product."
+      ]
+    },
+    {
+      "name": "B_X0_ALREADY_FORBIDDEN_COLOR_NEUTRALITY_V1",
+      "statement": "For dynamic u and fixed X0 identity x_c, the identity distinction is extension-neutral for the final list-coloring relation whenever color c remains forbidden at u without that identity, equivalently c is supplied by chi_S(u) or by another same-color X0 neighbor.",
+      "consequence": "A(u) is identical in the edge/nonedge states; the fixed-color edge contributes no additional coloring restriction.",
+      "classification": "IDENTITY_ONLY / PROVED_NEUTRAL"
+    },
+    {
+      "name": "B_B_DISJOINT_EXACT_PALETTE_NEUTRALITY_V1",
+      "statement": "If A(u) cap A(v)=empty, the dynamic edge/nonedge distinction uv is extension-neutral for the frozen list-coloring relation.",
+      "proof": "Every list-respecting coloring already satisfies c(u)!=c(v), so the proper-edge constraint is tautological.",
+      "classification": "GRAPH_U_CHANGE / PROVED_NEUTRAL"
+    },
+    {
+      "name": "C_X0_REDUNDANT_FIXED_COLOR_NEUTRALITY_V1",
+      "statement": "For representative z in residual component C and fixed identity x_c, if color c remains represented at z through another same-color X0 neighbor after removing the identity edge, then B_C(z) and the whole component list system are unchanged under this one-edge identity distinction; hence mu_C/MIN_BAD/R_C and reconstruction are unchanged.",
+      "classification": "IDENTITY_ONLY / PROVED_NEUTRAL",
+      "scope_firewall": "The theorem concerns only the single identity distinction with all other component coordinates/relations frozen."
+    },
+    {
+      "name": "B_C_UNIVERSAL_MASK_EQUALITY_NEUTRALITY_V1",
+      "statement": "Compare source-consistent states differing only by whether dynamic b is anticomplete or complete to residual component C, with the same message mu_C and all other declared boundary structure frozen. If for every F subseteq [4] and every alpha in A(b), mu_C(F)=mu_C(F union {alpha}), then the compiled component boundary relation is identical in both states.",
+      "proof": "For every legal boundary coloring gamma, the complete state changes F_D(gamma) only to F_D(gamma) union {gamma(b)} with gamma(b) in A(b); the universal mask equality therefore gives equal mu_C values. C0 reconstruction supplies a component witness whenever that common value is 1.",
+      "classification": "D_C_CHANGE / PROVED_NEUTRAL",
+      "nonconverse": "Failure of universal mask equality is only failure of this sufficient certificate. It does not prove extension nonneutrality without an exact reachable/legal boundary witness."
+    }
+  ],
+  "finite_rule_audit": {
+    "no_global_grammar_materialization": true,
+    "B_C_abstract_cases": 2688,
+    "calculation": "168 monotone message types x 16 possible exact dynamic palette masks",
+    "universal_mask_neutral_cases": 298,
+    "unresolved_cases": 2390,
+    "interpretation": "Counts are over the finite abstract message/palette control space, not counts of source-realizable grammar cells."
+  },
+  "source_status_policy": {
+    "OPTIONAL_LOCAL": "Neither pair bit is ruled out by the source constraints encoded in the local B1 annotation. This is not a global realizability claim.",
+    "UNKNOWN_GLOBAL_REALIZABILITY": "Used for pair families whose opposite bit cannot be certified source-realizable from local annotations alone.",
+    "existential_firewall": "Any existential source-valid neutral/nonneutral class outside universal rules requires a source-valid witness or separate realization theorem."
+  },
+  "extension_policy": {
+    "proved_neutral": "Only exact direct list/relation proofs or an admitted exact-interface adequacy argument.",
+    "proved_nonneutral": "Requires a legal/source-valid distinguishing boundary coloring or separately sealed reachability basis.",
+    "unknown": "Default whenever representation changes but downstream effect is not proved."
+  },
+  "conservative_transition_quotient": {
+    "status": "PARTIAL_ONLY",
+    "safe_collapse": "Raw distinctions carrying one of the sealed PROVED_NEUTRAL certificates may be collapsed for the corresponding frozen extension observation.",
+    "unresolved": "UNKNOWN distinctions remain unmerged and are not called nonredundant.",
+    "consequence": "A complete proof-distinct nonredundant transition ID system kappa is NOT yet sealed."
+  },
+  "implementation_note": {
+    "B1_checker_erratum": "During B2 execution a stale assertion was discovered in the old B1 checker blob. It was repaired and separately archived; B2 binds repaired blob 819ad7921be539d0fc66f0cf9a3304ad803e63ed.",
+    "classifier_path": "research/tools/r5_b1b1c5b2_complete_cover_chord_classifier/symbolic_chord_classifier.py"
+  },
+  "next_frontier": {
+    "name": "R5_B1B1C5B2A_EXTENSION_REACHABILITY_AND_TRANSITION_QUOTIENT_V1",
+    "target": "Resolve or safely retain UNKNOWN classes by adding exact reachability/distinguishing certificates for boundary relations, then define canonical proof-distinct nonredundant transition IDs. Do not count UNKNOWN as nonneutral.",
+    "C5C": "REMAINS_LOCKED until that quotient is sealed."
+  },
+  "scientific_ceiling": {
+    "B1_COMPLETE_LOCAL_COVER": "SEALED",
+    "B2_SYMBOLIC_CLASSIFIER": "PROVED",
+    "B2_UNIVERSAL_NEUTRALITY_RULES": "PROVED",
+    "GLOBAL_NONREDUNDANT_TRANSITION_QUOTIENT": "OPEN",
+    "GLOBAL_FORCED_EXTENSION_COST": "OPEN",
+    "C5C": "LOCKED",
+    "FULL_L2_REPAIR": "OPEN",
+    "LEMMA11_P7_LIFT": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "stop": true,
+  "return_to_HQ": true
+}

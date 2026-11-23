@@ -1,0 +1,119 @@
+{
+  "artifact_uuid": "JANUS-ENGINE-SIM-HOWL-CASTLE-RUN-001-v1.0",
+  "timestamp": "2026-08-30T00:11:00+03:00",
+  "version": "v1.0",
+  "title": "Janus Engine — Howl's Moving Castle simulation run 001",
+  "observer": "Hawkar / JANUS",
+  "node_type": "zero_dimensional_steady_state_simulation",
+  "branch_name": "Janus Engine",
+  "branch_id": "JANUS_ENGINE",
+  "parent": "data/JANUS-ENGINE-R2A-SELF-DRIVE-NET-GENERATION-v1.0.json",
+  "status": "MODEL_PASS_BASELINE_WITH_UNMEASURED_ASSUMPTIONS",
+  "purpose": "First numerical attempt to start the Janus Engine as a self-driving system and determine whether a positive power margin is mathematically possible after paying internal loads. This is a screening model, not experimental validation.",
+  "model_scope": "Steady-state lumped 0-D mass/energy balance. The gaseous-O2 branch is treated as the primary start mode; an optional cryogenic/LOX penalty is evaluated separately.",
+  "assumptions": {
+    "water_flow_m3_s": 0.1,
+    "water_flow_L_s": 100.0,
+    "dissolved_O2_mg_L": 8.0,
+    "O2_extraction_fraction": 0.50,
+    "water_side_pressure_drop_kPa": 2.0,
+    "water_hydraulic_efficiency": 0.70,
+    "chemical_energy_equivalent_MJ_per_kg_O2": 12.6,
+    "central_core_shaft_efficiency": 0.30,
+    "gas_separation_drying_compression_placeholder_MJ_per_kg_O2": 0.60,
+    "N2_sorbent_refrigeration_service_placeholder_MJ_per_kg_O2": 0.20,
+    "fixed_gill_controls_and_misc_W": 100.0,
+    "generator_efficiency": 0.92,
+    "optional_LOX_extra_placeholder_MJ_per_kg_O2": 1.50,
+    "assumption_warning": "All specific processing energies are provisional placeholders chosen to expose the balance structure. They are not measured Janus values and must be replaced by R0/R0B/R0C/R0D/R0E data."
+  },
+  "equations": {
+    "dissolved_O2_concentration": "C_O2 = DO_mg_L * 0.001 kg/m3",
+    "oxygen_capture": "m_dot_O2 = Q_water * C_O2 * eta_extraction",
+    "chemical_power_equivalent": "P_chem = m_dot_O2 * E_chem_per_kgO2",
+    "core_shaft_power": "P_core = eta_core * P_chem",
+    "water_power": "P_water = DeltaP * Q_water / eta_hydraulic",
+    "specific_aux_power": "P_specific = m_dot_O2 * (e_separation + e_N2_service + optional_e_LOX)",
+    "total_aux": "P_aux = P_water + P_specific + P_fixed",
+    "net_shaft": "P_net_shaft = P_core - P_aux",
+    "net_electrical": "P_net_electric = eta_generator * P_net_shaft"
+  },
+  "baseline_gaseous_O2_result": {
+    "O2_capture_kg_s": 0.0004,
+    "O2_capture_g_s": 0.4,
+    "O2_capture_kg_h": 1.44,
+    "chemical_power_equivalent_W": 5040.0,
+    "central_core_shaft_power_W": 1512.0,
+    "water_hydraulic_power_W": 285.714,
+    "gas_separation_drying_compression_W": 240.0,
+    "N2_service_W": 80.0,
+    "fixed_misc_W": 100.0,
+    "total_auxiliary_power_W": 705.714,
+    "net_shaft_power_W": 806.286,
+    "net_electrical_power_W": 741.783,
+    "autonomy_margin_fraction": 0.5333,
+    "net_electrical_fraction_of_chemical_input": 0.1472,
+    "verdict": "PASS_IN_MODEL",
+    "interpretation": "Under the assumed low hydraulic pressure drop and placeholder processing costs, the simulated gaseous-O2 system pays its internal loads and leaves approximately 0.74 kW electrical output. This is not yet evidence that the real device can achieve these assumptions."
+  },
+  "optional_LOX_branch_result": {
+    "extra_cryogenic_power_W": 600.0,
+    "total_auxiliary_power_W": 1305.714,
+    "net_shaft_power_W": 206.286,
+    "net_electrical_power_W": 189.783,
+    "autonomy_margin_fraction": 0.1364,
+    "verdict": "MARGINAL_PASS_IN_MODEL",
+    "interpretation": "The provisional LOX branch consumes most of the surplus. Therefore first self-drive should use gaseous O2 and keep oxygen liquefaction disabled until measured cryogenic performance is available."
+  },
+  "pressure_drop_sensitivity_at_baseline_DO_and_capture": [
+    {"DeltaP_kPa": 0.5, "gas_net_electric_W": 938.9, "LOX_net_electric_W": 386.9},
+    {"DeltaP_kPa": 1.0, "gas_net_electric_W": 873.2, "LOX_net_electric_W": 321.2},
+    {"DeltaP_kPa": 2.0, "gas_net_electric_W": 741.8, "LOX_net_electric_W": 189.8},
+    {"DeltaP_kPa": 3.0, "gas_net_electric_W": 610.4, "LOX_net_electric_W": 58.4},
+    {"DeltaP_kPa": 5.0, "gas_net_electric_W": 347.5, "LOX_net_electric_W": -204.5},
+    {"DeltaP_kPa": 7.5, "gas_net_electric_W": 18.9, "LOX_net_electric_W": -533.1},
+    {"DeltaP_kPa": 10.0, "gas_net_electric_W": -309.6, "LOX_net_electric_W": -861.6}
+  ],
+  "break_even_pressure_drop": {
+    "gaseous_O2_kPa": 7.644,
+    "provisional_LOX_mode_kPa": 3.444,
+    "design_lesson": "Hydrodynamic resistance is a first-order feasibility variable. The rotating gill and water path should target pressure drop far below the theoretical break-even value; approximately 1-2 kPa is used only as an early design target, not a validated limit."
+  },
+  "dissolved_O2_and_capture_sensitivity_at_2kPa": [
+    {"DO_mg_L": 5.0, "capture_fraction": 0.30, "O2_g_s": 0.15, "net_electric_W": 56.4},
+    {"DO_mg_L": 5.0, "capture_fraction": 0.50, "O2_g_s": 0.25, "net_electric_W": 330.5},
+    {"DO_mg_L": 8.0, "capture_fraction": 0.30, "O2_g_s": 0.24, "net_electric_W": 303.1},
+    {"DO_mg_L": 8.0, "capture_fraction": 0.50, "O2_g_s": 0.40, "net_electric_W": 741.8},
+    {"DO_mg_L": 8.0, "capture_fraction": 0.80, "O2_g_s": 0.64, "net_electric_W": 1399.8},
+    {"DO_mg_L": 12.0, "capture_fraction": 0.50, "O2_g_s": 0.60, "net_electric_W": 1290.1}
+  ],
+  "first_run_diagnosis": {
+    "green": [
+      "There exists a plausible mathematical region with P_net > 0 if dissolved-O2 extraction is substantial and the water-side pressure drop is very low.",
+      "Process integration materially helps because N2 and thermal duties are charged as service loads rather than treated as independent throwaway subsystems.",
+      "Gaseous-O2 self-drive has a much wider modeled margin than immediate LOX production."
+    ],
+    "red_or_unknown": [
+      "No measured rotating-gill extraction fraction yet.",
+      "No measured pressure drop for the Axle-derived geometry yet.",
+      "No measured energy cost for O2/N2 purification, moisture removal, sorbent regeneration or compression yet.",
+      "No selected central engine/fuel or measured shaft efficiency yet.",
+      "No demonstrated oxygen-compatible integrated hardware yet."
+    ],
+    "dominant_killer_variables": [
+      "water-side DeltaP",
+      "real O2 extraction fraction",
+      "specific gas-processing energy per kg O2",
+      "central-core efficiency",
+      "fixed mechanical/control losses at small scale"
+    ]
+  },
+  "run_verdict": "VIRTUAL_IGNITION_SUCCESSFUL_ONLY_AS_A_ZERO_D_MODEL",
+  "next_action": "Freeze a single ring geometry and replace the two most sensitive assumptions first: measure DeltaP_water(Q,RPM) and m_dot_O2(Q,RPM). Re-run this exact balance with measured values before adding LOX or combustion complexity.",
+  "safety_boundary": "The simulation does not authorize oxygen-enriched combustion, high-pressure oxygen, or cryogenic prototype work. Early physical validation remains low-energy water-loop and gas-transfer measurement with physically separated oxygen-compatible paths.",
+  "linked_records": [
+    "data/JANUS-ENGINE-R2A-SELF-DRIVE-NET-GENERATION-v1.0.json",
+    "data/JANUS-ENGINE-R0-ROTATING-GILL-RING-v1.0.json",
+    "data/JANUS-ENGINE-BRANCH-CHECKPOINT-v1.1.json"
+  ]
+}

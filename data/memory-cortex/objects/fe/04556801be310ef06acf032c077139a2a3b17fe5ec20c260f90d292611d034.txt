@@ -1,0 +1,101 @@
+{
+  "schema_id": "janus.rowan.fn1_2fn2_3mql_orthogonal_reference_prereg.v1",
+  "date_utc": "2026-10-26",
+  "status": "FROZEN_REFERENCES_BEFORE_2FN2_3MQL_COORDINATE_COMPARISON",
+  "source_lineage": [
+    "data/rowan/provenance/ROWAN-FN1-109AA-1E88-20NMR-1E8B-1NMR-REAL-2026-10-26-v1.json",
+    "data/rowan/provenance/ROWAN-FN1-109AA-TWO-DOMAINS-21NMR-POSE-REAL-2026-10-26-v1.json",
+    "data/rowan/provenance/ROWAN-FN1-21NMR-FOLD-VS-DOMAIN-POSE-TOPA-REAL-COMPARISON-2026-10-26-v1.json"
+  ],
+  "frozen_rowan": {
+    "uuid": "74a70ba9-8fa2-4011-b89a-70c761cc632f",
+    "name": "JANUS-PLACENTA-ECM-FN1-TYPEII-355-463-20261026-R0",
+    "uniprot": "P02751",
+    "sequence": "SNGEPCVLPFTYNGRTFYSCTTEGRQDGHLWCSTTSNYEQDQKYSFCTDHTVLVQTRGGNSNGALCHFPFLYNNHNYTDCTSEGRRDNMKWCGTTQNYDADQKFGFCPM",
+    "sequence_sha256": "d8658e68f40439d7021df84a16c84fa7102a3cc939bd3a96b288b2944985ae0e",
+    "length": 109
+  },
+  "references": [
+    {
+      "pdb": "2FN2",
+      "type": "NMR",
+      "expected_models": 20,
+      "protein_residue_count": 59,
+      "reference_polymer_sequence": "VLVQTRGGNSNGALCHFPFLYNNHNYTDCTSEGRRDNMKWCGTTQNYDADQKFGFCPMA",
+      "reference_target_fn2_offset_zero_based": 60,
+      "reference_fn2_substring_offset_zero_based": 9,
+      "structure_url": "https://files.rcsb.org/download/2FN2.cif",
+      "source_url": "https://data.rcsb.org/rest/v1/core/polymer_entity/2FN2/1",
+      "scope": "Only independent isolated FNII2 fold, NOT the paired-domain orientation",
+      "publication": "Sticht et al J Mol Biol 1998, PMID 9514732",
+      "glycosylation": "Reference glycosylated; predicted no explicit glycan"
+    },
+    {
+      "pdb": "3MQL",
+      "type": "X_RAY",
+      "expected_models": 1,
+      "resolution_angstrom": 3,
+      "protein_residue_count": 220,
+      "reference_polymer_sequence": "YGDCVTDSGVVYSVGMQWLKTQGNKQMLCTCLGNGVSCQETAVTQTYGGNSNGEPCVLPFTYNGRTFYSCTTEGRQDGHLWCSTTSNYEQDQKYSFCTDHTVLVQTRGGNSNGALCHFPFLYNNHNYTDCTSEGRRDNMKWCGTTQNYDADQKFGFCPMAAHEEICTTNEGVMYRIGDQWDKQHDMGHMMRCTCVGNGRGEWTCIAYSQLRGTKHHHHHH",
+      "reference_target_full_109_offset_zero_based": 50,
+      "structure_url": "https://files.rcsb.org/download/3MQL.cif",
+      "source_url": "https://data.rcsb.org/rest/v1/core/polymer_entity/3MQL/1",
+      "scope": "Crystallographic independent technique confirms or contradicts three-domain NMR reference orientation; still includes upstream FnI and downstream FnI, so NOT isolated pair",
+      "mutation": "H307D in upstream FnI relative to native FN1, OUTSIDE the fixed 109aa segment",
+      "publication": "Erat et al J Biol Chem 2010, PMID 20739283",
+      "caveat": "Initial crystallographic models built from existing individual-domain PDB structures; not fully provenance-independent from older structure archives"
+    }
+  ],
+  "biophysical_pair_evidence": {
+    "pmid": "10913243",
+    "doi": "10.1021/bi000427i",
+    "authors": "Smith, Hashimoto, Pickford, Campbell, Werner",
+    "finding": "Direct NMR chemical shifts and relaxation on isolated FNII1-FNII2 show preserved folds, flexible linker and independent tumbling, little intermodule interaction",
+    "coordinate_availability": "NO_FROZEN_PAIR_ONLY_FULL_ATOMIC_ENSEMBLE_LOCATED_AS_OF_PREREG",
+    "role": "Independent experimental qualitative constraint, cannot compute pair-only RMSD or 8Å pair-contact matrix directly"
+  },
+  "fixed_analysis": {
+    "reference_chain": "A",
+    "provider_chain": "A",
+    "sequence_source": "RCSB real polymer entity API seen from Yaksa, exact paired 109-aa segment at reference offset 50 for 3MQL; isolated second type II 49 aa at 2FN2 offset 9",
+    "minimum_CA_3MQL_global": 100,
+    "minimum_CA_per_domain": 45,
+    "FNII1_target_zero_based": [
+      0,
+      48
+    ],
+    "FNII2_target_zero_based": [
+      60,
+      108
+    ],
+    "metrics_3MQL": [
+      "109aa Kabsch CA RMSD",
+      "per-FNII1 CA RMSD",
+      "per-FNII2 CA RMSD",
+      "FNII2 anchored on FNII1 CA RMSD",
+      "FNII1-vs-FNII2 CA 8Å contact counts for prediction and Xray without zero-reference F1 falsification"
+    ],
+    "metrics_2FN2": [
+      "All 20 NMR models, second isolated FNII2 fold per-domain CA RMSD and GDT_TS-like",
+      "Median, min, max, full per-model rows"
+    ],
+    "source_sha256": "Record actual immutable downloaded mmCIF bytes for each source; provider predicted mmCIF must exactly match previous frozen SHA from first NMR run",
+    "no_best_model_cherry_picking": true,
+    "model_names": "No new Rowan protein predictions; comparisons reuse completed UUID",
+    "inferences": [
+      "Published isolated-pair NMR supports nonrigid linker qualitatively, no isolated pair atomic coordinates",
+      "2FN2 cannot establish relative orientation because isolated second domain only",
+      "3MQL is distinct experimental modality but retains FnI context and glycosylation/mutation, so not exact context matched",
+      "All references public long before current Rowan model and may overlap training; no proof of true prospective generalization"
+    ]
+  },
+  "hard_gates": {
+    "new_rowan_jobs": 0,
+    "new_rowan_credits": 0,
+    "no_paid_compute": true,
+    "no_fn1_placenta_or_scoBy_function_claim": true,
+    "no_production_model_promotion": true,
+    "lalba_weekly_credits_gate_unmodified": true,
+    "not_a_prospective_blind": true
+  }
+}

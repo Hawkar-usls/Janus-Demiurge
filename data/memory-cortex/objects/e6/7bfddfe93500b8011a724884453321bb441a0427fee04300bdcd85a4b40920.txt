@@ -1,0 +1,76 @@
+{
+  "schema": "janus.meta_registry.architecture_checkpoint.v1",
+  "id": "ADV-ELITE-Q25-ILLUMINATION-SYNC-DONOR-TRANSPLANT-2026-08-27",
+  "date": "2026-08-27",
+  "project": "ADV_Elite",
+  "status": "RESOLVED",
+  "decision": "SHARED_BRIGHTNESS_AXIS_WITH_INDEPENDENT_LED_GATE_AND_ELITE_ZERO_TECHNICAL_TRANSPLANTS",
+  "user_intent": {
+    "summary": "Take the best technical organs from ADV Elite Zero. Preserve [ ] as synchronized display/LED brightness control. Preserve L as a separate LED-only on/off control. LED brightness travel must stay aligned with display brightness travel."
+  },
+  "illumination_contract": {
+    "canonical_levels": [0, 8, 16, 28, 44, 64, 90, 125, 170, 220],
+    "shared_state": "brightness_index",
+    "display": "canonical_levels[brightness_index]",
+    "led": "led_enabled ? canonical_levels[brightness_index] : 0",
+    "keys": {
+      "[": "shared brightness step down",
+      "]": "shared brightness step up",
+      "L": "toggle LED output only"
+    },
+    "rules": [
+      "There is no independent LED brightness walk.",
+      "L never changes the display brightness.",
+      "L never changes the shared brightness index.",
+      "While LED is disabled, [ ] continue changing the shared brightness index.",
+      "When LED is re-enabled it returns at the current display brightness step.",
+      "Anomaly white must obey the shared brightness axis.",
+      "House amber must obey the shared brightness axis.",
+      "LED OFF is a hard physical-output gate and wins over state colors."
+    ]
+  },
+  "donor": {
+    "name": "JANUS CARDPUTER ADV ELITE ZERO v0.20 SKY ANCHOR",
+    "role": "TECHNICAL_ORGAN_DONOR_ONLY",
+    "selected_organs": [
+      "A9 Buzz worker with exact share target verification",
+      "A9 SD-first corpus with NVS fallback",
+      "ESP-NOW rescue/self-recovery",
+      "real-only ENV freshness/plausibility guards",
+      "CAP GNSS support",
+      "SX1262 LoRa hardware driver",
+      "P/N Sky Anchor telemetry concept",
+      "SwarmSense/self telemetry",
+      "IMU calibration",
+      "shared display/LED brightness UX"
+    ],
+    "rejected_layers": [
+      "game flight/world/stations/combat/economy/factions/missions/hyperspace/cockpit state"
+    ]
+  },
+  "integration_boundaries": [
+    "Only one final ADV_Elite exists.",
+    "Elite Zero is never a second ADV or cognitive authority.",
+    "J remains the manual LoRa ON/OFF gate.",
+    "House never auto-enables LoRa.",
+    "Love = House AND LoRa-active.",
+    "Raw GNSS is trusted-swarm only by default; external/public paths redact it by default.",
+    "SHA256/SHA256d semantics, target comparison and verifier truth are immutable.",
+    "A9 may learn scheduling/search policy around SHA but never claim to learn or alter SHA itself.",
+    "Old SHA-home cognitive curriculum remains retired.",
+    "Prediction never overwrites observation and stale data is never treated as current."
+  ],
+  "implementation_refs": [
+    "Hawkar-usls/janus-distributed-ai-swarm:firmware/adv_elite/ADV_Elite_illumination_policy.h",
+    "Hawkar-usls/janus-distributed-ai-swarm:firmware/adv_elite/ADV_Elite_donor_transplant_manifest_v1.0.json"
+  ],
+  "acceptance_tests": [
+    "Walk every [ ] brightness step and verify equal canonical brightness value is sent to display and enabled LED.",
+    "Disable LED with L, change brightness several steps, verify display changes while LED stays dark.",
+    "Re-enable LED with L and verify immediate restoration at the current shared brightness step.",
+    "Latch anomaly and House states at multiple brightness levels and verify color changes never bypass brightness scaling.",
+    "Reboot and verify shared brightness index and LED gate are restored by the final persistence layer."
+  ],
+  "epistemic_note": "This checkpoint freezes architecture and transplant policy. Hardware behavior is only VERIFIED after the final ADV_Elite build is compiled, flashed and physically tested on the Cardputer ADV.",
+  "next_gate": "WIRE_POLICY_AND_SELECTED_DONOR_ORGANS_INTO_FINAL_ADV_ELITE_COMPOSITION_AND_RUN_COMPILE_PLUS_PHYSICAL_ACCEPTANCE_TESTS"
+}

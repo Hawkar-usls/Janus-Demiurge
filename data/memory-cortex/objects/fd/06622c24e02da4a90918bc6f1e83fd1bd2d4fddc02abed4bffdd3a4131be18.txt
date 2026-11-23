@@ -1,0 +1,206 @@
+{
+  "schema": "janus.project_continuity_ledger.hrain_inaihr.v1_0",
+  "artifact_id": "JANUS-PROJECT-CONTINUITY-LEDGER-HRAIN-INAIHR-PROTOCOL-2026-08-24-v1.0",
+  "version": "v1.0",
+  "created_at_local": "2026-08-24T20:21:00+03:00",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "document_class": "CANONICAL_CROSS_PROJECT_EVENT_SOURCED_MEMORY_AND_DRIFT_PREVENTION_PROTOCOL",
+  "status": "ACTIVE_CANONICAL_PROJECT_CONTINUITY_PROTOCOL",
+  "parents": [
+    "JANUS-DEEP-ANALYSIS-5D-RECURSIVE-TRANCEPTION-HRAIN-INAIHR-PROTOCOL-2026-08-21-v2.0",
+    "JANUS-NEXUS-HABITAT-EVOLUTION-PROVENANCE-LEDGER-2026-08-17-v1.0"
+  ],
+  "purpose": "Prevent project-memory holes, narrative drift, silent supersession loss, forgotten negative results, untracked archive requests and pseudoreplication by making every JANUS project an append-only event-sourced graph that HRain can traverse structurally and iNaiHR can expand associatively without promoting associations to evidence.",
+  "core_law": "THE_CURRENT_PROJECT_STATE_MUST_BE_RECONSTRUCTABLE_FROM_APPEND_ONLY_EVENTS_AND_EXPLICIT_DEPENDENCIES. A SUMMARY IS A VIEW, NOT THE HISTORY.",
+  "compatibility": {
+    "HRain": {
+      "role": "STRUCTURAL_CONTEXT_AND_DEPENDENCY_GRAPH",
+      "must_receive": [
+        "project_origin",
+        "node_id",
+        "parent_ids",
+        "edge_types",
+        "lane_id",
+        "state_transition",
+        "source_or_receipt",
+        "claim_ceiling",
+        "supersession",
+        "negative_results",
+        "open_and_blocked_gates"
+      ],
+      "forbidden": "HRain structural adjacency must never be treated as external corroboration."
+    },
+    "iNaiHR": {
+      "role": "ASSOCIATIVE_CONTEXT_AND_CANDIDATE_BRANCH_GENERATION",
+      "must_receive": [
+        "candidate_associations",
+        "alternate_meanings",
+        "cross_domain_homologs",
+        "unresolved_questions",
+        "candidate_next_sources"
+      ],
+      "default_evidence_authority": 0,
+      "promotion_rule": "An iNaiHR candidate may become an evidence-bearing node only after D5 provenance binding to an independent source or measurement."
+    },
+    "DemiHead": {
+      "role": "BIND_COMPARE_PRESERVE_DISAGREEMENT",
+      "required_outputs": ["AGREEMENT", "DISAGREEMENT", "UNRESOLVED", "SOURCE_NEEDED", "SUPERSEDED", "BLOCKED"],
+      "law": "Agreement among JANUS faces can prioritize a test but cannot increase external evidence count."
+    }
+  },
+  "project_storage_contract": {
+    "required_views": {
+      "PROJECT_ORIGIN": "Why the project exists, original question, initial hypotheses, first physical discriminator and any semantic/project-only roots.",
+      "EVENT_LEDGER": "Append-only chronological events. Never rewrite prior events to match current understanding.",
+      "DEPENDENCY_GRAPH": "Machine-readable parent/child edges and selection dependencies.",
+      "CURRENT_AUTHORITY": "Derived snapshot of what is currently admitted, blocked, waiting, negative, superseded and forbidden.",
+      "OPEN_GATES": "Every unresolved measurement, archive, model or communication gate with exact next condition.",
+      "NEGATIVE_REGISTER": "Immutable negative/failed results and what they specifically rule out.",
+      "EXTERNAL_CONTACT_LEDGER": "Outbound request, recipient, exact scientific purpose, thread/message id if available, reply state, promised delivery and anti-duplication status.",
+      "SOURCE_MANIFEST": "Files, datasets, emails, URLs, commits, hashes and custodians used by the project.",
+      "SELECTION_DEPENDENCY_REGISTER": "Which coordinates, windows, frequencies, cases or samples were selected using upstream project information and therefore are not independent confirmation.",
+      "NEXT_ALLOWED_ACTIONS": "Actions already authorized under current council/gates.",
+      "FORBIDDEN_ACTIONS": "Actions that would violate preregistration, claim ceiling, waiting state, identity/hash gate or no-retarget rule."
+    },
+    "append_only_rule": "Historical records are immutable. Corrections are child events with CORRECTS or SUPERSEDES edges.",
+    "current_state_rule": "CURRENT_AUTHORITY is regenerated from ledger events; it must never silently discard a negative, wait, block or superseded result.",
+    "cross_repo_rule": "Linked canonical parents are referenced by repo+commit+path or immutable content hash; do not duplicate them as if newly discovered."
+  },
+  "canonical_event_schema": {
+    "event_id": "globally unique stable id",
+    "project_id": "stable project key",
+    "created_at": "RFC3339 timestamp",
+    "lane_id": "physical/archive/model/outreach/calibration/etc lane",
+    "event_type": "ORIGIN | HYPOTHESIS | PREREG | MEASUREMENT | NEGATIVE | BLOCK | EXTERNAL_REQUEST | EXTERNAL_REPLY | FILE_RECEIPT | HASH | COUNCIL | CORRECTION | SUPERSESSION | CALIBRATION | CONTROL | SYNTHETIC | DECISION",
+    "parents": "zero or more prior event ids",
+    "edges": [
+      "DERIVES_FROM",
+      "TESTS",
+      "CALIBRATES",
+      "CONTROLS",
+      "NEGATES",
+      "BLOCKS",
+      "UNBLOCKS",
+      "REQUESTS_DATA_FOR",
+      "REPLIES_TO",
+      "CORRECTS",
+      "SUPERSEDES",
+      "ASSOCIATIVE_ONLY",
+      "SELECTED_BY",
+      "INDEPENDENT_OF",
+      "NOT_INDEPENDENT_OF"
+    ],
+    "input_freeze": "coordinates/windows/thresholds/sample ids/source ids known before result",
+    "result": "bounded factual result",
+    "claim_ceiling": "strongest claim this event permits",
+    "provenance": "source/file/email/commit/hash/custodian",
+    "state_delta": "which project lanes change and how",
+    "negative_delta": "what is newly ruled out",
+    "open_gate_delta": "which gate opens/closes/changes",
+    "selection_dependency_delta": "whether this event can count as independent corroboration",
+    "next_allowed": "authorized continuation",
+    "forbidden": "explicit non-actions",
+    "hrain_projection": "structural node/edges",
+    "inaihr_projection": "candidate associations with evidence_authority=0 unless separately sourced"
+  },
+  "pre_stage_gate": {
+    "trigger": "BEFORE_EVERY_NEW_PHYSICAL_ARCHIVE_EXTERNAL_OR_MODEL_STAGE",
+    "checks": [
+      "LOAD_PROJECT_ORIGIN_AND_CURRENT_AUTHORITY",
+      "LOAD_ALL_OPEN_BLOCKED_WAITING_LANES",
+      "LOAD_NEGATIVE_REGISTER",
+      "LOAD_SELECTION_DEPENDENCY_REGISTER",
+      "VERIFY_STAGE_HAS_EXPLICIT_PARENT_AND_SCIENTIFIC_QUESTION",
+      "VERIFY_STAGE_IS_AUTHORIZED_OR_ASK_JANUS",
+      "FREEZE_INPUTS_COORDINATES_WINDOWS_THRESHOLDS_AND_CONTROLS",
+      "VERIFY_NO_EXISTING_EXTERNAL_THREAD_ALREADY_COVERS_THE_REQUEST",
+      "VERIFY_REQUESTED_DATA_CAN_ANSWER_THE_STATED_QUESTION",
+      "VERIFY_NO_SUPERSEDED_RESULT_IS_BEING_REACTIVATED",
+      "VERIFY_NEW_STAGE_DOES_NOT_SILENTLY_RAISE_CLAIM_CEILING"
+    ],
+    "fail_closed": true
+  },
+  "post_stage_gate": {
+    "trigger": "AFTER_EVERY_RESULT_REPLY_FILE_DELIVERY_OR_DECISION",
+    "checks": [
+      "APPEND_EVENT_BEFORE_INTERPRETIVE_CONTINUATION",
+      "FREEZE_MESSAGE_OR_FILE_METADATA",
+      "HASH_PRIMARY_BYTES_BEFORE_CONTENT_ANALYSIS_WHEN_BYTES_EXIST",
+      "UPDATE_LANE_STATE",
+      "UPDATE_NEGATIVE_REGISTER",
+      "UPDATE_OPEN_GATES",
+      "UPDATE_SELECTION_DEPENDENCIES",
+      "MARK_SUPERSEDED_INTERPRETATIONS",
+      "REGENERATE_CURRENT_AUTHORITY",
+      "RUN_HOLE_DETECTOR",
+      "ASK_JANUS_AGAIN_IF_THE_EVENT_OPENS_A_NEW_PHYSICAL_STAGE"
+    ]
+  },
+  "hole_detector": {
+    "mandatory_tests": [
+      {"id":"PCL-01","name":"ORPHAN_NODE","fail_if":"non-origin event has no explicit parent or source lineage"},
+      {"id":"PCL-02","name":"MISSING_ORIGIN_CHAIN","fail_if":"current narrative cannot trace back to PROJECT_ORIGIN"},
+      {"id":"PCL-03","name":"NEGATIVE_DROPPED","fail_if":"a prior negative relevant to the active hypothesis is absent from CURRENT_AUTHORITY"},
+      {"id":"PCL-04","name":"SUPERSESSION_DRIFT","fail_if":"superseded result is still described as current"},
+      {"id":"PCL-05","name":"BLOCKED_AS_NEGATIVE","fail_if":"missing/unavailable data are described as scientific null"},
+      {"id":"PCL-06","name":"BLOCKED_AS_POSITIVE","fail_if":"missing data are treated as suggestive support"},
+      {"id":"PCL-07","name":"ASSOCIATION_PROMOTED","fail_if":"iNaiHR/semantic adjacency lacks independent provenance but is counted as evidence"},
+      {"id":"PCL-08","name":"INTERNAL_CONSENSUS_PSEUDOREPLICATION","fail_if":"multiple JANUS faces are counted as independent sources"},
+      {"id":"PCL-09","name":"SELECTION_DEPENDENCY_PSEUDOREPLICATION","fail_if":"dataset is independent but selected location/window/feature derives from the same upstream hypothesis and is counted as independent confirmation"},
+      {"id":"PCL-10","name":"EXTERNAL_REQUEST_UNTRACKED","fail_if":"outbound archive/custodian request lacks lane, purpose, recipient and anti-duplication state"},
+      {"id":"PCL-11","name":"INBOUND_REPLY_UNFROZEN","fail_if":"external reply changes knowledge but no immutable event records it"},
+      {"id":"PCL-12","name":"FILE_USED_BEFORE_IDENTITY_HASH","fail_if":"delivered primary bytes are analyzed before identity verification and hashing"},
+      {"id":"PCL-13","name":"REQUEST_SCOPE_DRIFT","fail_if":"requested artifact cannot answer the frozen scientific question or a proxy is silently substituted"},
+      {"id":"PCL-14","name":"LANE_MERGE_DRIFT","fail_if":"calibration/control/exploratory lane is narrated as target-detection lane"},
+      {"id":"PCL-15","name":"WAITING_STATE_LOST","fail_if":"custodian promised future action but lane is treated as closed or absent"},
+      {"id":"PCL-16","name":"NEW_STAGE_WITHOUT_GATE","fail_if":"new physical/archive method begins without pre-stage gate/council when required"},
+      {"id":"PCL-17","name":"CLAIM_WITHOUT_SOURCE","fail_if":"claim has no source authority or exceeds source-to-claim ceiling"},
+      {"id":"PCL-18","name":"HISTORICAL_CONTEXT_LOSS","fail_if":"project reason-for-existence or the negative that caused a branch transition disappears from summaries"}
+    ],
+    "severity": ["INFO","WARN","HOLD","FAIL_CLOSED"],
+    "required_output": "hole_detector_receipt with every test PASS/WARN/FAIL and exact repair edge"
+  },
+  "project_memory_packet": {
+    "purpose": "Minimum complete handoff for any future model/session/HRain/iNaiHR node before continuing a project.",
+    "required_order": [
+      "PROJECT_ID_AND_ORIGINAL_QUESTION",
+      "WHY_THIS_PROJECT_EXISTS",
+      "ORIGIN_CHAIN",
+      "CURRENT_CLAIM_CEILING",
+      "CURRENT_ADMITTED_FACTS",
+      "IMMUTABLE_NEGATIVES",
+      "SUPERSEDED_RESULTS",
+      "OPEN_BLOCKED_WAITING_LANES",
+      "SELECTION_DEPENDENCIES_AND_NON_INDEPENDENCE",
+      "EXTERNAL_CONTACTS_AND_EXPECTED_REPLIES",
+      "LATEST_PRIMARY_OR_SYNTHETIC_DELTA",
+      "NEXT_ALLOWED_ACTIONS",
+      "FORBIDDEN_ACTIONS",
+      "EXACT_PARENT_HASHES_OR_COMMITS"
+    ],
+    "rule": "A new session must not infer project purpose from the latest file alone. It must load the origin chain plus current authority packet."
+  },
+  "archive_request_contract": {
+    "minimum_request_fields": [
+      "exact artifact/dataset/cruise/report identifier",
+      "frozen coordinate/time/window when relevant",
+      "scientific purpose phrased as provenance/reproducibility or measurement question",
+      "specific requested file classes or metadata",
+      "request for holding/access procedure if bytes cannot be released",
+      "no request for custodian interpretation of the target hypothesis",
+      "no speculative archaeological/exotic narrative unless directly necessary",
+      "no duplicate request while an existing thread is active"
+    ],
+    "preferred_data_order": [
+      "file manifest/checksums",
+      "identity and provenance metadata",
+      "navigation/timebase/CRS/datum",
+      "sensor/acquisition geometry",
+      "raw or closest-to-raw data",
+      "processed products and processing metadata",
+      "interpretive publications last"
+    ],
+    "rule": "ASK_FOR_THE_MEASUREMENT_CHAIN_NEEDED_TO_ANSWER_THE_FROZEN_QUESTION__NOT_FOR_A_CONVENIENT_FILE_NAME_IF_THAT_FILE_CANNOT_CLOSE_THE_GATE"
+  },
+  "canonical_seal": "JANUS REMEMBERS WHY A BRANCH EXISTS, WHAT FAILED BEFORE IT, WHAT SELECTED IT, WHO HOLDS THE NEXT BYTE, AND WHAT THE BYTE IS ALLOWED TO PROVE."
+}

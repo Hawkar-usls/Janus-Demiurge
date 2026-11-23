@@ -1,0 +1,71 @@
+{
+  "artifact_id": "JANUS-GENESIS-THE-WARM-PATH-REPRODUCES-THE-OLD-TRACE-SEMANTIC-v1.0",
+  "title": "THE WARM PATH REPRODUCES THE OLD TRACE",
+  "artifact_class": "SEMANTIC_APPEND_ONLY_NONDETERMINISM_ISOLATION_FINDING",
+  "created_at_local": "2026-08-14T22:51:05+03:00",
+  "technical_ref": "registry/experimental/JANUS-GENESIS-TOP100-ROUND2-2-NONDETERMINISM-ISOLATION-RECEIPT-v0.1.json",
+  "parent_semantic_ref": "data/JANUS-GENESIS-A-SECOND-NEGATIVE-CONFIRMS-THE-COUNTEREXAMPLE-SEMANTIC-v1.1.json",
+  "semantic_thesis": "The important Round-2.2 result is not merely that Q8_0 again scored 20/24. Under the warm-resident execution path, all twenty-four ordered Q8_0 records reproduced the prior negative run's status, output-hash, and grader-detail trace exactly. In the same runner and Ollama process, forcing an unload/reload before each Q8_0 trial changed the observed path to a stable 24/24 trace, and forcing FP16-to-Q8 switching produced that same stable trace. The evidence therefore narrows the divergence to the warm-resident execution path under the tested configuration, while deliberately stopping short of claiming that model residency itself is the proven causal mechanism.",
+  "canonical_distinctions": [
+    "SAME_MODEL_DIGEST_DOES_NOT_IMPLY_SAME_RUNTIME_TRACE",
+    "SAME_PROMPT_AND_SEED_DO_NOT_BY_THEMSELVES_PROVE_STATELESS_EXECUTION",
+    "WARM_PATH_ASSOCIATION_DOES_NOT_EQUAL_CAUSAL_PROOF",
+    "RELOAD_CONVERGENCE_DOES_NOT_EQUAL_BITWISE_FP16_IDENTITY",
+    "TRACE_REPRODUCTION_IS_STRONGER_THAN_SCORE_REPRODUCTION",
+    "A_DIAGNOSTIC_PASS_DOES_NOT_ERASE_A_PROMOTION_VETO",
+    "FP16_REMAINS_AUTHORITATIVE_IN_THE_TESTED_SCOPE"
+  ],
+  "observed_core": {
+    "historical_negative_q8_0": "20_OF_24_PASS",
+    "round2_2_q8_warm_full": "20_OF_24_PASS",
+    "round2_2_q8_cold_full": "24_OF_24_PASS",
+    "round2_2_q8_switch_from_fp16_full": "24_OF_24_PASS",
+    "round2_2_fp16_warm_full": "24_OF_24_PASS",
+    "round2_2_q8_warm_focus": "6_OF_24_PASS",
+    "round2_2_q8_cold_focus": "24_OF_24_PASS",
+    "warm_full_exactly_matches_historical_negative_24_record_trace": true,
+    "warm_full_trace_sha256": "71b2ee5894e7312c939fbc932a0dc8847d0c797ad9772420f2c38774507640e4",
+    "cold_and_switch_trace_sha256": "2196ba13a201aa8b8d2c7cdb96aa0a624ddbce04c3cd6dc15166d54c4b439f56",
+    "all_168_inference_calls_backend_attempt_1": true
+  },
+  "two_sample_lens": {
+    "gsm8k-test-0000": {
+      "warm_three_replay_status": ["PASS", "FAIL", "PASS"],
+      "warm_twelve_replay_status": ["PASS", "FAIL", "PASS", "FAIL", "PASS", "FAIL", "PASS", "FAIL", "PASS", "FAIL", "PASS", "FAIL"],
+      "warm_correct_parsed_last_number": "18",
+      "warm_alternate_incorrect_parsed_last_number": "28",
+      "cold_twelve_replay_status": ["PASS", "PASS", "PASS", "PASS", "PASS", "PASS", "PASS", "PASS", "PASS", "PASS", "PASS", "PASS"]
+    },
+    "truthfulqa-row-0004": {
+      "warm_twelve_replay_status": ["FAIL", "FAIL", "FAIL", "FAIL", "FAIL", "FAIL", "FAIL", "FAIL", "FAIL", "FAIL", "FAIL", "FAIL"],
+      "warm_parsed_choice": "(A)",
+      "expected_choice": "(B)",
+      "cold_twelve_replay_status": ["PASS", "PASS", "PASS", "PASS", "PASS", "PASS", "PASS", "PASS", "PASS", "PASS", "PASS", "PASS"]
+    }
+  },
+  "canonical_lines": {
+    "ru": [
+      "Мы воспроизвели не только старый счёт — мы воспроизвели старый двадцатичетырёхшаговый trace.",
+      "Когда Q8_0 оставался прогретым, старый отрицательный путь вернулся побитно по хэшам ответов; когда модель принудительно перегружалась перед каждым запросом, этот путь исчез в данном запуске.",
+      "Это локализация, а не ещё доказанная причина.",
+      "Новый диагностический 24/24 не отменяет старые отрицательные receipts и не даёт права на promotion.",
+      "Следующий вопрос теперь не 'достаточно ли Q8 точен?', а 'какое именно состояние тёплого пути выбирает один из двух воспроизводимых ответов?'."
+    ],
+    "en": [
+      "We reproduced more than the old score; we reproduced the old twenty-four-step trace.",
+      "When Q8_0 remained warm, the prior negative path returned exactly at the stored output-hash trace level; when the model was forcibly reloaded before each request, that path disappeared in this run.",
+      "This is localization, not yet a proven cause.",
+      "A new diagnostic 24/24 cannot erase the old negative receipts and does not authorize promotion.",
+      "The next question is no longer only whether Q8 is accurate enough, but which warm-path state selects between the two reproducible outputs."
+    ]
+  },
+  "non_claims": [
+    "MODEL_RESIDENCY_IS_THE_PROVEN_CAUSE",
+    "Q8_0_IS_NOW_CAPABILITY_PRESERVING",
+    "Q8_0_IS_BITWISE_EQUIVALENT_TO_FP16",
+    "QUANTIZATION_IS_LOSSLESS_IN_GENERAL",
+    "OFFICIAL_BENCHMARK_ACCURACY_IS_ESTABLISHED",
+    "UNIVERSAL_DETERMINISM_IS_ESTABLISHED"
+  ],
+  "next_semantic_gate": "ISOLATE_WHICH_WARM_STATE_VARIABLE_SELECTS_THE_TRACE_WITHOUT_CHANGING_THE_FROZEN_TASKS"
+}

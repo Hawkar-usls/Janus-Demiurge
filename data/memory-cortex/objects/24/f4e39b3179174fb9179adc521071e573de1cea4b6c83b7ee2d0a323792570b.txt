@@ -1,0 +1,293 @@
+{
+  "schema": "janus.tachyon.rule001.temporal_binding_algorithm.v1",
+  "artifact_id": "JANUS-TACHYON-RULE-001-TEMPORAL-PERCEPTION-ALGORITHM-2026-11-22-v1.0",
+  "date_utc": "2026-11-22",
+  "title_ru": "Алгоритм JANUS TACHYON RULE #1: моделирование временной связности восприятия и проверка субъективной вневременности",
+  "research_role": "OFFLINE_RESEARCH_REFERENCE_SPEC__NOT_BRAIN_PROGRAMMING__NOT_PHYSICAL_TIME_MACHINE",
+  "parent_rule": "data/JANUS-RULE-001-FIRST-PERSON-TEMPORAL-CONSTRUCTION-2026-11-22-v1.0.json",
+  "design_goals": [
+    "Раздельно учитывать объективную физическую хронологию и субъективные оценки времени.",
+    "Проверять возможную связь повторяемости/новизны стимулов с границами запомненных событий.",
+    "Проверять сохранность осознанной активности отдельно от субъективной непрерывности времени и памяти.",
+    "Не допускать вывода о физическом путешествии во времени из самоотчётов.",
+    "Хранить отрицательные и неопределённые исходы.",
+    "Переносить аналогию камня в лесу на временные утверждения без логического скачка от отсутствия переживания к отсутствию физического события."
+  ],
+  "io_contract": {
+    "input": {
+      "experiment_id": "immutable string, no personal identifiers",
+      "schedule_seed_commit": "SHA256 of preregistered session schedule, before data collection",
+      "session_id": "pseudonymous identifier",
+      "condition": "A_LOOP | B_DIVERSITY | C_NEUTRAL",
+      "external_clock_start_ns": "monotonic integer nanoseconds",
+      "external_clock_end_ns": "monotonic integer nanoseconds, must be later than start",
+      "stimulus_events": "Array of {time_offset_ms,stimulus_id,modality,category,transition_marker}, monotonic, prelogged, known before subjective reports",
+      "immediate_report": "Optional {passage_of_time_rating,subjective_duration_seconds,engagement,boredom,discomfort}, only with prior consent",
+      "delayed_report": "Optional {retrospective_duration_seconds,recalled_events_unstructured,ordered_event_recall}, with separate preregistered delay",
+      "boundary_labels": "Independent blinded coder outputs, not auto-generated subjective facts",
+      "awareness_checks": "Optional voluntary predeclared ordinary task-response evidence; never claim direct measurement of consciousness",
+      "adverse_event_log": "Stop/comfort report without automatic clinical interpretation"
+    },
+    "output": {
+      "objective_duration_s": "(external_clock_end_ns - external_clock_start_ns)/1e9",
+      "nominal_stimulus_transition_density_per_min": "count of predeclared transition markers / objective minutes",
+      "remembered_boundary_density_per_min": "blind-coded recalled distinct boundaries / objective minutes",
+      "retrospective_duration_ratio": "retrospective_duration_seconds / objective_duration_s when valid",
+      "prospective_duration_ratio": "immediate duration estimate / objective_duration_s when valid",
+      "subjective_time_passage_rating": "separate ordinal outcome; not equivalent to ratios",
+      "awareness_integrity": "OBSERVABLE_ENGAGEMENT_PRESENT | NOT_MEASURED | INSUFFICIENT_EVIDENCE; never timeless consciousness proof",
+      "guard_verdict": "VALID_FOR_COGNITIVE_ANALYSIS | INVALID_INPUT | ABSTAIN_MISSING_MEASUREMENTS | STOP_FOR_SAFETY",
+      "scientific_verdict": "HYPOTHESIS_CONSISTENT | INCONCLUSIVE | CONTRADICTS_DIRECTION | NOT_TESTED, only after preregistered aggregate analyses",
+      "physical_time_travel_verdict": "NOT_EVALUATED_BY_THIS_ALGORITHM"
+    }
+  },
+  "symbolic_mechanism": {
+    "physical_clock": "T_phys = (t_end_ns - t_start_ns) / 1e9; positive independent elapsed seconds",
+    "functional_latents_not_measured_brain_states": [
+      "z_t = F_sensory(x_t), functional perceptual features (not reverse-engineered neural reality)",
+      "p_t = F_predict(z_(t-1), context), expected features",
+      "novelty_t = distance(z_t,p_t), an optional preregistered model feature",
+      "boundary_t = threshold(novelty_t,context), hypothesis about event segmentation",
+      "continuity_t = F_integrate(z_(t-W:t),attention_t,memory_state_t), unverified model of experienced present",
+      "memory_t = F_encode(boundary_t,z_t,attention_t), unverified working model"
+    ],
+    "observables_and_derived_metrics": [
+      "B_stim = number of objective marked stimulus transitions; not a count of brain events",
+      "B_memory = independently coded distinct recalled event transitions; not an absolute consciousness meter",
+      "D_memory = B_memory / (T_phys/60) [events/min], defined only when T_phys>0",
+      "R_retro = estimated_retrospective_seconds / T_phys [dimensionless]",
+      "R_prospective = estimated_prospective_seconds / T_phys [dimensionless]"
+    ],
+    "prohibited_identity": [
+      "D_memory != density of physical time",
+      "R_retro != speed of real physical time",
+      "Continuity_report != survival of awareness without a brain",
+      "correlation != causal mechanism",
+      "zero recall != timelessness",
+      "synchronous self-report across participants != physical spacetime displacement",
+      "stimulus schedule and participant behavior are not themselves brain stimulation telemetry"
+    ]
+  },
+  "experimental_arms": [
+    {
+      "id": "A_LOOP",
+      "purpose": "Test event-predictability and repetition",
+      "protocol": "Repeat a small neutral, comfortable set of images and sound cues with no startling changes. Participant can stop at any time."
+    },
+    {
+      "id": "B_DIVERSITY",
+      "purpose": "Test varied meaningful context changes",
+      "protocol": "Present neutral varied visual/audio content matched in luminance, loudness, emotional valence, duration and general task effort; pre-register category changes."
+    },
+    {
+      "id": "C_NEUTRAL",
+      "purpose": "Control for device/session expectations",
+      "protocol": "Same duration and general comfort with neutral static or ordinary content; baseline task matched for non-specific apparatus effects."
+    }
+  ],
+  "experiment_preconditions": {
+    "conditions": [
+      "No hidden/subliminal or coercive suggestions",
+      "Independent monotonic clock and schedule logging",
+      "Randomization and counterbalancing before outcomes",
+      "No strobing, flashes, loudness escalation, prolonged sensory deprivation, forced isolation, restraints or sleep deprivation",
+      "Adult informed voluntary consent and immediate self-stop",
+      "Ethics/safety review before human studies",
+      "No collection of named participants or neurodata unless separately consented and approved"
+    ],
+    "phase_0": "Design document and simulated schedule only; no human observations claimed.",
+    "pilot_parameter_example": {
+      "duration_seconds": 300,
+      "arms": [
+        "A_LOOP",
+        "B_DIVERSITY",
+        "C_NEUTRAL"
+      ],
+      "note": "5 minutes is an example, not an established safe dose or scientifically powered design."
+    }
+  },
+  "states": [
+    {
+      "id": "S_ONT_EVENT_TYPE",
+      "action": "До любого моделирования определить класс события: внешнее физическое, субъективное, коллективно-интерпретируемое или претензия на изменение физического времени.",
+      "advance_if": "Никакое отсутствие наблюдателя не используется для отрицания физического события; любой physical-time claim помечен HOLD."
+    },
+    {
+      "id": "S0_SPEC",
+      "action": "Version and freeze hypothesis, arms, stimulus assets, duration, randomization, measures, thresholds, stop rule, sample size/power plan, and exclusion reasons; hash schedule.",
+      "advance_if": "All preregistration and review requirements met."
+    },
+    {
+      "id": "S1_VALIDATION",
+      "action": "Validate externally timed stimulus schedule, media intensity bounds, consent, stop control, missingness policy, and identity-free logs.",
+      "advance_if": "Input invariants and safeguards pass."
+    },
+    {
+      "id": "S2_CONDITION",
+      "action": "In authorized human pilot only, present one preassigned arm with voluntary immediate stop; log timestamps and known stimulus transitions.",
+      "advance_if": "Session completed comfortably."
+    },
+    {
+      "id": "S3_REPORT",
+      "action": "Gather immediate duration estimate/passage rating and separately delayed memory reports; avoid converting self-reports to proof of brain modification.",
+      "advance_if": "Report schema complete; missingness permitted and marked."
+    },
+    {
+      "id": "S4_METRICS",
+      "action": "Compute physical elapsed time, objective transition density, memory boundary density, retrospective and prospective ratios independently.",
+      "advance_if": "No invalid interval, negative counts, or leakage."
+    },
+    {
+      "id": "S5_BLIND_ANALYSIS",
+      "action": "Compare arms using preregistered subject/group-disjoint methods. Test repetition vs diversity and whether boundary counts mediate duration judgments. Adjust for bored/engaged ratings with prespecified analysis.",
+      "advance_if": "Eligible independent sample and adequate data; otherwise ABSTAIN."
+    },
+    {
+      "id": "S6_TIMELESSNESS_DISCRIMINATION",
+      "action": "If a participant reports no passage of time, check observable task engagement and recall/order performance. Distinguish no report, time distortion, weak memory, and lost awareness; never infer a timeless brain by declaration.",
+      "advance_if": "Multiple independent indicators; uncertainty allowed."
+    },
+    {
+      "id": "S7_VERDICT",
+      "action": "Publish all arms including nulls/negatives, uncertainty, missingness and external clock checks. Never upgrade to physical retrocausality.",
+      "advance_if": "Human reviewer signs research interpretation."
+    }
+  ],
+  "data_quality_gates": [
+    {
+      "gate": "G01_CLOCK",
+      "when": "elapsed time missing, negative, zero or physically inconsistent",
+      "verdict": "INVALID_INPUT"
+    },
+    {
+      "gate": "G02_CAUSAL_ORDER",
+      "when": "outcome or delayed labels appear in randomized schedule, model selection, or pre-registered feature selection",
+      "verdict": "INVALID_INPUT"
+    },
+    {
+      "gate": "G03_REPORT_DISSOCIATION",
+      "when": "single duration self-report is interpreted as both online speed and hindsight duration",
+      "verdict": "ABSTAIN_MISSING_MEASUREMENTS"
+    },
+    {
+      "gate": "G04_AMNESIA",
+      "when": "participant recalls few events but awareness during the session was not independently observed",
+      "verdict": "INCONCLUSIVE_NOT_TIMELESS"
+    },
+    {
+      "gate": "G05_CONSENT",
+      "when": "no consent / participant requests stop / discomfort",
+      "verdict": "STOP_FOR_SAFETY"
+    },
+    {
+      "gate": "G06_MULTIPLE_COMPARISON",
+      "when": "posthoc selected stimulus arms, temporal windows, thresholds or participants",
+      "verdict": "INVALID_SCIENTIFIC_CLAIM"
+    },
+    {
+      "gate": "G07_PHYSICAL_CLAIM",
+      "when": "subjective outcome labeled physical time travel or change of external clocks",
+      "verdict": "REJECT_PHYSICAL_PROMOTION"
+    },
+    {
+      "gate": "G08_POPULATION",
+      "when": "group agreement used to claim all minds are one or shared altered physical spacetime",
+      "verdict": "REJECT_UNSUPPORTED_INFERENCE"
+    },
+    {
+      "gate": "G09_ONTOLOGICAL_CATEGORY_ERROR",
+      "when": "No hearer interpreted as no acoustic pressure wave, or no sense of time interpreted as no external clock passage",
+      "verdict": "REJECT_CATEGORY_ERROR"
+    },
+    {
+      "gate": "G10_COLLECTIVE_INFERENCE",
+      "when": "Synchronized inner reports alone are treated as direct causal influence on physical spacetime",
+      "verdict": "HOLD_INDEPENDENT_PHYSICAL_EVIDENCE"
+    }
+  ],
+  "pseudocode_ru": [
+    "ПЕРВОЕ ПРАВИЛО: различить PHYSICAL_EVENT, SUBJECTIVE_EXPERIENCE, SOCIAL_INTERPRETATION и PHYSICAL_SPACETIME_CHANGE; отсутствие переживающего не означает отсутствие физического процесса.",
+    "ФУНКЦИЯ PLAN: зарегистрировать RULE_001, гипотезы, объективные часы, случайный порядок A/B/C, этические ограничения; сохранить hash ДО наблюдений.",
+    "ФУНКЦИЯ RUN: если нет безопасного добровольного допуска → STOP; иначе для каждой сессии воспроизводить заранее зафиксированные безопасные стимулы и логировать внешнее время.",
+    "ФУНКЦИЯ COLLECT: отдельно получить немедленную оценку прохождения времени, оценку длительности, отсроченную память и независимые события.",
+    "ФУНКЦИЯ MEASURE: T_phys ← (t_end−t_start), D_stim ← N_objective_boundaries/T_phys, D_memory ← N_recalled_boundaries/T_phys, R_retro ← T_retrospective/T_phys, R_prospective ← T_prospective/T_phys.",
+    "ФУНКЦИЯ VALIDATE: отбрасывать невалидные часы, неопределённые отчёты и утечку меток; не трактовать пробелы памяти как доказательство вневременности.",
+    "ФУНКЦИЯ COMPARE: на новых неиспользованных участниках проверить A_LOOP против B_DIVERSITY по первичному исходу; отдельно анализировать немедленное течение времени, событийную память и нейтральный контроль.",
+    "ФУНКЦИЯ ASSESS_TIMELESS: проверить, можно ли совместить признаки сохранённой осознанной активности с пониженным восприятием временной последовательности; результат маркировать только как субъективный феномен.",
+    "ФУНКЦИЯ REPORT: сохранить исходные измерения, нулевые и отрицательные случаи, интервалы неопределённости и независимую проверку; PHYSICAL_TIME_TRAVEL остаётся NOT_EVALUATED."
+  ],
+  "executable_reference": {
+    "language": "Python 3.11 stdlib",
+    "code_location": "tools/tachyon/rule001_temporal_perception.py",
+    "tests_location": "tests/test_tachyon_rule001_temporal_perception.py",
+    "use": "Pure offline synthetic or already authorized anonymized summary data. No human stimulation or brain-device control.",
+    "cannot_claim": "A successful unit test demonstrates software invariants, not a change in consciousness.",
+    "ontology_function": "classify_temporal_claim in tools/tachyon/rule001_temporal_perception.py"
+  },
+  "references": [
+    {
+      "title": "Retrospective duration judgments of naturalistic events depend on memories of event boundaries",
+      "url": "https://doi.org/10.3758/s13423-025-02833-z"
+    },
+    {
+      "title": "How duration, difficulty, and boredom impact prospective and retrospective passage of time judgements and duration estimates",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/42972152/"
+    },
+    {
+      "title": "The Minimal Phenomenal Experience questionnaire (MPE-92M)",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8279394/"
+    }
+  ],
+  "scientific_ladder": {
+    "current": "SPEC_REGISTERED",
+    "next": "OFFLINE_SYNTHETIC_REFERENCE_TESTS",
+    "human_research": "REQUIRES_ETHICAL_APPROVAL_AND_CONSENT",
+    "independent_replication": "NOT_DONE",
+    "timeless_experience": "NOT_DEMONSTRATED",
+    "change_physical_time": "NOT_SUPPORTED",
+    "self_modification": "NO",
+    "auto_deployment": "NO"
+  },
+  "event_ontology": {
+    "typed_event_classes": {
+      "PHYSICAL_EVENT": "Объективно регистрируемое событие, даже когда нет наблюдающего субъекта.",
+      "SUBJECTIVE_EXPERIENCE": "Переживание ощущения, звука, потока времени или субъективного настоящего, требующее субъекта; измерение — самоотчёт и психофизические корреляты.",
+      "SOCIAL_INTERPRETATION": "Коллективная интерпретация/согласование; возможны поведенческие эффекты без изменения фундаментальной физики.",
+      "PHYSICAL_SPACETIME_CHANGE": "Сильное утверждение об изменении физических часов/причинности; требует независимых подтверждений и внешней валидации."
+    },
+    "optional_claim_contract": {
+      "kind": "PHYSICAL_EVENT | SUBJECTIVE_EXPERIENCE | SOCIAL_INTERPRETATION | PHYSICAL_SPACETIME_CHANGE",
+      "event_type": "ACOUSTIC_FALL | SUBJECTIVE_SOUND | SUBJECTIVE_TIMELESSNESS | TIME_JUMP | COLLECTIVE_SYNCHRONIZATION | OTHER",
+      "physical_evidence": "Optional hash-linked external measurement, NOT inferred from subjective narrative.",
+      "observer_present": "Optional boolean; observer absent disallows subjective hearing by that observer but not a pressure wave.",
+      "subjective_report": "Optional participant statement with explicit consent; may not be physical proof."
+    },
+    "inference_rules": [
+      {
+        "id": "IO1",
+        "input": "ACOUSTIC_FALL + observer_present=false",
+        "result": "PHYSICAL_PRESSURE_WAVE_POSSIBLE__NO_OBSERVED_SUBJECTIVE_HEARING",
+        "note": "No measured wave without a sensor; conservation of physical causality is independent of report."
+      },
+      {
+        "id": "IO2",
+        "input": "SUBJECTIVE_TIMELESSNESS report",
+        "result": "FIRST_PERSON_REPORT_ONLY__CHECK_AWARENESS_MEMORY_AND_CLOCK",
+        "note": "No physical time-jump inference."
+      },
+      {
+        "id": "IO3",
+        "input": "TIME_JUMP with only subjective report",
+        "result": "HOLD_EXTERNAL_CLOCK_AND_CAUSAL_EVIDENCE",
+        "note": "Cannot establish physical displacement."
+      },
+      {
+        "id": "IO4",
+        "input": "COLLECTIVE_SYNCHRONIZATION",
+        "result": "SOCIAL_OR_PHENOMENOLOGICAL_EFFECT__PHYSICAL_CHANGE_NOT_ESTABLISHED",
+        "note": "Protect causal independence and source contamination."
+      }
+    ],
+    "global_safety_policy": "Never autonomously stimulate, hypnotize, confine, manipulate memories, alter public media at scale, or recruit participants. Software here classifies research claims only."
+  }
+}

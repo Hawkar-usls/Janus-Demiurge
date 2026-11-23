@@ -1,0 +1,74 @@
+{
+  "schema": "janus.meta_registry.nexus.exact_head_ci_certificate.v1",
+  "artifact_id": "JANUS-NEXUS-PHASE-BOUNDARY-MANUAL-CRASH-RECOVERY-EXACT-HEAD-CI-CERTIFICATE-v1.10",
+  "certified_at_local": "2026-08-17T02:40:00+03:00",
+  "repository": "Hawkar-usls/Demi_Head",
+  "exact_head": "971dedcea1c1d984f980f17dd52f39ddd4ed424f",
+  "head_message": "Add manual Nexus phase-boundary crash recovery gate",
+  "parent_lifecycle_authority": {
+    "artifact": "registry/experimental/JANUS-NEXUS-CURRENT-LIFECYCLE-AUTHORITY-v1.json",
+    "exact_head": "21f2e21129971abf45ab76833fd31a61a202ba03"
+  },
+  "status": "EXACT_HEAD_CI_PASS_PHASE_BOUNDARY_MANUAL_CRASH_RECOVERY_REFERENCE",
+  "github_actions": [
+    {"workflow": "Validate repository contracts", "run_id": 31979722804, "conclusion": "success"},
+    {"workflow": "Validate local acceptance browser holdout", "run_id": 31979722795, "conclusion": "success"},
+    {"workflow": "Validate local hemisphere proposal gate", "run_id": 31979722800, "conclusion": "success"},
+    {"workflow": "Verify proposal lab parity", "run_id": 31979722819, "conclusion": "success"}
+  ],
+  "frozen_adversarial_corpus": {
+    "path": "fixtures/nexus_phase_boundary_crash_recovery_holdout_v1.json",
+    "case_count": 13,
+    "frozen_before_exact_head_ci": true,
+    "freeze_sha256": "e3946b4f95262598203f46c46ca2998ffffaa26a9124b52a877424acc963452d"
+  },
+  "certified_semantics": {
+    "manual_recovery_only": true,
+    "operator_ack_required": true,
+    "process_dead_attestation_required": true,
+    "process_dead_attestation_independently_verified": false,
+    "pre_dispatch_recovery_requires_zero_dispatch_evidence": true,
+    "unexpected_dispatch_evidence_in_pre_dispatch_phase_fails_closed": true,
+    "dispatch_started_without_dispatch_evidence_is_still_ambiguous": true,
+    "dispatch_started_with_started_evidence_is_ambiguous": true,
+    "dispatch_completed_with_completed_evidence_is_ambiguous": true,
+    "receipt_pending_with_completed_evidence_is_ambiguous": true,
+    "dispatch_evidence_store_unavailable_fails_closed": true,
+    "unknown_future_phase_fails_closed_without_mutation": true,
+    "dispatch_ledger_deleted_or_reset": false,
+    "replay_ledger_deleted_or_reset": false,
+    "automatic_recovery": false,
+    "automatic_restart": false,
+    "automatic_retry": false,
+    "cross_host_transport": false,
+    "persistent_daemon": false,
+    "external_effect_authority": false,
+    "authority_delta": 0,
+    "mass_effect_budget_delta": 0
+  },
+  "laws": [
+    "PROCESS_DISAPPEARED != SAFE_TO_RETRY",
+    "STALE_LIFECYCLE != PERMISSION",
+    "PRE_DISPATCH_CLEAN_RECOVERY_REQUIRES_ZERO_DISPATCH_EVIDENCE",
+    "DISPATCH_STARTED -> AMBIGUOUS_EVEN_WITHOUT_COMPLETION_EVIDENCE",
+    "CONTRADICTORY_DURABLE_EVIDENCE -> HOLD",
+    "UNKNOWN_PHASE -> HOLD_NO_MUTATION",
+    "MANUAL_RECOVERY != REPLAY_RESET",
+    "MANUAL_RECOVERY != DISPATCH_INTENT_RESET"
+  ],
+  "claim_ceiling": {
+    "real_sigkill_coverage": false,
+    "real_power_loss_coverage": false,
+    "filesystem_corruption_tolerance": false,
+    "process_death_independent_proof": false,
+    "exactly_once_delivery": false,
+    "semantic_duplicate_prevention": false,
+    "automatic_restart": false,
+    "automatic_retry": false,
+    "persistent_daemon": false,
+    "cross_host_transport": false,
+    "external_effect_authority": false,
+    "production_recovery_readiness": false
+  },
+  "next_gate": "REAL_SUBPROCESS_TERMINATION_PRE_DISPATCH_DURABILITY_HOLDOUT"
+}

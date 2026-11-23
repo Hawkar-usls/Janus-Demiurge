@@ -1,0 +1,64 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B0-LIST3-RESTRICTION-TO-NORMAL-SUBCASE-RESULT-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "FAIL_DIRECT_LIST3_SOURCE_IMPORT__ADDITIONAL_SOURCE_BRIDGE_REQUIRED",
+  "gate": "R5_B1B0_LIST3_RESTRICTION_TO_NORMAL_SUBCASE_IMPORT_GATE_V1",
+  "binds": {
+    "source_audit_blob": "285431239aef3bdc8b5c9f49d81a105c0da70eae",
+    "prereg_blob": "af3f600c7318adaf841af0434233361f9265d6f7",
+    "B1A_theorem_seal_blob": "3729fb85fe388d99df42e185cd23aaa9e188bf28"
+  },
+  "primary_obstruction": {
+    "name": "EXTERNAL_SUBPALETTE_VS_SOURCE_LIST_SEMANTIC_MISMATCH",
+    "source_definition": "For v outside S' union X0', CSZ defines L_{P'}(v) solely from colors on N(v) intersect S'.",
+    "external_mechanism": "The P7-free List-3 algorithm reduces palettes by fixing singleton colors on possibly large sets and then updating neighboring palettes from those singleton vertices.",
+    "mismatch": "If those singleton vertices are stored in X0', their colors constrain extensions but are invisible to L_{P'} of every other unseeded vertex.",
+    "axiom_v_effect": "A vertex whose external palette has size <=2 but whose L_{P'} still has size 3 is required by axiom (v) to remain in source Y, not X.",
+    "lemma10_effect": "Even if it is manually placed in X, Lemma 10 recomputes Z_i from |L_{P'}| and places it back in Y=Z_3."
+  },
+  "direct_import_proof": [
+    "Claims 14-16 of the external List-3 algorithm establish list-size reduction in the external palette, not in CSZ seed-list semantics.",
+    "CSZ explicitly states that L_P for an unprecolored vertex is determined by neighbors in S but not by neighbors in X0.",
+    "CSZ axiom (v) defines X/Y membership from the size of that seed-list.",
+    "CSZ Lemma 10 restores the canonical partition by setting Z_i={v:|L_{P'}(v)|=i}, then X=Z_2 and Y=Z_3.",
+    "Therefore storing the external algorithm's bulk singleton assignments only in X0' cannot, by itself, certify that the other externally reduced vertices leave source Y.",
+    "Moving a non-singleton 2-list vertex to X0' would require committing one color, which is an extra branching operation not supplied by the existing restriction theorem.",
+    "Moving enough palette-causing vertices into S' could reproduce some reductions, but the external theorem supplies no bound guaranteeing that a seed of size q(|S|) suffices."
+  ],
+  "schematic_witness": {
+    "family": "For any N, take S={a,b}, X0={x_1,...,x_N}, Y={y_1,...,y_N}, Y0={z_1,...,z_N}, X=empty; edges ab, a-y_j, x_j-y_j, y_j-z_j only; f(a)=1,f(b)=2,f(x_j)=3.",
+    "verified_properties": [
+      "P6-free and hence P7-free.",
+      "Satisfies CSZ axioms (i)-(vi).",
+      "L_P(y_j)={2,3,4}, so every y_j is a source 3-list vertex in Y and has a neighbor in Y0.",
+      "Actual extension feasibility at y_j excludes color 3 because x_j in X0 is precolored 3, so the true palette relative to all fixed colors is {2,4}.",
+      "The source list remains {2,3,4} because x_j is in X0 rather than S."
+    ],
+    "interpretation": "This witnesses the semantic gap. It is not used to prove that every enhanced source-specific compilation is impossible."
+  },
+  "gate_verdict": {
+    "direct_existing_List3_restriction_import": "FAIL",
+    "bulk_X0_can_store_fixed_colors_without_seed_growth": "YES",
+    "bulk_X0_shrinks_source_LP_of_other_vertices": "NO",
+    "existing_List3_theorem_proves_bounded_seed_witnesses_for_all_reductions": "NO",
+    "additional_source_specific_bridge_needed": "YES"
+  },
+  "retained_positive_value": [
+    "The P7-free List-3 algorithm remains valid as an auxiliary structural/coloring tool.",
+    "Bulk singleton assignments can still be represented in X0' when only extension semantics, not source-list classification, is needed.",
+    "A future source-specific theorem could still exploit special B0/PATH_CELL geometry to convert a bounded subset of those restrictions into seed witnesses or safely remove affected components."
+  ],
+  "scientific_ceiling": {
+    "B1A": "SEALED_PASS",
+    "B1B0": "FAIL_DIRECT_IMPORT",
+    "B1B1_COMMON_D1_SYNCHRONIZATION": "NOT_OPENED",
+    "FULL_COMPONENT_QUOTIENT_LIFT": "UNSEALED_CANDIDATE",
+    "FULL_L2_REPAIR": "OPEN",
+    "LEMMA11_P7_LIFT": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "stop": true,
+  "return_to_HQ": true
+}

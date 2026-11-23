@@ -1,0 +1,132 @@
+{
+  "artifact_id": "JANUS-PALOMAR-JPFM-2F-C1A-NAMED-PLATE-SPARSE-STAMP-DIRECT-MORPHOLOGY-ADMISSION-v1.0",
+  "experiment_id": "JPFM-2F-C1A",
+  "schema_version": "1.0",
+  "date": "2026-08-15",
+  "status": "PREREGISTERED_BEFORE_C0M_OUTCOME__EXECUTION_CONDITIONAL_ON_C0M_PASS",
+  "purpose": "Validate exact named-plate sparse pixel transport and a new direct-stamp morphology feature contract on the frozen 64-source blind pilot, before scaling those measurements to the full 122,820-row S0 cohort. The direct-stamp features are explicitly not renamed versions of SExtractor/PSFEx quantities.",
+  "parents": [
+    "data/JANUS-PALOMAR-JPFM-2F-B3S-SHARD-AGGREGATE-RUN-001.json",
+    "data/JANUS-PALOMAR-JPFM-2F-C0H-HEADER-ONLY-TILE-WCS-EQUIVALENCE-RUN-001.json",
+    "data/JANUS-PALOMAR-JPFM-2F-C0M-FULL-S0-HEADER-ONLY-ACQUISITION-MAP-ADMISSION-v1.0.json"
+  ],
+  "execution_precondition": {
+    "required_C0M_outcome": "PASS_FULL_S0_HEADER_ONLY_ACQUISITION_MAP_FROZEN",
+    "if_C0M_does_not_pass": "BLOCKED__DO_NOT_EXECUTE_C1A"
+  },
+  "frozen_sample": {
+    "same_64_as_B1_B2_B3_B3S_C0_C0H": true,
+    "selection_rule": "For each frozen structural cluster 0..15: two closest to cluster-median anomaly score plus two highest anomaly score, src_id tie-break.",
+    "reason": "The sample was selected before any pixel morphology outcome and spans all 16 blind structural strata."
+  },
+  "pixel_transport_contract": {
+    "source_plate": "Exact frozen named POSS-I plate_id from C0M; never use a generic sky cutout that may silently choose another plate.",
+    "source_center": "Frozen fullplate_x0/fullplate_y0 from the admitted header-only acquisition map.",
+    "stamp_size_px": 81,
+    "stamp_half_width_px": 40,
+    "indexing": "Round the frozen floating center to the nearest integer pixel only for array slicing. Preserve the subpixel center offset for feature calculations.",
+    "remote_access": "Read only the 81x81 hdu.section corresponding to the exact named plate and source center using fsspec/HTTP range access.",
+    "full_remote_plate_array_access": false,
+    "nearest_source_search": false,
+    "peak_recentering": false,
+    "plate_substitution": false,
+    "edge_behavior": "If a full 81x81 stamp cannot be read at the frozen coordinate, record STAMP_EDGE_OR_TRANSPORT_FAILURE; do not shift the window."
+  },
+  "direct_feature_contract": {
+    "photographic_polarity": "Use inverted intensity I = 65535 - raw_pixel so point-source density becomes positive signal, matching the upstream experimental shape stage polarity.",
+    "background": "Estimate median and robust sigma = 1.4826*MAD from pixels at radius 18 <= r <= 38 pixels around the frozen subpixel center. No source-dependent background retuning.",
+    "signal_image": "signal = max(inverted - background_median, 0).",
+    "central_measurement_radius_px": 10,
+    "features": [
+      {
+        "name": "stamp_peak_snr",
+        "formula": "(maximum inverted intensity within r<=5 - background_median) / robust_background_sigma"
+      },
+      {
+        "name": "stamp_flux_r5",
+        "formula": "sum(signal) within r<=5"
+      },
+      {
+        "name": "stamp_flux_r10",
+        "formula": "sum(signal) within r<=10"
+      },
+      {
+        "name": "stamp_concentration_r2_r5",
+        "formula": "signal flux within r<=2 divided by signal flux within r<=5"
+      },
+      {
+        "name": "stamp_concentration_r3_r7",
+        "formula": "signal flux within r<=3 divided by signal flux within r<=7"
+      },
+      {
+        "name": "stamp_moment_centroid_dx_px,stamp_moment_centroid_dy_px",
+        "formula": "positive-signal weighted centroid within r<=10 relative to the frozen subpixel center; diagnostic only, never used to recenter the stamp or recompute other features"
+      },
+      {
+        "name": "stamp_moment_fwhm_proxy_px",
+        "formula": "2.354820045 * sqrt((lambda_major + lambda_minor)/2), where eigenvalues are the second central moment covariance eigenvalues of positive signal within r<=10 around its diagnostic weighted centroid"
+      },
+      {
+        "name": "stamp_moment_ellipticity",
+        "formula": "1 - sqrt(lambda_minor/lambda_major), clipped only for numerical roundoff to [0,1]"
+      },
+      {
+        "name": "stamp_moment_orientation_deg",
+        "formula": "major-eigenvector orientation modulo 180 degrees"
+      },
+      {
+        "name": "stamp_circularity,stamp_contour_area,stamp_shape_defect,stamp_circle_deviation",
+        "formula": "Same repaired OpenCV contour formulas used in admitted B3S, applied to the 21x21 cutout centered on the frozen predicted source position; thresholds 21 and 45; convexityDefects normalized to (-1,4) without changing /256 depth scaling."
+      },
+      {
+        "name": "stamp_outer_laplacian_mad",
+        "formula": "MAD of 3x3 discrete Laplacian of inverted image on the outer annulus 18<=r<=38; intended as local photographic texture/defect-density proxy."
+      },
+      {
+        "name": "stamp_outer_5mad_outlier_fraction",
+        "formula": "Fraction of outer-annulus inverted pixels whose absolute deviation from outer median exceeds 5 * robust_background_sigma."
+      }
+    ],
+    "explicit_non_equivalences": {
+      "stamp_moment_fwhm_proxy_px": "NOT SExtractor FWHM_IMAGE and must never be renamed as such.",
+      "stamp_moment_ellipticity": "NOT SExtractor ELLIPTICITY/ELONGATION and must never be renamed as such.",
+      "profile_diff": "NOT measured by the 81x81 direct-stamp path because upstream profile_diff requires an 8-arcmin flux-matched comparison-star neighborhood. Preserve B3S profile_diff only as a pilot/upstream quantity; do not fabricate a direct-stamp equivalent.",
+      "local_defect_density": "Outer texture metrics are proxies and require later plate/control calibration before physical interpretation."
+    }
+  },
+  "predeclared_C1A_gates": {
+    "transport": "64/64 frozen sources must return an exact 81x81 stamp from their frozen named plate without full-array access or plate substitution.",
+    "central_signal": "At least 95% of sources must have finite stamp_peak_snr >= 5.0. Report all failures; do not change polarity, annulus or threshold after viewing the result.",
+    "diagnostic_centroid": "At least 95% of sources must have diagnostic positive-signal centroid offset <= 4.0 pixels from the frozen center, and 100% must be <= 8.0 pixels. The diagnostic centroid is never fed back into feature extraction.",
+    "moment_feature_coverage": "At least 95% must have finite stamp_moment_fwhm_proxy_px and stamp_moment_ellipticity.",
+    "contour_feature_coverage": "At least 90% must have finite stamp_circularity and stamp_circle_deviation. shape_defect coverage is reported separately because convex contours can legitimately have no finite defect depth.",
+    "outer_texture_coverage": "64/64 must have finite outer-annulus background sigma, stamp_outer_laplacian_mad and stamp_outer_5mad_outlier_fraction.",
+    "no_retrofit": "No feature formula, stamp size, annulus, central radius, polarity or gate threshold may be changed after C1A outcome. Any repair must become a separately preregistered C1B-style corrective experiment."
+  },
+  "report_only_crosschecks_against_B3S": [
+    "Spearman correlation of stamp_moment_fwhm_proxy_px vs pass2 FWHM_IMAGE",
+    "Spearman correlation of stamp_moment_ellipticity vs pass2 ELONGATION",
+    "absolute/robust differences between sparse-stamp contour metrics and B3S contour metrics",
+    "feature distributions split by frozen structural_cluster and sample_role"
+  ],
+  "crosscheck_rule": "The B3S comparisons are report-only in C1A because the direct moment estimators are intentionally different algorithms. They may motivate a future preregistered calibration but cannot be used to tune C1A formulas or declare PASS/FAIL.",
+  "allowed_outcomes": [
+    "PASS_NAMED_PLATE_SPARSE_STAMP_DIRECT_MORPHOLOGY_PILOT",
+    "FAIL_CLOSED_PARENT_NOT_ADMITTED",
+    "FAIL_CLOSED_SPARSE_STAMP_TRANSPORT",
+    "FAIL_CLOSED_CENTRAL_SIGNAL_OR_LOCALIZATION",
+    "FAIL_CLOSED_DIRECT_MORPHOLOGY_COVERAGE"
+  ],
+  "external_label_firewall": {
+    "external_label_reveal_authorized": false,
+    "forbidden_inputs": [
+      "nuclear calendar",
+      "Blue Book or other human-report labels",
+      "NUFORC labels",
+      "Kp/ap or geomagnetic labels",
+      "Moon/Sun temporal covariates"
+    ]
+  },
+  "post_pass_gate": "JPFM-2F-C1B-LARGE-BLIND-SPARSE-STAMP-MORPHOLOGY-RELEASE",
+  "claim_ceiling": "SPARSE_NAMED_PLATE_TRANSPORT_AND_DIRECT_MORPHOLOGY_MEASUREMENT_VALIDATION_ONLY__NEW_STAMP_FEATURES_NOT_CALIBRATED_AS_PHYSICAL_CLASSES__EXTERNAL_LABELS_SEALED__NO_ORIGIN_CLAIM"
+}

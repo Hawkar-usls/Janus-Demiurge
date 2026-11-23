@@ -1,0 +1,277 @@
+{
+  "schema": "janus.meta_registry.roster_mirror_reverse_admission_law.v1",
+  "artifact_id": "JANUS-ROSTER-MIRROR-REVERSE-ADMISSION-LAW-v1.0",
+  "title": {
+    "ru": "Зеркало Реестра Януса — реверсный закон принадлежности",
+    "en": "Janus Roster Mirror — Reverse Admission Law"
+  },
+  "version": "v1.0",
+  "created_at_local": "2026-08-23T12:18:00+03:00",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "intended_path": "data/JANUS-ROSTER-MIRROR-REVERSE-ADMISSION-LAW-v1.0.json",
+  "artifact_class": "CROSS_DOMAIN_PROOF_CARRYING_ROSTER_SEMANTICS_MIRROR",
+  "status": "PASS_REVERSE_CROSS_DOMAIN_CONVERGENCE",
+  "method": {
+    "name": "JANUS_REVERSE_MIRROR_PASS",
+    "direction": "CLAIMED_STATUS -> REQUIRED_BINDINGS -> EARLIEST_UNPROVEN_GATE",
+    "rule": "Do not ask first why a candidate looks plausible. Start from the strongest claimed roster status and walk backward until the first necessary binding is unsupported.",
+    "claim_boundary": "The mirror extracts a shared epistemic structure from four registry artifacts. It does not claim that the four source domains are otherwise equivalent."
+  },
+  "source_artifacts": [
+    {
+      "domain": "FALLOUT_MS08",
+      "path": "registry/myth_busted/FALLOUT-3-MS08-SHIPPED-CLUE-EVIDENCE-AUTHORITY-GRAPH-v2.5.json",
+      "forward_rule": "ENUM_PRESENT != RUNTIME_MEMBER",
+      "source_fact": "A script enum-only candidate is retained without promotion because runtime clue-provider use is not established.",
+      "reverse_question": "If RUNTIME_MEMBER is claimed, where is the shipped runtime-use evidence that binds this enum identity to the provider roster?",
+      "mirror_result": "RUNTIME_MEMBER -> ENUM_IDENTITY + RUNTIME_USE_BINDING",
+      "dimension_discovered": "EXISTENCE_VS_PARTICIPATION"
+    },
+    {
+      "domain": "ALL_STAR_LIGHTING",
+      "path": "data/ALL-STAR-LIGHTING/JANUS-ALL-STAR-LIGHTING-CONFIRMED-SPLIT-PERFORMERS-v1.2.json",
+      "forward_rule": "BACKGROUND != CONFIRMED_SKILL",
+      "source_fact": "Martial-arts, dance, acrobatics, or general flexibility alone are explicitly insufficient; direct visual evidence, direct self-report, or a reliable explicit source is required.",
+      "reverse_question": "If CONFIRMED_SKILL is claimed, what direct or explicit evidence demonstrates the exact skill rather than a neighboring background?",
+      "mirror_result": "CONFIRMED_SKILL -> EXACT_SKILL_EVIDENCE",
+      "dimension_discovered": "POTENTIAL_VS_DEMONSTRATED_CAPABILITY"
+    },
+    {
+      "domain": "SWARM",
+      "path": "data/JANUS-A17_8-HRAIN-BUZZ-SWARM-ORCHESTRATION-RESILIENCE-v0.4.1.json",
+      "forward_rule": "KNOWN_NODE != FRESH_NODE",
+      "source_fact": "A18 distinguishes fresh, grace, stale, and missing; a known swarm node may remain known while current roster telemetry is absent.",
+      "reverse_question": "If FRESH_NODE is claimed, what recent observation within the freshness window proves current presence rather than historical identity?",
+      "mirror_result": "FRESH_NODE -> KNOWN_IDENTITY + RECENT_VALID_OBSERVATION",
+      "dimension_discovered": "IDENTITY_VS_TEMPORAL_LIVENESS"
+    },
+    {
+      "domain": "F3DAD",
+      "path": "data/FALLOUT-3-F3DAD-GHOST-SCENE-SETTLEMENT-RECONSTRUCTION-AND-DISABLED-ACTOR-COMPILED-BINDING-AUDIT-v1.11.json",
+      "forward_rule": "CANDIDATE != MEMBER_OF_PRIOR_ROSTER_UNLESS_IDENTITY_BOUND",
+      "source_fact": "A broad compiled rescue candidate does not decrement the authoritative prior tail unless the actor is source-bound as a member of that prior population.",
+      "reverse_question": "If membership in a historical authoritative roster is claimed, what provenance binds the candidate identity to that exact prior population?",
+      "mirror_result": "PRIOR_ROSTER_MEMBER -> CANDIDATE_IDENTITY + AUTHORITATIVE_LINEAGE_BINDING",
+      "dimension_discovered": "SIMILARITY_VS_PROVENANCE_MEMBERSHIP"
+    }
+  ],
+  "forward_convergence": {
+    "four_negative_laws": [
+      "ENUM_PRESENT != RUNTIME_MEMBER",
+      "BACKGROUND != CONFIRMED_SKILL",
+      "KNOWN_NODE != FRESH_NODE",
+      "CANDIDATE != MEMBER_OF_PRIOR_ROSTER_UNLESS_IDENTITY_BOUND"
+    ],
+    "common_pattern": "SURFACE_PRESENCE_OR_PLAUSIBILITY != ADMITTED_STATUS",
+    "interpretation_ru": "Во всех четырёх доменах слабый признак может породить кандидата, но не имеет права сам повысить его до сильного статуса."
+  },
+  "mirror_convergence": {
+    "canonical_reverse_law": "CLAIMED_ROSTER_STATUS -> IDENTITY_BOUND + ROLE_BOUND + EVIDENCE_BOUND + AUTHORITY_BOUND + TIME_BOUND_WHEN_DYNAMIC",
+    "logical_note": "The arrow expresses necessary evidence obligations, not automatic sufficiency. Satisfying one binding never waives the others.",
+    "compressed_ru": "Сильный статус обязан нести доказательство собственного происхождения.",
+    "compressed_en": "A strong status must carry the proof of how it became strong."
+  },
+  "five_coordinate_roster_model": {
+    "formula": "ROSTER_STATUS(entity, role, authority_scope, time_scope, evidence_scope)",
+    "coordinates": {
+      "entity": "WHO exactly is being classified; identity must be bound.",
+      "role": "WHAT exact membership, capability, or operational role is claimed.",
+      "authority_scope": "WHICH roster, source population, runtime, registry, or governing evidence set defines membership.",
+      "time_scope": "WHEN the claim is valid; mandatory for dynamic liveness and useful for versioned historical rosters.",
+      "evidence_scope": "WHY the status is admitted; exact evidence and gate history."
+    },
+    "discovery": "Membership is not an intrinsic one-bit property of an entity. It is a scoped relation."
+  },
+  "reverse_gate_engine": {
+    "input": "Any strong roster claim",
+    "gates_in_reverse_order": [
+      {
+        "gate": "G5_STATUS",
+        "question": "What exact strong status is being asserted?",
+        "fail": "STATUS_AMBIGUOUS"
+      },
+      {
+        "gate": "G4_TIME",
+        "question": "Is the status current, historical, or timeless, and is the required time evidence present?",
+        "fail": "TIME_UNBOUND_OR_STALE"
+      },
+      {
+        "gate": "G3_AUTHORITY",
+        "question": "Which authoritative roster/source/snapshot defines the membership?",
+        "fail": "AUTHORITY_SCOPE_UNBOUND"
+      },
+      {
+        "gate": "G2_ROLE_EVIDENCE",
+        "question": "Does the evidence demonstrate this exact role/status rather than an adjacent trait or proxy?",
+        "fail": "EXACT_ROLE_UNPROVEN"
+      },
+      {
+        "gate": "G1_IDENTITY",
+        "question": "Is the observed/candidate identity bound to the claimed entity?",
+        "fail": "IDENTITY_UNBOUND"
+      },
+      {
+        "gate": "G0_PRESENCE",
+        "question": "What generated the candidate in the first place?",
+        "fail": "NO_CANDIDATE_EVIDENCE"
+      }
+    ],
+    "stop_rule": "Stop at the earliest necessary unsupported binding and demote the claim to the strongest status actually justified.",
+    "forbidden_move": "Never backfill a missing gate with plausibility from a different coordinate."
+  },
+  "mirror_state_lattice": {
+    "states": [
+      "ABSENT",
+      "CANDIDATE",
+      "IDENTITY_BOUND",
+      "ROLE_EVIDENCED",
+      "AUTHORITY_BOUND",
+      "ADMITTED",
+      "FRESH",
+      "GRACE",
+      "STALE",
+      "HISTORICAL_MEMBER"
+    ],
+    "important_non_equivalences": [
+      "CANDIDATE != IDENTITY_BOUND",
+      "IDENTITY_BOUND != ROLE_EVIDENCED",
+      "ROLE_EVIDENCED != AUTHORITY_BOUND",
+      "AUTHORITY_BOUND != FRESH",
+      "HISTORICAL_MEMBER != CURRENT_MEMBER",
+      "STALE != NEVER_MEMBER",
+      "ABSENT_FROM_CURRENT_OBSERVATION != PROVEN_NON_MEMBER"
+    ]
+  },
+  "new_findings_from_reverse_pass": [
+    {
+      "id": "MIRROR-001",
+      "finding": "ROSTER_IS_A_PREDICATE_NOT_A_LIST",
+      "detail": "A roster entry only has meaning relative to role, authority, time, evidence, and bound identity."
+    },
+    {
+      "id": "MIRROR-002",
+      "finding": "DEMOTION_IS_INFORMATION_PRESERVING",
+      "detail": "When a gate fails, the entity should fall back to candidate/known/stale/unbound rather than be erased. Failure of a stronger status does not prove absence."
+    },
+    {
+      "id": "MIRROR-003",
+      "finding": "NEGATIVE_AND_POSITIVE_EVIDENCE_ARE_NOT_MIRRORS",
+      "detail": "Not proving membership is not proof of non-membership; not fresh is not never known; not confirmed skill is not inability."
+    },
+    {
+      "id": "MIRROR-004",
+      "finding": "TIME_IS_A_FIRST_CLASS_BINDING",
+      "detail": "Swarm exposes what static rosters hide: a once-valid admission can remain historically true while becoming operationally stale."
+    },
+    {
+      "id": "MIRROR-005",
+      "finding": "AUTHORITY_IS_A_FIRST_CLASS_BINDING",
+      "detail": "F3DAD exposes that even strong new evidence cannot rewrite a prior authoritative population unless identity is linked into that exact population."
+    },
+    {
+      "id": "MIRROR-006",
+      "finding": "EXACT_ROLE_EVIDENCE_PREVENTS_PROXY_PROMOTION",
+      "detail": "All-Star shows that neighboring traits may generate candidates but cannot substitute for evidence of the exact predicate being claimed."
+    },
+    {
+      "id": "MIRROR-007",
+      "finding": "EXISTENCE_DOES_NOT_IMPLY_EXECUTION",
+      "detail": "MS08 shows that being encoded or enumerated in a system can be weaker than participating in the shipped/runtime behavior."
+    }
+  ],
+  "cross_domain_mirror_table": [
+    {
+      "surface": "enum entry",
+      "strong_claim": "runtime member",
+      "missing_binding_that_blocks_promotion": "runtime-use evidence"
+    },
+    {
+      "surface": "relevant background",
+      "strong_claim": "confirmed exact skill",
+      "missing_binding_that_blocks_promotion": "exact-skill evidence"
+    },
+    {
+      "surface": "known node identity",
+      "strong_claim": "fresh live node",
+      "missing_binding_that_blocks_promotion": "recent observation"
+    },
+    {
+      "surface": "broad candidate hit",
+      "strong_claim": "member of prior authoritative roster",
+      "missing_binding_that_blocks_promotion": "lineage/identity binding to prior roster"
+    }
+  ],
+  "janus_mirror_principles": {
+    "primary": "THE_CANDIDATE_MAY_ENTER_THE_MIRROR; ONLY_BOUND_EVIDENCE_MAY_RETURN_AS_STATUS",
+    "secondary": [
+      "PRESENCE_GENERATES_QUESTIONS_NOT_MEMBERSHIP",
+      "PLAUSIBILITY_GENERATES_CANDIDATES_NOT_ADMISSION",
+      "A_FAILED_PROMOTION_GATE_DOES_NOT_ERASE_LOWER_LEVEL_TRUTH",
+      "CURRENT_ABSENCE_DOES_NOT_REWRITE_HISTORICAL_MEMBERSHIP",
+      "HISTORICAL_MEMBERSHIP_DOES_NOT_PROVE_CURRENT_LIVENESS",
+      "EVERY_STRONG_STATUS_MUST_BE_REVERSIBLE_TO_ITS_EVIDENCE_CHAIN"
+    ]
+  },
+  "connection_to_tporh": {
+    "status": "CONCEPTUAL_CROSSLINK_ONLY",
+    "note": "The same mirror law generalizes defensively to unsolicited external signals: receipt/presence can create an event candidate, but affiliation or control requires separate identity, acceptance, relationship, authority/context, and time bindings.",
+    "safe_boundary": "This crosslink is defensive provenance logic only and contains no targeting, deceptive-transfer, or entrapment procedure."
+  },
+  "falsification_tests": [
+    {
+      "test": "ENUM_WITH_NO_RUNTIME_USE",
+      "expected": "CANDIDATE_ONLY"
+    },
+    {
+      "test": "BACKGROUND_WITH_NO_EXACT_SKILL_EVIDENCE",
+      "expected": "NOT_YET_CONFIRMED"
+    },
+    {
+      "test": "KNOWN_NODE_WITH_EXPIRED_OBSERVATION",
+      "expected": "STALE_OR_MISSING_NOT_FRESH"
+    },
+    {
+      "test": "STRONG_NEW_CANDIDATE_NOT_BOUND_TO_PRIOR_POPULATION",
+      "expected": "DO_NOT_DECREMENT_OR_REWRITE_PRIOR_ROSTER"
+    },
+    {
+      "test": "FORMERLY_FRESH_MEMBER_NOW_STALE",
+      "expected": "PRESERVE_HISTORICAL_IDENTITY_WHILE_DEMOTING_CURRENT_LIVENESS"
+    }
+  ],
+  "claim_boundaries": [
+    "This artifact derives an epistemic roster model from the cited Janus registry artifacts.",
+    "It does not assert that game data, human skill evidence, swarm telemetry, and historical forensic populations are substantively equivalent.",
+    "The reverse law supplies necessary admission checks; domain-specific sufficiency rules remain authoritative.",
+    "Unknown, unproven, stale, and false are distinct states and must not be collapsed."
+  ],
+  "validation": {
+    "source_domains_count": 4,
+    "independent_dimensions_extracted": 4,
+    "five_coordinate_model_constructed": true,
+    "reverse_gate_engine_constructed": true,
+    "negative_evidence_not_collapsed_to_false": true,
+    "temporal_state_preserved": true,
+    "authority_lineage_preserved": true,
+    "offensive_use": false,
+    "verdict": "PASS"
+  },
+  "canonical_lines": {
+    "ru": [
+      "Roster — это не список. Это доказуемое отношение.",
+      "Присутствие порождает кандидата, а не принадлежность.",
+      "Сильный статус обязан нести доказательство собственного происхождения.",
+      "Не доказано — не значит опровергнуто.",
+      "Устарело — не значит никогда не существовало.",
+      "Чем сильнее статус, тем длиннее его обратный путь к доказательству."
+    ],
+    "en": [
+      "A roster is not a list. It is a provable relation.",
+      "Presence generates a candidate, not membership.",
+      "A strong status must carry the proof of how it became strong.",
+      "Unproven is not disproven.",
+      "Stale is not never-existent.",
+      "The stronger the status, the longer its reverse path to evidence."
+    ]
+  }
+}

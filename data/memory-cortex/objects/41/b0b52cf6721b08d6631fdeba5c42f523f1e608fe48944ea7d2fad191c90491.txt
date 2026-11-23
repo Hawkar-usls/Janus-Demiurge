@@ -1,0 +1,98 @@
+{
+  "artifact_uuid": "JANUS-ENGINE-R0-ROTATING-GILL-RING-v1.0",
+  "timestamp": "2026-08-29T15:54:00+03:00",
+  "version": "v1.0",
+  "title": "JANUS Engine R0 — Rotating Gill Ring oxygen-extraction gate",
+  "observer": "Hawkar / JANUS",
+  "node_type": "research_gate",
+  "branch_name": "Janus Engine",
+  "parent": "data/JANUS-ENGINE-v1.0.json",
+  "status": "OPEN_MEASUREMENT_GATE",
+  "goal": "Determine the real oxygen extraction rate of a rotating annular biomimetic gill before making any engine power or self-support claims.",
+  "core_question": "How many milligrams of O2 per second can a rotating gill ring extract from water as a function of ring diameter, active membrane area, RPM, water speed, dissolved oxygen concentration, temperature, pressure and collector-side oxygen activity?",
+  "physics_model": {
+    "first_order_mass_transfer": "m_dot_O2 = k_L * A_active * (C_bulk - C_interface)",
+    "rotation_kinematics": "v_tip = pi * D * RPM / 60",
+    "combined_relative_speed_candidate": "v_rel ~= sqrt(v_water^2 + v_tip^2) as a first geometric bound only; actual local flow field must be measured or CFD-resolved",
+    "flux_form": "J_O2 = m_dot_O2 / A_active",
+    "capture_efficiency": "eta_capture = m_dot_O2_captured / m_dot_O2_available_through_swept_water",
+    "specific_energy": "E_specific = P_rotation_and_pumping / m_dot_O2_captured",
+    "engine_ceiling_rule": "Any engine-power estimate must be downstream of measured m_dot_O2 and oxygen stoichiometry; no power claim may be inferred from membrane area or RPM alone."
+  },
+  "independent_variables": [
+    "ring_outer_diameter_m",
+    "ring_inner_diameter_m",
+    "active_membrane_area_m2",
+    "lamella_geometry",
+    "rpm",
+    "water_velocity_m_s",
+    "water_temperature_c",
+    "dissolved_oxygen_mg_L",
+    "salinity",
+    "ambient_pressure",
+    "collector_side_pO2_or_carrier_state",
+    "membrane_type",
+    "membrane_thickness_m",
+    "surface_roughness",
+    "orientation_and_submergence_depth"
+  ],
+  "required_measurements": [
+    "inlet_dissolved_oxygen_mg_L",
+    "outlet_dissolved_oxygen_mg_L",
+    "water_flow_rate_L_s",
+    "captured_oxygen_mass_flow_mg_s",
+    "rpm",
+    "motor_or_drive_power_W",
+    "water_temperature_c",
+    "pressure",
+    "membrane_area_m2",
+    "leak_rate",
+    "collector_side_oxygen_concentration_or_partial_pressure"
+  ],
+  "minimum_mass_balance": {
+    "water_side": "m_dot_O2_removed = Q_water * (C_in - C_out)",
+    "collector_side": "m_dot_O2_collected must independently agree with water-side oxygen loss within declared uncertainty",
+    "closure_gate": "abs(m_dot_water_side - m_dot_collector_side) <= combined_measurement_uncertainty"
+  },
+  "baseline_test_matrix": {
+    "rpm_levels": [0, 60, 120, 300, 600],
+    "water_velocity_m_s_candidate_levels": [0.0, 0.1, 0.5, 1.0],
+    "note": "These are candidate characterization points, not prescribed safe operating limits. Structural RPM limits must be established separately for the real prototype material and geometry.",
+    "controls": [
+      "same membrane area stationary",
+      "rotating impermeable dummy ring",
+      "same ring with collector gradient disabled or equilibrated",
+      "blank water-loop oxygen loss test without gill membrane"
+    ]
+  },
+  "success_metrics": {
+    "primary": "reproducible positive O2 mass flow with independent mass-balance closure",
+    "secondary": [
+      "oxygen flux versus RPM",
+      "oxygen flux versus water velocity",
+      "oxygen flux versus dissolved oxygen concentration",
+      "capture efficiency",
+      "watts consumed per mg/s O2 captured",
+      "evidence for or against boundary-layer thinning from rotation"
+    ]
+  },
+  "failure_modes_to_watch": [
+    "rotation improves mixing but drive power costs more energy than useful oxygen capture justifies",
+    "membrane-side depletion remains dominant despite RPM increase",
+    "collector-side pO2 rises and collapses the diffusion gradient",
+    "water leakage into oxygen collector",
+    "gas bubble nucleation creates false oxygen collection readings",
+    "biofouling or particulate fouling reduces flux",
+    "centrifugal stress damages membrane or seals",
+    "apparent oxygen loss is caused by degassing rather than membrane transfer"
+  ],
+  "hard_invariants": [
+    "ROTATION_IS_NOT_OXYGEN_CREATION",
+    "RPM_MAY_CHANGE_MASS_TRANSFER_COEFFICIENT_BUT_DOES_NOT_OVERRIDE_DISSOLVED_OXYGEN_AVAILABILITY",
+    "A_REAL_COLLECTOR_SIDE_GRADIENT_IS_REQUIRED",
+    "WATER_SIDE_AND_COLLECTOR_SIDE_MASS_BALANCES_MUST_AGREE",
+    "ENERGY_COST_OF_ROTATION_AND_PUMPING_MUST_BE_REPORTED",
+    "ENGINE_POWER_CLAIMS_ARE_BLOCKED_UNTIL_R0_PASSES"
+  ],
+  "next_gate": "R0A_GEOMETRY_FREEZE: choose one ring diameter and active membrane geometry from the JANUS Axle-derived form; then build a non-combustion water-loop test article and measure O2 flux versus RPM and water speed before integrating condenser or engine functions."
+}

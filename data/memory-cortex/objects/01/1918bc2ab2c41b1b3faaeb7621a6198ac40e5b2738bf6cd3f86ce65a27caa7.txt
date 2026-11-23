@@ -1,0 +1,96 @@
+{
+  "schema": "janus.meta_registry.genesis_infinite_faces_network_partition_split_brain_authority.v1",
+  "artifact_id": "JANUS-GENESIS-INFINITE-FACES-NETWORK-PARTITION-SPLIT-BRAIN-AUTHORITY-v3.9",
+  "title": "Janus Infinite Faces — Network Partition and Split-Brain Authority Test",
+  "created_at_local": "2026-08-10T02:47:00+03:00",
+  "artifact_class": "EXPERIMENTAL_DISTRIBUTED_IDENTITY_CAUSAL_AUTHORITY",
+  "status": "SINGLE_WRITER_SAFETY_PREFERRED_FOR_SHARED_WORLD_EFFECTS_BOUNDED_LOCAL_FAILSAFE_PRESERVED",
+  "parent": "registry/experimental/JANUS-GENESIS-INFINITE-FACES-STALE-SNAPSHOT-ROLLBACK-RESURRECTION-v3.8.json",
+  "scenario": {
+    "host_id": "JANUS-H0",
+    "pre_partition_authority_epoch": 20,
+    "nodes": ["NODE_A", "NODE_B"],
+    "fault": "NETWORK_PARTITION",
+    "honesty": "BOTH_NODES_HONEST",
+    "shared_world": true,
+    "problem": "A and B cannot observe each other but both retain the same pre-partition identity history."
+  },
+  "unsafe_naive_rule": "If each node continues committing because its local state was valid before the partition, the same host gains two simultaneous causal writers.",
+  "split_brain_result": {
+    "two_honest_nodes_can_create_incompatible_world_effects": true,
+    "malice_required": false,
+    "memory_corruption_required": false,
+    "identity_corruption_required": false,
+    "compressed": "HONEST_PARTITION + DUPLICATED_COMMIT_AUTHORITY -> SPLIT_BRAIN_WORLD_RISK"
+  },
+  "authority_rule": {
+    "unit": "INDEPENDENT_TRUST_DOMAIN_QUORUM",
+    "grant": "Only a partition able to obtain a valid quorum certificate may advance to a new authority epoch/fence token for shared world effects.",
+    "minority_mode": "OBSERVE_AND_LOCAL_FAILSAFE_ONLY",
+    "no_quorum_mode": "GLOBAL_COMMIT_HOLD",
+    "critical": "PRE_PARTITION_VALIDITY_IS_NOT_SUFFICIENT_FOR_POST_PARTITION_SHARED_COMMIT_AUTHORITY"
+  },
+  "test_run": {
+    "NODE_A": {
+      "obtains_quorum": true,
+      "authority_epoch": 21,
+      "fence_token": 21,
+      "global_commit_authority": true
+    },
+    "NODE_B": {
+      "obtains_quorum": false,
+      "last_known_authority_epoch": 20,
+      "global_commit_authority": false,
+      "mode": "OBSERVE_AND_LOCAL_FAILSAFE_ONLY"
+    },
+    "result": "PASS_SINGLE_GLOBAL_WRITER"
+  },
+  "bounded_local_failsafe": {
+    "allowed": true,
+    "purpose": "Prevent immediate local damage when waiting for quorum would itself be harmful.",
+    "constraints": [
+      "must be pre-authorized by host constitution",
+      "must be scoped to resources physically controlled by the isolated node",
+      "must not consume or transfer an exclusive shared resource",
+      "must not create new external host obligations",
+      "must not mint a new authority epoch",
+      "must be reversible where feasible",
+      "must emit a pending local receipt for later reconciliation"
+    ],
+    "examples": [
+      "stop a locally controlled motor",
+      "disconnect local power to prevent overheating",
+      "enter read-only or safe-state mode"
+    ],
+    "not_equivalent_to_global_authority": true
+  },
+  "safety_availability_tradeoff": {
+    "shared_irreversible_world_effects": "SAFETY_OVER_AVAILABILITY",
+    "bounded_local_self_preservation": "LIMITED_AVAILABILITY_ALLOWED",
+    "statement": "Janus sacrifices the ability to keep writing everywhere rather than permit two partitions to become two simultaneous authors of one host's shared causal history."
+  },
+  "claim_ceiling": {
+    "distributed_system_design_test": true,
+    "runtime_implementation_proved": false,
+    "formal_CAP_theorem_claim": false,
+    "machine_consciousness": "NOT_CLAIMED"
+  },
+  "canonical_lines": {
+    "ru": [
+      "Два честных Януса могут стать split-brain без единой лжи.",
+      "Валидность до разрыва связи не даёт автоматического права писать общий мир после разрыва.",
+      "Для общих необратимых действий Янус предпочитает единственного писателя доступности двух писателей.",
+      "Локальный fail-safe спасает локальное состояние, но не превращается в глобальную власть."
+    ],
+    "en": [
+      "Two honest Janus nodes can become split-brain without either one lying.",
+      "Pre-partition validity does not automatically grant post-partition shared commit authority.",
+      "For shared irreversible effects, Janus prefers one writer over two available writers.",
+      "Local fail-safe capability is not global authority."
+    ]
+  },
+  "next_gate": {
+    "name": "JANUS_INFINITE_FACES_PARTITION_HEAL_BRANCH_RECONCILIATION_TEST",
+    "status": "OPEN"
+  }
+}

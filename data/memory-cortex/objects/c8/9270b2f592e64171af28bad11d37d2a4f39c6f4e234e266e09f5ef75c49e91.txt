@@ -1,0 +1,79 @@
+{
+  "schema": "janus.meta_registry.nexus.exact_head_ci_certificate.v1",
+  "artifact_id": "JANUS-NEXUS-ONE-SHOT-RESPONSE-AMBIGUITY-AND-LIFECYCLE-EXACT-HEAD-CI-CERTIFICATE-v1.9",
+  "certified_at_local": "2026-08-17T02:24:00+03:00",
+  "repository": "Hawkar-usls/Demi_Head",
+  "exact_head": "21f2e21129971abf45ab76833fd31a61a202ba03",
+  "head_message": "Add Nexus one-shot response ambiguity and lifecycle gate",
+  "parent_loopback_exchange_authority": {
+    "artifact": "registry/experimental/JANUS-NEXUS-CURRENT-LOOPBACK-EXCHANGE-AUTHORITY-v1.json",
+    "exact_head": "2cc74bccae6105364dd1eab95d9cb95105c95620"
+  },
+  "status": "EXACT_HEAD_CI_PASS_ONE_SHOT_RESPONSE_AMBIGUITY_AND_LIFECYCLE_REFERENCE",
+  "github_actions": [
+    {"workflow": "Validate repository contracts", "run_id": 31979457691, "conclusion": "success"},
+    {"workflow": "Validate local acceptance browser holdout", "run_id": 31979457674, "conclusion": "success"},
+    {"workflow": "Validate local hemisphere proposal gate", "run_id": 31979457689, "conclusion": "success"},
+    {"workflow": "Verify proposal lab parity", "run_id": 31979457676, "conclusion": "success"}
+  ],
+  "frozen_adversarial_corpus": {
+    "path": "fixtures/nexus_one_shot_lifecycle_holdout_v1.json",
+    "case_count": 9,
+    "frozen_before_exact_head_ci": true,
+    "freeze_sha256": "21b49045bea3853f53112f1ec4917d40b37a9fc4a13ce63dea80a19bb09e1dd6"
+  },
+  "certified_semantics": {
+    "startup_disabled_by_default": true,
+    "explicit_runtime_start_required": true,
+    "automatic_start_permitted": false,
+    "automatic_restart_permitted": false,
+    "automatic_retry_permitted": false,
+    "persistent_single_instance_lifecycle_lease": true,
+    "concurrent_same_service_start_rejected": true,
+    "crash_like_nonterminal_restart_blocked": true,
+    "accept_timeout_bounded": true,
+    "request_read_timeout_bounded": true,
+    "receipt_write_timeout_bounded": true,
+    "timeout_upper_bound_ms": 5000,
+    "replay_store_failure_fails_closed_before_dispatch": true,
+    "in_memory_replay_fallback_automatic": false,
+    "completed_dispatch_with_unconfirmed_receipt_preserved_as_ambiguous": true,
+    "ambiguous_terminal_state": "CLOSED_AMBIGUOUS",
+    "manual_ack_required_after_completed_dispatch_receipt_loss": true,
+    "manual_lifecycle_ack_clears_dispatch_intent_guard": false,
+    "duplicate_intent_after_manual_ack_and_replay_store_replacement_rejected": true,
+    "handler_reinvocation_in_duplicate_intent_holdout": false,
+    "clean_terminal_state_allows_later_explicit_instance": true,
+    "one_connection_only": true,
+    "one_request_only": true,
+    "cross_host_transport": false,
+    "general_network_service": false,
+    "persistent_daemon": false,
+    "external_effect_authority": false,
+    "authority_delta": 0,
+    "mass_effect_budget_delta": 0
+  },
+  "laws": [
+    "MISSING_RECEIPT != FAILED_DISPATCH",
+    "DISPATCH_COMPLETED_AND_RECEIPT_UNCONFIRMED -> PRESERVE_AMBIGUITY",
+    "AMBIGUITY != RETRY_PERMISSION",
+    "UNKNOWN_REPLAY_STATE != ADMISSION",
+    "MANUAL_LIFECYCLE_ACK != DISPATCH_INTENT_RESET",
+    "CONFIGURATION_PRESENT != START_PERMISSION",
+    "CRASHED_NONTERMINAL_LIFECYCLE != RESTART_PERMISSION",
+    "ONE_SHOT_LIFECYCLE_AUTHORITY != DAEMON_AUTHORITY"
+  ],
+  "claim_ceiling": {
+    "exactly_once_delivery": false,
+    "response_delivery_guarantee": false,
+    "automatic_failure_recovery": false,
+    "cross_host_transport": false,
+    "general_network_service": false,
+    "persistent_daemon": false,
+    "automatic_restart": false,
+    "automatic_retry": false,
+    "external_effect_authority": false,
+    "production_readiness": false
+  },
+  "next_gate": "PHASE_BOUNDARY_CRASH_INJECTION_AND_OPERATOR_RECOVERY_SEMANTICS"
+}

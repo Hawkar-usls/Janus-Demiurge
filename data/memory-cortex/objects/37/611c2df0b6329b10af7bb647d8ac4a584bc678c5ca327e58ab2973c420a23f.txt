@@ -1,0 +1,74 @@
+{
+  "artifact_uuid": "JANUS-POSS1-NUCLEAR-CALENDAR-124-125-126-DISCREPANCY-AUDIT-v1.0",
+  "title": "JANUS POSS-I Nuclear Calendar — 124/125/126 Row-Definition Discrepancy Audit",
+  "version": "v1.0",
+  "timestamp": "2026-08-14T23:37:00+03:00",
+  "status": "OPEN_SOURCE_DEFINITION_DISCREPANCY__FREEZE_BEFORE_BETA_INSPECTION",
+  "purpose": "Prevent post-hoc choice of nuclear-test dates in the POSS-I transient analysis by explicitly freezing the presently documented 124, 125 and 126 calendar-count variants as different source/parsing definitions requiring side-by-side reproduction.",
+  "parent_gate": "registry/cosmology/JANUS-POSS1-PLATE-DAY-EXPOSURE-PHASE0-ACQUISITION-GATE-v1.0.json",
+  "variants": [
+    {
+      "id": "CAL_ORIGINAL_2025_124",
+      "reported_count": 124,
+      "source": "Bruehl & Villarroel, Scientific Reports 15, 34125 (2025)",
+      "source_url": "https://doi.org/10.1038/s41598-025-21620-3",
+      "source_family": ["DOE/NV-209 Rev.16 for US", "paper-cited Soviet test list", "paper-cited British test list"],
+      "role": "PRIMARY_LITERAL_REPRODUCTION_TARGET",
+      "status": "ROW_LIST_NOT_PUBLICLY_FROZEN_WITH_ANALYSIS_DATA"
+    },
+    {
+      "id": "CAL_WATTERS_2026_125",
+      "reported_count": 125,
+      "source": "Watters et al., Critical Evaluation of Studies Alleging Evidence for Technosignatures in the POSS1-E Photographic Plates (2026)",
+      "source_url": "https://arxiv.org/abs/2601.21946",
+      "source_family": "authors report attempting to use the same three nuclear-date sources cited by Bruehl & Villarroel",
+      "role": "INDEPENDENT_SOURCE_PARSING_REPRODUCTION",
+      "status": "MATERIAL_METHOD_DIAGNOSTIC",
+      "reported_explanation": "The one-date difference from 124 is likely due to differences in parsing the three cited sources."
+    },
+    {
+      "id": "CAL_HAYES_2026_126",
+      "reported_count": 126,
+      "source": "independent full-footprint POSS-I reanalysis described in the JANUS Phase-0 gate",
+      "role": "INDEPENDENT_CONTROL_CALENDAR",
+      "status": "NON_EQUIVALENT_CALENDAR_DEFINITION__MUST_NOT_REPLACE_PRIMARY_POST_HOC"
+    }
+  ],
+  "official_anchor_sources": {
+    "US": {
+      "title": "United States Nuclear Tests: July 1945 through September 1992",
+      "report": "DOE/NV--209-Rev16",
+      "publisher": "U.S. Department of Energy / NNSA Nevada Field Office",
+      "date": "2015-09",
+      "doi": "10.2172/1351809",
+      "govinfo": "https://www.govinfo.gov/app/details/GOVPUB-E11-PURL-gpo82304",
+      "status": "OFFICIAL_ROW_COMPLETE_ANCHOR"
+    },
+    "UK": {
+      "title": "United Kingdom overseas atmospheric nuclear weapons tests 1952-58",
+      "publisher": "UK Parliament, Hansard",
+      "url": "https://hansard.parliament.uk/Commons/1988-10-31/debates/909dbb52-6b70-4ad3-870f-e8b83c83b171/WrittenAnswers",
+      "status": "OFFICIAL_ROW_TABLE_ANCHOR"
+    },
+    "USSR": {
+      "status": "AUTHORITATIVE_ROW_COMPLETE_ANCHOR_NOT_YET_FROZEN",
+      "rule": "Do not fill Soviet rows from memory. Literal reproduction must first preserve the exact source cited by the 2025 study; an authoritative-source sensitivity calendar may then be built separately."
+    }
+  },
+  "required_reconciliation": {
+    "study_window": ["1949-11-19", "1957-04-28"],
+    "filter_definition": "above-ground nuclear tests only, with every inclusion/exclusion explicitly typed",
+    "row_fields": ["calendar_id", "test_id", "country", "test_name", "date_utc", "time_utc_if_known", "burst_type", "above_ground", "source", "source_row_or_page", "included_in_primary"],
+    "comparison_outputs": [
+      "set difference 124 vs 125",
+      "set difference 124 vs 126",
+      "set difference 125 vs 126",
+      "Palomar observing plate-days whose +/-1-day membership changes under each variant",
+      "beta_nuclear and IRR under each frozen variant"
+    ]
+  },
+  "anti_p_hacking_rule": "All calendar variants and inclusion rules must be frozen before target beta_nuclear is inspected. The variant yielding the most significant coefficient may not be promoted to primary after the fact.",
+  "primary_rule": "CAL_ORIGINAL_2025_124 remains the literal-reproduction primary if its exact row set can be recovered. CAL_WATTERS_2026_125 and CAL_HAYES_2026_126 are preregistered sensitivity/control calendars.",
+  "failure_rule": "If the exact 124-row membership cannot be reconstructed, the original-calendar reproduction is INCOMPLETE; do not silently choose a 125/126 reconstruction and call it exact replication.",
+  "claim_ceiling": "CALENDAR_DEFINITION_UNRESOLVED__NO_TARGET_BETA_NUCLEAR_YET"
+}

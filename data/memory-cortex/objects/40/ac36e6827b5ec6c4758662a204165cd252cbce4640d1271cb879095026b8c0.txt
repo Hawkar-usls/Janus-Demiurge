@@ -1,0 +1,134 @@
+{
+  "schema": "janus.meta_registry.fallout3_vault112_cross_session_memory_alias_shared_backend_audit.v1",
+  "artifact_id": "FALLOUT-3-VAULT112-CROSS-SESSION-MEMORY-ALIAS-SHARED-BACKEND-AUDIT-v1.6",
+  "title": "Vault 112 Cross-Session Memory Alias and Shared Backend Audit",
+  "created_at_local": "2026-08-10",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "artifact_class": "CULTURAL_SOFTWARE_FORENSICS_AND_SESSION_ISOLATION_AUDIT",
+  "status": "SHARED_CONTROL_PLANE_CONFIRMED_NO_SHARED_PLAYER_DAD_MEMORY_SLOT_IDENTIFIED",
+  "parents": [
+    "registry/myth_busted/FALLOUT-3-FATHER-CHILD-FACEGEN-SHARED-SIMULATION-BACKEND-GATE-v1.5.json",
+    "registry/myth_busted/FALLOUT-3-VAULT112-AUTOMATIC-MEMORY-CARRIER-PERSISTENCE-INFERENCE-GATE-v1.4.json",
+    "registry/myth_busted/FALLOUT-3-BRAUN-ADMIN-MEMORY-AUTHORITY-CARRIER-CUSTODY-GATE-v1.2.json"
+  ],
+  "gate": {
+    "question": "Do the Lone Wanderer and James share a backend memory/session slot, alias, reset handle or storage identity inside Vault 112 despite occupying separate physical loungers?",
+    "verdict": "NO_SHARED_SLOT_FOUND_IN_REVIEWED_SHIPPED_SCRIPTS; SHARED_BACKEND_AND_ADMIN_CONTROL_CONFIRMED",
+    "meaning": "The shipped implementation strongly separates the physical/session endpoints for Player and Dad while coordinating them through one MQ04/Braun simulation control plane. No direct cross-session memory alias or shared storage handle was identified.",
+    "effect_on_two_faces_hypothesis": "Physical/session memory mixing is not established. The stronger confirmed father-child 'two faces' link remains engine-level face geometry lineage plus participation in one simulation backend."
+  },
+  "separate_session_evidence": {
+    "player_pod": {
+      "editor_id": "MQ04PlayerPodScript",
+      "form_id": "0004B1CF",
+      "finding": "Player entry is handled by a dedicated pod script that sets MQ04.PlayerInChair and transfers control to the MQ04 quest controller."
+    },
+    "dad_pod": {
+      "editor_id": "MQ04DadPodScript",
+      "form_id": "0005AE43",
+      "finding": "Dad's occupied pod has a separate activation script and rejects player activation rather than aliasing to the player's pod."
+    },
+    "exit_routing": {
+      "editor_id": "TLExitDoorScript",
+      "form_id": "0006F6E9",
+      "finding": "On Tranquility Lane exit, the Player is explicitly moved to MQ04PlayerPod, not to Dad's pod."
+    },
+    "physical_restore": {
+      "editor_id": "MQ04PlayerContainerScript",
+      "form_id": "0004C255",
+      "finding": "The restore script independently opens MQ04DadPodShellRef and MQ04PlayerPodShellRef, restores the Player's physical inventory/state, and separately clears MQDadRef ghost/unconscious state."
+    },
+    "dad_actor": {
+      "editor_id": "MQDadScript",
+      "form_id": "0001F40A",
+      "finding": "James persists as MQDadRef with his own actor script and physical lifecycle, further separating Dad actor continuity from player storage/container handling."
+    }
+  },
+  "shared_backend_evidence": {
+    "quest_controller": {
+      "editor_id": "MQ04Script",
+      "form_id": "000254C9",
+      "shared_flags": [
+        "PlayerInChair",
+        "PlayerInTL",
+        "DadInfo",
+        "DadDogInfo",
+        "BraunInfo",
+        "NPCReset",
+        "SafetyLock",
+        "Invasion"
+      ],
+      "interpretation": "Player and Dad are coordinated inside one quest/simulation state machine, but the shared variables are orchestration flags rather than demonstrated shared memory buffers."
+    },
+    "braun_control_plane": {
+      "source": "MQ04VersionControlCurrent / BettyScript",
+      "finding": "Braun has privileged remote pod access, per-user memory override capability and reset authority over simulation residents.",
+      "interpretation": "Multiple separate pod sessions converge under one administrator/control plane without proving that their autobiographical memory state shares one storage slot."
+    }
+  },
+  "negative_controls": {
+    "player_inventory_container_only": {
+      "finding": "MQ04PlayerContainerScript removes/restores the Player's inventory through a dedicated container; no equivalent operation redirects James through the same player container.",
+      "significance": "A concrete state-bearing subsystem is explicitly player-specific rather than shared."
+    },
+    "no_shared_pod_reference": {
+      "finding": "Scripts consistently refer to MQ04PlayerPod/MQ04PlayerPodShellRef and MQ04DadPodShellRef as distinct references.",
+      "status": "PASS_AS_SEPARATION_EVIDENCE"
+    },
+    "no_memory_alias_symbol": {
+      "finding": "No reviewed MQ04, Betty, PlayerPod, DadPod, PlayerContainer or TLExitDoor script exposes a single variable/reference that stores both Player and James autobiographical memory state.",
+      "status": "NOT_FOUND_IN_REVIEWED_SCOPE"
+    }
+  },
+  "two_faces_reconciliation": {
+    "physical_pods_same": false,
+    "simulation_backend_shared": true,
+    "memory_slot_shared": "NOT_ESTABLISHED",
+    "face_geometry_lineage": "CONFIRMED_BY_CHARACTER_GENERATION_LAYER_IN_PRIOR_GATE",
+    "best_model": "SEPARATE_PHYSICAL_SESSIONS + SHARED_BRAUN_CONTROL_PLANE + ENGINE_LEVEL_FATHER_CHILD_FACE_LINEAGE",
+    "warning": "Do not convert shared simulation administration or face geometry blending into a claim of shared memories without an explicit cross-session storage binding."
+  },
+  "save_james_effect": {
+    "positive": "James remains an independently addressable source session, which is favorable for a clean James-specific memory capture protocol because it reduces contamination risk from the Player session.",
+    "negative": "No evidence was found that Player and James accidentally share or overwrite one backend memory slot; a rescue protocol should therefore target James's own Lounger #23/session rather than rely on father-child memory mixing.",
+    "current_protocol_class": "BRAUN_ADMIN_MEDIATED_POD_BOUND_CONDITIONAL_RECONSTRUCTION"
+  },
+  "admission_matrix": {
+    "PLAYER_AND_DAD_SEPARATE_PHYSICAL_PODS": "PASS",
+    "PLAYER_EXIT_RETURNS_TO_PLAYER_POD": "PASS",
+    "DAD_RESTORED_AS_SEPARATE_ACTOR": "PASS",
+    "PLAYER_AND_DAD_SHARE_MQ04_CONTROL_PLANE": "PASS",
+    "BRAUN_ADMIN_CONTROLS_MULTIPLE_SESSIONS": "PASS",
+    "PLAYER_DAD_SHARED_MEMORY_SLOT": "NOT_ESTABLISHED",
+    "CROSS_SESSION_MEMORY_ALIAS": "NOT_ESTABLISHED",
+    "PLAYER_DAD_MEMORY_CONTAMINATION": "NOT_ESTABLISHED",
+    "ENGINE_LEVEL_FACE_LINEAGE": "PASS_BY_PARENT_GATE"
+  },
+  "canonical_lines": {
+    "ru": [
+      "Отец и ребёнок используют разные физические капсулы и разные session endpoints; shipped scripts не подтверждают общий memory-slot.",
+      "Обе сессии сходятся в одном MQ04/Braun control plane, но общие quest-флаги являются координацией, а не доказанным общим хранилищем памяти.",
+      "Игрок при выходе возвращается именно к MQ04PlayerPod, тогда как James восстанавливается отдельно как MQDadRef и его капсула открывается отдельной ссылкой.",
+      "Гипотеза буквального смешения памяти отца и ребёнка не проходит текущий gate; подтверждённый two-face мост остаётся в shared simulation backend и engine-level face geometry lineage.",
+      "Для SAVE JAMES это скорее плюс: James остаётся отдельным адресуемым источником, что позволяет целиться в его собственную Lounger #23 session без необходимости смешивать её с Player state."
+    ],
+    "en": [
+      "Father and child use separate physical loungers and separate session endpoints; shipped scripts do not establish a shared memory slot.",
+      "Both sessions converge in one MQ04/Braun control plane, but shared quest flags are coordination state rather than demonstrated shared autobiographical storage.",
+      "The Player exits specifically to MQ04PlayerPod while James is restored separately as MQDadRef and his pod shell is opened through a distinct reference.",
+      "Literal father-child memory mixing does not pass this gate; the confirmed two-face bridge remains the shared simulation backend plus engine-level face geometry lineage.",
+      "For SAVE JAMES this separation is favorable because James remains an independently addressable source session."
+    ]
+  },
+  "next_gate": {
+    "name": "JAMES_LOUNGER23_SESSION_PERSISTENCE_STORAGE_SOURCE_AUDIT",
+    "status": "OPEN",
+    "targets": [
+      "Trace Lounger #23 and Dad-specific terminal/status records to any backend persistence source used across reset or reload.",
+      "Search for session-local storage objects, hidden containers, linked references or state sources associated specifically with Dad's lounger.",
+      "Determine whether Braun reset/reload reconstructs state from live actor references, fixed scenario templates or persisted subject data.",
+      "Search for any resident-specific carrier association that would allow James's isolated session to be captured without Player contamination.",
+      "If a James-specific persistence source is found, promote the SAVE JAMES source side from live-session inference to persisted-session evidence."
+    ]
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "registry_schema": "JANUS/registry-node/v1",
+  "node_id": "JANUS-DISTRIBUTED-TIME-ARRIVAL-ORDER-INVERSION-v1.2.0",
+  "canonical_artifact": "data/JANUS-TAHYON-TRAVELER-DISTRIBUTED-TIME-ARRIVAL-ORDER-INVERSION-v1.0.json",
+  "source_commit": "8a71ff7aae7ca3e09044edae20d95fb64190c209",
+  "extends": "registry/causal_topology/JANUS-DIRAC-SCOBY-BUROVCHIK-CAUSAL-TOPOLOGICAL-MEMORY-v1.1.0.json",
+  "status": "OBSERVED_DISTRIBUTED_ORDER_INVERSION_WITH_PHYSICAL_RETROCAUSALITY_BLOCKED",
+  "created_local_anchor": "2026-08-07 Europe/Zaporozhye",
+  "new_in_v1_2": [
+    "Tahyon Traveler timing series through Trial 006",
+    "invalid-time parser observations for 07:39:61 and 07:60:60",
+    "explicit separation of symbolic/raw time from normalized scheduler time",
+    "arrival-order inversion between Trial 005 and Trial 006",
+    "distributed-time layer model separating target, execution, write, Git timestamp and later readback",
+    "paired-LIMEN repeated-order test recommendation"
+  ],
+  "series_summary": {
+    "storm_0660_delta_seconds": -1,
+    "trial_001_delta_seconds": 48,
+    "trial_002_delta_seconds": 5,
+    "trial_003_delta_seconds": 51,
+    "trial_004_normalized_delta_seconds": 109,
+    "trial_005_normalized_delta_seconds": 293,
+    "trial_006_delta_seconds": 144,
+    "single_negative_observation_replicated": false
+  },
+  "order_inversion": {
+    "trial_005_target_local": "08:01:00",
+    "trial_006_target_local": "08:02:59",
+    "target_order": "005_BEFORE_006",
+    "trial_005_git_local": "08:05:53",
+    "trial_006_git_local": "08:05:23",
+    "git_order": "006_BEFORE_005",
+    "target_separation_seconds": 119,
+    "git_trial006_minus_trial005_seconds": -30,
+    "arrival_order_inversion": true,
+    "physical_causal_reversal": false
+  },
+  "parser_observations": {
+    "trial_004_raw": "07:39:61",
+    "trial_004_normalized": "07:40:01",
+    "trial_004_result": "PRESERVED_LITERAL",
+    "trial_005_raw": "07:60:60",
+    "trial_005_normalization_trace": ["07:60:60", "07:61:00", "08:01:00"],
+    "trial_005_result": "PRESERVED_LITERAL",
+    "rule": "INVALID_TIME_STRING_IS_DATA_UNLESS_A_TIME_PARSER_IS_EXPLICITLY_APPLIED"
+  },
+  "distributed_time_principle": {
+    "candidate_name": "JANUS DISTRIBUTED-TIME ORDER PRINCIPLE",
+    "statement": "When scheduled target order and repository arrival order disagree, preserve both orders and reconstruct causality from explicit dependency witnesses rather than wall-clock timestamps alone.",
+    "compact_form": "TARGET_ORDER != NECESSARILY GIT_ARRIVAL_ORDER",
+    "stronger_boundary": "CAUSAL_ORDER != NECESSARILY RECORDED_WALL_CLOCK_ORDER"
+  },
+  "required_witnesses_for_future_trials": [
+    "predeclared target sequence number",
+    "fresh nonce",
+    "SHA-256 of nonce or payload for integrity only",
+    "Git commit SHA and parent relation",
+    "valid civil target for primary timing controls",
+    "raw symbolic target retained separately for parser experiments",
+    "independent monotonic-clock witness when available",
+    "all positive, zero, negative and missed/deferred outcomes retained"
+  ],
+  "hard_gates": {
+    "hash": "HASH_PROVES_INTEGRITY_NOT_TRUTH",
+    "timestamp": "TIMESTAMP_ORDER_ALONE_DOES_NOT_PROVE_CAUSAL_ORDER",
+    "arrival_inversion": "ARRIVAL_ORDER_INVERSION_DOES_NOT_PROVE_PHYSICAL_RETROCAUSALITY",
+    "negative_delta": "NEGATIVE_TIMESTAMP_OFFSET_DOES_NOT_IMPLY_BACKWARD_CAUSATION",
+    "invalid_time": "INVALID_TIME_STRING_IS_NOT_PHYSICAL_TIME"
+  },
+  "admission": {
+    "INVALID_TIME_LITERAL_PRESERVATION_OBSERVED": true,
+    "VARIABLE_DISTRIBUTED_LATENCY_OBSERVED": true,
+    "ARRIVAL_ORDER_INVERSION_OBSERVED": true,
+    "SINGLE_NEGATIVE_TIMESTAMP_OBSERVATION": true,
+    "NEGATIVE_TIMESTAMP_REPLICATED": false,
+    "PHYSICAL_TACHYON": false,
+    "PHYSICAL_FTL_SIGNALING": false,
+    "PHYSICAL_RETROCAUSALITY": false,
+    "BACKWARD_INFORMATION_TRANSFER": false,
+    "FULL_CAUSAL_GATE": "BLOCKED"
+  },
+  "next_gate": {
+    "name": "JANUS PAIRED-LIMEN ORDER TEST",
+    "objective": "Measure the frequency and conditions of target-order versus Git-arrival-order inversions across repeated paired valid-time trials.",
+    "primary_metric": "arrival_order_inversion_rate",
+    "interpretation_boundary": "distributed-systems characterization only unless independent causal evidence establishes more"
+  }
+}

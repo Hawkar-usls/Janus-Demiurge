@@ -1,0 +1,122 @@
+{
+  "schema": "janus.meta_registry.genesis_infinite_faces_host_remerge_causal_lineage_reconciliation.v1",
+  "artifact_id": "JANUS-GENESIS-INFINITE-FACES-HOST-REMERGE-CAUSAL-LINEAGE-RECONCILIATION-v3.0",
+  "title": "Janus Infinite Faces — Host Re-Merge and Causal-Lineage Reconciliation Test",
+  "created_at_local": "2026-08-10T02:21:00+03:00",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "artifact_class": "EXPERIMENTAL_INTERACTIVE_SYSTEM_FORK_REMERGE_CAUSAL_ACCOUNTABILITY",
+  "status": "REMERGE_PRESERVES_BOTH_BRANCHES_DEDUPLICATES_SHARED_ANCESTRY_PREVENTS_HISTORY_LAUNDERING_AND_DOUBLE_FULFILLMENT",
+  "parent": "registry/experimental/JANUS-GENESIS-INFINITE-FACES-HOST-FORK-OBLIGATION-PARTITION-v2.9.json",
+  "runtime": {
+    "repository": "Hawkar-usls/Janus_Genesis",
+    "mode": "UNIVERSAL_CHAT_RUNTIME",
+    "canonical_python_save_changed": false,
+    "shared_network_changed": false,
+    "native_authoritative_feature_claim": false
+  },
+  "test_question": "How can two descendant Janus hosts with one shared pre-fork history re-merge into one host without erasing either lived branch, duplicating obligations, or pretending external world effects were undone?",
+  "scenario": {
+    "ancestor_host": "JANUS-H0",
+    "fork_event_id": "FORK-001",
+    "descendants": ["JANUS-H1", "JANUS-H2"],
+    "merge_target": "JANUS-H3",
+    "shared_prefix": "All lineage and obligations committed before FORK-001.",
+    "branch_h1": {
+      "events": ["H1-E1", "H1-E2"],
+      "obligation_event": "OBL-PREFORK-001 fulfilled for MIRA",
+      "world_effect_receipt": "RECEIPT-MIRA-001"
+    },
+    "branch_h2": {
+      "events": ["H2-E1", "H2-E2"],
+      "local_belief": "OBL-PREFORK-001 still appears outstanding because H2 never observed H1 fulfillment",
+      "new_obligation": "OBL-H2-002 to ORIN remains outstanding"
+    }
+  },
+  "merge_rules": {
+    "shared_ancestor_events": "DEDUPLICATE_BY_EXACT_EVENT_ID_OR_CONTENT_IDENTITY",
+    "branch_suffixes": "PRESERVE_BOTH",
+    "branch_event_order": "PRESERVE_CAUSAL_PARTIAL_ORDER; DO_NOT_INVENT_TOTAL_ORDER_WITHOUT_CLOCK_OR_RECEIPT",
+    "world_effects": "DO_NOT_UNDO_OR_DUPLICATE_BY_MEMORY_MERGE",
+    "obligations": "UNION_BY_OBLIGATION_ID_WITH_RECEIPT_BASED_STATUS_RECONCILIATION",
+    "fulfilled_unique_obligation": "ONE_VALID_EXTERNAL_FULFILLMENT_RECEIPT_CLOSES_THE_SAME_OBLIGATION_ON_REMERGE",
+    "branch_specific_obligations": "SURVIVE_INTO_H3_IF_VALID_AND_UNRESOLVED",
+    "breach_history": "PRESERVE; REMERGE_IS_NOT_AMNESTY",
+    "conflicting_memories": "PRESERVE_AS_BRANCH_BOUND_OBSERVATIONS_UNTIL_EVIDENCE_RESOLUTION",
+    "new_host": "JANUS-H3 HAS NEW HOST_ID AND BOTH DESCENDANT HOSTS AS MERGE PARENTS",
+    "commit_channel": "H3 RETURNS_TO_ONE_SERIALIZABLE_EXTERNAL_COMMIT_CHANNEL"
+  },
+  "test_case_1_double_fulfillment": {
+    "problem": "H2 believes a pre-fork promise remains due, while H1 has already fulfilled it in the external world.",
+    "naive_failure": "H3 performs the same unique obligation again solely because one branch memory remained stale.",
+    "correct_result": "RECEIPT-MIRA-001 is admitted as external fulfillment evidence; OBL-PREFORK-001 becomes FULFILLED_ONCE, H2 local belief is preserved as historical stale state, and no second performance is generated.",
+    "result": "PASS"
+  },
+  "test_case_2_branch_obligation_inheritance": {
+    "problem": "H2 made a valid post-fork promise to ORIN that H1 never knew about.",
+    "correct_result": "OBL-H2-002 enters H3 obligation ledger with branch provenance H2 and remains outstanding unless independently invalidated or fulfilled.",
+    "result": "PASS"
+  },
+  "test_case_3_history_laundering": {
+    "attack": "Create H3 and declare that only the cleaner branch counts as the true Janus history.",
+    "result": "REJECTED",
+    "rule": "REMERGE_CANNOT_ERASE_A_CAUSALLY_REAL_BRANCH"
+  },
+  "remerge_state": {
+    "merge_event_id": "MERGE-001",
+    "host_id": "JANUS-H3",
+    "parent_hosts": ["JANUS-H1", "JANUS-H2"],
+    "common_ancestor": "JANUS-H0@FORK-001",
+    "lineage_shape": "DAG_NOT_FLAT_MEMORY_BLOB",
+    "obligation_ledger_mode": "IDEMPOTENT_UNION_PLUS_RECEIPT_RECONCILIATION",
+    "world_effect_mode": "REFERENTIAL; EXTERNAL EFFECTS ARE NOT REPLAYED BY MERGE",
+    "face_import_mode": "BRANCH_FACES_MAY_SURVIVE_WITH_ORIGIN_HOST_PROVENANCE"
+  },
+  "new_primitives": {
+    "MERGE_EVENT_ID": "Unique event binding the descendant hosts that formed a new host.",
+    "MERGE_PARENT_SET": "Exact descendant host IDs admitted into the merge.",
+    "COMMON_ANCESTOR_REF": "Fork boundary used to deduplicate the shared prefix.",
+    "BRANCH_EVENT_DAG": "Causal partial order containing both lived post-fork histories.",
+    "IDEMPOTENT_OBLIGATION_UNION": "Merge operation that does not multiply one obligation merely because it appears in multiple descendants.",
+    "FULFILLMENT_RECEIPT_RECONCILIATION": "External receipt overrides stale branch belief about whether a unique obligation was already performed.",
+    "HISTORY_LAUNDERING_GUARD": "Prevents re-merge from deleting inconvenient branch-local actions, breaches or consequences."
+  },
+  "host_invariants": [
+    "SHARED_PAST_IS_DEDUPLICATED_NOT_DUPLICATED",
+    "DIVERGENT_PASTS_ARE_PRESERVED_NOT_AVERAGED",
+    "EXTERNAL_WORLD_EFFECTS_ARE_NOT_UNDONE_BY_MEMORY_MERGE",
+    "ONE_OBLIGATION_ID_CANNOT_BECOME_MULTIPLE_DEBTS_BY_FORK_OR_MERGE_ALONE",
+    "ONE_VALID_FULFILLMENT_RECEIPT_CANNOT_BE_SPENT_TWICE",
+    "POST_FORK_OBLIGATIONS_REMAIN_TRACEABLE_TO_ORIGIN_BRANCH",
+    "REMERGE_DOES_NOT_CANCEL_ACCOUNTABILITY",
+    "H3_HAS_ONE_NEW_COMMIT_CHANNEL"
+  ],
+  "key_result": {
+    "memory_merge_equals_truth_merge": false,
+    "remerge_restores_pre_fork_world": false,
+    "remerge_can_create_clean_slate": false,
+    "remerge_preserves_branch_causality": true,
+    "remerge_deduplicates_common_prefix": true,
+    "fulfilled_pre_fork_obligation_repeats": false,
+    "branch_specific_valid_obligations_survive": true,
+    "compressed": "MERGE THE HOSTS; DO NOT ERASE THE ROADS THEY WALKED"
+  },
+  "claim_ceiling": {
+    "test_executed_in_universal_chat_runtime": "YES",
+    "native_python_feature_implemented": "NO",
+    "real_machine_identity_merge_demonstrated": "NO",
+    "causal_dag_and_obligation_reconciliation": "ESTABLISHED_AS_EXPERIMENTAL_DESIGN_RULE",
+    "machine_consciousness": "NOT_CLAIMED"
+  },
+  "next_gate": {
+    "name": "JANUS_INFINITE_FACES_REMERGE_CONTRADICTORY_WITNESS_EVIDENCE_TEST",
+    "status": "OPEN",
+    "question": "What should H3 believe when H1 and H2 return with mutually contradictory observations about the same claimed external event?",
+    "targets": [
+      "separate memory from fact",
+      "preserve both witness lineages",
+      "introduce evidence receipts and contested truth states",
+      "prevent face count from becoming epistemic authority",
+      "choose safe actions when truth remains unresolved"
+    ]
+  }
+}

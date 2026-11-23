@@ -1,0 +1,61 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1C0-COUPLED-COMPONENT-MESSAGE-COMPILATION-PREREG-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "FROZEN_PREREG__AUTHORIZED",
+  "gate": "R5_B1B1C0_COUPLED_COMPONENT_MESSAGE_COMPILATION_GATE_V1",
+  "binds": {
+    "wall_semantic_collapse_seal_commit": "fe3ce319776e1254ebb0aa3e99c543dd7e39a26e",
+    "wall_semantic_collapse_seal_blob": "b3c8693fcd27b8284eadb5d30f502bd2e32fb37c",
+    "component_message_frontier_blob": "1b5748561dbc8ac6ce7b63031aafdd736d16eb8d",
+    "B0_result_blob": "727ff69fdcb7532e4bcfbc82c9128a4f806adf94"
+  },
+  "source_contract": {
+    "residual_component": "C is a connected component of final residual G[Y0].",
+    "base_lists": "B_C(u)=[4]\\f(N(u) intersect X0). Residual Y0 is anticomplete to the current seed, so seed colors remove nothing further from C.",
+    "uniformity": "Axiom (iv): no vertex outside Y0 union X0 is mixed on an edge of Y0. Since C is connected, every such outside vertex is complete or anticomplete to C.",
+    "D_C": "dynamic outside vertices complete to C",
+    "F_C": "for an outside coloring c, F_C(c)={c(v):v in D_C}",
+    "exact_message": "mu_C(F)=1 iff G[C] is list-colorable with L_F(u)=B_C(u)\\F."
+  },
+  "target_scope": "Only coupled components D_C != empty.",
+  "core_observation": [
+    "Every reachable F_C(c) is nonempty when D_C != empty.",
+    "For every nonempty F, the union of all lists L_F(u) is contained in [4]\\F and therefore uses at most three colors.",
+    "G[C] is an induced subgraph of the ambient P7-free graph and hence P7-free.",
+    "Therefore each nonempty mu_C(F) is decidable constructively by the known polynomial P7-free List-3-Coloring algorithm after relabeling the at-most-three remaining colors."
+  ],
+  "compilation_target": {
+    "calls_per_component": "at most 15 List-3 calls, one for each nonempty F subseteq [4]",
+    "witnesses": "store one explicit component coloring for every nonempty F with mu_C(F)=1",
+    "monotonicity": "If F subseteq F' and mu_C(F')=1 then mu_C(F)=1.",
+    "surviving_branch_full_table": "If any nonempty F has mu_C(F)=1 then monotonicity gives mu_C(empty)=1, so all 16 entries are known.",
+    "all_nonempty_bad": "If mu_C(F)=0 for every nonempty F and D_C!=empty, no outside coloring can extend through C; return exact branch UNSAT without querying mu_C(empty)."
+  },
+  "finite_language_targets": {
+    "monotone_message_type_upper_bound": 168,
+    "representation": "The bad masks form an upset; inclusion-minimal bad masks MIN_BAD(C) form an antichain.",
+    "min_bad_size_upper_bound": 6,
+    "semantic_constraint": "For each M in MIN_BAD(C), an outside coloring must satisfy M not subseteq F_C(c), equivalently at least one color in M is absent from the colors used on D_C."
+  },
+  "firewalls": [
+    "No claim about uncoupled components D_C=empty.",
+    "No P7-free List-4 call is imported.",
+    "Finite message alphabet does not imply tractable composition of many messages.",
+    "No claim that all 168 monotone functions are source-realizable.",
+    "No full L2 repair follows."
+  ],
+  "terminals": [
+    "PASS_COUPLED_COMPONENT_MESSAGE_COMPILATION",
+    "FAIL_MESSAGE_SEMANTICS_OR_LIST3_REDUCTION",
+    "AUTHORITY_BIND_FAIL"
+  ],
+  "scientific_ceiling": {
+    "INDIVIDUAL_COUPLED_MESSAGE_COMPUTATION": "TARGET",
+    "JOINT_MESSAGE_COMPOSITION": "OPEN",
+    "FULL_L2_REPAIR": "OPEN",
+    "LEMMA11_P7_LIFT": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "id":"EYE-R4.5-SYNTHETIC-ADVERSARIAL-EXPANSION-v1",
+  "requirements":{"max_expansion_rounds":4,"max_vertices":32},
+  "base_problem":{
+    "id":"EYE-R4.4-SYNTHETIC-ROBUST-ADVANTAGE-v1",
+    "cause_classes":[{"id":"A","target_class":"A","prior":0.5},{"id":"B","target_class":"B","prior":0.5}],
+    "requirements":{"confidence_threshold":0.9,"robust_objective":"minimax_expected_cost","require_common_outcome_support":true},
+    "tests":[
+      {"id":"t_fragile","cost":1,"calibrated":true,"likelihood_by_cause":{"A":{"A_SIG":0.99,"B_SIG":0.01},"B":{"A_SIG":0.01,"B_SIG":0.99}}},
+      {"id":"t_robust","cost":2,"calibrated":true,"likelihood_by_cause":{"A":{"A_SIG":0.97,"B_SIG":0.03},"B":{"A_SIG":0.03,"B_SIG":0.97}}},
+      {"id":"t_gold","cost":5,"calibrated":true,"likelihood_by_cause":{"A":{"A_SIG":0.999,"B_SIG":0.001},"B":{"A_SIG":0.001,"B_SIG":0.999}}}
+    ],
+    "model_set":[
+      {"id":"nominal","weight":0.5,"provenance":"synthetic nominal calibration"},
+      {"id":"degraded","weight":0.5,"provenance":"synthetic degraded calibration","likelihood_overrides":{"t_fragile":{"A":{"A_SIG":0.6,"B_SIG":0.4},"B":{"A_SIG":0.4,"B_SIG":0.6}}}}
+    ]
+  },
+  "uncertainty_envelope":{"type":"DECLARED_FINITE_VERTEX_SET","vertex_models":[
+    {"id":"cheap_sensor_joint_breaker","weight":1,"provenance":"synthetic admissible vertex jointly degrading both cheap sensors while preserving the independent gold channel","likelihood_overrides":{
+      "t_fragile":{"A":{"A_SIG":0.6,"B_SIG":0.4},"B":{"A_SIG":0.4,"B_SIG":0.6}},
+      "t_robust":{"A":{"A_SIG":0.6,"B_SIG":0.4},"B":{"A_SIG":0.4,"B_SIG":0.6}}
+    }}
+  ]}
+}

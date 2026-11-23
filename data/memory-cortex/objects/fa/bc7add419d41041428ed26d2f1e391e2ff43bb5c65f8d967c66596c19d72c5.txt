@@ -1,0 +1,71 @@
+{
+  "artifact_id": "JANUS-BLOODCORE-GHOST-TRANSPORT-SPLIT-2026-08-25-v1.0",
+  "status": "CURATED_HISTORICAL_RESTORATION_RECEIPT",
+  "historical_sources": {
+    "blood_core_v4008_self_think.py": {
+      "sha256": "0f9fbd46ff7669f8bd144605cb5c012e045a41d3cee7b419f96221ea3e1c66bd",
+      "compile": "PASS",
+      "relevant_behavior": "send_to_titan tried active target first, deduplicated fallbacks, POSTed /api/device/data, and treated any HTTP status below 500 as sufficient to switch active target"
+    },
+    "mod_ghost_rider.py": {
+      "sha256": "3937c74bb1191b45a638e7de0493ac43a4df6b4609154921c7c46a071663dca9",
+      "compile": "PASS",
+      "relevant_behavior": "read a random thought read-only, ask an LLM for distortion plus conspiracy, then persist generated text to lie.db"
+    }
+  },
+  "restored_safe_subfunctions": [
+    {
+      "name": "Ghost Rider Adversarial Challenger",
+      "repository": "Hawkar-usls/Janus-Demiurge",
+      "path": "restored/ghost_rider_adversarial_challenger.py",
+      "commit": "aef4a51d5c8c86821c633ef14876fd9478a183c3",
+      "test_commit": "0c444b2c086bb6c4eaeef00ca5275edb2f651bdc",
+      "local_test": "2/2 PASS",
+      "recovered_operator": "GENERATE_ADVERSARIAL_COUNTERHYPOTHESIS_THEN_TEST_EXTERNALLY",
+      "authority": "SYNTHETIC_CHALLENGE_ONLY_NO_TRUTH_MEMORY_NO_CONCLUSION_AUTHORITY"
+    },
+    {
+      "name": "Transport Failover Planner",
+      "repository": "Hawkar-usls/Janus-Demiurge",
+      "path": "restored/transport_failover_planner.py",
+      "commit": "1824c36d00fadfaf8a98bfb7fc0e09458433b033",
+      "test_commit": "89f3b8db7a85756606205f8b2b1670583fa907cf",
+      "local_test": "2/2 PASS",
+      "recovered_operator": "ACTIVE_FIRST_DEDUPED_FAILOVER_PLAN_WITH_EXPLICIT_ACK_CLASSIFICATION",
+      "authority": "PLAN_AND_ATTEMPT_RECEIPT_ONLY_NO_SOCKET_NO_SEND_NO_TARGET_SWITCH"
+    }
+  ],
+  "historical_repairs": [
+    {
+      "old_behavior": "Ghost Rider persisted LLM-generated distortions into lie.db",
+      "modern_repair": "synthetic attacks remain explicitly ADVERSARIAL_CANDIDATE_NOT_EVIDENCE and require independent testing"
+    },
+    {
+      "old_behavior": "HTTP status <500 counted as transport success",
+      "modern_repair": "only HTTP 2xx is ACK; 4xx is terminal client rejection; 5xx/network errors can suggest failover"
+    },
+    {
+      "old_behavior": "successful send could mutate active target",
+      "modern_repair": "planner/classifier has no authority to send or switch targets"
+    }
+  ],
+  "bloodcore_absorbed_or_rejected_functions": [
+    {"feature":"Chronos random backup injection","decision":"ABSORBED_BY_READ_ONLY_CHRONOS_ARCHAEOLOGIST"},
+    {"feature":"Hypnos ingest then delete dreams.json","decision":"DESTRUCTIVE_DELETE_NOT_RESTORED"},
+    {"feature":"Ouroboros generated module/proposal writes","decision":"ABSORBED_BY_AUDITOR_PATCH_EVALUATOR_SOVEREIGN_LOCK_CHAIN"},
+    {"feature":"MeaningSynthesizer random template/trend/probe generation","decision":"NOT_RESTORED_AS_EVIDENCE_ENGINE"},
+    {"feature":"Psyche random entropy drift","decision":"NOT_RESTORED_AS_CONTROL_SIGNAL"},
+    {"feature":"vault API key storage","decision":"SECRET_STORAGE_AUTHORITY_NOT_IMPORTED"}
+  ],
+  "laws": [
+    "ADVERSARIAL_GENERATION_NE_EVIDENCE",
+    "COUNTERHYPOTHESIS_MUST_BE_TESTABLE",
+    "NO_TRUTH_DB_PROMOTION_WITHOUT_INDEPENDENT_EVIDENCE",
+    "PLAN_NE_TRANSPORT_AUTHORITY",
+    "HTTP_LT_500_NE_SUCCESS",
+    "ACK_REQUIRES_2XX",
+    "CLIENT_REJECTION_NE_RETRY_LOOP",
+    "NETWORK_FAILURE_MAY_SUGGEST_NEXT_TARGET",
+    "HISTORICAL_FALLBACK_NE_MODERN_AUTHORITY"
+  ]
+}

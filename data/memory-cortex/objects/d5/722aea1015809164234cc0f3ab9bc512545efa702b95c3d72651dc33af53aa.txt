@@ -1,0 +1,113 @@
+{
+  "artifact_id": "JANUS-PALOMAR-JPFM-2F-C0M-FULL-S0-HEADER-ONLY-ACQUISITION-MAP-ADMISSION-v1.0",
+  "experiment_id": "JPFM-2F-C0M",
+  "schema_version": "1.0",
+  "date": "2026-08-15",
+  "status": "PREREGISTERED_AFTER_C0H_PASS_BEFORE_C0M_OUTCOME",
+  "purpose": "Freeze a complete label-blind acquisition-coordinate manifest for every source in the public 122,820-row POSS-I S0 cohort using named-plate headers only. The manifest binds each frozen src_id to exact plate/tile lineage, corrected tile pixel coordinates and full-plate pixel coordinates before any large-scale pixel morphology is acquired.",
+  "parents": [
+    "data/JANUS-PALOMAR-JPFM-2F-A-BLIND-STRUCTURAL-STRATIFICATION-RUN-001.json",
+    "data/JANUS-PALOMAR-JPFM-2F-C0H-HEADER-ONLY-TILE-WCS-EQUIVALENCE-RUN-001.json",
+    "data/JANUS-PALOMAR-JPFM-2F-C0-CORRECTED-TILE-WCS-LOCATOR-RUN-001.json"
+  ],
+  "required_parent": {
+    "C0H_outcome": "PASS_HEADER_ONLY_TILE_WCS_EQUIVALENCE",
+    "C0H_pixel_section_accessed": false,
+    "C0H_pixel_array_materialized": false
+  },
+  "frozen_public_cohort": {
+    "poss_repository": "jannefi/poss1-plate-slice",
+    "poss_commit": "4005e200541b321ead3d6608f0162a14430ef1c2",
+    "release": "results/s0-642-20260814",
+    "stage_S0_rows": 122820,
+    "stage_S0_gzip_sha256": "f19cf987756c62a68f55a472992d860e73ae63b3a4664189092b0e1fda77f7bb",
+    "stage_S0_csv_sha256": "2ff92f2210acb387ef9ef4b88d561595d3883e9aab27065042627272b96590f0",
+    "tile_manifest_gzip_sha256": "a1652db2d15470a9e8630a1a2ac3a055e49be65880ca615126a9aaa8cc2da02d",
+    "tile_manifest_csv_sha256": "5dcb90dc5d98550e5a60246aced2b097922a267c69e81f27d45d16a288142a99",
+    "blind_structural_manifest_rows": 122820,
+    "blind_structural_manifest_csv_sha256": "34b0ccde7c3683d07626774e52dac0a197451f729242204e59aae81397bdbc2e",
+    "blind_structural_manifest_gzip_sha256": "166f5e6621ed2b065b7981b3c8208670f3c989b1394bd559c9005ab1fa6d07d9"
+  },
+  "acquisition_coordinate_contract": {
+    "plate_identity": "Frozen public tile_id -> plate_id mapping from the release tile manifest.",
+    "tile_geometry": "Same 7x7 pixel-space grid, 60-arcmin tile size, overlap_slices and format_tile_id identity used by B2/C0/C0H.",
+    "astrometric_correction": "Same frozen per-plate CRPIX correction table and clean_tan_header_from_full TAN refit used by admitted C0/C0H.",
+    "source_coordinate": "Frozen final S0 ra/dec; no source search, nearest-neighbour association or peak recentering.",
+    "tile_pixel": "Corrected tile-WCS world_to_pixel prediction.",
+    "full_plate_pixel": "tile_pixel + deterministic full-plate section origin for that exact tile.",
+    "pixel_scale": "Local corrected-tile projection-plane pixel scale in arcsec/pixel.",
+    "structural_context": "Join only already-frozen 2F-A structural_cluster, anomaly_score and structural feature flags by exact src_id. This is morphology-blind context already frozen before C0M.",
+    "remote_image_pixels_read": false
+  },
+  "sharding_contract": {
+    "shard_count": 16,
+    "unit": "plate_id",
+    "assignment": "Sort all distinct frozen S0 plate_id values lexicographically and assign plate ordinal i to shard i mod 16. Every source/tile from a plate remains within one shard.",
+    "overlap_allowed": false,
+    "aggregate_source_union": "Must contain exactly 122,820 unique frozen src_id values with zero duplicates, zero omissions and zero extras.",
+    "aggregate_plate_union": "Must equal exactly the distinct plate_id set derived from the frozen S0 cohort.",
+    "aggregate_tile_union": "Must equal exactly the distinct tile_id set represented by the frozen S0 cohort. Zero-candidate public tiles are not required because they have no source acquisition target."
+  },
+  "predeclared_gates": {
+    "source_binding": "122,820/122,820 unique S0 src_id rows must join one-to-one to the frozen 2F-A structural manifest.",
+    "plate_binding": "Every S0 row must have exactly one frozen plate_id via tile_manifest.",
+    "header_access": "Every distinct plate represented in S0 must yield a valid named POSS-I header/WCS and an ok frozen CRPIX correction row.",
+    "tile_identity": "Every distinct tile_id represented in S0 must regenerate exactly from its named plate 7x7 grid.",
+    "prediction_coverage": "122,820/122,820 sources must receive finite corrected tile_x0/tile_y0 and fullplate_x0/fullplate_y0 predictions plus finite local_pixel_scale_arcsec.",
+    "tile_bounds": "All predicted corrected tile coordinates must lie within the deterministic trimmed tile footprint with a diagnostic margin reported; do not silently clip or recenter out-of-bounds predictions.",
+    "shard_integrity": "All 16 shard receipts and sidecars must pass hashes, exact deterministic plate assignment and non-overlap before aggregation.",
+    "pixel_transport": "No remote hdu.section, hdu.data or image array materialization is permitted anywhere in C0M."
+  },
+  "output_contract": {
+    "aggregate_manifest_columns": [
+      "src_id",
+      "tile_id",
+      "object_id",
+      "plate_id",
+      "ra",
+      "dec",
+      "structural_cluster",
+      "anomaly_score",
+      "tile_x0",
+      "tile_y0",
+      "fullplate_x0",
+      "fullplate_y0",
+      "local_pixel_scale_arcsec",
+      "tile_section_x_start_fullplate",
+      "tile_section_y_start_fullplate",
+      "tile_width_px",
+      "tile_height_px",
+      "distance_to_tile_edge_px",
+      "tan_refit_median_arcsec",
+      "tan_refit_max_arcsec",
+      "crpix_dx",
+      "crpix_dy"
+    ],
+    "large_raw_pixels_committed": false,
+    "per_shard_sidecars_committed": false,
+    "compact_per_shard_receipts_committed": true,
+    "aggregate_gzip_csv_committed": true,
+    "aggregate_result_json_committed": true
+  },
+  "allowed_outcomes": [
+    "PASS_FULL_S0_HEADER_ONLY_ACQUISITION_MAP_FROZEN",
+    "FAIL_CLOSED_PARENT_BINDING",
+    "FAIL_CLOSED_STRUCTURAL_OR_PLATE_BINDING",
+    "FAIL_CLOSED_HEADER_OR_TILE_IDENTITY",
+    "FAIL_CLOSED_PREDICTION_COVERAGE_OR_BOUNDS",
+    "FAIL_CLOSED_SHARD_INTEGRITY"
+  ],
+  "external_label_firewall": {
+    "external_label_reveal_authorized": false,
+    "forbidden_inputs": [
+      "nuclear calendar",
+      "Blue Book or other human-report labels",
+      "NUFORC labels",
+      "Kp/ap or geomagnetic labels",
+      "Moon/Sun temporal covariates"
+    ],
+    "reason": "C0M freezes where to read pixels before any morphology acquisition. External labels remain unavailable until the later full morphology feature manifest and morphology clusters are themselves frozen."
+  },
+  "post_pass_gate": "JPFM-2F-C1-NAMED-PLATE-SPARSE-STAMP-TRANSPORT-AND-DIRECT-MORPHOLOGY",
+  "claim_ceiling": "FULL_COHORT_HEADER_ONLY_PIXEL_ACQUISITION_COORDINATE_MAP_ONLY__NO_PIXEL_MORPHOLOGY_YET__EXTERNAL_LABELS_SEALED__NO_ORIGIN_CLAIM"
+}

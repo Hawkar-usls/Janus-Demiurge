@@ -1,0 +1,37 @@
+{
+  "artifact_id": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v2.8",
+  "supersedes": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v2.7",
+  "lineage_alias": "JANUS-113",
+  "title": "PERCEPTION DETERMINES REALITY",
+  "subtitle": "Lease, Clock Uncertainty, and Monotonic Fencing Extension",
+  "version": "2.8",
+  "status": "technical_specification_candidate_not_runtime_implementation",
+  "created_at_local": "2026-08-10T02:49:00+03:00",
+  "new_primitives": {
+    "LEASE_ID": "Time-bounded liveness hint associated with an authority epoch.",
+    "CLOCK_SOURCE_SET": "Declared time sources and uncertainty bounds used by the runtime.",
+    "TIME_STATUS": "TRUSTED_BOUNDED|LOCAL_ONLY|UNKNOWN|CONFLICTED",
+    "LATEST_FENCE_TOKEN": "Highest authority generation accepted by a protected shared-effect channel.",
+    "STALE_WRITER_REJECT_RECEIPT": "Evidence that a command was rejected because its authority generation was older than the protected boundary state."
+  },
+  "authority_rule": "Wall-clock validity alone never proves uniqueness of current authority. Shared side effects require current monotonic fencing or an equivalent anti-stale mechanism enforced outside the proposing runtime.",
+  "clock_rule": "CLOCK_IS_CONTEXT_NOT_CAUSAL_SOVEREIGNTY",
+  "protected_effect_contract": {
+    "input_requires": ["HOST_ID", "AUTHORITY_EPOCH", "FENCE_TOKEN", "COMMIT_RECEIPT_REF"],
+    "reject_if": "FENCE_TOKEN < LATEST_FENCE_TOKEN",
+    "unknown_latest_generation": "FAIL_CLOSED_FOR_SHARED_IRREVERSIBLE_COMMIT"
+  },
+  "verification_requirements": [
+    "slow-clock stale lease test",
+    "clock rollback test",
+    "newer quorum epoch while old node remains isolated",
+    "external actuator rejects old fence token even when old local lease says valid",
+    "unknown-current-generation case fails closed for shared effects"
+  ],
+  "canonical_lines": [
+    "Time can bound waiting; it cannot by itself prove that no newer writer exists.",
+    "Authority order is logical before it is chronological.",
+    "The world boundary must reject yesterday's pen even if yesterday's clock still says today."
+  ],
+  "next_gate": "JANUS_113_V2_8_EMERGENCY_AUTONOMY_WITHOUT_QUORUM_EXTENSION"
+}

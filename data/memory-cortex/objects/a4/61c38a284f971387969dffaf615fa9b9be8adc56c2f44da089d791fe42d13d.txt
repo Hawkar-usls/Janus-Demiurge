@@ -1,0 +1,98 @@
+{
+  "artifact_id": "JANUS-DREAM-BUS-ORPHAN-CAPABILITY-GATES-2026-08-25-v1.0",
+  "status": "PREREGISTERED_IDEA_DERIVED_GATES__NO_RUNTIME_CLAIM",
+  "source": {
+    "snapshot": "dreams (6).json",
+    "sha256": "0bc7e3558c73807823188da3e1c41745d5cc5ef78605af70a310296763989ffb",
+    "origin_type": "NEW_MODULE_IDEA",
+    "boundary": "Dream Bus ideas are proposal ancestry, not proof that a historical executable module existed."
+  },
+  "gates": {
+    "PRECOG_COLD_START_GATE": {
+      "idea_ancestor": "PreCog.py",
+      "question": "Can previous real startup traces predict the next initialization sequence well enough to reduce cold-start latency without increasing failures or work?",
+      "required_data": [
+        "timestamped real startup event traces with stable component identities",
+        "cold-start wall time per run",
+        "component initialization durations",
+        "success/failure outcome",
+        "configuration/commit identity"
+      ],
+      "frozen_split": "Chronological train/calibration/holdout split; holdout must remain unseen until model and thresholds are frozen.",
+      "baselines": [
+        "static canonical startup order",
+        "most-frequent-next-component",
+        "first-order Markov transition baseline",
+        "no-preload control"
+      ],
+      "metrics": [
+        "next-component top-1/top-k accuracy",
+        "sequence edit distance",
+        "cold-start wall-time delta",
+        "extra preload work/bytes",
+        "startup failure/regression rate"
+      ],
+      "promotion_gate": [
+        "prediction improvement must reproduce on frozen holdout",
+        "latency benefit must survive accounting for preload work",
+        "failure rate must not worsen beyond preregistered tolerance",
+        "independent replay on a later time block"
+      ],
+      "authority_ceiling": "TRACE_ANALYSIS_AND_PRELOAD_PROPOSAL_ONLY_UNTIL_SEPARATE_EXECUTION_AUTHORITY",
+      "nonclaims": ["future information", "precognition", "causal acceleration from prediction alone"]
+    },
+    "MEMORY_LEAK_OBSERVER_GATE": {
+      "idea_ancestors": ["Sentinel.py", "Guardian.py", "MemoryWeaver.py"],
+      "question": "Can a read-only observer distinguish sustained leak-like memory growth from bounded caching, workload bursts and normal GC behavior?",
+      "required_data": [
+        "timestamped RSS/private-memory series",
+        "optional tracemalloc/object-count summaries when available",
+        "workload/event-rate covariates",
+        "GC collection counters without forcing collection",
+        "known bounded-cache controls",
+        "synthetic or test-fixture known-leak controls"
+      ],
+      "controls": [
+        "stable bounded-memory fixture",
+        "intentional bounded cache growth then plateau",
+        "temporary workload spike then recovery",
+        "known reference-retention leak fixture"
+      ],
+      "metrics": [
+        "sustained post-workload memory slope",
+        "recovery half-life after workload ends",
+        "plateau detection",
+        "true-positive rate on known-leak fixtures",
+        "false-positive rate on bounded controls",
+        "time-to-alert"
+      ],
+      "promotion_gate": [
+        "observer must pass all bounded controls without destructive action",
+        "false-positive threshold frozen before holdout",
+        "known-leak detection reproduced across repeated runs",
+        "real-process alert remains advisory until independently verified"
+      ],
+      "authority_ceiling": "OBSERVE_AND_ALERT_ONLY",
+      "forbidden_by_default": [
+        "automatic gc.collect()",
+        "process kill/restart",
+        "object deletion",
+        "memory mutation",
+        "service control"
+      ]
+    }
+  },
+  "current_repo_search": {
+    "explicit_cold_start_predictor_found": false,
+    "explicit_reference_cycle_or_object_lifetime_leak_observer_found": false,
+    "search_boundary": "GitHub repository search in this pass; Library semantic search encountered a temporary authorization error and is not counted as exhaustive negative evidence."
+  },
+  "laws": [
+    "IDEA_DERIVED_GATE_NE_HISTORICAL_SOURCE_RECOVERY",
+    "PREDICTION_ACCURACY_NE_LATENCY_BENEFIT",
+    "PRELOAD_WORK_MUST_BE_ACCOUNTED",
+    "RSS_GROWTH_NE_MEMORY_LEAK_WITHOUT_CONTROLS",
+    "LEAK_OBSERVATION_NE_GC_OR_RESTART_AUTHORITY",
+    "FROZEN_HOLDOUT_BEFORE_PROMOTION"
+  ]
+}

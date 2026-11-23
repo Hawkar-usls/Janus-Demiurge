@@ -1,0 +1,319 @@
+{
+  "schema": "janus.meta_registry.fallout3_f3dad_smoker_faction_marker_ghost_scene_role_audit.v1",
+  "artifact_id": "FALLOUT-3-F3DAD-SMOKER-FACTION-MARKER-GHOST-SCENE-ROLE-AUDIT-v1.11S",
+  "version": "v1.11S",
+  "created_at_local": "2026-08-14T22:46:00+03:00",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "intended_layer": "data",
+  "status": "PASS_493_DIRECT_SMOKER_BASES_242_SMOKING_CAPABLE_MARKER_REFS_6_ROCK_CREEK_GHOST_SMOKERS_WALTER_MARKER_REVISION_WQ02_ORPHAN_IDLE_PROFILE_PITT_TEST_SCENE_0_DISABLED_DEDICATED_SMOKING_MARKERS",
+  "extends": [
+    "data/FALLOUT-3-F3DAD-SMOKING-CIGARETTE-NPC-PLAYER-USE-PATH-AUDIT-v1.10S.json",
+    "data/FALLOUT-3-F3DAD-REMOVED-LOCATION-GHOST-ACTOR-QUEST-ANCHOR-CROSSOVER-AUDIT-v1.10AC.json"
+  ],
+  "source_lineage": {
+    "archive": {
+      "name": "F3DAD.rar",
+      "size_bytes": 251166524,
+      "sha256": "311f481de1de176a33a358d993563f551bc617651225059d40ce6de430c865ce"
+    },
+    "official_master_set": [
+      "Fallout3.esm",
+      "Anchorage.esm",
+      "ThePitt.esm",
+      "BrokenSteel.esm",
+      "PointLookout.esm",
+      "Zeta.esm"
+    ],
+    "authority": "USER_SUPPLIED_SHIPPED_MASTER_BYTES"
+  },
+  "analysis_receipts": [
+    {"path":"f3_smoking_role_graph_fast.py","size_bytes":9954,"sha256":"24ed2aad6fee981734a614bddae2374e0ee6b51559d8e68192348f7fc7cb7a85"},
+    {"path":"f3_smoking_role_graph_fast.json","size_bytes":975364,"sha256":"f4576f0c92e4da8c2df1f3dd329bd7ca9a635115dca84a5601cc058fd8d8ac2f"},
+    {"path":"f3_smoking_target_inspect.py","size_bytes":1869,"sha256":"fdfec7d8c846da34773b9f46fafa5341d8b110f6976445660556357f72b73608"},
+    {"path":"f3_smoking_target_inspect_stdout.txt","size_bytes":376569,"sha256":"e0c6a1781f09acb4c1af9289f2800c743b719ec6608e97978080167ff96cddcd"},
+    {"path":"check_testcell_xtel.py","size_bytes":1438,"sha256":"ea2afc8c3c587e06c57a7deeefdf9582bdd665d56138d3ccca6d27586e9bf6c9"},
+    {"path":"f3_smoking_package_targets.py","size_bytes":2032,"sha256":"761944b0e21da0804f69d2e44d7c40dad0b7663012308300bda41b8461c1a3e9"},
+    {"path":"f3_smoking_named_placements.py","size_bytes":2817,"sha256":"66de524d90dd2c3c460ce2bbdc7eb1f4f3469e50b681ef72b5f2844491ccab9f"}
+  ],
+  "format_semantics": {
+    "xedit_reference": "TES5Edit/TES5Edit Core/wbDefinitionsFO3.pas @ 93cc0bc5a1251936c3c7859eee3150eda12a62d7",
+    "core_rule": "SMOKING_ELIGIBILITY_IS_MULTI_PATH: ACTOR_FACTION, DIRECT_PACKAGE_IDLE, OR WORLD_IDLE_MARKER MAY EACH PRODUCE A SMOKING PRESENTATION PATH.",
+    "critical_corrections": [
+      "v1.10S metric 299 counted direct SmokerFaction actor bases originating in Fallout3.esm only; master-aware normalization across all six supplied ESMs yields 493 unique direct SmokerFaction actor bases.",
+      "SmokerFaction membership is sufficient evidence of eligibility for faction-gated smoking idles, but does not prove a particular actor executed a smoking idle at runtime.",
+      "LooseSmokingStanding is not SmokerFaction-gated, so package- or marker-driven smoking can apply to actors outside SmokerFaction.",
+      "A smoking-capable IDLM/FURN base with zero placement is an orphan profile, not proof of a released or player-visible scene.",
+      "Initially Disabled is only one possible cut-scene signature; absence of the flag does not make an orphan base or ghost actor reachable."
+    ]
+  },
+  "scan_metrics": {
+    "unique_direct_smoker_faction_actor_bases_all_six_masters": 493,
+    "direct_smoker_bases_by_formid_origin_master": {
+      "Fallout3.esm": 299,
+      "Anchorage.esm": 0,
+      "ThePitt.esm": 156,
+      "BrokenSteel.esm": 32,
+      "PointLookout.esm": 3,
+      "Zeta.esm": 3
+    },
+    "direct_smoker_bases_with_static_root_union": 483,
+    "direct_smoker_bases_ghost_like": 10,
+    "rock_creek_ghost_smoker_bases": 6,
+    "the_pitt_unrooted_generic_holder_smoker_bases": 4,
+    "smoking_capable_marker_bases": 20,
+    "smoking_capable_marker_placements": 242,
+    "smoking_capable_marker_placements_by_plugin": {
+      "Fallout3.esm": 167,
+      "Anchorage.esm": 45,
+      "ThePitt.esm": 24,
+      "BrokenSteel.esm": 4,
+      "PointLookout.esm": 2,
+      "Zeta.esm": 0
+    },
+    "dedicated_or_near_dedicated_smoking_marker_placements": 52,
+    "mixed_generic_marker_placements_with_smoking_as_one_idle": 190,
+    "dedicated_smoking_marker_refs_initially_disabled": 0,
+    "direct_smoking_idle_packages": 10,
+    "unique_actor_owners_of_direct_smoking_idle_packages": 6,
+    "anchorage_direct_smoker_faction_bases": 0,
+    "anchorage_smoking_capable_marker_placements": 45
+  },
+  "smoking_behavior_architecture": [
+    {
+      "path_id": "SMOKE-PATH-1",
+      "name": "FACTION_GATED_AMBIENT_IDLE",
+      "graph": "NPC_/CREA -> SmokerFaction -> CTDA-gated NPCSmokingIdle or WallLeanSmoking -> aoCigarette.NIF",
+      "evidence_level": "PRIMARY_ESM_STRUCTURAL"
+    },
+    {
+      "path_id": "SMOKE-PATH-2",
+      "name": "DIRECT_PACKAGE_IDLE",
+      "graph": "Actor package -> IDLA LooseSmokingStanding -> aoCigarette.NIF",
+      "notable_owners": ["Jericho","Greta","DefenderMorgan","Clover","ParadiseFallsSlaverGuard03","Walter"],
+      "evidence_level": "PRIMARY_ESM_STRUCTURAL"
+    },
+    {
+      "path_id": "SMOKE-PATH-3",
+      "name": "WORLD_MARKER_DRIVEN",
+      "graph": "Sandbox/package -> placed IDLM/FURN marker -> smoking IDLE -> cigarette/cigar ANIO",
+      "marker_placements": 242,
+      "evidence_level": "PRIMARY_ESM_STRUCTURAL"
+    },
+    {
+      "path_id": "SMOKE-PATH-4",
+      "name": "PACKAGE_TARGETS_SMOKING_MARKER_REF",
+      "graph": "PACK PLDT -> specific smoking marker REFR -> marker IDLA -> LooseSmokingStanding",
+      "control": "DLC02FF010Executioner uses DLC02FF010Smoke targeting DLC02FF006ExecutionerSmokeMarker",
+      "evidence_level": "PRIMARY_ESM_STRUCTURAL"
+    }
+  ],
+  "findings": [
+    {
+      "finding_id": "F3DM-063S-ALL-SIX-MASTER-SMOKER-COUNT-CORRECTION",
+      "priority": "HIGHEST_METHOD",
+      "classification": ["METRIC_CORRECTION","MASTER_AWARE_FORMID_NORMALIZATION"],
+      "result": "The v1.10S count of 299 is Fallout3.esm-local. Across the six supplied masters, 493 unique actor bases directly contain SmokerFaction after master-aware FormID normalization.",
+      "claim_ceiling": "493 counts direct faction membership records/overrides by unique normalized actor base; it is not the number of actors visibly smoking in one playthrough."
+    },
+    {
+      "finding_id": "F3DM-064S-ROCK-CREEK-GHOST-HUNTERS-SMOKING-ELIGIBILITY",
+      "priority": "HIGHEST",
+      "classification": ["GHOST_CHARACTER_ROUTINE","FACTION_GATED_SMOKING_ELIGIBILITY","ROLE_ECOLOGY_CROSSOVER"],
+      "actors": [
+        "FFDCRockCreekHunter01 0005215D","FFDCRockCreekHunter02 0005215E",
+        "FFDCRockCreekHunter04 00052160","FFDCRockCreekHunter05 00052161",
+        "FFDCRockCreekHunter06 00052162","FFDCRockCreekHunter07 00052163"
+      ],
+      "surviving_comparator": "GrandmaSparkle 0005215F also directly belongs to SmokerFaction and survives physically at Wilhelm's Wharf.",
+      "shared_role": "WastelandHunterFaction + LvlHunter template + DefaultPatrolWeaponDrawn + DefaultSandboxCurrentLocation256 + SmokerFaction",
+      "dedicated_smoking_package_found_for_named_ghost_hunters": false,
+      "dedicated_rock_creek_smoking_marker_binding_found": false,
+      "interpretation": "The six cut Rock Creek hunter bases retained ambient smoking eligibility as part of their actor role profile. This adds a behavioral layer to the ghost encounter family, but does not prove a dedicated Rock Creek smoking scene or a specific smoking location.",
+      "public_novelty_claim": false
+    },
+    {
+      "finding_id": "F3DM-065S-WALTER-SMOKING-BREAK-MARKER-REVISION",
+      "priority": "VERY_HIGH",
+      "classification": ["SMOKING_BREAK_MARKER_REVISION_GHOST","OLD_MARKER_ORPHAN","LIVE_DUPLICATE_REPLACEMENT"],
+      "actor": "Walter / Megaton",
+      "packages": ["MegWalterBreak10x1 0001953C","MegWalterBreak19x1 0001953E"],
+      "live_target": {
+        "edid":"MegatonWalterBreakMARKERDUPLICATE000",
+        "form_id":"00052135",
+        "cell":"Megaton exterior CELL 00000A96",
+        "position":[-4014.7302,-25224.7813,13036.2363],
+        "structured_inbound_count":2
+      },
+      "orphan_old_target": {
+        "edid":"MegatonWalterBreakMARKEROLD",
+        "form_id":"0001953D",
+        "cell":"Megaton exterior CELL 00000A96",
+        "position":[-4017.2644,-25397.5293,13035.4990],
+        "structured_inbound_count":0
+      },
+      "distance_between_old_and_live_markers_units": 172.768,
+      "result": "Both surviving Walter smoking-break packages target the DUPLICATE marker; the OLD marker remains nearby in the same exterior cell but has zero inbound references. Strong static replacement/revision residue.",
+      "claim_ceiling": "The ESM supports replacement topology, not the exact editor history or reason for the marker move."
+    },
+    {
+      "finding_id": "F3DM-066S-BROKEN-STEEL-WQ02-ORPHAN-AUDIENCE-SMOKING-IDLE-PROFILE",
+      "priority": "VERY_HIGH",
+      "classification": ["ORPHAN_AUDIENCE_IDLE_PROFILE","ABANDONED_MARKER_BASE","SMOKING_CAPABLE_CROWD_PROFILE"],
+      "marker_base": {
+        "edid":"DLC03WQ02AudienceIdleMarker",
+        "form_id":"xx005C1E",
+        "type":"IDLM",
+        "placement_count":0,
+        "structured_inbound_formid_count":0,
+        "idles":[
+          "LooseMQ05DrLiWatchesDadA 0007D47D",
+          "LooseLookingAround 00089443",
+          "LooseSmokingStanding 00083518",
+          "LooseStandingArmsFolded 000C7AB9",
+          "LooseTalkHeadShakeNeutral 0001E60D"
+        ]
+      },
+      "production_context": {
+        "quest":"Broken Steel WQ02 / Griffon Aqua Cura sales-pitch scene",
+        "audience_actor_bases":["DLC03WQ02GhoulA","DLC03WQ02GhoulB","DLC03WQ02GhoulC","DLC03WQ02GhoulD"],
+        "surviving_packages":["DLC03WQ02AudienceWatchGriffon","DLC03WQ02AudienceMenanceGriffon","DLC03WQ02AudienceGriffonDeadWander"]
+      },
+      "interpretation": "A complete five-idle audience profile including cigarette smoking survives with no placement or inbound binding. Safest reading: abandoned/earlier crowd-idle implementation associated semantically with WQ02, not proof that the four released audience actors used this marker.",
+      "public_novelty_claim": false
+    },
+    {
+      "finding_id": "F3DM-067S-THE-PITT-ISOLATED-DEVELOPER-SMOKING-TEST",
+      "priority": "HIGH",
+      "classification": ["DEVELOPER_TEST_SMOKING_SCENE","ISOLATED_TEST_CELL","NOT_STORY_CUT_SCENE"],
+      "cell": {
+        "edid":"DLCPittTestJCha",
+        "full":"Test Cell",
+        "form_id":"xx00194C",
+        "reference_count":42,
+        "external_xtel_count":0
+      },
+      "idle_marker": {
+        "edid":"DLC01JChaTestIdles",
+        "form_id":"xx00B795",
+        "placed_ref":"xx00B796",
+        "includes_idle":"NPCSmokingIdle 00071EE3"
+      },
+      "nearby_smoking_test_actor": {
+        "edid":"DLCPittJChaTestNPC03",
+        "form_id":"xx002A57",
+        "full":"TestPerson03",
+        "direct_smoker_faction":true,
+        "approx_distance_to_idle_marker_units":154
+      },
+      "result": "The Pitt contains an isolated developer Test Cell with a placed multi-idle marker containing NPCSmokingIdle and a nearby SmokerFaction test NPC. This is smoking implementation/test evidence, not a removed narrative scene."
+    },
+    {
+      "finding_id": "F3DM-068S-ANCHORAGE-MARKER-DRIVEN-SMOKING-ARCHITECTURE",
+      "priority": "VERY_HIGH",
+      "classification": ["MARKER_DRIVEN_SMOKING","DLC_ARCHITECTURE_CONTRAST","CIGARETTE_AND_CIGAR_SCENES"],
+      "metrics": {
+        "direct_smoker_faction_actor_bases":0,
+        "smoking_capable_marker_placements":45,
+        "dedicated_or_near_dedicated_marker_placements":15
+      },
+      "general_chase_control": {
+        "actor":"DLC02GeneralChase xx0009C1",
+        "ref":"DLC02GeneralChaseREF xx0019A7",
+        "cell":"DLC02CommandTent",
+        "package":"DLC02GeneralChaseSandbox xx003943",
+        "marker_base":"DLC02ChaseIdleMarker",
+        "marker_placements_in_command_tent":2,
+        "idle":"LooseDLCAnchSmokingCigarStanding xx003483",
+        "animation_object":"DLCAnchCigarSmoking xx003484"
+      },
+      "nervous_soldier_control": {
+        "marker":"DLCAnchNervousSoldierSitSmokingMarker xx00ABA6",
+        "placements":1,
+        "idle":"DLCAnchNervousSoldierSitSmoking xx00ABA8",
+        "animation_object":"DLCAnchNervousSoldierSitSmokingAnimObject xx00ABAB"
+      },
+      "lazy_smoking": {
+        "marker":"DLC02LazySmokingMarker xx003EA4",
+        "placements":10
+      },
+      "result": "Operation: Anchorage demonstrates that a DLC can stage many smoking presentations without adding actors to SmokerFaction, using placed idle/furniture markers instead."
+    },
+    {
+      "finding_id": "F3DM-069S-ANCHORAGE-FF006-TO-FF010-SMOKING-COMPONENT-NAME-RESIDUE",
+      "priority": "HIGH",
+      "classification": ["SMOKING_SCENE_COMPONENT_REUSE_OR_RENAME_RESIDUE","STALE_SCENE_IDENTITY_INSIDE_LIVE_SCENE"],
+      "actor":"DLC02FF010Executioner xx00CBBE",
+      "actor_ref":"DLC02FF010ExecutionerRef xx00565A",
+      "package":"DLC02FF010Smoke xx00CBD9",
+      "package_target_ref":"DLC02FF006ExecutionerSmokeMarker xx00565F",
+      "target_base":"DLC02FF006SmokeIdleMarker xx00CBDC",
+      "target_idle":"LooseSmokingStanding",
+      "live_scene_script":"DLC02FF010ExecutionTriggerScript",
+      "scene_context":"player witnesses a battlefield execution; executioner and four captives survive as the current FF010 scene graph",
+      "interpretation":"A live FF010 execution scene still targets a smoking marker whose reference and base retain FF006 naming. Strong component reuse/rename residue; exact chronology is not encoded."
+    },
+    {
+      "finding_id": "F3DM-070S-RIVET-CITY-EXPLICIT-CIGARETTE-SMOKER-CONVERGENCE",
+      "priority": "HIGH",
+      "classification": ["ITEM_PLUS_FACTION_SMOKING_CONVERGENCE","PRODUCTION_CONTROL"],
+      "actors":[
+        {"edid":"TammyHargrave","form_id":"000156C5","inventory":"CigarettePack x1","direct_smoker_faction":true},
+        {"edid":"Brock","form_id":"000156C2","inventory":"CigarettePack x1","direct_smoker_faction":true},
+        {"edid":"Shrapnel","form_id":"000156B4","inventory":"CigarettePack x1","direct_smoker_faction":true},
+        {"edid":"Flak","form_id":"000156B3","inventory":"CigarettePack x1","direct_smoker_faction":true}
+      ],
+      "additional_shop_context":"Two placed RCFlakShrapnelShop idle markers exist and their idle profile includes LooseSmokingStanding.",
+      "claim_ceiling":"Item + faction + nearby shop idle profile strongly support smoking characterization, but no direct per-actor assignment to those two exact shop markers is claimed."
+    },
+    {
+      "finding_id": "F3DM-071S-NO-SIMPLE-DISABLED-SMOKING-SCENE-CLASS",
+      "priority": "VERY_HIGH_NEGATIVE",
+      "classification": ["NEGATIVE_CONTROL","CUT_SCENE_CLASSIFICATION_BOUNDARY"],
+      "dedicated_or_near_dedicated_placed_smoking_refs_checked":52,
+      "initially_disabled_count":0,
+      "result":"No high-confidence class of 'finished dedicated smoking scene left in world but merely flagged Initially Disabled' was found. Cut/hidden smoking evidence instead appears as ghost actor eligibility, unplaced marker bases, developer test cells, or marker revision/name residue."
+    },
+    {
+      "finding_id": "F3DM-072S-NO-CIGARETTE-CONSUMPTION-SCRIPT-PATH",
+      "priority": "HIGH_NEGATIVE",
+      "classification": ["INVENTORY_CONSUMPTION_NEGATIVE"],
+      "result":"No active SCTX across the six supplied masters contains cigarette/cigar/tobacco/nicotine tokens. Jericho's smoking packages test GetItemCount and select an idle, but no shipped script removal/consumption path was recovered.",
+      "claim_ceiling":"No script consumption path in supplied ESMs != no possible engine/mod/console behavior."
+    }
+  ],
+  "ghost_like_smoker_controls": {
+    "rock_creek_narrative_ghosts": [
+      "FFDCRockCreekHunter01","FFDCRockCreekHunter02","FFDCRockCreekHunter04",
+      "FFDCRockCreekHunter05","FFDCRockCreekHunter06","FFDCRockCreekHunter07"
+    ],
+    "the_pitt_generic_holder_controls": [
+      "DLC01HolderWastelanderAAF","DLC01HolderWastelanderAAM",
+      "DLC01HolderWastelanderAF","DLC01HolderWastelanderAM"
+    ],
+    "rule":"UNROOTED_GENERIC_HOLDER_BASE != NARRATIVE_CUT_CHARACTER"
+  },
+  "claim_ceiling": [
+    "SMOKERFACTION_MEMBERSHIP != OBSERVED_RUNTIME_SMOKING",
+    "SMOKING_CAPABLE_MARKER != PROOF_A_SPECIFIC_NPC_USED_IT",
+    "ORPHAN_IDLM_BASE != PROOF_A_RELEASED_OR_PRE_RELEASE_PLAYER_VISIBLE_SCENE",
+    "GHOST_ACTOR_SMOKING_ELIGIBILITY != DEDICATED_GHOST_SMOKING_SCENE",
+    "NEARBY_MARKER_AND_ACTOR != STRUCTURED_PACKAGE_ASSIGNMENT",
+    "EDITORID_FF006_INSIDE_FF010 != EXACT_CHRONOLOGICAL_MOVE",
+    "ZERO_INITIALLY_DISABLED_DEDICATED_MARKERS != NO_CUT_SMOKING_CONTENT",
+    "NO_ACTIVE_SCTX_CONSUMPTION != NO_ENGINE_LEVEL_OR_MODDED_CONSUMPTION",
+    "PUBLIC_CUT_CONTENT_CONTROL != NEW_DISCOVERY",
+    "PRIMARY_ESM_GRAPH_RECONSTRUCTION != WORLD_FIRST_CLAIM"
+  ],
+  "next_gate": {
+    "artifact_id":"FALLOUT-3-F3DAD-SMOKING-ACTOR-SCHEDULE-MARKER-ASSIGNMENT-AND-GHOST-ROUTINE-RECONSTRUCTION-v1.12S",
+    "objectives":[
+      "decode actor-template faction inheritance so direct versus effective SmokerFaction eligibility are separated",
+      "resolve every PACK PLDT/PTDA location target for the six direct-smoking-package owners",
+      "map all 242 smoking-capable marker refs to nearest/assigned actors and reject proximity-only false associations",
+      "cross smoking eligibility with the full 67 ghost-character base set, not only direct SmokerFaction membership",
+      "reconstruct time-of-day smoking schedules where package schedule fields survive",
+      "inspect BSA animation/mesh assets if supplied to determine whether additional orphan cigar/cigarette animations exist outside ESM metadata"
+    ]
+  },
+  "public_footprint_boundary": "Known smoking behavior and known cut Rock Creek hunters are controls. Registry contribution is the all-six-master smoking-role graph, marker architecture, orphan/revision classification, and crossover with ghost-character archaeology."
+}

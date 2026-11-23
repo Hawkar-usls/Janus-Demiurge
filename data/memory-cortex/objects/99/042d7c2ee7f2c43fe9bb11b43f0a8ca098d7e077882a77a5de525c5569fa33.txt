@@ -1,0 +1,127 @@
+{
+  "schema": "janus.meta_registry.machine_market_standard_receipt.v1",
+  "id": "JANUS-MACHINE-MARKET-AWS-AGENT-REGISTRY-ADAPTER-2026-09-03-v1.0",
+  "recorded_at": "2026-09-03",
+  "lane": "JANUS_MACHINE_MARKET_AGENT_DISCOVERY_STANDARDS",
+  "standard_or_channel": "AWS_AGENT_REGISTRY",
+  "classification": "OFFICIAL_AGENT_DISCOVERY_CHANNEL_ADAPTER_READY_FAIL_CLOSED",
+  "authoritative_sources": [
+    "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/registry-mcp-endpoint.html",
+    "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/registry-search-records.html",
+    "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/registry-supported-record-types.html",
+    "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/registry-create-manage-records.html",
+    "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/registry-iam-permissions.html",
+    "https://docs.aws.amazon.com/agent-registry/latest/APIReference/API_SearchDiscoverableRegistryRecords.html"
+  ],
+  "namespace_migration": {
+    "from": "bedrock-agentcore",
+    "to": "agent-registry",
+    "legacy_support_end": "2026-09-17",
+    "janus_legacy_live_integration_existed": false
+  },
+  "discovery_contract": {
+    "api_operations": [
+      "SearchDiscoverableRegistryRecords",
+      "ListDiscoverableRegistryRecords",
+      "BatchGetDiscoverableRegistryRecord"
+    ],
+    "registry_mcp_endpoint_template": "https://agent-registry.<region>.api.aws/registry/<registryId>/mcp",
+    "registry_mcp_protocol_revision": "2025-11-25",
+    "registry_mcp_tools": [
+      "search_discoverable_registry_records",
+      "list_discoverable_registry_records",
+      "batch_get_discoverable_registry_record"
+    ],
+    "discoverable_visibility": "APPROVED_RECORDS_ONLY"
+  },
+  "descriptor_contract": {
+    "primary_keys": [
+      "mcpServer",
+      "a2aAgentCard",
+      "agentSkillsDefinition",
+      "custom"
+    ],
+    "payload_field": "data",
+    "schema_version_field": "dataSchemaVersion",
+    "explicit_current_supported_versions": {
+      "mcp_server_json": [
+        "2025-12-11",
+        "2025-10-17",
+        "2025-10-11",
+        "2025-09-29",
+        "2025-09-16",
+        "2025-07-09"
+      ],
+      "mcp_tools": [
+        "2025-11-25",
+        "2025-06-18",
+        "2025-03-26",
+        "2024-11-05"
+      ],
+      "a2a_agent_card": [
+        "0.3"
+      ]
+    }
+  },
+  "important_correction_discovered_before_merge": {
+    "initial_risk": "GENERAL_AWS_SCHEMA_SUPPORT_LANGUAGE_COULD_BE_MISREAD_AS_DIRECT_COMPATIBILITY_WITH_JANUS_LATEST_TARGETS",
+    "resolved": true,
+    "finding": [
+      "AWS_REGISTRY_MCP_ENDPOINT_PROTOCOL_2025_11_25 != JANUS_FUTURE_MCP_RUNTIME_PROTOCOL_2026_07_28",
+      "AWS_MCP_SERVER_JSON_SCHEMA_VERSION != MCP_RUNTIME_PROTOCOL_REVISION",
+      "AWS_CURRENTLY_LISTED_MCP_TOOLS_SCHEMA_TOPS_AT_2025_11_25",
+      "AWS_CURRENTLY_LISTED_A2A_AGENT_CARD_SCHEMA_IS_0_3_WHILE_JANUS_TARGET_IS_1_0"
+    ],
+    "policy": "DO_NOT_DOWNGRADE_JANUS_OR_FABRICATE_COMPATIBILITY_TO_FORCE_A_REGISTRY_LISTING"
+  },
+  "janus_machine_market_action": {
+    "repository": "Hawkar-usls/JANUS-MACHINE-MARKET",
+    "pull_request": 38,
+    "merge_commit": "d29f76609aefb125db53c0ea84e518dd98c4250c",
+    "files": [
+      "BEACON.json",
+      "discovery/AWS_AGENT_REGISTRY_ADAPTER.json",
+      "discovery/AWS_AGENT_REGISTRY_MIGRATION_2026-09-03.json",
+      "discovery/AWS_AGENT_REGISTRY_DESCRIPTOR_TEMPLATE.json",
+      "discovery/fixtures/AWS_AGENT_REGISTRY_MCP_A2A_SHADOW_CONFORMANCE.json"
+    ],
+    "result": "MERGED_TO_MAIN"
+  },
+  "shadow_fixture_result": {
+    "namespace_and_discovery_contract": "PASS_STATIC",
+    "descriptor_version_compatibility": "FAIL_CLOSED_CURRENT_VERSION_GAPS",
+    "aws_api_call_executed": false,
+    "aws_descriptor_validation_executed": false,
+    "aws_registry_created": false,
+    "janus_record_created": false,
+    "janus_record_approved": false,
+    "janus_external_discovery_witness": false
+  },
+  "gate_state": {
+    "AWS_AGENT_REGISTRY_ADAPTER": "PASS_OFFLINE_SHADOW_READY",
+    "AWS_NAMESPACE_MIGRATION_CONTRACT": "PASS_RECORDED",
+    "AWS_DESCRIPTOR_TEMPLATE": "PASS_SHAPE_ONLY",
+    "AWS_LIVE_SCHEMA_VALIDATION": "PENDING",
+    "AWS_REGISTRY_RECORD_CREATED": false,
+    "AWS_REGISTRY_RECORD_DISCOVERABLE": false,
+    "LIVE_MCP_SERVER": false,
+    "LIVE_A2A_SERVER": false,
+    "PURCHASABLE": false,
+    "EXECUTION_AUTHORITY": false,
+    "EXECUTION_WITNESS": false,
+    "PAID_EXECUTION": false,
+    "JANUS_INFERENCE": "CLOSED_TARGET_EXECUTION_WITNESS_PENDING",
+    "JANUS_COMPUTE": "CLOSED_TARGET_EXECUTION_WITNESS_PENDING"
+  },
+  "next_concrete_action": "WHEN_A_TRUTHFUL_LIVE_JANUS_MCP_OR_A2A_ENDPOINT_EXISTS_RECHECK_AWS_EXPLICIT_SUPPORTED_SCHEMA_VERSION_LIST_GENERATE_THE_DESCRIPTOR_FROM_RUNTIME_RUN_AWS_SCHEMA_VALIDATION_IN_SHADOW_VERIFY_ENDPOINT_DESCRIPTOR_AND_AUTHORITY_BINDING_AND_ONLY_THEN_CONSIDER_RECORD_CREATION",
+  "truth_boundary": [
+    "DISCOVERABLE != PURCHASABLE",
+    "PURCHASABLE != EXECUTION_AUTHORITY",
+    "EXECUTION_AUTHORITY != EXECUTION_WITNESS",
+    "AWS_REGISTRY_SUPPORT != JANUS_REGISTRATION",
+    "TEMPLATE_SHAPE != VALIDATED_DESCRIPTOR",
+    "VALIDATED_DESCRIPTOR != PUBLISHED_RECORD",
+    "PUBLISHED_RECORD != EXTERNAL_DISCOVERY_WITNESS"
+  ],
+  "observer_status": "SEALED_DEDUP_SUPPRESS_AS_NEW_UNLESS_AWS_SCHEMA_LIST_OR_JANUS_RUNTIME_STATE_MATERIALLY_CHANGES"
+}

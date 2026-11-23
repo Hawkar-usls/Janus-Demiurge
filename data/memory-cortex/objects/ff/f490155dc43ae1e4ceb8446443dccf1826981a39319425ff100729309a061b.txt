@@ -1,0 +1,106 @@
+{
+  "artifact_id": "JANUS-LOGOS-001-R11-NIST-OBSERVED-DATA-PREREG-v1.0",
+  "date_utc": "2026-11-01",
+  "status": "FROZEN_PROTOCOL_BEFORE_CLOUD_EVALUATION",
+  "parent": "data/JANUS-GOD-CODE-v1.0.json",
+  "research_question": "Can a bounded research-only equation proposer recover relationships in actual scientific instrument measurements without simply fitting known points, when evaluated against simpler baselines on held-out observations?",
+  "epistemology": [
+    "Deutsch: scientific success requires explanations not readily adjusted to fit every datum; numerical accuracy alone is not a physical theory.",
+    "Constructor theory discusses possible/impossible physical transformations; not evidence of divine computation."
+  ],
+  "datasets": [
+    {
+      "id": "PONTIUS",
+      "provider": "NIST Statistical Reference Datasets",
+      "real_world": true,
+      "observed": true,
+      "experiment": "Load cell calibration; deflection versus load",
+      "source_url": "https://www.itl.nist.gov/div898/strd/lls/data/LINKS/DATA/Pontius.dat",
+      "metadata_url": "https://www.itl.nist.gov/div898/strd/lls/data/Pontius.shtml",
+      "observations": 40,
+      "normalized_x": "x / 3000000",
+      "holdout": "Sort the 20 unique load levels ascending. All replicates for levels with index%5==0 to TEST, index%5==1 to VALIDATION, rest TRAIN.",
+      "counts": {
+        "train": 24,
+        "validation": 8,
+        "test": 8
+      }
+    },
+    {
+      "id": "NORRIS",
+      "provider": "NIST Statistical Reference Datasets",
+      "real_world": true,
+      "observed": true,
+      "experiment": "Calibration of ozone monitors",
+      "source_url": "https://www.itl.nist.gov/div898/strd/lls/data/LINKS/DATA/Norris.dat",
+      "metadata_url": "https://www.itl.nist.gov/div898/strd/lls/data/Norris.shtml",
+      "observations": 36,
+      "normalized_x": "x / 1000",
+      "holdout": "Original published row sequence; index%5==0 to TEST, index%5==1 to VALIDATION, otherwise TRAIN.",
+      "counts": {
+        "train": 21,
+        "validation": 7,
+        "test": 8
+      }
+    }
+  ],
+  "source_rights": {
+    "nist_general_url": "https://www.nist.gov/copyrights-disclaimers",
+    "notice": "Cite the originating NIST studies and data links. General NIST website information may be copied unless independently marked copyrighted. NIST SRD-specific terms may differ; do not claim a permissive blanket license for every NIST SRD product. This frozen StRD source contains no observed copyright marking; no redistribution of broader proprietary SRD compilations."
+  },
+  "frozen_methods": {
+    "discoverer_view": "TRAIN_AND_VALIDATION_ONLY, each with normalized x and measured y; no TEST rows.",
+    "search_grammar": [
+      "1",
+      "x",
+      "x^2",
+      "x^3",
+      "sin(pi*x)",
+      "cos(pi*x)"
+    ],
+    "nonconstant_terms_max": 2,
+    "fit": "OLS on TRAIN via deterministic rank-checked normal equations in stdlib; no arbitrary execution/eval.",
+    "select": "Lowest validation RMSE plus model complexity penalty 0.025*nonconstant_term_count*train-only response standard deviation; tie break lexicographically by frozen basis order.",
+    "candidate_gate": "PROPOSE if validation RMSE / constant-mean validation RMSE < 0.20; otherwise ABSTAIN.",
+    "baselines": [
+      "CONSTANT_MEAN",
+      "OLS_LINEAR",
+      "OLS_QUADRATIC"
+    ],
+    "metric_primary": "Fresh held-out RMSE as raw units and normalized by training y standard deviation.",
+    "metric_secondary": "Held-out RMSE ratio vs validation-selected benchmark among mean/linear/quadratic; count 5%-plus improvements, ties and losses without hiding negative results.",
+    "null_control": "For both datasets permute validation y values with fixed cyclic shift by 3 while keeping train unchanged; deliberate pairing corruption must not be interpreted as new scientific law.",
+    "verification": "Checker on separate GitHub runner recomputes predictions from source measurements, baseline fits independently, rejects coefficient tampering and model injection.",
+    "fail_closed": "If dataset content, sample counts, split, source provenance, model dimensions, metric finiteness or SHA mismatches, fail."
+  },
+  "research_design_honesty": {
+    "prereg_after_data_known": true,
+    "dataset_and_published_reference_model_public": true,
+    "before_first_cloud_holdout_test": true,
+    "not_cryptographically_blind": true,
+    "no_new_physical_law_claim": true,
+    "threshold_not_backfit_to_holdout": true,
+    "not_validating_theology": true
+  },
+  "runtime": {
+    "workers": 2,
+    "permissions": "contents: read",
+    "schedule": false,
+    "external_model_calls": 0,
+    "paid_rowan": 0,
+    "nas": false,
+    "production_demiurge_changes": false
+  },
+  "next_gates": [
+    "R1.2 genuinely hidden data provider benchmark",
+    "R2 matched-budget 2/3/4 agents with neutral naming",
+    "Scientific interpretation and cross-domain structural transfer only upon replication"
+  ],
+  "cited_sources": [
+    "https://www.itl.nist.gov/div898/strd/lls/data/LINKS/DATA/Pontius.dat",
+    "https://www.itl.nist.gov/div898/strd/lls/data/LINKS/DATA/Norris.dat",
+    "https://www.nist.gov/itl/sed/products-services/statistical-reference-data-sets-strd",
+    "https://www.oxfordmartin.ox.ac.uk/publications/constructor-theory",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC4309123/"
+  ]
+}

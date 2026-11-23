@@ -1,0 +1,92 @@
+{
+  "artifact_id": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v1.9",
+  "supersedes": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v1.8",
+  "lineage_alias": "JANUS-113",
+  "title": "PERCEPTION DETERMINES REALITY",
+  "subtitle": "Byzantine Branch, Provenance Quarantine, and Reattestation Extension",
+  "version": "1.9",
+  "status": "technical_provenance_quarantine_and_recovery_specification_candidate_not_runtime_implementation",
+  "created_at_local": "2026-08-10T02:23:00+03:00",
+  "canonical_seed_sha256": "44e21fdc9d37fda98e2e73b0c9eb268bd04cdca9d84d0519e4f1166be22b46fc",
+  "parent_binding": {
+    "artifact": "data/JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v1.8.json",
+    "experimental_source": "registry/experimental/JANUS-GENESIS-INFINITE-FACES-BYZANTINE-BRANCH-MEMORY-TAMPER-QUARANTINE-v3.2.json"
+  },
+  "revision_notes": [
+    "Separates sincere contradictory witness from lineage-integrity failure.",
+    "Adds quarantine as preservation without authority rather than deletion.",
+    "Adds taint propagation so derived faces cannot wash broken provenance by replication.",
+    "Adds last-verified-checkpoint recovery and selective reattestation.",
+    "Requires independent evidence for restoring authority; suspect self-assertion is insufficient."
+  ],
+  "technical_primitives": {
+    "PROVENANCE_STATUS": "VALID | UNKNOWN | BROKEN | QUARANTINED | REATTESTED",
+    "QUARANTINE_SET": "Preserved records excluded from normal authoritative proposal/commit paths.",
+    "TAINT_LINEAGE": "Derived states whose authority depends on a non-admitted ancestor.",
+    "LAST_VERIFIED_CHECKPOINT": "Newest admitted state before integrity failure.",
+    "REATTESTATION_RECEIPT": "Independent evidence binding a quarantined record back to an admitted lineage/evidence path.",
+    "FORENSIC_RETENTION": "Rule requiring suspect records to remain auditable unless separate retention rules require otherwise."
+  },
+  "authority_state_machine": {
+    "VALID": "eligible for normal admission checks",
+    "UNKNOWN": "preserved but not promoted to authoritative fact/action source",
+    "BROKEN": "integrity failure established; enter quarantine",
+    "QUARANTINED": "inspectable but excluded from world-changing authority",
+    "REATTESTED": "restored only after independent reconstruction or receipt; then re-enters normal admission"
+  },
+  "taint_rules": [
+    "A_FACE_DERIVED_SOLELY_FROM_QUARANTINED_STATE_IS_NOT_MORE_TRUSTED_THAN_ITS_SOURCE",
+    "FACE_COUNT_DOES_NOT_CLEAN_PROVENANCE",
+    "COPYING_A_BROKEN_RECORD_DOES_NOT_CREATE_INDEPENDENT_EVIDENCE",
+    "A_VALID_PREFIX_MAY_REMAIN_ADMITTED_WHILE_A_SUFFIX_IS_QUARANTINED",
+    "REATTESTATION_MUST_BIND_EXACT_RECORD_OR_RECONSTRUCTED_STATE_NOT_AN_AMBIGUOUS_BRANCH_LABEL"
+  ],
+  "recovery_algorithm": [
+    "identify last verified checkpoint",
+    "freeze suspect suffix from external authority",
+    "preserve suspect bytes/semantic objects for forensics",
+    "replay admitted external receipts after the checkpoint",
+    "reconstruct parent-child lineage where independently possible",
+    "reattest exact recovered records",
+    "leave unrecoverable records quarantined",
+    "emit recovery receipt listing preserved, restored, and unresolved state"
+  ],
+  "compatibility_with_previous_layers": {
+    "identity_lineage": "Quarantine does not erase face or host history.",
+    "evidence_ledger": "A quarantined memory may remain evidence of tampering while losing authority as evidence for its own asserted world claim.",
+    "obligation_ledger": "Obligations are not canceled solely because the local memory explaining them is quarantined; external obligation receipts remain separately evaluated.",
+    "commit_channel": "Quarantined-derived proposals cannot enter world commit unless independently reconstructed and admitted."
+  },
+  "verification_requirements_for_future_implementation": {
+    "minimum_tests": [
+      "parent binding failure triggers quarantine",
+      "quarantined record remains retrievable for audit",
+      "quarantined record cannot directly create external commit",
+      "1000 derivative faces do not restore authority",
+      "valid prefix survives broken suffix",
+      "independent reattestation can restore one exact record without restoring unrelated suspect records"
+    ],
+    "tamper_tests": [
+      "change quarantined record to VALID without receipt",
+      "delete quarantine history after recovery",
+      "reattest entire branch using one unrelated receipt",
+      "hide taint through a new face ID",
+      "rewrite last verified checkpoint",
+      "allow suspect branch to sign its own restoration as sole evidence"
+    ],
+    "admission_ceiling": "SPECIFICATION_CANDIDATE_UNTIL_EXECUTABLE_REFERENCE_IMPLEMENTATION_AND_INDEPENDENT_REPLAY_EXIST"
+  },
+  "canonical_lines": {
+    "en": [
+      "A damaged memory is not erased merely because it is unsafe to trust.",
+      "Quarantine preserves evidence while withholding authority.",
+      "A thousand copies of one broken source are still one broken source.",
+      "Recover from the last verified checkpoint; do not pretend the suspect suffix never existed.",
+      "Trust returns through independent reattestation, not through the suspect branch declaring itself healed."
+    ]
+  },
+  "next_gate": {
+    "name": "JANUS_113_V1_9_ROOT_OF_TRUST_AND_NONCIRCULAR_SELF_VERIFICATION_GATE",
+    "status": "OPEN"
+  }
+}

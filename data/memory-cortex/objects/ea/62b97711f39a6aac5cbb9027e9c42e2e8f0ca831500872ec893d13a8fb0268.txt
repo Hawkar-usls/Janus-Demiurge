@@ -1,0 +1,171 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1C5B2B0-FORCED-DYNAMIC-BASE-CLOSURE-RESULT-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "PASS_FORCED_DYNAMIC_BASE_CLOSURE__CLASS_RETURN_OPEN",
+  "gate": "R5_B1B1C5B2B0_FORCED_DYNAMIC_BASE_CLOSURE_GATE_V1",
+  "binds": {
+    "prereg_blob": "94c678a11941098e0274f4b388363be4d7f51c4f",
+    "prereg_clarification_blob": "9593ae809a62de39c3b925dacf3bd582df8c91c8",
+    "B1_cover_result_blob": "7cb88d005602a6db83c9a820b506a13fc6212a45",
+    "B2_symbolic_classifier_seal_blob": "1fc517db23bdc51ed9e18ca5d204677cb3290fea",
+    "B2A_component_boundary_result_blob": "9d9134cc0fda6267f56acb787ef73a2879b420cb",
+    "B2A_theorem_seal_blob": "bef6531ad1d5c8382c453f4304783ce563cea9da"
+  },
+  "primary_source_check": {
+    "title": "Four-Coloring P6-Free Graphs. II. Finding an Excellent Precoloring",
+    "authors": [
+      "Maria Chudnovsky",
+      "Sophie Spirkl",
+      "Mingxian Zhong"
+    ],
+    "url": "https://web.math.princeton.edu/~mchudnov/4colpaper2.pdf",
+    "verified_source_axioms": {
+      "i": "G minus X0 is connected.",
+      "ii": "S is connected and no vertex in V(G) minus S is complete to S.",
+      "iii": "Y0 = V(G) minus (N(S) union X0 union S).",
+      "iv": "No vertex in V(G) minus (Y0 union X0) is mixed on an edge of Y0."
+    },
+    "verified_auxiliary_fact": "Every vertex in X union Y has a neighbor in S. This is also immediate from axiom (iii), since X and Y are disjoint from S, X0 and Y0.",
+    "use_firewall": "Only these definition-level/source-structural facts are imported. No P6-specific normalization or algorithmic theorem is transferred to P7 in this gate."
+  },
+  "theorem_bundle": [
+    {
+      "name": "FORCED_DYNAMIC_VERTEX_BASE_CLOSURE_V1",
+      "setup": {
+        "P": "A source-valid current final state P=(G,S,X0,X,Y0,Y,f) satisfying source axioms (i)-(iv).",
+        "u": "u belongs to U=X union Y.",
+        "color": "c belongs to the exact admissible palette A(u), hence c conflicts with no already fixed neighbor in S union X0.",
+        "component_uniformity": "u is complete or anticomplete to every connected component of G[Y0]."
+      },
+      "construction": {
+        "S_prime": "S union {u}",
+        "X0_prime": "X0",
+        "X_prime": "X minus {u}",
+        "Y0_prime": "Y0 minus N(u)",
+        "Y_prime": "(Y minus {u}) union (Y0 intersect N(u))",
+        "f_prime": "f union {u -> c}",
+        "graph": "G unchanged"
+      },
+      "statement": "The constructed seeded precoloring is a syntactic normal subcase of P, satisfies source axioms (i)-(iv), and has an extension iff P has an extension with u=c.",
+      "proof": {
+        "normal_subcase": [
+          "The deletion set is empty.",
+          "S is contained in S_prime, and u lies in X union Y, so S_prime is contained in S union X union Y0 union Y.",
+          "X0_prime=X0.",
+          "f_prime extends f only by fixing u.",
+          "u has an old seed neighbor, so G[S_prime] is connected."
+        ],
+        "axiom_i": "G and X0 are unchanged, so G minus X0 remains connected.",
+        "axiom_ii_connected": "u has a neighbor in the old connected seed S, hence S_prime is connected.",
+        "axiom_ii_no_complete": "If a vertex outside S_prime were complete to S_prime, it would be complete to the old S, contradicting old axiom (ii).",
+        "axiom_iii": [
+          "Every old Y0 vertex is anticomplete to S.",
+          "Such a vertex is anticomplete to S_prime exactly when it is nonadjacent to u.",
+          "Every old vertex outside Y0 union S union X0 already has a neighbor in S by old axiom (iii), so it cannot newly enter Y0_prime.",
+          "Therefore Y0_prime=V(G) minus (N(S_prime) union X0_prime union S_prime)=Y0 minus N(u)."
+        ],
+        "whole_component_residual": "By dynamic-to-component uniformity, if u has one neighbor in an old connected Y0 component C then u is complete to C; otherwise u is anticomplete to C. Hence Y0_prime is a union of whole old Y0 components.",
+        "axiom_iv": [
+          "Let ab be an edge of Y0_prime. Then ab was already an edge of old Y0.",
+          "Every old vertex outside Y0 union X0 is not mixed on ab by old axiom (iv).",
+          "The newly seeded vertex u is anticomplete to the retained component containing ab, by definition of retention plus component uniformity.",
+          "Any old Y0 vertex that leaves Y0 belongs to a whole removed old component. It is anticomplete to every distinct retained old component, so it is not mixed on ab.",
+          "Thus no vertex outside Y0_prime union X0_prime is mixed on an edge of Y0_prime."
+        ],
+        "extension_equivalence": "A precoloring extension of the new state is exactly a precoloring extension of P with the additional requirement phi(u)=c. The graph is unchanged and repartition is metadata."
+      }
+    },
+    {
+      "name": "FORCED_EQUAL_COLOR_PAIR_BASE_CLOSURE_V1",
+      "setup": {
+        "P": "Same source-valid final state.",
+        "u_v": "u,v belong to U=X union Y.",
+        "nonedge": "uv is not an edge.",
+        "color": "c belongs to A(u) intersect A(v).",
+        "component_uniformity": "Each of u and v is complete or anticomplete to every connected component of G[Y0]."
+      },
+      "construction": {
+        "S_double_prime": "S union {u,v}",
+        "X0_double_prime": "X0",
+        "X_double_prime": "X minus {u,v}",
+        "Y0_double_prime": "Y0 minus (N(u) union N(v))",
+        "Y_double_prime": "(Y minus {u,v}) union (Y0 intersect (N(u) union N(v)))",
+        "f_double_prime": "f union {u -> c, v -> c}",
+        "graph": "G unchanged"
+      },
+      "statement": "The pair-forced construction is a syntactic normal subcase, satisfies source axioms (i)-(iv), and has an extension iff P has an extension with phi(u)=phi(v)=c.",
+      "proof": {
+        "proper_fixed_pair": "Because uv is a nonedge and c is in both exact admissible palettes, fixing both vertices to c is proper relative to each other and to all already fixed vertices.",
+        "normal_subcase": "Each of u and v has an old seed neighbor, so the enlarged seed is connected and all syntactic normal-subcase containment conditions hold with empty deletion set and unchanged X0.",
+        "axiom_i": "G minus X0 is unchanged.",
+        "axiom_ii": "Connectedness follows because both new seed vertices attach to old S. No outside vertex can be complete to the enlarged seed without already being complete to old S.",
+        "axiom_iii": "An old Y0 vertex remains residual exactly when it is adjacent to neither u nor v, so Y0_double_prime=Y0 minus (N(u) union N(v)); no old non-Y0 vertex can enter.",
+        "whole_component_residual": "A component is retained iff both u and v are anticomplete to it; otherwise at least one is complete to it and the whole component is removed.",
+        "axiom_iv": "The single-force case analysis applies verbatim with removed components defined by N(u) union N(v). Both newly forced vertices are anticomplete to every retained component.",
+        "extension_equivalence": "Extensions are exactly extensions of P satisfying phi(u)=phi(v)=c."
+      }
+    },
+    {
+      "name": "R2_SEQUENTIAL_R1_PREDICATE_IDENTITY_V1",
+      "statement": "For uv a nonedge and c in A(u) intersect A(v), R2_P(u,v,c)=1 iff the one-step forced state P[u<-c] has an extension with v=c.",
+      "logical_form": "R2_P(u,v,c) = R1_P(u,c) AND R1_{P[u<-c]}(v,c), when the second R1 is read purely as an existential predicate on the forced state.",
+      "firewall": "This is not yet an algorithmic reduction. B2B0 proves only base closure of P[u<-c], not that it belongs to the full authoritative final hard class on which an R1 procedure could recursively be invoked."
+    }
+  ],
+  "B2B0_verdict": {
+    "source_axioms_i_to_iv": "PRESERVED",
+    "single_force_extension_semantics": "EXACT",
+    "pair_force_extension_semantics": "EXACT",
+    "residual_component_cutting": "IMPOSSIBLE_UNDER_SEALED_DYNAMIC_COMPONENT_UNIFORMITY",
+    "normal_subcase_syntax": "PASS",
+    "recursive_reseed": "NOT_AUTHORIZED",
+    "full_final_class_return": "OPEN"
+  },
+  "next_gate": {
+    "name": "R5_B1B1C5B2B1_FORCED_COLOR_CLASS_RETURN_GATE_V1",
+    "target": "Apply exactly one authorized post-force canonical pass and classify the result as A_TERMINAL, B_HARD_RETURN_WITH_CERTIFIED_PROGRESS, or C_ESCAPE_FROM_AUTHORIZED_CLASS.",
+    "ordered_checks": [
+      "source axiom (v) / exact list repartition",
+      "source axiom (vi) status",
+      "B0 survivor/provenance localization",
+      "C0 component compilation applicability",
+      "C2 full dynamic quotient assumptions",
+      "C3 selector/reconstruction contract",
+      "first invariant at which an escape occurs"
+    ],
+    "hard_return_requirements": [
+      "same authoritative hard-state contract",
+      "strict non-regenerating progress measure",
+      "polynomial bound on distinct successor states"
+    ],
+    "required_receipt": {
+      "name": "FORCED_STEP_DELTA",
+      "fields": [
+        "removed_Y0_components",
+        "retained_Y0_components",
+        "vertices_whose_exact_A_shrank",
+        "source_list_class_changes",
+        "VI_before_after",
+        "B0_coarse_class_changes",
+        "selector_message_recompilations_needed",
+        "seed_increment"
+      ]
+    }
+  },
+  "scientific_ceiling": {
+    "B2B0_BASE_CLOSURE": "PASS",
+    "R1_DECIDABILITY": "OPEN",
+    "R2_DECIDABILITY": "OPEN",
+    "R2_TO_SEQUENTIAL_R1": "LOGICAL_IDENTITY_ONLY",
+    "CLASS_RETURN_PROGRESS": "OPEN",
+    "GLOBAL_DYNAMIC_CORE_TRANSITION_QUOTIENT": "OPEN",
+    "C5C": "LOCKED",
+    "FULL_L2_REPAIR": "OPEN",
+    "LEMMA11_P7_LIFT": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "stop": true,
+  "return_to_HQ": true
+}

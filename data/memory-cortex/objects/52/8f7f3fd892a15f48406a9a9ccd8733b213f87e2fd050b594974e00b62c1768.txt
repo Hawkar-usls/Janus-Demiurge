@@ -1,0 +1,165 @@
+{
+  "schema": "janus.io.c_to_d.digital_corpus_stratified_lrs_cri_prereg.v1_0",
+  "artifact_id": "JANUS-IO-C-TO-D-DIGITAL-CORPUS-STRATIFIED-LRS-CRI-PREREG-2026-09-14-v1.0",
+  "created_at_local": "2026-09-14T00:01:00+03:00",
+  "repository_target": "Hawkar-usls/janus-meta-registry",
+  "parent": {
+    "artifact_id": "JANUS-IO-SKELETON-DANCE-TO-SPOOKY-SCARY-SKELETONS-DIGITAL-LINEAGE-GATE-2026-09-13-v1.0",
+    "commit": "972e88ce117bc8b6967ac73b66cbb61976ab7a70"
+  },
+  "gate_id": "C_TO_D_DIGITAL_CORPUS_STRATIFIED_LRS_GATE",
+  "status": "PREREGISTERED__CALIBRATION_PENDING_CORPUS_VALIDATION",
+  "gate_zero": {
+    "exact_prior_protocol_search": "NO_EXACT_C_TO_D_DIGITAL_CORPUS_STRATIFIED_LRS_CRI_PROTOCOL_FOUND",
+    "decision": "NEW_SUCCESSOR_ALLOWED"
+  },
+  "sampling_window": {
+    "main_corpus": "2010-2026",
+    "historical_anchor_not_counted_in_main_N": "1998 Disney Sing-Along Songs: Happy Haunting - Party at Disneyland! audiovisual recombination"
+  },
+  "strata": {
+    "D1_DIRECT_REUSE": {
+      "target_n": 20,
+      "inclusion": "Direct reuse of identifiable The Skeleton Dance (1929) frames/footage in digital posts, GIFs, videos or remediations.",
+      "expected_role": "ceiling-control for visual retention",
+      "prediction_not_result": {
+        "shape": "near 1.0",
+        "agent_identity": "near 1.0",
+        "gesture": "near 1.0"
+      }
+    },
+    "D2_SPOOKY_NON_DISNEY": {
+      "target_n": 15,
+      "inclusion": "Non-Disney remakes or independent digital skeleton performances tied to the Spooky Scary Skeletons trend or closely documented derivative family, with replacement of original Disney pixels.",
+      "expected_role": "test whether kinetic/relational grammar persists when pixel identity is removed"
+    },
+    "D3_SPOOKTOBER": {
+      "target_n": 20,
+      "inclusion": "Seasonal October/Spooktober skeleton memes whose relation is family-level rather than direct Disney reuse.",
+      "expected_role": "measure diffusion and seasonal ritualization"
+    },
+    "D4_CAPTION_REENCODING": {
+      "target_n": 20,
+      "inclusion": "Direct or near-direct The Skeleton Dance visual nucleus with externally replaced caption/context.",
+      "expected_role": "killer-test for recognizable nucleus plus replaceable context"
+    }
+  },
+  "lrs": {
+    "name": "Layer Retention Score",
+    "vector": ["shape", "agent_identity", "context", "gesture", "affect_retention", "function_semantics_retention"],
+    "range": "0.0-1.0",
+    "polarity_axes": {
+      "affect_polarity": [-1, 0, 1],
+      "function_semantics_polarity": [-1, 0, 1]
+    },
+    "rule": "Retention and polarity are separate; inversion is not encoded as negative retention."
+  },
+  "les": {
+    "name": "Lineage Evidence Score",
+    "ordered_classes": [
+      "DIRECT",
+      "DOCUMENTED_INTERMEDIATE",
+      "FAMILY",
+      "FORMAL_SIMILARITY_ONLY",
+      "UNRESOLVED"
+    ],
+    "rule": "High LRS cannot substitute for lineage evidence."
+  },
+  "d4_context_taxonomy": {
+    "primary_context_classes": [
+      "WORK_OFFICE",
+      "PSYCHOLOGICAL_EXISTENTIAL",
+      "SOCIAL_RELATIONSHIPS",
+      "SCHOOL_ACADEMIC",
+      "POP_CULTURE_FANDOM",
+      "POLITICS_CURRENT_EVENTS",
+      "SEASONAL_HALLOWEEN"
+    ],
+    "coding_rule": "Exactly one primary_context per D4 item for CRI computation; optional secondary tags are descriptive only and do not enter entropy.",
+    "unknown_rule": "If no class fits without interpretation, code OTHER_PENDING and exclude that item from the preregistered seven-class CRI until adjudicated.",
+    "revision_note": "SEASONAL_HALLOWEEN was added before any D4 quantitative coding because seed discovery showed direct Disney-image caption reuse can remain Halloween-specific and should not be forced into POP_CULTURE_FANDOM."
+  },
+  "cri": {
+    "name": "Context Replaceability Index",
+    "definition": "Normalized Shannon entropy over preregistered D4 primary-context classes.",
+    "formula": "CRI = -SUM_k(p_k * ln(p_k)) / ln(K)",
+    "K": 7,
+    "range": "0.0-1.0",
+    "interpretation": {
+      "low": "stable nucleus observed in a narrow/repeated context family",
+      "high": "stable nucleus successfully carries multiple distinct context classes"
+    },
+    "firewall": "CRI measures context diversity only; it must not include visual retention or be treated as a causal measure of virality."
+  },
+  "derived_metric": {
+    "name": "STABLE_INTERFACE_SCORE",
+    "formula": "mean(shape, agent_identity, gesture) * CRI",
+    "status": "SECONDARY_EXPLORATORY_METRIC_NOT_PRIMARY_ENDPOINT",
+    "reason": "Keeps CRI conceptually independent while allowing a separate test of stable visual nucleus plus context diversity."
+  },
+  "item_schema": [
+    "item_id",
+    "stratum",
+    "date",
+    "platform",
+    "source_url",
+    "source_title",
+    "creator_or_uploader_if_known",
+    "direct_disney_visual_reuse",
+    "audio_relation",
+    "primary_context",
+    "secondary_tags",
+    "lrs",
+    "polarity",
+    "les",
+    "evidence_note",
+    "coding_confidence",
+    "dedupe_key"
+  ],
+  "coding_protocol": {
+    "first_pass": "Code source identity, date, platform and stratum before assigning LRS values.",
+    "second_pass": "Assign LRS and polarity without using popularity metrics as evidence of retention.",
+    "adjudication": "Items with uncertain visual provenance or ambiguous primary_context remain OPEN and do not contribute to quantitative close.",
+    "replication": "At least 20 percent of the corpus should receive a later blind recode against the same rubric before final seal.",
+    "dedupe": "Reposts of the same underlying media object do not count as independent morphology samples; they may be retained as transmission events but share a dedupe_key."
+  },
+  "quantitative_close_conditions": {
+    "minimum_complete_n": {
+      "D1_DIRECT_REUSE": 15,
+      "D2_SPOOKY_NON_DISNEY": 12,
+      "D3_SPOOKTOBER": 15,
+      "D4_CAPTION_REENCODING": 15
+    },
+    "preferred_n": {
+      "D1_DIRECT_REUSE": 20,
+      "D2_SPOOKY_NON_DISNEY": 15,
+      "D3_SPOOKTOBER": 20,
+      "D4_CAPTION_REENCODING": 20
+    },
+    "required_outputs": [
+      "per-item coded corpus",
+      "stratum-wise LRS distributions",
+      "LES distribution",
+      "D4 CRI",
+      "transition matrix C->D1, D1->D2, D1->D3, D1->D4",
+      "uncertainty and exclusion ledger"
+    ]
+  },
+  "hypotheses": {
+    "H1": "D1 should show ceiling-level visual retention because exact footage is reused.",
+    "H2": "D2 should show lower shape/pixel identity than D1 while retaining comparatively high gesture/autonomous-skeleton grammar.",
+    "H3": "D3 should show reduced Disney-specific morphology and stronger seasonal-context clustering.",
+    "H4": "D4 should permit high visual-core retention together with low semantic retention and high CRI.",
+    "H5": "High CRI does not by itself imply higher popularity or causal transmissibility."
+  },
+  "epistemic_firewall": [
+    "Predicted LRS values are not observations until item-level coding is complete.",
+    "Direct Disney reuse and generic skeleton culture must remain separate strata.",
+    "A similar dancing skeleton does not establish Disney lineage.",
+    "CRI is a diversity statistic, not proof that context replacement caused spread.",
+    "Popularity metrics cannot be used to infer semantic retention.",
+    "The historical Holbein-to-Disney direct lineage remains OPEN and is not repaired by digital-era evidence."
+  ],
+  "next_gate": "C_TO_D_DIGITAL_CORPUS_COLLECTION_AND_CODING_GATE",
+  "canonical_seal": "THE DIGITAL CORPUS IS PREREGISTERED. NUMERICAL PREDICTIONS ARE NOT RESULTS. LRS, LES AND CRI MUST BE CODED PER ITEM BEFORE ANY VERIFIED CLAIM."
+}

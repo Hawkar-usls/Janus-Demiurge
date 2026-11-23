@@ -1,0 +1,99 @@
+{
+  "schema": "janus.research.causality_controls_offline_result.v1",
+  "record_id": "BANANA-TO-JANUS-CAUSALITY-CONTROLS-006-OFFLINE-RESULT-2026-11-09",
+  "record_type": "APPEND_ONLY_POST_TEST_EVIDENCE",
+  "date": "2026-11-09",
+  "status": "OFFLINE_SYNTHETIC_CONTROLS_PASS__NO_QPU_OR_BIOLOGICAL_DATA",
+  "parent_research_link": {
+    "title": "BANANA-TO-JANUS-CAUSALITY-BRIDGE",
+    "bridge_pr": "https://github.com/Hawkar-usls/janus-meta-registry/pull/477",
+    "historical_banana_commit": "05af9149c4d8f94bba56c740194760d8f5353221",
+    "qpu005_prereg_pr": "https://github.com/Hawkar-usls/janus-meta-registry/pull/475",
+    "qpu005_original_code_pr": "https://github.com/Hawkar-usls/Janus-Demiurge/pull/485",
+    "bridge_status_at_recording": "OPEN_NOT_MERGED"
+  },
+  "implementation": {
+    "repo": "Hawkar-usls/Janus-Demiurge",
+    "code_pr": "https://github.com/Hawkar-usls/Janus-Demiurge/pull/487",
+    "code_pr_status_at_recording": "OPEN_NOT_MERGED",
+    "ci_workflow": ".github/workflows/janus-ocean-causality-controls-006.yml",
+    "script": "experiments/ocean_transformer/causality_controls/controls_006.py",
+    "tests": "experiments/ocean_transformer/causality_controls/test_controls_006.py",
+    "reproduction": "experiments/ocean_transformer/causality_controls/README.md",
+    "fixture_names": [
+      "banana_20260126_original.json",
+      "qpu005_20261109_prereg.json",
+      "banana_qpu005_bridge_20261109.json"
+    ],
+    "python": "3.11",
+    "external_python_dependencies": 0,
+    "separate_from_physical_qpu005": true
+  },
+  "verified_ci": {
+    "run_id": 42687671165,
+    "run_url": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/42687671165",
+    "head_sha": "6020b0e58be08fe0c1cd827deb85b8e4e7a34aed",
+    "status": "completed",
+    "conclusion": "success",
+    "job_id": 129398739925,
+    "unit_tests_executed": 17,
+    "unit_tests_passed": 17,
+    "report_phase": "OFFLINE_CONTROLS_PASS__SYNTHETIC_ONLY",
+    "artifact_id": 13705068267,
+    "artifact_name": "janus-ocean-causality-controls-006-42687671165",
+    "artifact_zip_digest_sha256": "e55d8d1380322c1aa3b954f5f3051c6f42469a74c14b40396916efd12e2d3740",
+    "artifact_expires_at": "2027-02-07T19:53:31Z",
+    "report_canonical_sha256": "c96fb97e2d4a36a476719a22c07f6e32ad1bf0b3b300bd9bff60d18b943355eb"
+  },
+  "controls": [
+    {
+      "id": "BRIDGE-CTRL-01-FORWARD-BANANA",
+      "status": "PASS_SYNTHETIC_ONLY",
+      "description": "40 seeded synthetic maturation episodes; training on episodes 0-23, unused validation 24-31, test 32-39; local precommit SHA before scoring; model beats persistence MAE; undeclared future labels rejected",
+      "result_canonical_sha256": "18fee00712ee39c62d6dcc9364193e039b484a28dcd6b3d5d4387fe0c1164d7d",
+      "real_banana_measurements": false
+    },
+    {
+      "id": "BRIDGE-CTRL-02-QPU005",
+      "status": "PASS_SYNTHETIC_ONLY",
+      "description": "Exact 4096 synthetic A/C/B rows under null and deliberate injection; original frozen Fisher function reused; null not significant, injection detected, B postselection invariance, filtered/malformed input rejected",
+      "result_canonical_sha256": "1edb5751a9f741e4cc877d10be5424d74813f6bc62729392ecb52b61bb5e067a",
+      "real_qpu_shots": 0
+    },
+    {
+      "id": "BRIDGE-CTRL-03-TRACEABILITY",
+      "status": "PASS_HISTORICAL_SNAPSHOTS_AND_CURRENT_QPU_SOURCE",
+      "description": "Pinned Git blob checks for original January banana, original QPU preregistration, November bridge snapshot and original QPU005 protocol in working tree",
+      "result_canonical_sha256": "a42c4cbb74c3481c7f2f447aa7045e5ba21ce5ebb7438d84ddf7f7b89d80cc30",
+      "external_notarization": false
+    }
+  ],
+  "frozen_baseline_integrity": {
+    "banana_original_git_blob": "a83a3df5188717dbfd761f59b9c004b8425503d8",
+    "qpu005_prereg_json_git_blob": "42d0053c15f7c7e0032538cce45b0564686aca86",
+    "bridge_proposal_json_git_blob": "6b5b823a7333c9cc08e84a657d5c43781935e54b",
+    "qpu005_original_protocol_git_blob": "09448c98ef0321660e739a558d0e43ab55ae5289",
+    "qpu005_original_file_edited_by_test_branch": false,
+    "historical_json_overwritten": false
+  },
+  "engineering_notes": [
+    "Initial CI checks failed due to strict float equality assertion comparing the two machine representations 1/3 versus 0.33333333333333337; assertion changed to an approximation without modifying frozen Fisher implementation.",
+    "Final successful test ran the same 17 cases and all 5 program stages, including forecast precommit then score, and uploaded SHA-256 artifact manifest.",
+    "Forecast commitment is a local synthetic demonstration within one CI run, not independent real-world external signing.",
+    "All fixtures are seeded or immutable historical snapshots; no actual plant or IBM Quantum observations were created.",
+    "Artifact retention is 90 days, so an independent custodian would be required for long-term evidentiary preservation."
+  ],
+  "limits": {
+    "real_plant_measurements": false,
+    "real_QPU_backend_called": false,
+    "real_QPU_job_id": null,
+    "QPU_minutes_used": 0,
+    "no_backward_information_channel_demonstrated": true,
+    "hardware_independent_causal_separation_verified": false,
+    "physical_retrocausality_proven": false,
+    "production_model_changed": false,
+    "NAS_containers_changed": false,
+    "no_auto_promotion": true
+  },
+  "next_gate": "Review code PR #487 and bridge PR #477; if merged, develop a separately preregistered real-world prospective control study with external timestamps and independent ground truth. Leave physical QPU005 approval as a separate explicit decision."
+}

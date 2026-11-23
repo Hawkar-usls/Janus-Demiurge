@@ -1,0 +1,65 @@
+{
+  "schema": "janus.guestbook.respect_filter.v1_0",
+  "artifact_id": "JANUS-GUESTBOOK-RESPECT-FILTER-v1.0",
+  "status": "DETERMINISTIC_LEXICAL_POLICY",
+  "created_at_local": "2026-08-15T20:27:00+03:00",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "purpose": "Prevent automatically published guestbook entries from combining a JANUS name reference with profanity or direct degrading insults, while preserving ordinary disagreement and scientific criticism.",
+  "publication_rule": "JANUS_MENTION && PROFANITY_OR_DIRECT_INSULT => QUARANTINE_NOT_TICKER",
+  "submission_limit_per_github_login": 3,
+  "submission_limit_scope": "TOTAL_PROCESSED_GUESTBOOK_SUBMISSIONS_ACCEPTED_OR_QUARANTINED",
+  "janus_name_variants": ["JANUS", "Janus", "janus", "IANUS", "ЯНУС", "Янус", "янус"],
+  "normalization": {
+    "unicode_nfkc": true,
+    "case_insensitive": true,
+    "separator_compaction": true,
+    "basic_leetspeak_normalization": true,
+    "basic_latin_cyrillic_confusable_normalization": true,
+    "goal": "Catch trivial punctuation, spacing, case and mixed-script evasion without using an opaque sentiment classifier."
+  },
+  "allowed_examples": [
+    "JANUS is wrong about this result.",
+    "I disagree with JANUS.",
+    "JANUS failed this test and should preserve the negative result.",
+    "Я не согласен с Янусом.",
+    "Янус, здесь ошибка в статистике."
+  ],
+  "rejected_example_classes": [
+    "JANUS plus profanity",
+    "JANUS plus direct degrading insult",
+    "JANUS spelled with trivial separators plus prohibited language",
+    "JANUS with simple Latin/Cyrillic confusable substitution plus prohibited language"
+  ],
+  "quarantine_policy": {
+    "raw_abusive_message_copied_into_quarantine_json": false,
+    "message_sha256_recorded": true,
+    "issue_url_recorded": true,
+    "github_login_recorded_for_audit": true,
+    "display_quarantined_login_in_ticker": false,
+    "display_quarantined_message_in_ticker": false,
+    "site_may_display_aggregate_rejection_notice_without_naming_a_person": true,
+    "reason": "Preserve provenance and enforcement evidence without turning the website into a public shaming mechanism."
+  },
+  "scope_limits": {
+    "not_a_sentiment_model": true,
+    "not_a_general_content_moderator": true,
+    "does_not_forbid_disagreement": true,
+    "does_not_forbid_negative_results": true,
+    "does_not_establish_intent": true,
+    "does_not_claim_complete_profanity_detection": true
+  },
+  "implementation": {
+    "filter": "tools/guestbook/janus_guestbook_filter.py",
+    "publisher": "tools/guestbook/janus_guestbook_publish.py",
+    "live_client": "assets/guestbook.js",
+    "public_cache": "guestbook/messages.json",
+    "quarantine_ledger": "guestbook/quarantine.json"
+  },
+  "canonical_rules": [
+    "CRITICISM != INSULT",
+    "DISAGREEMENT != DISRESPECT",
+    "REJECTED_FROM_TICKER != ERASED_FROM_PROVENANCE",
+    "QUARANTINE != PUBLIC_SHAMING",
+    "AUTOMATIC_PUBLICATION_REQUIRES_DETERMINISTIC_GATES"
+  ]
+}

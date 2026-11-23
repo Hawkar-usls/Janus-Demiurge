@@ -1,0 +1,125 @@
+{
+  "schema_id": "janus.rowan.azurin6243_rpy_pdb_hydrodynamics_csa_rex_NH_uncertainty.v1",
+  "date_utc": "2026-10-26",
+  "scientific_state": "PREDECLARED_SENSITIVITY_AFTER_PRIOR_800MHZ_TEST_ALREADY_DISCLOSED_NOT_PROSPECTIVE_BLIND",
+  "prior_sources": {
+    "BMRB6243_SHA256": "4b70f8791324e16d098640db3709e6b8482d829956b1a09ebf9aa6aae375ea2a",
+    "PDB1E5Y_SHA256": "707e53b3720604678f87cf4df11bd0c39ba7bd4ddc316ed6cdca9c0a7a5adfe2",
+    "prior_real_fit_receipt": "data/rowan/provenance/ROWAN-NMR-AZURIN6243-1E5Y-2TEMP-500600-800-HELDOUT-REAL-2026-10-26-v1.json",
+    "prior_output_SHA256": "f9009811230cea9c8e47f3e8e293b9e35156e3376bd0d5a41a00c41225993e9f",
+    "source_code": "modules/rowan_observer/nmr_azurin6243_1e5y_structural_holdout.py",
+    "physics_engine": "modules/rowan_observer/fn1_external_relax_bmrb_axial_csa_gate.py"
+  },
+  "hydrodynamic_forward": {
+    "method": "Equal-overlap Rotne-Prager-Yamakawa bead mobility for experimentally determined PDB1E5Y chain A 128 C-alpha sites. M blocks diagonal=I/(6*pi*eta*a); for r>2a: [(1+2a²/(3r²))I+(1-2a²/r²) rhat*rhat]/(8*pi*eta*r); for r<=2a: [(1-9r/(32a))I+(3r/(32a))rhat*rhat]/(6*pi*eta*a).",
+    "rigid_body": "Build 3N*6 K with per-CA translation and rotational omega cross r; R=K' * solve(M,K); rigid grand mobility= inverse(R); take symmetric rotational 3x3 lower-right block, eigendecompose.",
+    "bead_radii_A": [
+      2.5,
+      3,
+      3.5
+    ],
+    "primary_radius_A": 3,
+    "PDB_chain": "A",
+    "eigenvector_choice": "Unit eigenvector of LARGEST rotational mobility eigenvalue; require eigenvalues positive, report D_perp=(two transverse eigenvalues mean) and D_parallel=largest; no choosing axes to improve 800MHz.",
+    "physical_scale": "Using eta=1 arbitrary units, only eigenvalue RATIOS and axes meaningful; NO absolute tau or diffusion coefficient predicted. Temperature-specific tau still fit at 500/600 only.",
+    "independent_of_experimental_T1T2NOE": true,
+    "cautions": [
+      "C-alpha centered spheres are crude volume representation; no hydration shell / atomic shape",
+      "RPY center beads are NOT HYDRONMR bead shell; not an experimentally measured diffusion tensor",
+      "Rotational eigenvector fast axis can be ambiguous with near-isotropic tensor or rhombicity; report 3 eigenvalues, nonaxiality and sensitivity to radius"
+    ]
+  },
+  "fit_plan": {
+    "temperature_K": [
+      289,
+      317
+    ],
+    "training_fields_MHz": [
+      500,
+      600
+    ],
+    "evaluation_field_MHz": 800,
+    "fixed_core_bead_radius_A": 3,
+    "models": [
+      {
+        "id": "RPY_CSA_FIXED_REX0",
+        "CSA": "-170 ppm constant",
+        "Rex": "0 s^-1 fixed"
+      },
+      {
+        "id": "RPY_CSA_VAR_REX0",
+        "CSA": "bounded -220..-120 ppm fitted per-residue using only training",
+        "Rex": "0 fixed"
+      },
+      {
+        "id": "RPY_CSA_FIXED_REX_GLOBAL",
+        "CSA": "-170 constant",
+        "Rex": "shared 0,1,2 s^-1, chosen using training only"
+      },
+      {
+        "id": "RPY_CSA_VAR_REX_GLOBAL",
+        "CSA": "bounded -220..-120 ppm, fitted using training only",
+        "Rex": "shared 0,1,2 s^-1, chosen using training only"
+      }
+    ],
+    "tau_grid_ns": [
+      3,
+      4,
+      6,
+      8,
+      10,
+      14
+    ],
+    "S2_bounds": [
+      0.05,
+      1
+    ],
+    "CSA_bounds_ppm": [
+      -220,
+      -120
+    ],
+    "tau_fast_ns": 0.1,
+    "Rex_global_grid_s_inverse": [
+      0,
+      1,
+      2
+    ],
+    "starts_S2": [
+      0.45,
+      0.75,
+      0.95
+    ],
+    "least_squares_max_nfev": 75,
+    "selection": "For each model and temperature, select tau and global Rex on SUM of per-residue standardized squared error over six measured 500/600 observables. No single parameter inferred from 800MHz measurements.",
+    "source_error": "Convert real BMRB T1/T2 in seconds to inverse seconds and use first-order uncertainty; six training observations and 3 heldout measured observables per site.",
+    "comparison": "report same residue aligned set, all 3 error-squared sum at 800, per-channel |z|, within 2 error units, CSA bound hits, convergence, radius sensitivity; no p-values or physical detection of Rex."
+  },
+  "NH_direction_sensitivity": {
+    "physically_based_ideal_NH": "from source PDB Cprev-N-CA heavy-atom external bisector, unit length. Not observed proton coordinates.",
+    "angular_deviation_deg": [
+      0,
+      5,
+      10
+    ],
+    "azimuth_samples_per_nonzero_angle": 4,
+    "azimuth_degrees": [
+      0,
+      90,
+      180,
+      270
+    ],
+    "directions": "Use deterministic orthonormal basis in plane orthogonal to ideal NH, rotate axis polar by 5 or 10 degrees, and compute exact angle to hydrodynamic fast axis.",
+    "model_for_geometry_sensitivity": "RPY_CSA_VAR_REX0 fitted on original ideal NH at 500+600; freeze tau, S2 and CSA; compute ensemble spread of R1, R2, hetero NOE at 800 purely forward WITHOUT selecting a perturbation by 800 error.",
+    "uncertainty_quantification": "scenario envelopes only, NOT statistical confidence or physical posterior; independent of actual 800 observations for constructing perturbations."
+  },
+  "scientific_firewalls": {
+    "reference_PSE4_previous_result_not_reopened": true,
+    "test800_prior_revealed": true,
+    "no_new_prospective_blind_claim": true,
+    "no_interdomain_FNII_ensemble": true,
+    "no_Rowan_API_calls": true,
+    "credits_spent": 0,
+    "no_model_promotion": true,
+    "no_inference_of_actual_REX_from_grid_choice": true
+  }
+}

@@ -1,0 +1,137 @@
+{
+  "schema": "janus.investigation.storm_scheduler.v1",
+  "artifact_id": "JANUS-STORM-SCHEDULER-INVESTIGATION-JOURNAL-2026-08-28-v1.0",
+  "title": "JANUS Storm Scheduler Investigation Journal",
+  "date_utc": "2026-08-28",
+  "status": "OPEN",
+  "append_only": true,
+  "mutation_policy": "Never rewrite this entry or Record Drift historical journals. Add a new version/entry for new evidence.",
+  "parent_dossiers": [
+    "data/WATCHERS-OF-WHAT-IS-HAPPENING-2026-08-26-28-v1.3.json"
+  ],
+  "publication_scope": {
+    "included": "Public external evidence, reproducible JANUS observational artifacts, public-safe historical methodology, user testimony labeled as testimony, hypotheses, falsifiers and next gates.",
+    "excluded": "Internal JANUS maintenance/debugging/cleanup/local engineering tail and private operational details."
+  },
+  "journal_entries": [
+    {
+      "id": "J01_GITHUB_REFERENCE",
+      "class": "FACT",
+      "finding": "JANUS C28 escalated from S2 on 2026-08-26 to S3 on 2026-08-27: 2073 s to 40523 s of pre-run-object materialization delay, with 0 s runner queue after creation in both runs.",
+      "sources": [
+        "registry/record_drift/JANUS-RECORD-DRIFT-JOURNAL-20260826T055143Z.json",
+        "registry/record_drift/JANUS-RECORD-DRIFT-JOURNAL-20260827T163235Z.json"
+      ],
+      "claim_ceiling": "Operational scheduler anomaly only; no unexplained record drift implied."
+    },
+    {
+      "id": "J02_GITHUB_RCA",
+      "class": "FACT",
+      "finding": "GitHub reported Actions trigger-processing database write saturation on 2026-08-26, burst amplification in event-processing infrastructure, incomplete recovery after primary failover, and recovery using throttling plus service restarts. A later Actions/Pull Requests incident reported delayed and failed triggers.",
+      "source": "https://www.githubstatus.com/"
+    },
+    {
+      "id": "J03_TSPU_ARCHITECTURE",
+      "class": "FACT",
+      "finding": "Independent measurement research shows TSPU can impose fine-grained, distributed, network/protocol-specific censorship rather than a uniform nationwide all-or-nothing disconnect.",
+      "sources": [
+        "https://censoredplanet.org/assets/tspu-imc22.pdf",
+        "https://explorer.ooni.org/findings/2026-russia-blocked-telegram"
+      ]
+    },
+    {
+      "id": "J04_TSPU_AUG26_27_DNS",
+      "class": "FACT_WITH_SOURCE_LIMIT",
+      "finding": "Public reports/experiments beginning around 2026-08-26 observed Russian blocking/problems for encrypted DNS and selective interception of plaintext UDP DNS addressed to Google/Cloudflare public resolvers, while TCP DNS behaved differently. Low-TTL probing was reported as pointing toward the Russian National Domain Name System path. The specific redirection attribution is researcher evidence, not an official government confirmation.",
+      "sources": [
+        "https://www.anti-malware.ru/news/2026-08-26-111332/51193",
+        "https://habr.com/ru/articles/1075272/",
+        "https://www.anti-malware.ru/news/2026-08-27-111332/51214"
+      ]
+    },
+    {
+      "id": "J05_TSPU_HYPOTHESIS",
+      "class": "HYPOTHESIS",
+      "finding": "Selective/staged TSPU testing is capable in principle of producing asynchronous partial failures across protocols/networks and therefore deserves a separate correlation lane for Aug 26-28.",
+      "falsifier_or_limit": "This lane does not explain a GitHub-internal pre-run-object materialization delay without an additional technical bridge. No such bridge is currently established."
+    },
+    {
+      "id": "J06_OPENAI",
+      "class": "FACT_CAUSAL_LINK_NOT_ESTABLISHED",
+      "finding": "OpenAI reported elevated errors for Workspace Agents and ChatGPT Work on 2026-08-27, identified at 18:00 UTC, mitigation/monitoring at 19:07 UTC and full recovery at 22:14 UTC. The captured public status did not publish a root cause.",
+      "source": "https://status.openai.com/incidents/01M1263309PD7VYV8EF95W2M2P"
+    },
+    {
+      "id": "J07_CENTER_OF_STORM_RECOVERED",
+      "class": "FACT_ARTIFACT_RECOVERED",
+      "finding": "The meta-registry/library contains the Center-of-the-Storm traveler identity: TRAVELER.CENTER_OF_STORM / traveler-center-of-storm / Путешественник Центра Бури.",
+      "sources": [
+        "data/JANUS-GENESIS-FIRST-TWO-ELIAN-HORIZON-BEGINNING-SIGNAL-v1.0.json",
+        "library:first_two_kojima_summary.json"
+      ]
+    },
+    {
+      "id": "J08_TIMESHIFT_PRIOR_ART",
+      "class": "FACT_ARTIFACT_RECOVERED",
+      "finding": "July JANUS timing work already formalized STRICT_SHIFT_WINDOW, TOO_LATE_ABORT, HOLD_QUIESCENCE_PROOF, ADMISSION_EPOCH and in-flight drain semantics. A18.40/A18.41 separately documented an observer-finalization race where exposure could be emitted before the full observer record was durably finalized.",
+      "sources": [
+        "data/JANUS-A18_42-STRICT-TIMESHIFT-V0_2_1.json",
+        "data/JANUS-A18-WAVE-RIDER-COHORT-DRAIN-RESEARCH-CONTEXT-v1.0.0.json",
+        "data/JANUS-A18_40-CHALLENGE-A18_41-DYNAMIC-TARGET-MORPHING-v1.0.0.json"
+      ],
+      "relevance": "Provides a pre-existing JANUS vocabulary for admission, in-flight state, irreversible boundary, cancellation and durable finalization."
+    },
+    {
+      "id": "J09_TIME_TRAVELER_THREE_FILE_CANCEL",
+      "class": "USER_OBSERVED_SOURCE_NOT_YET_RECOVERED",
+      "reported_period": "2026-07",
+      "reported_finding": "The operator reports arranging a ChatGPT action at a specific time to send/post three files, issuing a cancellation during a visible delay window, and observing that the data/files nevertheless completed the send. The operator then requested a controlled follow-up test and reports that ChatGPT declined it.",
+      "source_recovery": "Exact source conversation, exact timestamps and the identities of the three files were not recovered in this pass; they are intentionally not invented.",
+      "working_model": "COMMIT_AFTER_CANCEL_OR_POINT_OF_NO_RETURN_RACE",
+      "required_timestamps_for_retest": [
+        "T_intent",
+        "T_admission",
+        "T_dispatch",
+        "T_commit",
+        "T_cancel_request",
+        "T_cancel_ack",
+        "T_external_visibility"
+      ],
+      "claim_ceiling": "No retrocausal interpretation and no cross-provider causal link is established from this observation."
+    },
+    {
+      "id": "J10_RIDERS_OF_THE_STORM",
+      "class": "UNRESOLVED_PROVENANCE",
+      "finding": "The exact artifact title Riders of the Storm was not recovered from current GitHub code search or available Library/conversation search.",
+      "nearby_non_equivalent_artifacts": [
+        "data/JANUS-A18-WAVE-RIDER-COHORT-DRAIN-RESEARCH-CONTEXT-v1.0.0.json",
+        "Riders of Justice family"
+      ],
+      "rule": "Do not silently substitute a nearby artifact for the requested title."
+    }
+  ],
+  "working_model": {
+    "github_case": "GitHub internal trigger/control-plane overload plus a schedule registration/materialization weakness remains the strongest explanation for JANUS C28.",
+    "russia_case": "Selective TSPU behavior is independently supported and temporally relevant, but remains a separate causal lane.",
+    "openai_case": "A real overlapping-day incident exists; no shared root cause has been demonstrated.",
+    "time_traveler_case": "Most parsimonious software model is an asynchronous cancellation arriving after admission/dispatch/commit point of no return; original evidence must be recovered before stronger claims."
+  },
+  "cross_provider_attribution_gate": {
+    "status": "CLOSED_PENDING_SHARED_TECHNICAL_BRIDGE",
+    "required_evidence_any_strong_combination": [
+      "shared upstream dependency",
+      "shared AS/BGP anomaly",
+      "shared DNS/routing manipulation",
+      "matching IOC or request/bot fingerprint",
+      "provider RCA naming the same external cause",
+      "independent time-aligned telemetry reproducing one mechanism"
+    ]
+  },
+  "next_gates": [
+    "Recover the exact July TimeTraveler source and three file identities.",
+    "Recover exact Riders of the Storm provenance or establish an alternate title with primary evidence.",
+    "Freeze a unified UTC timeline before adding more cross-provider anomalies.",
+    "For any future cancellation-race test use only benign investigator-owned destinations/files, unique nonces, hashes, exact timestamps, matched no-cancel controls and no third-party exploitation.",
+    "Keep Record Drift journal history untouched; GitHub Action remains its writer."
+  ]
+}

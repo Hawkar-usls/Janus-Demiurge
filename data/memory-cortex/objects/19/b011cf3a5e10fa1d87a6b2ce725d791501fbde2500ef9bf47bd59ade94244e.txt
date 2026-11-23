@@ -1,0 +1,40 @@
+{
+  "schema": "janus.meta_registry.nexus.current_wal_sidecar_authority.v1",
+  "artifact_id": "JANUS-NEXUS-CURRENT-WAL-SIDECAR-AUTHORITY-v1",
+  "created_at_local": "2026-08-17T03:02:00+03:00",
+  "certified_wal_sidecar_authority": {
+    "artifact": "registry/experimental/JANUS-NEXUS-PHYSICAL-WAL-SIDECAR-FAIL-CLOSED-EXACT-HEAD-CI-CERTIFICATE-v1.14.json",
+    "repository": "Hawkar-usls/Demi_Head",
+    "exact_head": "bbb2d88af6d3ffcaf1a0182f39539f80e513bdfe",
+    "status": "EXACT_HEAD_CI_PASS_PHYSICAL_WAL_SIDECAR_FAIL_CLOSED_REFERENCE"
+  },
+  "parent_write_safety_authority": {
+    "artifact": "registry/experimental/JANUS-NEXUS-CURRENT-WRITE-SAFETY-AUTHORITY-v1.json",
+    "exact_head": "cd77fcb7c2819c5f5e3bafa916537ec1ed5d7dc6"
+  },
+  "scope": {
+    "wal_absent_checkpointed_state_permitted": true,
+    "present_wal_physical_envelope_required": true,
+    "wal_magic_version_page_size_frame_alignment_checked": true,
+    "real_sqlite_wal_holdout": true,
+    "damaged_wal_fail_closed": true,
+    "checksum_chain_verified": false,
+    "salt_chain_verified": false,
+    "wal_repair": false,
+    "automatic_recovery": false,
+    "automatic_restart": false,
+    "automatic_retry": false,
+    "persistent_daemon": false,
+    "cross_host_transport": false,
+    "external_effect_authority": false,
+    "authority_delta": 0,
+    "mass_effect_budget_delta": 0
+  },
+  "selection_rule": "This authority covers only the certified read-only physical WAL sidecar envelope and fail-closed ordering. It grants no WAL checksum/salt-chain claim, WAL repair, retry, restart, daemon, cross-host, or external-effect authority.",
+  "laws": [
+    "WAL_SIDECAR_AUTHORITY != WAL_REPAIR_AUTHORITY",
+    "PHYSICAL_WAL_PASS != WAL_CHECKSUM_PASS",
+    "DAMAGED_PRESENT_WAL -> HOLD",
+    "WAL_ABSENT_CHECKPOINTED_STATE != WAL_CORRUPTION"
+  ]
+}

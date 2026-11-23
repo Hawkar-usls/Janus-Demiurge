@@ -1,0 +1,46 @@
+{
+  "artifact_id": "JANUS-I0-RETRO-SHA-TRIAL-42113589660-PRECOMMIT-v1.0",
+  "title": "JANUS I0 Retro SHA: independent t0 receiver commitment",
+  "schema_version": "1.0",
+  "created_date": "2026-11-05",
+  "registry": {
+    "repository": "Hawkar-usls/janus-meta-registry",
+    "path": "registry/uap/JANUS-I0-RETRO-SHA-TRIAL-42113589660-PRECOMMIT-v1.0.json",
+    "mode": "APPEND_ONLY"
+  },
+  "target_repo": "Hawkar-usls/janus-io",
+  "trial_id": "i0-retro-42113589660",
+  "hypothesis": "The hash recorded at t0 could match an independent hash made no earlier than t0+120s; this run is a null baseline until a real retrocausal channel exists.",
+  "method": "RECEIVE computes hashlib.sha256(secrets.token_bytes(32)).hexdigest(); SEND waits to t0+120s, computes SHA-256 of a distinct 32-byte OS random payload BEFORE downloading the receiver artifact. Then compares both.",
+  "receive": {
+    "workflow": ".github/workflows/janus-i0-retro-receive.yml",
+    "run_id": 42113589660,
+    "run_url": "https://github.com/Hawkar-usls/janus-io/actions/runs/42113589660",
+    "status": "SUCCESS",
+    "recorded_epoch": 1793914362.4090676,
+    "predicted_sha256": "3b126e2cc03a5c9aa6a15bb6bc3a8d8bb755fd4eaf296e298347dce8f20549c8"
+  },
+  "send": {
+    "workflow": ".github/workflows/janus-i0-retro-send.yml",
+    "run_id": 42113610517,
+    "run_url": "https://github.com/Hawkar-usls/janus-io/actions/runs/42113610517",
+    "target_earliest_epoch": 1793914482.4090676,
+    "status_at_precommit": "IN_PROGRESS",
+    "future_hash": null
+  },
+  "constraints": {
+    "exact_full_hash_match_required": true,
+    "no_sender_access_to_receive_artifact_before_future_hash_generation": true,
+    "queue_delay_possible": true,
+    "results_are_not_retrocausality_proof": true,
+    "source_of_randomness": "OS cryptographic randomness",
+    "actual_physical_retrocausal_channel_connected": false
+  },
+  "outcome_status": "PRECOMMIT_RECORDED__SEND_PENDING",
+  "observations": {
+    "independent_receive_artifact_created": true,
+    "independent_send_artifact_created": null,
+    "chronological_separation_verified": null,
+    "exact_match": null
+  }
+}

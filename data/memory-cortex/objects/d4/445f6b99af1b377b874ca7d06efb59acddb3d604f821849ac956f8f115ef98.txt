@@ -1,0 +1,25 @@
+# JANUS-LOGOS-001 R1.2 — prospective real-measurement trial
+
+The former R1.1 round on NIST Pontius and Norris was a documented comparative failure; those data are NOT re-used for tuning.
+
+The R1.2 protocol [was frozen before the first holdout run](../../data/JANUS-LOGOS-001-R12-PREREG-v1.0.json). It uses 35 NIST Eckerle4 interferometric transmittance observations and 54 NIST Chwirut2 ultrasonic calibration observations. Original sources:
+
+- https://www.itl.nist.gov/div898/strd/nls/data/LINKS/DATA/Eckerle4.dat
+- https://www.itl.nist.gov/div898/strd/nls/data/LINKS/DATA/Chwirut2.dat
+
+Exact source bytes were fetched from ceres-solver's public NIST mirror and committed, with Git blob SHAs checked against that repository. Published NIST reference models exist. This is therefore **process-held-out public data**, not a genuinely secret external scientific challenge. No novel physical-law claim is justified.
+
+## Candidate selection (no holdout access)
+
+The train-only inner grouped 3-fold CV chooses a shape within each of the predeclared Gaussian, exponential-decay and rational-exponential families. It also examines fixed polynomial degrees 0–4. Fitting uses deterministic OLS; selection considers VALIDATION RMSE plus a parameter-count complexity cost, and requires at least 2% lower validation RMSE than the best constant/linear/quadratic/cubic model to PROPOSE. Otherwise the system must ABSTAIN.
+
+The verifier uses different code on a separate GitHub Actions runner, reconstructs original NIST sources and group-wise TEST splits, and compares to OLS baselines 0–3 chosen on validation. A 5% holdout win on **both** datasets is required for the frozen competitive-performance claim. Two adversarial validation-label scrambling controls must abstain; four modified evidence variants must be rejected.
+
+## Reproduce
+
+    python research/logos_001/r12_data.py --part discover --out /tmp/r12-input.json
+    python research/logos_001/r12_discover.py --input /tmp/r12-input.json --out /tmp/r12-proposal.json
+    python research/logos_001/r12_witness.py --candidate /tmp/r12-proposal.json --out /tmp/r12-witness.json --self-test
+    python -m unittest discover -s research/logos_001 -p 'test_r12.py' -v
+
+No third-party Python libraries, secrets, NAS workloads, Rowan credit use, paid AI calls or schedules are required. Even successful scores do **not** authorize switching the Demiurge production model. The programme explores a scientific conjecture motivated by David Deutsch's criticism-first methodology, not evidence of a divinely authored source code, simulation, or P=NP.

@@ -1,0 +1,89 @@
+{
+  "artifact_id": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v2.1",
+  "supersedes": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v2.0",
+  "lineage_alias": "JANUS-113",
+  "title": "PERCEPTION DETERMINES REALITY",
+  "subtitle": "Domain-Diverse Root Quorum and Trust-Sybil Resistance Extension",
+  "version": "2.1",
+  "status": "technical_multi_root_trust_domain_specification_candidate_not_runtime_implementation",
+  "created_at_local": "2026-08-10T02:34:00+03:00",
+  "canonical_seed_sha256": "44e21fdc9d37fda98e2e73b0c9eb268bd04cdca9d84d0519e4f1166be22b46fc",
+  "parent_binding": {
+    "artifact": "data/JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v2.0.json"
+  },
+  "problem_statement": "A multi-signature design is not independently witnessed merely because several keys sign it. If the keys share one failure or control domain, one compromise can manufacture apparent quorum.",
+  "new_primitives": {
+    "TRUST_DOMAIN_ID": "Identifier for an independently governed or independently failing attestation boundary.",
+    "ROOT_CREDENTIAL_ID": "Individual credential within a trust domain.",
+    "DOMAIN_MEMBERSHIP_BINDING": "Record that prevents one domain from presenting many credentials as many independent domains.",
+    "DOMAIN_DIVERSE_QUORUM": "Admission rule expressed in distinct trust domains rather than raw key count.",
+    "DISSENT_RECEIPT": "Preserved record when a trust domain reports a different checkpoint binding.",
+    "ROOT_REGISTRY_VERSION": "Versioned registry defining which trust domains and credential lineages were accepted for a specific checkpoint era."
+  },
+  "admission_rule": {
+    "raw_key_count": "NON_AUTHORITATIVE",
+    "minimum": "two distinct registered trust domains for the baseline model",
+    "exact_match_fields": [
+      "HOST_ID",
+      "SEQUENCE",
+      "STATE_ROOT",
+      "VERIFIER_MEASUREMENT",
+      "POLICY_SCHEMA_BINDING",
+      "PREVIOUS_CHECKPOINT_REF"
+    ],
+    "duplicate_credentials_from_same_domain": "COLLAPSE_TO_ONE_DOMAIN"
+  },
+  "trust_domain_requirements": [
+    "control boundary declared",
+    "credential lineage declared",
+    "failure domain declared",
+    "storage/custody boundary declared where relevant",
+    "domain membership changes versioned",
+    "no retroactive reclassification of a historical signature to manufacture quorum"
+  ],
+  "dissent_protocol": {
+    "two_domains_agree_one_disagrees": "Preserve dissent and admit only if current policy threshold is met; disagreement remains auditable.",
+    "no_threshold_agreement": "SAFE_HOLD_FOR_WORLD_CHANGING_COMMIT",
+    "three_distinct_roots": "Do not combine or average incompatible roots."
+  },
+  "sybil_resistance": {
+    "face_parallel": "One face cannot spawn many faces to gain votes.",
+    "root_parallel": "One trust domain cannot spawn many keys to gain independent witness weight.",
+    "rule": "INDEPENDENCE_CLASS_PRECEDES_COUNTING"
+  },
+  "root_registry_shape": {
+    "registry_version": "string",
+    "domains": [
+      {
+        "trust_domain_id": "string",
+        "credential_ids": ["string"],
+        "status": "active|retiring|revoked",
+        "valid_from_sequence": "coordinate",
+        "valid_until_sequence": "coordinate|null"
+      }
+    ],
+    "quorum_policy_id": "string"
+  },
+  "implementation_tests": [
+    "ten keys from one domain fail a two-domain quorum",
+    "two exact attestations from distinct domains pass baseline quorum",
+    "domain registry tamper invalidates admission",
+    "dissent receipt survives admission by other domains",
+    "credentials cannot be reassigned to new domains retroactively",
+    "incompatible roots cannot be averaged or silently selected by raw signature majority"
+  ],
+  "boundaries": [
+    "Distinct trust domains can still collude or share hidden dependencies.",
+    "Domain diversity is an engineering independence model, not proof of absolute independence.",
+    "Attestation still proves integrity/binding relative to trust assumptions, not semantic truth."
+  ],
+  "canonical_lines": [
+    "Count trust domains, not signatures.",
+    "Ten keys in one hand are still one hand.",
+    "Dissent is evidence to preserve, not noise to delete."
+  ],
+  "next_gate": {
+    "name": "JANUS_113_V2_1_POST_COMPROMISE_TEMPORAL_ROOT_RECOVERY_GATE",
+    "status": "OPEN"
+  }
+}

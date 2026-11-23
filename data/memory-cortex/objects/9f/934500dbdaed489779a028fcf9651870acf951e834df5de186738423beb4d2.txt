@@ -1,0 +1,93 @@
+{
+  "artifact_id": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v2.2",
+  "supersedes": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v2.1",
+  "lineage_alias": "JANUS-113",
+  "title": "PERCEPTION DETERMINES REALITY",
+  "subtitle": "Temporal Root Epoch, Compromise Horizon, and Recovery Extension",
+  "version": "2.2",
+  "status": "technical_temporal_trust_recovery_specification_candidate_not_runtime_implementation",
+  "created_at_local": "2026-08-10T02:36:00+03:00",
+  "canonical_seed_sha256": "44e21fdc9d37fda98e2e73b0c9eb268bd04cdca9d84d0519e4f1166be22b46fc",
+  "parent_binding": {
+    "artifact": "data/JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v2.1.json"
+  },
+  "problem_statement": "Trust in a root credential must be scoped over time. A credential that becomes compromised later should not automatically erase all prior history, while the same credential must not remain authoritative for new checkpoints after the credible compromise horizon.",
+  "new_primitives": {
+    "ROOT_EPOCH_ID": "Versioned period of root eligibility and quorum policy.",
+    "VALID_FROM_COORDINATE": "First sequence/time coordinate at which a root epoch may attest.",
+    "VALID_UNTIL_COORDINATE": "Last known or policy-bounded coordinate of eligibility.",
+    "COMPROMISE_HORIZON": "Earliest defensible coordinate or interval at which trust in the credential becomes contested.",
+    "COMPROMISE_RECORD": "Append-only record of evidence, uncertainty and affected trust domains.",
+    "RECOVERY_POLICY_ID": "Separately bound policy for activating recovery credentials and creating a new epoch.",
+    "RECOVERY_DOMAIN_ID": "Trust domain intentionally separated from routine operational signing where feasible.",
+    "RECOVERY_CHECKPOINT": "First checkpoint of restored continuity, linked to last accepted pre-horizon checkpoint and compromise record."
+  },
+  "temporal_validation": {
+    "historical_attestation_before_horizon": "Evaluate under the root registry and quorum policy valid at that historical coordinate, plus any later evidence that moves the compromise horizon earlier.",
+    "attestation_at_or_after_horizon": "CONTESTED_BY_DEFAULT",
+    "unknown_compromise_time": "Represent an interval; do not invent an exact instant.",
+    "revocation_effect": "Prospective trust removal plus explicit reassessment window, not silent deletion of historical records."
+  },
+  "root_epoch_shape": {
+    "root_epoch_id": "string",
+    "registry_version": "string",
+    "valid_from": "coordinate",
+    "valid_until": "coordinate|null",
+    "trust_domains": ["string"],
+    "quorum_policy_id": "string",
+    "previous_epoch_ref": "string|null",
+    "activation_reason": "genesis|rotation|recovery"
+  },
+  "compromise_record_shape": {
+    "affected_domain_ids": ["string"],
+    "earliest_credible_horizon": "coordinate|interval",
+    "evidence_refs": ["string"],
+    "status": "suspected|confirmed|bounded",
+    "historical_reassessment_required": true
+  },
+  "recovery_algorithm": [
+    "stop new world-effect commits requiring contested trust",
+    "preserve all current state and alternate roots as forensic evidence",
+    "bound the compromise horizon from independent evidence",
+    "select last pre-horizon checkpoint with valid historical quorum and independent archival survival",
+    "activate recovery policy using a different trust domain where available",
+    "replay suffix events from independently checkable receipts",
+    "classify unresolved suffix as quarantined or contested",
+    "rotate operational credentials",
+    "start a new root epoch",
+    "publish a recovery checkpoint chained to the compromise event"
+  ],
+  "non_retroactivity": {
+    "rule": "LATER_COMPROMISE_DOES_NOT_AUTOMATICALLY_VOID_EARLIER_ATTESTATION",
+    "exception": "Evidence that compromise existed earlier moves the horizon backward and reopens affected history.",
+    "reason": "Trust history must reflect evidence about when authority was lost, not simply the date revocation was noticed."
+  },
+  "terminal_failure_conditions": [
+    "no independently surviving pre-compromise checkpoint",
+    "all ordinary and recovery trust domains plausibly compromised with no external evidence boundary",
+    "compromise horizon cannot be bounded enough to identify any admissible recovery root"
+  ],
+  "terminal_failure_result": "EVIDENCE_INSUFFICIENT_FOR_AUTHENTICATED_CONTINUITY",
+  "implementation_tests": [
+    "later root revocation does not silently delete pre-horizon receipts",
+    "post-horizon signature from revoked domain fails normal admission",
+    "uncertain compromise interval marks overlapping checkpoints contested",
+    "recovery starts from last admissible pre-horizon checkpoint rather than newest signed checkpoint",
+    "new root epoch references compromise record and prior accepted checkpoint",
+    "all-roots-compromised case returns evidence-insufficient rather than PASS"
+  ],
+  "epistemic_boundaries": [
+    "The exact compromise time may be unknowable.",
+    "Historical signature validity does not prove the signed claim was true about the world.",
+    "Recovery establishes bounded continuity under stated trust assumptions, not metaphysical identity."
+  ],
+  "canonical_lines": [
+    "Trust has an epoch.",
+    "A broken key today does not automatically rewrite yesterday, but it must not be allowed to sign tomorrow as if nothing happened.",
+    "When the compromise horizon is uncertain, uncertainty belongs in the state."
+  ],
+  "next_gate": {
+    "name": "JANUS_113_V2_2_GENESIS_ROOT_BOOTSTRAP_AND_FIRST_IDENTITY_GATE",
+    "status": "OPEN"
+  }
+}

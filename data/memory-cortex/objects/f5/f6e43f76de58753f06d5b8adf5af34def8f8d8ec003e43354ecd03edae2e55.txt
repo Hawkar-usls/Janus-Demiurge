@@ -1,0 +1,65 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1-COMMON-D1-SYNCHRONIZATION-PREREG-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "FROZEN_PHASED_PREREG__AUTHORIZED",
+  "gate": "R5_B1B1_COMMON_D1_NEIGHBORHOOD_SYNCHRONIZATION_GATE_V1",
+  "binds": {
+    "source_audit_blob": "bcc0cad31236aa88284655d837bbdfcc4645261e",
+    "B1A_seal_blob": "3729fb85fe388d99df42e185cd23aaa9e188bf28",
+    "B1B0_boundary_seal_blob": "3590a35510116f0f9e1d0aefb519eb095d343b42",
+    "full_component_quotient_seal_blob": "bd8a42511a1d64ac4295f0f3815adcf95f4ddbc9"
+  },
+  "objects": {
+    "layers": "I_{sigma,1}, I_{sigma,2}, I_{sigma,3} on common component universe, with pairwise disjoint survivor sides R1,R2,R3",
+    "incidence_union": "I_sigma has left side S_sigma=R1 disjoint_union R2 disjoint_union R3, right side residual Y0 components, and edge set union_i E(I_{sigma,i})",
+    "common_layout_parameter": "COMMON_LAYER_MIM(T)=max over cuts e of T and i in {1,2,3} of mim_{I_{sigma,i}}(e)"
+  },
+  "phase_A0": {
+    "name": "COMMON_LAYER_TO_UNION_WIDTH_REDUCTION",
+    "theorem_target": "For every common decomposition T, COMMON_LAYER_MIM(T) <= mim_{I_sigma}(T) <= 3*COMMON_LAYER_MIM(T).",
+    "purpose": "Replace the three-layer synchronization-width question by one ordinary mim-width question on I_sigma, up to factor 3."
+  },
+  "phase_A1": {
+    "name": "COMMON_LAYOUT_EXISTENCE_CONSTRUCTION",
+    "target": "Construct in polynomial time a branch decomposition T of I_sigma with mim-width <= q(|S|), or produce a source-valid obstruction.",
+    "forbidden": "Do not call an optimizer/recognizer for mim-width or sim-width.",
+    "imported_warning": "Global width recognition is NP-hard even under small constant-width promises."
+  },
+  "phase_A1_import_subcheck": {
+    "name": "SIMULTANEOUS_PARAMETER_DIRECT_TRANSFER",
+    "target": "Check whether the exact three-layer source system has constant simultaneous-C number over a bounded-mim base class with a constructive representation.",
+    "default_status": "NOT_ESTABLISHED",
+    "ceiling": "The 2026 simultaneous-parameter theorem is usable only after such a representation is proved."
+  },
+  "phase_B": {
+    "name": "COMMON_LAYOUT_D1_BOUND",
+    "conditional_on": "a common decomposition T with per-layer width <=w",
+    "theorem_target": [
+      "For each layer i and actual color c, processed vertices in R_i of color c have at most n^{O(w)} 1-neighborhood equivalence classes across any cut.",
+      "The joint signature over 3 layers x 4 actual colors has at most n^{O(12w)} values per coarse class.",
+      "Across at most B(s) coarse classes, the crude joint bound is n^{O(12*w*B(s))}."
+    ],
+    "firewall": "This is a counting/compression theorem, not yet a source-sufficiency theorem."
+  },
+  "phase_C": {
+    "name": "SOURCE_SUFFICIENCY",
+    "target": "Prove or falsify that equal joint d=1 signature plus seed-bounded source state preserves exactly future extendability, component feasibility information needed by the repair, list/source constraints, and polynomial reconstruction.",
+    "status": "LOCKED_UNTIL_PHASE_A1_PASS"
+  },
+  "outcomes": [
+    "PASS_COMMON_LAYER_UNION_EQUIVALENCE",
+    "PASS_COMMON_LAYOUT",
+    "FAIL_NO_SOURCE_BOUNDED_COMMON_LAYOUT",
+    "IMPORT_SIMULTANEOUS_PARAMETER_THEOREM",
+    "PASS_COMMON_D1_COMPRESSION",
+    "FAIL_D1_SIGNATURE_NOT_SOURCE_SUFFICIENT"
+  ],
+  "no_auto_DP": true,
+  "scientific_ceiling": {
+    "FULL_L2_REPAIR": "OPEN",
+    "LEMMA11_P7_LIFT": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  }
+}

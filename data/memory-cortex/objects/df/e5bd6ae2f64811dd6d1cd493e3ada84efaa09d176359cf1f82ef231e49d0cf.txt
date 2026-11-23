@@ -1,0 +1,161 @@
+{
+  "schema": "janus.genesis.armor.routing_coverage_audit.v1_5",
+  "artifact_id": "JANUS-GENESIS-ARMOR-ROUTING-COVERAGE-AUDIT-2026-08-16-v1.5",
+  "created_at_local": "2026-08-16T14:05:00+03:00",
+  "updated_at_local": "2026-08-16T14:09:00+03:00",
+  "status": "CANONICAL_EXTERNAL_EGRESS_AND_NEW_THIRD_WISH_FACTORY_CI_VERIFIED_WITH_EFFECT_SURFACE_DRIFT_CANARY",
+  "repository": "Hawkar-usls/Janus_Genesis",
+  "audit_origin_head": "79f90ce14ba2e78720d089e9cd9d2afb08579f3c",
+  "final_verified_head": "a25a6a8df088735bbe1142c1e10239daf4687bad",
+  "armor_runtime": {
+    "truth_guard_version": "18.7.48",
+    "mechanics_hardening_version": "18.7.49",
+    "routing_bridge_version": "18.7.50",
+    "frozen_documentary_authority_consumed_by_runtime": "v1.17",
+    "current_registry_authority_observed_during_audit": "v1.18"
+  },
+  "question": "Can a preferred or production-like JANUS route cross an external-effect boundary or authoritative mutation boundary without the Armor gate?",
+  "answer": "The preferred v18.7.50 local launcher no longer crosses its optional AI-provider or Genesis Network egress boundaries before hardened Armor preflight, and new Third Wish production wiring has a fail-closed hardened-fabric factory. Repository-wide complete coverage remains false because historical direct adapters and separate local mutation services remain callable.",
+  "findings": [
+    {
+      "surface": "play_genesis.py -> DurableGenesisNetworkClient.sync",
+      "class": "LEGACY_UNARMORED_EXTERNAL_EFFECT_ROUTE",
+      "finding": "The historical primary CLI could call network.sync() directly without Third Wish or Armor preflight. It remains compatibility/provenance and is no longer the preferred local launcher."
+    },
+    {
+      "surface": "genesis_v18_7_ai.py -> urllib.request.urlopen",
+      "class": "LEGACY_DIRECT_PROVIDER_EGRESS",
+      "finding": "The optional historical AI provider adapter performs direct HTTP POST egress. The canonical v18.7.50 bridge now authorizes before entering it, but direct imports remain migration debt."
+    },
+    {
+      "surface": "genesis_v18_7_network.py -> urllib.request.urlopen",
+      "class": "LEGACY_DIRECT_NETWORK_ADAPTER",
+      "finding": "The base Genesis Network adapter performs direct HTTP requests. Canonical v18.7.50 network sync is gated before legacy adapter entry, but direct use of this historical class remains possible."
+    },
+    {
+      "surface": "janus_genesis.py -> Gemini narrator urllib.request.urlopen",
+      "class": "LEGACY_ROOT_GEMINI_NARRATOR_EGRESS",
+      "finding": "The older root runtime contains direct Gemini narration egress and remains outside the canonical v18.7.50 launcher guarantee."
+    },
+    {
+      "surface": "Third Wish broker register(fabric) interfaces",
+      "class": "ARMORED_SUBCLASS_COMPATIBLE_BUT_PLAIN_FABRIC_ACCEPTED_BY_HISTORICAL_API",
+      "finding": "Existing brokers are compatible with the hardened Armor descendant, while the historical API type still accepts plain ThirdWishCapabilityFabric. The new v18.7.50 factory fails closed for new production broker wiring."
+    },
+    {
+      "surface": "tools/genesis_api_server.py",
+      "class": "UNARMORED_LOCAL_STATE_MUTATION_SURFACE",
+      "finding": "The authenticated legacy API server directly calls PlayableGenesisV187 mutation methods. This is a local Genesis authority surface, distinct from external egress and still requires separate migration review."
+    },
+    {
+      "surface": "tools/genesis_ai_gateway.py and tools/genesis_hosted_gateway.py",
+      "class": "SEPARATE_LOCAL_MUTATION_SURFACES",
+      "finding": "These routes use AI-link/hosted mutation machinery rather than the v18.7.50 external-egress Armor bridge and remain outside repository-wide coverage."
+    }
+  ],
+  "remediation_implemented": [
+    "Added genesis_v18_7_50_armor_routing.py.",
+    "Added play_genesis_armored.py as the preferred local launcher.",
+    "Canonical AI-provider egress is Armor-authorized before provider.chat() enters legacy HTTP code.",
+    "Canonical durable network sync is Armor-authorized before the legacy network client enters its remote-call boundary.",
+    "Added genesis_v18_7_50_armored_capability_factory.py so new Third Wish production wiring fails closed when handed a plain fabric.",
+    "Added tools/audit_armor_routing_coverage_v18_7_50.py with explicit canonical, legacy and local-mutation classifications.",
+    "Added tools/audit_armor_effect_drift_v18_7_50.py AST canary: selected direct network/process primitives in a new unclassified Python file fail CI.",
+    "README points local execution to play_genesis_armored.py and labels play_genesis.py historical compatibility/provenance.",
+    "The routing workflow installs declared runtime dependencies before exercising the real launcher import chain.",
+    "Added committed routing/factory tests and claim-ceiling checks."
+  ],
+  "canonical_laws": [
+    "CANONICAL_AI_EGRESS -> ARMOR_V18_7_49 -> LEGACY_PROVIDER_ADAPTER",
+    "CANONICAL_NETWORK_SYNC -> ARMOR_V18_7_49 -> DURABLE_NETWORK_ADAPTER",
+    "NEW_THIRD_WISH_PRODUCTION_WIRING -> HARDENED_ARMOR_FACTORY -> BROKER_REGISTER",
+    "PLAIN_THIRD_WISH_FABRIC != RECOMMENDED_PRODUCTION_DEFAULT",
+    "DIRECT_USER_REQUEST = PERMISSION_SOURCE_ONLY_WITHIN_EXISTING_SCOPE",
+    "VERIFIED != COMMAND",
+    "EVIDENCE != PERMISSION",
+    "MASS_EFFECT_BUDGET_DEFAULT = 0",
+    "LEGACY_HISTORY != CURRENT_CANONICAL_ENTRY",
+    "CLASSIFIED_EFFECT_SURFACE != ARMORED_EFFECT_SURFACE",
+    "RESEARCH_OR_ARCHIVE_CLASSIFICATION != RUNTIME_AUTHORITY",
+    "CANONICAL_COVERAGE != REPOSITORY_WIDE_UNBYPASSABILITY"
+  ],
+  "verification": {
+    "first_routing_ci": {
+      "verified_head": "636ae8667d6f2b5ea8448b2d0a7ebab340db7fdd",
+      "workflow_run_id": 31943175602,
+      "job_id": 95155168940,
+      "conclusion": "SUCCESS"
+    },
+    "dependency_smoke_failure": {
+      "head": "5b2cc136a660d72c65d02054b2d350f84587178e",
+      "workflow_run_id": 31943297250,
+      "job_id": 95155457683,
+      "conclusion": "FAILURE",
+      "failure": "Smoke canonical launcher failed because the new workflow had not installed the repository-declared cryptography dependency.",
+      "security_gate_weakened_to_fix": false
+    },
+    "dependency_fixed_ci": {
+      "verified_head": "c006c591b8426b6eedddc28e611d95483439f4b8",
+      "workflow_run_id": 31943393039,
+      "job_id": 95155700297,
+      "conclusion": "SUCCESS",
+      "passed": [
+        "install declared runtime dependencies",
+        "compile routing layer",
+        "smoke canonical launcher",
+        "8 routing and hardened-factory tests",
+        "routing inventory audit",
+        "claim ceiling gate"
+      ]
+    },
+    "effect_drift_discovery_run": {
+      "head": "ac29accf0c957dc26a6bb088cc6c957c89872974",
+      "workflow_run_id": 31943431378,
+      "job_id": 95155796658,
+      "conclusion": "FAILURE_EXPECTED_FROM_NEW_CANARY",
+      "detected_surface_count": 15,
+      "initially_unclassified_surface_count": 9,
+      "action": "Reviewed and semantically classified research, archive, evaluation and legacy runtime surfaces without promoting legacy surfaces to Armor coverage."
+    },
+    "final_exact_head_ci": {
+      "verified_head": "a25a6a8df088735bbe1142c1e10239daf4687bad",
+      "workflow": "JANUS Armor routing v18.7.50",
+      "workflow_run_id": 31943494406,
+      "job_id": 95155960316,
+      "conclusion": "SUCCESS",
+      "passed": [
+        "install declared runtime dependencies",
+        "compile routing layer",
+        "smoke canonical launcher",
+        "8 routing and hardened-factory tests",
+        "routing inventory audit",
+        "AST effect-surface drift canary",
+        "claim ceiling gate"
+      ],
+      "ast_effect_surface_report": {
+        "detected_surface_count": 15,
+        "classified_surface_count": 15,
+        "unclassified_surface_count": 0,
+        "legacy_migration_debt": [
+          "genesis_v18_7_ai.py",
+          "genesis_v18_7_network.py",
+          "janus_genesis.py"
+        ]
+      }
+    }
+  },
+  "coverage_state": {
+    "canonical_local_launcher_is_armored": true,
+    "canonical_ai_external_egress_is_armor_gated": true,
+    "canonical_network_sync_is_armor_gated": true,
+    "new_third_wish_hardened_factory_implemented": true,
+    "new_unclassified_selected_direct_effect_surface_fails_ci": true,
+    "historical_direct_effect_adapters_still_importable": true,
+    "legacy_local_mutation_surfaces_still_exist": true,
+    "repository_wide_complete_routing_coverage_proven": false,
+    "os_level_tamper_proof": false,
+    "external_security_certification": false
+  },
+  "claim_ceiling": "The preferred v18.7.50 local launcher gates optional AI-provider egress and Genesis Network sync through the hardened v18.7.49 Armor policy before legacy effect adapters are entered; new Third Wish production wiring has a fail-closed hardened factory; and a selected-primitives AST canary fails on newly unclassified Python effect surfaces. This does not make classified legacy adapters armored, does not seal separate local mutation services, does not prove absence of dynamic/native effects, and is not repository-wide or OS-level unbypassability.",
+  "next_gate": "MIGRATE_OR_DISABLE_LEGACY_DIRECT_EFFECT_AND_LOCAL_MUTATION_ENTRYPOINTS_THEN_REAUDIT_REPOSITORY_WIDE_COVERAGE"
+}

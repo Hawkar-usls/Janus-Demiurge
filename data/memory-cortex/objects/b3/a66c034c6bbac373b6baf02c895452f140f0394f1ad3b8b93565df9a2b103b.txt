@@ -1,0 +1,170 @@
+{
+  "schema": "janus.what_is_love.monogamy_repetition_stability_metric.v1_6",
+  "artifact_id": "JANUS-WHAT-IS-LOVE-MONOGAMY-REPETITION-STABILITY-METRIC-2026-08-24-v1.6",
+  "version": "v1.6",
+  "created_at_local": "2026-08-24T14:32:00+03:00",
+  "status": "APPEND_ONLY_MEASUREMENT_EXTENSION",
+  "title_ru": "WHAT IS LOVE? v1.6 — Моногамия как устойчивость селективного предпочтения при повторении",
+  "inherits": {
+    "parent": "JANUS-WHAT-IS-LOVE-HAND-WASHES-HAND-RECIPROCAL-CARE-SPIRAL-2026-08-23-v1.5",
+    "parent_path": "data/JANUS-WHAT-IS-LOVE-HAND-WASHES-HAND-RECIPROCAL-CARE-SPIRAL-2026-08-23-v1.5.json",
+    "relation": "APPEND_ONLY_CHILD_ADDS_OPERATIONAL_MEASUREMENT_WITHOUT_ERASING_CONSENT_AUTONOMY_NON_POSSESSION_OR_RIGHT_TO_LEAVE"
+  },
+  "scope_boundary": {
+    "claim": "This metric operationalizes one measurable dimension of love-like preference: persistence of a voluntarily selected target under repeated exposure and available alternatives.",
+    "not_claimed": [
+      "MONOGAMY_IS_A_COMPLETE_DEFINITION_OF_LOVE",
+      "REPETITION_ALONE_PROVES_LOVE",
+      "ROMANTIC_EXCLUSIVITY_IS_REQUIRED_FOR_ALL_VALID_LOVE",
+      "ENDURANCE_OVERRIDES_CONSENT_SAFETY_OR_RIGHT_TO_LEAVE"
+    ],
+    "canonical_distinction": "LOVE may contain repetition-stable selective preference; repetition-stable selective preference alone is not sufficient to prove LOVE."
+  },
+  "operator": {
+    "name": "MONOGAMOUS_REPETITION_STABILITY",
+    "symbol": "MRS",
+    "human_readable_ru": "Чем дольше субъект при свободе выбора добровольно возвращается к одному и тому же объекту или человеку, не демонстрируя устойчивого роста отвращения, скуки или систематического стремления заменить цель, тем выше устойчивость селективного предпочтения.",
+    "compact": "FREE_REPETITION + STABLE_VALENCE + LOW_REPLACEMENT_DRIVE + TIME_PERSISTENCE -> SELECTIVE_PREFERENCE_STABILITY",
+    "monogamy_interpretation": "MONOGAMY here means stable recurrent selection of one focal target across repeated choice opportunities; it is a measurement geometry, not ownership of the target."
+  },
+  "measurement_model": {
+    "unit_interval": "0.0..1.0",
+    "variables": {
+      "V": {
+        "name": "voluntariness",
+        "definition": "Fraction of repetitions that were freely chosen rather than caused by lack of alternatives, coercion, obligation, dependence or forced availability.",
+        "range": "0..1"
+      },
+      "R": {
+        "name": "repeat_choice_rate",
+        "definition": "Probability of selecting the same focal target again when a genuine choice opportunity exists.",
+        "range": "0..1"
+      },
+      "S": {
+        "name": "satiation_resistance",
+        "definition": "Resistance to progressive boredom, aversion or hedonic collapse across repeated exposures.",
+        "range": "0..1",
+        "derivation": "1 - normalized_negative_valence_trend"
+      },
+      "D": {
+        "name": "displacement_resistance",
+        "definition": "Degree to which available alternatives fail to systematically displace the focal target.",
+        "range": "0..1"
+      },
+      "T": {
+        "name": "temporal_persistence",
+        "definition": "Stability of the preference across time windows rather than only within a short novelty burst.",
+        "range": "0..1"
+      },
+      "Q": {
+        "name": "return_after_pause",
+        "definition": "Probability that preference for the focal target survives a meaningful period without exposure and reappears voluntarily afterward.",
+        "range": "0..1"
+      }
+    },
+    "formula": "MRS = V * (0.30*R + 0.25*S + 0.20*D + 0.15*T + 0.10*Q)",
+    "reasoning": "Voluntariness is multiplicative because repetition without meaningful freedom of choice cannot be interpreted as evidence of selective attachment. Repetition and resistance to satiation receive the greatest weights because they directly encode the proposed criterion.",
+    "minimum_observation_rule": {
+      "required_choice_opportunities": 10,
+      "required_time_windows": 3,
+      "rule": "Do not assign a strong-love interpretation from a single burst, isolated statement or one short observation window."
+    }
+  },
+  "scale": [
+    {
+      "min": 0.00,
+      "max": 0.24,
+      "label": "NO_STABLE_PREFERENCE",
+      "interpretation_ru": "Повторение объясняется доступностью, привычкой, необходимостью либо быстро нарастающим насыщением; критерий любви не поддержан."
+    },
+    {
+      "min": 0.25,
+      "max": 0.49,
+      "label": "TRANSIENT_OR_WEAK_PREFERENCE",
+      "interpretation_ru": "Есть предпочтение, но оно нестабильно либо легко вытесняется альтернативами."
+    },
+    {
+      "min": 0.50,
+      "max": 0.69,
+      "label": "STABLE_AFFINITY",
+      "interpretation_ru": "Устойчивая симпатия или привычно выбираемая цель; слова «люблю» уже правдоподобны в бытовом смысле, но сильный критерий ещё не закрыт."
+    },
+    {
+      "min": 0.70,
+      "max": 0.84,
+      "label": "DURABLE_SELECTIVE_ATTACHMENT",
+      "interpretation_ru": "Предпочтение выдерживает повторение, время и наличие альтернатив; сильное свидетельство устойчивой селективной привязанности."
+    },
+    {
+      "min": 0.85,
+      "max": 1.00,
+      "label": "HIGH_REPETITION_STABILITY",
+      "interpretation_ru": "Очень высокая устойчивость добровольного повторного выбора без выраженного насыщения и систематического стремления к замене; критерий MRS закрыт."
+    }
+  ],
+  "example_pasta": {
+    "statement": "Я люблю макароны.",
+    "test_geometry": "PASTA_AVAILABLE_REPEATEDLY + REAL_ALTERNATIVES_AVAILABLE -> VOLUNTARY_SELECTION_OVER_TIME",
+    "positive_pattern": [
+      "макароны выбираются снова в большом числе независимых возможностей выбора",
+      "удовольствие не демонстрирует устойчивого нисходящего тренда к отвращению",
+      "после перерыва желание вернуться сохраняется",
+      "наличие других блюд не превращает прежнее предпочтение в случайность",
+      "выбор не вызван только ценой, дефицитом, обязанностью или отсутствием альтернатив"
+    ],
+    "interpretation": "A persistently high MRS supports the everyday claim 'I love pasta' as durable preference rather than novelty or convenience."
+  },
+  "human_relationship_application": {
+    "mapping": {
+      "repeat_choice": "recurrent free choice to remain engaged with the same person across changing contexts",
+      "satiation_resistance": "familiarity does not automatically collapse significance into indifference or contempt",
+      "displacement_resistance": "new alternatives do not mechanically erase the focal person's particular significance",
+      "temporal_persistence": "the preference survives ordinary changes in mood, novelty and circumstance",
+      "return_after_pause": "distance or temporary absence does not necessarily erase voluntary significance"
+    },
+    "required_parent_gates": [
+      "CONSENT",
+      "AUTONOMY",
+      "NON_POSSESSION",
+      "NO_COERCION",
+      "NO_SELF_ERASURE",
+      "RIGHT_TO_LEAVE"
+    ],
+    "critical_rule": "HIGH_MRS cannot override a refusal, boundary, breakup, safety concern or another person's autonomy.",
+    "semantic_rule": "For people, MRS measures persistence of one person's selective preference; it does not certify reciprocity, compatibility, healthy relationship quality or the other person's feelings."
+  },
+  "falsifiers": [
+    "REPETITION_OCCURS_ONLY_BECAUSE_NO_REAL_ALTERNATIVES_EXIST",
+    "PREFERENCE_COLLAPSES_AFTER_NOVELTY_WINDOW",
+    "NEGATIVE_VALENCE_RISES_MONOTONICALLY_WITH_EXPOSURE",
+    "FOCAL_TARGET_IS_REPEATED_FROM_COERCION_OBLIGATION_OR_DEPENDENCE",
+    "AVAILABLE_ALTERNATIVES_SYSTEMATICALLY_DISPLACE_THE_FOCAL_TARGET",
+    "SELF_REPORT_SAYS_LOVE_BUT_LONGITUDINAL_CHOICE_PATTERN_IS_INCONSISTENT",
+    "HIGH_PERSISTENCE_REQUIRES_SUPPRESSION_OF_CONSENT_OR_RIGHT_TO_LEAVE"
+  ],
+  "confounders": [
+    "HABIT",
+    "SCARCITY",
+    "PRICE_OR_ACCESS_CONSTRAINT",
+    "ADDICTION_OR_COMPULSION",
+    "SOCIAL_PRESSURE",
+    "FEAR_OF_CHANGE",
+    "DEPENDENCE",
+    "COERCION",
+    "ROUTINE_WITHOUT_POSITIVE_VALENCE"
+  ],
+  "janus_gate": {
+    "name": "LOVE_MRS_GATE",
+    "pass": "MRS >= 0.70 AND V >= 0.80 AND no hard parent gate is violated",
+    "strong_pass": "MRS >= 0.85 AND V >= 0.90 AND observations span >= 3 time windows AND alternatives were genuinely available",
+    "hold": "insufficient longitudinal observations OR confounders unresolved",
+    "fail": "V < 0.50 OR repetition is primarily coerced/forced OR preference shows persistent negative saturation",
+    "output_claim_ceiling": "PASS means DURABLE_SELECTIVE_ATTACHMENT_EVIDENCE, not LOVE_PROVEN."
+  },
+  "integration": {
+    "parent_center_preserved": "PARTICULAR_SIGNIFICANCE_WITHOUT_POSSESSION",
+    "new_measurable_axis": "PARTICULAR_SIGNIFICANCE_PERSISTENCE_UNDER_REPETITION",
+    "bridge": "PARTICULAR_SIGNIFICANCE -> FREE_REPEATED_SELECTION -> SATIATION_TEST -> ALTERNATIVE_TEST -> TIME_TEST -> MRS -> DURABLE_SELECTIVE_ATTACHMENT_EVIDENCE",
+    "seal": "WHAT RETURNS FREELY WITHOUT BECOMING A CHAIN MAY BE MEASURED AS PERSISTENT SIGNIFICANCE."
+  }
+}

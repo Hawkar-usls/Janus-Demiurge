@@ -1,0 +1,55 @@
+{
+  "schema": "janus.meta_registry.github_native_evidence_intake_architecture.v1",
+  "record_id": "JANUS-GITHUB-NATIVE-PUBLIC-EVIDENCE-INTAKE-2026-11-11",
+  "date_utc": "2026-11-11",
+  "status": "IMPLEMENTATION_IN_DRAFT_PR_NOT_AUTOMATICALLY_LIVE",
+  "approved_goal": "GitHub Actions as bounded central read-only external source witness and immutable source intake into JANUS Meta Registry with human review and a scientific training firewall.",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "implementation": {
+    "workflow": ".github/workflows/janus-public-source-intake.yml",
+    "source_code": "tools/janus_public_source_intake.py",
+    "tests": "tests/test_public_source_intake.py",
+    "intended_schedule": "27 6 * * *",
+    "estimated_runs_per_day": 1,
+    "outbound_sources": [
+      "https://data.gdeltproject.org/gdeltv2/lastupdate.txt",
+      "https://data.gdeltproject.org/gdeltv2/<exact timestamp>.gkg.csv.zip",
+      "https://ru.wikipedia.org/w/api.php",
+      "https://api.openalex.org/works",
+      "https://api.github.com/repos/Hawkar-usls/Demi_Head/actions/workflows/tachyon-r2h-parallel-research.yml/runs"
+    ],
+    "gdelt_doc_api_used": false,
+    "available_without_brave_key": true,
+    "max_gdelt_zip_bytes": 9000000,
+    "per_source_records_max": 3,
+    "request_redirects_allowed": false,
+    "training_automatically_performed": false,
+    "github_pr_auto_merged": false,
+    "allowed_publish_paths": [
+      "data/observations/public_source_quarantine/JANUS-PUBLIC-SOURCES-*.json"
+    ],
+    "quarantine_excluded_from_EYE_derived_training": true,
+    "credentials_in_workflow": false,
+    "principal_scope": "read-only except dedicated append-only review proposal job"
+  },
+  "scientific_boundaries": {
+    "metadata_is_independently_verified_science": false,
+    "gdelt_gkg_is_news_truth": false,
+    "R2H_checkpoint_weights_updated": false,
+    "source_promotion_requires_separate_review": true,
+    "blind_atomic_clock_holdout_never_train": true,
+    "janus_ocean_modified": false,
+    "nas_containers_modified": false
+  },
+  "dependency_gate": {
+    "automatic_schedule_live_only_after_main_merge": true,
+    "GH_Actions_PR_creation_setting_may_block_PR": true,
+    "alternative_if_blocked": "Append-only candidate branch + archived Actions artifact; requires maintainer review"
+  },
+  "external_context": [
+    "https://github.com/Hawkar-usls/Janus/pull/51",
+    "https://github.com/Hawkar-usls/Demi_Head/pull/79",
+    "https://github.com/Hawkar-usls/janus-meta-registry/pull/509"
+  ],
+  "registry_operation": "APPEND_ONLY_RESEARCH_ARCHITECTURE"
+}

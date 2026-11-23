@@ -1,0 +1,52 @@
+{
+  "schema": "JANUS/universal-event-record/v1.0.0",
+  "schema_id": "janus.universal.event_record.v1",
+  "registry_id": "JANUS-UNIVERSAL-EVENT-RECORD-SCHEMA-v1.0.0",
+  "status": "CANONICAL_INTEROP_SCHEMA",
+  "purpose": "One JSON-native event envelope for embedded nodes, swarm exchange, Witness, Habitat replay and janus-meta-registry ingestion.",
+  "compatibility": {
+    "json_native_record": true,
+    "runtime_append_format": "JSONL/NDJSON: one canonical JSON object per line",
+    "closed_chunk_format": "ordinary .json document containing manifest + records or references",
+    "meta_registry_style": ["schema","schema_id","registry_id","status","purpose","provenance","integrity"],
+    "unknown_fields": "preserve/ignore for forward compatibility",
+    "required_versioning": true
+  },
+  "required_record_fields": ["schema","record_id","record_type","truth_class","node","session","time","payload","provenance","integrity"],
+  "record_types": ["SENSOR","SWARM_RX","SWARM_TX","PREDICTION","SIMULATION","PREDICTION_SCORE","ANOMALY","MODEL","MEMORY","CONTROL","RESOURCE","MINING","TRANSFER","SYSTEM"],
+  "truth_classes": ["OBSERVED_REAL","DERIVED_FROM_REAL","PREDICTED","SIMULATED","CONTROL_STATE","UNKNOWN"],
+  "record_template": {
+    "schema": "JANUS/universal-event-record/v1.0.0",
+    "record_id": "<node>/<session>/<seq>",
+    "record_type": "SENSOR",
+    "truth_class": "OBSERVED_REAL",
+    "node": {"node_id":"<stable-id>","node_kind":"<ADV_ELITE|BUZZ|BLIND_EYE|ZIM|...>","role":"<role>","firmware":"<version>"},
+    "session": {"session_id":"<boot/session-id>","seq":1},
+    "time": {"wall_utc":"<RFC3339-or-null>","monotonic_ms":0,"clock_source":"<RTC|GNSS|NTP|peer|monotonic>","clock_quality":"<LOCKED|SYNCED|ESTIMATED|UNKNOWN>","target_utc":null},
+    "payload": {},
+    "provenance": {"source_node_id":"<node-id>","source_transport":"<LOCAL|ESP_NOW|LORA|WIFI|SERIAL|ARCHIVE>","source_record_id":null,"model_id":null,"model_version":null},
+    "integrity": {"algorithm":"SHA-256","prev_hash":"<previous-record-hash-or-zero>","record_hash":"<hash-of-canonical-record-with-record_hash-null>"}
+  },
+  "prediction_extension": {
+    "required_for": ["PREDICTION","SIMULATION","PREDICTION_SCORE"],
+    "fields": ["forecast_origin_time","target_time","horizon_ms","target_variables","predicted_distribution_or_value","confidence","model_id","model_version","input_window_ref","m2r_active","simulation_count","later_observed_ref","error_metrics"]
+  },
+  "anomaly_extension": {"required_for":["ANOMALY"],"fields":["detector_id","severity","channels","score","baseline_ref","pre_window_ref","post_window_ref"]},
+  "transfer_extension": {"required_for":["TRANSFER"],"fields":["from_node","to_node","first_seq","last_seq","first_hash","last_hash","chunk_hash","receipt_id","acknowledged_durable"]},
+  "chunk_manifest": {"schema":"JANUS/witness-chunk/v1.0.0","fields":["chunk_id","source_node_id","session_id","first_seq","last_seq","first_hash","last_hash","records_count","chunk_sha256","created_at","storage_location","compression","retention_class"]},
+  "integrity_rules": [
+    "hash proves integrity/lineage, not truth",
+    "prediction/simulation never uses OBSERVED_REAL truth_class",
+    "sensor truth is never overwritten by later model output",
+    "correction is a new record referencing the old record; history is not rewritten",
+    "per-node/session hash chains avoid fake global ordering across concurrent nodes",
+    "swarm transfer requires durable ACK before deletion when offload is mandatory"
+  ],
+  "embedded_write_policy": [
+    "append one complete JSON object plus newline",
+    "flush according to bounded durability policy, not every byte",
+    "rotate by size/time/session",
+    "never rewrite the growing file to append a record",
+    "on recovery, ignore/quarantine only an incomplete final line and preserve prior valid records"
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "artifact_id": "JANUS-ECHO-COUSTEAU-THREE-KEY-ACQUISITION-RUN-001-2026-08-20-v1.0",
+  "run_id": "COUSTEAU_THREE_KEY_ACQUISITION_RUN_001",
+  "research_branch": "Janus-Echo-Кусто",
+  "created_at_local": "2026-08-20T21:38:00+03:00",
+  "canonical_source": {
+    "repository": "Hawkar-usls/Janus-Cosmos",
+    "branch": "janus-echo-cousteau",
+    "path": "data/cousteau/JANUS-ECHO-COUSTEAU-THREE-KEY-ACQUISITION-RUN-001-2026-08-20-v1.0.json",
+    "commit": "dbdbcbd772d4dacff669e9ea78ed8a612e957b2b"
+  },
+  "frozen_origin": [-3.865418, 3.854924],
+  "results": {
+    "TITANIC": {
+      "verdict": "PARTIAL_PASS",
+      "found": "NOAA NCEI Titanic 2004 public raw SeaBeam 2112 multibeam dataset: 147 raw full-resolution XSE files plus sound-speed-profile archive; 11,045 records, 1,667,795 beams, 322.1168 km track.",
+      "closes": ["RAW_MULTIBEAM_SUBGATE", "SVP_SUBGATE", "REAL_OCEAN_GEOMETRY_PATH_INPUT_SUBGATE"],
+      "open": ["COMPLEX_IQ_OR_PHASE_RESOLVED_RETURN", "DIRECT_HULL_TRANSFER_FUNCTION", "WAVEFORM_AND_PHASE_REFERENCE", "WITHHELD_PASS_SPLIT"],
+      "CST_EXP_03": "NOT_YET_PASSED"
+    },
+    "AFRICA": {
+      "verdict": "NO_FOR_M121_GA08_DOCUMENTED_3S_TRANSECT",
+      "finding": "The documented M121/GA08 east-west section is near 3.0 S; the frozen point is at 3.865418 S. Minimum meridional separation is approximately 96.23 km. The nearest verified CTD used in this audit is approximately 114.35 km away.",
+      "meaning": "M121 GA08 is retained as regional control, not frozen-point local data.",
+      "boundary": "Full raw-ping minimum-distance audit for all M121 transit legs remains pending; exact NCEI/GMRT intersection search remains open."
+    },
+    "PALOMAR": {
+      "verdict": "CONDITIONAL_NO_PENDING_PRIMARY_UTC",
+      "event": "POSS-I XE325 nine apparent transient detections, 1950-04-12",
+      "primary_sources_located": ["Caltech Palomar plate log 1949-June 1953", "MAST DSS Plate Finder Epoch", "MAST SurveyPlateListLatest.csv"],
+      "primary_exact_utc": "NOT_YET_EXTRACTED",
+      "secondary_0230_local_lead": {
+        "status": "UNVERIFIED_SECONDARY_ONLY",
+        "timezone_conflict": ["PDT -> 09:30Z", "PST -> 10:30Z"],
+        "altitude_from_frozen_point_deg": [-40.38, -52.43],
+        "conditional_result": "BELOW_HORIZON_UNDER_BOTH_TIMEZONE_INTERPRETATIONS"
+      },
+      "meaning": "If primary metadata confirms approximately 02:30 local exposure, literal same-instant surface line-of-sight from the frozen point to the XE325 field fails. Final gate remains open until primary UTC recovery."
+    }
+  },
+  "gate_transition": {
+    "old_titanic_gate": "COUSTEAU_TITANIC_RAW_SONAR_AND_TRANSFER_FUNCTION_ACQUISITION_V1",
+    "new_titanic_gate": "COUSTEAU_TITANIC_COMPLEX_RETURN_AND_PHASE_CALIBRATION_ACQUISITION_V1",
+    "reason": "Public raw multibeam plus SVP acquisition subgate passed; target-transfer/phase component remains unresolved."
+  },
+  "parallel_gates": [
+    "COUSTEAU_TITANIC_COMPLEX_RETURN_AND_PHASE_CALIBRATION_ACQUISITION_V1",
+    "COUSTEAU_FROZEN_POINT_EXACT_TRACK_AND_SWATH_INTERSECTION_ACQUISITION_V1",
+    "COUSTEAU_PALOMAR_XE325_EXACT_UTC_SKY_GEOMETRY_GATE_V1"
+  ],
+  "hard_rules": [
+    "NO_RECENTERING",
+    "NEGATIVE_RESULTS_ARE_FIRST_CLASS_RECEIPTS",
+    "NO_LOCAL_DATA_CLAIM_FROM_BOUNDS_ONLY",
+    "SECONDARY_PALOMAR_TIME_CANNOT_CLOSE_PRIMARY_TIME_GATE",
+    "PALOMAR_GEOMETRY_IS_NOT_CAUSATION",
+    "RAW_MULTIBEAM_IS_NOT_COMPLEX_TARGET_TRANSFER_FUNCTION",
+    "TITANIC_CST_EXP_03_STILL_PRECEDES_AFRICA_TARGET_IDENTITY_INTERPRETATION",
+    "NO_UNDERWATER_PYRAMID_DETECTED_YET"
+  ],
+  "status": "RECEIPT_FROZEN__TITANIC_PARTIAL_PASS__AFRICA_M121_NO__PALOMAR_CONDITIONAL_NO_PENDING_PRIMARY_UTC"
+}

@@ -1,0 +1,57 @@
+{
+  "artifact_id": "JANUS-PALOMAR-JPFM-2F-C0H-HEADER-ONLY-TILE-WCS-EQUIVALENCE-ADMISSION-v1.0",
+  "experiment_id": "JPFM-2F-C0H",
+  "schema_version": "1.0",
+  "date": "2026-08-15",
+  "status": "PREREGISTERED_AFTER_C0_PASS_BEFORE_C0H_OUTCOME",
+  "purpose": "Verify that the corrected reconstructed-tile WCS used by admitted C0 can be reproduced from the named full-plate FITS header, deterministic 7x7 tile geometry, and frozen per-plate CRPIX table without reading any tile image pixels. Admission would remove 60-arcmin tile pixel transport from subsequent morphology scaleout localization.",
+  "parents": [
+    "data/JANUS-PALOMAR-JPFM-2F-C0-CORRECTED-TILE-WCS-LOCATOR-ADMISSION-v1.0.json",
+    "data/JANUS-PALOMAR-JPFM-2F-C0-CORRECTED-TILE-WCS-LOCATOR-RUN-001.json"
+  ],
+  "required_parent": {
+    "outcome": "PASS_CORRECTED_TILE_WCS_DIRECT_PIXEL_LOCATOR",
+    "sample_rows": 64,
+    "distinct_tiles": 52
+  },
+  "frozen_sample": {
+    "same_64_as_C0": true,
+    "truth": "C0 sidecar pred_x0/pred_y0 and local_pixel_scale_arcsec, which were produced from corrected reconstructed tile FITS headers after sparse 60-arcmin section transport."
+  },
+  "header_only_method": {
+    "plate_identity": "Use the exact frozen tile_id -> named POSS-I plate_id mapping.",
+    "remote_access": "Open named dss1red_{plate}.fits with lazy/fsspec header access; never access hdu.section or hdu.data.",
+    "tile_grid": "Recompute the same 7x7 pixel-space centres from NAXIS1/NAXIS2, XPIXELSZ, PLTSCALE and 60-arcmin tile size.",
+    "tile_identity": "Regenerate format_tile_id at each grid centre and require exact frozen tile_id membership.",
+    "section_geometry": "Compute overlap_slices only; do not materialize the section array.",
+    "tile_wcs": "Use the same clean_tan_header_from_full function and same frozen plate_crpix_table.csv correction as B2/C0.",
+    "prediction": "Transform frozen S0 ra/dec with the header-only corrected tile WCS.",
+    "image_pixels_read": false
+  },
+  "predeclared_gates": {
+    "plate_header_access": "All named plates required by the 64-source sample must yield valid headers/WCS.",
+    "tile_identity": "All 52 frozen distinct tile_ids must be regenerated exactly.",
+    "prediction_coverage": "64/64 sources must obtain finite header-only x/y predictions.",
+    "equivalence_primary": "64/64 sources must agree with frozen C0 pred_x0/pred_y0 to Euclidean <= 1e-6 pixel.",
+    "pixel_scale_equivalence": "64/64 local pixel-scale values must agree with C0 to absolute <= 1e-9 arcsec/pixel.",
+    "pixel_transport": "No hdu.section, .data or array materialization from remote plate pixels is permitted."
+  },
+  "allowed_outcomes": [
+    "PASS_HEADER_ONLY_TILE_WCS_EQUIVALENCE",
+    "FAIL_CLOSED_PARENT_BINDING",
+    "FAIL_CLOSED_HEADER_OR_TILE_IDENTITY",
+    "FAIL_CLOSED_HEADER_ONLY_WCS_EQUIVALENCE"
+  ],
+  "external_label_firewall": {
+    "external_label_reveal_authorized": false,
+    "forbidden_inputs": [
+      "nuclear calendar",
+      "Blue Book/human-report labels",
+      "NUFORC labels",
+      "geomagnetic Kp/ap",
+      "Moon/Sun temporal covariates"
+    ]
+  },
+  "post_pass_gate": "JPFM-2F-C1-NAMED-PLATE-SPARSE-STAMP-TRANSPORT-AND-DIRECT-MORPHOLOGY",
+  "claim_ceiling": "HEADER_ONLY_WCS_ENGINEERING_EQUIVALENCE_ONLY__NO_MORPHOLOGY_OR_EXTERNAL_LABEL_INFERENCE"
+}

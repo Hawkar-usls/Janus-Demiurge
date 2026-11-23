@@ -1,0 +1,48 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-R6-0-CROSS-FITTED-NUMERIC-ADJACENCY-ROLE-SPEC-2026-08-14-v0.1",
+  "version": "v0.1",
+  "node_type": "frozen_cross_fitted_numeric_role_discovery_spec",
+  "parent_R5_0": "data/JANUS-LINEAR-A-R5-0-WORD-LEVEL-SELF-SUPERVISED-ROLE-LEARNING-RESULT-2026-08-14-v0.1.json",
+  "source": {
+    "repository": "Hawkar-usls/lineara.xyz",
+    "frozen_commit": "43fe7cf1abc8e6bb1ea3228c3a1bd5938709620a",
+    "word_parser": "R5-0 exact source word_index mechanical grouping",
+    "word_labels_hidden_until_all statistical scoring complete": true
+  },
+  "question": "Which opaque source words repeatedly occupy a position immediately before or after a numeric-only source word in document-held-out evidence?",
+  "cross_fitting": {
+    "folds": 5,
+    "fold_operator": "sha256('JANUS-LINA-R6-0-CV-v0.1|' + document_id) modulo 5",
+    "target_occurrence_status": "all component readings certain",
+    "none_reinterpreted_as_certain": false,
+    "doubtful_reinterpreted_as_certain": false
+  },
+  "train_selection_per_fold": {
+    "roles": ["RIGHT_NUMERIC", "LEFT_NUMERIC"],
+    "minimum_word_occurrences": 8,
+    "minimum_documents": 4,
+    "minimum_adjacency_rate": 0.70,
+    "selection_uses_training_documents_only": true
+  },
+  "cross_fitted_candidate_family": {
+    "minimum_folds_selected": 3,
+    "heldout_evidence_uses_only_folds_where_candidate_was_selected_on_training": true,
+    "minimum_aggregate_heldout_occurrences": 5,
+    "minimum_aggregate_heldout_adjacency_rate": 0.75
+  },
+  "statistical_gate": {
+    "null": "within the same selected heldout folds, every certain lexical word occurrence has the global side-specific numeric-adjacency probability",
+    "test": "one-sided exact binomial tail for >= observed numeric adjacencies",
+    "multiple_testing": "Benjamini-Hochberg across the frozen cross-fitted role-candidate family",
+    "FDR_q_max": 0.05,
+    "ROLE_CANDIDATE_ADMITTED_if": ["selected_folds>=3", "heldout_occurrences>=5", "heldout_rate>=0.75", "BH_q<=0.05"]
+  },
+  "postscore_descriptors": {
+    "for_admitted_candidates": ["numeric_bucket_distribution", "region_set", "heldout_document_ids"],
+    "descriptors_are_meanings": false
+  },
+  "claim_ceiling": {
+    "allowed": ["cross-fitted quantity-adjacency role candidate", "numeric-side role profile", "source-native administrative-structure candidate"],
+    "forbidden": ["commodity meaning", "person meaning", "transaction meaning", "grammatical label", "translation", "phonetic assignment", "language-family identification", "new anchor", "Linear A decipherment", "R3B replication"]
+  }
+}

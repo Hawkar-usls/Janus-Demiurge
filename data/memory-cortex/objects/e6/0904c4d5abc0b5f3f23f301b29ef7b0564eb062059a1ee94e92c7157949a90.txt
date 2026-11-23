@@ -1,0 +1,61 @@
+{
+  "id": "EYE-R4.3-STOCHASTIC-WITNESS-PLANNER-CONTRACT-2026-09-02-v1.0",
+  "schema_version": "1.0",
+  "created_at": "2026-09-02",
+  "status": "ACTIVE_EXECUTABLE_RESEARCH_CONTRACT",
+  "program": "EYE",
+  "stage": "R4.3",
+  "title": "Stochastic Witness Planner",
+  "canonical_question": "Given rival cause classes, calibrated likelihoods P(outcome|cause,test), explicit priors, test costs, dependencies and a confidence threshold, which contingent test policy minimizes expected cost to a confidence-qualified cause-class decision without pretending that the planning model is the world?",
+  "relationship_to_r4_2": "R4.2 assumes one deterministic outcome per cause/test. R4.3 replaces that map with calibrated discrete likelihood distributions, performs Bayesian posterior updates after each observed outcome, and stops only when the declared target-class confidence threshold is met.",
+  "bayes_update": "P(c|o,t) = P(o|c,t) P(c) / sum_j P(o|c_j,t) P(c_j)",
+  "target_class_posterior": "P(K|evidence) = sum_{c: target_class(c)=K} P(c|evidence)",
+  "terminal_rule": "A state is decision-terminal only when max_K P(K|evidence) >= confidence_threshold. Prior-only threshold crossings are blocked by default unless allow_prior_only_identification=true.",
+  "bellman_recurrence": "V(b,a)=0 at an allowed confidence-qualified terminal belief b; otherwise V(b,a)=min_t [cost(t)+sum_o P(o|b,t)V(BayesUpdate(b,t,o),a∪{t})] over admissible calibrated tests.",
+  "policy_objective": [
+    "minimum expected additional test cost to confidence-qualified target-class identification",
+    "then minimum worst-case additional test cost",
+    "then deterministic test-id tie break"
+  ],
+  "model_requirements": [
+    "every decision-usable available test is explicitly marked calibrated=true",
+    "every calibrated decision test declares a normalized likelihood distribution for every candidate cause",
+    "priors are explicit positive masses and are normalized by the solver",
+    "dependencies and failure domains are explicit",
+    "uncalibrated or qualitative evidence uses decision_usable=false and cannot silently become a probability model",
+    "unavailable historical or counterfactual tests use available=false"
+  ],
+  "exactness": {
+    "policy": "Dynamic programming is exact under the declared finite discrete likelihood/prior/threshold model while resource ceilings are not exceeded.",
+    "belief_state": "Cause-level posterior beliefs are preserved because causes sharing one target class may have different future likelihoods.",
+    "resource_rule": "If exact state expansion exceeds a declared ceiling, verdict is UNKNOWN_RESOURCE_LIMIT rather than an approximate optimality claim.",
+    "non_identifiability_rule": "If no admissible policy can guarantee reaching the confidence threshold on every positive-probability branch of the declared nominal model, verdict is NON_IDENTIFIABLE_UNDER_CURRENT_STOCHASTIC_MODEL."
+  },
+  "model_uncertainty_stress": {
+    "mechanism": "Optional stress_scenarios perturb priors and/or likelihood tables. The nominal policy is replayed under each declared scenario using scenario-specific Bayesian updates.",
+    "measures": ["success_probability", "unresolved_probability", "wrong_confident_probability", "out_of_nominal_support_probability", "expected_cost_under_scenario"],
+    "verdict": "Any declared scenario that violates stress_success_threshold, produces wrong-confident mass, or creates out-of-nominal-support mass yields MODEL_UNCERTAIN_UNDER_DECLARED_STRESS_SCENARIOS."
+  },
+  "outputs": ["stochastic_policy_receipt.json", "policy_tree.json", "next_test_ranking.json", "stress_test_receipt.json", "policy_summary.json"],
+  "firewalls": [
+    "STOCHASTIC_POLICY != CAUSAL_TRUTH",
+    "PRIOR != EVIDENCE",
+    "LIKELIHOOD != OBSERVED_FREQUENCY_WITHOUT_CALIBRATION",
+    "POSTERIOR_CONFIDENCE != FREQUENTIST_GUARANTEE",
+    "SOFT_UNCALIBRATED_TEST != PROBABILITY_MODEL",
+    "EXPECTED_COST_OPTIMUM != WORST_CASE_OPTIMUM",
+    "GREEDY_NEXT_TEST != OPTIMAL_POLICY",
+    "STRESS_PASS != TRUE_WORLD_CALIBRATION",
+    "STRESS_FAIL != CAUSE_FALSE",
+    "NON_IDENTIFIABLE != FALSE",
+    "UNKNOWN_RESOURCE_LIMIT != NON_IDENTIFIABLE"
+  ],
+  "benchmarks": {
+    "synthetic_noisy_adaptive": "Noisy root plus branch tests and a gold fallback; exact nominal policy begins with t_root, expected cost 2.445, worst-case cost 8. A declared weaker-specialist stress scenario lowers policy success to 0.84 and must trigger MODEL_UNCERTAIN.",
+    "search_proof_stochastic": "Noisy provenance audit first, followed only when needed by an independent verifier; exact expected cost 2.83 and worst-case cost 4 at confidence threshold 0.9.",
+    "palomar_xe325_stochastic": "Current historical morphology remains qualitative/uncalibrated and is therefore forbidden from becoming a likelihood table; expected verdict NON_IDENTIFIABLE_UNDER_CURRENT_STOCHASTIC_MODEL."
+  },
+  "authority_ceiling": "PASS establishes solver consistency and exact policy optimality only inside the declared calibrated finite stochastic planning model. It does not establish that priors, likelihoods, stress scenarios, independence assumptions or cause classes are empirically correct.",
+  "next_stage": "EYE-R4.4-ROBUST-WITNESS-PLANNER",
+  "next_stage_goal": "Optimize policies against sets or intervals of plausible likelihood/prior models instead of optimizing nominally and stress-testing afterward; add minimax/CVaR-style risk objectives and explicit calibration provenance."
+}

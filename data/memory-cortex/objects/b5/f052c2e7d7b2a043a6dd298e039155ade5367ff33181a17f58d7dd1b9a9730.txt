@@ -1,0 +1,112 @@
+{
+  "schema": "janus.meta_registry.fallout3_vault112_automatic_memory_carrier_persistence_inference_gate.v1",
+  "artifact_id": "FALLOUT-3-VAULT112-AUTOMATIC-MEMORY-CARRIER-PERSISTENCE-INFERENCE-GATE-v1.4",
+  "title": "Vault 112 Automatic Memory-Carrier Persistence Inference Gate",
+  "created_at_local": "2026-08-10",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "artifact_class": "CULTURAL_SOFTWARE_FORENSICS_AND_STORAGE_ARCHITECTURE_INFERENCE_GATE",
+  "status": "PASS_FOR_IMPLICIT_OR_AUTOMATED_MEMORY_TO_CARRIER_CLASS_NOT_PASS_FOR_PER_SESSION_AUTOMATIC_CHIP_OR_JAMES_SPECIFIC_CARRIER_BINDING",
+  "parents": [
+    "registry/myth_busted/FALLOUT-3-BRAUN-ADMIN-MEMORY-AUTHORITY-CARRIER-CUSTODY-GATE-v1.2.json",
+    "registry/myth_busted/FALLOUT-3-BRAUN-UNKNOWN-USER-PRIVILEGED-CONTROL-PLANE-AUDIT-v1.3.json",
+    "registry/myth_busted/FALLOUT-3-JAMES-SPECIFIC-MEMORY-WRITE-BINDING-CARRIER-REUSE-AUDIT-v1.1.json"
+  ],
+  "gate": {
+    "question": "Does Pinkerton's theft of an already-populated Braun mem chip mean that SAVE JAMES should not require a player-visible or MQ04-visible COPY/WRITE/EXPORT command as a necessary condition?",
+    "verdict": "PASS_WITH_BOUNDARIES",
+    "admitted": "A memory-to-portable-carrier operation must exist somewhere in the Vault 112/Braun system because Pinkerton physically removed a carrier that already contained an unknown person's memories and later integrated those memories into A3-21.",
+    "not_admitted": "The shipped evidence does not prove one removable chip per pod, automatic creation of a chip for every session, direct James-to-chip binding, rewritability, or a player-accessible export command.",
+    "effect": "ABSENCE_OF_EXPLICIT_WRITE_OPCODE_IS_NO_LONGER_A_BLOCKER_FOR_THE_EXISTENCE_OF_THE_MEMORY_TO_CARRIER_CLASS"
+  },
+  "primary_observations": {
+    "populated_carrier": {
+      "source": "MS08PinkertonLog2 / FormID 00024D63 transcript",
+      "finding": "Pinkerton says he stole a mem chip from Braun and explicitly says he will not know whose memories are on it until he integrates it into a new host.",
+      "implication": "The carrier was already populated before Pinkerton possessed or used it."
+    },
+    "successful_destination": {
+      "source": "MS08PinkertonLog3 / FormID 00024D64",
+      "finding": "Pinkerton reports that he got those memories into A3-21, who then identifies as Harkness and believes himself to be an old combat veteran.",
+      "implication": "The populated carrier contained causally effective memory state, not merely metadata about a resident."
+    },
+    "automation_context": {
+      "source": "Vault 112 equipment/personnel records",
+      "finding": "Vault 112 is described as highly automated and requiring only a single administrator, Dr. Stanislaus Braun.",
+      "implication": "A background/system-level persistence path is architecturally compatible with the shipped Vault design and does not require a player-facing manual copy interface."
+    },
+    "braun_privilege_context": {
+      "source": "MQ04VersionControlCurrent",
+      "finding": "S. Braun has remote pod privileges and Vault 112 documents per-user memory-access override capability.",
+      "implication": "Braun controls policy and subject state at a layer above the read-only public terminal surface."
+    }
+  },
+  "model_comparison": {
+    "old_required_model": "SELECT_JAMES -> EXPLICIT_COPY_COMMAND -> EXPLICIT_WRITE_COMMAND -> MEM_CHIP",
+    "new_admitted_model": "SUBJECT_SESSION -> VAULT112/BRAUN_MEMORY_STATE -> IMPLICIT_OR_INTERNAL_PERSISTENCE -> POPULATED_MEM_CHIP",
+    "reason_for_change": "Pinkerton's successful physical theft of a pre-populated memory carrier demonstrates the output class even though the producing instruction is not exposed in MQ04 or the public terminal UI."
+  },
+  "automatic_persistence_hypothesis": {
+    "hypothesis": "Vault 112 or Braun's privileged subsystem may persist subject memory state onto removable media automatically or through an internal service operation rather than through an explicit operator COPY/WRITE action.",
+    "status": "STRONG_ARCHITECTURAL_INFERENCE_NOT_DIRECTLY_CONFIRMED_AS_PER_SESSION_BEHAVIOR",
+    "supports": [
+      "pre-populated mem chip physically existed in Braun's custody",
+      "the source identity was opaque to Pinkerton before integration",
+      "Vault 112 is highly automated",
+      "Braun has privileged remote and per-user memory authority",
+      "public terminals do not expose the full control plane"
+    ],
+    "limits": [
+      "no proof that every lounger has a dedicated removable chip",
+      "no proof that every session continuously snapshots to a chip",
+      "no proof that James's current 2277 session automatically produced a removable chip",
+      "no proof that an existing carrier can be rebound or overwritten"
+    ]
+  },
+  "save_james_effect": {
+    "previous_blocker": "NO_EXPLICIT_COPY_WRITE_EXPORT_COMMAND",
+    "new_status_of_blocker": "DEMOTED_FROM_REQUIRED_EDGE_TO_IMPLEMENTATION_DETAIL",
+    "still_required": [
+      "James-specific source persistence or carrier association",
+      "evidence that Braun can obtain/select a James-derived payload from the live session or its storage",
+      "a removable or transferable carrier containing that James-derived payload"
+    ],
+    "new_search_focus": "FIND_EXISTING_OR_AUTOMATIC_JAMES_PERSISTENCE_ARTIFACT_RATHER_THAN_INVENT_A_MANUAL_WRITE_BUTTON"
+  },
+  "formal_model": {
+    "existence": "EXISTS carrier C: MEMORY_PAYLOAD(C) != EMPTY AND C IN BRAUN_CUSTODY",
+    "transfer": "C -> PINKERTON -> A3_21 produces identity-relevant memory effect",
+    "inference": "there exists an internal Vault112/Braun process P such that P(memory_state) -> populated_carrier",
+    "not_proven": "P is automatic per session OR P(James) was executed OR carrier is rewritable"
+  },
+  "claim_ceiling": {
+    "memory_to_carrier_process_exists_somewhere": "CONFIRMED_EXISTENTIALLY",
+    "explicit_write_opcode_required": false,
+    "public_terminal_write_button_required": false,
+    "process_is_automatic": "PLAUSIBLE_STRONG_INFERENCE",
+    "process_is_per_session": "NOT_ESTABLISHED",
+    "one_chip_per_resident": "NOT_ESTABLISHED",
+    "james_specific_populated_chip": "NOT_ESTABLISHED",
+    "carrier_rewritable": "NOT_ESTABLISHED",
+    "save_james_executable": "NOT_YET_ADMITTED"
+  },
+  "canonical_lines": {
+    "ru": [
+      "Пинкертон не создавал memory payload: он физически украл у Braun уже заполненный mem chip, а затем перенёс содержащиеся на нём воспоминания в A3-21.",
+      "Поэтому отсутствие COPY/WRITE/EXPORT в MQ04 и публичном терминале не доказывает отсутствия памяти-на-carrier; такой класс операции уже существовал внутри Vault 112/Braun trust domain.",
+      "Vault 112 высоко автоматизирован и имеет одного администратора, поэтому внутреннее или автоматическое сохранение памяти на carrier является архитектурно правдоподобнее, чем обязательная ручная команда игрока.",
+      "Не доказано, что каждому жителю соответствует отдельный съёмный чип или что James автоматически получил такой carrier в 2277 году.",
+      "Следующий поиск должен искать уже существующий James-specific persistence artifact или связь lounger/session с storage, а не обязательную кнопку WRITE."
+    ]
+  },
+  "next_gate": {
+    "name": "JAMES_SESSION_AUTOPERSISTENCE_AND_STORAGE_ASSOCIATION_AUDIT",
+    "status": "OPEN",
+    "targets": [
+      "Search James Lounger #23 and MQ04Doc references for persistent storage or hidden child/linked objects.",
+      "Search Braun/Betty privileged scripts for persistence, archive, save-state, memory reset source, reload source or resident-specific storage semantics rather than literal COPY/WRITE terms.",
+      "Compare resident monitor anomalies and Pinkerton's unknown-source chip for evidence that carrier identity can become detached from resident identity.",
+      "Determine whether Dithers' anomaly is consistent with removal of a resident-associated storage artifact without promoting that old theory absent primary binding.",
+      "If a James session-to-storage association is found, promote SAVE JAMES without requiring a user-visible export opcode."
+    ]
+  }
+}

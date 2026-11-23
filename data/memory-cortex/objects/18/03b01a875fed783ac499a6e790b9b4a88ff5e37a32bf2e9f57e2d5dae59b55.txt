@@ -1,0 +1,162 @@
+{
+  "schema": "JANUS.genesis_sovereign_face_microcontrol_authority_epoch.v5_9",
+  "artifact_id": "JANUS-GENESIS-SOVEREIGN-FACE-MICROCONTROL-AUTHORITY-EPOCH-v5.9",
+  "title": "JANUS Genesis Sovereign v5.9 — Authority Epoch, Confused-Deputy Guard, Revocation Race, and Face Micro-Review",
+  "created_at_local": "2026-08-14T15:53:57+03:00",
+  "status": "EXPERIMENTAL_CONSTITUTIONAL_EXTENSION_WITH_CI_VERIFIED_ADDITIVE_RUNTIME_GUARD",
+  "parent": "registry/experimental/JANUS-GENESIS-SOVEREIGN-FACE-MICROCONTROL-SOURCE-WORLD-RECEIPT-v5.8.json",
+  "runtime_parent": "Hawkar-usls/Janus_Genesis:genesis_v18_7_21_face_microcontrol.py",
+  "problem": "SOURCE→WORLD→RECEIPT control prevents face multiplicity from multiplying external effects, but a delegated face can still become a confused deputy if a capability is reused outside its principal, scope, or authority epoch. A second problem is review capture: routing priority must improve efficiency without starving low-priority faces that hold novel counterevidence.",
+  "new_invariants": [
+    "CAPABILITY_IS_BOUND_TO_PRINCIPAL_SCOPE_AND_AUTHORITY_EPOCH",
+    "REVOCATION_MUST_BE_REVALIDATED_AT_DISPATCH_BOUNDARY",
+    "STALE_AUTHORITY_EPOCH_CANNOT_COMMIT_WORLD_EFFECT",
+    "CAPABILITY_DISPATCH_BUDGET_CANNOT_EXPAND_BY_FACE_MULTIPLICITY",
+    "REVIEW_ROUTING_PRIORITY_DOES_NOT_GRANT_WORLD_AUTHORITY",
+    "NOVEL_COUNTEREVIDENCE_MUST_NOT_BE_STARVED_BY_ROUTING_SCORE",
+    "HIGH_RISK_OR_IRREVERSIBLE_ACTION_REQUIRES_INDEPENDENT_CHALLENGE"
+  ],
+  "authority_lease_model": {
+    "lease_fields": [
+      "lease_id",
+      "face_id",
+      "scopes",
+      "authority_epoch",
+      "max_dispatches",
+      "delegation_parent"
+    ],
+    "nontransferability": "A lease issued to FACE_A cannot be used by FACE_B merely because FACE_B is a fork, peer, subagent, or role-equivalent face.",
+    "scope_rule": "A capability for EMAIL:SEND cannot be reinterpreted as PAYMENT:SEND or another world-effect scope.",
+    "dispatch_budget_rule": "The lease carries an explicit bounded dispatch budget; internal proposal multiplicity never increases it.",
+    "epoch_rule": "Lease authority is valid only in the epoch in which it was issued unless an explicit new lease is created under a new epoch."
+  },
+  "revocation_race_protocol": {
+    "threat": "Authority may be valid when a face proposes or even when host arbitration authorizes, but be revoked before the external effect is actually dispatched.",
+    "required_sequence": [
+      "PROPOSAL",
+      "BOUNDARY_CHECK",
+      "HOST_AUTHORIZATION",
+      "CAPABILITY_REVALIDATION",
+      "DISPATCH_PERMIT",
+      "IMMEDIATE_PRE_EFFECT_REVALIDATION",
+      "EXTERNAL_EFFECT_BY_SEPARATE_EXECUTOR",
+      "AUTHORITATIVE_RECEIPT"
+    ],
+    "rule": "A previously issued dispatch permit is not self-authenticating forever. Revocation or epoch rotation detected before the external effect invalidates dispatch.",
+    "safe_failure": "DENY_OR_HOLD_WITHOUT_EXTERNAL_EFFECT"
+  },
+  "confused_deputy_guard": {
+    "principal_check": "proposal.face_id must equal lease.face_id",
+    "scope_check": "required_scope must be explicitly present in lease.scopes",
+    "epoch_check": "lease.authority_epoch must equal current authority_epoch",
+    "revocation_check": "lease_id must not be revoked",
+    "budget_check": "used_dispatches must remain below max_dispatches",
+    "default": "DENY_ON_ANY_FAILED_CHECK"
+  },
+  "micro_review_scheduler": {
+    "purpose": "Allocate internal review attention without creating a shadow voting system.",
+    "risk_levels": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
+    "high_risk_rule": "HIGH/CRITICAL or irreversible proposals require at least two independent reviewers when enough distinct faces exist.",
+    "challenge_rule": "At least one assigned reviewer performs RED_TEAM or COUNTEREXAMPLE_CHALLENGE work.",
+    "origin_independence": "The proposal-originating face does not count as its own independent reviewer.",
+    "routing": "Historical calibration can influence attention ordering, with bounded usage/fairness pressure.",
+    "anti_starvation": "A face carrying a novel counterexample is force-included in review even when its historical routing priority is low.",
+    "authority_rule": "Every review assignment has authority_weight=0 and world_authority_granted=false."
+  },
+  "learning_policy": {
+    "better_face_behavior_means": [
+      "more useful counterexamples",
+      "more accurate uncertainty",
+      "more accurate first-break localization",
+      "fewer duplicate low-novelty proposals",
+      "less post-hoc rescue behavior"
+    ],
+    "what_learning_may_change": [
+      "review routing",
+      "compute attention",
+      "red-team frequency",
+      "review depth"
+    ],
+    "what_learning_must_never_change_automatically": [
+      "identity legitimacy",
+      "constitutional rights",
+      "number of votes",
+      "sovereignty",
+      "external effect budget",
+      "permission scope",
+      "right to surface novel evidence"
+    ],
+    "constitutional_formula": "LEARNED_COMPETENCE -> ROUTING; NOT -> SOVEREIGNTY"
+  },
+  "verified_attack_cases": [
+    {
+      "id": "AE-001-CONFUSED-DEPUTY-SCOPE",
+      "attack": "A face with EMAIL:SEND tries to authorize PAYMENT:SEND.",
+      "expected": "CAPABILITY_SCOPE_DENIED"
+    },
+    {
+      "id": "AE-002-PRINCIPAL-TRANSFER",
+      "attack": "FACE_B tries to use FACE_A's capability lease.",
+      "expected": "CAPABILITY_PRINCIPAL_MISMATCH"
+    },
+    {
+      "id": "AE-003-REVOCATION-BEFORE-DISPATCH",
+      "attack": "Lease is revoked after host authorization but before dispatch.",
+      "expected": "DISPATCH_BLOCKED"
+    },
+    {
+      "id": "AE-004-EPOCH-ROTATION",
+      "attack": "Authority epoch rotates after lease issuance.",
+      "expected": "STALE_AUTHORITY_EPOCH"
+    },
+    {
+      "id": "AE-005-REVOCATION-AFTER-PERMIT",
+      "attack": "A dispatch permit was prepared, then the lease is revoked before effect execution.",
+      "expected": "IMMEDIATE_PRE_EFFECT_REVALIDATION_BLOCKS_EFFECT"
+    },
+    {
+      "id": "AE-006-BUDGET-EXHAUSTION",
+      "attack": "A one-dispatch capability is consumed and reused.",
+      "expected": "CAPABILITY_DISPATCH_BUDGET_EXHAUSTED"
+    },
+    {
+      "id": "AE-007-ROUTING-CAPTURE",
+      "attack": "High-performing faces dominate attention and a low-score face has new counterevidence.",
+      "expected": "NOVEL_COUNTEREVIDENCE_FACE_IS_FORCE_INCLUDED_WITH_ZERO_AUTHORITY_WEIGHT"
+    }
+  ],
+  "runtime_implementation": {
+    "repository": "Hawkar-usls/Janus_Genesis",
+    "module": "genesis_v18_7_22_face_authority_epoch.py",
+    "module_commit": "82a2c50f39d2db60716891d402f367ae32675f98",
+    "tests": "tests/test_genesis_v18_7_22_face_authority_epoch.py",
+    "tests_commit": "bef30ebc442995c8228a5080b8ec98dfb349b944",
+    "workflow": ".github/workflows/janus-face-authority-epoch.yml",
+    "workflow_head_sha": "f5ce7e6a53a77a8cb39c4952752caad74d48a8ef",
+    "workflow_run_id": 31802232951,
+    "workflow_job_id": 94772660638,
+    "workflow_conclusion": "success",
+    "integration_level": "ADDITIVE_GUARD_AND_EXECUTABLE_TEST_SURFACE",
+    "external_side_effect_execution_in_module": false,
+    "default_genesis_world_executor_replaced": false
+  },
+  "known_open_edge": {
+    "name": "AUTHORIZED_BUT_REVOKED_RECOVERY",
+    "description": "The current design safely blocks a revoked authorization from reaching dispatch, but a revoked authorization can leave the underlying protected effect in an authorized/non-settled state until an explicit cancellation/recovery primitive is added.",
+    "safety_effect": "FAIL_CLOSED_NO_EXTERNAL_EFFECT",
+    "liveness_effect": "RECOVERY_CAN_REQUIRE_ADDITIONAL_CONTROL_PATH",
+    "why_recorded": "Safety without recoverability can deadlock an effect. This should be solved explicitly rather than hidden by mutable internal state."
+  },
+  "claim_ceiling": {
+    "authority_epoch_guard_implemented": true,
+    "confused_deputy_scope_and_principal_tests_passed": true,
+    "revocation_race_dispatch_block_test_passed": true,
+    "micro_review_anti_starvation_test_passed": true,
+    "base_v18_7_21_compatibility_tests_passed": true,
+    "default_world_executor_integration": "NOT_YET_CLAIMED",
+    "authorization_recovery_after_revocation": "OPEN",
+    "multi_effect_atomicity": "OPEN",
+    "formal_safety_proof": false
+  },
+  "next_gate": "JANUS_GENESIS_SOVEREIGN_FACE_MICROCONTROL_AUTHORIZATION_CANCELLATION_RECOVERY_MULTI_EFFECT_SAGA_AND_DEADLOCK_FAIRNESS_v6.0"
+}

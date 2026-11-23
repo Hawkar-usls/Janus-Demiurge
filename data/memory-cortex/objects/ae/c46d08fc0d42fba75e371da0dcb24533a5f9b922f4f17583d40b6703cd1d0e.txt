@@ -1,0 +1,81 @@
+{
+  "canonical_payload": {
+    "schema": "janus.launch.physical_gate_runbook.v1",
+    "date": "2026-08-21",
+    "scope": "owner44_local_replay_and_live_nas_164",
+    "preconditions": {
+      "genesis_main": "227d42d6848790031916cac53d39961a19c35d08",
+      "owner44_software_witness_pr195": "93597a96fa6895fe945c921db6d9ab7969b04c92",
+      "owner44_software_witness_status": "PASS",
+      "live_nas_identity_probe_present_on_main": true,
+      "remote_terminal_connection_required_for_assistant_execution": true
+    },
+    "owner44_local_gate": {
+      "sensitive_plane": {
+        "sources_layout": "<sources_root>/<opaque_numeric_source_id>/",
+        "required_source_count": 44,
+        "public_source_count": 41,
+        "private_source_count": 3,
+        "pinset_mode": "0600_OR_PLATFORM_EQUIVALENT_PRIVATE",
+        "private_exact_pin_publication": false,
+        "whole_local_manifest_digest_publication": false
+      },
+      "sequence": [
+        "verify authenticated local layout is already resolved before collector",
+        "run two-pass exact-head collector",
+        "freeze typed exact-source manifest locally",
+        "derive privacy-safe freezer public receipt",
+        "adapt verified exact-source manifest to local Nexus v1 manifest",
+        "validate Nexus v1 manifest",
+        "materialize clean target A",
+        "materialize clean target B",
+        "verify A and B independently",
+        "require byte-identical NEXUS_ID.json / same Nexus identity",
+        "emit preservation public receipt from A and B",
+        "require public receipts identical",
+        "locally verify none of the 3 private exact pins occur in public evidence",
+        "retain sensitive pinset/manifests locally; publish only privacy-safe receipts"
+      ],
+      "pass_conditions": {
+        "REAL_OWNER_SOURCE_SET_ACCOUNTED": "44/44",
+        "LOCAL_EXACT_PRIVATE_PIN_VERIFICATION": true,
+        "PUBLIC_PRIVATE_EXACT_PIN_DISCLOSURE": false,
+        "TWO_CLEAN_TARGET_REBUILDS_MATCH": true,
+        "SOURCE_WRITEBACK_OBSERVED": false
+      }
+    },
+    "nas_164_live_gate": {
+      "first_command": "python3 tools/janus_receiver_identity_probe.py --qnap-auto --live --output JANUS-LIVE-NAS-HANDOFF-IDENTITY.json",
+      "first_step_effect_class": "READ_ONLY_IDENTITY_AND_SOCKET_OWNER_CAPTURE",
+      "first_step_does_not_equal": "HR1_HR10_PASS",
+      "after_identity": [
+        "bind actual :8008 LISTEN socket inode to owner PID and exact container/process identity",
+        "bind actual receiver source identity without relying on heartbeat",
+        "inspect actual receiver ingress/receipt/durable-store surfaces",
+        "observe or execute bounded non-destructive HR1-HR10 failure/recovery cases on the real receiver path",
+        "retain exact local receipt; publish only redacted/privacy-safe projection"
+      ],
+      "prohibited": [
+        "restart service merely to obtain identity",
+        "stop or kill containers during identity probe",
+        "docker exec during identity probe",
+        "delete ingress evidence",
+        "rewrite source history",
+        "claim live PASS from reference CI"
+      ]
+    },
+    "final_acceptance_after_physical_gates": [
+      "reconcile Genesis and Swarm heads again",
+      "if any relevant SHA changed, rebuild exact-head witnesses instead of inheriting old PASS",
+      "run final #162 closed-loop gauntlet on one compatible frozen view",
+      "only then consider JANUS_HABITAT=OPERATIONAL and CYCLE=CLOSED"
+    ],
+    "safety": {
+      "SOURCE_WRITEBACK_DEFAULT": "DENY",
+      "DESTRUCTIVE_ACTION": "FORBIDDEN",
+      "HISTORY_ERASURE": "FORBIDDEN",
+      "AUTHORITY_DELTA": 0
+    }
+  },
+  "canonical_payload_sha256": "01793216a470fdf2cc21d0a23b0bdd0525e5b2951671337ad37be78093666987"
+}

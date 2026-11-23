@@ -1,0 +1,64 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-R3C-2A-LOGOS-D6-CORRECTIVE-REPLAY-SPEC-2026-08-14-v0.1",
+  "timestamp": "2026-08-14T17:12:00+03:00",
+  "version": "v0.1",
+  "title": "Corrective replay of logos D6 A319/*904 source-layer conflict",
+  "observer": "Oleksandr Ahapov / Hawkar + JANUS",
+  "node_type": "preexecution_corrective_external_replay_spec",
+  "status": "FROZEN_BEFORE_EXECUTION",
+  "parent_JANUS_result": "data/JANUS-LINEAR-A-R3C-2-LOGOS-DEFECT-CONFORMANCE-RESULT-2026-08-14-v0.1.1.json",
+  "external_prior_art": {
+    "repository": "papadopouloskyriakos/logos",
+    "commit": "aa799f74722a807c850a212bea9fc3a8fa38db21",
+    "script": "scripts/audit_face_splits.py",
+    "claim": "D6: transliteration layer contains *904 in 3/3 label-bearing documents whose parsedInscription layer contains U+1066B LINEAR A SIGN A319.",
+    "matching_semantics": "A document is label-bearing when ANY transliteratedWords item CONTAINS the substring '*904'; exact whole-token equality is not required."
+  },
+  "identified_JANUS_replay_defect": {
+    "type": "PREDICATE_NARROWING_ERROR",
+    "old_predicate": "normalize_alias(word) == '*904'",
+    "corrective_predicate": "'*904' in word",
+    "why_old_predicate_fails": "HTZd155 stores the label inside the compound source word NA-MA-MA-TI-TI-*904, so exact equality returns zero despite the source label being present.",
+    "scientific_method_change": false,
+    "replay_conformance_definition_change": true,
+    "external_prior_art_changed": false
+  },
+  "source": {
+    "repository": "mwenge/lineara.xyz",
+    "commit": "43fe7cf1abc8e6bb1ea3228c3a1bd5938709620a",
+    "path": "LinearAInscriptions.js",
+    "expected_bytes": 1609137,
+    "expected_sha256": "4da8e1f9693d30880ee505e56541fc189add70605bad88436c44a8e11a57764c"
+  },
+  "admitted_loader": {
+    "path": "research/linear_a/janus_linear_a_r3c_source_loader_v0_4.py",
+    "loader_id": "JANUS-LINEAR-A-R3C-SOURCE-LOADER-v0.4"
+  },
+  "frozen_D6": {
+    "glyph_codepoint": "U+1066B",
+    "glyph_unicode_name": "LINEAR A SIGN A319",
+    "source_label_substring": "*904",
+    "seeded_documents": ["HT132", "HTZd155", "HTZd157+156"],
+    "required_tests": [
+      "all-corpus label-bearing document set",
+      "all-corpus A319-glyph document set",
+      "set intersection",
+      "seeded 3/3 co-presence",
+      "label occurrence count by substring-bearing word",
+      "glyph occurrence count in parsedInscription",
+      "HTZd155 compound-word canary"
+    ]
+  },
+  "decision_rule": {
+    "CONFIRMED_EXTERNAL_REPLAY_CORRECTED": "label-bearing set equals glyph-bearing set and all three seeded documents co-present under upstream substring semantics.",
+    "PARTIAL": "nonempty overlap but sets differ or fewer than 3 seeded cases co-present.",
+    "NOT_REPRODUCED": "no seeded co-presence."
+  },
+  "claim_ceiling": {
+    "external_prior_art_replay_only": true,
+    "JANUS_independent_discovery": false,
+    "R3B_effect": "NONE",
+    "new_anchor": false,
+    "decipherment": false
+  }
+}

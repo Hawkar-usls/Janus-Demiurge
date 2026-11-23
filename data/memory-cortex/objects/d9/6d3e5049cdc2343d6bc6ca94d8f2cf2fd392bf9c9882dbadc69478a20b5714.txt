@@ -1,0 +1,94 @@
+{
+  "artifact": "JANUS-TRUMP-GRAPH-PHP-CARDINALITY-HALL-MATCHING-QUOTIENT-VS-RESOLUTION-WIDTH-2026-09-14-v1.1",
+  "verdict": "PASS_SCOPED_GRAPH_PHP_CARDINALITY_HALL_QUOTIENT_SEPARATION",
+  "parent_scientific_authority": "c5e49c9924c720288e38c8529afdbf69f0c1e7f6",
+  "lineage": {
+    "prereg_v1_0_commit": "c3ff5488bd9d7e41ee844aa9f717022814b95d2d",
+    "implementation_freeze_commit": "233bc029d4fa8f119725fb936e9732d83060fe6a",
+    "prereg_v1_1_amendment_commit": "172c9b4ec54a214becbda9a5b1d9d459df8587c2",
+    "fixture_generator_v1_1_freeze_commit": "61a1dabbb7246dcbd841709a59e2871a97febcee",
+    "population_freeze_commit": "863ad58a567785fbe6022bc181f23728382ff767",
+    "run_commit": "b4d1f9d17c0dd867ee5400b95b69fc28def250c1"
+  },
+  "prepopulation_history": {
+    "v1_0_fixture_construction": "FAILED_BEFORE_POPULATION_FREEZE",
+    "reason": "NO_EXPANDER_FOUND at n=12,r=floor(n/4) within frozen 20000 attempts",
+    "scientific_run_started": false,
+    "repair": "v1.1 prereg changed only hard-fixture n values and r constant before population freeze"
+  },
+  "primary_subtype": "CARDINALITY_HALL_MATCHING_QUOTIENT",
+  "quotient": "Q(F)=G_F=(L,R,E)",
+  "decision_semantics": {
+    "SAT": "saturating matching of L exists",
+    "UNSAT": "there exists S subseteq L with |N(S)|<|S|"
+  },
+  "population": {
+    "cases": 12,
+    "lanes": {
+      "HARD_UNSAT_EXPANDER": "4/4 exact UNSAT",
+      "HALL_UNSAT_CONTROL": "4/4 exact UNSAT",
+      "SAT_MATCHING_CONTROL": "4/4 exact SAT"
+    },
+    "n_values": [16, 20, 24, 32],
+    "population_sha256_internal": "865cf1846c0ccb40c0fcb790f41daaa309bcfe4b7b53697731a5b6b2716e0862",
+    "population_file_sha256": "259ae85c6d83b0075e3235fc5950b4de557e8b86daa30b7281e4debb951c936d"
+  },
+  "counting_baseline": {
+    "carrier": "(m,n,schema_certificate)",
+    "role": "COUNTING_BASELINE_NEGATIVE_CONTROL",
+    "HARD_UNSAT_EXPANDER": "4/4 UNSAT by m>n",
+    "HALL_UNSAT_CONTROL": "4/4 UNKNOWN although ground truth is UNSAT",
+    "SAT_MATCHING_CONTROL": "4/4 UNKNOWN although ground truth is SAT",
+    "conclusion": "global cardinality alone is not an exact quotient for the full admitted graph-PHP language",
+    "constitutional_guard": "PROMISE_SUBCLASS_TRIVIALIZATION_FORBIDDEN"
+  },
+  "certificates": {
+    "SAT": "saturating matching -> concrete assignment -> independent original-CNF replay",
+    "UNSAT": "Hall deficient set (S,N(S)) -> independent exact-neighborhood recomputation -> |N(S)|<|S|"
+  },
+  "hardness_separation": {
+    "input_clause_width": 5,
+    "hard_fixture_parameters": [
+      {"n": 16, "r": 2, "e": 1, "theorem_width_lower_bound": 1.0},
+      {"n": 20, "r": 2, "e": 1, "theorem_width_lower_bound": 1.0},
+      {"n": 24, "r": 3, "e": 1, "theorem_width_lower_bound": 1.5},
+      {"n": 32, "r": 4, "e": 1, "theorem_width_lower_bound": 2.0}
+    ],
+    "literature": {
+      "authors": "Eli Ben-Sasson and Avi Wigderson",
+      "title": "Short Proofs Are Narrow—Resolution Made Simple",
+      "theorem": "Theorem 4.15",
+      "statement_used": "for every bipartite (m,n,d,r,e)-expander G, resolution width of G-PHP is at least r*e/2",
+      "existence_statement_used": "for m=n+1 there exist degree-5 examples with r=n/c and e=1 for constant c>1",
+      "authority_type": "LITERATURE_THEOREM_NOT_REPROVED_BY_GATE"
+    },
+    "asymptotic_interpretation": "with frozen r=floor(n/8)=Theta(n), theorem width lower bound is Omega(n); finite fixture values corroborate membership only",
+    "separation_claim": "constant-width graph-PHP inputs can have resolution refutation width growing linearly while exact graph matching/Hall quotient decision is polynomial"
+  },
+  "complexity_ledger": {
+    "T_recognize": "polynomial canonicalization, positive-block ownership, negative-conflict connected components and clique checks",
+    "T_construct": "polynomial reconstruction of bipartite quotient G_F",
+    "T_matching_Hall": "polynomial maximum bipartite matching plus alternating-reachability Hall witness",
+    "T_reconstruct": "linear matching-to-assignment reconstruction for SAT",
+    "T_verify": "polynomial certificate verification plus original CNF replay",
+    "overall": "T_recognize + T_construct + T_matching/Hall + T_reconstruct + T_verify <= poly(|F|)",
+    "forbidden_hidden_search_observed": false,
+    "population_expansion_audit_is_part_of_solver_runtime": false
+  },
+  "evidence": {
+    "solver_sha256": "598d0d462b9804732700653b2e02714a36523b10f746ffdc7b320aff6159c80b",
+    "generator_sha256": "54db988b2ab516801793ea16c0c0d8d42d4c0e425185e3ce73e0bc15409a8113",
+    "independent_checker_sha256": "c89b3b6e9f413e30a94a4269fb112c6e7474214cfb597dcf8f63611c063eec1c",
+    "run_gate_sha256": "faa97a5efee698f12e10174a4b21cb81ddc775f0dbed5c337c6cdd2a7489826c",
+    "run_raw_sha256": "92b2b6888b69cd584c740904f5cd6e3180d4f38ec48b8bad1271d31874e1f0a0",
+    "checker_raw_sha256": "737f060e377b3d938199e88cb2155de6a98e62d38a198f3d5732256b64d5da5d"
+  },
+  "scope_firewall": {
+    "claim": "scoped exact-quotient / proof-representation separation for the preregistered polynomially recognizable graph-PHP language",
+    "UNIVERSAL_SAT_SELECTOR": "NOT_CLAIMED",
+    "SAT_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN",
+    "Pi_negative_evidence_weight": 0
+  },
+  "append_only": true
+}

@@ -1,0 +1,132 @@
+{
+  "artifact_id": "JANUS-GITHUB-MAIL-SPIRAL-REVERSE-AUDIT-2026-08-22-v1.0",
+  "created_at_local": "2026-08-22T11:43:00+03:00",
+  "scope": "READ_ONLY_GMAIL_GITHUB_SIGNAL_AUDIT",
+  "method": {
+    "name": "JANUS_SPIRAL_REVERSE_MAIL_PASS",
+    "principle": "BROAD_SCAN -> SIGNAL_SEPARATION -> REVERSE_PASS -> CROSS-LAYER_INVARIANT -> RECHECK",
+    "mutation_policy": "NO_EMAIL_MUTATION",
+    "mailbox_ordering": "RECHECK_FROM_OLDEST_RELEVANT_GITHUB_SIGNAL_TOWARD_PRESENT"
+  },
+  "first_spiral_findings": [
+    {
+      "id": "SCOUT-INDEPENDENT-EVIDENCE-SELF-ATTESTATION",
+      "repo": "Hawkar-usls/Janus_Genesis",
+      "pr": 200,
+      "severity": "P1",
+      "finding": "Model-produced independent_confirmation can be treated as independent evidence and may allow fact_allowed=true without external validation.",
+      "required_boundary": "MODEL_OUTPUT_IS_UNTRUSTED_UNTIL_EXTERNAL_PROVENANCE_VERIFIER_ATTESTS_INDEPENDENCE"
+    },
+    {
+      "id": "SCOUT-REQUEST-ID-COLLISION",
+      "repo": "Hawkar-usls/Janus_Genesis",
+      "pr": 200,
+      "severity": "P2",
+      "finding": "Duplicate or normalization-colliding request_id values can overwrite receipts and silently lose one request."
+    },
+    {
+      "id": "SCOUT-RAW-VS-SAFE-ID-VERIFY-MISMATCH",
+      "repo": "Hawkar-usls/Janus_Genesis",
+      "pr": 200,
+      "severity": "P2",
+      "finding": "Processor writes under sanitized ID while verification can read raw ID, causing persistent requeue/failure."
+    },
+    {
+      "id": "SCOUT-MALFORMED-REQUEST-BATCH-POISONING",
+      "repo": "Hawkar-usls/Janus_Genesis",
+      "pr": 200,
+      "severity": "P2",
+      "finding": "One malformed queued request can abort the batch and repeatedly block valid work."
+    },
+    {
+      "id": "SYSEAR-SENSITIVE-RECEIPT-PERMISSIONS",
+      "repo": "Hawkar-usls/Janus_Genesis",
+      "pr": 199,
+      "severity": "P1",
+      "finding": "Sensitive receipt is created before chmod 0600; shared-directory exposure window exists and chmod failure is swallowed."
+    },
+    {
+      "id": "SYSEAR-CLASSIFIER-DNSMASQ-DHCP",
+      "repo": "Hawkar-usls/Janus_Genesis",
+      "pr": 199,
+      "severity": "P1",
+      "finding": "Bare dnsmasq matching can classify ordinary DNS queries as DHCP, distorting telemetry histograms."
+    },
+    {
+      "id": "SYSEAR-DROPBEAR-FIREWALL-SUBSTRING",
+      "repo": "Hawkar-usls/Janus_Genesis",
+      "pr": 199,
+      "severity": "P2",
+      "finding": "Substring 'drop' can classify Dropbear AUTH events as FIREWALL."
+    },
+    {
+      "id": "SYSEAR-WALLCLOCK-DURATION",
+      "repo": "Hawkar-usls/Janus_Genesis",
+      "pr": 199,
+      "severity": "P2",
+      "finding": "Capture duration uses wall clock instead of monotonic time, weakening bounded-duration semantics under clock steps."
+    },
+    {
+      "id": "TERMINAL-HARDCODED-ACTOR-PR1",
+      "repo": "Hawkar-usls/-Terminal-for-Janus",
+      "pr": 1,
+      "severity": "P2",
+      "finding": "Workflow passes hard-coded owner identity instead of actual triggering actor to authorization verifier."
+    },
+    {
+      "id": "TERMINAL-HARDCODED-ACTOR-PR2",
+      "repo": "Hawkar-usls/-Terminal-for-Janus",
+      "pr": 2,
+      "severity": "P1",
+      "finding": "Authenticated-owner gate can succeed independently of real workflow initiator because actor identity is hard-coded."
+    },
+    {
+      "id": "JANUS-IO-AIOHTTP-UNDECLARED",
+      "repo": "Hawkar-usls/janus-io",
+      "pr": 12,
+      "severity": "P1",
+      "finding": "Remote Scout/Terminal channel imports aiohttp without repository-declared dependency, breaking clean-checkout reproducibility."
+    },
+    {
+      "id": "GITHUB-BROAD-CLASSIC-PAT",
+      "account_event": true,
+      "severity": "SECURITY_HIGH_IF_UNEXPECTED",
+      "event": "Classic PAT JANUS_HABITAT_GATE_QNAP created with broad scopes including admin:enterprise, repo, workflow, user, audit_log and other write scopes.",
+      "classification": "EXPECTEDNESS_REQUIRES_OWNER_CONFIRMATION"
+    },
+    {
+      "id": "GITHUB-PASSWORD-RESET",
+      "account_event": true,
+      "severity": "SECURITY_CRITICAL_IF_UNEXPECTED",
+      "event": "GitHub password reset recorded on 2026-08-16.",
+      "classification": "EXPECTEDNESS_REQUIRES_OWNER_CONFIRMATION"
+    },
+    {
+      "id": "GITGUARDIAN-META-REGISTRY-SERIES",
+      "repo": "Hawkar-usls/janus-meta-registry",
+      "severity": "SECURITY_REVIEW_REQUIRED",
+      "event": "GitGuardian reported secret findings in PRs 67, 68, 69 and 71; PR71 incident 36138308 was Triggered as Generic High Entropy Secret in JSON and Python occurrences.",
+      "classification": "NOT_PROVEN_REAL_CREDENTIAL_NOT_SAFE_TO_DISMISS"
+    },
+    {
+      "id": "GITHUB-OAUTH-TRANCEPTOR-TECHNOLOGY",
+      "account_event": true,
+      "severity": "REVIEW_IF_UNEXPECTED",
+      "event": "Third-party OAuth app Tranceptor Technology authorized with read:org and user:email on 2026-06-12."
+    }
+  ],
+  "cross_layer_invariant": {
+    "statement": "DATA MAY TRANSFORM; PROVENANCE MUST NOT BE SYNTHESIZED.",
+    "janus_phrase": "FUNCTION MAY TRANSFORM — IDENTITY MUST CROSS THE GATE.",
+    "applies_to": [
+      "model evidence claims",
+      "workflow actor identity",
+      "request identifier normalization",
+      "telemetry classification",
+      "secret provenance",
+      "runtime dependency reproducibility"
+    ]
+  },
+  "status": "FIRST_SPIRAL_CAPTURED_REVERSE_PASS_ACTIVE",
+  "next_gate": "RECHECK_OLDEST_TO_NEWEST_GITHUB_MAIL_FOR_PRECURSORS_AND_REPEATED_IDENTITY_PROVENANCE_FAILURES"
+}

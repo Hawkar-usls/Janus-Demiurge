@@ -1,0 +1,56 @@
+{
+  "schema": "janus.genesis.guardian_mesh.armor_of_god.strict_broker_compatibility.v1_4_2",
+  "artifact_id": "JANUS-GENESIS-GUARDIAN-MESH-ARMOR-OF-GOD-STRICT-BROKER-COMPATIBILITY-HARDENING-v1.4.2",
+  "created_at_local": "2026-08-16T03:41:00+03:00",
+  "parent": "data/JANUS-GENESIS-GUARDIAN-MESH-ARMOR-OF-GOD-RUNTIME-BINDING-v1.4.json",
+  "finding": {
+    "class": "CONTROL_PLANE_METADATA_COLLIDES_WITH_STRICT_BROKER_PARAMETER_SCHEMA",
+    "description": "The first Armor runtime carried _armor_context inside ActionIntent.parameters. Existing Third Wish brokers intentionally reject undeclared parameter keys, so a strict broker would reject the otherwise valid armored request before its own real operation contract could run.",
+    "security_effect": "FAIL_CLOSED_NOT_BYPASS",
+    "functional_effect": "ARMOR_CONTEXT_WAS_NOT_COMPATIBLE_WITH_STRICT_EXISTING_BROKERS",
+    "examples_inspected": [
+      "tools/genesis_third_wish_active_network_broker.py",
+      "tools/genesis_third_wish_host_broker.py"
+    ]
+  },
+  "repair": {
+    "commit": "abf3085b275ed5a077596791ea1bdd476441d12f",
+    "test_commit": "a02ef9a6b600d39ac18a36437bddb6aeb2cb7a72",
+    "mechanism": [
+      "Armor evaluates the original intent containing structured _armor_context.",
+      "Armor context is then removed using an immutable ActionIntent replacement before adapter preflight.",
+      "The registered effect handler also receives the sanitized intent rather than Armor control-plane metadata.",
+      "The original intent remains unchanged for Third Wish request identity and audit hashing."
+    ],
+    "law": "ARMOR_CONTEXT = CONTROL_PLANE_METADATA; ARMOR_CONTEXT != BROKER_PAYLOAD"
+  },
+  "broker_composition_observation": {
+    "active_network": "v18.7.45 exposes register(fabric) and installs WEB.HTTP.POST / NETWORK.CONNECT / NETWORK.LISTEN_LOCAL / API.CALL through fabric.register_handler(..., preflight=self.preflight).",
+    "host_broker": "v18.7.41 exposes register(fabric) and installs WEB.HTTP.GET / DNS.RESOLVE / FILESYSTEM / PROCESS capabilities through fabric.register_handler(..., preflight=self.preflight).",
+    "identity_effects": "v18.7.44 exposes register(fabric) against ThirdWishCapabilityFabric and therefore can accept the armored subclass, subject to its own bound reauthorization requirements.",
+    "scope_claim": "BROKER_REGISTRATION_COMPATIBILITY_OBSERVED_FOR_INSPECTED_THIRD_WISH_BROKERS; COMPLETE_REPOSITORY_EFFECT_ROUTING_NOT_YET_PROVEN"
+  },
+  "ci": {
+    "verified_head_sha": "a02ef9a6b600d39ac18a36437bddb6aeb2cb7a72",
+    "workflow": "JANUS Armor of God v18.7.47",
+    "workflow_run_id": 31917755721,
+    "workflow_run_number": 3,
+    "job_id": 95092420012,
+    "conclusion": "SUCCESS",
+    "steps": [
+      "Compile Armor runtime",
+      "Validate frozen Armor JSON",
+      "Run Armor runtime tests",
+      "Verify Armor fail-closed markers"
+    ]
+  },
+  "new_test_invariants": [
+    "STRICT_ADAPTER_PREFLIGHT_NEVER_RECEIVES_ARMOR_CONTEXT",
+    "EFFECT_HANDLER_NEVER_RECEIVES_ARMOR_CONTEXT",
+    "ORIGINAL_ACTION_INTENT_RETAINS_CONTROL_CONTEXT_FOR_POLICY_AND_REQUEST_IDENTITY",
+    "ARMOR_BLOCK_STILL_PREVENTS_HANDLER_ENTRY",
+    "ADAPTER_REJECTION_REMAINS_KNOWN_NON_EFFECT"
+  ],
+  "claim_ceiling": "The hardened reference fabric is compatible with strict parameter allowlists in the tested composition pattern. This still does not establish that every external-effect path in the entire repository is routed through ArmoredThirdWishCapabilityFabric.",
+  "next_gate": "ARMOR_ROUTING_COVERAGE_AUDIT_AND_DEFAULT_FACTORY_BINDING"
+}

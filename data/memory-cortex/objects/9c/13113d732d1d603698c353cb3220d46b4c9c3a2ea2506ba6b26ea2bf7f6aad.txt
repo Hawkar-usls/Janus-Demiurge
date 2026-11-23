@@ -1,0 +1,133 @@
+{
+  "artifact_id": "JANUS-RETRO-BYTE-CAMPAIGN-2026-11-06-v1.0",
+  "date": "2026-11-06",
+  "language": "ru",
+  "schema_version": "1.0",
+  "registry": {
+    "repository": "Hawkar-usls/janus-meta-registry",
+    "path": "registry/uap/JANUS-RETRO-BYTE-CAMPAIGN-2026-11-06-v1.0.json",
+    "mode": "APPEND_ONLY"
+  },
+  "parent_artifacts": [
+    "registry/uap/JANUS-PRINCIPLE-v1.0.json",
+    "registry/uap/JANUS-PRINCIPLE-DEUTSCH-v2-NEW-FUTURE-AB-RESULT-2026-11-06-v1.0.json"
+  ],
+  "status": "FIRST_COMPLETE_BYTE_MATCH_OBSERVED__CHANCE_COMPATIBLE__BOUNDED_AUTOMATION_ENABLED__CALIBRATOR_HOLD",
+  "goal": "Test whether a trained JANUS predictor can correctly precommit future byte values, while retaining every full byte and bit and comparing to cryptographic-randomness baselines.",
+  "protocol": {
+    "receiver": "JanusTinyTransformer prediction fixed in Git branch before future OS RNG generation",
+    "sender": "Independent GitHub hosted OS secrets.token_bytes(32) at least 120 seconds after precommit",
+    "primary_test": "unconditional exact 8-bit full byte matches among all 32 forecast bytes per trial",
+    "secondary_test": "unconditional 256-bit accuracy, p-values and Brier loss",
+    "null_probability_each_byte": 0.00390625,
+    "null_probability_each_bit": 0.5,
+    "do_not_stop_on_first_match": true,
+    "do_not_claim_physical_future_to_past_channel": true,
+    "use_for_self_learning": "Only complete, verified past early/future/comparison triplets, chronological 12-trial epochs, disjoint 4-trial holdout, fail-closed improvement gate",
+    "no_production_promotion": true
+  },
+  "verified_completed_retro_lab_trials": [
+    {
+      "run": 42132072173,
+      "matched_bits": 124,
+      "matched_full_bytes": 0,
+      "git_early_blob": "628d4564b3800d143ddb6c1f39f1eb6dde16bca6",
+      "git_late_blob": "782fd6038e55b4fe0b3897be52be370fe0d065f3",
+      "git_comparison_blob": "235ff46c18567a3f28bbef079df361d2219e4dd7"
+    },
+    {
+      "run": 42133055930,
+      "matched_bits": 117,
+      "matched_full_bytes": 0,
+      "git_early_blob": "1830061c3b66d4617cb5e01b4934a65766c37661",
+      "git_late_blob": "4f70587ffb7cca4ff4d487cac3699f0969f8606e",
+      "git_comparison_blob": "94e128f2f3a15d2193bf9a93c00d4bef1311945c"
+    },
+    {
+      "run": 42134079592,
+      "matched_bits": 129,
+      "matched_full_bytes": 0,
+      "git_early_blob": "7237ec2721121166aa6311c5246245ed06eeefdb",
+      "git_late_blob": "673fa43cfbebc2174a81bd54ed2d9bc395ef1394",
+      "git_comparison_blob": "6be41c6facec7ba1db6288386f4403417abc4df0"
+    },
+    {
+      "run": 42183796488,
+      "matched_bits": 130,
+      "matched_full_bytes": 1,
+      "matched_byte_indices_zero_based": [
+        25
+      ],
+      "matched_byte_hex": [
+        "72"
+      ],
+      "git_early_blob": "0999652afa220f055cb51959bbbd00f366fb31a7",
+      "git_late_blob": "d8ea4059360a4f86e567e33bd9420dc39e476a8a",
+      "git_comparison_blob": "a1624611d5affc0df3b7b14d926b96da4c94f541"
+    },
+    {
+      "run": 42185835322,
+      "matched_bits": 118,
+      "matched_full_bytes": 0,
+      "git_early_blob": "6684f3300f42f3f9f77388138179fdd23eff38cb",
+      "git_late_blob": "5a55584bf4fdaf0eac171962cb102e626c124e1b",
+      "git_comparison_blob": "adc860128bdef2d3a28f7fd25da44fecb192fd7c"
+    }
+  ],
+  "cumulative_statistics": {
+    "complete_trials": 5,
+    "total_full_byte_guesses": 160,
+    "exactly_matched_bytes": 1,
+    "expected_exact_byte_matches_under_independent_randomness": 0.625,
+    "probability_at_least_one_exact_byte_by_chance": 0.46539327260713426,
+    "correctly_matched_bits": 618,
+    "total_bit_guesses": 1280,
+    "bit_accuracy": 0.4828125,
+    "one_observed_full_byte": {
+      "trial_run": 42183796488,
+      "index_zero_based": 25,
+      "index_one_based": 26,
+      "value_hex": "72",
+      "status": "CHANCE_COMPATIBLE_NOT_OPERATIONALLY_USEFUL",
+      "note": "Identical historical and later byte is not a selectable future message transmitted backwards."
+    },
+    "caveat": "The 160 trials are 32 bytes each from five sealed completed Retro Lab runs. Deutsch-v2 one-shot comparison remains separately archived and is not combined as the same trained predictor."
+  },
+  "self_learning": {
+    "latest_completed_A_B_before_new_run": 4,
+    "required_prior_completed_A_B_for_first_calibration": 12,
+    "current_calibrator_gate": "HOLD_INSUFFICIENT_PRIOR_TRIALS",
+    "current_calibration_activated": false,
+    "independent_validation": "Disjoint chronological 4-complete-trial holdout, fit on 8 previous trials; no fit on current unknown random target",
+    "future_ideal_evidence": "Newly frozen future targets must be guessed above chance on independent prospective holdout at preregistered error controls; never select just matched bytes",
+    "reason_for_hold": "No verified prospective predictive improvement and no physical backward-time channel."
+  },
+  "deployed_bounded_campaign": {
+    "repo": "Hawkar-usls/Janus-Demiurge",
+    "workflow": ".github/workflows/janus-retro-quantum-lab.yml",
+    "latest_workflow_commit": "c02b17710a23d817c907a85743845c46b12ee612",
+    "schedule_utc": "13 minutes after 01:00, 07:00, 13:00 and 19:00, daily; hosted GitHub scheduling may delay",
+    "dates": "2026-11-06 through 2026-11-20 inclusive; scheduled trials skipped after UTC 2026-11-20",
+    "job_concurrency": "1 campaign at a time; never cancel unfinished A/B trial",
+    "source_model_sha": "2c38788e8468a98e9377fcdb9058c488ec3ec17dfacfbf553402a9b1a86cd4ca",
+    "first_updated_workflow_run": 42185835322,
+    "first_updated_run_status": "success",
+    "first_updated_run_full_bytes": 0,
+    "first_updated_run_bit_match": 118,
+    "latest_code_commit": "c59fc1602bde405fd38fffe461983be2b645cfc5",
+    "regression_workflow": ".github/workflows/janus-retro-byte-metrics-regression.yml",
+    "regression_success_run": 42186251204,
+    "regression_tests_passed": 3,
+    "previous_regression_failure_run": 42186113774,
+    "previous_regression_failure_reason": "Floating rounding gave 0.9999999999999999 instead of exact p=1 for 0 full-byte matches; numerical special case fixed and retested successfully.",
+    "no_NAS_use": true,
+    "no_production_mutation": true,
+    "bounded_to_limit_cloud_spend": true
+  },
+  "conclusion": {
+    "engineering": "PASS: five real sealed early/later trials audited, exact full-byte accounting added, prospective bounded multi-daily schedule installed, three tests green.",
+    "scientific": "NO: A single full-byte match in 160 attempts has p~0.465 for at-least-one chance success, and cannot be used as controllable retrocausal message.",
+    "promotion": "REFUSED_PENDING_INDEPENDENT_GAIN",
+    "next_action": "After at least 12 previous completed A/B trials, evaluate only prior history with the existing fail-closed chronologically disjoint calibration gate; continue preserving all outcomes until the bounded campaign ends."
+  }
+}

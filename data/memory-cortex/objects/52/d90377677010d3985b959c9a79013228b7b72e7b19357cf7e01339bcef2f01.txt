@@ -1,0 +1,252 @@
+{
+  "artifact_id": "JANUS-TRUMP-R4-G-RQ-PAIR-FIXED-FOREST-LIFT-INDEPENDENT-SYMBOLIC-REPLAY-2026-09-20-v1.0",
+  "version": "v1.0",
+  "date": "2026-09-20",
+  "gate": "R4_G_RQ_PAIR_FIXED_FOREST_LIFT_THEOREM_GATE_V1",
+  "status": "PASS_INDEPENDENT_SYMBOLIC_REPLAY_ZERO_MISMATCHES",
+  "object_class": "INDEPENDENT_SYMBOLIC_REPLAY__UNSEALED",
+  "derivation_inputs": {
+    "parent_family": {
+      "commit": "ece366af062cac03388cfc0f90b5b89281279297",
+      "blob": "38b8f9644b9eb076a3bf026c04f06777958a452c"
+    },
+    "prereg": {
+      "commit": "995332d489244193cab1a1681118c6f844768ba8",
+      "blob": "6add5b8f2f4d183f31a9b92d556740ccb3c4fdf5"
+    },
+    "D2_semantics": {
+      "commit": "bdec8439613b1eaf3d20f44095137241a431689b",
+      "blob": "13747aaec73ee646b710a68fcef76d666a23f69b"
+    },
+    "primary_proof_intermediate_lemmas_used": false,
+    "previous_32_finite_execution_used": false
+  },
+  "independent_method": {
+    "description": "Re-derive the pair-fixed residual from set/relation restriction and neighborhood/list predicates on the symbolic parent grammar. Do not import O1-O8 proof text or intermediate lemmas from the primary proof.",
+    "symbolic_partition": {
+      "F": "{s,t,p,m,n}",
+      "Z": "{z}",
+      "A": "A_r",
+      "B": "B_q",
+      "fixed_after_pair": "H = F union {a_i,b_j}",
+      "residual": "R = V(G_{r,q}) \\ H"
+    },
+    "parent_edge_relation_decomposition": {
+      "E0": [
+        "s-t",
+        "s-p",
+        "p-m",
+        "m-n",
+        "t-n"
+      ],
+      "EA": "{a-s,a-z : a in A_r}",
+      "EB": "{b-t,b-m,b-z : b in B_q}",
+      "union_exact": "E = E0 union EA union EB",
+      "no_other_edges": true
+    }
+  },
+  "replay_derivation": {
+    "fixed_and_remnant_vertex_classes": {
+      "result": "R = {z} union (A_r\\{a_i}) union (B_q\\{b_j})",
+      "derivation": [
+        "V = F union {z} union A_r union B_q as a disjoint symbolic partition.",
+        "H = F union {a_i,b_j}.",
+        "Therefore V\\H = {z} union (A_r\\{a_i}) union (B_q\\{b_j})."
+      ],
+      "degenerate_case": "If r=q=1, A_r\\{a_i}=B_q\\{b_j}=empty and R={z}."
+    },
+    "induced_residual_edge_relation": {
+      "result": "E[R] = {z-a : a in A_r\\{a_i}} union {z-b : b in B_q\\{b_j}}",
+      "derivation": [
+        "E0 has no endpoint pair entirely inside R because all endpoints of E0 lie in F subset H.",
+        "For EA, a-s never survives because s in H; a-z survives iff a is not a_i.",
+        "For EB, b-t and b-m never survive because t,m in H; b-z survives iff b is not b_j.",
+        "No other residual edge exists because the parent relation has no other edges."
+      ]
+    },
+    "propagated_list_predicate": {
+      "fixed_pair_neighborhood_signatures": {
+        "a in A_r\\{a_i}": "N(a) intersect {a_i,b_j} = empty",
+        "b in B_q\\{b_j}": "N(b) intersect {a_i,b_j} = empty",
+        "z": "N(z) intersect {a_i,b_j} = {a_i,b_j}"
+      },
+      "result": {
+        "a in A_r\\{a_i}": [
+          2,
+          3,
+          4
+        ],
+        "b in B_q\\{b_j}": [
+          1,
+          3,
+          4
+        ],
+        "z": "{1,2,3,4}\\{gamma,delta}"
+      },
+      "no_extra_propagation_reason": "Remaining A/B lists have size 3; z has size 3 when gamma=delta and size 2 when gamma!=delta, so exact pair-fixed propagation creates no singleton."
+    },
+    "symbolic_assignment_classes": {
+      "33": {
+        "z_list": [
+          1,
+          2,
+          4
+        ],
+        "z_list_size": 3,
+        "z_color_1_allowed": true
+      },
+      "34": {
+        "z_list": [
+          1,
+          2
+        ],
+        "z_list_size": 2,
+        "z_color_1_allowed": true
+      },
+      "43": {
+        "z_list": [
+          1,
+          2
+        ],
+        "z_list_size": 2,
+        "z_color_1_allowed": true
+      },
+      "44": {
+        "z_list": [
+          1,
+          2,
+          3
+        ],
+        "z_list_size": 3,
+        "z_color_1_allowed": true
+      },
+      "interpretation": "These are the four symbolic (gamma,delta) classes only; no r,q sampling is performed."
+    },
+    "degree_structure": {
+      "deg_R(z)": "(r-1)+(q-1)=r+q-2",
+      "deg_R(a) for a in A_r\\{a_i}": 1,
+      "deg_R(b) for b in B_q\\{b_j}": 1,
+      "characterization": "K_{1,r+q-2} when r+q-2>0; K1 when r=q=1",
+      "acyclic": true
+    },
+    "independent_full_coloring_constraint_check": {
+      "coloring": {
+        "s": 1,
+        "t": 2,
+        "p": 3,
+        "m": 2,
+        "n": 4,
+        "a_i": "gamma",
+        "b_j": "delta",
+        "z": 1,
+        "remaining A": 2,
+        "remaining B": 3
+      },
+      "list_constraints": [
+        "gamma in {3,4} subseteq L(a_i)={2,3,4}",
+        "delta in {3,4} subseteq L(b_j)={1,3,4}",
+        "1 belongs to L_res(z) for all 33,34,43,44",
+        "2 belongs to every remaining A list {2,3,4}",
+        "3 belongs to every remaining B list {1,3,4}"
+      ],
+      "edge_constraints": [
+        "s-t: 1!=2",
+        "s-p: 1!=3",
+        "p-m: 3!=2",
+        "m-n: 2!=4",
+        "t-n: 2!=4",
+        "a_i-s: gamma!=1",
+        "a_i-z: gamma!=1",
+        "remaining a-s: 2!=1",
+        "remaining a-z: 2!=1",
+        "b_j-t: delta!=2",
+        "b_j-m: delta!=2",
+        "b_j-z: delta!=1",
+        "remaining b-t: 3!=2",
+        "remaining b-m: 3!=2",
+        "remaining b-z: 3!=1"
+      ],
+      "constraint_failures": 0
+    },
+    "D2_q_bit_consequence": {
+      "semantic_rule": "q_{gamma,delta}=1 iff the pair-fixed exact state has a valid extension.",
+      "valid_extension_constructed_for_all_symbolic_assignment_classes": true,
+      "q33": 1,
+      "q34": 1,
+      "q43": 1,
+      "q44": 1,
+      "Pi": "{33,34,43,44}={3,4}^2"
+    }
+  },
+  "replay_checks_against_frozen_target": [
+    {
+      "item": "residual vertex formula",
+      "verdict": "MATCH"
+    },
+    {
+      "item": "residual edge formula",
+      "verdict": "MATCH"
+    },
+    {
+      "item": "remaining A list formula",
+      "verdict": "MATCH"
+    },
+    {
+      "item": "remaining B list formula",
+      "verdict": "MATCH"
+    },
+    {
+      "item": "z list formula",
+      "verdict": "MATCH"
+    },
+    {
+      "item": "gamma=delta / gamma!=delta list sizes",
+      "verdict": "MATCH"
+    },
+    {
+      "item": "star/K1 characterization",
+      "verdict": "MATCH"
+    },
+    {
+      "item": "T2 applicability",
+      "verdict": "MATCH"
+    },
+    {
+      "item": "constructive full coloring",
+      "verdict": "MATCH"
+    },
+    {
+      "item": "q-bit consequence",
+      "verdict": "MATCH"
+    }
+  ],
+  "mismatch_count": 0,
+  "replay_verdict": "PASS_INDEPENDENT_SYMBOLIC_REPLAY_ZERO_MISMATCHES",
+  "theorem_status_after_replay": {
+    "G_RQ_PAIR_FIXED_FOREST_LIFT": "PROVED_FOR_FROZEN_G_RQ_FAMILY",
+    "Pi_statement": "For all r,q>=1 and all (a_i,b_j) in A_r x B_q, Pi(a_i,b_j)={3,4}^2.",
+    "pair_fixed_residuals": "All are star K_{1,r+q-2} or degenerate K1 and route through T2_FOREST_LIST.",
+    "family_specific_semantic_quotient_size": 1
+  },
+  "scientific_ceiling": {
+    "C11_TERMINAL_ROUTER_COMPLETENESS": "CANDIDATE__NOT_THEOREM",
+    "P3_EXACT_PAIR_QUOTIENT": "NOT_ESTABLISHED",
+    "P3_BYPASS": "NOT_ESTABLISHED",
+    "PI_DISCOVERY": "PARTIAL",
+    "LEMMA11_P7_LIFT": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "forbidden_generalizations": [
+    "all false-twin families route",
+    "all C11 residuals are forests",
+    "all C11 residuals route",
+    "universal semantic quotient size 1",
+    "universal exact pair quotient established",
+    "P3 unnecessary universally"
+  ],
+  "theorem_seal": "NOT_AUTHORIZED",
+  "successor_autoactivation": false,
+  "return_to_HQ": true,
+  "stop": true
+}

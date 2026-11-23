@@ -1,0 +1,52 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1C3-COMPONENT-MESSAGE-SELECTOR-COMPILATION-PREREG-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "FROZEN_PREREG__AUTHORIZED",
+  "gate": "R5_B1B1C3_COMPONENT_MESSAGE_SELECTOR_COMPILATION_V1",
+  "binds": {
+    "C0_message_seal_blob": "0dbebe81f52a5b8411199fc44614bf8c17b6dd95",
+    "C2_QALL_seal_fund_commit": "d276acdc13daabb706776cb0cc8ab3fa8bc5ba71",
+    "C2_QALL_seal_meta_commit": "a4cadccc2f4861cb2fdc37824c32cfb7fc2fc512",
+    "C2_QALL_seal_blob": "33d6b365728c703c43371b966d9ed26020f12b98"
+  },
+  "input_state": {
+    "U": "all still-dynamic vertices X union Y",
+    "residual_components": "all connected components C of G[Y0]",
+    "C0": "every residual component has D_C!=empty and a compiled monotone message mu_C with MIN_BAD(C) of size <=6 plus stored witness colorings for allowed reachable masks"
+  },
+  "selector_construction": {
+    "for_each": "For every C and every M in MIN_BAD(C), create one virtual selector h_{C,M}.",
+    "list": "L(h_{C,M})=M",
+    "neighborhood": "N(h_{C,M})=D_C",
+    "selector_edges": "No edges between selector vertices.",
+    "outside_graph": "Keep G[U] and its source list constraints exactly."
+  },
+  "exact_semantics_target": {
+    "local": "For an outside coloring c, h_{C,M} is list-colorable iff M is not a subset of F_C(c).",
+    "component": "All selectors of C are simultaneously colorable iff mu_C(F_C(c))=1.",
+    "global": "An outside coloring extends through every original residual component iff it extends to every selector vertex."
+  },
+  "reconstruction_target": [
+    "Given a selector-graph coloring, ignore selector colors themselves.",
+    "For each C compute the actual nonempty F_C(c) from colors on D_C.",
+    "Use the C0 table to verify mu_C(F_C)=1 and fetch the stored explicit component-coloring witness.",
+    "Combine component witnesses; distinct Y0 components are anticomplete, X0 effects were already absorbed in B_C, seed is anticomplete to Y0."
+  ],
+  "size_target": "At most 6 selector vertices per residual component, hence O(n) selectors total.",
+  "p7_target": {
+    "relation_to_QALL": "The selector graph is obtained from P7-free Q_ALL by deleting any component node with MIN_BAD(C)=empty and replacing every remaining [C] by an independent false-twin class indexed by MIN_BAD(C).",
+    "theorem": "Independent false-twin blowup preserves P7-freeness because an induced path on at least four vertices contains at most one vertex from one independent false-twin class; otherwise a twin-neighborhood chord is forced.",
+    "conclusion": "Selector graph is P7-free."
+  },
+  "four_list_structure": {
+    "fact": "If [4] belongs to MIN_BAD(C), then MIN_BAD(C)={[4]} because MIN_BAD is an antichain and every other mask is a subset of [4].",
+    "meaning": "The only possible 4-list selector for a component is a single NO_ALL_FOUR_COLORS selector: it is colorable iff its neighborhood does not collectively use all four colors."
+  },
+  "firewalls": [
+    "Selector compilation is a normal-form theorem, not a solver.",
+    "Selectors may have different 3-lists among the four 3-subsets of [4], so P7-free List-3 on one common palette does not directly apply.",
+    "P7-free List-4 is not assumed tractable.",
+    "No semantic interpretation of source axioms (vi)-(viii) is promoted in this gate."
+  ]
+}

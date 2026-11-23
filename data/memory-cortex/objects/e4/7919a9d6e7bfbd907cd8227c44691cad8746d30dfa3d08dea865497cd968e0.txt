@@ -1,0 +1,112 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1C5B2B2-D-CONNECTED-CHAIN-QALL-EXPONENTIAL-PROFILE-FAMILY-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "SOURCE_VALID_ARBITRARY_K_WITNESS",
+  "gate": "R5_B1B1C5B2B2_D_CONNECTED_QALL_REALIZABLE_EFFECT_PROFILE_MULTIPLICITY_V1",
+  "family_name": "CONNECTED_CHAIN_QALL_FAMILY_V1",
+  "parameter": "integer k>=2",
+  "graph": {
+    "vertices": {
+      "seed": ["s4","s1"],
+      "left_dynamic": "L={l_1,...,l_k}",
+      "right_dynamic": "R={r_1,...,r_k}",
+      "residual": ["z"]
+    },
+    "edges": [
+      "s4-s1",
+      "s4 adjacent to every vertex of L union R",
+      "s1 has no neighbor outside {s4}",
+      "z adjacent to every vertex of R and to no vertex of L or seed",
+      "L is stable",
+      "R is stable",
+      "l_i-r_j iff j<=i"
+    ],
+    "seed_coloring": {
+      "f(s4)": 4,
+      "f(s1)": 1
+    },
+    "root_partition": {
+      "S": "{s4,s1}",
+      "X0": "empty",
+      "X": "empty",
+      "Y": "L union R",
+      "Y0": "{z}"
+    }
+  },
+  "root_source_validity": {
+    "axiom_i": "G-X0=G is connected: s4 joins seed to L,R and z joins through R.",
+    "axiom_ii": "S is connected by s4-s1. No outside vertex is complete to S: every L/R vertex sees s4 but not s1, while z sees neither.",
+    "axiom_iii": "Exactly z is outside S union X0 and anticomplete to S; hence Y0={z}.",
+    "axiom_iv": "Y0 is a singleton, so it has no edge and the no-mixing condition is vacuous.",
+    "axiom_v": "Every L/R vertex sees exactly seed color 4 and has source list {1,2,3}; z sees no seed color and has list [4]. Thus X=empty,Y=L union R,Y0={z}.",
+    "axiom_vi": "Y intersect N(Y0)=R and every r_j has the same source list L0={1,2,3}. There are no competing B0 survivors."
+  },
+  "P7_free_proof": {
+    "without_s4": [
+      "G-s4 consists of isolated s1 plus the bipartite graph on sides L union {z} and R.",
+      "The neighborhoods into R satisfy N(l_1) subset N(l_2) subset ... subset N(l_k)=R and N(z)=R.",
+      "Hence this bipartite graph is a chain graph and has no induced 2K2.",
+      "Every induced P5 contains an induced 2K2 on path positions {1,2,4,5}; therefore the nontrivial component of G-s4 is P5-free and in particular P7-free."
+    ],
+    "with_s4": "s4 is adjacent to every vertex except z. In an induced P7 containing s4, among the six other path vertices at most two may be path-neighbors of s4, but at least five are adjacent to s4 because only z is a nonneighbor. This forces a chord. Therefore no induced P7 contains s4.",
+    "conclusion": "G_k is P7-free for every k."
+  },
+  "root_component_stack": {
+    "residual_component": "C={z}",
+    "D_C": "R",
+    "C2_Q_ALL": "dynamic vertices L union R plus carrier [z], dynamic chain edges l_i-r_j iff j<=i, and [z]-r_j for every j",
+    "Q_ALL_connected": "l_k is adjacent to all R, every l_i is adjacent to r_1, and [z] is adjacent to all R.",
+    "C0_message": "B_C(z)=[4]; mu_C(F)=1 iff F is a proper subset of [4]; MIN_BAD(C)={[4]}.",
+    "C3_selector": "one 4-list selector with neighborhood R, expressing NO_ALL_FOUR_COLORS.",
+    "B0": "competing-survivor set empty; frozen provenance obligations are vacuous."
+  },
+  "authorized_forcing_family": {
+    "choice_set": "For every F subseteq {1,...,k-1}, force l_i=1 exactly for i in F.",
+    "why_each_force_is_authorized": [
+      "L is stable, so earlier forced l_h=1 never forbids color 1 at an unforced l_i.",
+      "Every l_i is nonadjacent to s1, which also has color 1.",
+      "Every unforced l_i always sees only fixed color 4 from s4, so 1 remains in its exact palette A(l_i)."
+    ],
+    "why_seed_stays_connected": "Every forced l_i is adjacent to s4.",
+    "why_precoloring_stays_proper": "All newly forced vertices have color 1 and are pairwise nonadjacent and nonadjacent to s1.",
+    "why_Q_ALL_stays_connected": "l_k is never forced and remains adjacent to all R; every remaining l_i is adjacent to r_1; [z] remains adjacent to all R."
+  },
+  "forced_descendant_structure": {
+    "S_F": "S union {l_i:i in F}",
+    "X0_F": "empty",
+    "Y0_F": "{z}",
+    "unforced_l_i": "source list {1,2,3}, hence Y",
+    "r_j": "source list {2,3} iff some forced l_i has i>=j; otherwise {1,2,3}. Thus r_j is X or Y.",
+    "Z0_Z1": "empty for every F",
+    "connectivity_repair": "never invoked",
+    "component_recompile": "C={z}, D_C=R, C0 message and C3 selector remain unchanged; B2A/exact-palette data are recomputed deterministically.",
+    "axioms_i_to_vi": "all preserved directly for every F"
+  },
+  "profile_distinction": {
+    "identity_erasure_safe": "The distinction does not use neighborhoods into newly forced seed identities and does not use the forced identity ledger.",
+    "canonical_invariant": [
+      "[z] is the unique residual-component carrier.",
+      "R is exactly the set of live dynamic neighbors of [z].",
+      "The live dynamic nonneighbors of [z] are exactly the unforced vertices l_i.",
+      "Each live l_i has exactly i neighbors in R.",
+      "Therefore the multiset of R-degrees of live nonneighbors of [z] is exactly {i:1<=i<=k and i notin F}."
+    ],
+    "consequence": "Different F give different degree sets and hence pairwise nonisomorphic reduced canonical effect profiles, even under vertex renaming preserving carrier/dynamic roles.",
+    "count": "2^(k-1) distinct realizable canonical effect profiles.",
+    "root_Q_ALL_size": "2k+1",
+    "growth": "2^(k-1)=2^((|Q_ALL|-3)/2), exponential in the connected block size."
+  },
+  "D_firewall": {
+    "future_distinguishability": "NOT_CLAIMED",
+    "representation_lower_bound": "NOT_CLAIMED",
+    "secondary_compact_carrier": "NOT_RULED_OUT",
+    "algorithmic_hardness": "NOT_CLAIMED",
+    "required_next_gate": "B2B2-E_CONNECTED_FUTURE_DISTINGUISHABILITY"
+  },
+  "finite_checker": {
+    "path": "research/tools/r5_b1b1c5b2b2_d_connected_qall_multiplicity/chain_family_checker.py",
+    "blob": "a63d1848a71af5ca131d4f7674ab605472e0893f",
+    "scope": "finite sanity only; arbitrary-k proof is structural"
+  }
+}

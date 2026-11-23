@@ -1,0 +1,61 @@
+{
+  "schema": "janus.io.c_to_d.digital_corpus.lrs_cri_sampling_amendment.v1_1",
+  "artifact_id": "JANUS-IO-C-TO-D-DIGITAL-CORPUS-LRS-CRI-SAMPLING-AMENDMENT-2026-09-14-v1.1",
+  "created_at_local": "2026-09-14T00:01:00+03:00",
+  "repository_target": "Hawkar-usls/janus-meta-registry",
+  "parent_protocol": {
+    "artifact_id": "JANUS-IO-C-TO-D-DIGITAL-CORPUS-STRATIFIED-LRS-CRI-PREREG-2026-09-14-v1.0",
+    "commit": "5257fbf397b5847186f0d111c76aac7036f0527c"
+  },
+  "status": "METHODOLOGICAL_AMENDMENT_BEFORE_CRI_COMPUTATION",
+  "problem_detected": "Quota-balancing D4 across context classes and then computing Shannon entropy on the same quota-balanced sample would mechanically inflate CRI and create design-induced circularity.",
+  "correction": {
+    "D4_DISCOVERY_BALANCED": {
+      "purpose": "Coverage, rubric calibration, existence proof that the same visual nucleus can support multiple distinct contexts.",
+      "sampling": "Targeted search with minimum coverage goals per preregistered context class.",
+      "allowed_outputs": [
+        "documented context diversity",
+        "examples by class",
+        "coding/adjudication refinement",
+        "LRS distributions if provenance criteria are met"
+      ],
+      "forbidden_output": "Do not estimate population CRI from this quota-balanced sample."
+    },
+    "D4_PREVALENCE_UNBIASED": {
+      "purpose": "Estimate naturally observed context diversity for CRI.",
+      "sampling": "Use a fixed reproducible retrieval frame without context quotas, e.g. a chronological/systematic sample of eligible direct Skeleton Dance visual-nucleus captioned items from a defined platform/template result stream. Freeze retrieval rule before coding context.",
+      "primary_endpoint": "CRI",
+      "formula": "CRI = -SUM_k(p_k * ln(p_k)) / ln(K)",
+      "K": 7,
+      "context_classes": [
+        "WORK_OFFICE",
+        "PSYCHOLOGICAL_EXISTENTIAL",
+        "SOCIAL_RELATIONSHIPS",
+        "SCHOOL_ACADEMIC",
+        "POP_CULTURE_FANDOM",
+        "POLITICS_CURRENT_EVENTS",
+        "SEASONAL_HALLOWEEN"
+      ]
+    }
+  },
+  "recommended_retrieval_rule_for_unbiased_sample": {
+    "preferred": "Platform-bound systematic sampling from one or more fixed source streams where the visual nucleus is pre-filtered independently of caption meaning; then take every eligible item in chronological order or every nth eligible item until target N is reached.",
+    "avoid": [
+      "searching by context words before CRI sampling",
+      "equal quotas by context class",
+      "dropping repetitive seasonal items merely to improve diversity",
+      "using popularity ranking if ranking could correlate with caption semantics unless ranking is itself frozen as part of the sampling frame"
+    ]
+  },
+  "interpretation_firewall": [
+    "Balanced discovery can establish breadth but not prevalence.",
+    "Unbiased prevalence sampling can estimate CRI but may miss rare context classes.",
+    "High CRI is not proof of virality or causal transmissibility.",
+    "Low CRI in the prevalence sample does not negate the existence of rare cross-context reencodings documented in the discovery sample."
+  ],
+  "stable_interface_score": {
+    "formula": "mean(shape, agent_identity, gesture) * CRI",
+    "rule": "Compute only with CRI from D4_PREVALENCE_UNBIASED; never substitute entropy from the balanced discovery set."
+  },
+  "canonical_seal": "TARGETED CONTEXT COVERAGE AND CRI ESTIMATION ARE SEPARATE TASKS. DO NOT MANUFACTURE HIGH ENTROPY BY QUOTA DESIGN."
+}

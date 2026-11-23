@@ -1,0 +1,85 @@
+{
+  "artifact_id":"JANUS-TRUMP-R5-B1B1C5B2B2-E5-SIGNED-HUANG-SOURCE-AND-SCHAEFER-AUDIT-2026-09-21-v1.0",
+  "version":"v1.0",
+  "date_local":"2026-09-21",
+  "status":"PASS_SOURCE_AND_CLASSIFICATION_AUDIT",
+  "gate":"R5_B1B1C5B2B2_E5_SIGNED_HUANG_EQUALITY_SCHAEFER_BARRIER_V1",
+  "binds":{
+    "prereg_blob":"1ae88b7877ea295cb51c9da3bf738d137479a335",
+    "E4_theorem_seal_blob":"e4ff429fcc3818011ec269bd681e6dde30c4f4e4",
+    "C10_addendum_blob":"9ebf7a6837502e20bbc45cd8edfbd4f41db7c00b",
+    "raw_relation_schaefer_basis_result_blob":"d831101ddfec93f6691a72404b643992730330db",
+    "connected_mixed_carrier_schaefer_barrier_blob":"98c4fbf9c26051dfc50a1ded5d518f9b0a45a106",
+    "checker_blob":"ddec0d1c920d81b84dfd5b14a4502c48264a2509"
+  },
+  "published_sources":[
+    {
+      "id":"HUANG_2016",
+      "title":"Improved Complexity Results on k-Coloring P_t-Free Graphs",
+      "author":"Shenwei Huang",
+      "doi":"10.1016/j.ejc.2015.06.005",
+      "arxiv":"1304.5808",
+      "claim_used":"The C7 clause construction belongs to a P7-free graph family for arbitrary 3-CNF literal occurrences.",
+      "firewall":"The source NP-completeness theorem is not used as a substitute for the relation derivation."
+    },
+    {
+      "id":"SCHAEFER_DICHOTOMY",
+      "claim_used":"A finite Boolean relation language lies in polynomial time when it has a common Schaefer tractable basis; otherwise its unrestricted CSP is NP-complete.",
+      "local_authority":"research/TRUMP_CONNECTED_MIXED_CARRIER_SCHAEFER_BARRIER_PROOF_OR_FALSIFICATION_2026-09-15.json"
+    }
+  ],
+  "source_identity":{
+    "pair_state":"p_i=(x_i,d_i) with x_i,d_i in {1,2}",
+    "global_e":"e_i=1 iff x_i=d_i",
+    "variable_edge":"x_i and ~x_i are adjacent and both restricted to {1,2}, hence color(~x_i)=3-color(x_i)",
+    "positive_occurrence":"q=1 iff x_i=d_i, so q=e_i",
+    "negative_occurrence":"q=1 iff ~x_i=d_i, so q=1-e_i",
+    "conclusion":"For occurrence polarity sigma in {0,1}, q=e_i xor sigma."
+  },
+  "E4_catalog_transform":{
+    "unsigned_upward_relations":14,
+    "polarity_masks_per_relation":8,
+    "distinct_signed_relations":70,
+    "signed_catalog_sha256":"4fdb1833f82fc182794b6ea57408810e32e26b110ef473c69759d7533efdf858",
+    "root_unsigned":"OR3 on q: all {0,1}^3 except 000",
+    "root_signed":"Eight coordinate flips give exactly the eight 3-literal clause relations, each excluding one Boolean assignment."
+  },
+  "schaefer_classification":{
+    "full_signed_language":{
+      "0_valid":false,
+      "1_valid":false,
+      "horn":false,
+      "dual_horn":false,
+      "bijunctive":false,
+      "affine":false
+    },
+    "root_signed_OR3_language":{
+      "0_valid":false,
+      "1_valid":false,
+      "horn":false,
+      "dual_horn":false,
+      "bijunctive":false,
+      "affine":false
+    },
+    "conclusion":"Already the eight signed root OR3 relations lie in no common frozen Schaefer tractable class; the full 70-relation signed catalog also lies in none."
+  },
+  "positive_escape":{
+    "name":"GLOBAL_RENAMABLE_UPWARD_EQUALITY_SUBCASE",
+    "condition":"There exists one orientation bit r_i per global equality variable such that every occurrence polarity sigma_{j,t}=r_i for that variable in every factor occurrence.",
+    "effect":"Define e'_i=e_i xor r_i. Then every signed occurrence bit q becomes e'_i and all E4 local factors are again upward in the shared e' coordinates.",
+    "solver":"Apply C10 after this global renaming.",
+    "scope":"For root OR3 clauses this condition is exactly that each equality variable occurs with one polarity globally. More general local future states may admit additional accidental symmetries, but no such larger class is promoted here."
+  },
+  "barrier_scope":{
+    "genuinely_mixed":"Variables may occur with incompatible polarities across the connected factor system, so no single global renaming restores the C10 shared upward orientation.",
+    "result":"The unrestricted signed relation language is outside all six frozen Schaefer tractable classes.",
+    "interpretation":"A universal polynomial exact carrier for unrestricted connected composition of this signed language would cross a P-vs-NP-scale barrier.",
+    "not_claimed":[
+      "P!=NP",
+      "no polynomial algorithm",
+      "a representation lower bound",
+      "hardness of every structurally restricted signed Huang subfamily"
+    ]
+  },
+  "audit_verdict":"PASS_SIGNED_HUANG_EXACT_LANGUAGE_DERIVATION_AND_SCHAEFER_BARRIER_SCOPE"
+}

@@ -1,0 +1,298 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-TRANSCRIPTION-SUBSTRATE-SPEC-2026-08-14-v1.0",
+  "timestamp": "2026-08-14T14:55:00+03:00",
+  "version": "v1.0",
+  "title": "JANUS Linear A source-agnostic lossless transcription substrate",
+  "observer": "Oleksandr Ahapov / Hawkar + JANUS",
+  "node_type": "frozen_transcription_architecture_specification",
+  "status": "FROZEN_BEFORE_R3B_ALTERNATE_EDITORIAL_SOURCE_INGESTION",
+  "scientific_claim_bearing": false,
+  "purpose": "Turn JANUS Linear A from a collection of source-specific parsers into a lossless, provenance-carrying transcription substrate that can ingest mwenge, SigLA, CTLA, TMT, RILA-S1 or future sources without forcing one source's tokenization, numeric grammar, word boundaries, uncertainty notation or editorial decisions onto another source.",
+  "parents": {
+    "canonical_state": {
+      "path": "data/JANUS-LINEAR-A-RESEARCH-STATE-2026-08-14-v2.5.json",
+      "commit": "da765a7c0cfdb77c7036b739b611d17eb6e626fe"
+    },
+    "R3B_access_recheck": {
+      "path": "data/JANUS-LINEAR-A-R3B-L2-L3-SOURCE-ACCESS-RECHECK-2026-08-14-v1.0.json",
+      "commit": "49b8b088c34879731b368ed8aa87a9aba7a67c6b"
+    },
+    "R3B_acquisition_protocol": {
+      "path": "data/JANUS-LINEAR-A-R3B-0-SOURCE-ACQUISITION-PROTOCOL-2026-08-14-v0.1.json",
+      "commit": "d3fa752e552e9a3f14e5daec0e75d7f86386ed61"
+    },
+    "typed_numeric_baseline": {
+      "path": "research/linear_a/janus_linear_a_token_typing_policy_v0_6_2.py",
+      "blob_sha": "5db5f5c3b54aaeffc61b2b5cdd2d3945caf834e7",
+      "relationship": "Provides a proven mwenge-specific generic numeric-literal repair. It is not automatically imposed on alternate editorial sources; every new adapter must declare its own source-native numeric grammar."
+    }
+  },
+  "architectural_principles": [
+    "RAW_FIRST_LOSSLESS: source-native literal text, IDs and ordering are immutable evidence and must survive every derived normalization.",
+    "PROVENANCE_ATOMIC: every document, segment, token, reading and bridge edge can carry exact source/file/page/locator provenance.",
+    "TYPE_BEFORE_SEMANTICS: punctuation, numeric, damage, uncertainty, separator and editorial markers are typed before lexical hashing/scoring.",
+    "APPROX_IS_NOT_EXACT: approximate or uncertain numeric structure may be recognized without receiving a false exact magnitude.",
+    "SOURCE_WORD_IS_NOT_UNIVERSAL_WORD: source-native grouping may be represented, but JANUS must not silently promote it to a cross-source linguistic word boundary.",
+    "DISAGREEMENT_IS_DATA: conflicting readings, token counts, boundaries, sign IDs or layout are retained as explicit disagreements rather than coerced away.",
+    "LAYOUT_IS_FIRST_CLASS: side, surface, zone, line, row, column, reading direction and spatial boxes are representable independently of token text.",
+    "ALTERNATIVES_ARE_BRANCHES: alternate readings and uncertain sign identifications are explicit competing branches with provenance, not flattened strings.",
+    "BRIDGES_ARE_TYPED_EDGES: document/sign/group/token correspondences carry relation type, confidence/evidence class and collision state.",
+    "FAIL_CLOSED: absent required provenance, malformed ordinals, ambiguous identity or unsupported normalization blocks promotion rather than triggering fallback guessing."
+  ],
+  "canonical_IR": {
+    "format_id": "JANUS-LINEAR-TRANSCRIPTION-IR-v1.0",
+    "serialization": "UTF-8 JSON",
+    "top_level_required": [
+      "ir_format",
+      "source",
+      "document",
+      "surfaces",
+      "segments",
+      "tokens",
+      "groups",
+      "relations",
+      "disagreements",
+      "provenance_receipt"
+    ],
+    "source": {
+      "required": ["source_id", "source_family", "edition_id", "independence_level", "adapter_id"],
+      "allowed_independence_levels": [
+        "L0_DERIVATIVE_TRANSFORM",
+        "L1_INDEPENDENT_DIGITIZATION_SHARED_TRANSCRIPTION",
+        "L2_ALTERNATE_EDITORIAL_CORPUS_SHARED_PRIMARY_TRADITION",
+        "L3_INDEPENDENT_TRANSCRIPTION_BASELINE",
+        "UNCLASSIFIED"
+      ],
+      "must_preserve": ["native_identifier_scheme", "native_numeric_grammar_id", "native_uncertainty_grammar_id", "native_boundary_grammar_id"]
+    },
+    "document": {
+      "required": ["document_id", "source_document_id", "artifact_class"],
+      "optional": ["site", "findspot", "museum_id", "material", "object_type", "date_range", "bibliographic_locator"],
+      "rule": "Unknown values remain null/absent; they are never inferred from a bridged source without an explicit provenance edge."
+    },
+    "surfaces": {
+      "identity": "surface_id unique within document",
+      "fields": ["surface_id", "source_surface_label", "orientation", "reading_direction", "width", "height", "coordinate_system", "provenance_refs"]
+    },
+    "segments": {
+      "identity": "segment_id unique within document",
+      "allowed_types": ["PAGE", "SURFACE", "ZONE", "COLUMN", "ROW", "LINE", "REGISTER", "CELL", "FREEFORM_REGION", "UNKNOWN"],
+      "fields": ["segment_id", "segment_type", "parent_segment_id", "surface_id", "source_label", "sequence_index", "bbox", "polygon", "provenance_refs"]
+    },
+    "tokens": {
+      "identity": "token_id unique within document and stable inside one frozen source ingest",
+      "required": ["token_id", "source_raw", "token_type", "sequence_index", "provenance_refs"],
+      "allowed_token_types": [
+        "SIGN",
+        "SIGN_UNCERTAIN",
+        "SIGN_ALTERNATIVE_SET",
+        "NUMERIC_EXACT",
+        "NUMERIC_APPROX_OR_UNCERTAIN",
+        "FRACTION_EXACT",
+        "FRACTION_APPROX_OR_UNCERTAIN",
+        "PUNCTUATION",
+        "SEPARATOR",
+        "DAMAGE",
+        "GAP",
+        "ILLEGIBLE",
+        "EDITORIAL_MARK",
+        "LIGATURE_OR_COMPOSITE",
+        "LOGOGRAM_SOURCE_LABEL",
+        "UNKNOWN_SOURCE_TOKEN",
+        "MASK"
+      ],
+      "common_fields": [
+        "source_sign_id",
+        "source_reading_label",
+        "normalized_sign_id",
+        "segment_id",
+        "group_ids",
+        "bbox",
+        "reading_status",
+        "certainty",
+        "alternatives",
+        "numeric",
+        "damage",
+        "editorial",
+        "provenance_refs"
+      ],
+      "semantic_candidate_rule": "Only token types explicitly admitted by a downstream frozen scientific ontology may enter lexical/sign candidate identity. Numeric, punctuation, damage, gap, illegible, editorial and MASK types are non-semantic by default."
+    },
+    "numeric": {
+      "representation": {
+        "exact": {
+          "fields": ["numerator", "denominator", "canonical_fraction"],
+          "rules": [
+            "numerator and denominator are integers encoded as decimal strings",
+            "denominator must be non-zero",
+            "canonical_fraction must be reduced and preserve sign in numerator",
+            "no binary float is authoritative"
+          ]
+        },
+        "approximate_or_uncertain": {
+          "fields": ["marker", "source_expression", "bounded_interval", "exact_value"],
+          "rules": [
+            "exact_value MUST be null",
+            "bounded_interval may be present only if the source explicitly supplies bounds",
+            "source_expression remains lossless"
+          ]
+        }
+      },
+      "source_specific_grammar_rule": "An adapter may reuse v0.6.2 grammar only if its source contract explicitly freezes that choice. New editorial sources must not inherit mwenge numeric conventions by convenience."
+    },
+    "readings_and_uncertainty": {
+      "reading_status_values": ["CERTAIN", "PROBABLE", "POSSIBLE", "UNCERTAIN", "DAMAGED", "RESTORED", "EDITORIAL", "UNKNOWN"],
+      "certainty_rule": "Numeric certainty scores are optional metadata and never replace categorical/source-native uncertainty notation.",
+      "alternatives": {
+        "required_when_token_type": "SIGN_ALTERNATIVE_SET",
+        "fields": ["alternative_id", "source_raw", "source_sign_id", "normalized_sign_id", "reading_status", "provenance_refs"],
+        "rule": "No alternative is silently promoted to primary solely because another source agrees with it."
+      }
+    },
+    "groups": {
+      "purpose": "Represent source-native grouping without asserting universal linguistic wordhood.",
+      "allowed_group_types": [
+        "SOURCE_WORD",
+        "SOURCE_SIGN_GROUP",
+        "SOURCE_NUMERIC_GROUP",
+        "SOURCE_FORMULA_GROUP",
+        "SOURCE_LINE_GROUP",
+        "JANUS_DERIVED_SEQUENCE_WINDOW",
+        "UNKNOWN"
+      ],
+      "required": ["group_id", "group_type", "member_token_ids", "provenance_refs"],
+      "rules": [
+        "member order is explicit and source-native unless derived=true",
+        "SOURCE_WORD is evidence about the source interface/editorial segmentation, not independent linguistic validation",
+        "derived groups require derivation_spec_ref"
+      ]
+    },
+    "relations": {
+      "allowed_types": [
+        "NEXT_TOKEN",
+        "SAME_SOURCE_GROUP",
+        "SAME_SPATIAL_CLUSTER",
+        "ALTERNATIVE_OF",
+        "DAMAGED_PART_OF",
+        "DOCUMENT_IDENTITY_BRIDGE",
+        "SURFACE_IDENTITY_BRIDGE",
+        "TOKEN_IDENTITY_EXACT",
+        "TOKEN_IDENTITY_COMPATIBLE",
+        "TOKEN_IDENTITY_CONFLICT",
+        "GROUP_BOUNDARY_AGREEMENT",
+        "GROUP_BOUNDARY_CONFLICT",
+        "NUMERIC_VALUE_AGREEMENT",
+        "NUMERIC_VALUE_CONFLICT",
+        "LAYOUT_ALIGNMENT"
+      ],
+      "required": ["relation_id", "relation_type", "source_refs", "target_refs", "evidence_class"],
+      "evidence_classes": ["SOURCE_NATIVE", "MECHANICAL_EXACT", "MECHANICAL_COMPATIBLE", "EDITORIAL_ASSERTION", "HUMAN_VERIFIED", "INFERRED_FROZEN_RULE"],
+      "rule": "Cross-source edges never mutate the source-native nodes they connect."
+    },
+    "disagreements": {
+      "allowed_types": [
+        "DOCUMENT_ID_COLLISION",
+        "SURFACE_MAPPING_CONFLICT",
+        "TOKEN_COUNT_CONFLICT",
+        "SIGN_ID_CONFLICT",
+        "READING_CONFLICT",
+        "BOUNDARY_CONFLICT",
+        "NUMERIC_TYPE_CONFLICT",
+        "NUMERIC_VALUE_CONFLICT",
+        "UNCERTAINTY_CONFLICT",
+        "DAMAGE_CONFLICT",
+        "ORDER_CONFLICT",
+        "LAYOUT_CONFLICT",
+        "SOURCE_OMISSION",
+        "SOURCE_ADDITION",
+        "UNRESOLVED"
+      ],
+      "required": ["disagreement_id", "disagreement_type", "source_refs", "target_refs", "status", "provenance_refs"],
+      "status_values": ["OPEN", "MECHANICALLY_LOCALIZED", "EDITORIALLY_EXPLAINED", "RESOLVED_FOR_TECHNICAL_BRIDGE_ONLY", "NOT_RESOLVABLE_WITH_AVAILABLE_EVIDENCE"],
+      "promotion_rule": "Resolving a technical bridge does not erase the original disagreement record."
+    },
+    "provenance_receipt": {
+      "required": ["source_files", "adapter", "ingest_timestamp", "ir_sha256", "validation_state"],
+      "source_file_fields": ["file_id", "filename", "sha256", "bytes", "mime_type", "page_count", "source_locator"],
+      "atomic_provenance_ref_fields": ["ref_id", "file_id", "page", "line", "bbox", "source_record_id", "source_url", "extraction_method", "extractor_version"],
+      "extraction_methods": ["SOURCE_API", "SOURCE_HTML", "SOURCE_JSON", "SOURCE_XML", "PDF_TEXT_LAYER", "MANUAL_DOUBLE_ENTRY", "MANUAL_VERIFIED", "OTHER"]
+    }
+  },
+  "normalization_layers": [
+    {
+      "layer": "L0_RAW",
+      "description": "Exact source-native literals/IDs/order. Immutable evidence."
+    },
+    {
+      "layer": "L1_TYPED",
+      "description": "Source-native tokens receive non-semantic structural types without changing raw literals."
+    },
+    {
+      "layer": "L2_SOURCE_NORMALIZED",
+      "description": "Optional source-specific canonical IDs/numeric exact fractions under a frozen adapter contract."
+    },
+    {
+      "layer": "L3_BRIDGED",
+      "description": "Cross-source identity/compatibility/conflict edges are added; source nodes remain immutable."
+    },
+    {
+      "layer": "L4_SCIENTIFIC_VIEW",
+      "description": "A frozen experiment projects only explicitly eligible fields/tokens from L3. No scientific experiment consumes untyped raw strings directly."
+    }
+  ],
+  "hashing_and_identity": {
+    "document_IR_hash": "SHA-256 over canonical JSON serialization with sorted object keys and compact separators, excluding only the ir_sha256 field itself.",
+    "token_identity": "Source-local token_id is not a universal sign identity. Universalization requires a typed bridge edge.",
+    "scientific_candidate_hash": "Must include ontology/version namespace and may consume only fields allowed by the frozen scientific view.",
+    "raw_literal_hashing_for_candidate_identity": "FORBIDDEN_UNLESS_EXPLICITLY_FROZEN_BY_EXPERIMENT"
+  },
+  "validator_fail_closed_rules": [
+    "duplicate token_id, group_id, segment_id, relation_id, disagreement_id or provenance ref ID",
+    "token references missing segment/group/provenance objects",
+    "group references missing tokens",
+    "relation references nonexistent nodes",
+    "exact numeric token missing valid reduced rational representation",
+    "approximate/uncertain numeric token carrying non-null exact_value",
+    "SOURCE_WORD or derived group missing provenance/derivation identity",
+    "alternative-set token with zero alternatives",
+    "cross-source normalization that overwrites source_raw",
+    "ir_sha256 mismatch",
+    "scientific view attempting to admit non-semantic token types without an explicit frozen ontology exception"
+  ],
+  "adapter_contract_required_fields": [
+    "adapter_id",
+    "source_family",
+    "source_version_or_edition",
+    "input_byte_identity",
+    "document_identity_parser",
+    "surface_segment_parser",
+    "tokenization_rule",
+    "numeric_grammar_id",
+    "uncertainty_grammar_id",
+    "damage_grammar_id",
+    "boundary_grammar_id",
+    "layout_grammar_id",
+    "fail_closed_conditions",
+    "round_trip_or_losslessness_checks"
+  ],
+  "compatibility_targets": {
+    "mwenge": "Adapter may map existing v0.6.2 typed output into IR while preserving original row/line/word indices and raw token text.",
+    "SigLA": "Adapter may map document-view/seq-pattern/word-N structures into source-native groups and token relations without promoting SOURCE_WORD to universal wordhood.",
+    "CTLA_TMT_RILA": "Adapters remain source-specific and cannot be implemented until exact source bytes/pages and notation conventions are frozen under R3B-0."
+  },
+  "R3B_integration": {
+    "R3B_0": "Acquisition receipt freezes bytes/provenance.",
+    "R3B_1": "Overlap freeze selects documents before transcription-level comparison and requires each source side to serialize into this IR.",
+    "R3B_2": "Source-specific adapter validation proves lossless/typed ingest independently of cross-source scientific outcomes.",
+    "R3B_3": "Disagreement-preserving identity bridge aligns source-native IR nodes.",
+    "R3B_4": "Only then may a locked external/cross-editorial replication experiment consume an L4 scientific view."
+  },
+  "claim_ceiling": {
+    "transcription_substrate_architecture_frozen": true,
+    "alternate_editorial_source_ingested": false,
+    "L2_or_L3_replication_unlocked": false,
+    "new_anchor_established": false,
+    "decipherment_established": false,
+    "promotion": "BLOCKED"
+  }
+}

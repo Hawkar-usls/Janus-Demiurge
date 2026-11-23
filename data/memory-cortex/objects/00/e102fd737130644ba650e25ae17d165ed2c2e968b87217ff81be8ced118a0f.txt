@@ -1,0 +1,149 @@
+{
+  "artifact_id": "JANUS-LOGOS-001-R12-FROZEN-PROSPECTIVE-RESEARCH-PLAN-v1.0",
+  "date_utc": "2026-11-01",
+  "status": "FROZEN_BEFORE_FIRST_HOLDOUT_WITNESS_RUN",
+  "parent": {
+    "god_code": "data/JANUS-GOD-CODE-v1.0.json",
+    "r11_negative_result": "data/JANUS-LOGOS-001-R11-CLOUD-RECEIPT-v1.0.json"
+  },
+  "principle": "Following Deutsch's fallibilist emphasis, explanations are conjectures subject to comparison and criticism; no numerical fit alone is a universal physical explanation.",
+  "hypotheses": {
+    "engineering": "Nested training-only CV can select more suitable analytic families than the R1.1 bounded single/two-term selector.",
+    "primary": "On new observed NIST calibration datasets, candidate equations must demonstrate >=5% better test RMSE than a validation-selected simple regression baseline in both datasets before any competitiveness claim.",
+    "null": "On independently permuted validation labels, discoverer must ABSTAIN; fail if it claims a law."
+  },
+  "prospective_datasets": [
+    {
+      "id": "ECKERLE4",
+      "observed": true,
+      "study": "Circular interference transmittance vs wavelength",
+      "source": "https://www.itl.nist.gov/div898/strd/nls/data/LINKS/DATA/Eckerle4.dat",
+      "independent_mirror": "https://github.com/ceres-solver/ceres-solver/blob/master/data/nist/Eckerle4.dat",
+      "mirror_git_blob_sha": "2d0d8bf3f139925ebf78e201b80079ea17d36848",
+      "n": 35,
+      "unique_x": 35,
+      "split_counts": {
+        "train": 21,
+        "validation": 7,
+        "test": 7
+      },
+      "normalization": "z=(wavelength-400)/100"
+    },
+    {
+      "id": "CHWIRUT2",
+      "observed": true,
+      "study": "Ultrasonic reference block response vs metal distance",
+      "source": "https://www.itl.nist.gov/div898/strd/nls/data/LINKS/DATA/Chwirut2.dat",
+      "independent_mirror": "https://github.com/ceres-solver/ceres-solver/blob/master/data/nist/Chwirut2.dat",
+      "mirror_git_blob_sha": "03703de739d642ff62364312f727ac4e8740c1bd",
+      "n": 54,
+      "unique_x": 22,
+      "split_counts": {
+        "train": 29,
+        "validation": 9,
+        "test": 16
+      },
+      "normalization": "z=distance/6"
+    }
+  ],
+  "split": "Group all identical x observations. Order distinct x ascending, use index % 5: 0 TEST, 1 VALIDATION, other TRAIN. Source rows preserve original order. No source read by discoverer except generated train+validation input. Entire fixture public; test is held out by process, not cryptography.",
+  "selection_algorithm": {
+    "inner_cv": "For each candidate family and fixed nonlinear grid shape, grouped 3-fold CV within TRAIN only, using distinct x group sorted index modulo 3. Minimize train-CV RMSE. Refit winning shape on all TRAIN.",
+    "models": [
+      "constant",
+      "polynomial degree 1,2,3,4",
+      "gaussian basis intercept + amplitude * exp(-0.5*((z-center)/width)^2)",
+      "exp-decay basis intercept + amplitude*exp(-rate*z)",
+      "rational-exp basis intercept + amplitude*exp(-rate*z)/(z+offset)"
+    ],
+    "shapes": {
+      "gaussian_centers": "0.00 to 1.00 inclusive step 0.025",
+      "gaussian_widths": [
+        0.02,
+        0.03,
+        0.04,
+        0.05,
+        0.06,
+        0.08,
+        0.1,
+        0.12,
+        0.15,
+        0.2,
+        0.3,
+        0.4,
+        0.6
+      ],
+      "exp_rates": [
+        0.25,
+        0.5,
+        1,
+        1.5,
+        2,
+        3,
+        4,
+        6,
+        8,
+        12,
+        16,
+        24
+      ],
+      "rational_exp_rates": [
+        0,
+        0.25,
+        0.5,
+        1,
+        1.5,
+        2,
+        3,
+        4,
+        6,
+        8,
+        12
+      ],
+      "rational_offsets": [
+        0.02,
+        0.04,
+        0.07,
+        0.1,
+        0.15,
+        0.25,
+        0.4,
+        0.6,
+        1
+      ]
+    },
+    "validation_score": "RMSE(validation)/sd_y_train + 0.008 * number_of_parameters; count nonlinear shape parameters in model complexity: Gaussian 4, exp_decay 3, rational_exp 4; polynomial d+1, constant 1.",
+    "selection_gate": "Only PROPOSE if validation RMSE < 0.98 * best validation RMSE among constant, linear, quadratic and cubic polynomial models fitted on TRAIN. Else ABSTAIN, no promotion.",
+    "dataset_negative_controls": "For each dataset create negative case: use unchanged TRAIN but validation y cyclically shifted by floor(n_validation/2), reusing all points; the same discoverer method must ABSTAIN.",
+    "minimum_generalization": "Real TEST held out until independent witness; if candidate proposed, compare test RMSE to baseline selected on validation among degrees 0..3. Report candidate lost/won/tied and all negative cases, including nonproposals.",
+    "guard": "If holdout, source SHA, sample/split, malformed model or control mismatches then fail. TEST performance must NEVER be used to retune grid, threshold or family for this round."
+  },
+  "baseline": [
+    "OLS polynomial 0/1/2/3 fitted on TRAIN, selection by validation normalized RMSE; independent verifier recomputes from NIST source text."
+  ],
+  "success_definition": {
+    "software": "CI discovers candidates deterministically, two independent runners verify source and corruption tests.",
+    "controls": "Both negative controls MUST ABSTAIN and four adversarial receipt mutations MUST FAIL.",
+    "scientific_competitiveness": "Both datasets PROPOSE and >=5% holdout RMSE improvement vs validation-selected baseline; else record NO_PROMOTION and negative result.",
+    "metaphysics": "Not tested; no claim of God existence, universal physical law or P=NP."
+  },
+  "limits": [
+    "Published NIST datasets and source model families are publicly known, not genuinely unknown to the scientific community.",
+    "NIST dataset metadata publishes theoretical functional families; predeclared search grammar may include them and is not free-form discovery.",
+    "This is model selection under finite sampled measurements, not independent physical replication or new science.",
+    "No performance assessment is allowed from old Pontius and Norris data."
+  ],
+  "execution": {
+    "read_only": true,
+    "scheduled": false,
+    "paid_models": false,
+    "rowan_paid": false,
+    "nas": false,
+    "production_model_write": false,
+    "random_seed": "DETERMINISTIC_SOURCES_NO_RANDOM_HOLDOUT"
+  },
+  "references": [
+    "https://www.itl.nist.gov/div898/strd/nls/nls_main.shtml",
+    "https://www.oxfordmartin.ox.ac.uk/publications/constructor-theory"
+  ]
+}

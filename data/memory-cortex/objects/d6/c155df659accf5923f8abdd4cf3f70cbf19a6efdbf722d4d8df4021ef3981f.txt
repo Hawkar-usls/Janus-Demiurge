@@ -1,0 +1,95 @@
+{
+  "schema": "janus.research.preregistered_physical_qpu_protocol.v1",
+  "record_id": "JANUS-RETRO-PHYSICAL-005-PREREG-2026-11-09",
+  "experiment_id": "JANUS-RETRO-PHYSICAL-005",
+  "date": "2026-11-09",
+  "record_type": "PRE_EXPERIMENT_APPEND_ONLY_PROTOCOL_AND_READINESS",
+  "status": "OFFLINE_QISKIT_PROTOCOL_PASS__REAL_PHYSICAL_QPU_NOT_YET_RUN",
+  "hypothesis": "Does the unconditioned earlier A measurement distribution differ depending on a later random C basis-setting choice on an entangled Bell pair?",
+  "protocol_source": {
+    "repository": "Hawkar-usls/Janus-Demiurge",
+    "pull_request": "https://github.com/Hawkar-usls/Janus-Demiurge/pull/485",
+    "main_merge_commit": "8fa54f25c5bf3f5593db6b7ddc2a3a8da5f78f19",
+    "protocol_code": "experiments/ocean_transformer/physical_qpu_005_protocol.py",
+    "ibm_qpu_adapter": "experiments/ocean_transformer/physical_qpu_005_ibm.py",
+    "scientific_preregistration": "experiments/ocean_transformer/JANUS_PHYSICAL_QPU_005.md",
+    "offline_ci": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/42666317046",
+    "offline_ci_artifact_id": 13696876528,
+    "offline_ci_artifact_digest": "sha256:7129c5c17ea905b56253b4cbfa665fb38398c56c654ff4dee41e0aa6dcd5c191",
+    "offline_unit_test_count": 11,
+    "offline_tests_passed": true
+  },
+  "predeclared_hardware_design": {
+    "platform": "IBM Quantum physical QPU, manually authorized Open Plan instance",
+    "quantum_qubits": 3,
+    "qubits": {
+      "A": "early Z readout",
+      "B": "entangled partner measured Z or X depending on late setting",
+      "C": "late random basis choice ancilla measured after early A in circuit program"
+    },
+    "operations": [
+      "Prepare Bell A-B",
+      "measure A",
+      "measure later random ancilla C",
+      "conditionally rotate B with H if C==1",
+      "measure B"
+    ],
+    "shots_one_provider_job": 4096,
+    "primary_endpoint": "Raw unconditional 2x2 table of early bit A versus later setting C, two-sided Fisher exact test",
+    "primary_alpha": 0.001,
+    "secondary_diagnostics": "Z/Z entanglement correlation and Z/X decorrelation; not a primary claim",
+    "per_shot_event_timestamp_independently_verified": false,
+    "raw_shot_postselection_allowed": false,
+    "single_job_before_result_review": true,
+    "hardware_backend_simulator_forbidden": true
+  },
+  "safety_and_access": {
+    "real_hardware_run_started": false,
+    "real_provider_job_id": null,
+    "actual_provider_measurements_available": false,
+    "provider_authentication_secret_required": true,
+    "github_secret_names": [
+      "IBM_QUANTUM_API_KEY",
+      "IBM_QUANTUM_OPEN_INSTANCE"
+    ],
+    "workflow_manual_only": ".github/workflows/janus-physical-qpu-005-manual.yml",
+    "workflow_requires_explicit_hardware_authorization": true,
+    "scheduled_provider_requests": false,
+    "unlimited_provider_calls": false,
+    "provider_billing_tier_verified_by_bot": false,
+    "open_plan_user_confirmation_required": true,
+    "production_transformer_weights_modified": false,
+    "nas_or_protected_containers_changed": false
+  },
+  "scientific_limitations": {
+    "single_physical_qpu_is_an_external_provider": true,
+    "spacelike_independent_random_choice_established": false,
+    "independent_distant_photonic_station_used": false,
+    "independent_external_custodian_and_physical_receiver_used": false,
+    "provider_metadata_is_not_independent_cryptographic_notarization": true,
+    "hardware_crosstalk_clock_ordering_loopholes_open": true,
+    "even_one_outlier_is_not_physical_retrocausality_proof": true,
+    "retrocausal_communication_observed": false,
+    "proof_of_retrocausality": false,
+    "independent_replication_completed": false
+  },
+  "references": [
+    {
+      "url": "https://quantum.cloud.ibm.com/docs/en/guides/execute-dynamic-circuits",
+      "role": "Current IBM dynamic circuit midcircuit measurement and if_test API"
+    },
+    {
+      "url": "https://www.ibm.com/quantum/products",
+      "role": "IBM Open Plan quantum hardware runtime limits"
+    },
+    {
+      "doi": "10.1103/PhysRevLett.84.1",
+      "role": "Foundational delayed choice quantum eraser physical experiment"
+    },
+    {
+      "doi": "10.1073/pnas.1213201110",
+      "role": "Space-like separated causally disconnected choice quantum eraser"
+    }
+  ],
+  "next_gate": "A person with an Open Plan IBM Quantum account must explicitly add the two GitHub Actions secrets and manually approve exactly one QPU workload; any resulting job ID, compiled QPY and all raw shots must be preserved before an independent photonic-lab protocol could be considered."
+}

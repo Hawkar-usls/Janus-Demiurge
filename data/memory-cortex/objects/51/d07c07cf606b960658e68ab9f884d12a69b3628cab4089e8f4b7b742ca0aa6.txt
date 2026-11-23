@@ -1,0 +1,97 @@
+{
+  "schema": "janus.meta_registry.nexus.exact_head_ci_certificate.v1",
+  "artifact_id": "JANUS-NEXUS-STORAGE-EVIDENCE-FAIL-CLOSED-EXACT-HEAD-CI-CERTIFICATE-v1.12",
+  "certified_at_local": "2026-08-17T02:52:00+03:00",
+  "repository": "Hawkar-usls/Demi_Head",
+  "exact_head": "7bbacfdc78766638572f00ea0ac1f71fc1a5672c",
+  "head_message": "Harden storage preflight against WAL-masked main DB damage",
+  "parent_durability_authority": {
+    "artifact": "registry/experimental/JANUS-NEXUS-CURRENT-DURABILITY-AUTHORITY-v1.json",
+    "exact_head": "3b7d9e2e1b65c9217e05e9281f2447164d18e659"
+  },
+  "status": "EXACT_HEAD_CI_PASS_FAIL_CLOSED_STORAGE_EVIDENCE_REFERENCE",
+  "github_actions": [
+    {"workflow": "Validate repository contracts", "run_id": 31980267172, "conclusion": "success"},
+    {"workflow": "Validate local acceptance browser holdout", "run_id": 31980267211, "conclusion": "success"},
+    {"workflow": "Validate local hemisphere proposal gate", "run_id": 31980267249, "conclusion": "success"},
+    {"workflow": "Verify proposal lab parity", "run_id": 31980267162, "conclusion": "success"}
+  ],
+  "supporting_diagnostic_ci": {
+    "workflow": "Diagnose Nexus storage fault gate",
+    "run_id": 31980267184,
+    "conclusion": "success",
+    "role": "NON_AUTHORITY_SUPPORTING_FORENSIC_STORAGE_SUITE"
+  },
+  "frozen_adversarial_corpus": {
+    "path": "fixtures/nexus_storage_fault_holdout_v1.json",
+    "case_count": 10,
+    "frozen_before_first_execution": true,
+    "freeze_sha256": "1e7939a1572d7b91fc9711041153b1ad1f32be496f92015287d979ef44662046",
+    "changed_after_initial_failure": false
+  },
+  "negative_to_repair_provenance": {
+    "initial_candidate_exact_head": "5e42a256c848f59c12969511a5a0e59399665cc4",
+    "initial_candidate_status": "REFERENCE_TEST_FAILURE_NOT_CERTIFIED",
+    "initial_main_run_id": 31980104280,
+    "failure_class": "WAL_MASKED_EXPLICIT_MAIN_DATABASE_DAMAGE",
+    "observed_problem": "Surviving SQLite WAL state could make an overwritten or truncated main database appear logically readable to WAL-aware quick_check.",
+    "repair": "Validate the physical main SQLite envelope before any WAL-aware SQLite open: SQLite magic, page size validity, minimum page extent, and whole-page file size; only then run read-only quick_check and required-table schema checks.",
+    "test_expectations_weakened": false,
+    "frozen_corpus_rewritten": false
+  },
+  "certified_semantics": {
+    "evidence_stores": ["lifecycle", "dispatch", "replay"],
+    "preflight_read_only": true,
+    "main_database_physical_envelope_checked_before_wal_aware_open": true,
+    "sqlite_magic_required": true,
+    "sqlite_page_size_validated": true,
+    "main_file_must_contain_whole_pages": true,
+    "sqlite_quick_check_required_after_physical_envelope": true,
+    "required_tables_checked": true,
+    "wal_shm_sidecar_inventory_recorded": true,
+    "missing_store_auto_creation": false,
+    "corrupt_store_auto_replacement": false,
+    "truncated_store_auto_replacement": false,
+    "wrong_schema_auto_migration": false,
+    "wal_recoverable_logical_view_overrides_damaged_main_file": false,
+    "all_three_stores_required_before_guarded_recovery": true,
+    "corrupt_replay_store_blocks_lifecycle_recovery_mutation": true,
+    "healthy_guarded_recovery_delegates_to_certified_v1_10_semantics": true,
+    "automatic_recovery": false,
+    "automatic_restart": false,
+    "automatic_retry": false,
+    "cross_host_transport": false,
+    "persistent_daemon": false,
+    "external_effect_authority": false,
+    "authority_delta": 0,
+    "mass_effect_budget_delta": 0
+  },
+  "laws": [
+    "MISSING_EVIDENCE != ZERO_EVIDENCE",
+    "WAL_RECOVERABLE_LOGICAL_VIEW != HEALTHY_MAIN_EVIDENCE_FILE",
+    "CORRUPT_MAIN_DB + SURVIVING_WAL != AUTOMATIC_RECOVERY_PERMISSION",
+    "SCHEMA_MISMATCH != MIGRATION_PERMISSION",
+    "UNKNOWN_STORAGE_STATE != PERMISSION",
+    "STORAGE_PREFLIGHT != STORAGE_REPAIR",
+    "STORAGE_AUTHORITY != WRITE_FAILURE_AUTHORITY"
+  ],
+  "claim_ceiling": {
+    "full_filesystem_health": false,
+    "future_write_success": false,
+    "full_wal_semantic_consistency": false,
+    "real_enospc_tested": false,
+    "real_read_only_filesystem_tested": false,
+    "wal_corruption_recovery": false,
+    "power_loss_tested": false,
+    "kernel_panic_tested": false,
+    "disk_cache_loss_tested": false,
+    "automatic_recovery": false,
+    "automatic_restart": false,
+    "automatic_retry": false,
+    "persistent_daemon": false,
+    "cross_host_transport": false,
+    "external_effect_authority": false,
+    "production_storage_readiness": false
+  },
+  "next_gate": "WRITE_SIDE_STORAGE_FAILURE_AND_WAL_FAULT_HOLDOUT"
+}

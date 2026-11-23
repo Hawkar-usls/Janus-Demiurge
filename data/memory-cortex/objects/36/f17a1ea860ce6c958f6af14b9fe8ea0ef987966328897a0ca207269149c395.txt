@@ -1,0 +1,186 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1C5B2B1-FORCED-COLOR-CLASS-RETURN-PREREG-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "PREREGISTERED_LOCKED_NOT_EXECUTED",
+  "gate": "R5_B1B1C5B2B1_FORCED_COLOR_CLASS_RETURN_GATE_V1",
+  "binds": {
+    "B2B0_theorem_seal_blob": "1e27139bc05ec8b44ddab0bfe0c31a004d941b68",
+    "B2B0_result_blob": "46cfc8fc13bf9ede54268c5879cd44d1fb781ec8",
+    "B2B0_replay_blob": "7ec45c36e735ffcd87521ada2a356acb4585a0ea",
+    "B2A_theorem_seal_blob": "bef6531ad1d5c8382c453f4304783ce563cea9da",
+    "B2_symbolic_classifier_seal_blob": "1fc517db23bdc51ed9e18ca5d204677cb3290fea"
+  },
+  "object": "ONE-STEP POST-FORCE CLASS-RETURN INVENTORY ONLY",
+  "input": {
+    "state": "One source-valid current final hard state P.",
+    "force_single": "One admissible R1 query u=c with u in U=X union Y and c in A(u), or",
+    "force_pair": "One admissible R2 query u=v=c with uv a nonedge and c in A(u) intersect A(v).",
+    "base_state": "First construct only the B2B0-sealed one-step forced base state."
+  },
+  "purpose": "Determine what happens immediately after one source-legitimate forced-color step. Do not recurse. Do not assume the forced base state already belongs to the full authoritative final class.",
+  "exactly_one_pass_rule": {
+    "allowed": [
+      "Recompute source list data from the enlarged seed.",
+      "Perform deterministic/source-canonical repartition steps whose correctness for this exact input class is already sealed or proved inside this gate.",
+      "Recompile already-sealed component/message objects when their declared inputs changed.",
+      "Stop at the first missing invariant or unsupported normalization dependency."
+    ],
+    "forbidden": [
+      "Calling R1 or R2 recursively on a successor.",
+      "Using generic P7-free 4-precoloring or mixed List-4 solving.",
+      "Importing a P6-specific CSZ normalization lemma unless an existing P7-valid transfer theorem explicitly matches the new forced state.",
+      "Inventing a progress measure before the delta inventory is observed.",
+      "Branching on an unbounded set of new forced vertices."
+    ]
+  },
+  "ordered_invariant_audit": [
+    {
+      "order": 1,
+      "name": "B2B0_BASE",
+      "expected": "PASS_BY_SEAL",
+      "checks": [
+        "source axioms (i)-(iv)",
+        "normal-subcase syntax",
+        "exact extension semantics"
+      ]
+    },
+    {
+      "order": 2,
+      "name": "SOURCE_LIST_REPARTITION_V",
+      "checks": [
+        "recompute L_P from enlarged seed",
+        "recompute exact palettes A with fixed X0",
+        "identify vertices whose source list size/class changed",
+        "determine whether axiom (v) is restored by an authorized deterministic repartition"
+      ]
+    },
+    {
+      "order": 3,
+      "name": "VI_STATUS",
+      "checks": [
+        "whether a single 3-list color class controls every Y vertex adjacent to residual Y0 as required by the current source contract",
+        "whether the state is terminal because residual Y0 or the relevant Y-neighborhood disappears",
+        "if false, record exact distinct surviving list classes and witnesses"
+      ]
+    },
+    {
+      "order": 4,
+      "name": "B0_PROVENANCE",
+      "checks": [
+        "survivor/source-Z localization",
+        "coarse source-class update",
+        "component-incidence localization"
+      ]
+    },
+    {
+      "order": 5,
+      "name": "C0_COMPONENT_COMPILATION",
+      "checks": [
+        "component base-list systems after the force",
+        "message recompilations required",
+        "whether every residual component remains in the sealed C0 domain"
+      ]
+    },
+    {
+      "order": 6,
+      "name": "C2_DYNAMIC_COMPONENT_QUOTIENT",
+      "checks": [
+        "all-components-coupled condition where required",
+        "dynamic complete/anticomplete component incidence",
+        "full dynamic quotient lift assumptions"
+      ]
+    },
+    {
+      "order": 7,
+      "name": "C3_SELECTOR_RECONSTRUCTION",
+      "checks": [
+        "selector compilation assumptions",
+        "state-aware reconstruction pointers",
+        "whether selector semantics remain exact"
+      ]
+    }
+  ],
+  "required_terminal_trichotomy": {
+    "A_TERMINAL": {
+      "definition": "The forced state is decidable by an already sealed backend without another R1/R2 call.",
+      "required_certificate": [
+        "terminal backend name",
+        "backend hypotheses",
+        "reconstruction path"
+      ]
+    },
+    "B_HARD_RETURN_WITH_CERTIFIED_PROGRESS": {
+      "definition": "After the one-pass audit, the state satisfies the same authoritative hard-state contract.",
+      "required_certificate": [
+        "exact same-class theorem/certificate",
+        "strict progress measure value before and after",
+        "proof that normalization cannot increase/regenerate that measure along the authorized successor relation",
+        "polynomial bound on distinct successor states produced by one input state"
+      ],
+      "firewall": "Seed growth by itself or local list shrinkage by itself is not an admissible progress proof."
+    },
+    "C_ESCAPE_FROM_AUTHORIZED_CLASS": {
+      "definition": "The first required invariant that is not established is recorded and execution stops.",
+      "required_certificate": [
+        "first failed or unsupported invariant",
+        "source-valid witness state",
+        "all earlier invariants that passed",
+        "whether the escape is a theorem failure, missing transfer theorem, or merely unavailable backend"
+      ]
+    }
+  },
+  "forced_step_delta_receipt": {
+    "name": "FORCED_STEP_DELTA",
+    "required_fields": [
+      "force_kind",
+      "forced_vertices",
+      "forced_color",
+      "seed_size_before_after",
+      "removed_Y0_components",
+      "retained_Y0_components",
+      "vertices_whose_source_L_changed",
+      "vertices_whose_exact_A_shrank",
+      "source_list_class_changes",
+      "VI_before_after",
+      "VI_witnesses_if_false",
+      "B0_coarse_class_changes",
+      "component_base_system_changes",
+      "selector_message_recompilations_needed",
+      "C2_assumption_changes",
+      "C3_assumption_changes",
+      "first_escape_invariant_or_null",
+      "terminal_backend_or_null",
+      "candidate_monotone_coordinates_observed"
+    ]
+  },
+  "killer_question": "Does every source-valid forced-color query terminate after one authorized pass, or return to the same hard class with a rigorously monotone polynomially bounded successor structure; otherwise preserve the first source-valid ESCAPE witness.",
+  "success_criteria": {
+    "inventory_pass": "Every tested/source-generated forced step receives exactly one of the three terminals with a replayable receipt.",
+    "progress_theorem_pass": "May be promoted only if HARD_RETURN cases have a proved non-regenerating strict measure and polynomial successor bound.",
+    "algorithmic_R1_R2_pass": "NOT_AVAILABLE_IN_THIS_GATE even if finite examples all terminate."
+  },
+  "forbidden_promotions": [
+    "NO_RECURSIVE_RESEED",
+    "NO_R1_ALGORITHM_FROM_FINITE_TESTING",
+    "NO_R2_ALGORITHM_FROM_FINITE_TESTING",
+    "NO_GENERIC_P7_PRECOLORING_BACKEND",
+    "NO_P6_LEMMA10_IMPORT_WITHOUT_TRANSFER",
+    "NO_C5C_UNLOCK",
+    "NO_FULL_L2_REPAIR",
+    "NO_P_EQUALS_NP"
+  ],
+  "scientific_ceiling": {
+    "B2B0": "SEALED_PASS",
+    "B2B1": "PREREGISTERED_NOT_EXECUTED",
+    "R1_DECIDABILITY": "OPEN",
+    "R2_DECIDABILITY": "OPEN",
+    "CLASS_RETURN_PROGRESS": "OPEN",
+    "GLOBAL_DYNAMIC_CORE_TRANSITION_QUOTIENT": "OPEN",
+    "C5C": "LOCKED",
+    "FULL_L2_REPAIR": "OPEN",
+    "LEMMA11_P7_LIFT": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  }
+}

@@ -1,0 +1,232 @@
+{
+  "artifact_uuid": "JANUS-META-REGISTRY-ROOSTERS-TIMING-V1.1",
+  "timestamp": "2026-06-29T09:47:18Z",
+  "version": "v1.1-rooster-timing-metadata",
+  "title": "Как ТСПУ анализирует Telegram и VPN по таймингам сессий",
+  "subtitle": "Научно-технический анализ метаданных TLS/TCP без инструкций по обходу",
+  "compiler": "JANUS (via User Hawkar Vision)",
+  "classification": "Technical Surveillance Countermeasures Registry / Non-operational research note",
+  "relationship_to_previous_registry": {
+    "base_artifact_uuid": "JANUS-META-REGISTRY-ROOSTERS-V1.0",
+    "base_version": "v1.0-rooster",
+    "inherits": [
+      "описание ТСПУ как DPI-инфраструктуры",
+      "идею анализа зашифрованного TLS-трафика через метаданные",
+      "модель деградации/сбросов/дропов как поведенческого воздействия",
+      "интеграцию с JANUS как реестром сетевых паттернов"
+    ],
+    "new_contribution": "Добавляет слой timing/metadata analysis: не расшифровка TLS 1.3, а классификация поведения клиента по ранним TCP/TLS событиям, параллельности сессий и несоответствию TLS-фингерпринта реальному сетевому поведению приложения."
+  },
+  "safety_scope": {
+    "allowed_scope": [
+      "описание наблюдаемой модели DPI на уровне метаданных",
+      "пассивная научная интерпретация PCAP/Wireshark-паттернов",
+      "оценка рисков ложных срабатываний",
+      "архитектурное сравнение браузера, Telegram-клиента и VPN-туннеля"
+    ],
+    "excluded_scope": [
+      "команды, скрипты, параметры задержек, точные пороги, рецепты обхода",
+      "проверочные методики против реальной инфраструктуры",
+      "настройки маскировки, подделки отпечатков или оптимизации под фильтр",
+      "списки целевых IP/доменов/провайдеров"
+    ],
+    "redaction_policy": "Численные пороги и эксплуатационные детали сохранены только как качественные формулировки: «burst», «low-single-digit parallelism», «sub-second clustering», без пригодных для настройки значений."
+  },
+  "executive_summary": {
+    "core_thesis": "Если содержимое TLS 1.3 недоступно, DPI может анализировать не payload, а форму поведения: когда и сколько соединений открывается, к одному ли адресу они направлены, как выглядит ClientHello, какие ALPN/SNI/размеры ранних пакетов видны и как это соотносится с типичным профилем приложения.",
+    "why_it_matters": "Telegram Desktop и VPN-туннели могут создавать резкий стартовый профиль: несколько близко расположенных TCP/TLS-сессий к одному внешнему узлу, тогда как современный браузер часто использует мультиплексирование HTTP/2/HTTP/3 и выглядит иначе.",
+    "hypothesis": "Срабатывание фильтра может быть результатом корреляции двух признаков: агрессивной параллельности стартовых сессий и TLS-фингерпринта, похожего на популярный десктопный браузер, но ведущего себя не как обычный браузерный сеанс."
+  },
+  "observed_packet_pattern": {
+    "source_context": "Скриншот Wireshark-подобной трассы: несколько SYN к одному TCP/443, серия SYN/ACK и ACK, затем несколько TLSv1.3 Client Hello с похожим SNI-контекстом, после чего серверные TLS-ответы и дальнейшие ACK/данные.",
+    "sequence_model": [
+      {
+        "phase": "tcp_fanout",
+        "description": "Клиент почти одновременно инициирует несколько TCP-соединений к одному целевому IP:443.",
+        "visible_to_dpi": [
+          "timestamp",
+          "5-tuple",
+          "SYN cadence",
+          "parallel connection count"
+        ]
+      },
+      {
+        "phase": "tls_client_hello_cluster",
+        "description": "В раннем окне появляются несколько TLS ClientHello. Payload приложения ещё не расшифровывается, но параметры рукопожатия и метаданные видимы.",
+        "visible_to_dpi": [
+          "TLS version family",
+          "cipher/extension structure",
+          "ALPN",
+          "SNI when not hidden",
+          "JA3/JA4-like fingerprint"
+        ]
+      },
+      {
+        "phase": "behavioral_consistency_check",
+        "description": "DPI сопоставляет отпечаток клиента с ожидаемым поведением этого класса клиента. Браузерный отпечаток плюс нетипичный burst-профиль может получить высокий anomaly score.",
+        "visible_to_dpi": [
+          "fingerprint class",
+          "connection burst shape",
+          "inter-arrival timing",
+          "dst concentration"
+        ]
+      },
+      {
+        "phase": "policy_action",
+        "description": "При совпадении с политикой система может дропать часть пакетов, сбрасывать сессию или деградировать конкретный протокольный профиль.",
+        "visible_to_dpi": [
+          "RST/drop outcome",
+          "retransmission increase",
+          "handshake failure ratio"
+        ]
+      }
+    ]
+  },
+  "feature_model": {
+    "timing_features": [
+      "число новых TCP-сессий к одному dst_ip:dst_port в коротком стартовом окне",
+      "распределение inter-arrival time между SYN и ClientHello",
+      "степень синхронности параллельных handshakes",
+      "доля handshake failures / retransmissions после начального burst",
+      "скорость перехода от TCP established к TLS ClientHello"
+    ],
+    "topology_features": [
+      "концентрация соединений на одном IP/ASN/CDN-edge",
+      "повторяемость паттерна при запуске приложения",
+      "соотношение исходящих потоков к одному endpoint против обычного веб-серфинга",
+      "симметрия/асимметрия маршрута, важная для DPI, которому нужно видеть обе стороны сессии"
+    ],
+    "tls_fingerprint_features": [
+      "JA3/JA4-подобный отпечаток ClientHello",
+      "набор cipher suites и extensions",
+      "порядок/структура TLS extensions",
+      "ALPN-набор и его соответствие поведению приложения",
+      "SNI-домен, если он не скрыт ECH/другими механизмами"
+    ],
+    "behavioral_mismatch_features": [
+      "браузерный TLS-профиль без типичной браузерной модели запросов",
+      "много почти одновременных независимых TCP-сессий вместо устойчивого мультиплексированного профиля",
+      "одинаковый ClientHello-класс на нескольких параллельных соединениях",
+      "резкое изменение фонового трафика ОС после поднятия VPN-туннеля"
+    ]
+  },
+  "telegram_model": {
+    "application_profile": "Telegram-клиент может открывать пул соединений для ускорения доставки медиа и синхронизации, из-за чего стартовый сетевой профиль похож на компактный burst, а не на единичный веб-запрос.",
+    "dpi_view": "DPI не обязательно нужно знать содержимое сообщений. Достаточно видеть раннюю форму сессий: fanout к endpoint, серию ClientHello, похожие отпечатки и временную близость handshakes.",
+    "risk_pattern": "Если этот профиль накладывается на популярный браузерный TLS-фингерпринт, возникает несостыковка: fingerprint говорит «Chrome-like», а поведение говорит «не обычная вкладка браузера»."
+  },
+  "vpn_model": {
+    "application_profile": "При запуске VPN внешний наблюдатель видит один или несколько туннельных endpoint-ов, к которым быстро устремляется фоновый трафик приложений и ОС.",
+    "dpi_view": "Содержимое туннеля скрыто, но стартовый момент может выглядеть как резкая перестройка транспортного графа: новые соединения, плотные тайминги, повторяемый endpoint, изменение распределения размеров/периодичности пакетов.",
+    "risk_pattern": "Поведенческий профиль может быть классифицирован не по содержимому, а по факту туннелирования и по несовпадению между транспортным ритмом и заявленным TLS-клиентом."
+  },
+  "browser_baseline_model": {
+    "http2": "HTTP/2 поддерживает мультиплексирование независимых streams внутри соединения, поэтому множество запросов не обязательно превращается в множество отдельных TCP handshakes.",
+    "http3": "HTTP/3 переносит HTTP-семантику поверх QUIC, где также есть stream-based multiplexing и TLS 1.3-подобная криптографическая база в QUIC-контексте.",
+    "practical_consequence": "У реального браузера профиль часто имеет устойчивые соединения, preconnect, connection reuse, h2/h3 streams и CDN-специфику. Поэтому простая имитация TLS-отпечатка без имитации поведения может выглядеть подозрительно."
+  },
+  "classification_hypothesis": {
+    "rule_layer": [
+      "Если в коротком окне наблюдается плотный burst новых соединений к одному endpoint — поднять score.",
+      "Если TLS-fingerprint относится к массовому браузеру, но session graph не похож на браузерный — поднять score.",
+      "Если после начального burst наблюдается повторяемый туннельный профиль — поднять score.",
+      "Если есть явные признаки обычного браузерного reuse/multiplexing/CDN-navigation — снизить score."
+    ],
+    "ml_layer": [
+      "модель временного ряда по событиям SYN/SYN-ACK/ACK/ClientHello",
+      "графовая модель endpoint concentration",
+      "классификатор consistency между JA3/JA4-классом и поведением",
+      "оценка вероятности ложного срабатывания на update-клиентах, лаунчерах, CDN и корпоративных прокси"
+    ],
+    "policy_layer": [
+      "soft degradation: рост потерь и retransmissions",
+      "hard reset: RST/обрыв раннего handshaking",
+      "selective shaping: нестабильность только на выбранном классе трафика"
+    ]
+  },
+  "false_positive_analysis": {
+    "possible_false_positives": [
+      "браузерный preconnect к нескольким origin/CDN edge",
+      "лаунчеры игр и апдейтеры с параллельными загрузками",
+      "облачные клиенты синхронизации",
+      "корпоративные прокси, EDR/антивирусные агенты",
+      "мессенджеры и видеоклиенты с собственными пулами соединений"
+    ],
+    "why_false_positives_happen": "Метаданные не равны намерению пользователя. Один и тот же burst-профиль может быть у VPN, Telegram media preload, апдейтера игры или легального корпоративного клиента.",
+    "research_note": "Поэтому корректный анализ должен говорить о вероятностной классификации и риске, а не о стопроцентной идентификации."
+  },
+  "limitations": {
+    "unknowns": [
+      "точные пороги срабатывания неизвестны и могут меняться по региону, оператору, времени и политике",
+      "часть наблюдений может быть вызвана серверной стороной, CDN, перегрузкой, маршрутом или локальной сетью",
+      "скриншот PCAP показывает форму сессии, но сам по себе не доказывает намерение DPI",
+      "RST/drop может иметь несколько причин, включая middlebox, firewall, серверную политику или сетевой сбой"
+    ],
+    "epistemic_status": "гипотеза на основе открытых технических разборов, метаданных TLS/TCP и наблюдаемых трасс; не утверждается как полная внутренняя модель ТСПУ."
+  },
+  "non_operational_research_method": {
+    "safe_methods": [
+      "пассивное сравнение собственных трасс без атакующих проверок",
+      "агрегация статистики reset/drop/retransmission без подбора обходных параметров",
+      "описание признаков на уровне категорий, а не пригодных для настройки чисел",
+      "сравнение приложений только в лабораторной или собственной сети"
+    ],
+    "unsafe_methods_not_included": [
+      "автоматизированные тесты против реальных фильтрующих узлов",
+      "подбор sleep/parallelism/JA3/JA4 под обход",
+      "генерация маскировочных профилей",
+      "публикация рабочих скриптов или команд"
+    ]
+  },
+  "janus_integration": {
+    "registry_role": "Timing layer для ROOSTERS: добавляет не аппаратный, а поведенческий слой анализа трафика.",
+    "conceptual_mapping": [
+      "DPI-node = наблюдатель формы сессии",
+      "ClientHello = ранний семантический отпечаток без доступа к содержимому",
+      "burst timing = ритм поведения приложения",
+      "RST/drop = сигнал воздействия на сессию",
+      "false positive = шумовая цена классификации по метаданным"
+    ],
+    "use_in_nas_brain": [
+      "как аналитический JSON-реестр для классификации сетевых паттернов",
+      "как предупреждение: TLS-защита payload не скрывает timing graph",
+      "как слой эпистемической осторожности: не путать корреляцию, классификацию и доказательство"
+    ]
+  },
+  "public_references": [
+    {
+      "label": "Base uploaded registry",
+      "description": "Исходный JANUS-META-REGISTRY-ROOSTERS-V1.0 с описанием ТСПУ, DPI, байпасов, балансировки и деградации.",
+      "local_artifact": "JANUS-META-REGISTRY-ROOSTERS-V1.0.json"
+    },
+    {
+      "label": "Cloudflare JA3/JA4 docs",
+      "description": "JA3/JA4 как способ профилирования TLS-клиентов по тому, как они инициируют соединение.",
+      "url": "https://developers.cloudflare.com/bots/additional-configurations/ja3-ja4-fingerprint/"
+    },
+    {
+      "label": "FoxIO JA4",
+      "description": "JA4+ как набор сетевых fingerprinting-методов для threat hunting и анализа сетевого поведения.",
+      "url": "https://github.com/FoxIO-LLC/ja4"
+    },
+    {
+      "label": "RFC 9113 HTTP/2",
+      "description": "HTTP/2 и stream multiplexing внутри соединения.",
+      "url": "https://www.rfc-editor.org/rfc/rfc9113.html"
+    },
+    {
+      "label": "RFC 9114 HTTP/3",
+      "description": "HTTP/3 как HTTP-семантика поверх QUIC со stream-based моделью.",
+      "url": "https://www.rfc-editor.org/rfc/rfc9114.html"
+    }
+  ],
+  "provenance": {
+    "created_by": "Hawkar (user) with JANUS assistant",
+    "input_materials": [
+      "Uploaded base JSON registry v1.0",
+      "User-provided analytical note about TSPU timing/session metadata",
+      "User-provided Wireshark-like screenshot showing parallel TCP/TLS session setup"
+    ],
+    "notes": "Документ намеренно не содержит воспроизводимых обходных инструкций. Он фиксирует научно-техническую модель наблюдения и классификации."
+  }
+}

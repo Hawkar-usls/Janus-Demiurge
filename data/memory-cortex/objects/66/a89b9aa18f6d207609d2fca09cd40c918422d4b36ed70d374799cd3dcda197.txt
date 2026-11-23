@@ -1,0 +1,54 @@
+{
+  "id":"EYE-R4.4-ROBUST-WITNESS-PLANNER-CONTRACT-2026-09-02-v1.0",
+  "schema_version":"1.0",
+  "created_at":"2026-09-02",
+  "status":"ACTIVE_EXECUTABLE_RESEARCH_CONTRACT",
+  "program":"EYE",
+  "stage":"R4.4",
+  "title":"Robust Witness Planner",
+  "canonical_question":"Given several provenance-declared admissible prior/likelihood models, which adaptive witness policy reaches a common cause-class confidence gate while minimizing declared robust cost across the model set?",
+  "relationship_to_r4_3":"R4.3 optimizes one nominal stochastic model and stress-tests it afterwards. R4.4 optimizes against the declared uncertainty set from the beginning.",
+  "robust_stop_rule":"A terminal claim is allowed only when the same target class exceeds confidence_threshold in every admissible model after at least one calibrated decision witness unless prior-only identification is explicitly enabled.",
+  "finite_model_bellman":"For each joint posterior state, every candidate test induces one expected continuation cost per admissible model. The planner selects the test minimizing a declared risk functional rho over that model-cost vector, recursively over all supported outcomes.",
+  "objectives":{
+    "minimax_expected_cost":"rho(v)=max_M v_M",
+    "cvar_model_expected_cost":"rho(v)=upper-tail CVaR_alpha of per-model expected costs using declared model weights"
+  },
+  "model_set_requirements":[
+    "at least two admissible models are required for a robustness claim",
+    "every model has a non-empty provenance label",
+    "priors are explicit or inherit the declared base prior",
+    "decision-usable tests remain calibrated probability models",
+    "likelihood overrides must cover every candidate cause",
+    "the finite model set is an uncertainty contract, not evidence that the true world lies inside it"
+  ],
+  "support_firewall":"By default require_common_outcome_support=true: a test is not robust-admissible when one model assigns zero support to an outcome another admissible model considers possible. This prevents silent model elimination from exact-zero likelihoods.",
+  "distinct_negative_verdicts":[
+    "ROBUST_NON_IDENTIFIABLE_UNDER_DECLARED_MODEL_SET",
+    "MODEL_SET_TOO_WIDE_FOR_COMMON_ROBUST_IDENTIFICATION",
+    "UNKNOWN_RESOURCE_LIMIT",
+    "DEGENERATE_MODEL_SET"
+  ],
+  "exactness":"Dynamic programming is exact only for the declared finite model set, finite test space, objective, posterior rounding and resource ceilings. No claim is made about models not included in the set.",
+  "outputs":["robust_policy_receipt.json","policy_tree.json","model_set_receipt.json","next_test_ranking.json","policy_summary.json"],
+  "firewalls":[
+    "ROBUST_POLICY != CAUSAL_TRUTH",
+    "MODEL_SET != TRUE_WORLD",
+    "MODEL_PROVENANCE != MODEL_VALIDITY",
+    "MINIMAX_OPTIMAL != CALIBRATED",
+    "CVAR_OPTIMAL != CALIBRATED",
+    "ROBUST_STOP != FREQUENTIST_GUARANTEE",
+    "PRIOR_SET != EVIDENCE",
+    "MODEL_SET_TOO_WIDE != TRUE_WORLD_AMBIGUITY",
+    "ROBUST_NON_IDENTIFIABLE != FALSE",
+    "UNKNOWN_RESOURCE_LIMIT != ROBUST_NON_IDENTIFIABLE"
+  ],
+  "benchmarks":{
+    "synthetic_robust_advantage":"Nominal-fragile cheap test loses under degraded calibration; minimax selects t_robust with robust cost 2.",
+    "search_proof_robust":"Declared degraded calibration changes the robust first move to independent_verifier; minimax worst-model expected cost is approximately 4.024.",
+    "palomar_xe325_robust":"No calibrated decision-usable historical discriminator exists; verdict remains ROBUST_NON_IDENTIFIABLE under deliberately non-evidential sensitivity envelopes."
+  },
+  "authority_ceiling":"PASS establishes optimality only inside the declared finite uncertainty set and robust objective. Calibration provenance, model completeness, model weights, priors and support assumptions remain independently falsifiable.",
+  "next_stage":"EYE-R4.5-ADVERSARIAL-MODEL-EXPANDER",
+  "next_stage_goal":"Replace a manually enumerated finite model set with interval/contamination ambiguity sets and adversarially search for witness-model combinations that break the current robust policy before granting a stronger robustness ceiling."
+}

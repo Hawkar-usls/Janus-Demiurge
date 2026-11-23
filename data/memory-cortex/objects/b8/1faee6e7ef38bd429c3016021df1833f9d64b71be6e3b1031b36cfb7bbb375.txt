@@ -1,0 +1,76 @@
+{
+  "schema": "janus.music.audio_similarity_witness_run.v1",
+  "artifact_id": "JANUS-ROBERT-MILES-AUDIO-SIMILARITY-WITNESS-RUN-2026-09-01-v1.0",
+  "created_date": "2026-09-01",
+  "status": "EXECUTED_PASS__RELATED_AUDIO_STRUCTURE_VISIBLE__SMALL_N_NONCONFIRMATORY",
+  "preregistration": {
+    "path": "data/JANUS-ROBERT-MILES-AUDIO-SIMILARITY-PROSPECTIVE-PREREG-2026-09-01-v1.0.json",
+    "commit": "362e988da3d980b011e5928ca7ab2b00f66b7d23",
+    "status": "FROZEN_BEFORE_AUDIO_FEATURE_EXTRACTION"
+  },
+  "execution_receipt": {
+    "repo": "Hawkar-usls/TOPA",
+    "workflow": ".github/workflows/robert-miles-audio-similarity-witness.yml",
+    "tool": "tools/robert_miles_audio_similarity_witness.py",
+    "topa_commit": "7b24cc9913718b349d6659f206cbaa796a355874",
+    "workflow_run_id": 33516930159,
+    "job_id": 99886179978,
+    "conclusion": "success",
+    "artifact_id": 9803999792,
+    "artifact_digest": "sha256:826bea3beacff6cce6e354b6a35fe8619c5bb51812a31156f32d3f5c7f6fc2e5"
+  },
+  "decode": "ffmpeg -> mono 11025 Hz signed-16 PCM",
+  "pair_design": "3 related + 3 unrelated controls; all 12 exact track files disjoint across inferential pairs",
+  "pair_results": [
+    {"id":"AR1","group":"related","pair":"Fable (Messagge Version) vs Fable (Dream Version)","chroma":0.9437284275395103,"spectral":0.996918240644143,"rms_shape":0.30926841362589985,"onset_shape":0.03322964254687861,"tempo_diff_bpm":0.0},
+    {"id":"AR2","group":"related","pair":"Fable (Dream Radio) vs Fable (Messagge Radio)","chroma":0.9559718275535878,"spectral":0.9970866810661928,"rms_shape":0.35875817724567927,"onset_shape":0.06519126083116383,"tempo_diff_bpm":0.0},
+    {"id":"AR3","group":"related","pair":"One And One (Robert Miles Radio Version) vs One And One (Radio Without The Beat)","chroma":0.9676218969922715,"spectral":0.991892436625526,"rms_shape":0.47270229827734433,"onset_shape":0.04685815384031511,"tempo_diff_bpm":31.321022727272734},
+    {"id":"AC1","group":"control","pair":"Fantasya vs Landscape","chroma":0.849806620491708,"spectral":0.9945105393095335,"rms_shape":0.0013127279623298405,"onset_shape":0.009566179906097174,"tempo_diff_bpm":0.0},
+    {"id":"AC2","group":"control","pair":"In My Dream vs Princess Of Light","chroma":0.8170416958237374,"spectral":0.9950520644091196,"rms_shape":0.3334638670133847,"onset_shape":0.09362050211120335,"tempo_diff_bpm":43.06640625},
+    {"id":"AC3","group":"control","pair":"In The Down vs Red Zone","chroma":0.7520461068174412,"spectral":0.9905879932041352,"rms_shape":-0.06487553448916536,"onset_shape":0.038994732207107564,"tempo_diff_bpm":14.35546875}
+  ],
+  "group_summary": {
+    "chroma_profile_cosine": {"related_mean":0.9557740506951232,"control_mean":0.8062981410442956,"difference":0.14947590965082758,"raw_exact_permutation_p_one_sided":0.05,"bonferroni_5":0.25},
+    "spectral_profile_cosine": {"related_mean":0.9952991194452873,"control_mean":0.993383532307596,"difference":0.0019155871376912437,"raw_exact_permutation_p_one_sided":0.25,"bonferroni_5":1.0},
+    "rms_shape_correlation": {"related_mean":0.38024296304964117,"control_mean":0.08996702016218305,"difference":0.2902759428874581,"raw_exact_permutation_p_one_sided":0.1,"bonferroni_5":0.5},
+    "onset_shape_correlation": {"related_mean":0.04842635240611918,"control_mean":0.04739380474146936,"difference":0.001032547664649816,"raw_exact_permutation_p_one_sided":0.5,"bonferroni_5":1.0},
+    "tempo_difference_bpm": {"related_mean":10.440340909090912,"control_mean":19.140625,"difference":-8.700284090909088,"raw_exact_permutation_p_one_sided":0.35,"bonferroni_5":1.0}
+  },
+  "verdict": {
+    "strongest_effect": "CHROMA_PROFILE_SIMILARITY",
+    "chroma_consistency": "All three related pairs exceed all three control pairs: related 0.9437-0.9676 versus controls 0.7520-0.8498.",
+    "rms_shape": "Related mean substantially exceeds control mean, but one control pair is also moderately correlated and small N prevents confirmation.",
+    "spectral_profile": "Near-saturated similarity for both groups; low discriminative value in this same-artist/same-era catalog.",
+    "onset_shape": "No meaningful group separation in this implementation.",
+    "tempo": "Related pairs are closer on average, but one One And One variant produces a large tempo-estimator difference; nonconfirmatory.",
+    "confirmatory_status": "EFFECT_SIZE_PATTERN_PRESENT_BUT_NOT_FAMILYWISE_CONFIRMATORY",
+    "strongest_allowed_claim": "The decoded-audio witness behaves differently from SHA-256: related versions show a clear harmonic/pitch-class similarity effect and a suggestive dynamic-envelope effect relative to disjoint same-catalog controls. This is expected musical structure, not hidden cryptographic structure."
+  },
+  "relation_to_sha_run": {
+    "sha_result": "The preregistered five-hex LCS pattern did not replicate in five new related SHA pairs.",
+    "audio_result": "Related versions are visibly closer in chroma than unrelated controls.",
+    "combined_law": "MUSICAL_RELATIONSHIP_SURVIVES_IN_AUDIO_FEATURE_SPACE_WHILE_SHA256_AVALANCHES_IT_AWAY",
+    "formula": "RELATED_AUDIO -> STRUCTURAL_SIMILARITY; RELATED_AUDIO -> SHA256_DIGESTS_APPROX_RANDOM_RELATIVE_TO_EACH_OTHER"
+  },
+  "next_gate": {
+    "name": "LARGER_DISJOINT_AUDIO_REPLICATION",
+    "requirements": [
+      "Increase number of related compositions and independent same-catalog controls.",
+      "Keep chroma metric unchanged as primary before extracting new audio features.",
+      "Use a stronger beat/tempo estimator and optionally perceptual fingerprint as secondary witnesses.",
+      "Do not modify SHA metrics based on the audio result."
+    ]
+  },
+  "ibm_boundary": {
+    "ibm_quantum_hardware_used": false,
+    "reason": "This result is fully classical and does not require or imply SHA reversal."
+  },
+  "epistemic_firewall": [
+    "AUDIO_SIMILARITY != SHA_SIMILARITY",
+    "CHROMA_EFFECT != HIDDEN_MESSAGE",
+    "SMALL_N_RAW_P_0_05 != FAMILYWISE_CONFIRMATION",
+    "EXPECTED_RELATED_MUSIC_SIMILARITY_IS_A_POSITIVE_CONTROL",
+    "NULL_METRICS_PRESERVED"
+  ],
+  "canonical_seal": "THE AUDIO REMEMBERS THE FAMILY; SHA-256 DOES NOT. THAT IS NOT A FAILURE OF THE HASH TEST — IT IS THE EXPECTED DIFFERENCE BETWEEN A PERCEPTUAL WITNESS AND A CRYPTOGRAPHIC IDENTITY WITNESS."
+}

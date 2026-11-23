@@ -1,0 +1,187 @@
+{
+  "artifact_id": "JANUS-TRUMP-C11-P7-SURVIVOR-RIGIDITY-GATE-RESULT-2026-09-20-v1.0",
+  "version": "v1.0",
+  "date": "2026-09-20",
+  "status": "PASS_C11_P7_SURVIVOR_RIGIDITY",
+  "authority": "STATIC_THEOREM_LEVEL_PROOF_AUDIT_FROM_FROZEN_C11_FACTS",
+  "preregistration": {
+    "path": "research/TRUMP_C11_P7_SURVIVOR_RIGIDITY_GATE_PREREG_2026-09-20_v1.0.json",
+    "commit": "e37edd0df60e99bc12ca72406ef7f429fec9a2b5"
+  },
+  "parent": {
+    "acceptability_fail_commit": "14ce4fc00529464d6304e9fed5974e86c5289b8c",
+    "acceptability_fail_blob": "d28e75d16cffc9ad8e51c6611728b2b918a59616",
+    "cell": "C11",
+    "witness_vertex_count": 8
+  },
+  "frozen_C11_facts": {
+    "residual_common": "z is adjacent to y and y'",
+    "stored_111": "P={p}, M={m}, N={n}",
+    "z_anticomplete_to_stored_support": [
+      "p",
+      "m",
+      "n"
+    ],
+    "stable_set": [
+      "y",
+      "y_prime",
+      "p",
+      "n"
+    ],
+    "source_orientation": "f'(m) in L_{P'}(y)",
+    "consequence_orientation": "ym is a nonedge",
+    "type_separator": "s in T minus T'",
+    "type_edges": {
+      "y-s": "edge",
+      "y_prime-s": "nonedge",
+      "p-s": "edge",
+      "n-s": "nonedge"
+    },
+    "stored_edges": {
+      "p-m": "edge",
+      "m-n": "edge",
+      "p-n": "nonedge"
+    },
+    "list_sizes": {
+      "y": 3,
+      "y_prime": 3
+    },
+    "lists_distinct": true,
+    "terminal_source_path": [
+      "z",
+      "y",
+      "s",
+      "p",
+      "m",
+      "n"
+    ]
+  },
+  "theorem": {
+    "R1_FORCE_YPRIME_M_EDGE": {
+      "verdict": "PASS",
+      "claim": "y'm is an edge.",
+      "proof": [
+        "Consider the ordered seven vertices y'-z-y-s-p-m-n.",
+        "Consecutive edges y'z, zy, ys, sp, pm, mn are frozen.",
+        "Nonconsecutive y'y, y'p, y'n, yp, yn, pn are absent because {y,y',p,n} is stable.",
+        "z is nonadjacent to s,p,m,n because z is in descendant Y0' and hence anticomplete to the enlarged seed; p,m,n are stored seed vertices and s is an old seed vertex.",
+        "ym is absent by the source symmetry orientation f'(m) in L(y).",
+        "sm is absent because m belongs to original Y0 and is anticomplete to original seed S.",
+        "sn is absent because n has original type T' and s is in T minus T'.",
+        "Thus the only nonconsecutive adjacency not already forbidden is y'm.",
+        "If y'm were absent, y'-z-y-s-p-m-n would be an induced P7, contradicting P7-freeness.",
+        "Therefore y'm is forced."
+      ]
+    },
+    "R2_FIRST_LIST_DIFFERENCE": {
+      "verdict": "PASS",
+      "claim": "f'(m) is in L(y) minus L(y').",
+      "proof": [
+        "The source orientation gives f'(m) in L(y).",
+        "By R1, y' is adjacent to m and m is in the enlarged seed with color f'(m).",
+        "Therefore f'(m) is excluded from L(y')."
+      ]
+    },
+    "R3_SECOND_LIST_DIFFERENCE": {
+      "verdict": "PASS",
+      "claim": "f(s) is in L(y') minus L(y).",
+      "proof": [
+        "Since s is in T, y is adjacent to s, so f(s) is excluded from L(y).",
+        "Since s is not in T', y' is nonadjacent to s.",
+        "All vertices of T' have the unique seed color f(T'), and f(T') differs from f(T)=f(s).",
+        "Hence y' has no original-seed neighbor colored f(s), so f(s) belongs to L_old(y').",
+        "Property (5) provenance gives L_old(y')=L_new(y'), so f(s) belongs to L(y')."
+      ]
+    },
+    "R4_SINGLETON_CROSS_DIFFERENCES": {
+      "verdict": "PASS",
+      "claim": "L(y)\\L(y')={f'(m)} and L(y')\\L(y)={f(s)}.",
+      "proof": [
+        "Both lists are distinct 3-element subsets of the four-color set.",
+        "Therefore each directed set difference has exactly one element.",
+        "R2 supplies the element of L(y)\\L(y'); R3 supplies the element of L(y')\\L(y)."
+      ]
+    },
+    "R5_INDUCED_C6": {
+      "verdict": "PASS",
+      "claim": "y'-z-y-s-p-m-y' is an induced C6.",
+      "proof": [
+        "Cycle edges y'z, zy, ys, sp, pm and my' hold, with my' from R1.",
+        "Every non-cycle pair is frozen nonadjacent: y'y, y's, y'p, zs, zp, zm, yp, ym, sm.",
+        "Therefore the six vertices induce exactly C6."
+      ]
+    },
+    "R6_PENDANT_N": {
+      "verdict": "PASS",
+      "claim": "In the induced subgraph on {y',z,y,s,p,m,n}, n has exactly one neighbor, m.",
+      "proof": [
+        "mn is an edge.",
+        "n is nonadjacent to y', y and p by the frozen stable set.",
+        "n is nonadjacent to z because z is anticomplete to stored support.",
+        "n is nonadjacent to s because n has type T' and s is not in T'."
+      ]
+    }
+  },
+  "canonical_kernel": {
+    "graph_structure": "INDUCED_C6_PLUS_PENDANT_LEAF",
+    "cycle_order": [
+      "y_prime",
+      "z",
+      "y",
+      "s",
+      "p",
+      "m",
+      "y_prime"
+    ],
+    "pendant_vertex": "n",
+    "pendant_attachment": "m",
+    "crossed_singleton_list_differences": {
+      "L(y)\\L(y_prime)": "{f'(m)}",
+      "L(y_prime)\\L(y)": "{f(s)}"
+    },
+    "interpretation": "P7-freeness converts the old terminal P6 escape into a rigid closing-chord configuration coupling graph adjacency to the exact two singleton list differences."
+  },
+  "source_consistency": {
+    "source_terminal_facts": "Directly matches the acceptability paragraph: z anticomplete to V(Q), {y,y',p,n} stable, orientation f'(m) in L(y), and induced P6 z-y-s-p-m-n.",
+    "new_reasoning": "Only P7-freeness and frozen type/list semantics are added; no new state or repair hypothesis is introduced."
+  },
+  "scientific_interpretation": {
+    "strongest_supported_statement": "Every authoritative-core C11 acceptability survivor satisfying the frozen source orientation has a forced y'-m closing edge. Consequently the seven-vertex survivor kernel is an induced C6 y'-z-y-s-p-m-y' with pendant n at m, and the two unequal 3-lists differ exactly by the crossed colors f'(m) and f(s).",
+    "not_claimed": [
+      "that C11 is repaired",
+      "that the kernel is the only obstruction outside C11",
+      "that C1S, CS1 or CSS are reachable or unreachable",
+      "that a bounded descriptor based on this kernel is sufficient",
+      "full Lemma 11 P7 lift",
+      "P7-free 4-COLOR in P",
+      "hardness localization",
+      "P=NP evidence"
+    ]
+  },
+  "gate_verdict": {
+    "R1": "PASS",
+    "R2": "PASS",
+    "R3": "PASS",
+    "R4": "PASS",
+    "R5": "PASS",
+    "R6": "PASS",
+    "overall": "PASS_C11_P7_SURVIVOR_RIGIDITY"
+  },
+  "scientific_ceiling": {
+    "FIRST_REAL_ACCEPTABILITY_ESCAPE": "C11",
+    "C11_MIN_WITNESS": "8_VERTICES",
+    "C11_P7_SURVIVOR_KERNEL": "VERIFIED_INDUCED_C6_PLUS_PENDANT_LEAF_WITH_CROSSED_SINGLETON_LIST_DIFFERENCES",
+    "REPAIR": "NOT_STARTED",
+    "C1S_CS1_CSS": "NOT_REACHED",
+    "LEMMA11_P7_LIFT": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "HARDNESS_LOCALIZED": "NOT_CLAIMED",
+    "P_VS_NP": "OPEN"
+  },
+  "next_allowed_object": {
+    "name": "C11_SURVIVOR_KERNEL_REPAIR_PREREGISTRATION",
+    "status": "NOT_OPENED",
+    "auto_open": false
+  },
+  "stop": true
+}

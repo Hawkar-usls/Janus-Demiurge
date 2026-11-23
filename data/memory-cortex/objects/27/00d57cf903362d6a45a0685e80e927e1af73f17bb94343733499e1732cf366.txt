@@ -1,0 +1,97 @@
+{
+  "artifact_id": "JANUS-PALOMAR-JPFM-2F-C1A-CORRECTIVE-AUDIT-v1.0",
+  "experiment_id": "JPFM-2F-C1A-CORRECTIVE-AUDIT",
+  "schema_version": "1.0",
+  "date": "2026-08-15",
+  "status": "C1A_FAIL_PRESERVED__TWO_INDEPENDENT_FAILURE_MODES_LOCALIZED",
+  "purpose": "Preserve JPFM-2F-C1A as a fail-closed measurement pilot and localize separately (1) deterministic full-plate edge ineligibility for exact 81x81 stamps and (2) a polarity mismatch introduced only in the new intensity/moment estimator. This audit does not reinterpret C1A as PASS and does not alter the already-admitted B3S contour measurements.",
+  "parents": [
+    "data/JANUS-PALOMAR-JPFM-2F-C1A-NAMED-PLATE-SPARSE-STAMP-DIRECT-MORPHOLOGY-ADMISSION-v1.0.json",
+    "data/JANUS-PALOMAR-JPFM-2F-C1A-NAMED-PLATE-SPARSE-STAMP-DIRECT-MORPHOLOGY-RUN-001.json",
+    "data/JANUS-PALOMAR-JPFM-2F-B3S-SHARD-AGGREGATE-RUN-001.json",
+    "data/JANUS-PALOMAR-JPFM-2F-C0M-FULL-S0-HEADER-ONLY-ACQUISITION-MAP-RUN-001.json"
+  ],
+  "C1A_frozen_result": {
+    "outcome": "FAIL_CLOSED_SPARSE_STAMP_TRANSPORT",
+    "canonical_payload_sha256": "b798ebae38f4dc39797f214995f7aba29a4ab11003220a17f93535b25f5db972",
+    "sidecar_csv_sha256": "aca5c9cb989f733445296599fa63b7446a64640cb45234fad6c7f21bfef4eac2",
+    "sidecar_gzip_sha256": "c8a041d12542d81e66732ad9972d1fa7eaf03c48b253962d0be0092c58524858",
+    "exact_named_plate_81px_stamps": 62,
+    "sample_rows_preserved": 64,
+    "external_labels_revealed": false
+  },
+  "failure_mode_1_transport_geometry": {
+    "classification": "DETERMINISTIC_FULL_PLATE_EDGE_INELIGIBILITY__NOT_NETWORK_OR_PLATE_ID_FAILURE",
+    "rule_that_failed": "C1A required 64/64 full 81x81 stamps without shifting the frozen center.",
+    "diagnostic_workflow_run_id": 31904710873,
+    "temporary_diagnostic_workflow_removed": true,
+    "failures": [
+      {
+        "src_id": "tile_RA24.686_DECp33.529:2812",
+        "plate_id": "XE296",
+        "structural_cluster": 0,
+        "sample_role": "unusual",
+        "frozen_fullplate_x0": 13990.3136105,
+        "frozen_fullplate_y0": 12975.5080957,
+        "requested_slice_x0": 13950,
+        "requested_slice_y0": 12936,
+        "status": "STAMP_EDGE_OR_TRANSPORT_FAILURE"
+      },
+      {
+        "src_id": "tile_RA5.026_DECp8.655:877",
+        "plate_id": "XE525",
+        "structural_cluster": 7,
+        "sample_role": "typical",
+        "frozen_fullplate_x0": 13977.6691659,
+        "frozen_fullplate_y0": 10676.2945423,
+        "requested_slice_x0": 13938,
+        "requested_slice_y0": 10636,
+        "status": "STAMP_EDGE_OR_TRANSPORT_FAILURE"
+      }
+    ],
+    "corrective_principle": "For any future fixed-size stamp measurement, geometric eligibility must be computed from the frozen center, stamp size and named-plate NAXIS1/NAXIS2 before pixel access. Geometrically ineligible rows remain in the full denominator with an explicit status; their windows are never shifted inward and they are never silently dropped. Transport success is evaluated on the precomputed geometrically eligible subset, with all unexplained eligible-source failures retained as failures."
+  },
+  "failure_mode_2_intensity_polarity": {
+    "classification": "NEW_DIRECT_INTENSITY_ESTIMATOR_POLARITY_MISMATCH",
+    "C1A_choice": "The new central-signal/moment branch used I = 65535 - raw because upstream experimental profile_diff preconditioning in stage_shape_post.py uses this inversion.",
+    "observed_failure": {
+      "finite_stamp_peak_snr_ge5_fraction_full_64": 0.03125,
+      "finite_stamp_peak_snr_rows": 62,
+      "median_inverted_peak_snr": 1.7357522964042764,
+      "moment_fwhm_proxy_vs_pass2_FWHM_IMAGE_spearman_rho": 0.1516708216866863,
+      "moment_ellipticity_vs_pass2_ELONGATION_spearman_rho": -0.03699226914456951
+    },
+    "upstream_detection_implementation": {
+      "poss_commit": "4005e200541b321ead3d6608f0162a14430ef1c2",
+      "pipeline_split_blob_sha": "8308a0492d897e1fc9297cb79cf66ac668e97448",
+      "sex_pass1_config_blob_sha": "754df09f8c169c5fd1b47c8b994bf2e92d2c9e71",
+      "facts": [
+        "run_pass1 passes the reconstructed raw FITS image directly to Source Extractor; no 65535-minus-image preprocessing step exists in that detection call.",
+        "sex_pass1.sex specifies DETECT_TYPE CCD and DETECT_THRESH 5.0 on that raw image."
+      ]
+    },
+    "corrective_principle": "The replacement direct central-signal and moment branch must use positive excess in the same raw-pixel convention actually presented to the upstream Source Extractor detector: signal = max(raw - outer_annulus_median, 0). The outer annulus, radii, moment aperture and SNR threshold remain frozen. This repair is limited to the new C1A intensity/moment branch; it does not alter upstream pass2 quantities or B3S contour formulas."
+  },
+  "channel_separation_evidence": {
+    "contour_channel_survived_C1A": true,
+    "C1A_finite_circularity_and_circle_deviation_fraction": 0.96875,
+    "median_stamp_circularity_minus_B3S_circularity": -1.51256961677948e-08,
+    "median_stamp_circle_deviation_minus_B3S": 2.9042208304908e-08,
+    "interpretation": "Exact sparse named-plate pixels reproduce the previously admitted contour channel closely for transportable sources. The C1A failure therefore does not justify changing contour thresholds or formulas."
+  },
+  "forbidden_repairs": [
+    "reclassify C1A as PASS",
+    "move either edge stamp inward",
+    "drop geometric edge rows from the 64-row denominator",
+    "change the frozen 81x81 stamp size in the corrective replay",
+    "change outer-annulus radii 18..38",
+    "change central peak radius 5",
+    "change moment radius 10",
+    "lower the central SNR>=5 gate after seeing C1A",
+    "change B3S or C1A contour thresholds 21,45",
+    "use nearest-source search or peak recentering",
+    "reveal nuclear, Blue Book, NUFORC, geomagnetic, lunar or solar temporal labels"
+  ],
+  "next_gate": "JPFM-2F-C1A2-RAW-POLARITY-EDGE-AWARE-DIRECT-MORPHOLOGY",
+  "claim_ceiling": "MEASUREMENT_PIPELINE_CORRECTIVE_AUDIT_ONLY__C1A_REMAINS_FAIL_CLOSED__EXTERNAL_LABELS_SEALED__NO_PHYSICAL_OR_ORIGIN_CLAIM"
+}

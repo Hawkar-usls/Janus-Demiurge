@@ -1,0 +1,156 @@
+{
+  "artifact_id": "JANUS-TRUMP-EXACT-CHANNEL-DISCOVERY-IMPLICATION-REACHABILITY-NORMAL-FORM-2026-09-20-v1.0",
+  "version": "v1.0",
+  "date": "2026-09-20",
+  "status": "PASS_EXACT_CHANNEL_DISCOVERY_IMPLICATION_REACHABILITY_NORMAL_FORM",
+  "scope": "PURE_GRAPH_RECOGNITION_THEOREM__SHARPENS_2SAT_NORMAL_FORM",
+  "parent": {
+    "path": "research/TRUMP_EXACT_CHANNEL_DECOMPOSITION_POLYNOMIAL_DISCOVERY_THEOREM_2026-09-20_v1.0.json",
+    "commit": "fa80da76f3fdc0178032a2bc8d70df76cbbcde56",
+    "blob": "395796d7c1c2f3f8f5fef59faf34f7a184d98d6a",
+    "status": "PASS_EXACT_CHANNEL_DECOMPOSITION_POLYNOMIAL_DISCOVERY"
+  },
+  "fixed_triple": {
+    "data": "Distinct (z,c,f) with cz,zf in E(G).",
+    "variable_convention": "For v!=z, x_v=1 iff v is assigned to R; x_v=0 iff v is assigned to L.",
+    "forced_sets": {
+      "R0": "{f} union (N(f)\\{z})",
+      "L0": "{c} union (N(c)\\{z})"
+    }
+  },
+  "implication_graph": {
+    "name": "D_{z,c,f}",
+    "vertices": "V(G)\\{z}",
+    "construction": [
+      "For each unordered edge uv in E(G-z), if cu is absent OR fv is absent, add implication arc v->u. This is the clause (x_u OR NOT x_v), forbidding u in L, v in R.",
+      "For the same edge uv, if fu is absent OR cv is absent, add implication arc u->v. This is the clause (NOT x_u OR x_v), forbidding u in R, v in L."
+    ],
+    "equivalent_ordered_edge_form": "For every ordered adjacent pair (u,v) in G-z, if cu is absent OR fv is absent, add arc v->u.",
+    "clause_class": "Every non-unit clause is a mixed-sign implication/order clause. No generic 2-SAT SCC satisfiability test is required."
+  },
+  "main_equivalence": {
+    "theorem": "The fixed triple (z,c,f) admits an exact-channel decomposition iff Reach_D(R0) intersect L0 is empty.",
+    "necessity": [
+      "Every vertex of R0 must be assigned R.",
+      "Every implication arc p->q means x_p=1 forces x_q=1.",
+      "Therefore every vertex reachable from R0 must be R in every feasible solution.",
+      "If such a reachable vertex lies in L0, it is simultaneously forced R and forced L, contradiction."
+    ],
+    "sufficiency": [
+      "Let R_min=Reach_D(R0).",
+      "If R_min is disjoint from L0, assign every vertex of R_min to R and every other vertex except z to L.",
+      "R_min is successor-closed under every implication arc by construction.",
+      "Hence every mixed-sign clause is satisfied.",
+      "All forced-R units hold because R0 subseteq R_min, and all forced-L units hold because R_min is disjoint from L0.",
+      "By the previously proved 2-SAT/exact-channel equivalence, this assignment yields an exact-channel decomposition."
+    ]
+  },
+  "canonical_extremal_solutions": {
+    "minimal_R": {
+      "formula": "R_min = Reach_D(R0)",
+      "property": "R_min is contained in every feasible R-side.",
+      "decomposition": "L_max = V(G)\\({z} union R_min)."
+    },
+    "maximal_R": {
+      "formula": "R_max = V(G)\\({z} union Pred_D(L0))",
+      "property": "Every feasible R-side is contained in R_max.",
+      "proof": "Any vertex that can reach L0 cannot be R in a feasible implication-closed assignment, otherwise implications force a vertex of L0 to R.",
+      "decomposition": "L_min = Pred_D(L0)."
+    },
+    "feasibility_relation": "For every feasible fixed triple, R_min subseteq R_max."
+  },
+  "full_solution_lattice": {
+    "exact_characterization": "A set R subseteq V(G)\\{z} is a feasible R-side iff R0 subseteq R, R intersect L0 is empty, and R is successor-closed under D. Equivalently: R_min subseteq R subseteq R_max and R is successor-closed.",
+    "warning": "Merely lying between R_min and R_max is not sufficient; implication closure is also required.",
+    "preorder": "Define u <=_D v iff v is reachable from u in D. Feasible R-sides are exactly the upper sets of this reachability preorder satisfying the forced bounds.",
+    "SCC_quotient": "After contracting strongly connected components of D, feasible solutions are upper sets of the condensation DAG between the forced closure and forbidden predecessor region.",
+    "lattice": "The feasible R-sides form a distributive lattice under set intersection and union.",
+    "bottom": "R_min.",
+    "top": "R_max."
+  },
+  "compact_certificates": {
+    "FEASIBLE": {
+      "certificate": [
+        "fixed triple (z,c,f)",
+        "canonical R_min=Reach_D(R0), or any implication-closed feasible R",
+        "reconstructed L",
+        "canonical ports and crossing graph X"
+      ],
+      "verifier": "Recompute D, R0, closure, and exact-channel interface in O(n+m) for the fixed triple after adjacency preprocessing."
+    },
+    "NO_DECOMPOSITION": {
+      "certificate": [
+        "r0 in R0",
+        "ell0 in L0",
+        "directed path r0 -> ... -> ell0 in D",
+        "for every path arc, the source graph edge and missing-adjacency condition that generated the implication"
+      ],
+      "logic": "r0 is forced R; implications propagate R along the path; ell0 is therefore forced R but also forced L.",
+      "verifier": "Linear in the path length plus adjacency checks."
+    }
+  },
+  "necessary_prefilters": {
+    "cf_nonedge": {
+      "statement": "cf must be absent.",
+      "reason": "c is forced L and f forced R; if cf were an edge, it would be a crossing edge incident with anchors, contradicting c notin P_L and f notin P_R. Equivalently, unit forces collide through the crossing constraints."
+    },
+    "no_common_forced_neighbor": {
+      "formula": "(N(c) intersect N(f))\\{z} = empty.",
+      "reason": "Any such vertex belongs to both L0 and R0 and immediately falsifies the reachability criterion."
+    },
+    "role": "Optional O(1)/set-intersection prefilters; they are not needed for correctness."
+  },
+  "discovery_algorithm": {
+    "fixed_triple": [
+      "Build D_{z,c,f}.",
+      "Compute Reach_D(R0) by directed BFS/DFS.",
+      "Feasible iff the closure is disjoint from L0.",
+      "If feasible, output canonical minimal-R decomposition R_min and reconstruct ports canonically.",
+      "If infeasible, output a predecessor tree path from some r0 in R0 to the first reached ell0 in L0."
+    ],
+    "fixed_triple_complexity": "O(n+m) after adjacency preprocessing.",
+    "global": [
+      "Enumerate eligible ordered triples (z,c,f) with c,f distinct neighbors of z.",
+      "Apply the cheap cf/common-neighbor prefilters if desired.",
+      "Run the fixed-triple reachability algorithm."
+    ],
+    "eligible_triple_bound": "sum_z d(z)(d(z)-1) <= 2m(Delta-1).",
+    "total_complexity": "O(m*Delta*(n+m)); hence O(n*m*(n+m)) as a coarser bound.",
+    "graph_only": true,
+    "extension_oracle": false
+  },
+  "validation": {
+    "exhaustive_small_graph_sanity_check": {
+      "graph_orders": [
+        4,
+        5
+      ],
+      "eligible_fixed_triple_instances_checked": 15744,
+      "checks": [
+        "reachability feasibility iff direct exact-channel decomposition existence",
+        "R_min is a valid feasible solution whenever feasible",
+        "R_max is a valid feasible solution whenever feasible",
+        "every direct feasible solution lies between R_min and R_max and is implication-closed",
+        "every implication-closed set between R_min and R_max is a direct feasible solution"
+      ],
+      "mismatches": 0,
+      "authority": "SANITY_CHECK_ONLY; theorem authority is the analytic proof."
+    }
+  },
+  "application_consequences": {
+    "pure_discovery_primitive": "DIRECTED_REACHABILITY",
+    "generic_2SAT_needed": false,
+    "canonical_decomposition_available": true,
+    "compact_negative_certificate": true,
+    "solution_family_structure": "DISTRIBUTIVE_LATTICE_OF_IMPLICATION_UPSETS"
+  },
+  "scientific_ceiling": {
+    "PURE_EXACT_CHANNEL_DISCOVERY": "POLYNOMIAL_BY_REACHABILITY",
+    "FIXED_TRIPLE_NORMAL_FORM": "DIRECTED_REACHABILITY",
+    "FUTURE_C11_EXTRA_SEMANTICS": "NOT_AUTOMATICALLY_COVERED",
+    "UNIVERSAL_C11_APPLICABILITY": "NOT_CLAIMED",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "stop": true
+}

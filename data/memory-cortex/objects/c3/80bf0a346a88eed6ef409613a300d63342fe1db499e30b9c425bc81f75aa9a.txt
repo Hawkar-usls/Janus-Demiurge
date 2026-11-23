@@ -1,0 +1,82 @@
+{
+  "artifact_uuid": "JANUS-CONNECTION-EXTERNAL-PANEL-B-RUBRIC-2026-08-14-v0.1",
+  "timestamp_local": "2026-08-14T16:19:00+03:00",
+  "version": "v0.1",
+  "status": "FROZEN_BEFORE_SELECTED_BODY_INSPECTION",
+  "selection": "data/JANUS-CONNECTION-EXTERNAL-PANEL-B-RESULT-RECORDS-SELECTION-2026-08-14-v0.1.json",
+  "selection_commit": "069d93e6311c89de222ef3583b67d0e7a1ea52ad",
+  "selected_record_count": 21,
+  "classification_labels": ["STRONG", "WEAK", "CONTRADICTION", "NOT_APPLICABLE"],
+  "record_classification": {
+    "ACTUAL_EXECUTION_AUDIT_RESULT": "A record representing an observed tool/run/audit/scan/verifier output rather than only a fixture expectation.",
+    "EXPECTED_GOLDEN_FIXTURE": "A frozen expected/golden/test result used to verify implementation semantics; useful for structural recurrence but not counted toward the minimum actual-output requirement.",
+    "STRUCTURAL_OR_PARSER_FIXTURE": "A machine-readable test/parser/configuration-shaped object selected by path filter but not itself a result semantics record.",
+    "OTHER_MACHINE_READABLE_RECORD": "A selected JSON that does not fit the three classes above; retain rather than replace."
+  },
+  "patterns": {
+    "HIDDEN-001_NON_TRANSITIVE_EVIDENCE_BINDING_LADDER": {
+      "STRONG": "The selected record explicitly preserves distinct evidence/result stages such that evidence or success at stage N licenses, enables, or is necessary for stage N+1 but does not itself establish the downstream verification/admissibility/policy/outcome state.",
+      "WEAK": "Multiple stages or result layers are present and separable, but the non-transitive promotion boundary is only implied or not operationally explicit.",
+      "CONTRADICTION": "The record explicitly treats upstream evidence/success as automatically establishing a separately represented downstream claim despite acknowledging that downstream stage as distinct.",
+      "NOT_APPLICABLE": "No meaningful staged evidence/result promotion relation is represented."
+    },
+    "HIDDEN-002_AMBIGUITY_IS_A_FIRST_CLASS_STATE": {
+      "STRONG": "The selected record explicitly preserves a non-binary state such as unknown, unresolved, skipped, unscanned, inconclusive, not-applicable, partial, unevaluated, or equivalent rather than forcing a binary pass/fail or present/absent result.",
+      "WEAK": "Optional/missing/empty-state semantics preserve some uncertainty but without an explicit epistemic or evaluability distinction.",
+      "CONTRADICTION": "Known unresolved/unevaluated evidence is explicitly collapsed into a binary final state while the record still represents the unresolved condition.",
+      "NOT_APPLICABLE": "No ambiguity/evaluability state is represented."
+    },
+    "HIDDEN-003_FIRST_BREAK_LOCALIZATION_GENERALIZATION": {
+      "STRONG": "The selected record represents an ordered stage/check chain in which the earliest failed or blocked boundary is retained and materially localizes why downstream stages are not treated as reached.",
+      "WEAK": "Ordered statuses/checks exist, but first-failure position is not itself preserved as a meaningful localization boundary. Generic unordered failed checks are at most WEAK.",
+      "CONTRADICTION": "The record discards first-break position while explicitly claiming equivalent localization of failure in an ordered chain.",
+      "NOT_APPLICABLE": "No ordered prerequisite/check chain suitable for first-break localization is represented."
+    },
+    "HIDDEN-006_NEGATIVE_CLAIM_CLOSED_SEARCH_UNIVERSE": {
+      "STRONG": "A non-detection, zero finding, unknown, unresolved, or negative result is explicitly scoped to the scan/search/evaluation coverage and/or detection sensitivity, and a broader absence claim is blocked when that coverage or sensitivity is incomplete, unknown, filtered, or otherwise narrower than the claim scope.",
+      "WEAK": "The negative/empty result carries explicit scope/filter/coverage qualifiers, but the record does not itself state or encode the boundary against broader absence inference.",
+      "CONTRADICTION": "A global absence conclusion is explicitly asserted from a search/scan/evaluation universe that the same record identifies as incomplete, partial, filtered, unevaluated, or sensitivity-limited.",
+      "NOT_APPLICABLE": "No non-detection-to-absence or search-coverage relation is represented."
+    }
+  },
+  "anti_overfit_rules": [
+    "Do not infer a pattern from filenames alone; classification requires selected JSON body evidence after this rubric is frozen.",
+    "Do not replace any of the 21 selected records after body inspection.",
+    "Do not replace the zero-eligible CodeQL repository.",
+    "Do not count multiple records from one repository as multiple governance-independent supports.",
+    "Do not count a generic null, empty array, false boolean, or missing field as HIDDEN-002 without ambiguity/evaluability semantics.",
+    "Do not count a generic list of failed checks as HIDDEN-003 STRONG unless ordering plus earliest-boundary significance is represented.",
+    "Do not count zero findings as HIDDEN-006 STRONG unless scope/coverage/sensitivity constrains the admissible negative claim.",
+    "Do not use Panel A results to satisfy Panel B thresholds.",
+    "Do not reinterpret CONTRADICTION as NOT_APPLICABLE to preserve promotion eligibility."
+  ],
+  "repository_level_collapse": {
+    "rule": "For each HIDDEN and repository, collapse selected records to the strongest observed classification with CONTRADICTION overriding all support: CONTRADICTION > STRONG > WEAK > NOT_APPLICABLE.",
+    "independence_unit": "governance_namespace/repository, not file count"
+  },
+  "transport_threshold": {
+    "promotion_label": "EXTERNAL_TRANSPORT_SUPPORTED_PANEL_B",
+    "requirements": {
+      "strong_independent_repositories_min": 3,
+      "additional_weak_or_strong_repository_min": 1,
+      "total_supporting_independent_repositories_min": 4,
+      "contradiction_repositories_max": 0,
+      "actual_execution_audit_result_supporting_repositories_min": 2
+    },
+    "below_threshold_two_strong_label": "EXTERNAL_RECURRENCE_OBSERVED_NOT_TRANSPORT_PROMOTED",
+    "otherwise_label": "EXTERNAL_PANEL_B_NOT_TRANSPORTED"
+  },
+  "destructive_rewire_gate": {
+    "eligible_only_after_transport_threshold_pass": true,
+    "purpose": "specificity calibration after external recurrence; never a rescue or discovery mechanism",
+    "if_threshold_fails": "DO_NOT_EXECUTE_REWIRE"
+  },
+  "claim_ceiling": {
+    "rubric_freeze_establishes_external_transport": false,
+    "population_prevalence": false,
+    "causal_law": false,
+    "scientific_novelty": false,
+    "organizational_independence_beyond_named_repositories": false,
+    "family_wide_connection_promotion": false
+  }
+}

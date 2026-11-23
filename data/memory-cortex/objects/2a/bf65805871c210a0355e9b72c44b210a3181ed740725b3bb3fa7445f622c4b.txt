@@ -1,0 +1,212 @@
+{
+  "schema": "janus.research.open_causality_prereg.v1",
+  "experiment_id": "JANUS-OPEN-CAUSALITY-009",
+  "date_utc": "2026-11-09",
+  "artifact_type": "APPEND_ONLY_PRE_MEASUREMENT_REGISTRATION",
+  "status": "FROZEN_PRIOR_TO_FUTURE_TARGETS__NO_FUTURE_OUTCOMES_YET",
+  "evidence_class": "OFFLINE_TESTS_AND_ARCHIVED_HISTORICAL_NOAA_ONLY",
+  "title": "JANUS Ocean public-source prospective NOAA and drand with hypothetical SUNLU Glow sensor",
+  "implementation": {
+    "repository": "Hawkar-usls/Janus-Demiurge",
+    "code_pr": "https://github.com/Hawkar-usls/Janus-Demiurge/pull/490",
+    "merged_commit": "1f36ff3dfb0baa5dc035db9efa0a804f2f5b5188",
+    "source_blobs": {
+      "noaa_009a.py": "5424cad061198038a8dc21ac5b6d42250be02d25",
+      "future_009b.py": "d9bcef596207488594453a01755a16a97606cba7",
+      "glow_009c.py": "2713293f74e49b51cf43eed066bc2e58d61b77a8",
+      "aggregate_009.py": "4cc57653c6fefe49fcb9968c7bb8553acf550dff",
+      "signed_rounds_009.mjs": "b4a3772ab1871f9befca1f3e8503d2f59c0c8edf",
+      "original_physical_qpu_005_protocol.py": "09448c98ef0321660e739a558d0e43ab55ae5289"
+    },
+    "noaa_workflow": ".github/workflows/janus-ocean-open-light-009a.yml",
+    "drand_early_workflow": ".github/workflows/janus-ocean-open-future-009b-precommit.yml",
+    "drand_late_workflow": ".github/workflows/janus-ocean-open-future-009b-assess.yml",
+    "final_aggregation_workflow": ".github/workflows/janus-ocean-open-causality-009-final-pool.yml",
+    "offline_test_workflow": ".github/workflows/janus-ocean-open-causality-009-offline-ci.yml",
+    "noaa_source_smoke": ".github/workflows/janus-ocean-open-light-009a-noaa-source-smoke.yml",
+    "documentation": "experiments/ocean_transformer/open_causality_009/README.md"
+  },
+  "fixed_calendar": {
+    "target_dates_utc": [
+      "2026-11-12",
+      "2026-11-13",
+      "2026-11-14",
+      "2026-11-15",
+      "2026-11-16",
+      "2026-11-17",
+      "2026-11-18",
+      "2026-11-19"
+    ],
+    "all_days_required": true,
+    "no_extension_to_make_up_for_losses": true,
+    "no_early_stopping_after_favorable_scores": true,
+    "independent_lanes": true,
+    "conventional_forward_causal_solar_and_random_beacon_prediction_not_physical_retrocausality": true
+  },
+  "lane_009a": {
+    "title": "OPEN-LIGHT-009A — prospective NOAA irradiance",
+    "real_observation_source": "NOAA Global Monitoring Laboratory SURFRAD Bondville, IL",
+    "source_url": "https://gml.noaa.gov/aftp/data/radiation/surfrad/bon/",
+    "real_observed_quantity": "global horizontal downwelling shortwave solar irradiance GHI W/m^2",
+    "source_resolution_minutes": 1,
+    "target_resolution_hours": 1,
+    "n_target_hours_per_day": 24,
+    "n_target_days": 8,
+    "total_plan_hours": 192,
+    "quality_gate": "All 1440 unique minute rows, QC flag zero for GHI, >=45/60 per hour, 24 complete hours for each day. Failure is reported, never filled with zero or omitted.",
+    "training_days": "Four predetermined calendar days D-7 through D-4 where D is early preparation UTC date",
+    "early_schedule_utc": "03:17 UTC on preparation date D, target D+2",
+    "target_disclosure": "Do not retrieve target day until >=3 days after start of target day; late verification 03:17 UTC target+3 days",
+    "github_precommit": "Publish all 24 forecast and each baseline into unique date-named GitHub Actions artifact with immutable server-side creation timestamp before first target minute. Fail if duplicate.",
+    "predictor": "FIXED_PHYSICS_INFORMED_SOLAR_RATIO_V1_NOT_NEURAL_TRANSFORMER",
+    "comparators": [
+      "last available historical same-hour irradiance",
+      "four-day same-hour mean",
+      "Haurwitz geometric clear sky"
+    ],
+    "primary_metric": "Mean absolute error W/m^2 across all 24 predeclared target hours, with all 8 days pooled if complete",
+    "hypothesis": "Physics-informed fixed hybrid generalizes better than each comparator on unseen public NOAA data.",
+    "sample_size_not_powered_for_physical_retrocausality": true,
+    "source_hash_policy": "Store exact NOAA daily original SHA-256 bytes and retrieved publication time; distinguish later NOAA corrections."
+  },
+  "lane_009b": {
+    "title": "OPEN-FUTURE-009B — independent future drand public randomness",
+    "provider": "drand Quicknet BLS signed public randomness",
+    "chain_hash": "52db9ba70e0cc0f6eaf7803dd07447a1f5477735fd3f661792ba94600c84e971",
+    "chain_genesis_unix": 1692803367,
+    "period_seconds": 3,
+    "verifier": "drand-client@1.4.2; mandatory BLS signature verification against pinned chain key, and SHA256(signature) equals declared randomness",
+    "n_days": 8,
+    "n_independent_target_rounds_per_day": 128,
+    "total_n_planned_bits": 1024,
+    "first_target_release_time_utc": "08:00 UTC each target day",
+    "round_spacing_seconds": 60,
+    "target_bit": "most significant bit of SHA256(verified round signature)",
+    "early_schedule": "11:37 UTC two calendar days before target date, publish exact model output probabilities and bit decisions in unique dated GitHub Actions artifact before future target",
+    "late_schedule": "12:48 UTC on target date, fetch exact originally frozen artifact, check GitHub server time before first round, verify 128 unfiltered signed rounds, score ALL bits",
+    "model": "JanusTinyTransformer reused from immutable historical synthetic Born-rule project, not trained on drand and no retraining in this experiment",
+    "historical_checkpoint": {
+      "repo": "Hawkar-usls/Janus-Demiurge",
+      "github_actions_run_id": 42596763409,
+      "github_artifact_id": 13663149173,
+      "artifact_zip_sha256": "45c8b063b08973b06b88ec843e9a5d16976c983a8e35b39ef33e9304201e5515",
+      "source_training_domain": "synthetic standard quantum measurement / Born-rule"
+    },
+    "hypotheses": {
+      "H0": "The predicted bits are independent of cryptographically unpredictable future drand bits; expected matches=512/1024.",
+      "H1_exploratory": "The frozen model matches more than chance (test only on complete fixed calendar)."
+    },
+    "metrics": [
+      "raw bit accuracy across all fixed slots",
+      "Brier score with fair-prior reference 0.25",
+      "exact two-sided per-cohort binomial descriptive only",
+      "single pooled one-sided binomial probability on 1024"
+    ],
+    "pooled_one_sided_threshold_matches": 562,
+    "one_sided_p_at_threshold": 0.0009810323301827086,
+    "alpha": 0.001,
+    "strict_conditions": "Threshold has interpretive meaning only if 8 complete cohorts were frozen before target timestamps, verified without omission or multiple tested targets. Scientific anomaly requires independent replication and conventional leakage controls.",
+    "physical_late_choice_is_not_implemented": true,
+    "independent_physical_early_receiver": false,
+    "retrocausality_proven": false
+  },
+  "lane_009c": {
+    "title": "OPEN-GLOW-009C — hypothetical afterglow physical-memory adapter",
+    "compound": "SrAl2O4:Eu2+,Dy3+ representative green persistent luminescence, NOT independently confirmed dopant concentrations in every SUNLU PLA product",
+    "cited_sources": [
+      "https://sunlu.kyiv.ua/content/files/21_msds_sunlu_pla_grow_in_the_dark_filament-99280517.pdf",
+      "https://www.edinst.com/resource/application-note-kinetics-of-persistent-luminescence-phosphors/",
+      "https://doi.org/10.1016/j.jre.2021.07.014"
+    ],
+    "sunlu_2023_SDS_strontium_aluminate_weight_fraction": 0.05,
+    "formulation_scope": "2023 SDS only; nominal published fraction, not an independently measured current spool.",
+    "hypothetical_sample_mm": [
+      10,
+      10,
+      1
+    ],
+    "assumed_composite_density_g_per_cm3": 1.23,
+    "derived_composite_mass_g": 0.123,
+    "conditional_aluminate_mass_mg": 6.15,
+    "assumed_pump_wavelength_nm": 365,
+    "typical_green_emission_nm": 520,
+    "assumed_absorbed_incident_photon_fraction": 0.1,
+    "assumed_delayed_photon_yield_per_absorbed_photon": 0.05,
+    "effective_single_exponential_decay_tau_seconds": 900,
+    "note_on_decay": "Published kinetics often require multiple exponentials and show average lifetimes of approx 750-1780 s under particular laboratory excitation; 900 s is a scenario assumption, not manufacturer characterization.",
+    "assumed_effective_365nm_fraction_of_broadband_NOAA_GHI": 0.03,
+    "radiation_spectral_limitation": "NOAA GHI is broadband; 3% is an invented conversion fraction used ONLY as a sensitivity scenario and not measured UV spectrum.",
+    "example_excitation": {
+      "incident_light_wavelength_nm": 365,
+      "incident_optical_power_mW": 1,
+      "pump_duration_seconds": 300,
+      "modelled_emitted_green_microwatt_t0": 0.9948660735,
+      "modelled_emitted_green_microwatt_t60": 0.9307041609,
+      "modelled_emitted_green_microwatt_t300": 0.7128526915,
+      "modelled_emitted_green_microwatt_t600": 0.5107812733,
+      "expected_photodiode_output_mV_if_1percent_coupling_0p3AperW_100kohm": 2.98459822,
+      "expected_photodiode_output_mV_if_10percent_coupling_0p3AperW_100kohm": 29.8459822,
+      "not_empirical": true
+    },
+    "mathematical_model": "dN/dt = incident_365nm_photon_rate*absorption*delayed_yield - N/tau; emitted_green_W = N/tau * h*c/(520nm)",
+    "prospective_control": "Freeze virtual green-output 24-hour trace from OPEN-LIGHT-009A future GHI predictions before target. After real NOAA GHI release, calculate a second virtual trace under identical assumed constants, compare MAE; never call it measured glow.",
+    "historical_source_smoke": {
+      "run_url": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/42711702411",
+      "real_noaa_archives_checked": [
+        "2026-11-02",
+        "2026-11-03",
+        "2026-11-04",
+        "2026-11-05",
+        "2026-11-06"
+      ],
+      "simulation_only_glow_output": true,
+      "virtual_glow_max_microwatt_by_day": {
+        "2026-11-02": 1.05768383,
+        "2026-11-03": 3.27471034,
+        "2026-11-04": 2.2759185,
+        "2026-11-05": 1.76092043,
+        "2026-11-06": 5.90332962
+      }
+    },
+    "controls_for_real_material_future": [
+      "unpigmented PLA blank",
+      "standardized UV/blue LED excitation",
+      "independent source switch-off timestamp",
+      "dark box and 520nm filter",
+      "photodiode optical collection and gain calibration",
+      "temperature compensation and repeated known-duration charge/discharge"
+    ],
+    "actual_phosphor_sample_illuminated": false,
+    "actual_green_afterglow_measured": false,
+    "physical_retrocausality_proven": false
+  },
+  "evidence_before_first_target": {
+    "tests": "27/27 offline unit tests PASS",
+    "offline_ci_url": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/42711539237",
+    "pr_ci_url": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/42711887831",
+    "real_historical_noaa_read_success": true,
+    "real_future_target_noaa_read": false,
+    "future_drand_beacons_seen_during_forecast": false,
+    "prospective_early_forecast_status": "NOT_YET_PUBLISHED",
+    "physical_glow_afterglow_data_collected": false,
+    "QPU_minutes_used": 0,
+    "original_qpu005_protocol_unmodified": true,
+    "original_light008_protocol_unmodified": true,
+    "automated_forecast_status": "CODE_READY_NO_COHORT_SCORED_YET",
+    "no_independent_physical_retrocausal_signal": true
+  },
+  "security_and_provenance": {
+    "GitHub_actions_permissions": [
+      "contents:read",
+      "actions:read"
+    ],
+    "independent_timestamp": "Github Actions artifact created_at. Platform timestamp, not hardware clock.",
+    "no_fresh_retraining_between_early_and_late": true,
+    "no_postselection": true,
+    "missing_release_policy": "FAIL_CLOSED_KEEP_UNKNOWN_AND_REVIEW; never count as zero or skip unfavorable cases",
+    "result_policy": "Append outcomes as separate JSON after actual verified run ID, SHA, source provenance; never overwrite this preregistration",
+    "data_residency": "only public datasets + model checkpoint; no private personal data or NAS devices",
+    "original_qpu005_or_light008_file_changed": false
+  },
+  "next_gate": "Observe first 009A/009B forecast artifacts timestamped BEFORE their targets; assess only after 2026-11-12. Assess SUNLU actual material only after separate controlled hardware measurements."
+}

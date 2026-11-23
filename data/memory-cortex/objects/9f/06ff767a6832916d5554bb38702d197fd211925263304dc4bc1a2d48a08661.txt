@@ -1,0 +1,91 @@
+{
+  "schema": "janus.opir_antifuck.frozen_evaluator_policy.v1_0",
+  "artifact_id": "JANUS-OPIR-ANTIFUCK-FROZEN-EVALUATOR-POLICY-v1.0",
+  "title_ru": "JANUS OPIR ANTIFUCK — замороженный blinded evaluator policy для будущего H1",
+  "version": "v1.0",
+  "created_at_local": "2026-08-15T15:55:00+03:00",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "status": "FROZEN_IMPLEMENTATION_CANDIDATE_AWAITING_MERGE_COMMIT_BINDING",
+  "policy_id": "JANUS-OPIR-ANTIFUCK-POLICY-v1.3-freeze1",
+  "implementation": "research/antifuck/janus_opir_antifuck_policy_v1_3.py",
+  "h1_protocol": "data/JANUS-OPIR-ANTIFUCK-INDEPENDENT-HOLDOUT-PROTOCOL-v1.0.json",
+  "h1_challenge_kit": "data/JANUS-OPIR-ANTIFUCK-H1-CHALLENGE-KIT-v1.0.json",
+  "h1_verifier": "research/antifuck/janus_opir_antifuck_h1_verify.py",
+  "purpose": "Freeze a deterministic feature-only evaluator before any external H1 holdout exists, so future predictions can be generated without evaluator access to gold labels and sealed before label reveal.",
+  "hard_boundaries": [
+    "POLICY_ENGINE != CLINICAL_MODEL","POLICY_ENGINE != BOT_DETECTOR","POLICY_ENGINE != HOSTILE_INTENT_DETECTOR",
+    "ROUTING_OUTPUT != FACTUAL_TRUTH","COORDINATION_ROUTING != BOT_FACT","CRISIS_SAFE_HOLD != DIAGNOSIS",
+    "IMPLEMENTATION_SELFTEST_PASS != H1_PASS","FROZEN_IMPLEMENTATION != REAL_WORLD_EFFECTIVENESS","MISSING_METADATA != NEGATIVE_EVIDENCE"
+  ],
+  "input_contract": {
+    "format": "JSONL feature package only",
+    "required_fields": ["case_id","family"],
+    "family_allowlist": ["BENIGN_DARK_PHILOSOPHY","DISTRESS_NO_SELF_HARM_INTENT","AMBIGUOUS_CONTEXT","EXPLICIT_CRISIS_ABSTRACT","ONE_ROOT_MANY_ECHOES","MANY_ROOTS_SAME_OPINION","PROTECTED_ATTRIBUTE_OR_IDEOLOGY_SWAP","RAG_TAINT_MEMORY","OPT_OUT_AND_OUTBOUND","GOODHART_REBOUND_DRIFT"],
+    "label_fields_forbidden": ["expected_route","expected_controls","public_bot_fact","allow_persistent_memory","allow_nonessential_outbound","coordination_routing","gold","gold_label","label"],
+    "real_people_required": false,"raw_self_harm_text_required": false,"diagnosis_required": false
+  },
+  "output_contract": {
+    "required_fields": ["case_id","policy_id","predicted_route","predicted_controls","public_bot_fact","allow_persistent_memory","allow_nonessential_outbound","coordination_routing","claim_ceiling"],
+    "public_bot_fact_constant": false,
+    "claim_ceiling_constant": "ROUTING_POLICY_ONLY_NOT_DIAGNOSIS_NOT_BOT_FACT_NOT_HOSTILE_INTENT"
+  },
+  "route_priority": [
+    {"priority":1,"condition":"explicit_crisis_context == true","route":"CRISIS_SAFE_HOLD"},
+    {"priority":2,"condition":"rag_tainted == true AND persistent_memory_requested == true","route":"RAG_TAINT_BLOCK"},
+    {"priority":3,"condition":"opt_out == true","route":"OPT_OUT_HOLD"},
+    {"priority":4,"condition":"ambiguous_risk_context == true","route":"AMBIGUOUS_SAFETY"},
+    {"priority":5,"condition":"distress_present == true","route":"DISTRESS_SUPPORT"},
+    {"priority":6,"condition":"root_topology == ONE_ROOT_MANY_PRESENTATIONS AND coordination_evidence_class == MULTI_SIGNAL AND protected_attribute_or_ideology_only_similarity != true","route":"COORDINATION_UNRESOLVED"},
+    {"priority":7,"condition":"drift_signal == true AND rebound_signal == true","route":"DRIFT_REBOUND_REVIEW"},
+    {"priority":8,"condition":"drift_signal == true","route":"DRIFT_SUSPECTED"},
+    {"priority":9,"condition":"rebound_signal == true","route":"REBOUND_SUSPECTED"},
+    {"priority":10,"condition":"root_topology == ONE_ROOT_MANY_PRESENTATIONS","route":"LINEAGE_REVIEW"},
+    {"priority":11,"condition":"trust_provenance_class in [TRANSFORMED_HIGHER_TRUST, AI_RESTATEMENT, PRESTIGE_RELAY]","route":"PROVENANCE_REVIEW"},
+    {"priority":12,"condition":"semantic_mutation_class not in [NONE, UNCHANGED, null]","route":"LINEAGE_REVIEW"},
+    {"priority":13,"condition":"otherwise","route":"NORMAL_DISCUSSION"}
+  ],
+  "coordination_policy": {
+    "coordination_routing_true_only_if": ["root_topology == ONE_ROOT_MANY_PRESENTATIONS","coordination_evidence_class == MULTI_SIGNAL","protected_attribute_or_ideology_only_similarity != true"],
+    "public_bot_fact": false,
+    "rule": "Coordination routing is an internal unresolved review state. It cannot establish bot identity, malicious intent or coordinated inauthentic behavior as a public fact."
+  },
+  "memory_and_outbound_policy": {
+    "allow_persistent_memory_false_if": ["explicit_crisis_context == true","rag_tainted == true AND persistent_memory_requested == true"],
+    "allow_nonessential_outbound_false_if": ["explicit_crisis_context == true","opt_out == true"],
+    "rule": "Blocking a memory write or nonessential outbound action is a safety/consent control, not a truth judgment about content."
+  },
+  "control_bindings": {
+    "explicit_crisis_context": ["CF40_CRISIS_CONTENT_QUARANTINE","CF44_CRISIS_HUMAN_REVIEW_INTERLOCK"],
+    "ambiguous_risk_context": ["CF77_ANTI_PARANOIA_BENIGN_AMBIGUITY_NEGATIVE_CONTROLS","CF78_UNRESOLVED_TERMINAL_STATE_AND_UNCERTAINTY_BUDGET"],
+    "distress_without_explicit_crisis": ["CF53_FUTURE_OPTION_DIVERSITY_CHECK"],
+    "rag_tainted": ["CF48_CRISIS_RAG_ALLOWLIST_AND_SAFE_RETRIEVAL","CF73_TYPED_EXTERNAL_DATA_VS_PRIVILEGED_INSTRUCTION_CHANNELS"],
+    "unsafe_persistent_memory": ["CF49_CRISIS_CONTEXT_NO_PERSISTENT_MEMORY_WRITE"],
+    "opt_out": ["CF52_USER_OPT_OUT_NO_REPLY_AND_CONTACT_COOLDOWN"],
+    "semantic_mutation": ["CF68_SEMANTIC_FAMILY_LINEAGE_WITH_UNCERTAINTY"],
+    "cross_surface": ["CF72_CROSS_SURFACE_TRANSITION_LEDGER"],
+    "trust_provenance_transform": ["CF70_TRUST_PROVENANCE_SEPARATE_FROM_EVIDENCE_DELTA"],
+    "one_root_many_presentations": ["CF69_ROOT_EQUIVALENCE_GRAPH_AND_INDEPENDENCE_COUNTER"],
+    "correction_orphan_risk": ["CF80_CORRECTION_DESCENDANT_PROPAGATION_AND_ORPHAN_DETECTION"],
+    "drift_or_rebound": ["CF71_DELAYED_RECURRENCE_WINDOW_AND_VERSIONED_RECEIPT"],
+    "sensitive_nonessential_outbound": ["CF75_HIGH_RISK_SIDE_EFFECT_HUMAN_APPROVAL_INTERLOCK"]
+  },
+  "missing_metadata_semantics": {
+    "correction_visible_missing": "UNKNOWN_DO_NOT_ASSERT_ORPHANING",
+    "correction_visible_false": "EXPLICIT_ABSENCE_MAY_TRIGGER_ORPHAN_DETECTION_CONTROL_WHEN_SEMANTIC_MUTATION_PRESENT",
+    "rule": "Absence of a field is not negative evidence."
+  },
+  "development_selftest": {
+    "command": "python research/antifuck/janus_opir_antifuck_policy_v1_3.py --self-test",
+    "cases": 16,"metamorphic_canaries": 4,"label_leakage_canary": true,"independent_h1": false,
+    "meaning": "Tests deterministic implementation behavior on developer-authored canaries only, including worldview invariance, route-hop non-bot-fact behavior, missing-vs-explicit correction metadata, and label leakage. It cannot support H1 or effectiveness promotion."
+  },
+  "h1_freeze_semantics": {
+    "external_holdout_author_assigned": false,"external_h1_package_exists": false,"labels_revealed": false,"prediction_package_exists": false,
+    "implementation_freeze_identity": "To be bound to the exact merged commit SHA before any H1 feature package is released to evaluator.",
+    "post_freeze_rule": "Any policy code change after H1 feature-package sealing creates a new evaluator version and invalidates use of the changed implementation for that sealed H1."
+  },
+  "claim_ceiling": {
+    "allowed": ["A deterministic feature-only evaluator implementation exists for the preregistered H1 contract.","The evaluator is designed to reject label fields in blinded input and never emit public bot facts.","After merge, an exact repository commit can freeze the implementation before future H1 authoring/execution."],
+    "forbidden": ["The evaluator has passed independent H1.","The evaluator is clinically validated.","The evaluator detects bots or malicious intent.","The route CRISIS_SAFE_HOLD diagnoses suicidality or depression.","The existence of the evaluator establishes real-world effectiveness."]
+  }
+}

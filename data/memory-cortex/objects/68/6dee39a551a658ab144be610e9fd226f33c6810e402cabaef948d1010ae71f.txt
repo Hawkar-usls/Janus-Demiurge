@@ -1,0 +1,116 @@
+{
+  "artifact_id": "JANUS-COUSTEAU-SM222-EXACT-GLOBAL-GRID-CORRECTIVE-2026-09-25-v1.0",
+  "date": "2026-09-25",
+  "target": {
+    "lat": 17.0710306,
+    "lon": 83.2693611
+  },
+  "execution": {
+    "workflow": "JANUS Cousteau SM222 Exact Point Query",
+    "run_id": 36165106988,
+    "job_id": 108170826842,
+    "conclusion": "SUCCESS",
+    "artifact_id": 10876793749,
+    "artifact_sha256": "f10005599a87d22fa3cbc0267cb9c3bbb59a8de76d63f22bbc7b04b05a97a5fc"
+  },
+  "exact_public_grid_results": {
+    "GEBCO_2026": {
+      "exact_query_z_m": -395,
+      "queried_grid_cell": {
+        "lon": 83.26875,
+        "lat": 17.072917,
+        "z_m": -395
+      },
+      "tid": 40,
+      "tid_meaning": "PREDICTED_FROM_SATELLITE_DERIVED_GRAVITY__INTERPOLATED_VALUE_GUIDED_BY_SATELLITE_GRAVITY",
+      "direct_measurement": false,
+      "multibeam_tid_expected": 11
+    },
+    "GMRT_v4_5": {
+      "exact_point_elevation_m": -409,
+      "local_unmasked_grid": {
+        "ncols": 76,
+        "nrows": 73,
+        "cellsize_deg": 0.00054931640625,
+        "finite_cells": 5548,
+        "min_m": -588.98,
+        "max_m": -246.03,
+        "mean_m": -405.4147098053353,
+        "center_value_m": -406.68,
+        "center_3x3_range_m": 10.14,
+        "center_3x3_sd_m": 3.1530999835357103
+      },
+      "local_high_resolution_mask": {
+        "finite_cells": 0,
+        "interpretation": "NO_CURATED_GMRT_HIGH_RESOLUTION_OCEAN_DATA_IN_LOCAL_WINDOW"
+      },
+      "interpretation": "EXACT_POINT_VALUE_EXISTS_BUT_LOCAL_HIGH_RES_MASK_IS_EMPTY; DO_NOT TREAT AS LOCAL MULTIBEAM"
+    },
+    "NOAA_NCEI_multibeam_index": {
+      "exact_0m_tracks": 0,
+      "within_5km_tracks": 0,
+      "within_20km_tracks": 0,
+      "within_50km_tracks": 0,
+      "interpretation": "NO_NCEI_INDEXED_MULTIBEAM_TRACK_WITHIN_50KM__DOES_NOT_NEGATE_GSI_SM222"
+    }
+  },
+  "gebco_15arcsec_local_morphology": {
+    "cell_spacing_approx_m": {
+      "east_west": 442.895,
+      "north_south": 463.312
+    },
+    "target_cell_z_m": -395,
+    "central_neighbors_m": {
+      "west": -383,
+      "east": -407,
+      "south": -422,
+      "north": -370
+    },
+    "central_gradient": {
+      "dz_dx": -0.0270945,
+      "dz_dy": 0.0561177,
+      "slope_deg": 3.56584
+    },
+    "detrended_plane_residuals": {
+      "window_3x3": {
+        "rmse_m": 0.56656,
+        "max_abs_m": 0.88889,
+        "target_residual_m": 0.22222
+      },
+      "window_5x5": {
+        "rmse_m": 1.61071,
+        "max_abs_m": 3.92,
+        "target_residual_m": 0.16
+      },
+      "window_7x7": {
+        "rmse_m": 2.36829,
+        "max_abs_m": 8.2449,
+        "target_residual_m": 0.38776
+      }
+    },
+    "interpretation": "SMOOTH_MONOTONIC_REGIONAL_SLOPE_AT_15_ARCSEC_SCALE__NO_LARGE_CLOSED_LOCAL_RELIEF_SIGNAL_AT_TARGET_IN_PREDICTED_GRID"
+  },
+  "correction": {
+    "superseded_inference": "TARGET_NEAR_2500M_LOWER_SLOPE_TO_RISE_TRANSITION",
+    "status": "REJECTED_AS_OVERINTERPRETATION_OF_PUBLICATION_GEOMETRY",
+    "reason": "Two exact global-grid services return approximately -400 m, and GEBCO source type is indirect satellite-gravity prediction. The publication states northern-block continental slope spans roughly 250-2500 m; ~400 m therefore belongs near the shallow/upper portion of the slope, not the lower-slope/rise boundary.",
+    "corrected_domain": "UPPER_CONTINENTAL_SLOPE_SCALE__EXACT_RAW_SM222_DEPTH_STILL_OPEN"
+  },
+  "grade": {
+    "coordinate": "C4",
+    "public_global_grid": "D3_POINT_QUERY",
+    "raw_sm222": "NOT_D4",
+    "ground_truth": "G0"
+  },
+  "anomaly_verdict": "NO_ANOMALY_AT_GLOBAL_PREDICTED_GRID_SCALE__LOCAL_HIGH_RESOLUTION_MORPHOLOGY_BLOCKED",
+  "hard_rules": [
+    "GEBCO_TID40_NE_DIRECT_MEASUREMENT",
+    "GMRT_UNMASKED_NE_LOCAL_HIGH_RESOLUTION",
+    "NCEI_INDEX_NEGATIVE_NE_GSI_SURVEY_NEGATIVE",
+    "GLOBAL_GRID_NE_SM222_RAW_SOUNDING",
+    "MODEL_SMOOTHNESS_NE_RAW_SEAFLOOR_SMOOTHNESS",
+    "D4_REQUIRES_POINT_BOUND_SM222_OR_OTHER_DIRECT_MEASURED_DATA"
+  ],
+  "next_gate": "GSI_BHUKOSH_SM222_RAW_GRID_TRACK_OR_SOUNDING__OR_INDEPENDENT_DIRECT_MEASUREMENT_TID10_11_12_13_14_15_16_17",
+  "canonical_seal": "THE ~2500 M INFERENCE IS WITHDRAWN. PUBLIC GLOBAL GRIDS PUT THE TARGET NEAR -400 M, BUT TID 40 SAYS THE CELL IS PREDICTED, NOT MEASURED."
+}

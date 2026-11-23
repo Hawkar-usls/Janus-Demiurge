@@ -1,0 +1,164 @@
+{
+  "artifact_id": "EYE-R4.7-RT.1-PROSPECTIVE-OUTCOME-CONTRACT-v1",
+  "title": "Retro-Tahyon prospective outcome contract",
+  "created_date": "2026-09-02",
+  "authority": "DETERMINISTIC_PROSPECTIVE_ROUTING_ONLY__NO_PROBABILITY_OR_PHYSICAL_TRUTH_CLAIM",
+  "source": {
+    "artifact_id": "JANUS-RETRO-TAHYON-ARCHIVAL-DOSSIER-v1.0",
+    "path": "registry/uap/Retro-Tahyon.json",
+    "required_source_status": "ARCHIVAL_PROVENANCE_ESTABLISHED__PHYSICAL_RETROCAUSAL_MECHANISM_NOT_ESTABLISHED",
+    "benchmark": "EYE/r4_7_rt/retro_tahyon_competing_model_benchmark.json"
+  },
+  "probability_policy": {
+    "status": "FORBIDDEN_UNTIL_EMPIRICALLY_CALIBRATED_LIKELIHOODS_EXIST",
+    "rule": "Do not assign priors or P(outcome|cause,test) from archival wording, intuition, symmetry, or convenience.",
+    "r4_2_connection": "Use an R4.2-compatible deterministic outcome model with a minimax/no-prior adapter. The R4.2 expected-cost/outcome-probability layer is not authoritative for this benchmark.",
+    "r4_3_gate": "BLOCKED_PENDING_REAL_CALIBRATION"
+  },
+  "cause_classes": [
+    "ORDINARY_CAUSAL_OR_LEAKAGE_NULL",
+    "DAT_INFORMATION_SELECTION",
+    "ADVANCED_TIME_PHYSICAL_CHANNEL",
+    "TACHYON_SPECIFIC_CARRIER"
+  ],
+  "global_invalid_states": {
+    "OUT_OF_CONTRACT": "Observed label/outcome was not preregistered. Do not reinterpret it post hoc; stop and amend a future preregistered protocol.",
+    "PROTOCOL_INVALID": "A required control, preregistration, holdout, leakage exclusion, or instrument-validity condition failed. No cause-class promotion is permitted."
+  },
+  "tests": [
+    {
+      "id": "TOPA-RT-H2",
+      "source_name": "TEMPORAL_KERNEL_GATE",
+      "role": "VALIDITY_PREREQUISITE",
+      "required_before": ["TOPA-RT-H1"],
+      "outcome_space": [
+        {
+          "outcome": "KERNEL_PREREGISTRATION_VALID",
+          "interpretation": "Temporal kernel/lag family was frozen before outcomes; this licenses H1 execution but does not separate cause classes.",
+          "falsifier_or_invalidity": "POST_HOC_LAG_SELECTION_OR_UNFROZEN_KERNEL",
+          "next_test": "TOPA-RT-H1"
+        },
+        {
+          "outcome": "POST_HOC_LAG_SELECTION_OR_UNFROZEN_KERNEL",
+          "interpretation": "Validity failure only. No cause-class promotion is permitted.",
+          "falsifier_or_invalidity": "SELF",
+          "next_test": "REDESIGN_AND_PREREGISTER_H2"
+        }
+      ]
+    },
+    {
+      "id": "TOPA-RT-H1",
+      "source_name": "PROSPECTIVE_PRE_EVENT_INFORMATION_GATE",
+      "role": "ORDINARY_NULL_VS_RETRO_INFORMATION_FAMILY",
+      "prerequisites": ["TOPA-RT-H2:KERNEL_PREREGISTRATION_VALID"],
+      "outcome_space": [
+        {
+          "outcome": "HOLDOUT_NULL_OR_LEAKAGE_COMPATIBLE",
+          "interpretation": "The preregistered holdout is compatible with the ordinary/leakage null. No retrocausal mechanism is admitted.",
+          "falsifier_or_invalidity": "PROSPECTIVE_EFFECT_SURVIVES_PREREGISTERED_HOLDOUT",
+          "next_test": "STOP_AT_ORDINARY_OR_LEAKAGE_NULL_CEILING"
+        },
+        {
+          "outcome": "PROSPECTIVE_EFFECT_SURVIVES_PREREGISTERED_HOLDOUT",
+          "interpretation": "A prospective anomaly survives the declared leakage controls. This only separates the coarse ordinary/leakage null from the retro-information family; it does not distinguish DAT, generic advanced-time physics, or tachyon carrier.",
+          "falsifier_or_invalidity": "HOLDOUT_NULL_OR_LEAKAGE_COMPATIBLE",
+          "next_test": "TOPA-RT-H3"
+        },
+        {
+          "outcome": "H1_PROTOCOL_INVALID_OR_LEAKAGE_NOT_EXCLUDED",
+          "interpretation": "H1 is invalid. No cause-class update is permitted.",
+          "falsifier_or_invalidity": "SELF",
+          "next_test": "REDESIGN_AND_REPEAT_H1"
+        }
+      ]
+    },
+    {
+      "id": "TOPA-RT-H3",
+      "source_name": "DAT_VS_FORCE_MODEL_GATE",
+      "role": "INFORMATION_SELECTION_VS_PHYSICAL_CHANNEL",
+      "prerequisites": ["TOPA-RT-H1:PROSPECTIVE_EFFECT_SURVIVES_PREREGISTERED_HOLDOUT"],
+      "outcome_space": [
+        {
+          "outcome": "DECISION_STRUCTURE_DOMINANT",
+          "interpretation": "The prospective effect tracks decision opportunities more than physical-generator parameters. Within the coarse benchmark this favors DAT/information-selection over force-like physical-channel models; it does not prove future-to-past information.",
+          "falsifier_or_invalidity": "PHYSICAL_SYSTEM_DOMINANT",
+          "next_test": "STOP_AT_DAT_INFORMATION_SELECTION_CEILING"
+        },
+        {
+          "outcome": "PHYSICAL_SYSTEM_DOMINANT",
+          "interpretation": "The effect tracks physical-system parameters rather than decision structure. This moves the benchmark into the physical-channel family but does not identify a tachyon carrier.",
+          "falsifier_or_invalidity": "DECISION_STRUCTURE_DOMINANT",
+          "next_test": "TOPA-RT-H4"
+        },
+        {
+          "outcome": "NO_PROSPECTIVE_SEPARATION",
+          "interpretation": "H3 does not separate DAT from physical-channel alternatives. Ambiguity remains; H4 may test only the tachyon-specific carrier branch.",
+          "falsifier_or_invalidity": "NONE_CAUSE_CLASS_UNRESOLVED",
+          "next_test": "TOPA-RT-H4"
+        },
+        {
+          "outcome": "H3_PROTOCOL_INVALID",
+          "interpretation": "H3 is invalid. No DAT-vs-physical inference is allowed.",
+          "falsifier_or_invalidity": "SELF",
+          "next_test": "REDESIGN_AND_REPEAT_H3"
+        }
+      ]
+    },
+    {
+      "id": "TOPA-RT-H4",
+      "source_name": "CARRIER_IDENTITY_GATE",
+      "role": "TACHYON_SPECIFIC_CARRIER_IDENTITY",
+      "prerequisites": ["TOPA-RT-H1:PROSPECTIVE_EFFECT_SURVIVES_PREREGISTERED_HOLDOUT"],
+      "outcome_space": [
+        {
+          "outcome": "TACHYON_SPECIFIC_SIGNATURE_INDEPENDENTLY_CONFIRMED",
+          "interpretation": "A preregistered, independently observed carrier-specific physical signature is present. Within the benchmark this permits a tachyon-specific carrier IDENTIFIABILITY_CANDIDATE only; physical truth remains unestablished.",
+          "falsifier_or_invalidity": "NO_TACHYON_SPECIFIC_SIGNATURE",
+          "next_test": "INDEPENDENT_CARRIER_REPLICATION_REQUIRED"
+        },
+        {
+          "outcome": "NO_TACHYON_SPECIFIC_SIGNATURE",
+          "interpretation": "No tachyon-specific carrier identity is admitted. If H3 was PHYSICAL_SYSTEM_DOMINANT, the ceiling remains a generic advanced-time physical-channel candidate; if H3 was unresolved, DAT versus generic physical channel remains unresolved.",
+          "falsifier_or_invalidity": "TACHYON_SPECIFIC_SIGNATURE_INDEPENDENTLY_CONFIRMED",
+          "next_test": "STOP_OR_DESIGN_NEW_CARRIER_SPECIFIC_WITNESS"
+        },
+        {
+          "outcome": "H4_PROTOCOL_INVALID_OR_SIGNATURE_NONSPECIFIC",
+          "interpretation": "Carrier test is invalid or nonspecific. No tachyon identity inference is allowed.",
+          "falsifier_or_invalidity": "SELF",
+          "next_test": "REDESIGN_AND_REPEAT_H4"
+        }
+      ]
+    },
+    {
+      "id": "TOPA-RT-H5",
+      "source_name": "UAP_BRIDGE_GATE",
+      "role": "CROSS_DOMAIN_EXTENSION_ONLY",
+      "available": false,
+      "reason": "Canonical source reports direct_uap_tachyon_link_found=false and NARA byte-level bulk scan NOT_COMPLETED.",
+      "outcome_space": [],
+      "next_test": "NONE_UNTIL_SOURCE_LINKED_UAP_EVENT_EXISTS"
+    }
+  ],
+  "expected_minimax_policy": {
+    "root": "TOPA-RT-H2",
+    "after_H2_valid": "TOPA-RT-H1",
+    "after_H1_null": "STOP_AT_ORDINARY_OR_LEAKAGE_NULL_CEILING",
+    "after_H1_effect": "TOPA-RT-H3",
+    "after_H3_decision": "STOP_AT_DAT_INFORMATION_SELECTION_CEILING",
+    "after_H3_physical": "TOPA-RT-H4",
+    "after_H4_signature": "TACHYON_SPECIFIC_CARRIER_IDENTIFIABILITY_CANDIDATE",
+    "after_H4_no_signature_given_H3_physical": "ADVANCED_TIME_PHYSICAL_CHANNEL_IDENTIFIABILITY_CANDIDATE",
+    "worst_case_test_count": 4
+  },
+  "firewalls": [
+    "OUTCOME != CAUSE_TRUTH",
+    "PROSPECTIVE_ANOMALY != RETROCAUSAL_MECHANISM",
+    "RETROCAUSAL_MECHANISM != TACHYON_CARRIER",
+    "ARCHIVAL_WORDING != LIKELIHOOD",
+    "NO_CALIBRATED_LIKELIHOODS => NO_R4_3",
+    "INVALID_PROTOCOL != NEGATIVE_RESULT",
+    "OUT_OF_CONTRACT != INTERPRETABLE_AFTER_THE_FACT",
+    "H5_UNAVAILABLE != UAP_LINK_NEGATIVE_PROOF"
+  ]
+}

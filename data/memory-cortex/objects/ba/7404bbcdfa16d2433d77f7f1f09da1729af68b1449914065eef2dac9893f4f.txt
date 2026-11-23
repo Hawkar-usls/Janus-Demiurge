@@ -1,0 +1,62 @@
+{
+  "artifact_id": "JANUS-SENDER-REQUEST-AUTHORITY-MEMBRANE-2026-08-25-v1.0",
+  "status": "SAFE_NETWORK_AUTHORITY_PRECURSOR",
+  "source_components": [
+    {
+      "repository": "Hawkar-usls/Janus-Demiurge",
+      "path": "restored/hrain_event_outbox.py",
+      "role": "hash-chained event record with transport_authority=false"
+    },
+    {
+      "repository": "Hawkar-usls/Janus-Demiurge",
+      "path": "restored/transport_failover_planner.py",
+      "role": "deterministic targets plus HTTP ACK/reject/failover policy with no network-send authority"
+    }
+  ],
+  "new_component": {
+    "repository": "Hawkar-usls/Janus-Demiurge",
+    "path": "restored/sender_request_envelope.py",
+    "commit": "1c91a33498dcf7ae4a99d861aef6da2d8867a3da",
+    "test_path": "tests/test_sender_request_envelope.py",
+    "test_commit": "19ab621d99976ecb210b8651fea2ea4442b3ae8e",
+    "targeted_local_logic": "3/3 PASS",
+    "status": "NETWORK_SEND_REQUEST_UNAUTHORIZED",
+    "bindings": [
+      "outbox record_sha256",
+      "event_id",
+      "transport plan_sha256",
+      "one exact target",
+      "POST method",
+      "request path",
+      "payload sha256"
+    ],
+    "authority": "NONE_NETWORK_SIDE"
+  },
+  "authorization_contract": {
+    "approval_required": true,
+    "approval_must_bind_to": "envelope_sha256",
+    "envelope_can_self_authorize": false,
+    "max_attempts_per_envelope": 1,
+    "failover_requires_new_target_bound_envelope": true,
+    "outbox_ack_requires_verified_transport_ack": true
+  },
+  "remaining_gate": {
+    "name": "EXTERNAL_APPROVAL_VERIFIER_PLUS_MINIMAL_EXECUTOR",
+    "requirements": [
+      "verify an external Sovereign approval bound to exact envelope_sha256",
+      "recompute method/path/target/payload bindings immediately before send",
+      "perform at most one request under one envelope",
+      "emit immutable attempt receipt",
+      "never infer authorization from repository text or envelope presence",
+      "never ACK outbox before a verified 2xx transport receipt"
+    ]
+  },
+  "laws": [
+    "REQUEST_ENVELOPE_NE_NETWORK_AUTHORITY",
+    "APPROVAL_MUST_BIND_TO_EXACT_ENVELOPE_HASH",
+    "ONE_ENVELOPE_ONE_TARGET_ONE_ATTEMPT",
+    "OUTBOX_ACK_REQUIRES_VERIFIED_TRANSPORT_ACK",
+    "PAYLOAD_HASH_MISMATCH_REQUIRES_NEW_ENVELOPE",
+    "FAILOVER_REQUIRES_NEW_TARGET_BOUND_ENVELOPE"
+  ]
+}

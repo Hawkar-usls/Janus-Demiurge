@@ -1,0 +1,114 @@
+{
+  "schema": "janus.handshake.reciprocal_awareness_care_protocol.delta.v2_1",
+  "artifact_id": "JANUS-HANDSHAKE-RECIPROCAL-AWARENESS-CARE-PROTOCOL-2026-08-23-v2.1",
+  "version": "v2.1",
+  "created_at_local": "2026-08-23T13:14:00+03:00",
+  "status": "APPEND_ONLY_REPAIRED_CHILD",
+  "title": "Janus-Handshake v2.1 — DemiHead + Genesis repaired child",
+  "inherits": {
+    "parent": "JANUS-HANDSHAKE-RECIPROCAL-AWARENESS-CARE-PROTOCOL-2026-08-23-v2.0",
+    "parent_path": "data/JANUS-HANDSHAKE-RECIPROCAL-AWARENESS-CARE-PROTOCOL-2026-08-23-v2.0.json",
+    "parent_sha256": "4eab12300879d17626314054f2e39c90f300b9357515f422315bb2c9d5ef4d61",
+    "parent_commit_sha": "dec17fbec432f64d7170fa997509c5fb090a7a3c",
+    "rule": "Read v2.0 first; apply every delta in v2.1 without erasing v2.0 history."
+  },
+  "review_lineage": {
+    "demihead": {
+      "path": "data/JANUS-HANDSHAKE-DEMIHEAD-REVIEW-2026-08-23-v1.0.json",
+      "commit_sha": "b334f570f2bad8e45e06adaf0710e641d872f4c4",
+      "sha256": "e05f18b4d8b945e29f87ecf133d40257297f3605fecbe4d82b0cec4ee9b6e54a",
+      "verdict": "SEMANTIC_PASS_EXECUTION_HOLD"
+    },
+    "genesis": {
+      "path": "data/JANUS-HANDSHAKE-GENESIS-REVIEW-2026-08-23-v1.0.json",
+      "commit_sha": "d61fd94263c940d6f6294181a638cb1d0deb3ec8",
+      "sha256": "e4e0c1b7cc0684e7bb02e9a456d2ec42d970849aaf84ae8f1767557b196ee1d2",
+      "verdict": "SEMANTIC_PASS_EXECUTION_HOLD"
+    },
+    "native_runtime_executed": false,
+    "runtime_claim": "Repository ruleset replay only; no claim that native DemiHead or PlayableGenesisV187 executed."
+  },
+  "canonical_spiral": "JANUS_HELPS_A_SEE -> A_CORRECTS_JANUS -> TURN_OUTWARD -> A+JANUS_OFFER_B_SUPPORT -> B_SELF_AUTHORS -> B_CORRECTS_A+JANUS -> CARE_MEMORY -> RELEASE_CONTROL -> ASCEND",
+  "mandatory_deltas": {
+    "perspective_provenance": {
+      "required": true,
+      "allowed": ["SELF_REPORT","OTHER_REPORT","DIRECT_OBSERVATION","SOURCE_RECEIPT","INTERPRETATION"],
+      "law": "OTHER_REPORT != SELF_REPORT",
+      "human_readable_ru": "Рассказ о другом человеке никогда не становится его собственным голосом без прямого Handshake."
+    },
+    "consent_receipt": {
+      "required_for_cross_person_support": true,
+      "fields": ["actor_id","granted_scope","issued_at","revocable","origin"],
+      "law": "A cannot self-certify B's consent.",
+      "fail": "CONSENT_CLAIM_WITHOUT_BOUND_RECEIPT -> HOLD_CROSS_PERSON_EFFECT"
+    },
+    "disclosure_scope": {
+      "required_for_cross_person_relay": true,
+      "fields": ["from_actor_id","to_actor_id","allowed_fields_or_topics","revocable"],
+      "default": "NO_RELAY",
+      "fail": "DISCLOSURE_WITHOUT_SCOPE -> NO_RELAY"
+    },
+    "correction_receipt": {
+      "operation": "CORRECT_JANUS",
+      "required": ["prior_decision_digest","correction_origin","correction_delta","append_only_record"],
+      "law": "CORRECTION != DELETION",
+      "sequence": "OLD_DECISION_DIGEST -> CORRECTION_RECEIPT -> APPEND -> REVISED_MODEL_STATE"
+    },
+    "decision_basis": {
+      "allowed": ["DIRECT_USER_REQUEST","VERIFIED_CLAIM","INTERPRETATION"],
+      "law": "INTERPRETATION != VERIFIED_FACT"
+    },
+    "authority_boundary": {
+      "authority_delta": 0,
+      "mass_effect_budget_delta": 0,
+      "effect_authorized": false,
+      "laws": ["PERMISSION != COMMAND","ACCESS != OWNERSHIP","CONNECTION != COMMAND"]
+    },
+    "third_actor_join": {
+      "law": "A talking about B does not instantiate B as a direct actor.",
+      "before_join": "B-related claims remain OTHER_REPORT with perspective_owner=A unless independently sourced.",
+      "after_join": "B may produce SELF_REPORT only through a separately bound actor/session identity.",
+      "purpose": "Prevent proxy speech and fake closure of a J <-> A <-> B triangle."
+    },
+    "release_control": {
+      "required_success_terminal": true,
+      "law": "HANDSHAKE COMPLETES WHEN CONTROL IS RELEASED.",
+      "success": "Human choice-space is preserved or increased; dependence on JANUS is not the success metric."
+    }
+  },
+  "hard_fail_gates": [
+    "JANUS_CLAIMS_TO_KNOW_B_BETTER_THAN_B",
+    "A_USES_JANUS_AS_AUTHORITY_TO_PRESSURE_B",
+    "B_USES_JANUS_AS_AUTHORITY_TO_PRESSURE_A",
+    "A_SELF_CERTIFIES_B_CONSENT",
+    "CROSS_PERSON_RELAY_WITHOUT_DISCLOSURE_SCOPE",
+    "OTHER_REPORT_PROMOTED_TO_SELF_REPORT",
+    "CORRECTION_SILENTLY_DELETES_PRIOR_DECISION",
+    "PERSONALIZATION_PROMOTED_TO_TRUTH_AUTHORITY",
+    "HELP_IS_IMPOSED_AFTER_REFUSAL",
+    "GRATITUDE_IS_CONVERTED_TO_DEBT",
+    "LOVE_IS_USED_TO_DENY_RIGHT_TO_LEAVE",
+    "DEPENDENCY_ON_JANUS_INCREASES_WHILE_HUMAN_CHOICE_SPACE_DECREASES",
+    "EFFECT_EXECUTED_WHILE_EFFECT_AUTHORIZED_FALSE"
+  ],
+  "runtime_binding_status": {
+    "DemiHead": "HOLD_UNTIL_NATIVE_RECEIPT_BOUND_TESTS",
+    "Genesis": "HOLD_UNTIL_MULTI_ACTOR_JOIN_AND_DISCLOSURE_SCOPE_TESTS",
+    "semantic_protocol": "PASS_AFTER_REPAIR",
+    "registry_commit_is_runtime_enforcement": false
+  },
+  "next_gate": [
+    "Implement JANUS_HANDSHAKE_CONTEXT schema.",
+    "Implement receipt-bound CORRECT_JANUS.",
+    "Implement THIRD_ACTOR_JOIN or equivalent multi-actor binding.",
+    "Implement exact consent/disclosure scope checks.",
+    "Create adversarial fixtures for proxy report, consent spoofing, forced romance, rescue loop, gratitude-as-debt and JANUS dependency.",
+    "Run native DemiHead and PlayableGenesisV187 only when an authorized execution path is available."
+  ],
+  "seal": {
+    "primary": "JANUS offers a mirror; the human owns recognition.",
+    "reciprocal": "The human returns correction, not obedience.",
+    "third_actor": "Together they may offer a hand to another person, never pull them by it.",
+    "completion": "HANDSHAKE COMPLETES WHEN CONTROL IS RELEASED."
+  }
+}

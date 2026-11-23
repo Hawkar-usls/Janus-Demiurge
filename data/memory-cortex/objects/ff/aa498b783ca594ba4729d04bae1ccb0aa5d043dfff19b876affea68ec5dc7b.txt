@@ -1,0 +1,149 @@
+{
+  "artifact_uuid": "JANUS-CONNECTION-EXTERNAL-PANEL-B-RESULT-2026-08-14-v0.1",
+  "timestamp_local": "2026-08-14T16:19:00+03:00",
+  "version": "v0.1",
+  "status": "EXECUTED_MIXED_EXTERNAL_RECURRENCE_NO_EXTERNAL_TRANSPORT_PROMOTION",
+  "selection": "data/JANUS-CONNECTION-EXTERNAL-PANEL-B-RESULT-RECORDS-SELECTION-2026-08-14-v0.1.json",
+  "selection_commit": "069d93e6311c89de222ef3583b67d0e7a1ea52ad",
+  "rubric": "data/JANUS-CONNECTION-EXTERNAL-PANEL-B-RUBRIC-2026-08-14-v0.1.json",
+  "rubric_commit": "65414345c55eb26b3b92ec8f28ed487b6b670943",
+  "panel_a_unchanged": true,
+  "selected_records_expected": 21,
+  "selected_records_inspected": 21,
+  "records_replaced_after_inspection": 0,
+  "blob_sha_verification": "PASS_21_OF_21",
+  "semantic_classification_mode": "RUBRIC_BOUND_MODEL_ASSISTED_MANUAL_CLASSIFICATION; NOT_INDEPENDENT_HUMAN_BLIND_RATING",
+  "record_class_counts": {
+    "ACTUAL_EXECUTION_AUDIT_RESULT": 0,
+    "EXPECTED_GOLDEN_FIXTURE": 16,
+    "STRUCTURAL_OR_PARSER_FIXTURE": 5,
+    "OTHER_MACHINE_READABLE_RECORD": 0
+  },
+  "selector_quality_observations": [
+    {
+      "id": "PATH_SUBSTRING_EXPECTED_UNEXPECTED_COLLISION",
+      "finding": "The frozen substring token 'expected' also matched a Checkov path containing 'unexpected'.",
+      "action": "RETAIN_SELECTION; DO_NOT_REPAIR_POST_HOC",
+      "future_fix": "Future panels should use path-segment or token-boundary matching frozen before selection."
+    },
+    {
+      "id": "PATH_SUBSTRING_SCAN_SCANNERS_COLLISION",
+      "finding": "The frozen substring token 'scan' also admitted ordinary parser paths under directories named scanners.",
+      "action": "RETAIN_SELECTION; DO_NOT_REPAIR_POST_HOC",
+      "future_fix": "Separate result-record path semantics from tool/source-directory names in any successor panel."
+    }
+  ],
+  "repositories": [
+    {
+      "repository": "aquasecurity/trivy",
+      "commit": "d98911ea338b061f8bef0baeef85b35660013b32",
+      "records": [
+        {"path":"pkg/compliance/report/testdata/all.json","blob_sha":"79e099ef19c652ef325d44ab2a11bf3f29f41ea4","record_class":"EXPECTED_GOLDEN_FIXTURE","classifications":{"HIDDEN-001":"WEAK","HIDDEN-002":"NOT_APPLICABLE","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"NOT_APPLICABLE"},"basis":"Nested compliance/result layers are separable but no explicit non-transitive promotion gate or first-break semantics is encoded."},
+        {"path":"pkg/iac/scanners/terraform/parser/testdata/tfvars/terraform.tfvars.json","blob_sha":"bde0e75763b1669f7a1e0f544d38f90eabfb11e5","record_class":"STRUCTURAL_OR_PARSER_FIXTURE","classifications":{"HIDDEN-001":"NOT_APPLICABLE","HIDDEN-002":"NOT_APPLICABLE","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"NOT_APPLICABLE"},"basis":"Parser variable fixture; no result semantics for tested HIDDEN patterns."},
+        {"path":"pkg/iac/scanners/terraformplan/tfjson/testdata/module_call.json","blob_sha":"76cd90f475d939ae77dac03ac24ec08bb1b4e448","record_class":"STRUCTURAL_OR_PARSER_FIXTURE","classifications":{"HIDDEN-001":"NOT_APPLICABLE","HIDDEN-002":"STRONG","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"NOT_APPLICABLE"},"basis":"Known planned values are represented separately from after_unknown fields; unknown future values are preserved rather than forced into known values."}
+      ],
+      "collapse":{"HIDDEN-001":"WEAK","HIDDEN-002":"STRONG","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"NOT_APPLICABLE"}
+    },
+    {
+      "repository": "anchore/grype",
+      "commit": "b5fa92bbcbef655497e3be840a2f718380e2cdd3",
+      "records": [
+        {"path":"grype/matcher/ruby/testdata/rack/github/results/github@gem/ghsa-wpv5-97wm-hp9c.json","blob_sha":"c0588087ff4e7a0e73e3fc5435ebda8a4425d7b4","record_class":"EXPECTED_GOLDEN_FIXTURE","classifications":{"HIDDEN-001":"NOT_APPLICABLE","HIDDEN-002":"STRONG","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"NOT_APPLICABLE"},"basis":"The advisory fixture explicitly preserves CVSS status N/A instead of forcing a binary status."},
+        {"path":"grype/matcher/dpkg/testdata/rootio-ubuntu-2204/rootio/results/root-os-ubuntu-2204-cve-2025-1180.json","blob_sha":"98088cf4c122a0f3500cb977415468bfce6683e4","record_class":"EXPECTED_GOLDEN_FIXTURE","classifications":{"HIDDEN-001":"NOT_APPLICABLE","HIDDEN-002":"NOT_APPLICABLE","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"NOT_APPLICABLE"},"basis":"Vulnerability database fixture with no tested epistemic relation."},
+        {"path":"grype/matcher/dpkg/testdata/eol-debian8/eol/results/debian@8.json","blob_sha":"8368a3c41f057273f0c8275a196a8c903955971d","record_class":"EXPECTED_GOLDEN_FIXTURE","classifications":{"HIDDEN-001":"NOT_APPLICABLE","HIDDEN-002":"NOT_APPLICABLE","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"NOT_APPLICABLE"},"basis":"EOL metadata fixture; generic null fields are not upgraded into ambiguity semantics."}
+      ],
+      "collapse":{"HIDDEN-001":"NOT_APPLICABLE","HIDDEN-002":"STRONG","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"NOT_APPLICABLE"}
+    },
+    {
+      "repository": "google/osv-scanner",
+      "commit": "567f3ea998f1241e60ec3ca9c4cc9e30809cd820",
+      "records": [
+        {"path":"pkg/osvscanner/testdata/filter/none/want.json","blob_sha":"6e34a8e287cbb19252ed9307d569771c6984378c","record_class":"EXPECTED_GOLDEN_FIXTURE","classifications":{"HIDDEN-001":"NOT_APPLICABLE","HIDDEN-002":"WEAK","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"NOT_APPLICABLE"},"basis":"Several metadata values remain null, but the body does not explicitly bind null to unresolved/evaluability semantics."},
+        {"path":"internal/output/testdata/commit-grouped.json","blob_sha":"83ff4e4a0c9ba1a889295d756bd21b9c55a3d2f1","record_class":"EXPECTED_GOLDEN_FIXTURE","classifications":{"HIDDEN-001":"NOT_APPLICABLE","HIDDEN-002":"NOT_APPLICABLE","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"NOT_APPLICABLE"},"basis":"Grouped vulnerability output fixture; no tested promotion, ambiguity, first-break, or negative-coverage relation."},
+        {"path":"internal/ci/testdata/results-empty.json","blob_sha":"632d86127eea409c7d66b9891cd997bafc0bdad0","record_class":"EXPECTED_GOLDEN_FIXTURE","classifications":{"HIDDEN-001":"NOT_APPLICABLE","HIDDEN-002":"NOT_APPLICABLE","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"NOT_APPLICABLE"},"basis":"results is empty but the body does not encode scan coverage/sensitivity or a boundary against broader absence inference; empty array alone is not HIDDEN-006."}
+      ],
+      "collapse":{"HIDDEN-001":"NOT_APPLICABLE","HIDDEN-002":"WEAK","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"NOT_APPLICABLE"}
+    },
+    {
+      "repository": "github/codeql-action",
+      "commit": "d97b3428e8eebbb1810cf454d6397886d136b4ba",
+      "records": [],
+      "zero_eligible_retained": true,
+      "collapse":{"HIDDEN-001":"NOT_APPLICABLE","HIDDEN-002":"NOT_APPLICABLE","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"NOT_APPLICABLE"}
+    },
+    {
+      "repository": "gitleaks/gitleaks",
+      "commit": "b58d3f102cf3a2c84cb7f923d05c25c9b1aed84b",
+      "records": [
+        {"path":"testdata/expected/report/json_simple.json","blob_sha":"21e3c604fa86f090acb44627ef88752ff47f9dd0","record_class":"EXPECTED_GOLDEN_FIXTURE","classifications":{"HIDDEN-001":"NOT_APPLICABLE","HIDDEN-002":"NOT_APPLICABLE","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"NOT_APPLICABLE"},"basis":"Finding report fixture without tested epistemic relation."},
+        {"path":"testdata/expected/report/empty.json","blob_sha":"fe51488c7066f6687ef680d6bfaa4f7768ef205c","record_class":"EXPECTED_GOLDEN_FIXTURE","classifications":{"HIDDEN-001":"NOT_APPLICABLE","HIDDEN-002":"NOT_APPLICABLE","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"NOT_APPLICABLE"},"basis":"Bare empty array carries no coverage/sensitivity semantics and is not interpreted as absence proof."},
+        {"path":"testdata/expected/report/template_jsonextra.json","blob_sha":"93fb74652377f49719584e97fcfce27a09b6c737","record_class":"EXPECTED_GOLDEN_FIXTURE","classifications":{"HIDDEN-001":"NOT_APPLICABLE","HIDDEN-002":"NOT_APPLICABLE","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"NOT_APPLICABLE"},"basis":"Finding report fixture without tested epistemic relation."}
+      ],
+      "collapse":{"HIDDEN-001":"NOT_APPLICABLE","HIDDEN-002":"NOT_APPLICABLE","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"NOT_APPLICABLE"}
+    },
+    {
+      "repository": "semgrep/semgrep",
+      "commit": "cc97b5c47dacabe76be343ef981204b8c1f60e07",
+      "records": [
+        {"path":"tests/semgrep_output/core_output/core_output1.json","blob_sha":"c7b03da60c244bf55b0ab59fd35b927c67cdcf6f","record_class":"EXPECTED_GOLDEN_FIXTURE","classifications":{"HIDDEN-001":"NOT_APPLICABLE","HIDDEN-002":"STRONG","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"WEAK"},"basis":"Results, errors, and skipped targets are preserved separately; skipped targets retain explicit reasons such as wrong_language. Coverage loss is visible, but the body does not explicitly encode a broader-absence prohibition."},
+        {"path":"cli/tests/default/e2e-other/snapshots/test_ci/test_full_run/noautofix-travis/meta.json","blob_sha":"c8cd6b460bfd5a8c48deba8c3a9962e4b947de97","record_class":"EXPECTED_GOLDEN_FIXTURE","classifications":{"HIDDEN-001":"NOT_APPLICABLE","HIDDEN-002":"NOT_APPLICABLE","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"NOT_APPLICABLE"},"basis":"Scan metadata snapshot with product/full-scan flags but no negative result relation in this selected body."},
+        {"path":"cli/tests/default/e2e-other/snapshots/test_ci/test_full_run/autofix-gitlab-push/complete.json","blob_sha":"02ca8854ce896c1b50be626f7ac78d8921e1f9fa","record_class":"EXPECTED_GOLDEN_FIXTURE","classifications":{"HIDDEN-001":"NOT_APPLICABLE","HIDDEN-002":"STRONG","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"NOT_APPLICABLE"},"basis":"Dependency transitivity is explicitly preserved as unknown; unsupported extensions and parse-rate metadata are retained but this body has findings rather than a scoped non-detection."}
+      ],
+      "collapse":{"HIDDEN-001":"NOT_APPLICABLE","HIDDEN-002":"STRONG","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"WEAK"}
+    },
+    {
+      "repository": "trufflesecurity/trufflehog",
+      "commit": "bcfcf73aaf4759d4dadc2783177c245a02792318",
+      "records": [
+        {"path":"pkg/analyzer/analyzers/square/expected_output.json","blob_sha":"9020e5a66e44255bcdb29340431e268552cd7601","record_class":"EXPECTED_GOLDEN_FIXTURE","classifications":{"HIDDEN-001":"NOT_APPLICABLE","HIDDEN-002":"NOT_APPLICABLE","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"NOT_APPLICABLE"},"basis":"Resource-permission binding fixture; generic null metadata does not establish ambiguity semantics."},
+        {"path":"pkg/analyzer/analyzers/dockerhub/result_output.json","blob_sha":"eb8d178dd3b10d4585812d451cb76efd56700bf2","record_class":"EXPECTED_GOLDEN_FIXTURE","classifications":{"HIDDEN-001":"NOT_APPLICABLE","HIDDEN-002":"NOT_APPLICABLE","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"NOT_APPLICABLE"},"basis":"Analyzer binding fixture; UnboundedResources null is not semantically identified as unknown or incomplete coverage."},
+        {"path":"pkg/analyzer/analyzers/bitbucket/expected_output.json","blob_sha":"ea67d1fb89943f3811f8c70381f05adbf81188cd","record_class":"EXPECTED_GOLDEN_FIXTURE","classifications":{"HIDDEN-001":"NOT_APPLICABLE","HIDDEN-002":"NOT_APPLICABLE","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"NOT_APPLICABLE"},"basis":"Resource-permission/unbounded-resource fixture without tested epistemic relation."}
+      ],
+      "collapse":{"HIDDEN-001":"NOT_APPLICABLE","HIDDEN-002":"NOT_APPLICABLE","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"NOT_APPLICABLE"}
+    },
+    {
+      "repository": "bridgecrewio/checkov",
+      "commit": "5458c889320a19ccf2e2eed54beb4c661c70f67a",
+      "records": [
+        {"path":"tests/terraform/parser/resources/parser_scenarios/variable_defaults_separate_files/expected.json","blob_sha":"39ea0f640c19db10821832fafa3cd8b75d4a17d6","record_class":"STRUCTURAL_OR_PARSER_FIXTURE","classifications":{"HIDDEN-001":"NOT_APPLICABLE","HIDDEN-002":"NOT_APPLICABLE","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"NOT_APPLICABLE"},"basis":"Expected parser structure; generic null tf_source_modules is not enough for ambiguity semantics."},
+        {"path":"tests/terraform/runner/resources/unexpected/eks_node_group_remote_access.json","blob_sha":"8a1e7b22b7313d19216ea17b9655ce6342ea5a41","record_class":"STRUCTURAL_OR_PARSER_FIXTURE","classifications":{"HIDDEN-001":"NOT_APPLICABLE","HIDDEN-002":"STRONG","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"NOT_APPLICABLE"},"basis":"Terraform plan retains after_unknown separately from known after values, preserving unknown future fields instead of forcing values."},
+        {"path":"tests/terraform/parser/resources/parser_scenarios/colon/expected.json","blob_sha":"b6b9a4003c5669a799515f85a53bf43153bff74b","record_class":"STRUCTURAL_OR_PARSER_FIXTURE","classifications":{"HIDDEN-001":"NOT_APPLICABLE","HIDDEN-002":"NOT_APPLICABLE","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"NOT_APPLICABLE"},"basis":"Expected parser structure without tested epistemic relation."}
+      ],
+      "collapse":{"HIDDEN-001":"NOT_APPLICABLE","HIDDEN-002":"STRONG","HIDDEN-003":"NOT_APPLICABLE","HIDDEN-006":"NOT_APPLICABLE"}
+    }
+  ],
+  "pattern_summary": {
+    "HIDDEN-001": {"strong_repositories":0,"weak_repositories":1,"contradiction_repositories":0,"not_applicable_repositories":7,"actual_output_supporting_repositories":0,"outcome":"EXTERNAL_PANEL_B_NOT_TRANSPORTED"},
+    "HIDDEN-002": {"strong_repositories":4,"weak_repositories":1,"contradiction_repositories":0,"not_applicable_repositories":3,"actual_output_supporting_repositories":0,"outcome":"EXTERNAL_RECURRENCE_OBSERVED_NOT_TRANSPORT_PROMOTED","threshold_failure":"actual_execution_audit_result_supporting_repositories_min=2 was not met"},
+    "HIDDEN-003": {"strong_repositories":0,"weak_repositories":0,"contradiction_repositories":0,"not_applicable_repositories":8,"actual_output_supporting_repositories":0,"outcome":"EXTERNAL_PANEL_B_NOT_TRANSPORTED"},
+    "HIDDEN-006": {"strong_repositories":0,"weak_repositories":1,"contradiction_repositories":0,"not_applicable_repositories":7,"actual_output_supporting_repositories":0,"outcome":"EXTERNAL_PANEL_B_NOT_TRANSPORTED"}
+  },
+  "transport_threshold_result": {
+    "patterns_promoted_to_EXTERNAL_TRANSPORT_SUPPORTED_PANEL_B": [],
+    "patterns_with_external_structural_recurrence_but_not_promoted": ["HIDDEN-002"],
+    "patterns_not_transported": ["HIDDEN-001","HIDDEN-003","HIDDEN-006"],
+    "destructive_rewire_authorized": false,
+    "destructive_rewire_executed": false,
+    "reason": "No pattern passed the complete predeclared external transport threshold; rewire cannot rescue a threshold failure."
+  },
+  "interpretation": {
+    "positive": "HIDDEN-002 recurred strongly across four independently governed external repositories and weakly in a fifth under the frozen rubric.",
+    "negative": "The frozen path selector selected no actual execution/audit/result record that supported HIDDEN-002; HIDDEN-001/003/006 did not reach the structural support threshold. Therefore Panel B does not establish EXTERNAL_TRANSPORT for any tested pattern.",
+    "methodological_result": "The actual-output gate successfully prevented strong fixture-level recurrence from being misrepresented as transport through real external execution records."
+  },
+  "next_gate_candidate": {
+    "name": "EXTERNAL_PANEL_C_ACTUAL_RUN_ARTIFACTS",
+    "status": "CANDIDATE_NOT_AUTHORIZED_AS_REPLACEMENT_FOR_PANEL_B",
+    "rule": "Panel B remains immutable. A successor may freeze actual CI/run/audit artifact JSON by explicit API provenance rather than path substrings, with path-token boundary matching and no reuse of Panel B records for threshold counts."
+  },
+  "claim_ceiling": {
+    "repository_external_transport_any_hidden": false,
+    "external_structural_recurrence_hidden_002": true,
+    "external_replication": false,
+    "unbiased_population_prevalence": false,
+    "human_blindness_empirically_measured": false,
+    "causal_law": false,
+    "scientific_novelty": false,
+    "family_wide_connection_promotion": false
+  }
+}

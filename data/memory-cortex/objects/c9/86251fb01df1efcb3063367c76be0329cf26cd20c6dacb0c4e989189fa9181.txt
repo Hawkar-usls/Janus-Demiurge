@@ -1,0 +1,31 @@
+{
+  "artifact_id": "JANUS-TRUMP-FIXED-PALETTE-CUT-VERTEX-LIST-FACTORIZATION-RESULT-2026-09-20-v1.0",
+  "version": "v1.0",
+  "date": "2026-09-20",
+  "status": "PASS_FIXED_PALETTE_CUT_VERTEX_LIST_FACTORIZATION",
+  "theorem": {
+    "input": "Graph C with exact lists L(v) subseteq [4] and a cut vertex r.",
+    "components": "Let Q_1,...,Q_t be the connected components of C-r.",
+    "boundary_lists": "For kappa in L(r), define L_i^kappa(v)=L(v)\\{kappa} if vr is an edge, otherwise L(v).",
+    "equivalence": "C is list-colorable iff there exists kappa in L(r) such that every (Q_i,L_i^kappa) is list-colorable.",
+    "proof": {
+      "forward": "Restrict any list-coloring c of C to kappa=c(r) and to each Q_i. Neighbors of r cannot use kappa, hence each restriction respects L_i^kappa.",
+      "reverse": "Choose kappa and a list-coloring of every Q_i under L_i^kappa. Since distinct Q_i have no edges between them, their colorings glue with r=kappa to a proper list-coloring of C."
+    },
+    "reconstruction": "Union the independently reconstructed component colorings and set r=kappa.",
+    "complexity_overhead": "At most |L(r)|<=4 boundary branches plus linear-time component construction and list restriction; downstream complexity is the sum of the chosen component solvers."
+  },
+  "proof_carrying_certificate": {
+    "cut_vertex": "Verify C-r has at least two connected components.",
+    "component_partition": "Verify components partition V(C)\\{r} and there are no inter-component edges.",
+    "per_kappa": "Preserve exact restricted lists and each downstream component certificate.",
+    "branch_result": "A kappa branch is SAT iff all components are SAT; it is rejected if any component is contradiction/UNSAT."
+  },
+  "oracle_use": false,
+  "scientific_ceiling": {
+    "CUT_VERTEX_FACTORIZATION": "VERIFIED",
+    "DOWNSTREAM_SOLVABILITY": "DEPENDS_ON_AUTHORIZED_COMPONENT_TERMINALS",
+    "REPAIR": "NOT_STARTED"
+  },
+  "stop": true
+}

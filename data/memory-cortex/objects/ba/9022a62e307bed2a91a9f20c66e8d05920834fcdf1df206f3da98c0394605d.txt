@@ -1,0 +1,140 @@
+{
+  "artifact_id": "JANUS-PALOMAR-JPFM-2F-C2A-STRATIFIED-UPSTREAM-MORPHOLOGY-REPLAY-ADMISSION-v1.0",
+  "experiment_id": "JPFM-2F-C2A",
+  "schema_version": "1.0",
+  "date": "2026-08-15",
+  "status": "PREREGISTERED_AFTER_EXACT_512_SAMPLE_FREEZE_BEFORE_C2A_PIXEL_OUTCOME",
+  "purpose": "Measure actual pinned upstream Source Extractor/PSFEx morphology plus compatibility-fixed profile/contour metrics on the exact frozen 512-source, 360-tile label-blind corpus; normalize PSF-sensitive features to high-confidence stars within the same replayed tile; then test whether the already-frozen 16 structural strata carry reproducible morphology information without opening nuclear, human-report or environmental labels.",
+  "parents": [
+    "data/JANUS-PALOMAR-JPFM-2F-C2A-STRATIFIED-UPSTREAM-MORPHOLOGY-SAMPLE-FREEZE-ADMISSION-v1.0.json",
+    "data/JANUS-PALOMAR-JPFM-2F-C2A-STRATIFIED-UPSTREAM-MORPHOLOGY-SAMPLE-FREEZE-RUN-001.json",
+    "data/JANUS-PALOMAR-JPFM-2F-C1A2-MOMENT-SURROGATE-NEGATIVE-CERTIFICATE-v1.0.json",
+    "data/JANUS-PALOMAR-JPFM-2F-B3S-SHARD-AGGREGATE-RUN-001.json"
+  ],
+  "frozen_sample_binding": {
+    "rows": 512,
+    "distinct_tiles": 360,
+    "distinct_plates": 234,
+    "manifest_csv_sha256": "a3656b181648e5abf933859199b5712e945b932610fffdd6c810785cff341b21",
+    "manifest_gzip_sha256": "3d4c7513b4add64324fddeedd04e9379b415f729fb36a76d977b871845638ca7",
+    "sample_freeze_canonical_sha256": "e4e5c8e13be97f4c54a12fc1cc217a5ed1fdcba763795aa47dc0d921b3d8d958",
+    "replacement_after_failure_allowed": false
+  },
+  "upstream_measurement_contract": {
+    "repository": "jannefi/poss1-plate-slice",
+    "commit": "4005e200541b321ead3d6608f0162a14430ef1c2",
+    "tile_reconstruction": "Exact same 7x7 60-arcmin named-plate reconstruction and frozen CRPIX correction used by admitted B2/B3S.",
+    "detection_chain": "Pinned Source Extractor pass1 -> PSFEx -> Source Extractor pass2 configs from the upstream commit.",
+    "source_identity": "Exact pass2 NUMBER == frozen object_id only; nearest-neighbour replacement forbidden.",
+    "raw_candidate_features": [
+      "FWHM_IMAGE",
+      "ELONGATION",
+      "SPREAD_MODEL",
+      "SPREADERR_MODEL",
+      "SNR_WIN",
+      "CLASS_STAR",
+      "FLUX_AUTO",
+      "MAG_AUTO"
+    ],
+    "compatibility_fixed_shape_stage": "Same B3S OpenCV convexityDefects array-layout adapter only; formulas/thresholds unchanged.",
+    "shape_features": [
+      "profile_diff",
+      "circularity",
+      "area",
+      "shape_defect",
+      "circle_deviation",
+      "stars_used"
+    ]
+  },
+  "tile_local_reference_star_contract": {
+    "purpose": "Normalize candidate PSF morphology to stars measured under the same local plate/tile seeing, scan and emulsion context.",
+    "reference_row_filters": [
+      "FLAGS == 0",
+      "CLASS_STAR >= 0.8",
+      "SNR_WIN >= 20",
+      "finite FWHM_IMAGE",
+      "finite ELONGATION",
+      "finite SPREAD_MODEL"
+    ],
+    "exclude_target_NUMBER": true,
+    "minimum_reference_stars": 20,
+    "for_each_feature": [
+      "FWHM_IMAGE",
+      "ELONGATION",
+      "SPREAD_MODEL"
+    ],
+    "normalization": "candidate minus reference median divided by 1.4826*MAD. If MAD<=0 or reference count<20, robust z is unavailable; do not impute.",
+    "empirical_percentile": "(N(reference < candidate) + 0.5*N(reference == candidate)) / N(reference)",
+    "derived_local_sharpness_z": "-local_FWHM_IMAGE_z so positive values mean sharper/narrower than local high-confidence stars.",
+    "reference_threshold_retuning_after_outcome": false
+  },
+  "execution_sharding": {
+    "shard_count": 16,
+    "unit": "tile_id",
+    "assignment": "Sort the 360 frozen tile_id values lexicographically and assign tile ordinal i to shard i mod 16; all selected sources from one tile stay together.",
+    "expected_tile_counts": "8 shards have 23 tiles and 8 shards have 22 tiles.",
+    "cross_shard_tile_overlap_allowed": false,
+    "global_source_union": "Exactly the frozen 512 src_id values, zero duplicates/omissions/extras."
+  },
+  "predeclared_measurement_gates": {
+    "tile_identity": "All 360 frozen distinct tiles must reconstruct exactly.",
+    "detection_chain": "At least 95% of the 360 required tiles complete pass1+PSFEx+pass2.",
+    "exact_object_id": "At least 90% of 512 selected rows recover exact pass2 NUMBER == frozen object_id.",
+    "sky_consistency": "At least 90% of exact rows have replay pass2 coordinate <=10 arcsec from frozen S0 coordinate.",
+    "raw_upstream_morphology": "At least 95% of exact rows have finite FWHM_IMAGE, ELONGATION and SPREAD_MODEL.",
+    "shape_execution": "At least 90% of exact rows finish compatibility-fixed upstream shape stage with shape_failed=0.",
+    "local_reference_normalization": "At least 80% of exact rows have >=20 qualifying local reference stars and finite robust z for all three primary local-normalized features.",
+    "no_replacement": "Any failed source/tile remains a failure; no alternate source or tile may be substituted."
+  },
+  "primary_blind_morphology_inference": {
+    "eligibility": "Rows with exact source recovery and finite local_FWHM_z, local_ELONGATION_z, local_SPREAD_MODEL_z. No imputation.",
+    "minimum_complete_rows": "At least 80% of the frozen 512 rows; otherwise global morphology inference is WITHHELD_INSUFFICIENT_NORMALIZED_COVERAGE even if measurement artifacts are retained.",
+    "feature_matrix": [
+      "local_FWHM_IMAGE_z",
+      "local_ELONGATION_z",
+      "local_SPREAD_MODEL_z"
+    ],
+    "feature_scaling_for_test": "For each of the three local-z features, subtract the complete-case sample median and divide by 1.4826*MAD; if any global MAD<=0, inference is withheld.",
+    "global_statistic": "Between-structural-cluster sum of squares in the 3D robust-scaled morphology matrix divided by total sum of squares (R2-like explained fraction).",
+    "null": "50,000 permutations of structural_cluster labels performed separately within sample_role=typical and sample_role=unusual, preserving 32 observations per structural cluster globally and the 256/256 role totals through role-stratified label shuffling.",
+    "seed": 20260815,
+    "p_value": "plus-one Monte Carlo p = (1 + null_stat >= observed_stat hits)/(50000+1).",
+    "global_alpha": 0.05,
+    "interpretation": "A significant global result means the frozen structural strata carry morphology information in this balanced blind corpus; it does not make any stratum physical or exotic."
+  },
+  "predeclared_cluster_followups": {
+    "run_condition": "Always compute descriptive distances, but inferential cluster-specific p-values are interpreted only if the global morphology association p<0.05.",
+    "statistic_per_cluster": "Euclidean distance between that cluster's mean robust-scaled 3D morphology vector and the mean of all other complete-case rows.",
+    "same_50000_permutations": true,
+    "multiple_testing": "Westfall-Young maxT across all 16 cluster distance statistics using the same role-stratified permutations; adjusted p is plus-one exceedance probability of the permutation maximum >= observed cluster statistic.",
+    "familywise_alpha": 0.05,
+    "special_interest_cluster_8": "Cluster 8 is reported explicitly because 2F-A already showed extreme plate concentration before C2A pixels, but receives no separate uncorrected discovery threshold."
+  },
+  "secondary_report_only_analyses": [
+    "Per-cluster distributions of raw FWHM_IMAGE, ELONGATION, SPREAD_MODEL, local percentiles and local sharpness z.",
+    "Typical-vs-unusual differences within each frozen structural cluster.",
+    "profile_diff/circularity/shape_defect/circle_deviation distributions and missingness.",
+    "Reference-star counts per tile and morphology-normalization availability.",
+    "Plate/tile concentration of any morphology-extreme selected rows."
+  ],
+  "external_label_firewall": {
+    "external_label_reveal_authorized": false,
+    "forbidden_inputs": [
+      "nuclear calendar",
+      "Blue Book or any human-report labels",
+      "NUFORC labels",
+      "Kp/ap or geomagnetic labels",
+      "Moon/Sun temporal covariates"
+    ],
+    "post_C2A_rule": "Even a positive C2A morphology association does not authorize external-label reveal. It authorizes only a larger/full label-blind morphology scaleout or a separately frozen morphology-cluster manifest."
+  },
+  "allowed_measurement_outcomes": [
+    "PASS_STRATIFIED_UPSTREAM_MORPHOLOGY_CORPUS_ADMITTED",
+    "FAIL_CLOSED_TILE_OR_DETECTION_REPLAY",
+    "FAIL_CLOSED_OBJECT_LINEAGE",
+    "FAIL_CLOSED_RAW_UPSTREAM_MORPHOLOGY",
+    "FAIL_CLOSED_SHAPE_REPLAY",
+    "FAIL_CLOSED_LOCAL_REFERENCE_NORMALIZATION"
+  ],
+  "claim_ceiling": "LABEL_BLIND_STRATIFIED_UPSTREAM_MORPHOLOGY_AND_STRUCTURAL_ASSOCIATION_ONLY__NO_EXTERNAL_LABEL_INFERENCE__NO_CAUSAL_OR_ORIGIN_CLAIM"
+}

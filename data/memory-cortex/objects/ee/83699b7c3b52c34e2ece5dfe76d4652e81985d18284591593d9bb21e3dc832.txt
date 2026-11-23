@@ -1,0 +1,117 @@
+{
+  "artifact_uuid": "JANUS-ENGINE-SIM-HOWL-CASTLE-RUN-002-GEOMETRY-GROUNDED-v1.0",
+  "timestamp": "2026-08-30T00:11:00+03:00",
+  "version": "v1.0",
+  "title": "Janus Engine — Howl's Moving Castle simulation RUN-002, geometry-grounded",
+  "observer": "Hawkar / JANUS",
+  "node_type": "zero_dimensional_geometry_grounded_simulation",
+  "branch_name": "Janus Engine",
+  "branch_id": "JANUS_ENGINE",
+  "parent": "data/JANUS-ENGINE-R0A-GEOMETRY-FREEZE-FLOW-BUDGET-v1.0.json",
+  "status": "MODEL_MIXED_RESULT_PENDING_MEASUREMENT",
+  "purpose": "Replace RUN-001's implicit large flow area with the actual 62.3 mm Axle-derived module scale and determine how much independently supplied ring-equivalent area is required before self-drive is mathematically possible.",
+  "frozen_geometry": {
+    "outer_diameter_mm": 62.3,
+    "frontal_area_m2": 0.003048358,
+    "axial_thickness_mm": 6.0,
+    "source": "JANUS_AXLE_COIN_TWO_SIDED_LAUREL_A1_v2.6_ADHESION_ROTATION_REPAIR.3mf"
+  },
+  "screening_operating_point": {
+    "water_velocity_m_s": 2.0,
+    "dissolved_O2_mg_L": 8.0,
+    "O2_capture_fraction": 0.50,
+    "water_density_kg_m3": 998.0,
+    "hydrodynamic_K": 1.0,
+    "DeltaP_screen_kPa": 1.996,
+    "pump_efficiency": 0.70,
+    "chemical_energy_equivalent_MJ_per_kg_O2": 12.6,
+    "central_core_shaft_efficiency": 0.30,
+    "separation_drying_N2_service_energy_MJ_per_kg_O2": 0.80,
+    "generator_efficiency": 0.92,
+    "shared_fixed_auxiliary_W": 100.0,
+    "assumption_warning": "K, capture fraction, processing energy, core efficiency and fixed auxiliary load remain unmeasured placeholders. Only the 3MF bounding geometry is grounded in the supplied model."
+  },
+  "single_module_result": {
+    "water_flow_L_s": 6.0967,
+    "O2_capture_g_s": 0.02439,
+    "O2_capture_kg_h": 0.08779,
+    "chemical_power_equivalent_W": 307.274,
+    "central_core_shaft_power_W": 92.182,
+    "water_hydraulic_power_W": 17.384,
+    "gas_processing_and_N2_service_W": 19.510,
+    "surplus_before_shared_fixed_aux_W": 55.289,
+    "net_shaft_after_100W_shared_fixed_W": -44.711,
+    "verdict": "FAIL_IF_ONE_MODULE_MUST_CARRY_100W_SHARED_OVERHEAD",
+    "interpretation": "The actual 62.3 mm module radically reduces the oxygen supply relative to RUN-001. One module can only afford about 55 W of shared fixed load at this screening point before reaching zero shaft surplus."
+  },
+  "aggregate_scaling": {
+    "rule": "Only independently supplied fresh-water area may be multiplied. Concentric rings exposed to the same depleted water parcel are not independent modules.",
+    "two_module_equivalent": {
+      "total_water_flow_L_s": 12.1934,
+      "O2_capture_g_s": 0.04877,
+      "net_shaft_after_100W_shared_fixed_W": 10.577,
+      "net_electric_W": 9.731,
+      "verdict": "BARELY_POSITIVE_IN_MODEL"
+    },
+    "seventeen_module_equivalent": {
+      "reason": "17 independently supplied 62.3 mm frontal-area equivalents approximately reproduce the 100 L/s / 0.4 g/s scale of RUN-001 at 2 m/s and 50% capture.",
+      "total_water_flow_L_s": 103.644,
+      "O2_capture_g_s": 0.41458,
+      "O2_capture_kg_h": 1.49248,
+      "central_core_shaft_power_W": 1567.100,
+      "water_hydraulic_power_W": 295.534,
+      "gas_processing_and_N2_service_W": 331.661,
+      "shared_fixed_auxiliary_W": 100.0,
+      "net_shaft_power_W": 839.905,
+      "net_electric_power_W": 772.712,
+      "verdict": "PASS_IN_MODEL_IF_17_AREAS_RECEIVE_INDEPENDENT_FRESH_WATER"
+    }
+  },
+  "oxygen_target_scaling_at_2m_s": {
+    "target_O2_g_s": 0.4,
+    "ring_equivalents_required_at_30pct_capture": 27.337,
+    "ring_equivalents_required_at_50pct_capture": 16.402,
+    "ring_equivalents_required_at_80pct_capture": 10.251,
+    "important_boundary": "Ring-equivalent count is an area/throughput equivalence, not a prescription to physically nest that number of rings."
+  },
+  "single_aperture_equivalence": {
+    "for_100_L_s_at_2m_s": {
+      "required_area_m2": 0.05,
+      "equivalent_circular_diameter_mm": 252.313
+    },
+    "interpretation": "If the design uses one dominant frontal water-flow aperture instead of distributed modules, the first RUN-001 flow scale belongs to roughly a 25 cm class flow aperture, not a 6.23 cm one."
+  },
+  "velocity_optimization_screen": {
+    "model": "DeltaP = 0.5*rho*v^2 with K=1; core and gas-processing powers scale with oxygen captured; fixed shared load omitted for per-module optimization.",
+    "best_velocity_m_s": 2.361,
+    "best_per_module_shaft_surplus_before_shared_fixed_W": 57.191,
+    "best_per_module_electric_equivalent_before_shared_fixed_W": 52.616,
+    "interpretation": "The simple model has an optimum because oxygen supply rises approximately linearly with water velocity while hydraulic power rises approximately cubically. This optimum is not a measured Janus operating point."
+  },
+  "run001_revision": {
+    "old_interpretation": "100 L/s assigned to an abstract gill system",
+    "new_interpretation": "RUN-001 is an aggregate-area system point. It must not be attributed to one 62.3 mm ring.",
+    "scientific_status": "RUN001_NOT_RETRACTED_BUT_RESCALED"
+  },
+  "dominant_unknowns_now": [
+    "real membrane active area inside one 62.3 mm module",
+    "real oxygen transfer coefficient and capture fraction versus RPM and water velocity",
+    "real DeltaP_water(Q,RPM) and hydrodynamic K",
+    "real torque required to rotate the gill geometry in water",
+    "fresh-water renewal between concentric / axial rings",
+    "real gas-conditioning energy per kg O2",
+    "selected fuel/core and actual shaft efficiency"
+  ],
+  "verdict": {
+    "single_62p3mm_module": "NOT_SELF_DRIVING_UNDER_RUN001_100W_FIXED_OVERHEAD_ASSUMPTION",
+    "aggregate_area": "POSITIVE_MODEL_REGION_EXISTS",
+    "overall": "VIRTUAL_CASTLE_REMAINS_ALIVE_BUT_REQUIRES_SCALE_OR_MULTIPLE_INDEPENDENT_FLOW_LANES",
+    "most_important_design_change": "Treat the coin-scale Axle as a module/core geometry and design the gill system as a much larger effective exchange surface around it rather than expecting the coin-scale frontal area alone to feed the full engine."
+  },
+  "next_gate": "R0A1_MEMBRANE_AREA_AND_FRESH_WATER_RENEWAL: choose a realizable lamella / porous / hollow-channel gill architecture inside or around the 62.3 mm Axle scale, calculate actual active membrane area and flow lanes, then replace capture_fraction with a transport model or measurement.",
+  "linked_records": [
+    "data/JANUS-ENGINE-R0A-GEOMETRY-FREEZE-FLOW-BUDGET-v1.0.json",
+    "data/JANUS-ENGINE-SIM-HOWL-CASTLE-RUN-001-v1.0.json",
+    "data/JANUS-ENGINE-R2A-SELF-DRIVE-NET-GENERATION-v1.0.json"
+  ]
+}

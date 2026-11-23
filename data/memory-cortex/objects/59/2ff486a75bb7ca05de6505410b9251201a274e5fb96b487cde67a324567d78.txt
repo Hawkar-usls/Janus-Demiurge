@@ -1,0 +1,100 @@
+{
+  "schema_version": "1.0",
+  "spec_id": "JANUS-LINEAR-A-R7-E0-KU-RO-MECHANISM-2026-08-15-v0.1",
+  "stage": "R7-E0",
+  "status": "PREREGISTERED_BEFORE_MECHANISM_EVIDENCE",
+  "created_date": "2026-08-15",
+  "scientific_question": "Can the already-admitted HT KU-RO ROW-OPENING-LIKE placement function be narrowed to a more specific structural mechanism without using translation, semantics, phonetics, or post-hoc target selection?",
+  "frozen_parent": {
+    "canonical_version": "v2.30",
+    "baseline_commit_sha": "e93e5ee00ae815739965c6ded7f0e3f16a0cc871",
+    "canonical_module": "research/linear_a/janus_linear_a_canonical_state_v2_30.py",
+    "target": "KU-RO",
+    "region": "HT",
+    "inherited_admitted_role": "ROW-OPENING-LIKE",
+    "inherited_admission_status": "REGION_SCOPED_PROBABLE_STRUCTURAL_FUNCTION_ADMITTED"
+  },
+  "anti_reselection_contract": {
+    "target_is_frozen_before_e0_scoring": true,
+    "region_is_frozen_before_e0_scoring": true,
+    "parent_role_is_frozen_before_e0_scoring": true,
+    "condition_only_on_already_row_first_eligible_contexts": true,
+    "do_not_rank_vocabulary": true,
+    "do_not_use_row_first_enrichment_as_e0_test_statistic": true,
+    "do_not_retune_thresholds_after_e0_evidence": true,
+    "failure_does_not_revoke_parent_c3_admission": true
+  },
+  "forbidden_inputs": {
+    "translation": true,
+    "lexical_semantics": true,
+    "phonetic_value": true,
+    "language_family": true,
+    "external_proposed_meanings": true,
+    "post_score_candidate_selection": true
+  },
+  "mechanism_families": [
+    {
+      "mechanism_id": "ARITHMETIC_SUMMARY",
+      "candidate_refinement": "SUMMARY-ROW-OPENING-LIKE",
+      "test_definition": "Within frozen KU-RO row-first events, test whether the target row behaves as an arithmetic summary of a conservatively defined immediately preceding accounting block.",
+      "null_contract": [
+        "preserve HT region",
+        "preserve physical-object/document membership",
+        "preserve row-first eligibility",
+        "preserve block shape and numeric exposure",
+        "destroy target-to-summary alignment"
+      ],
+      "permutation_seed": 71001
+    },
+    {
+      "mechanism_id": "SECTION_BOUNDARY",
+      "candidate_refinement": "ACCOUNTING-SECTION-MARKER-LIKE",
+      "test_definition": "Within frozen KU-RO row-first events, test whether the target row is preferentially aligned with a local accounting/template boundary rather than an exchangeable row-first position.",
+      "null_contract": [
+        "preserve HT region",
+        "preserve physical-object/document membership",
+        "preserve row-first eligibility",
+        "preserve local position and numeric exposure strata",
+        "destroy target-to-boundary alignment"
+      ],
+      "permutation_seed": 71002
+    }
+  ],
+  "decision_thresholds": {
+    "minimum_eligible_target_events": 20,
+    "minimum_documents": 15,
+    "minimum_physical_objects": 12,
+    "permutations_per_mechanism": 10000,
+    "familywise_alpha": 0.01,
+    "multiple_testing": "HOLM_2_FAMILY",
+    "minimum_effect_lift_over_matched_null": 0.20,
+    "minimum_leave_one_object_out_positive_fraction": 0.90,
+    "maximum_single_object_support_fraction": 0.15,
+    "editorial_stratum_minimum_n_for_directional_check": 5,
+    "editorial_stratum_required_minimum_effect": 0.0
+  },
+  "decision_lattice": {
+    "ARITHMETIC_SUMMARY_only": "SUMMARY-ROW-OPENING-LIKE",
+    "SECTION_BOUNDARY_only": "ACCOUNTING-SECTION-MARKER-LIKE",
+    "both": "SUMMARY/SECTION-BOUNDARY-LIKE",
+    "both_ambiguity_flag": true,
+    "neither": "MECHANISM_UNRESOLVED_RETAIN_ROW-OPENING-LIKE"
+  },
+  "claim_ceiling": {
+    "mechanism_refinement_may_be_established": true,
+    "exact_word_meaning_established": false,
+    "translation_established": false,
+    "phonetic_value_established": false,
+    "language_family_established": false,
+    "new_anchor_established": false,
+    "decipherment_established": false,
+    "universal_cross_region_function_established": false,
+    "external_replication_established": false
+  },
+  "promotion_policy": {
+    "e0_pass_does_not_automatically_promote_canonical_state": true,
+    "separate_result_freeze_required": true,
+    "separate_canonical_promotion_gate_required": true,
+    "untouched_external_replication_remains_required_for_external_replication_claim": true
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "id":"EYE-R4.3-SEARCH-PROOF-STOCHASTIC-v1",
+  "cause_classes":[
+    {"id":"valid_independent_result","prior":0.5,"target_class":"VALID"},
+    {"id":"stale_or_derivative_result","prior":0.4,"target_class":"INVALID"},
+    {"id":"verifier_specific_false_positive","prior":0.1,"target_class":"INVALID"}
+  ],
+  "requirements":{"confidence_threshold":0.9},
+  "tests":[
+    {"id":"provenance_hash_audit","cost":1,"calibrated":true,"failure_domains":["provenance"],"likelihood_by_cause":{
+      "valid_independent_result":{"CLEAN":0.95,"PROVENANCE_BAD":0.05},
+      "stale_or_derivative_result":{"CLEAN":0.10,"PROVENANCE_BAD":0.90},
+      "verifier_specific_false_positive":{"CLEAN":0.95,"PROVENANCE_BAD":0.05}
+    }},
+    {"id":"independent_verifier","cost":3,"calibrated":true,"failure_domains":["verifier"],"likelihood_by_cause":{
+      "valid_independent_result":{"MATCH":0.99,"REJECT":0.01},
+      "stale_or_derivative_result":{"MATCH":0.01,"REJECT":0.99},
+      "verifier_specific_false_positive":{"MATCH":0.01,"REJECT":0.99}
+    }},
+    {"id":"end_to_end_rebuild","cost":6,"calibrated":true,"failure_domains":["rebuild"],"likelihood_by_cause":{
+      "valid_independent_result":{"VALID":1.0,"INVALID":0.0},
+      "stale_or_derivative_result":{"VALID":0.0,"INVALID":1.0},
+      "verifier_specific_false_positive":{"VALID":0.0,"INVALID":1.0}
+    }}
+  ]
+}

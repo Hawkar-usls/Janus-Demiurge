@@ -1,0 +1,156 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1C5B2B2-D-CONNECTED-QALL-REALIZABLE-EFFECT-PROFILE-MULTIPLICITY-RESULT-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "SUPERPOLYNOMIAL_REALIZABLE_CONNECTED_EFFECT_PROFILES__E_REQUIRED",
+  "gate": "R5_B1B1C5B2B2_D_CONNECTED_QALL_REALIZABLE_EFFECT_PROFILE_MULTIPLICITY_V1",
+  "binds": {
+    "prereg_blob": "cc1408c15c08b5de16a9652877386d7658d8fb0f",
+    "B2B2_C_factorization_seal_blob": "8e4469c5e5e5f094b8013d29b8a22713f0ee1d8c",
+    "B2B2_A_confluence_seal_blob": "17d0d32714b345e08af797279ef61723779ee0ec",
+    "B2B2_B_identity_erasure_seal_blob": "3c43b3db1cb198582d9e7a2177d36d4dfbb28eb4",
+    "checker_blob": "543fbeba41e5fd71b1b267c332cc6e7d4d8b83e2"
+  },
+  "family": {
+    "name": "CONNECTED_CHAIN_QALL_PROFILE_FAMILY_Kk",
+    "parameter": "k>=2",
+    "vertices": {
+      "seed": ["t","s4"],
+      "dynamic_left": "L={l1,...,lk}",
+      "dynamic_right": "R={r1,...,rk}",
+      "residual": ["z"]
+    },
+    "fixed_seed_colors": {
+      "t": 3,
+      "s4": 4
+    },
+    "edges": [
+      "t-s4",
+      "s4 adjacent to every vertex of L union R",
+      "li-rj iff j<=i",
+      "z adjacent to every rj",
+      "no other edges"
+    ],
+    "partition_root": {
+      "S": "{t,s4}",
+      "X0": "empty",
+      "Y0": "{z}",
+      "Y": "L union R",
+      "X": "empty"
+    },
+    "root_source_lists": "Every dynamic vertex sees only seed color 4 and therefore has source list {1,2,3}.",
+    "vi": "Y intersect N(Y0)=R, and every vertex of R has the same source 3-list {1,2,3}."
+  },
+  "source_validity": {
+    "axiom_i": "G minus X0=G is connected: t-s4 reaches every dynamic vertex and z is reached through R.",
+    "axiom_ii": "S is connected. Every outside vertex is nonadjacent to t, hence no outside vertex is complete to S.",
+    "axiom_iii": "Exactly z is anticomplete to S outside S, so Y0={z}.",
+    "axiom_iv": "Y0 is a singleton and has no edge, so the no-mixing-on-Y0-edge condition is vacuous.",
+    "axiom_v": "Every root dynamic vertex has source-list size 3 and lies in Y.",
+    "axiom_vi": "All Y vertices adjacent to z are exactly R and share the same 3-list."
+  },
+  "P7_free_theorem": {
+    "statement": "K_k is P7-free for every k.",
+    "proof": [
+      "The induced subgraph on L union R union {z} is a chain graph: use bipartition (L union {z}, R), with N(l1) subset ... subset N(lk)=R=N(z). Chain graphs contain no induced P5, hence no induced P7.",
+      "Every vertex of L union R is adjacent to s4, while z and t are not.",
+      "Any induced path containing s4 can contain at most the immediate path-neighbor(s) from L union R; any further L/R vertex would create a chord to s4.",
+      "Thus no induced path containing s4 has seven vertices.",
+      "Vertex t has only neighbor s4, so any induced path using t also uses s4 and is covered by the previous case."
+    ]
+  },
+  "root_QALL": {
+    "dynamic_graph": "The chain graph on L-R.",
+    "component_node": "[z] adjacent to every rj because D_z=R.",
+    "connectedness": "l_k is adjacent to every rj, so the dynamic graph is connected; [z] attaches to all R. Therefore Q_ALL is one connected block."
+  },
+  "authorized_forcing_family": {
+    "optional_vertices": "{l1,...,l_{k-1}}",
+    "retained_connector": "l_k is never forced.",
+    "forced_color": 1,
+    "reachable_sets": "Every subset F of {l1,...,l_{k-1}} is jointly reachable by repeatedly forcing li=1 in arbitrary order.",
+    "why_color_1_remains_available": "The left side L is stable. An unforced lj is nonadjacent to every already forced li and continues to see only seed color 4 from the original seed, so 1 remains in its exact/source palette.",
+    "confluence": "By B2B2-A the closure depends only on F, not its forcing order."
+  },
+  "canonical_closure_for_F": {
+    "seed": "S_F=S union F, every li in F fixed to color 1.",
+    "X0": "remains empty; no source singleton arises.",
+    "Y0": "{z} remains residual because z is anticomplete to L.",
+    "unforced_left": "Every li not in F remains Y with source list {1,2,3}.",
+    "right_classes": "r_j becomes X with source list {2,3} iff it has a forced neighbor, equivalently iff some li in F has i>=j; otherwise r_j remains Y with source list {1,2,3}.",
+    "vi": "The remaining Y vertices adjacent to z are precisely the unhit r_j and all still have the same source list {1,2,3}; axiom (vi) remains valid.",
+    "connectivity_repair": "None is needed because X0 stays empty.",
+    "QALL_connectedness": "All R remain live and l_k remains live and adjacent to every R, so every canonical successor Q_ALL remains connected."
+  },
+  "component_side_stability": {
+    "component": "C={z}",
+    "D_C": "R in every state",
+    "base_list": "[4] because X0 is empty",
+    "message": "mu_C(Fmask)=1 for every proper color mask and mu_C([4])=0; MIN_BAD(C)={[4]}.",
+    "interpretation": "The component-side compiled object is constant across the family. The exponential multiplicity below is not created by changing C0/C2/C3/B2A message identities."
+  },
+  "profile_injection": {
+    "canonical_marker": "The unique residual component carrier [z] marks R: its dynamic neighbors are exactly R. Therefore any canonical isomorphism preserving state-coordinate types maps R to R and L to L.",
+    "left_signature": "For every surviving li, its number of neighbors in R is exactly i.",
+    "recover_F": "The set of surviving L-to-R degrees is exactly {i in {1,...,k}: li not in F}; since l_k is always retained, this set uniquely determines F.",
+    "conclusion": "Distinct subsets F yield pairwise distinct canonical effect profiles even after forcing-order confluence and new-seed identity erasure."
+  },
+  "multiplicity": {
+    "number_of_reachable_profiles": "2^(k-1)",
+    "growth": "exponential in k and therefore superpolynomial in the block size Theta(k)",
+    "inside_one_connected_QALL_block": true,
+    "cross_block_factorization_not_responsible": true,
+    "history_order_not_responsible": true,
+    "new_seed_tau_identity_not_responsible": true
+  },
+  "finite_checker_receipt": {
+    "checked_k": "2 through 8",
+    "P7_free": "PASS",
+    "source_axioms_i_to_vi": "PASS",
+    "all_optional_subsets_reachable": "PASS",
+    "QALL_connected_after_every_tested_subset": "PASS",
+    "profiles": {
+      "k=2": 2,
+      "k=3": 4,
+      "k=4": 8,
+      "k=5": 16,
+      "k=6": 32,
+      "k=7": 64,
+      "k=8": 128
+    },
+    "profile_injection": "PASS",
+    "checker_blob": "543fbeba41e5fd71b1b267c332cc6e7d4d8b83e2"
+  },
+  "D_verdict": {
+    "polynomial_realizable_profile_bound": "FALSIFIED",
+    "secondary_cross_block_factorization": "NOT_APPLICABLE_TO_THIS WITNESS: every canonical state remains one connected Q_ALL block",
+    "terminal": "SUPERPOLYNOMIAL_REALIZABLE_CONNECTED_EFFECT_PROFILES__E_REQUIRED"
+  },
+  "critical_firewalls": [
+    "This is NOT a strong B2B2 negative result.",
+    "Profile inequality is not yet future distinguishability.",
+    "The family may still admit a polynomial exact behavioral carrier despite exponentially many explicit profiles.",
+    "The forced assignment/reconstruction ledger itself has only O(k) explicit storage and is not an exponential representation lower bound.",
+    "B2B2-E must test whether authorized future R1/R2/source/reconstruction consumers distinguish exponentially many of these profiles after all exact carriers are applied."
+  ],
+  "next_frontier": {
+    "name": "R5_B1B1C5B2B2_E_CONNECTED_FUTURE_DISTINGUISHABILITY_V1",
+    "status": "UNLOCKED_BY_D_NOT_EXECUTED",
+    "target": "On the K_k family and any stronger connected witness found, determine the size of the exact behavioral quotient under future authorized R1/R2 plus reconstruction. First test whether K_k's 2^(k-1) explicit profiles collapse to a polynomial behavior signature."
+  },
+  "scientific_ceiling": {
+    "B2B2_D_REALIZABLE_PROFILE_COUNT": "EXPONENTIAL_WITNESS_PROVED",
+    "B2B2_E_FUTURE_DISTINGUISHABILITY": "NEXT",
+    "STRONG_CONNECTED_MULTIPLICITY_NEGATIVE": "NOT_PROVED",
+    "POLYNOMIAL_CONNECTED_CORE_CARRIER": "OPEN",
+    "R1_DECIDABILITY": "OPEN",
+    "R2_DECIDABILITY": "OPEN",
+    "RECURSIVE_R1_R2": "FORBIDDEN",
+    "C5C": "LOCKED",
+    "FULL_L2_REPAIR": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "stop": true,
+  "return_to_HQ": true
+}

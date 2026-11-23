@@ -1,0 +1,133 @@
+{
+  "schema_version": "1.0",
+  "spec_id": "JANUS-LINEAR-A-R7-F0-KU-RO-DOWNSTREAM-SLOT-2026-08-15-v0.1",
+  "stage": "R7-F0",
+  "status": "PREREGISTERED_BEFORE_F0_SCORING",
+  "created_date": "2026-08-15",
+  "parent": {
+    "e2_merge_commit_sha": "c2f57985891ac0628fa0da0849df0d24aeddebcd",
+    "canonical_version": "v2.30",
+    "target": "KU-RO",
+    "opaque_target_token": "6a2ea59b95fe1b610d20",
+    "region": "HT",
+    "retained_parent_role": "ROW-OPENING-LIKE",
+    "e2_status": "E2_CANDIDATE_PROFILE_NOT_REPLICATED_RETAIN_ROW-OPENING-LIKE"
+  },
+  "source": {
+    "repository": "Hawkar-usls/lineara.xyz",
+    "frozen_commit": "43fe7cf1abc8e6bb1ea3228c3a1bd5938709620a",
+    "internal_corpus_status": "DEVELOPMENT_CORPUS_PREVIOUSLY_ACCESSED",
+    "external_or_cold_replication_claim_allowed": false
+  },
+  "prior_negative_results_preserved": {
+    "R7_0_exact_two_sided_formula_slot": "CROSS_FITTED_CONCRETE_FORMULA_SLOT_CANDIDATES_NOT_ESTABLISHED",
+    "R7_A0_anchored_formula_family": "CROSS_FITTED_ANCHORED_FORMULA_FAMILY_CANDIDATES_NOT_ESTABLISHED",
+    "R7_E0_summary_or_boundary_mechanism": "MECHANISM_UNRESOLVED_RETAIN_ROW-OPENING-LIKE",
+    "R7_E2_dense_predecessor_profile": "E2_CANDIDATE_PROFILE_NOT_REPLICATED_RETAIN_ROW-OPENING-LIKE",
+    "none_of_these_gates_may_be_reinterpreted_as_pass": true
+  },
+  "event_population": {
+    "region": "HT",
+    "predicate": "existing C0 ROW_FIRST_LEXICAL with match=true",
+    "target": "frozen KU-RO opaque token",
+    "background": "all non-target ROW_FIRST_LEXICAL events",
+    "physical_object_normalization": "R7-D0 object_id()",
+    "heldout_unit": "physical object",
+    "all_events_from_the_heldout_physical_object_are_excluded_from_training": true
+  },
+  "downstream_definition": {
+    "anchor": "the frozen row-first lexical occurrence",
+    "tail": "ordered sequence items strictly after the anchor on the same source row",
+    "numeric_magnitude_used": false,
+    "lexical_identity_may_be_used_only_as_opaque_hash_in_the_predeclared_lexicalized_channel": true,
+    "source_labels_used_for_scoring": false
+  },
+  "channels": {
+    "NEXT_KIND": {
+      "signature": "kind of the first downstream same-row item, one of W/N/X/END",
+      "fixed_support": ["W", "N", "X", "END"],
+      "claim_if_admitted": "IMMEDIATE-DOWNSTREAM-SLOT-TYPE-CONSTRAINT"
+    },
+    "NEXT_LEX_OR_KIND": {
+      "signature": "if first downstream item is W use W:<opaque-token>; otherwise N/X/END",
+      "unknown_policy": "heldout lexical tokens absent from training support map to W:<UNK>",
+      "training_support": "union of target/background training lexicalized signatures plus N/X/END/W:<UNK>",
+      "claim_if_admitted": "IMMEDIATE-DOWNSTREAM-LEXICALIZED-SLOT-CONSTRAINT"
+    },
+    "TWO_KIND": {
+      "signature": "ordered kinds of the first two downstream items, padding missing positions with END",
+      "fixed_support": "Cartesian product {W,N,X,END} x {W,N,X,END}",
+      "claim_if_admitted": "TWO-SLOT-DOWNSTREAM-TEMPLATE-CONSTRAINT"
+    }
+  },
+  "cross_fitting": {
+    "scheme": "leave-one-physical-object-out over target-bearing physical objects",
+    "target_model": "channel signature distribution among KU-RO row-first events in all non-heldout objects",
+    "background_model": "channel signature distribution among non-KU-RO row-first events in all non-heldout objects",
+    "smoothing": "symmetric Dirichlet alpha=0.5 on the frozen channel support",
+    "heldout_event_score_bits": "log2(P_target(signature)/P_background(signature))",
+    "heldout_object_score_bits": "mean heldout-event score within that target-bearing physical object",
+    "primary_observed_score_bits": "unweighted mean across target-bearing physical objects"
+  },
+  "structure_destroying_null": {
+    "operator": "within each physical object, uniformly permute complete downstream-tail signature bundles among all row-first lexical anchors; keep anchor identities, object membership and the multiset of tails fixed",
+    "recompute_full_LOPO_pipeline_each_permutation": true,
+    "permutations": 5000,
+    "seed": 71301,
+    "empirical_p": "(1 + null scores >= observed score)/(1 + permutations)",
+    "null_mean_recorded": true,
+    "purpose": "destroy anchor-to-downstream ordering while preserving physical-object composition and downstream frequency structure"
+  },
+  "familywise_decision": {
+    "channels_tested": 3,
+    "multiple_testing": "Holm",
+    "familywise_alpha": 0.01,
+    "channel_gates": {
+      "minimum_target_events": 25,
+      "minimum_target_physical_objects": 20,
+      "minimum_background_events": 300,
+      "minimum_exchangeable_target_event_fraction": 0.70,
+      "maximum_single_target_object_event_fraction": 0.15,
+      "minimum_observed_information_gain_bits": 0.15,
+      "minimum_observed_minus_null_mean_bits": 0.15,
+      "minimum_positive_target_object_fraction": 0.65,
+      "Holm_adjusted_p_max": 0.01
+    }
+  },
+  "decision": {
+    "pass_status": "CROSS_FITTED_KU_RO_DOWNSTREAM_SLOT_ORGANIZATION_ESTABLISHED",
+    "fail_status": "KU_RO_DOWNSTREAM_SLOT_ORGANIZATION_NOT_ESTABLISHED_RETAIN_ROW-OPENING-LIKE",
+    "underpowered_status": "F0_SUPPORT_INSUFFICIENT_RETAIN_ROW-OPENING-LIKE",
+    "minimum_admitted_channels": 1,
+    "pass_claim": "Within the already-accessed frozen HT corpus, KU-RO row-opening events carry out-of-object downstream slot information above the row-first background and above an object-preserving structure-destroying null.",
+    "pass_is_internal_cross_fitted_structure_not_external_replication": true,
+    "failure_does_not_revoke_parent_C3_role": true
+  },
+  "anti_flexibility": {
+    "channels_may_not_be_added_removed_or_redefined_after_result_visibility": true,
+    "smoothing_alpha_may_not_change_after_result_visibility": true,
+    "null_operator_may_not_change_after_result_visibility": true,
+    "support_or_effect_thresholds_may_not_change_after_result_visibility": true,
+    "failed_channels_may_not_be_replaced_by_new_channels_inside_F0_v0_1": true,
+    "consumed_E1_E2_holdout_may_not_be_called_untouched": true,
+    "R7_0_or_R7_A0_thresholds_may_not_be_relaxed_post_hoc": true
+  },
+  "claim_ceiling": {
+    "parent_probable_region_scoped_structural_function_retained": true,
+    "internal_cross_fitted_downstream_slot_organization_may_be_established": true,
+    "specific_semantic_function_established": false,
+    "exact_word_meaning_established": false,
+    "translation_established": false,
+    "phonetic_value_established": false,
+    "language_family_established": false,
+    "new_anchor_established": false,
+    "universal_cross_region_function_established": false,
+    "external_replication_established": false,
+    "decipherment_established": false
+  },
+  "promotion_policy": {
+    "F0_pass_does_not_auto_promote_canonical_state": true,
+    "separate_result_freeze_and_verification_required": true,
+    "functional_or_semantic_role_label_requires_a_new_preregistered_lane": true
+  }
+}

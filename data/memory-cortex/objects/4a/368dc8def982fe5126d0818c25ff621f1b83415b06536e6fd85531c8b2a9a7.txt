@@ -1,0 +1,80 @@
+{
+  "artifact_id": "JANUS-EXTERNAL-EVENT-OBSERVATION-OPPORTUNITY-STATE-MACHINE-v1.0",
+  "date": "2026-08-15",
+  "status": "METHODOLOGICAL_GATE_ACTIVE__NAVIGATIONAL_NOT_CURRENT_AUTHORITY",
+  "purpose": "Prevent external-event association studies from conflating event absence with missing event data, or observation absence with an observed zero.",
+  "state_space": {
+    "EVENT_OBSERVED": {
+      "external_event": "ESTABLISHED_POSITIVE_EVENT",
+      "observation_opportunity": "OBSERVED",
+      "allowed_roles": ["positive/exposed scientific unit", "attribution test if spatial/temporal geometry is compatible"],
+      "example_semantics": "A rocket/balloon/flare is established on a date and Palomar or a human-reporting channel has an actual observation opportunity."
+    },
+    "EVENT_NOT_OBSERVED": {
+      "external_event": "ESTABLISHED_POSITIVE_EVENT",
+      "observation_opportunity": "NOT_OBSERVED",
+      "allowed_roles": ["opportunity diagnostic only"],
+      "forbidden_roles": ["observed zero", "negative evidence against event effect"],
+      "example_semantics": "Bumper or Strato-Lab event exists but Palomar did not observe the relevant date/window."
+    },
+    "NO_EVENT_OBSERVED": {
+      "external_event": "ESTABLISHED_NEGATIVE_EVENT_STATE",
+      "observation_opportunity": "OBSERVED",
+      "allowed_roles": ["negative/unexposed scientific control"],
+      "requirements": [
+        "External manifest must be complete enough to establish the no-event state for that date/interval.",
+        "Observation channel must have actual opportunity."
+      ],
+      "example_semantics": "A solar flare-patrol-qualified day with no official event, combined with an actually observed Palomar night."
+    },
+    "NO_EVENT_NOT_OBSERVED": {
+      "external_event": "ESTABLISHED_NEGATIVE_EVENT_STATE",
+      "observation_opportunity": "NOT_OBSERVED",
+      "allowed_roles": ["calendar bookkeeping only"],
+      "forbidden_roles": ["negative scientific unit", "zero outcome"]
+    },
+    "EVENT_STATE_UNKNOWN": {
+      "external_event": "UNKNOWN_OR_POSITIVE_ONLY_MANIFEST_GAP",
+      "observation_opportunity": "ANY",
+      "allowed_roles": ["missingness/provenance diagnostic"],
+      "forbidden_roles": ["no-event control", "rate denominator"],
+      "example_semantics": "NASA sounding-rocket catalogue contains scientifically successful rockets; absence of a row cannot establish no launch."
+    }
+  },
+  "admission_algorithm": [
+    "1. Establish external event state from a source with explicit population/completeness semantics.",
+    "2. Independently establish observation opportunity in the target channel.",
+    "3. Do not coerce UNKNOWN external state to NO_EVENT.",
+    "4. Do not coerce NOT_OBSERVED target state to observed zero.",
+    "5. Only EVENT_OBSERVED and NO_EVENT_OBSERVED may enter an exposed/unexposed rate comparison.",
+    "6. For human-made physical attribution additionally require geography/trajectory and within-day ordering where available.",
+    "7. If the target channel is dense/saturated, model rate/morphology conditional on observation rather than binary any-event presence."
+  ],
+  "lineage_lessons": [
+    {
+      "source": "JPFM-2E",
+      "lesson": "ANY_CANDIDATE became exactly PALOMAR_OBSERVED_NIGHT in the dense S0 cohort; encoding unobserved days as zero generated the nominal nuclear association."
+    },
+    {
+      "source": "JPFM-3B/3C",
+      "lesson": "NOAA flare-patrol opportunity was required before a no-flare date could become a legitimate solar negative."
+    },
+    {
+      "source": "JPFM-4A Project82/Bumper/Strato-Lab calibrations",
+      "lesson": "A real human-made event can be unusable for POSS attribution when Palomar did not observe; date-only Blue Book coincidences collapse when geography or ordering is incompatible."
+    },
+    {
+      "source": "JPFM-4A 119L/NASA rocket acquisition",
+      "lesson": "Operational prose or positive-only catalogues cannot manufacture negative event dates."
+    }
+  ],
+  "hard_fail_conditions": [
+    "UNOBSERVED_AS_ZERO",
+    "NO_ROW_AS_NO_EVENT",
+    "DATE_ONLY_HUMAN_MADE_ATTRIBUTION_WITHOUT_GEOGRAPHY_WHEN_GEOGRAPHY_IS_AVAILABLE",
+    "POST_OUTCOME_EXPANSION_OF_EVENT_MANIFEST",
+    "SENSITIVITY_RESCUES_FAILED_PRIMARY"
+  ],
+  "current_authority_changed": false,
+  "claim_ceiling": "METHOD_GATE_ONLY__NO_EXTERNAL_EVENT_CAUSALITY_OR_ORIGIN_CLAIM"
+}

@@ -1,0 +1,117 @@
+{
+  "schema": "janus.io.d4_prevalence.alternative_frame_prereg.v1_0",
+  "artifact_id": "JANUS-IO-D4-PREVALENCE-UNBIASED-ALTERNATIVE-FRAME-PREREG-2026-09-14-v1.0",
+  "created_date": "2026-09-14",
+  "repository_target": "Hawkar-usls/janus-meta-registry",
+  "parent": {
+    "artifact_id": "JANUS-IO-D4-PREVALENCE-IMGFLIP-LATEST-FRAME-ACCESS-GATE-2026-09-14-v1.0",
+    "commit": "f28c9c14152e1520a1a9a5bf66430e2ded5ae4fe"
+  },
+  "sampling_manifest": {
+    "artifact_id": "JANUS-IO-D4-PREVALENCE-KYM-SKELETONS-MASTER-FRAME-MANIFEST-2026-09-14-v1.0",
+    "commit": "874815692d43a91b5a32f474faf31fbec5605ed3",
+    "item_count": 832,
+    "unique_item_count": 832,
+    "ordered_ids_sha256": "97ecfbbc9424297df29e35d0509f47a2b692545eff56cb8a8dbb7e36b28f14ea"
+  },
+  "gate_id": "D4_PREVALENCE_UNBIASED_ALTERNATIVE_FRAME_PREREG_GATE",
+  "status": "ALTERNATIVE_FRAME_SELECTED_AND_FROZEN__CONTEXT_CODING_LOCKED__ELIGIBILITY_SCREEN_NEXT",
+  "candidate_audit": {
+    "KYM_SPOOKY_SCARY_SKELETONS_NARROW_GALLERY": {
+      "status": "FAIL_FRAME_SIZE",
+      "reason": "Public image gallery exposes 9 images, below preregistered minimum N=15."
+    },
+    "TENOR_GIPHY_SEARCH": {
+      "status": "FAIL_NONRANKED_REQUIREMENT",
+      "reason": "Default search endpoints are relevance/ranking based; this violates the non-ranked prevalence-frame requirement."
+    },
+    "WAYBACK_IMGFILP_TEMPLATE_SNAPSHOT": {
+      "status": "FAIL_ACCESS_COMPLETENESS",
+      "reason": "Direct CDX check for the exact Imgflip template URL returned no usable captures; cannot enumerate a frozen N>=15 frame."
+    },
+    "KYM_SKELETONS_MASTER_GALLERY": {
+      "status": "PASS_FRAME_ACCESS_AND_ENUMERATION",
+      "reason": "Parent Skeletons gallery exposes 832 items with stable photo IDs; all 832 were enumerated and frozen before context coding."
+    }
+  },
+  "estimand": {
+    "primary": "Distribution of context classes among direct or near-direct The Skeleton Dance (1929) visual reencodings represented inside the frozen KYM Skeletons master-gallery frame.",
+    "scope_boundary": "This is conditionally unbiased within the frozen KYM frame. It is NOT an estimator of all internet uses of The Skeleton Dance."
+  },
+  "frame_construction": {
+    "source": "Know Your Meme / Skeletons image gallery",
+    "source_url": "https://knowyourmeme.com/memes/skeletons/photos",
+    "enumeration_method": "Fetch all 52 pages at sort=newest, 16 gallery items per page, record stable KYM photo IDs, verify 832 total and 832 unique, freeze ordered-ID payload and SHA-256 before eligibility or context coding.",
+    "algorithmic_ranking_used": false,
+    "manual_context_quota_used": false,
+    "caption_based_selection_used": false
+  },
+  "deterministic_randomization": {
+    "purpose": "Avoid chronological start-point bias while preserving complete reproducibility.",
+    "seed": "JANUS_IO_D4_PREVALENCE_KYM_SKELETONS_MASTER_V1_2026-09-14",
+    "seed_sha256": "d42dc79878c49bd1bacbc988d94b950d7245dde59362aba49a799c5773696b0d",
+    "rank_rule": "For each frozen KYM photo ID i, compute SHA256(seed + ':' + decimal(i)); sort lexicographically ascending by the 64-character lowercase hex digest.",
+    "full_ranked_order_sha256": "d3dd94b14cbc4e1d5ffbdfc1cb9821f6aa74d37c8a96b31dd7765c8bd18b583e",
+    "first_50_ids_for_audit": [803203,627181,658809,627222,407929,627206,627188,821561,851388,1998314,1400777,1048725,1646705,970811,763630,2153689,2046860,627133,745420,615292,627156,627157,1185024,1303961,922218,1494907,1416964,791565,841679,1184121,976388,2810675,627205,857820,627218,1611488,620078,1111048,853606,627286,1187185,1819741,1378655,1416590,531229,1801828,1045154,850269,832760,1416605]
+  },
+  "eligibility_screen": {
+    "target_n": 20,
+    "minimum_n": 15,
+    "screen_order": "deterministic_randomization order",
+    "stop_rule": "Stop when 20 eligible unique D4 items are frozen; if all 832 are screened and fewer than 15 eligible items exist, declare FRAME_INSUFFICIENT and keep CRI locked.",
+    "eligible": [
+      "Exact frame or footage from The Skeleton Dance (1929)",
+      "Direct crop, resize, loop, compression, colorization, overlay text, or minor compositing where the underlying 1929 visual nucleus remains source-identifiable"
+    ],
+    "ineligible": [
+      "Independent redraw or 3D/SFM/Blender/game-engine remake with no retained original visual substrate: belongs to D2",
+      "Generic dancing skeleton with no source-identifiable 1929 Disney visual nucleus",
+      "Exact duplicate/repost of an already sampled underlying media object when dedupe_key matches"
+    ],
+    "ambiguous_rule": "If direct-source identity cannot be established from the item and source metadata, mark ELIGIBILITY_OPEN, do not count it toward N, log it, and continue."
+  },
+  "anti_leakage_protocol": {
+    "phase_1": "During eligibility screening, record only source identity, media provenance, date/ID and dedupe status. Do not assign D4 context class, LRS, affect, semantics, or CRI contribution.",
+    "phase_2": "Freeze the final eligible sample IDs and exclusions ledger in a successor artifact.",
+    "phase_3": "Only after sample freeze, code context taxonomy, LRS, polarity and LES.",
+    "phase_4": "Compute CRI only if minimum N and coding-completeness conditions are met."
+  },
+  "context_taxonomy_after_freeze": {
+    "K": 7,
+    "classes": [
+      "WORK_OFFICE",
+      "PSYCHOLOGICAL_EXISTENTIAL",
+      "SOCIAL_RELATIONSHIPS",
+      "SCHOOL_ACADEMIC",
+      "POP_CULTURE_FANDOM",
+      "POLITICS_CURRENT_EVENTS",
+      "SEASONAL_HALLOWEEN"
+    ],
+    "coding_rule": "Exactly one primary_context per included D4 item for CRI; secondary tags are descriptive only.",
+    "other_rule": "OTHER_PENDING is logged but excluded from CRI until adjudicated under a predeclared rule; no new category may be invented after inspecting the final distribution without an amendment."
+  },
+  "cri": {
+    "formula": "CRI = -SUM_k(p_k * ln(p_k)) / ln(7)",
+    "allowed_input": "Only the frozen KYM conditional-prevalence sample from this preregistration.",
+    "forbidden_inputs": [
+      "D4_DISCOVERY_BALANCED",
+      "Imgflip N=3 access-limited frame",
+      "search-engine-ranked objects",
+      "Tenor/GIPHY relevance-ranked search results"
+    ]
+  },
+  "kill_switches": [
+    "If the frozen KYM manifest cannot be reconstructed and hash-verified, stop.",
+    "If source identity screening starts using caption/context desirability, invalidate and restart from the same frozen frame with a blind recode.",
+    "If fewer than 15 eligible unique items exist after exhaustive screening, FRAME_INSUFFICIENT and CRI remains forbidden.",
+    "If a sampled item belongs to D2 rather than direct/near-direct D4 visual reuse, exclude it before context coding and log the reason."
+  ],
+  "epistemic_firewall": [
+    "KYM is a curated archive, so conditional unbiasedness within the frozen gallery does not imply internet-wide prevalence.",
+    "A high CRI would demonstrate context diversity inside this sampling frame, not causally prove virality or universal replaceability.",
+    "High LRS cannot substitute for direct visual-source eligibility or LES.",
+    "No outcome-dependent frame switching is allowed after this preregistration unless this frame fails a predeclared kill-switch."
+  ],
+  "next_gate": "D4_PREVALENCE_KYM_ELIGIBILITY_SCREEN_AND_SAMPLE_FREEZE_GATE",
+  "canonical_seal": "THE ALTERNATIVE FRAME IS FROZEN BEFORE CONTEXT CODING. ALL 832 KYM SKELETONS-GALLERY IDS ARE ENUMERATED; A DETERMINISTIC HASH-RANKED ORDER SELECTS ITEMS FOR SOURCE-IDENTITY SCREENING. CRI REMAINS LOCKED UNTIL AT LEAST 15 ELIGIBLE DIRECT/NEAR-DIRECT SKELETON-DANCE REENCODINGS ARE FROZEN."
+}

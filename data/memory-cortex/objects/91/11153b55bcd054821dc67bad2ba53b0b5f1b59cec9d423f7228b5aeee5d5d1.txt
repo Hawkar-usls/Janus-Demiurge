@@ -1,0 +1,203 @@
+{
+  "artifact_uuid": "JANUS-RECORD-DRIFT-OBSERVATORY-v0.1",
+  "version": "0.1",
+  "created_at": "2026-08-14T11:20:00+03:00",
+  "status": "preregistered_observatory_protocol",
+  "title": "JANUS Record Drift Observatory",
+  "purpose": "Test whether previously recorded information remains byte-identical, semantically identical, and presentation-identical across later retrievals, while distinguishing legitimate revisions, rendering changes, storage corruption, identity changes, distributed divergence, and unexplained drift.",
+  "motivating_observation": {
+    "example": "A Dota match was remembered/observed as ending at 12:21, while a later replay/display appeared to show a different number.",
+    "evidence_status": "anecdotal_unverified_seed_observation",
+    "rule": "The motivating observation is not evidence of data mutation and must not be used as a positive result. It only motivates prospective preregistered testing."
+  },
+  "core_question": "For a stable record identity R captured at T0, does the record retrieved at Tn differ from T0, and if so, at which layer did the divergence occur?",
+  "null_hypotheses": {
+    "H0_immutable": "For immutable controls, raw content and pinned identity remain unchanged across checks.",
+    "H0_live": "For mutable/live records, any change is explainable by an explicit revision, version, branch movement, source update, timezone/rendering transformation, or identity change.",
+    "anomaly_candidate": "Only a reproducible divergence that survives identity, raw-byte, timestamp, parser, cache, replica, revision-history, and local-storage checks may be labelled unexplained drift."
+  },
+  "measurement_layers": [
+    {
+      "layer": "L0_IDENTITY",
+      "captures": ["stable_object_id", "source_uri", "git_commit_if_available", "git_blob_if_available", "version_id", "retrieval_endpoint"]
+    },
+    {
+      "layer": "L1_RAW",
+      "captures": ["raw_bytes_sha256", "byte_length", "content_type", "encoding"]
+    },
+    {
+      "layer": "L2_CANONICAL",
+      "captures": ["canonicalized_sha256", "canonicalization_rule"],
+      "note": "Used only in addition to raw bytes, never instead of them. JSON key ordering/whitespace normalization must not hide raw-byte drift."
+    },
+    {
+      "layer": "L3_SEMANTIC",
+      "captures": ["declared_fields", "typed_values", "recorded_timestamp_utc", "recorded_timestamp_offset", "source_update_time_if_exposed"]
+    },
+    {
+      "layer": "L4_PRESENTATION",
+      "captures": ["display_text", "locale", "timezone", "client_version", "screenshot_hash_if_available"]
+    },
+    {
+      "layer": "L5_PROVENANCE",
+      "captures": ["capture_time_utc", "capture_time_local", "retriever", "network_source", "commit_or_receipt", "previous_journal_entry_hash"]
+    }
+  ],
+  "control_groups": {
+    "A_git_immutable": {
+      "role": "negative control for real mutation",
+      "members": "Files retrieved by immutable Git commit/blob identity from Hawkar-usls/janus-meta-registry.",
+      "expected": "R0_STABLE",
+      "failure_if": "Pinned historical object content changes while the exact same object identity remains valid."
+    },
+    "B_git_live": {
+      "role": "positive control for ordinary declared evolution",
+      "members": "The same repository paths retrieved from moving branch main.",
+      "expected": "May change when main advances; change must map to commit history.",
+      "failure_if": "Live content differs without a resolvable commit/identity transition."
+    },
+    "C_registry_artifacts": {
+      "role": "self-hosted experimental subjects",
+      "members": "JANUS JSON artifacts, audit receipts, manifests, test results, and future finalized outputs.",
+      "rule": "Every finalized result becomes a monitored subject at its first committed state."
+    },
+    "D_test_results": {
+      "role": "recursive subject class",
+      "members": "Eye In The Sky and future experiment result JSON/CSV summaries.",
+      "rule": "Results are evidence objects, not truth objects. Their raw bytes, semantics, and later interpretation are monitored separately."
+    },
+    "E_journal_self_control": {
+      "role": "journal monitors its own history",
+      "rule": "Entry N cannot contain its own final hash. Instead entry N+1 records and verifies the committed identity/hash of entry N. This one-generation delay avoids a self-hash paradox.",
+      "expected": "Historical committed journal generations remain stable; the live journal may grow only through explicit new commits."
+    },
+    "F_external_static": {
+      "role": "external immutable/reference controls",
+      "members": [
+        {
+          "name": "RFC 3339",
+          "source": "RFC Editor",
+          "uri": "https://www.rfc-editor.org/rfc/rfc3339.txt",
+          "purpose": "Stable external text plus timestamp-format reference."
+        },
+        {
+          "name": "RFC 3161",
+          "source": "RFC Editor",
+          "uri": "https://www.rfc-editor.org/rfc/rfc3161.txt",
+          "purpose": "External timestamping reference; future protocol may attach third-party timestamp receipts."
+        }
+      ]
+    },
+    "G_external_live": {
+      "role": "external mutable/historical-record subjects",
+      "members": "Authoritative sources with stable record identifiers and exposed revision/update metadata; sources are admitted individually before monitoring.",
+      "admission_requirements": ["stable_record_identity", "retrievable_raw_or_structured_payload", "capture_allowed", "time_or_revision_metadata_preferred", "no source selected because a drift was already noticed"]
+    }
+  },
+  "drift_taxonomy": {
+    "R0_STABLE": "Identity, raw content, semantic fields, and declared presentation are unchanged within the comparison contract.",
+    "R1_PRESENTATION_DRIFT": "Raw/canonical/semantic record is stable but displayed representation changes.",
+    "R2_INTERPRETATION_DRIFT": "Raw record is stable but parser, schema, or derived semantic interpretation changes.",
+    "R3_DECLARED_SOURCE_REVISION": "Authoritative content changes with an explicit version/update/commit/revision trail.",
+    "R4_UNDECLARED_REMOTE_CONTENT_DRIFT": "Same stable remote identity returns different raw content without a discovered declared revision.",
+    "R5_LOCAL_COPY_DRIFT": "Local stored copy changes while independent pinned/remote controls remain stable.",
+    "R6_DISTRIBUTED_DIVERGENCE": "Replicas, caches, APIs, mirrors, or independent endpoints disagree for what is claimed to be the same record/version.",
+    "R7_IDENTITY_DRIFT": "A label/path/display name now resolves to a different underlying object; content changed because identity changed.",
+    "R8_CLOCK_OR_TIMEZONE_DRIFT": "Underlying instant is compatible but displayed/local time differs because of timezone, offset, locale, clock, or conversion rules.",
+    "R9_JOURNAL_CHAIN_BREAK": "A journal generation cannot validate the previous committed journal generation or expected previous-entry link.",
+    "R10_UNEXPLAINED_CONFIRMED_DRIFT": "A difference survives all registered identity, revision, raw-byte, presentation, parser, cache/replica, clock/timezone, and local-storage checks. This is an anomaly label, not a physical explanation."
+  },
+  "capture_contract": {
+    "required_at_T0": [
+      "record_id",
+      "source_class",
+      "source_uri_or_path",
+      "capture_time_utc",
+      "capture_time_local_with_offset",
+      "raw_hash_or_content_address",
+      "identity_version_or_commit_when_available",
+      "semantic_extract",
+      "expected_mutability"
+    ],
+    "required_at_Tn": [
+      "same_identity_resolution_attempt",
+      "fresh_raw_capture",
+      "fresh_hash",
+      "semantic_reextract",
+      "presentation_capture_when relevant",
+      "revision_history_check",
+      "classification",
+      "evidence_links"
+    ],
+    "timestamp_rule": "Store UTC and numeric offset. Never store a naked local clock time as the only timestamp.",
+    "hash_rule": "SHA-256 is the primary cross-system content hash; Git commit/blob identifiers are retained as additional repository-native identities.",
+    "canonicalization_rule": "Canonicalized hashes are secondary diagnostics and must never replace the raw-byte hash."
+  },
+  "journal_protocol": {
+    "structure": "append-only logical sequence represented by committed generation files/entries",
+    "entry_fields": ["entry_id", "observed_at", "subjects", "previous_entry_identity", "results", "new_subjects_admitted", "anomalies", "claim_ceiling"],
+    "hash_chain": "Each entry records the previous committed journal identity/hash. The next entry independently verifies it.",
+    "journal_as_subject": "Every committed journal generation is automatically admitted into the monitored set for the next generation.",
+    "anti_rewrite_rule": "Corrections are new entries; historical journal entries are not silently rewritten.",
+    "chain_break_policy": "A broken link is R9 until explained by an explicit repository history event."
+  },
+  "recursive_evidence_rule": {
+    "statement": "The observatory's own outputs participate in later observatory checks.",
+    "examples": [
+      "A test result JSON created today is hashed and becomes a subject tomorrow.",
+      "A journal entry created today is verified by the next journal entry.",
+      "A correction does not erase the earlier claim; both original and correction are separately preserved and monitored."
+    ],
+    "guardrail": "Self-reference increases provenance coverage but does not create independent evidence. Independent sources/replicas remain necessary for strong anomaly claims."
+  },
+  "analysis_metrics": {
+    "record_checks": "count of subject-check comparisons",
+    "drift_rate_all": "checks classified R1-R10 divided by all valid checks",
+    "raw_content_drift_rate": "checks classified R3-R7 or R10 with confirmed raw difference divided by raw-checkable comparisons",
+    "unexplained_drift_rate": "R10 divided by all valid checks",
+    "journal_chain_break_rate": "R9 divided by journal-link checks",
+    "by_source_class": true,
+    "by_time_since_T0": true,
+    "confidence_intervals_required": true
+  },
+  "admission_gate_for_anomaly": [
+    "stable identity confirmed",
+    "T0 evidence predates discovery of drift",
+    "T0 and Tn raw evidence both available or content-addressed",
+    "repeat retrieval confirms difference",
+    "declared revision/version history checked",
+    "timezone/clock/locale conversion checked when temporal",
+    "parser/schema/client-version effects checked",
+    "cache/replica divergence checked when possible",
+    "local corruption checked against independent copy",
+    "observer recollection alone is insufficient"
+  ],
+  "claim_ceiling": {
+    "data_can_change_in_normal_information_systems": "allowed_when_directly_observed_and_classified",
+    "unexplained_record_drift": "allowed_only_as_R10_anomaly_label_after_gate",
+    "retrocausality": false,
+    "timeline_change": false,
+    "reality_rewrite": false,
+    "mandela_effect_as_physics": false,
+    "memory_report_as_byte_level_evidence": false
+  },
+  "relationship_to_eye_in_the_sky": {
+    "old_chain": "EVENT -> RECORD -> OBSERVER -> INTERPRETATION",
+    "extended_chain": "EVENT -> RECORD(T0) -> TIME -> RECORD(Tn) -> OBSERVER -> INTERPRETATION",
+    "new_question": "Does the record itself remain stable before observer interpretation is considered?",
+    "status": "orthogonal extension; can use Eye In The Sky outputs as monitored records without inheriting its causal claims."
+  },
+  "first_gate": {
+    "name": "T0 Genesis Baseline",
+    "requirements": [
+      "pin current janus-meta-registry main commit",
+      "register immutable Git controls",
+      "register moving-main controls",
+      "register Eye In The Sky result artifacts",
+      "register the genesis journal itself for next-generation checking",
+      "register at least two external static controls",
+      "do not report positive drift at T0"
+    ]
+  },
+  "next_version": "v0.2 after repeated prospective captures and at least one independently classified ordinary revision case"
+}

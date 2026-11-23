@@ -1,0 +1,101 @@
+{
+  "artifact_id": "JANUS-ECHO-COUSTEAU-FREQUENCY-NEIGHBORHOOD-CASE-MINING-2026-08-20-v1.1",
+  "supersedes": "JANUS-ECHO-COUSTEAU-FREQUENCY-NEIGHBORHOOD-CASE-MINING-2026-08-20-v1.0",
+  "research_branch": "Janus-Echo-Кусто",
+  "source_repository": "Hawkar-usls/Janus-Cosmos",
+  "source_branch": "janus-echo-cousteau",
+  "source_path": "data/cousteau/JANUS-ECHO-COUSTEAU-FREQUENCY-NEIGHBORHOOD-CASE-MINING-2026-08-20-v1.1.json",
+  "source_commit": "23e6896c0f5ba2a2a9e8a2664c296e66e077219f",
+  "echo_operator_repository": "Hawkar-usls/Echo-Pyramid",
+  "echo_operator_branch": "janus-echo-cousteau",
+  "echo_operator_path": "config/cousteau_transformed_echo_reverse_operator.v1.1.json",
+  "echo_operator_commit": "cd114d8ea2e072d511063ba0a3cee2e512c02152",
+  "model_prior": {
+    "nominal_band_hz": [511.6618075801749, 529.1545189504374],
+    "center_hz": 520.4081632653061,
+    "ctd_sensitivity_envelope_hz": [504.8396501457726, 543.265306122449],
+    "status": "MODEL_PRIOR_NOT_UNIVERSAL_FREQUENCY__NOT_A_BLIND_KEY"
+  },
+  "round_trip_echo_contract": {
+    "equation": "Y(f) = X(f) * H_tx(f) * S_target(f,theta_in,theta_out) * H_rx(f) + N(f)",
+    "target_expansion": "S_target = C_in * H_resonator * B_scatter * C_out",
+    "meaning": "Active sonar must be modeled as outbound propagation, target/resonator interaction, and inbound return propagation. The incident illuminator cannot be treated as the target fingerprint.",
+    "physical_firewall": "Transformed echo does not imply literal through-transmission through the whole object; resonance may enter through scattering, cavity coupling, ringing or reradiation."
+  },
+  "control_matrix": [
+    {
+      "id": "ICEBERG_HARMONIC_TREMOR",
+      "class": "NATURAL_FALSE_POSITIVE",
+      "key_fact": "40 Hz fundamental with 40 Hz overtone spacing and sufficiently many visible overtones produces a harmonic at 520 Hz.",
+      "gate_effect": "ABSOLUTE_520_HZ_MATCH_REJECTED_AS_NON_SPECIFIC",
+      "reference": "NOAA PMEL cryogenic acoustics + Dziak et al. Oceanography 2013"
+    },
+    {
+      "id": "SEI_WHALE_MID_FREQUENCY_CALLS",
+      "class": "BIOLOGICAL_FALSE_POSITIVE",
+      "key_fact": "Published mid-frequency calls span 200-600 Hz.",
+      "gate_effect": "DIRECT_BIOLOGICAL_OVERLAP_WITH_NOMINAL_PRIOR"
+    },
+    {
+      "id": "ANTARCTIC_MINKE_BIO_DUCK",
+      "class": "BIOLOGICAL_FALSE_POSITIVE",
+      "key_fact": "Machine-like repetitive biological signal; measured fundamental analysis approximately 40-500 Hz with harmonics reported to 2000 Hz.",
+      "gate_effect": "HARMONIC_MACHINE_LIKE_PATTERN_NOT_DIAGNOSTIC"
+    },
+    {
+      "id": "FISH_SWIMBLADDER_RESONANCE",
+      "class": "BIOLOGICAL_CAVITY_RESONATOR_CONTROL",
+      "key_fact": "Gas-filled swimbladders are strong frequency-dependent acoustic scatterers and can generate resonant sonar returns.",
+      "gate_effect": "BIOLOGICAL_RESONANT_RETURN_MUST_BE_OUTPERFORMED"
+    },
+    {
+      "id": "SUBMERGED_ELASTIC_SHELL_RESONANCE",
+      "class": "MECHANISM_POSITIVE_CONTROL",
+      "key_fact": "Submerged elastic shells exhibit resonance-rich backscatter, sonar-cross-section structure and transient ringing under acoustic illumination.",
+      "gate_effect": "PROVES_TRANSFORMED_ECHO_MECHANISM_SENSITIVITY_ONLY__NOT_TARGET_IDENTITY"
+    },
+    {
+      "id": "SURTASS_LFA",
+      "class": "ILLUMINATOR_CONTROL",
+      "transmit_band_hz": [100, 500],
+      "key_fact": "Nearby active-sonar excitation band is part of X(f), not evidence for S_target.",
+      "gate_effect": "RECOVER_OR_MARGINALIZE_INCIDENT_FIELD_BEFORE_TARGET_INFERENCE"
+    },
+    {
+      "id": "NOAA_UPSWEEP",
+      "class": "HARD_ABSOLUTE_FREQUENCY_REJECT",
+      "spectrogram_axis_hz": [0, 64],
+      "spectrogram_axis_provenance": "USER_VERIFIED_FROM_NOAA_PMEL_SPECTROGRAM_IMAGE; NOAA text page confirms signal identity but does not expose numeric axis in machine-readable text.",
+      "key_fact": "Official NOAA example lies far below the flooded prior.",
+      "gate_effect": "EXCLUDE_FROM_520_HZ_CANDIDATE_SET"
+    }
+  ],
+  "mandatory_features_for_transformed_echo_candidate": [
+    "calibrated_absolute_frequency",
+    "full_modal_pattern",
+    "Q_or_linewidth",
+    "mode_spacing",
+    "ringdown_or_group_delay",
+    "phase_or_complex_impulse_response_where_available",
+    "outbound_illuminator_estimate",
+    "separate_outbound_and_inbound_path_accounting_or_justified_reciprocity",
+    "bearing_range_TWTT_and_Doppler_where_available",
+    "CTD_or_sound_speed_profile",
+    "stable_geodetic_backpropagation_focus",
+    "repeat_independent_passes",
+    "withheld_pass_forward_replay",
+    "quantitative_comparison_to_ice_biology_fish_ship_seafloor_and_ASW_controls"
+  ],
+  "hard_rules": [
+    "ABSOLUTE_520_HZ_MATCH_IS_NOT_EVIDENCE_OF_PYRAMID_GEOMETRY",
+    "FULL_MODAL_PATTERN_OUTRANKS_SINGLE_PEAK",
+    "OUTBOUND_ILLUMINATOR_IS_NOT_TARGET_RETURN",
+    "TRANSFORMED_ECHO_REQUIRES_ROUND_TRIP_PATH_ACCOUNTING",
+    "ICE_BIOLOGY_FISH_SHIP_SEAFLOOR_AND_ASW_CONTROLS_ARE_MANDATORY",
+    "SUBMERGED_ELASTIC_SHELL_IS_MECHANISM_POSITIVE_CONTROL_NOT_TARGET_IDENTITY",
+    "NOAA_UPSWEEP_IS_REJECTED_FROM_520_HZ_CANDIDATE_SET_BY_ABSOLUTE_FREQUENCY",
+    "PRESERVE_NEGATIVE_AND_AMBIGUOUS_RESULTS"
+  ],
+  "status": "CONTROL_MATRIX_V1_1_FROZEN__ROUND_TRIP_TRANSFORMED_ECHO_GATE_ADDED__META_REGISTRY_SYNCHRONIZED",
+  "next_gate": "COUSTEAU_ROUND_TRIP_RESONANT_RETURN_BLIND_CONTROL_GATE_V1"
+}

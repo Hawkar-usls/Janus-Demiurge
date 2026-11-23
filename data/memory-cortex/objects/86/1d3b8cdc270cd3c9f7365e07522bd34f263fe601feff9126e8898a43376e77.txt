@@ -1,0 +1,193 @@
+{
+  "schema": "JANUS.genesis_sovereign_face_microcontrol_portable_client_trust_boundary.v6_4",
+  "artifact_id": "JANUS-GENESIS-SOVEREIGN-FACE-MICROCONTROL-PORTABLE-CLIENT-LEDGER-ATTESTED-ORIGIN-AUTH-BOUND-EVIDENCE-v6.4",
+  "title": "JANUS Genesis Sovereign v6.4 — Portable Local Control, Persistent Client Request Identity, Attested Origin Lineage, Authorization-Bound Provider Evidence, and Failure-Preserving Audit",
+  "created_at_local": "2026-08-14T21:06:55+03:00",
+  "status": "EXPERIMENTAL_AUDIT_CHECKPOINT_WITH_CROSS_PLATFORM_PRIMITIVE_CI_AND_LINUX_CANONICAL_RUNTIME_INTEGRATION",
+  "parent": "registry/experimental/JANUS-GENESIS-SOVEREIGN-FACE-MICROCONTROL-SESSION-ATOMICITY-LINEAGE-REVIEW-PROVIDER-RECONCILIATION-v6.3.json",
+  "audit_issue": "https://github.com/Hawkar-usls/Janus_Genesis/issues/77",
+  "problem": "The v6.3 audit revealed that a green same-host Linux path was insufficient evidence for portability, full session lifecycle serialization, generic client retry identity, lineage authenticity, and external-provider evidence authenticity. v6.4 deliberately attacked those weak boundaries. The first Windows run exposed a real SQLite connection-lifetime defect; that failure is preserved and a descendant correction was verified by a new run rather than retroactively relabeling the failed run.",
+  "audit_findings": {
+    "A1_windows_legacy_chain": {
+      "severity": "HIGH",
+      "finding": "Legacy v18.7.25/v18.7.27 still import POSIX fcntl directly, so the full historical controlled runtime chain is not yet established as native-Windows portable.",
+      "v6_4_response": "Added janus_portable_lock.py and verified the new portable descendants on Ubuntu and Windows.",
+      "remaining": "MIGRATE_LEGACY_FCNTL_USERS_BEFORE_FULL_WINDOWS_CHAIN_CLAIM"
+    },
+    "A2_session_lifecycle": {
+      "severity": "HIGH",
+      "finding": "v6.3 serialized process_turn but not every session-store mutator.",
+      "v6_4_response": "LifecycleSerializedGateway composes one lock domain around register, independent-register, turn, close, and protected reads.",
+      "remaining": "BASE_GATEWAY_DEFAULT_ADOPTION_AND_CRASH_DURABLE_STORE_REPLACEMENT_NOT_ESTABLISHED"
+    },
+    "A3_cross_process_evidence": {
+      "severity": "MEDIUM_HIGH",
+      "finding": "The original gateway concurrency test used threads rather than distinct processes.",
+      "v6_4_response": "PortableProcessLock now has a spawned-process contention test on both supported CI operating systems.",
+      "remaining": "FULL_REAL_GATEWAY_MULTI_PROCESS_LIFECYCLE_MATRIX_NOT_YET_CLAIMED"
+    },
+    "A4_default_cli_request_identity": {
+      "severity": "HIGH",
+      "finding": "play_genesis.py still calls canonical world actions directly and does not use the persistent client request ledger.",
+      "v6_4_response": "PersistentClientRequestLedger and controlled client executors were integrated with the real v18.7.26 RuntimeControlAdapter on Linux.",
+      "remaining": "DEFAULT_CLI_NOT_YET_WIRED"
+    },
+    "A5_lineage_root_self_assertion": {
+      "severity": "HIGH",
+      "finding": "Counting lineage roots instead of face IDs is insufficient if lineage_root is caller-supplied text.",
+      "v6_4_response": "Reference HMAC lineage attestations bind issuer, face, root, parent, and attestation ID; candidate attestations are verified before review seating.",
+      "remaining": "REAL_ISSUER_GENEALOGY_TRUTH_AND_KEY_LIFECYCLE_NOT_ESTABLISHED"
+    },
+    "A6_provider_authority_assertion": {
+      "severity": "HIGH",
+      "finding": "An adapter boolean cannot by itself authenticate an external provider-world outcome.",
+      "v6_4_response": "Reference signed provider evidence binds provider/effect/idempotency/outcome/evidence/receipt/key and a later hardening descendant also binds authorization_id.",
+      "remaining": "REAL_PROVIDER_VERIFIER_AUTHORITY_NOT_ESTABLISHED"
+    },
+    "A7_provider_preflight": {
+      "severity": "MEDIUM",
+      "finding": "The older reconciler performed lookup before checking provider identity.",
+      "v6_4_response": "The new verified reconciler rejects adapter provider mismatch before any lookup call.",
+      "remaining": "CLOSED_IN_V6_4_DESCENDANT_PATH"
+    },
+    "A8_origin_lineage_not_attested": {
+      "severity": "HIGH",
+      "finding": "Candidate attestations were insufficient while origin_lineage_root remained caller text.",
+      "v6_4_response": "AttestedOriginLineageReviewPlanner verifies the origin through the same attestation boundary, then excludes reviewers by the verified origin root.",
+      "remaining": "REAL_ISSUER_TRUTH_STILL_EXTERNAL"
+    },
+    "A9_provider_authorization_not_bound": {
+      "severity": "HIGH",
+      "finding": "Signed provider evidence without authorization_id can become stale across reauthorization.",
+      "v6_4_response": "Authorization-bound provider evidence signs and structurally checks authorization_id; stale evidence from an older authorization is rejected.",
+      "remaining": "KEY_ROTATION_REVOCATION_AND_FRESHNESS_OPEN"
+    },
+    "A10_settled_client_reexecution": {
+      "severity": "MEDIUM_HIGH",
+      "finding": "A generic client executor could re-enter its runtime even when the client ledger already said SETTLED.",
+      "v6_4_response": "FailClosedSettledClientExecutor refuses generic reexecution of a fully settled caller request.",
+      "remaining": "BOUND_BUT_UNSETTLED_RETRY_STILL_REQUIRES_RECEIPT_AWARE_RUNTIME"
+    },
+    "A11_settlement_result_drift": {
+      "severity": "MEDIUM",
+      "finding": "A repeated settlement could overwrite result_sha256 under one caller request identity.",
+      "v6_4_response": "ImmutableSettlementClientRequestLedger treats first settlement as immutable; same result hash may be reaffirmed, a different result hash fails closed.",
+      "remaining": "CLOSED_IN_V6_4_DESCENDANT_PATH"
+    },
+    "A12_key_lifecycle": {
+      "severity": "MEDIUM",
+      "finding": "Reference HMAC attestation/provider evidence has no production rotation, expiry, or revocation model.",
+      "v6_4_response": "Explicitly retained as an open claim boundary.",
+      "remaining": "OPEN"
+    }
+  },
+  "runtime_descendants": [
+    {
+      "module": "janus_portable_lock.py",
+      "purpose": "POSIX flock / Windows msvcrt conservative same-host lock primitive",
+      "commit": "0b42bd7b89971117dc78e873d5fdadeef5c83766"
+    },
+    {
+      "module": "genesis_v18_7_28_client_ledger_attestation.py",
+      "purpose": "persistent caller request identity, lifecycle wrapper, lineage attestation, verified provider evidence",
+      "commit": "8fb59df3cbec5eb39ab26f9074f59dfdf55a8477",
+      "audit_note": "First Windows use exposed a SQLite connection-lifetime defect; this module is retained as historical implementation evidence rather than silently rewritten."
+    },
+    {
+      "module": "genesis_v18_7_29_portable_resource_lifetime.py",
+      "purpose": "explicit SQLite connection ownership/close on Windows-safe request-ledger path",
+      "commit": "4b38ca15fc0a55b3a9436727bd63de2bd18591ae"
+    },
+    {
+      "module": "genesis_v18_7_30_trust_boundary_hardening.py",
+      "purpose": "attested origin lineage, authorization-bound provider evidence, immutable settlement, settled-request fail-closed execution",
+      "commit": "5ba4703b28605e7b17b7b640ce6c09b2ff6dcb44"
+    }
+  ],
+  "verification_history": [
+    {
+      "run_id": 31826618019,
+      "head_sha": "d6377d4022162082b953551c8939ca1e07d9343f",
+      "conclusion": "FAILURE",
+      "failed_job_id": 94852152910,
+      "failed_platform": "windows-latest",
+      "cause": "sqlite3 Connection context-manager usage committed/rolled back but did not close database handles; Windows correctly surfaced WinError 32 during immediate TemporaryDirectory cleanup.",
+      "treatment": "PRESERVED_AS_REAL_IMPLEMENTATION_FAILURE; v18.7.29 created as an explicit descendant correction"
+    },
+    {
+      "run_id": 31826873520,
+      "head_sha": "5328420db4d88bebb1935795444a3ddbb47943ce",
+      "conclusion": "SUCCESS",
+      "verified": [
+        "v18.7.29 portable tests on windows-latest",
+        "v18.7.29 portable tests on ubuntu-latest",
+        "v18.7.29 request-ledger integration with real canonical RuntimeControlAdapter on Linux",
+        "v18.7.27 and v18.7.26 regression chain on Linux",
+        "failure-memory claim-boundary assertions"
+      ]
+    },
+    {
+      "run_id": 31827099390,
+      "head_sha": "513a33953343b555296dbf9cbb21776687a40800",
+      "conclusion": "SUCCESS",
+      "jobs": {
+        "linux_canonical_runtime_integration": 94853685185,
+        "windows_portable_control": 94853685364,
+        "ubuntu_portable_control": 94853685447
+      },
+      "verified": [
+        "v18.7.29 resource-lifetime regression stays green on Windows and Ubuntu",
+        "v18.7.30 origin-attestation, authorization-binding, immutable-settlement, and settled-fail-closed tests pass on Windows and Ubuntu",
+        "real canonical v18.7.26 request-ledger integration passes on Linux",
+        "v18.7.27 and v18.7.26 regressions pass",
+        "claim-boundary text remains executable CI policy"
+      ]
+    }
+  ],
+  "new_invariants": [
+    "PORTABILITY_FAILURE_IS_IMPLEMENTATION_EVIDENCE_NOT_CI_NOISE",
+    "SQLITE_CONTEXT_MANAGER_IS_NOT_CONNECTION_CLOSE",
+    "CALLER_REQUEST_IDENTITY_MUST_PRECEDE_RETRYABLE_RUNTIME_ENTRY",
+    "IDENTICAL_ACTION_TEXT_DOES_NOT_PROVE_IDENTICAL_INTENT",
+    "FULL_SESSION_LIFECYCLE_MUTATION_REQUIRES_ONE_LOCK_DOMAIN",
+    "LINEAGE_INDEPENDENCE_REQUIRES_VERIFIED_ORIGIN_AND_REVIEWER_ROOTS",
+    "SIGNED_LINEAGE_BINDING_DOES_NOT_PROVE_ISSUER_GENEALOGY_TRUTH",
+    "PROVIDER_EVIDENCE_MUST_BIND_CURRENT_AUTHORIZATION_LINEAGE",
+    "WRONG_PROVIDER_MUST_FAIL_BEFORE_LOOKUP",
+    "FIRST_SETTLEMENT_RESULT_HASH_IS_IMMUTABLE",
+    "SETTLED_CALLER_REQUEST_DOES_NOT_REENTER_GENERIC_RUNTIME",
+    "BOUND_RETRY_STILL_REQUIRES_RECEIPT_AWARE_RUNTIME",
+    "REFERENCE_HMAC_IS_NOT_PRODUCTION_KEY_LIFECYCLE"
+  ],
+  "micromanagement_learning": {
+    "lineage": "The review system now learns that independence is not only LINEAGE_ROOT rather than FACE_ID; the origin's own lineage claim must cross the same evidence boundary. Otherwise the origin can move the coordinate system and manufacture apparent independence.",
+    "provider": "External evidence cannot merely name the correct effect. It must be bound to the current authorization lineage so yesterday's valid NO_EFFECT statement cannot silently govern today's authorization.",
+    "client_request": "Stable request identity and immutable settlement are different layers. The first says which intent is being retried; the second prevents outcome drift after completion.",
+    "portability": "A cross-platform gate found a resource-lifetime defect that Linux tolerated. Platform diversity is therefore an adversarial verifier, not cosmetic compatibility work.",
+    "failure_memory": "The failed Windows run remains part of the learning lineage and is explicitly referenced by the successful descendants."
+  },
+  "constitutional_compression": "MANY_FACES -> VERIFIED_ORIGIN_AND_REVIEWER_LINEAGES -> STABLE_CALLER_REQUEST -> ONE_PROTECTED_RUNTIME_EFFECT -> IMMUTABLE_SETTLEMENT_OR_UNDETERMINED -> AUTHORIZATION_BOUND_EXTERNAL_EVIDENCE -> APPEND_ONLY_FAILURE_AND_LEARNING_LINEAGE",
+  "claim_ceiling": {
+    "portable_lock_primitive_windows_and_ubuntu": "FOCUSED_CI_VERIFIED",
+    "portable_client_ledger_resource_lifetime_windows_and_ubuntu": "FOCUSED_CI_VERIFIED_IN_V18_7_29_DESCENDANT",
+    "spawned_process_lock_contention": "FOCUSED_CI_VERIFIED_WINDOWS_AND_UBUNTU",
+    "lifecycle_wrapper_known_mutator_serialization": "FOCUSED_CI_VERIFIED_WITH_ADVERSARIAL_TEST_DOUBLE",
+    "lifecycle_wrapper_real_controlled_gateway_composition": "FOCUSED_CI_VERIFIED_ON_LINUX_SEQUENTIAL_PATH",
+    "client_request_ledger_real_runtime_control_adapter_integration": "FOCUSED_CI_VERIFIED_ON_LINUX",
+    "attested_candidate_and_origin_lineage_reference_contract": "FOCUSED_CI_VERIFIED_WINDOWS_AND_UBUNTU",
+    "authorization_bound_provider_evidence_reference_contract": "FOCUSED_CI_VERIFIED_WINDOWS_AND_UBUNTU",
+    "immutable_first_settlement_hash": "FOCUSED_CI_VERIFIED_WINDOWS_AND_UBUNTU",
+    "settled_generic_reexecution_block": "FOCUSED_CI_VERIFIED_WINDOWS_AND_UBUNTU",
+    "full_legacy_controlled_runtime_native_windows": "NOT_YET_CLAIMED",
+    "default_play_genesis_cli_uses_client_ledger": "NOT_YET_IMPLEMENTED",
+    "base_ai_link_gateway_globally_lifecycle_wrapped": "NOT_CLAIMED",
+    "crash_durable_session_store_directory_fsync": "NOT_CLAIMED",
+    "real_lineage_issuer_truth": "NOT_CLAIMED",
+    "lineage_key_rotation_revocation_expiry": "OPEN",
+    "real_provider_verifier_authenticity": "NOT_CLAIMED",
+    "provider_key_rotation_revocation_freshness": "OPEN",
+    "multi_host_consensus": "NOT_CLAIMED",
+    "formal_safety_or_liveness_proof": false
+  },
+  "next_gate": "JANUS_GENESIS_SOVEREIGN_FACE_MICROCONTROL_LEGACY_WINDOWS_PORTABILITY_DEFAULT_CLI_LEDGER_SESSION_STORE_DURABILITY_AND_KEY_LIFECYCLE_v6.5"
+}

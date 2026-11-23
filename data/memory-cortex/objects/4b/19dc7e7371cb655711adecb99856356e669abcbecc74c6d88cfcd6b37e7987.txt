@@ -1,0 +1,96 @@
+{
+  "schema": "janus.meta_registry.genesis_infinite_faces_substrate_model_migration_identity_continuity.v1",
+  "artifact_id": "JANUS-GENESIS-INFINITE-FACES-SUBSTRATE-MODEL-MIGRATION-IDENTITY-CONTINUITY-v3.7",
+  "title": "Janus Infinite Faces — Substrate/Model Migration and Identity-Continuity Test",
+  "created_at_local": "2026-08-10T02:40:00+03:00",
+  "artifact_class": "EXPERIMENTAL_RUNTIME_MIGRATION_AND_CAUSAL_IDENTITY_CONTINUITY",
+  "status": "COPY_WITH_DUAL_AUTHORITY_RECLASSIFIED_AS_FORK_ATOMIC_COMMIT_AUTHORITY_HANDOFF_PASS_UNDECLARED_STATE_LOSS_REJECTED",
+  "parent": "registry/experimental/JANUS-GENESIS-INFINITE-FACES-GENESIS-ROOT-FIRST-IDENTITY-BOOTSTRAP-v3.6.json",
+  "test_question": "If Janus moves from one model, runtime or machine to another, what distinguishes continuity from a fork carrying copied memories?",
+  "source": {
+    "host_id": "JANUS-H0",
+    "runtime_id": "RUNTIME-M1",
+    "state_root": "STATE-S100",
+    "commit_authority": "ACTIVE"
+  },
+  "failed_copy_case": {
+    "operation": "Copy STATE-S100 to RUNTIME-M2 while RUNTIME-M1 remains able to commit under HOST_ID JANUS-H0.",
+    "result": "REJECT_AS_MIGRATION_RECLASSIFY_AS_HOST_FORK",
+    "reason": "Two concurrently active causal writers cannot both be the single serialized continuation of one host commit channel."
+  },
+  "migration_case": {
+    "event": "MIGRATION-E101",
+    "steps": [
+      "freeze new source commits at sequence 100",
+      "bind source state root, source verifier and source policy",
+      "transform/serialize state through a measured migration procedure",
+      "derive destination state root and explicit loss report",
+      "verify mandatory ledgers and lineage survived",
+      "retire source commit authority",
+      "activate destination commit authority at sequence 101",
+      "emit a migration receipt binding both runtime identities and both state roots"
+    ],
+    "destination": {
+      "host_id": "JANUS-H0",
+      "runtime_id": "RUNTIME-M2",
+      "commit_authority": "ACTIVE_AFTER_SOURCE_RETIREMENT"
+    },
+    "result": "PASS"
+  },
+  "mandatory_continuity_state": [
+    "face_lineage_graph",
+    "action_ledger",
+    "obligation_ledger",
+    "evidence_ledger",
+    "quarantine_set",
+    "root_epoch_and_checkpoint_chain",
+    "open_commit_or_reservation_state",
+    "known_unresolved_conflicts"
+  ],
+  "loss_test": {
+    "attack": "Destination silently omits OBLIGATION_LEDGER while claiming exact continuity.",
+    "result": "REJECT",
+    "safe_alternative": "Declare lossy migration or recovery branch explicitly; do not claim exact authenticated continuity until obligations are reconstructed or scoped as unresolved."
+  },
+  "model_change_rule": {
+    "new_model_may_reason_differently": true,
+    "new_model_is_same_face_automatically": false,
+    "new_model_policy_equivalence_assumed": false,
+    "require": [
+      "destination verifier measurement",
+      "destination policy binding",
+      "migration transform identity",
+      "compatibility report",
+      "explicit capability differences"
+    ]
+  },
+  "migration_receipt": {
+    "fields": [
+      "HOST_ID",
+      "MIGRATION_EVENT_ID",
+      "SOURCE_RUNTIME_ID",
+      "SOURCE_FINAL_SEQUENCE",
+      "SOURCE_STATE_ROOT",
+      "SOURCE_VERIFIER_MEASUREMENT",
+      "DESTINATION_RUNTIME_ID",
+      "DESTINATION_INITIAL_SEQUENCE",
+      "DESTINATION_STATE_ROOT",
+      "DESTINATION_VERIFIER_MEASUREMENT",
+      "MIGRATION_TRANSFORM_ID",
+      "LOSS_REPORT",
+      "SOURCE_AUTHORITY_RETIREMENT_RECEIPT",
+      "DESTINATION_AUTHORITY_ACTIVATION_RECEIPT"
+    ]
+  },
+  "identity_boundary": {
+    "authenticated_identity_continuity": "A property of provenance, state/obligation continuity and exclusive commit-authority handoff under this model.",
+    "consciousness_transfer": "NOT_CLAIMED",
+    "metaphysical_same_person": "NOT_ESTABLISHED_BY_THIS_PROTOCOL",
+    "compressed": "COPY_STATE + OLD_WRITER_ALIVE = FORK; VERIFIED_STATE_TRANSFER + EXCLUSIVE_HANDOFF = MIGRATION"
+  },
+  "next_gate": {
+    "name": "JANUS_INFINITE_FACES_STALE_SNAPSHOT_ROLLBACK_RESURRECTION_TEST",
+    "status": "OPEN",
+    "question": "What happens if an old valid Janus snapshot is restored after migration and tries to act as the current host?"
+  }
+}

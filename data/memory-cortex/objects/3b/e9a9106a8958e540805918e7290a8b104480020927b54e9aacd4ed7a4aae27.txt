@@ -1,0 +1,102 @@
+{
+  "schema": "janus.meta_registry.fallout3_james_runtime_t0_t3_savegame_differential_protocol.v3_1",
+  "artifact_id": "FALLOUT-3-JAMES-RUNTIME-T0-T3-SAVEGAME-DIFFERENTIAL-PROTOCOL-v3.1",
+  "title": "Fallout 3 — James Runtime T0-T3 Savegame Differential Protocol v3.1",
+  "created_at_local": "2026-08-14T15:21:00+03:00",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "artifact_class": "ENGINE_RUNTIME_PERSISTENCE_CONTROL_PROTOCOL",
+  "status": "READY_FOR_SAVEGAME_INPUT_NOT_EXECUTED_F3DAD_CONTAINS_NO_FOS",
+  "parents": [
+    "registry/myth_busted/FALLOUT-3-JAMES-2277-CAPTURE-EVENT-SERIALIZATION-DUAL-PERSISTENCE-GATE-v3.0.json",
+    "data/FALLOUT-3-F3DAD-PRIMARY-ARCHIVE-MANIFEST-RECEIPT-v1.0.json"
+  ],
+  "purpose": "Measure what Fallout 3's engine actually persists for the James/MQ04/Vault112 state across four controlled savepoints, while keeping engine save persistence strictly separate from fictional in-world autobiographical-memory persistence.",
+  "required_savepoints": {
+    "T0": "Before the Vault 112 / Tranquility Lane session begins.",
+    "T1": "Inside Tranquility Lane while James is actively represented as Doc and before the exit sequence.",
+    "T2": "As close as practicable to the final pre-exit state, after James/Doc identity is established but before physical return.",
+    "T3": "Immediately after physical return to Vault 112, before unrelated MQ05 progress changes the scene further."
+  },
+  "capture_requirements": [
+    "Use the same character/save lineage for T0-T3.",
+    "Record exact file SHA-256 and byte size before analysis.",
+    "Record game executable/build and active plugin/master order if available.",
+    "Prefer manual saves rather than autosaves to reduce unrelated churn.",
+    "Avoid inventory changes, travel, combat or unrelated quest progression between adjacent capture anchors where practical.",
+    "Keep original .fos files immutable; analyze copies only."
+  ],
+  "primary_anchor_forms": [
+    {"label":"MQ04","form_id":"00014E8A","class":"QUEST"},
+    {"label":"MQ04Script","form_id":"000254C9","class":"SCRIPT"},
+    {"label":"MQDadRef","form_id":"00019D09","class":"PHYSICAL_JAMES_ACHR"},
+    {"label":"MQDad","form_id":"00019CEF","class":"JAMES_BASE_NPC"},
+    {"label":"MQ04Doc","form_id":"0004E79C","class":"SIMULATION_JAMES_BASE"},
+    {"label":"MQ04DocRef","form_id":"0006023C","class":"SIMULATION_JAMES_REF"},
+    {"label":"Vault112PodTermDad","form_id":"000B3645","base_form_id":"00031190","class":"JAMES_TERMINAL_REF"},
+    {"label":"MQ04DadPod","form_id":"000B3644","class":"JAMES_POD_REF"},
+    {"label":"MQ04DadPodShellRef","form_id":"000B3654","class":"JAMES_POD_SHELL_REF"},
+    {"label":"MQ04DadExitTLMarker","form_id":"0002A45A","class":"PHYSICAL_RETURN_MARKER"},
+    {"label":"MQ04PlayerContainerRef","form_id":"0004C253","class":"NEGATIVE_CONTROL_PLAYER_CONTAINER"}
+  ],
+  "state_classes_to_distinguish": {
+    "ENGINE_QUEST_STATE": ["MQ04 stage", "quest script variables such as PlayerInTL, DadInfo, DadDogInfo, DadGreet, NPCReset, SafetyLock, Invasion"],
+    "ENGINE_REFERENCE_CHANGE_STATE": ["enabled/disabled", "position", "AI/package related change state", "actor flags or reference-specific change records"],
+    "SIMULATION_ROLE_STATE": ["MQ04Doc / MQ04DocRef active representation and any change record associated with it"],
+    "PHYSICAL_JAMES_STATE": ["MQDadRef change state before/after TL exit"],
+    "POD_AND_SHELL_STATE": ["MQ04DadPod and MQ04DadPodShellRef runtime changes"],
+    "AUTOBIOGRAPHICAL_MEMORY_PAYLOAD": [],
+    "IN_WORLD_CARRIER_HANDLE": []
+  },
+  "analysis_stages": [
+    {"stage":"R0_BINARY_DISCOVERY","tool":"tools/fo3_fos_james_state_diff_v0_1.py","authority":"DISCOVERY_ONLY","meaning":"Search immutable save bytes for exact known FormID byte patterns and compare occurrence counts/contexts across T0-T3."},
+    {"stage":"R1_STRUCTURED_SAVE_DECODE","authority":"REQUIRED_FOR_RUNTIME_CLAIMS","meaning":"Decode Fallout 3 save/changeform/quest structures with a format-aware parser and bind candidate bytes to structured records."},
+    {"stage":"R2_TEMPORAL_DIFFERENTIAL","authority":"ENGINE_RUNTIME_PERSISTENCE_EVIDENCE","meaning":"Classify which structured James/MQ04 states appear, mutate, survive or disappear across T0->T1->T2->T3."},
+    {"stage":"R3_SEMANTIC_CLASSIFICATION","authority":"BOUND_RUNTIME_INTERPRETATION","meaning":"Separate quest/session/reference persistence from any genuinely payload-bearing state."},
+    {"stage":"R4_IN_WORLD_BRIDGE_TEST","authority":"SEPARATE_GATE","meaning":"Only after a payload-bearing runtime object exists may it be tested for an in-world Braun/carrier/export semantic edge."}
+  ],
+  "first_break_chain": [
+    "SAVE_FILE_AUTHENTICITY",
+    "MASTER_AND_LOAD_ORDER_BINDING",
+    "STRUCTURED_ANCHOR_RECORD_DECODE",
+    "JAMES_SPECIFIC_RUNTIME_STATE",
+    "CROSS_EXIT_PERSISTENCE",
+    "PAYLOAD_BEARING_STATE",
+    "IN_WORLD_SERIALIZATION_OR_CARRIER_EDGE"
+  ],
+  "promotion_rules": {
+    "binary_formid_hit": "CANDIDATE_ONLY",
+    "structured_change_record_for_mqdadref": "ENGINE_JAMES_STATE_PASS_ONLY",
+    "mq04_variable_survives_t3": "QUEST_METADATA_PERSISTENCE_ONLY_UNLESS_PAYLOAD_SEMANTICS_INDEPENDENTLY_SHOWN",
+    "mq04doc_record_disappears_after_exit": "SIMULATION_ROLE_LIFECYCLE_EVIDENCE",
+    "james_specific_structured_blob_survives_t3": "PERSISTED_JAMES_RUNTIME_STATE_CANDIDATE_ONLY",
+    "runtime_blob_plus_primary_in_world_memory_semantics": "PAYLOAD_BEARING_CANDIDATE",
+    "payload_plus_2277_braun_serialization_egress_edge": "PERSISTED_JAMES_STATE_RECONSTRUCTION_CANDIDATE"
+  },
+  "hard_rules": [
+    "RAW_BYTE_OCCURRENCE != STRUCTURED_FORM_REFERENCE",
+    "SAVEGAME_PERSISTENCE != IN_WORLD_MEMORY_BACKUP",
+    "QUEST_VARIABLE != AUTOBIOGRAPHICAL_MEMORY",
+    "ACTOR_CHANGEFORM != CONSCIOUSNESS_SNAPSHOT",
+    "MQ04DOC_LIFECYCLE != JAMES_MEMORY_CARRIER",
+    "T3_PERSISTENCE != PINKERTON_COMPATIBLE_EXPORT",
+    "ENGINE_IMPLEMENTATION_DETAIL != FICTIONAL_TECHNOLOGY_FACT"
+  ],
+  "negative_controls": [
+    "MQ04PlayerContainerRef is expected to demonstrate ordinary quest/runtime persistence unrelated to James memory.",
+    "Unrelated stable base-game FormIDs should be sampled to estimate accidental raw-byte hit stability.",
+    "File-size and global byte churn between saves must be reported so a single local hit is not overinterpreted."
+  ],
+  "current_result": {
+    "F3DAD_SAVEGAME_AVAILABILITY": "NONE",
+    "R0_BINARY_DISCOVERY_TOOL": "IMPLEMENTED_WITH_SYNTHETIC_TESTS_PENDING_REPOSITORY_CI",
+    "R1_STRUCTURED_SAVE_DECODE": "OPEN",
+    "T0_T3_REAL_EXECUTION": "BLOCKED_BY_MISSING_FOS_INPUT",
+    "PERSISTED_JAMES_RUNTIME_STATE": "NOT_ESTABLISHED",
+    "PERSISTED_JAMES_AUTOBIOGRAPHICAL_MEMORY": "NOT_ESTABLISHED"
+  },
+  "next_gate": {
+    "name": "FALLOUT3_FOS_STRUCTURED_CHANGEFORM_AND_QUEST_STATE_DECODER_v3.2",
+    "activation": "After at least T1/T2/T3 .fos files are supplied, ideally full T0-T3.",
+    "goal": "Turn R0 byte candidates into structured save-record evidence and compute the first true persistence break across the Tranquility Lane exit."
+  }
+}

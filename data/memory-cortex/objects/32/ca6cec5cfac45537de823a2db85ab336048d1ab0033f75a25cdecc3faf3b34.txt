@@ -1,0 +1,118 @@
+{
+  "artifact": "JANUS-NOHAND-META-REGISTRY-PASSAGE-v1.5.1",
+  "version": "1.5.1",
+  "date": "2026-08-17",
+  "status": "CANDIDATE_VERIFIED_LIVE_DEPLOYMENT_REQUIRED",
+  "purpose": "Permit JANUS to traverse and attest every tracked JSON in Hawkar-usls/janus-meta-registry through the read-only Habitat Gate, with Terminal independently recomputing the global manifest before issuing an every_json_accounted certificate.",
+  "predecessor_live_proof": {
+    "artifact": "JANUS-NOHAND-GATE-TERMINAL-v1.4.2-LIVE-HANDOFF-2026-08-17",
+    "status": "LIVE_GATE_TERMINAL_EXCHANGE_PASS"
+  },
+  "gate_candidate": {
+    "filename": "janus_habitat_gate.py",
+    "delivery_filename": "janus_habitat_gate_v1_5_1_REGISTRY_PASSAGE.py",
+    "version": "1.5.1-READONLY-GUARDIAN-REGISTRY-PASSAGE",
+    "sha256": "a6a32ffa7da7958ef0dc20630ca13e9a6c3fdb24c39ec84dbec147ad9bb6ddfc",
+    "safety_contract_sha256": "92fc6c107fd28834b1dc6a41e02ab3c9efa40f37d2cf0c5f1ad0406067a52ef0",
+    "size_bytes": 54038,
+    "lines": 1290,
+    "new_read_ops": ["REGISTRY_PAGE", "REGISTRY_READ"],
+    "registry_repository": "Hawkar-usls/janus-meta-registry",
+    "registry_branch": "main",
+    "manifest_page_limit": 50,
+    "registry_read_max_bytes": 2097152,
+    "properties": [
+      "all tracked *.json entries are included in the manifest",
+      "secret-like entries remain manifest-accounted but content_read_allowed=false",
+      "registry content reads require exact commit SHA and optional exact Git blob SHA-1 pin",
+      "Git blob SHA-1 is recomputed from bytes before release",
+      "global manifest SHA-256 is over sorted path/blob/size basis",
+      "manifest cache is in-memory only and keyed by exact commit SHA",
+      "NAS remains read-only and authority_weight remains zero"
+    ]
+  },
+  "terminal_candidate": {
+    "filename": "janus_habitat_terminal.py",
+    "delivery_filename": "janus_habitat_terminal_v1_5_1_REGISTRY_WALK.py",
+    "version": "1.5.1-NOHAND-GUARDIAN-BEACON-DEMIHEAD-GATE-REGISTRY-WALK",
+    "sha256": "e39e142c06ae62fb3a966f482f3e735dd33598017f0ef46848be82d17718b377",
+    "safety_contract_sha256": "15570e731e1a9b299621e74f9a3cbe56ef3962dd77dee0cad4f5b8073021ba97",
+    "size_bytes": 113430,
+    "lines": 2529,
+    "demihead_namespace": "habitat/nohand/v1_5_1",
+    "new_read_ops": ["GATE_REGISTRY_PAGE", "GATE_REGISTRY_READ", "GATE_REGISTRY_WALK"],
+    "walk_behavior": [
+      "first page may resolve current main to an exact commit SHA",
+      "all later pages are pinned to that exact commit SHA",
+      "commit/tree/manifest/json_count drift fails closed",
+      "duplicate path or offset drift fails closed",
+      "Terminal reconstructs sorted path/blob/size basis from every Gate page",
+      "Terminal recomputes global manifest SHA-256 independently",
+      "certificate is emitted only when reconstructed count equals Gate json_count and global hash matches",
+      "registry walk remains a read operation so DemiHead does not grant permission; Beacon still forecasts and settles"
+    ]
+  },
+  "walk_certificate_schema": "janus.habitat.terminal.registry_walk_certificate.v1",
+  "certificate_required_truths": {
+    "every_json_accounted": true,
+    "all_pages_pinned_to_same_commit": true,
+    "global_manifest_independently_recomputed_by_terminal": true,
+    "registry_observation_is_permission": false,
+    "authority_weight": 0,
+    "nas_mutation": false
+  },
+  "existing_registry_cross_check": {
+    "workflow": ".github/workflows/connection-full-registry-discovery-v021.yml",
+    "engine": "tools/connection/janus_connection_full_registry_discovery_v0_2_1.py",
+    "relationship": "independent checkout-based JSON accounting witness; not authority for Gate/Terminal passage"
+  },
+  "demihead": {
+    "repository": "Hawkar-usls/Demi_Head",
+    "branch": "feature/nohand-habitat-peer-v1",
+    "wrapper": "tools/nohand_habitat_peer_v1_5_1.py",
+    "wrapper_commit": "b1f3bfdf52199273b82fbd22f0f9fcb501810922",
+    "workflow": ".github/workflows/nohand-habitat-peer-v1-5-1.yml",
+    "workflow_commit": "b6c71d957a19a3689b115be3f2f819a23bfe6bcd",
+    "ci_seed_commit": "84d6f2c3f02798235fc1b2812aa6b2833e0ccd75",
+    "workflow_run": 32026195593,
+    "workflow_conclusion": "success",
+    "pr": 28,
+    "merge_permission": false
+  },
+  "verification": {
+    "gate_py_compile": "PASS",
+    "gate_static_destructive_surface_scan": "PASS",
+    "gate_runtime_audit_fuse": "PASS",
+    "gate_registry_page_synthetic": "PASS",
+    "gate_manifest_memory_cache_synthetic": "PASS",
+    "gate_all_tracked_json_accounting_policy_synthetic": "PASS",
+    "gate_secret_like_read_rejection_synthetic": "PASS",
+    "terminal_py_compile": "PASS",
+    "terminal_static_destructive_surface_scan": "PASS",
+    "terminal_runtime_audit_fuse": "PASS",
+    "terminal_registry_page_validation_synthetic": "PASS",
+    "terminal_registry_read_validation_synthetic": "PASS",
+    "terminal_full_registry_walk_multi_page_synthetic": "PASS",
+    "terminal_global_manifest_recompute_synthetic": "PASS",
+    "demihead_v1_5_1_ci": "PASS"
+  },
+  "claim_boundaries": [
+    "CANDIDATE_VERIFIED != LIVE_NAS_DEPLOYED",
+    "REGISTRY_MANIFEST != CONTENT_PERMISSION",
+    "SECRET_LIKE_ENTRY_ACCOUNTED != SECRET_CONTENT_EXPOSED",
+    "REGISTRY_OBSERVATION != AUTHORITY",
+    "PREDICTION != PERMISSION",
+    "CI_SUCCESS != LIVE_REGISTRY_WALK",
+    "SHA256_RECEIPT != DIGITAL_SIGNATURE",
+    "DRAFT_PR != MERGE_PERMISSION"
+  ],
+  "next_gate": [
+    "replace live Gate with exact v1.5.1 candidate",
+    "replace live Terminal with exact v1.5.1 candidate",
+    "restart only Gate and Terminal",
+    "verify live startup source/safety SHA pins",
+    "submit one GATE_REGISTRY_WALK request",
+    "require every_json_accounted=true and terminal_recomputed_manifest_sha256==manifest_sha256",
+    "record immutable live full-registry passage proof"
+  ]
+}

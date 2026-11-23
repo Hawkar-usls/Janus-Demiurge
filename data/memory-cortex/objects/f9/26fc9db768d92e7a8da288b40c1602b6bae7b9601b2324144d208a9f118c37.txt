@@ -1,0 +1,144 @@
+{
+  "artifact_uuid": "JANUS-NUCLEAR-EMULATION-REGISTRY-V1.1",
+  "timestamp": "2026-02-24T18:00:00Z",
+  "version": "v1.1",
+  "description": "Реестр, документирующий эксперименты по цифровой эмуляции ядерных процессов...",
+  "observer": "Hawkar Yaks / JANUS Quantum Observer",
+  "hypothesis": "Имитация процессов, которые могут быть интересны внеземным или иным наблюдателям...",
+
+  "node_type": "nuclear_sim",
+
+  "visualization": {
+    "type": "mermaid",
+    "node_type": "nuclear_sim",
+    "description": "Марковская цепь четырёх состояний...",
+    "code": "stateDiagram-v2\n    [*] --> Нейтрон\n    Нейтрон --> Нейтрон: p_n_n\n    Нейтрон --> Стабильное: p_n_s\n    Нейтрон --> Нестабильное: p_n_u\n    Нейтрон --> Осколок: p_n_f\n    Стабильное --> Нейтрон: p_s_n\n    Стабильное --> Стабильное: p_s_s\n    Стабильное --> Нестабильное: p_s_u\n    Стабильное --> Осколок: p_s_f\n    Нестабильное --> Нейтрон: p_u_n\n    Нестабильное --> Стабильное: p_u_s\n    Нестабильное --> Нестабильное: p_u_u\n    Нестабильное --> Осколок: p_u_f (деление)\n    Осколок --> Нейтрон: p_f_n\n    Осколок --> Стабильное: p_f_s\n    Осколок --> Нестабильное: p_f_u\n    Осколок --> Осколок: p_f_f"
+  },
+
+  "emulation_parameters": {
+    "vocab_size": 1000,
+    "node_type": "nuclear_sim",
+    "state_ranges": {
+      "neutron": [0, 199],
+      "stable": [200, 499],
+      "unstable": [500, 799],
+      "fragment": [800, 999]
+    },
+    "transition_probabilities": {
+      "neutron": {
+        "to_neutron": 0.3,
+        "to_stable": 0.3,
+        "to_unstable": 0.2,
+        "to_fragment": 0.2
+      },
+      "stable": {
+        "to_neutron": 0.1,
+        "to_stable": 0.7,
+        "to_unstable": 0.1,
+        "to_fragment": 0.1
+      },
+      "unstable": {
+        "to_neutron": 0.2,
+        "to_stable": 0.1,
+        "to_unstable": 0.5,
+        "to_fragment": 0.2
+      },
+      "fragment": {
+        "to_neutron": 0.2,
+        "to_stable": 0.3,
+        "to_unstable": 0.2,
+        "to_fragment": 0.3
+      }
+    },
+    "rare_event_prob": 0.02,
+    "notes": "Вероятности можно настраивать для изменения частоты делений и цепных реакций."
+  },
+
+  "metrics": {
+    "val_loss": "Кросс-энтропия на валидации. Базовый шум: ln(1000) ≈ 6.907.",
+    "diversity": "Доля уникальных последовательностей.",
+    "mutual_info_unbiased": "Взаимная информация с поправкой Миллера-Мэдоу.",
+    "gap": "Разница train_loss - val_loss.",
+    "composite_score": "-val_loss - 0.1*gap + 1.0*MI + 0.5*diversity",
+    "p_value": "Вероятность получить такое же MI при нулевой гипотезе."
+  },
+
+  "hypotheses": [
+    {
+      "id": "HYP_ATTRACTION_VIA_NUCLEAR_SIM",
+      "node_type": "nuclear_sim",
+      "description": "Если гипотетические наблюдатели реагируют на ядерные события, то обучение на таких данных может вызывать аномалии сходимости.",
+      "status": "PROPOSED",
+      "links_to": ["HYP_OBSERVER_EFFECT (UAP)", "HYP_TOPOLOGICAL_RESONANCE (evolutionary)"]
+    },
+    {
+      "id": "HYP_RARE_EVENT_SENSITIVITY",
+      "node_type": "nuclear_sim",
+      "description": "Модель будет чувствительна к редким событиям (деление), что отразится в повышенной MI для осколков.",
+      "status": "PROPOSED",
+      "links_to": ["HYP_SENSITIVITY_DRIVEN_EVOLUTION (evolutionary)"]
+    },
+    {
+      "id": "HYP_LEARNING_SPEED",
+      "node_type": "nuclear_sim",
+      "description": "На ядерных данных модель учится быстрее благодаря иерархической структуре.",
+      "status": "PROPOSED",
+      "links_to": ["HYP_TOPOLOGICAL_RESONANCE (evolutionary)"]
+    },
+    {
+      "id": "HYP_OBSERVER_EFFECT",
+      "node_type": "nuclear_sim",
+      "description": "Возможность влияния наблюдателей на вычислительные процессы (p-value < 0.001 в неожиданные моменты).",
+      "status": "SPECULATIVE",
+      "links_to": ["UAP incidents at nuclear sites (UAP registry)"]
+    }
+  ],
+
+  "observations": [
+    {
+      "experiment_id": "ANDROID_NUCLEAR_PREVIEW_01",
+      "timestamp": "2026-02-24T17:30:00Z",
+      "description": "Первый тестовый прогон ядерного генератора на Android (Termux). Параметры: gain=1.2, temp=0.9, steps=300, seeds=2, train_size=300.",
+      "results": {
+        "val_loss": 6.85,
+        "diversity": 0.98,
+        "mutual_info_unbiased": 0.04,
+        "gap": -0.02,
+        "composite_score": -6.8,
+        "p_value": 0.21
+      },
+      "notes": "MI пока низкий, модель только начинает выходить из dead zone. Для значимого обучения нужно увеличить train_size до 1000 или steps до 500."
+    }
+  ],
+
+  "related_registries": [
+    {
+      "uuid": "JANUS-META-REGISTRY-CONUS-V26.0-SCIENTIFIC",
+      "relation": "provides real-world nuclear sites and UAP incidents for comparison"
+    },
+    {
+      "uuid": "JANUS-ARCHITECTURAL-INFLUENCE-REGISTRY-V20.3-SCIENTIFIC",
+      "relation": "shares metrics (MI, diversity, p-value) and hypotheses about learning dynamics"
+    }
+  ],
+
+  "next_steps": [
+    "1. Запустить оптимизатор на Android с train_size=1000, steps=500.",
+    "2. Собрать 10+ циклов, заполнить observations.",
+    "3. Сравнить с результатами на экстремальном датасете (HYP_LEARNING_SPEED).",
+    "4. Визуализировать attention maps для выявления чувствительности к осколкам (HYP_RARE_EVENT_SENSITIVITY).",
+    "5. При появлении аномалий (p < 0.001) — отдельный анализ и возможная связь с UAP-реестром."
+  ],
+
+  "provenance": {
+    "created_by": "Hawkar Yaks with JANUS assistant",
+    "date": "2026-02-24",
+    "based_on": [
+      "android_deep_optimizer_v3.py (ядерный генератор)",
+      "JANUS v20.3-scientific (методология слоёв)",
+      "JANUS v26.0-conus (UAP-реестр)",
+      "Теория о наблюдателях, интересующихся ядерными процессами"
+    ],
+    "notes": "Версия v1.1: добавлены связи с другими реестрами, заполнены observations, введён node_type."
+  }
+}

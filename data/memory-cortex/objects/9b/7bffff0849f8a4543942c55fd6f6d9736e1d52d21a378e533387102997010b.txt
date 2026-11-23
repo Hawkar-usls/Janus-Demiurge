@@ -1,0 +1,55 @@
+{
+  "artifact_id": "JANUS-TRUMP-FOREST-LIST-COLORING-TERMINAL-RESULT-2026-09-20-v1.0",
+  "version": "v1.0",
+  "date": "2026-09-20",
+  "status": "PASS_FOREST_LIST_COLORING_POLYNOMIAL_TERMINAL",
+  "authority": "STATIC_ALGORITHMIC_THEOREM_WITH_EXTERNAL_PRIMARY_AUTHORITY",
+  "preregistration": {
+    "path": "research/TRUMP_FOREST_LIST_COLORING_TERMINAL_PREREG_2026-09-20_v1.0.json",
+    "commit": "74f33dc0234a7978f9f175e50d306066a8ceb385"
+  },
+  "external_authority": [
+    {
+      "source": "Jansen and Scheffler, Generalized coloring for tree-like graphs",
+      "statement": "List Coloring on trees is solvable in linear time."
+    },
+    {
+      "source": "Exact Algorithms lecture notes, Theorem 4",
+      "statement": "Repeated singleton propagation; empty list gives NO; if all lists in a forest have size at least 2, the instance is YES."
+    }
+  ],
+  "theorem": {
+    "input": "Forest F with arbitrary finite lists L(v).",
+    "algorithm": [
+      "Apply exact singleton propagation to a fixpoint.",
+      "If any list becomes empty, return UNSAT.",
+      "Otherwise every remaining list has size at least 2.",
+      "Every remaining forest component is list-colorable by leaf induction.",
+      "Reconstruct all propagated singleton assignments."
+    ],
+    "equivalent_DP": {
+      "root_each_tree": true,
+      "recurrence": "F(v)={c in L(v): for every child u there exists d in F(u) with d!=c}",
+      "criterion": "F(root) nonempty for every tree root",
+      "reconstruction": "Choose a root color in F(root) and recurse to child colors different from the parent color."
+    },
+    "complexity": {
+      "fixed_four_color_palette": "O(|V|+|E|) with a small constant",
+      "general_finite_lists": "polynomial"
+    },
+    "P7_free_required": false
+  },
+  "applicability_to_C11_PI": {
+    "exact_use_condition": [
+      "The residual interaction graph is a forest.",
+      "All restrictions induced by fixed/precolored boundary vertices have already been encoded into the current lists."
+    ],
+    "conclusion": "Residual feasibility is polynomially decidable without a general P7-free 4-coloring oracle."
+  },
+  "scientific_ceiling": {
+    "FOREST_LIST_TERMINAL": "VERIFIED",
+    "CYCLIC_RESIDUALS": "UNRESOLVED",
+    "REPAIR": "NOT_STARTED"
+  },
+  "stop": true
+}

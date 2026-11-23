@@ -1,0 +1,169 @@
+{
+  "schema": "janus.json.compression_identity_study.registry.v1",
+  "title": "JANUS JSON Compression Identity Study v1.0",
+  "created_date": "2026-09-04",
+  "source": {
+    "repository": "Hawkar-usls/janus-meta-registry",
+    "commit": "53773246f4caabe767642eccfd3cd7746a6b1635",
+    "scope": "data/*.json",
+    "origins_tested": 192,
+    "raw_total_bytes": 2819172
+  },
+  "experiment": {
+    "hash": "sha256",
+    "pipeline": "RAW -> COMPRESS -> HASH_REPRESENTATION -> DECOMPRESS -> HASH_RECOVERED -> BYTE_COMPARE",
+    "gzip_deterministic": {
+      "implementation": "Python gzip.compress",
+      "compresslevel": 9,
+      "mtime": 0,
+      "filename_header": false
+    },
+    "gzip_with_filename_header": {
+      "implementation": "Python gzip.GzipFile",
+      "compresslevel": 9,
+      "mtime": 0,
+      "filename_header": "original_filename"
+    },
+    "zstd_deterministic": {
+      "implementation": "zstd 1.5.7",
+      "level": 9
+    }
+  },
+  "aggregate": {
+    "gzip_deterministic": {
+      "compressed_total_bytes": 922104,
+      "compressed_over_raw_ratio": 0.3270832713,
+      "space_saved_percent": 67.29167287,
+      "compressed_sha_differs_from_raw_count": 192,
+      "roundtrip_byte_exact_count": 192,
+      "roundtrip_sha_restored_count": 192
+    },
+    "gzip_with_filename_header": {
+      "compressed_total_bytes": 932265,
+      "compressed_over_raw_ratio": 0.3306875210,
+      "space_saved_percent": 66.93124790,
+      "compressed_sha_differs_from_raw_count": 192,
+      "roundtrip_byte_exact_count": 192,
+      "roundtrip_sha_restored_count": 192
+    },
+    "zstd_deterministic": {
+      "compressed_total_bytes": 939395,
+      "compressed_over_raw_ratio": 0.3332166324,
+      "space_saved_percent": 66.67833676,
+      "compressed_sha_differs_from_raw_count": 192,
+      "roundtrip_byte_exact_count": 192,
+      "roundtrip_sha_restored_count": 192
+    },
+    "anomaly_classes": {
+      "duplicate_declared_id": 22,
+      "invalid_json": 11,
+      "declared_integrity_mismatch": 10,
+      "duplicate_content": 2,
+      "utf8_bom": 1
+    },
+    "invalid_json_byte_anomalies_preserved_after_roundtrip": 11,
+    "compressed_bytes_direct_utf8_decodable": 0,
+    "compressed_bytes_direct_json_parseable": 0
+  },
+  "duplicate_content_control": {
+    "raw_sha256": "27dba6d7ab773f369506ad3ac2fd4059be841ef514203101df1b1e1b4911c5ec",
+    "raw_size_bytes": 8458,
+    "files": [
+      {
+        "filename": "Janus Ecosystem Meta Registry.json",
+        "gzip_deterministic_sha256": "c5f1f1309cfaf0466c26b7176c260088d1b35752107c2c293a4b451e170921f4",
+        "gzip_with_filename_header_sha256": "c38ecddf1fa1d078cec3af3b0b6f309edefb41c97279de3f683b0c0e22075c3e",
+        "zstd_deterministic_sha256": "7b1ee8b88c8419c5e23737975371d6b04e0fcf0ddd69e639d38ecf251f696ef1",
+        "recovered_raw_sha256": "27dba6d7ab773f369506ad3ac2fd4059be841ef514203101df1b1e1b4911c5ec"
+      },
+      {
+        "filename": "Ne Ver, Ne Boisia.json",
+        "gzip_deterministic_sha256": "c5f1f1309cfaf0466c26b7176c260088d1b35752107c2c293a4b451e170921f4",
+        "gzip_with_filename_header_sha256": "15a3f84f95e48db5dfde3192a83cace3c109647d879e2fc46714be5406b168c5",
+        "zstd_deterministic_sha256": "7b1ee8b88c8419c5e23737975371d6b04e0fcf0ddd69e639d38ecf251f696ef1",
+        "recovered_raw_sha256": "27dba6d7ab773f369506ad3ac2fd4059be841ef514203101df1b1e1b4911c5ec"
+      }
+    ],
+    "finding": "Identical raw bytes produce identical hashes under the same deterministic content-only compression profile. Packaging metadata such as a gzip original-filename header can split the compressed representation hash while decompression still returns the same raw witness."
+  },
+  "invalid_json_controls": {
+    "count": 11,
+    "all_roundtrip_byte_exact": true,
+    "all_roundtrip_raw_sha_restored": true,
+    "files": [
+      {
+        "filename": "JANUS-ARCHITECTURAL-INFLUENCE-REGISTRY-V18.json",
+        "raw_sha256": "8e25ae19d30866f8ecec4238f7f38171fb79fa07936a541be38c99509069af9f"
+      },
+      {
+        "filename": "JANUS-ARCHITECTURE-V26.4.json",
+        "raw_sha256": "4546d459e20feefa0d8037b0870b6b62be2aa6284725c8430c0c5d2d8968c265"
+      },
+      {
+        "filename": "JANUS-CINEMA-SOUL-SIGNAL-REGISTRY-v24.1.json",
+        "raw_sha256": "b275e55839a03b07d7cadbeebf41219cd173e9f24c5a959501dca2e3e0de3a99"
+      },
+      {
+        "filename": "JANUS-FERMI-META-IRONY-PROTOCOL-v1.0.json",
+        "raw_sha256": "63688994a2ff6113fa6cc67ca55321499afef82cc11e09cc284b9a5429d18551"
+      },
+      {
+        "filename": "JANUS-MULTIVERSE-ROSEWINE-SPIDER-DEADGIRL-v1.0.json",
+        "raw_sha256": "1d32649af9714d73759cb3d6f546d5ec57e0981660857577c971c5641d4e6268"
+      },
+      {
+        "filename": "JANUS_META_REGISTRY_v21.4_FINAL.json",
+        "raw_sha256": "82bd46838dbe4d43b51df73034985e4b4a22edd83ba13f27889599ea48b12f48"
+      },
+      {
+        "filename": "janus-ai-integration-v5.9.json",
+        "raw_sha256": "0c55b9c427c3178c5f1f9695955952488970026a75582979a9f92fcd27f70f54"
+      },
+      {
+        "filename": "janus-meta-registry-v9.5-academic.json",
+        "raw_sha256": "01b0125f55681e44146b1e9ff2e9a2ab0e0d26477e64cc989b751c7a6058a379"
+      },
+      {
+        "filename": "janus-registry-v5.2.json",
+        "raw_sha256": "55314c3d4f8b3f12f176d8380008c989e03b02f435f107e13824436c517bc766"
+      },
+      {
+        "filename": "janus_pathfinder_registry.json",
+        "raw_sha256": "3a92fb079935f91fc5991cc5626ed7d2abfc2f89a78382b1365e84e1d37bcda4"
+      },
+      {
+        "filename": "semantic_field_registry_v12.json",
+        "raw_sha256": "b90df07fa4e62d017fd028ce85d0fc48c03e05f60e32919bb23cbd59f9d1cfbc"
+      }
+    ]
+  },
+  "laws": [
+    "SHA256(raw) != SHA256(compressed) is expected because compressed bytes are a different representation.",
+    "For all 192 origins: SHA256(decompressed) == SHA256(raw).",
+    "For all 192 origins: decompressed bytes == raw bytes.",
+    "Same raw bytes plus the same deterministic content-only compression profile produce the same compressed representation hash.",
+    "Packaging metadata may change compressed SHA even when recovered raw bytes are identical.",
+    "compressed_sha256 MUST NOT replace raw_sha256.",
+    "Lossless compression preserves malformed JSON and byte-level anomalies; it does not repair them.",
+    "Compressed bytes require a codec layer before JSON parsing; streaming decode can avoid full uncompressed-file materialization."
+  ],
+  "required_representation_descriptor": {
+    "parent_raw_sha256": "required",
+    "representation_sha256": "required",
+    "codec": "required",
+    "codec_version": "required",
+    "parameters": "required",
+    "packaging_metadata_policy": "required",
+    "raw_size_bytes": "required",
+    "representation_size_bytes": "required",
+    "roundtrip_verified": "required",
+    "roundtrip_raw_sha256": "must_equal_parent_raw_sha256"
+  },
+  "full_per_origin_artifact": {
+    "filename": "JANUS-JSON-COMPRESSION-IDENTITY-STUDY-v1.0.json",
+    "sha256": "a7353bb8de4f66b189998cb1b9956d5a4fa9a12510872c334ec7d7396341b3d4",
+    "size_bytes": 401830,
+    "per_origin_records": 192
+  },
+  "seal": "COMPRESSED FORM CHANGES; RECOVERED WITNESS DOES NOT."
+}

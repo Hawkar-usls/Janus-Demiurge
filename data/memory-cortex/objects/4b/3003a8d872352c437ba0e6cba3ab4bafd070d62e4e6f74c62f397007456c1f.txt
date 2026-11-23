@@ -1,0 +1,169 @@
+{
+  "artifact_id": "JANUS-TRUMP-SOURCE-CONSTRUCTOR-SUPPORT-Z-NORMALIZATION-GATE-RESULT-2026-09-20-v1.0",
+  "version": "v1.0",
+  "date": "2026-09-20",
+  "status": "NO_EXPLICIT_NORMALIZATION_FOUND__CANDIDATE_NORMALIZATION_PASSES",
+  "authority": "PRIMARY_SOURCE_INTERPRETATION_PLUS_SPECIFICATION_LEVEL_SET_THEOREM__NOT_A_PAPER_CORRECTION",
+  "preregistration": {
+    "path": "research/TRUMP_SOURCE_CONSTRUCTOR_SUPPORT_Z_NORMALIZATION_GATE_PREREG_2026-09-20_v1.0.json",
+    "commit": "be56c6a72256a0d28958d9e8376f3e7740f11fa0"
+  },
+  "parent": {
+    "raw_fail_commit": "1e85e725aa4d15dd98af632b92ed940dc400b301",
+    "canonical_run": 35472717720,
+    "canonical_artifact_digest": "sha256:74cac8cda1cde7017a1f59b5c66698f5fdd3d73c0d1af74a79cae31ddd0d45ba"
+  },
+  "primary_source_findings": {
+    "author_pdf": "https://web.math.princeton.edu/~mchudnov/4colpaper2.pdf",
+    "publisher_doi": "10.1137/18M1234849",
+    "seeded_precoloring_disjointness": "The defining roles of a seeded precoloring are pairwise disjoint.",
+    "formal_constructor": [
+      "S(Q) is the union of all local representative vertices.",
+      "Z(Q) is the union of local Z(T,T') sets.",
+      "Q-admissible f' has domain S(Q) union Z(Q).",
+      "The displayed raw tuple assigns S union S(Q) to the seed role and X0 union Z(Q) to the precolored-X0 role.",
+      "No explicit Z(Q) minus S(Q) or precedence operation appears in the displayed formula."
+    ],
+    "explicit_source_normalization_search": {
+      "result": "NOT_FOUND_IN_ACCESSIBLE_SOURCES_SEARCHED",
+      "searched": [
+        "author-hosted accepted manuscript",
+        "SIAM article landing/available metadata and text",
+        "author publication page",
+        "targeted web searches for erratum/corrigendum/correction tied to DOI 10.1137/18M1234849"
+      ],
+      "limitation": "The paywalled final full text was not independently line-by-line compared against the author-hosted manuscript. Absence of a located correction is not proof that no private or unindexed clarification exists."
+    },
+    "source_001_discrepancy": {
+      "formal_definition": "001 uses (Y(T') intersect N(Y0)) minus N(N_{T,T'}).",
+      "completeness_paragraph": "With N={y} and y in Y(T'), the proof writes (Y(T) intersect N(Y0)) minus N(y).",
+      "status": "CONFIRMED_INTERNAL_TEXT_DISCREPANCY__UNRESOLVED",
+      "consequence": "The 5-vertex 001+000 minimizer remains quarantined. The sealed 6-vertex 111+000 witness is the canonical authority witness for this gate."
+    }
+  },
+  "question_A_hidden_invariant": {
+    "claim": "S(Q) intersect Z(Q)=empty for every relevant Q",
+    "verdict": "FALSIFIED_UNDER_LITERAL_DEFINITIONS_BY_CANONICAL_WITNESS",
+    "authority_witness": "sealed independent 6-vertex legacy 111+000 witness",
+    "scope": "This refutes the hidden-invariant interpretation only; it does not refute Lemma 11 or the paper's main theorem."
+  },
+  "normalization": {
+    "name": "LEGACY_SUPPORT_Z_ROLE_NORMALIZATION_V1",
+    "definitions": {
+      "A": "S(Q)",
+      "Z_FORCE": "legacy Z(Q), unchanged",
+      "Z_X0": "Z_FORCE minus A",
+      "S_new": "S union A",
+      "X0_new": "X0 union Z_X0",
+      "X_new": "X",
+      "Y0_new": "Y0 minus (A union N(A))",
+      "Y_new": "(Y minus (A union Z_FORCE)) union (N(A) intersect Y0)",
+      "coloring": "f union f', with f' still defined on A union Z_FORCE and all original Q-admissibility equations retained"
+    },
+    "principle": "Role normalization only. Forced-color semantics are attached to Z_FORCE, not to membership in the physical X0 role."
+  },
+  "proof_obligations": {
+    "N1_TYPING": {
+      "verdict": "PASS_SPECIFICATION_LEVEL",
+      "proof": [
+        "Legacy support A is contained in Y union Y0: P,N representatives lie in Y and M representatives lie in Y0.",
+        "Every legacy local Z(T,T') is contained in Y, hence Z_FORCE is contained in Y.",
+        "Original roles S,X0,X,Y0,Y are disjoint.",
+        "Original Y is partitioned into Y intersect A -> seed; (Z_FORCE minus A) -> X0 role; and the remaining Y minus (A union Z_FORCE) -> Y role.",
+        "Original Y0 is partitioned into A intersect Y0 -> seed; N(A) intersect Y0 -> Y role; and the remainder -> Y0 role, using the paper's convention N(A) excludes A.",
+        "Therefore S_new,X0_new,X_new,Y0_new,Y_new are pairwise disjoint and cover V(G)."
+      ]
+    },
+    "N2_SEMANTIC_PRECOLORING_IDENTITY": {
+      "verdict": "PASS_SPECIFICATION_LEVEL",
+      "identity": "S_new union X0_new = S union X0 union A union Z_FORCE",
+      "consequence": "Exactly the same vertices are fixed as in the literal constructor; only support/Z-overlap vertices are assigned to the seed role rather than simultaneously to two roles."
+    },
+    "N3_ADMISSIBILITY_IDENTITY": {
+      "verdict": "PASS_SPECIFICATION_LEVEL",
+      "proof": [
+        "The domain of f' remains A union Z_FORCE.",
+        "Every forced-color equation for every vertex in Z_FORCE is retained even if that vertex also lies in A.",
+        "Endpoint/support color constraints and the global properness condition are unchanged.",
+        "Hence the set of Q-admissible functions is identical to the literal definition for the same chosen Z_FORCE."
+      ]
+    },
+    "N4_NORMAL_SUBCASE": {
+      "verdict": "PASS_SPECIFICATION_LEVEL",
+      "proof": [
+        "Take deletion set empty, which is allowed in the normal-subcase definition.",
+        "S is contained in S_new.",
+        "A is contained in Y union Y0, so S_new is contained in S union X union Y0 union Y.",
+        "Legacy 001 support is a Y endpoint with a seed neighbor; legacy 111 endpoints are in Y and the Y0 middle is adjacent to endpoints; thus every nonempty legacy support fragment attaches to connected S and G[S_new] is connected.",
+        "Z_X0 is contained in Y, so X0_new intersect Y0 adds no new Y0 vertex requiring an extra seed-neighbor check.",
+        "X0 is contained in X0_new and X0_new is contained in X0 union X union Y0 union Y.",
+        "The new coloring is f union f' on precisely the added fixed vertices."
+      ],
+      "note": "This establishes normal-subcase typing/definition only, not downstream Lemma 7 or Lemma 10 transfer."
+    },
+    "N5_COMPLETENESS_REPLAY": {
+      "verdict": "PASS_CONDITIONAL_ON_THE_CHOSEN_LEGACY_Z_FORCE",
+      "proof": [
+        "The completeness witness c in Paper II already agrees with f' on A union Z_FORCE by construction.",
+        "The normalized tuple fixes the same union of vertices with the same colors as the literal tuple.",
+        "Therefore c extends the normalized raw tuple whenever it extended the literal intended precoloring data."
+      ],
+      "source_001_firewall": "This identity does not choose between the two conflicting 001 Z formulas; it preserves whichever source-level Z_FORCE is separately determined."
+    },
+    "N6_BUDGET": {
+      "verdict": "PASS_SPECIFICATION_LEVEL",
+      "proof": [
+        "The family Q is unchanged.",
+        "S(Q) is unchanged.",
+        "Z_FORCE and the admissible-function set are unchanged.",
+        "The normalization adds only a set-difference projection Z_X0=Z_FORCE minus S(Q), computable in polynomial time.",
+        "Therefore Q-count, support bound, unique-Z-completion counting argument, construction size, and reconstruction asymptotics are unchanged."
+      ]
+    }
+  },
+  "canonical_witness_replay": {
+    "sealed_6_vertex_111_plus_000": {
+      "literal_constructor": "ILL_TYPED_BY_SUPPORT_Z_OVERLAP",
+      "normalized_constructor": "TYPED",
+      "forced_color_on_overlap": "RETAINED_THROUGH_Z_FORCE",
+      "fixed_vertex_union": "UNCHANGED"
+    },
+    "quarantined_5_vertex_001_plus_000": {
+      "status": "NOT_USED_FOR_SOURCE_AUTHORITY_UNTIL_001_SELECTOR_DISCREPANCY_IS_RESOLVED"
+    }
+  },
+  "scientific_interpretation": {
+    "strongest_supported_statement": "The literal displayed Lemma-11 raw constructor admits a verified support/Z role collision under the audited definitions. A minimal role-only normalization separating semantic forcing Z_FORCE from physical X0 placement Z_X0 restores seeded-precoloring typing and preserves the legacy raw precoloring/admissibility/budget interface at specification level.",
+    "not_claimed": [
+      "that the authors intended this normalization",
+      "that the published final version contains no correction",
+      "that Lemma 11 is false",
+      "that the paper's main theorem is false",
+      "that the normalization restores Lemma 7, Lemma 10, acceptability, or the full proof",
+      "that the 001 discrepancy is resolved"
+    ]
+  },
+  "outcome": {
+    "verdict": "NO_EXPLICIT_NORMALIZATION_FOUND__CANDIDATE_NORMALIZATION_PASSES",
+    "legacy_constructor_normalization": "PASS_SPECIFICATION_LEVEL",
+    "paper_repaired": "NOT_CLAIMED",
+    "source_001_semantics": "AMBIGUOUS"
+  },
+  "next_allowed_object": {
+    "name": "LEGACY_NORMALIZED_CONSTRUCTOR_REPLAY_GATE",
+    "status": "NOT_OPENED",
+    "purpose": "Replay the sealed 111+000 canonical witness and a source-faithful legacy portfolio through the normalized constructor before returning to SPLIT4.",
+    "restriction": "Do not re-enable SPLIT4 until the legacy normalized constructor survives its own P6-free replay."
+  },
+  "scientific_ceiling": {
+    "RIGID_SPLIT4": "PAUSED",
+    "RAW_SPLIT4_COVERAGE": "BLOCKED_BY_LEGACY_CONSTRUCTOR_GATE",
+    "LEMMA7_P7_TRANSFER": "NOT_STARTED",
+    "LEMMA10_P7_TRANSFER": "NOT_STARTED",
+    "SUBGATE_A": "OPEN",
+    "LEMMA11_P7_LIFT": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "stop": true
+}

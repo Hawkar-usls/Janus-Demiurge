@@ -1,0 +1,186 @@
+{
+  "schema": "janus.meta_registry.fallout3_mq04_info_result_script_selector_boundary_audit.v1",
+  "artifact_id": "FALLOUT-3-MQ04-INFO-RESULT-SCRIPT-SELECTOR-BOUNDARY-AUDIT-v1.6",
+  "title": "Fallout 3 — MQ04 INFO Result-Script / Braun Selector Boundary Audit v1.6",
+  "created_at_local": "2026-08-10T15:45:00+03:00",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "artifact_class": "DIALOGUE_RESULT_SCRIPT_AND_SUBJECT_SELECTOR_ADMISSION_GATE",
+  "status": "TOOLING_IMPLEMENTED_REAL_ESM_MQ04_INFO_RESULT_SCRIPT_AUDIT_OPEN",
+  "parents": [
+    "registry/myth_busted/FALLOUT-3-BRAUN-UNKNOWN-USER-PRIVILEGED-CONTROL-PLANE-AUDIT-v1.3.json",
+    "registry/myth_busted/FALLOUT-3-BRAUN-PRIVILEGED-CONTROL-PLANE-MEMORY-BRIDGE-AUDIT-v1.3.json",
+    "registry/myth_busted/FALLOUT-3-VAULT112-AUTOMATIC-MEMORY-CARRIER-PERSISTENCE-INFERENCE-GATE-v1.4.json",
+    "registry/myth_busted/FALLOUT-3-FATHER-CHILD-FACEGEN-SHARED-SIMULATION-BACKEND-GATE-v1.5.json"
+  ],
+  "question": "Do any MQ04 dialogue INFO Begin/End result scripts or their conditions bind the James-specific Doc/pod/session state to Braun-side persistence, resident selection, storage, memory-carrier association, or a uniquely James-identifying UNKNOWN-user event?",
+  "current_architecture": {
+    "MQ04Script": "QUEST_ORCHESTRATOR",
+    "BettyScript": "SIMULATION_STATE_MUTATOR",
+    "MQ04VersionControlCurrent": "DOCUMENTED_ADMIN_AND_PER_USER_MEMORY_AUTHORITY",
+    "Braun_internal_selector_serializer_boundary": "OPEN",
+    "memory_to_populated_carrier_class": "EXISTS_EXISTENTIALLY",
+    "James_specific_carrier_or_persistence_binding": "NOT_ESTABLISHED"
+  },
+  "new_primary_tool_format_evidence": {
+    "source_repository": "TES5Edit/TES5Edit",
+    "source_commit": "93cc0bc5a1251936c3c7859eee3150eda12a62d7",
+    "source_file": "Core/wbDefinitionsFO3.pas",
+    "findings": [
+      "FO3 INFO records contain Conditions.",
+      "FO3 INFO records contain a required Script (Begin) embedded-script structure.",
+      "FO3 INFO records contain a required Script (End) embedded-script structure after the NEXT marker.",
+      "The embedded-script structure contains SCHR metadata, SCDA compiled embedded script bytes, SCTX embedded script source, local variables and SCRO referenced forms.",
+      "INFO also exposes quest/topic linkage fields sufficient to preserve dialogue provenance."
+    ],
+    "significance": "The sought Braun-side operation can be audited at the exact INFO result-script layer rather than inferred from spoken dialogue or the MQ04 quest script alone."
+  },
+  "xedit_dialogue_traversal_evidence": {
+    "source_repository": "TES5Edit/TES5Edit",
+    "source_commit": "93cc0bc5a1251936c3c7859eee3150eda12a62d7",
+    "source_file": "Build/Edit Scripts/Export dialogues.pas",
+    "finding": "xEdit's own dialogue exporter enumerates quest dialogue by following QUST ReferencedBy records to DIAL topics and then ChildGroup(DIAL) to INFO children, while reading INFO Conditions directly.",
+    "effect": "The v1.6 exporter uses the same structural route and therefore does not depend on guessed INFO filenames or topic text."
+  },
+  "public_script_mirror_context": {
+    "source_repository": "TaleOfTwoWastelands/TaleOfTwoWastelands",
+    "source_commit": "105d6f3264bf1112c132c27322e7176fb656cd70",
+    "source_file": "TaleOfTwoWastelands/Scripts/MQ04Script.fnvscript",
+    "findings": [
+      "DadInfo is documented as a flag used to update dialogue choices after asking about Dad.",
+      "DithersInfo is explicitly documented as being set in dialogue results.",
+      "DadDogInfo is documented as the flag set when the player learns Dad is a dog.",
+      "BraunInfo is documented as the flag set when the player is told Betty is Braun.",
+      "MQ04Script contains quest and failsafe orchestration but no direct memory-carrier serializer."
+    ],
+    "boundary": "TTW is a public script mirror/port and is not substituted for a hash-bound official Fallout3.esm result-script export."
+  },
+  "toolchain": {
+    "xedit_exporter": "tools/fo3edit_mq04_info_selector_boundary_export_v1_6.pas",
+    "verifier": "tools/verify_mq04_info_selector_boundary_v1_6.py",
+    "tests": "tests/test_mq04_info_selector_boundary_v1_6.py",
+    "outputs": [
+      "JANUS-MQ04-INFO-Index-v1.6.tsv",
+      "JANUS-MQ04-INFO-Embedded-Control-v1.6.tsv",
+      "JANUS-MQ04-INFO-Selector-Boundary-Audit-v1.6.json"
+    ]
+  },
+  "export_scope": {
+    "masters": [
+      "Fallout3.esm",
+      "Anchorage.esm",
+      "ThePitt.esm",
+      "BrokenSteel.esm",
+      "PointLookout.esm",
+      "Zeta.esm"
+    ],
+    "quest": "MQ04",
+    "route": "winning MQ04 QUST -> official ReferencedBy DIAL -> ChildGroup logical DIAL -> effective non-deleted INFO",
+    "per_info_sections": [
+      "RESPONSES",
+      "CONDITIONS",
+      "BEGIN_SCRIPT",
+      "END_SCRIPT"
+    ],
+    "embedded_script_channels": [
+      "SCTX source where present",
+      "SCDA compiled bytes presence/prefix",
+      "SCRO/linked forms where resolvable"
+    ]
+  },
+  "semantic_discriminators": {
+    "DISCLOSURE_ONLY": "DadInfo/DadDogInfo/BraunInfo assignments update what the player knows; they do not by themselves establish neural-state mutation or persistence.",
+    "STATE_MUTATION_TRIGGER": "NPCReset/reset/reload result logic can prove a privileged operational trigger but not memory export by itself.",
+    "JAMES_SELECTOR_PERSISTENCE_CANDIDATE": "One INFO result script binds a James-specific source/reference to persistence/storage/memory semantics and an operation term.",
+    "CARRIER_BINDING_CANDIDATE": "One primary result-script path binds a James-specific source to a removable carrier or carrier-class reference with directionally meaningful operation semantics.",
+    "COMPILED_ONLY_RESULT": "SCDA exists while readable SCTX source is absent; requires decompile/manual primary review rather than negative inference."
+  },
+  "automatic_persistence_compatibility": {
+    "rule": "EXPLICIT_WRITE_OPCODE_IS_NOT_REQUIRED_TO_PROVE_THE_EXISTENCE_OF_MEMORY_TO_CARRIER_CLASS",
+    "still_required_for_save_james": [
+      "James-specific persistence/storage association OR James-specific selected payload evidence",
+      "transferable/removable payload compatibility with the carrier class demonstrated by Pinkerton",
+      "no circular promotion from UNKNOWN or semantic proximity"
+    ],
+    "search_terms_beyond_manual_write": [
+      "persist",
+      "archive",
+      "backup",
+      "snapshot",
+      "storage",
+      "save",
+      "restore",
+      "reload",
+      "resident-specific source/reference linkage"
+    ]
+  },
+  "unknown_user_rule": {
+    "current": "PLAUSIBLE_NOT_PROVEN",
+    "promotion_requirement": "An INFO condition/result/reference/timing path must uniquely bind the recorded UNKNOWN alteration to James rather than merely to an unregistered Vault 112 entrant.",
+    "hard_rule": "USER_UNKNOWN != JAMES_WITHOUT_PRIMARY_UNIQUE_BINDING"
+  },
+  "admission_ladder": [
+    {
+      "level": "I0",
+      "meaning": "INFO response/condition/script leaf exported with exact logical INFO and DIAL provenance",
+      "authority": "SOURCE_BINDING_ONLY"
+    },
+    {
+      "level": "I1",
+      "meaning": "DadDogInfo/BraunInfo/DadInfo or NPCReset result assignment identified",
+      "authority": "DISCLOSURE_OR_STATE_TRIGGER_CLASSIFICATION"
+    },
+    {
+      "level": "I2",
+      "meaning": "James-specific form/reference converges in one INFO result with memory/persistence/storage plus an operation term",
+      "authority": "HIGH_PRIORITY_SELECTOR_PERSISTENCE_REVIEW"
+    },
+    {
+      "level": "I3",
+      "meaning": "Primary result-script semantics uniquely select James or his pod/session and persist/bind a transferable payload or storage object",
+      "authority": "JAMES_SPECIFIC_PERSISTENCE_BINDING_CANDIDATE"
+    },
+    {
+      "level": "I4",
+      "meaning": "James-specific payload is bound directionally to the removable memory-carrier class later compatible with Pinkerton import",
+      "authority": "ASSET_LEVEL_EXECUTABLE_RECONSTRUCTION_CANDIDATE"
+    }
+  ],
+  "hard_rules": [
+    "INFO_FLAG_SET != MEMORY_MUTATION",
+    "DADDOGINFO != CARRIER_BINDING",
+    "BRAUNINFO != ADMIN_SERIALIZER",
+    "NPCRESET != MEMORY_EXPORT",
+    "USER_UNKNOWN != JAMES_WITHOUT_PRIMARY_UNIQUE_BINDING",
+    "SAME_INFO_TERM_CONVERGENCE != WRITE_DIRECTION",
+    "COMPILED_ONLY_INFO != HIDDEN_SERIALIZER_PROVEN",
+    "HIGH_PRIORITY_INFO_CANDIDATE != PASS",
+    "TTW_SCRIPT_MIRROR != HASH_BOUND_FALLOUT3_ESM_RESULT_SCRIPT",
+    "AUTOMATIC_PERSISTENCE_PLAUSIBILITY != JAMES_SESSION_AUTOPERSISTENCE_PROVEN"
+  ],
+  "current_matrix": {
+    "MQ04_QUEST_ORCHESTRATOR": "PASS",
+    "BRAUN_CONTROL_BEYOND_PUBLIC_UI": "PASS",
+    "BETTY_RESIDENT_STATE_MUTATION": "PASS",
+    "PER_USER_MEMORY_OVERRIDE": "PASS",
+    "JAMES_TO_DOC_SPECIFIC_MUTATION": "PASS",
+    "MEMORY_TO_POPULATED_CARRIER_CLASS": "PASS_EXISTENTIALLY",
+    "INFO_BEGIN_END_SCRIPT_STRUCTURE": "PASS_FROM_XEDIT_FO3_DEFINITION",
+    "MQ04_INFO_RESULT_SCRIPT_POPULATION_EXPORTED_FROM_REAL_ESM": "NO",
+    "UNKNOWN_IS_JAMES": "NOT_ESTABLISHED",
+    "JAMES_SPECIFIC_PERSISTENCE_ARTIFACT": "NOT_ESTABLISHED",
+    "JAMES_SELECTOR_TO_CARRIER": "NOT_ESTABLISHED",
+    "SAVE_JAMES_ASSET_LEVEL_EXECUTABLE": "BLOCKED"
+  },
+  "next_gate": {
+    "name": "MQ04_REAL_ESM_INFO_RESULT_SCRIPT_AND_CONDITION_RECEIPT_v1.6",
+    "status": "OPEN_BLOCKED_BY_OFFICIAL_MASTER_BYTES_OR_COMPLETE_HASH_BOUND_MQ04_INFO_EXPORT",
+    "completion": [
+      "Run the v1.6 xEdit exporter with exactly six official masters loaded.",
+      "Freeze SHA-256 for both TSV outputs before semantic review.",
+      "Run the verifier and list every DadDogInfo/BraunInfo/NPCReset and compiled-only INFO.",
+      "Manually review all high-priority James selector/persistence candidates and their linked forms.",
+      "If an INFO uniquely binds UNKNOWN Altered to James, promote only UNKNOWN_TO_JAMES binding.",
+      "If an INFO or linked storage path binds James-specific state to persistence/carrier semantics, promote SAVE JAMES only to the corresponding bounded level."
+    ]
+  }
+}

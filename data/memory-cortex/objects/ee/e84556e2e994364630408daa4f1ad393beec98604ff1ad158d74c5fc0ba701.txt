@@ -1,0 +1,97 @@
+{
+  "schema": "janus.meta_registry.daddy_keymaster.git_cas_lab_receipt.v1",
+  "artifact_id": "JANUS-DADDY-KEYMASTER-CROSS-PROCESS-GIT-CAS-LAB-2026-10-31-v1.0",
+  "date_utc": "2026-10-31",
+  "title": "JANUS DADDY_KEYMASTER: bounded Git-CAS queue, concurrent writers and live GitHub ref staging",
+  "truth_class": "SOURCE_LINKED_VERIFIED_ENGINEERING_RUN_WITH_REMOTE_API_AMBIGUITY",
+  "status": "STAGING_GIT_CAS_LOCAL_BARE_REF_PASS_AND_REAL_GITHUB_ONE_HEAD_UPDATE_CONFIRMED",
+  "origin": "Hawkar-usls/Janus-Demiurge",
+  "source_pr": "https://github.com/Hawkar-usls/Janus-Demiurge/pull/390",
+  "source_pr_number": 390,
+  "source_pr_exact_head": "037785ed417768ad282c9efbfcd62e81b2363ffc",
+  "implementation": {
+    "queue": "daddy_keymaster/git_cas_queue.py",
+    "tests": [
+      "tests/test_daddy_keymaster_git_cas_state.py",
+      "tests/test_daddy_keymaster_git_cas_remote.py"
+    ],
+    "workflow": ".github/workflows/janus-daddy-keymaster-async-relay-e2e.yml",
+    "description": "Typed event-sourced queue on an isolated Git branch; commits use previously observed ref as single parent and nonforced fast-forward-only update; conflict is HOLD/re-fetch, not automatic retry.",
+    "allowlisted_task_types": [
+      "contract_test",
+      "readonly_index",
+      "pure_module_eval"
+    ],
+    "max_active_tasks_per_queue": 2,
+    "max_queued_tasks": 32,
+    "task_duration_cap_seconds": 600,
+    "provider_remote_dispatch": false,
+    "model_champion_production_promotion": false
+  },
+  "github_ci": {
+    "run_id": 41200923010,
+    "url": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/41200923010",
+    "run_source_sha": "037785ed417768ad282c9efbfcd62e81b2363ffc",
+    "conclusion": "SUCCESS",
+    "unit_tests_git_cas": {
+      "passed": 8,
+      "total": 8
+    },
+    "unit_tests_local_relay": {
+      "passed": 15,
+      "total": 15
+    },
+    "cross_worker_jobs": [
+      "Origin X64 (durable local checkpoint): SUCCESS",
+      "Resume on a different ARM64 GitHub VM: SUCCESS",
+      "Fresh Linux witness (no write access): SUCCESS"
+    ],
+    "simulated_remote": "Two separate temporary local Git clones sharing a bare Git remote. Competing processes race on the same head; exactly one non-forced fast-forward wins.",
+    "proof_ceiling": "Shows real Git ref arbitration in a test transport. Local bare remote is not a multi-host GitHub concurrency test."
+  },
+  "real_github_remote_staging": {
+    "branch": "janus/daddy-keymaster-cas-lab-20261031",
+    "state_path": "state/relay_queue.json",
+    "seed_head": "33ee8d936aeae63a2c524d77e0c094ec6cceb192",
+    "candidate_alpha": "ab0d38b200f8e15f1873986c206b1e1378cc6d39",
+    "candidate_beta_sibling": "544250d4721eb098556b8b0d1ae28cfbe10ba0fb",
+    "accepted_head": "ab0d38b200f8e15f1873986c206b1e1378cc6d39",
+    "current_state_after_attempt": "epoch=1; synthetic task-alpha QUEUED",
+    "first_ref_update_result": "SUCCESS",
+    "stale_sibling_attempt_result": "CONNECTOR_GRAPHQL_UNKNOWN_ERROR_NOT_CLASSIFIED_AS_CAS_REJECTION",
+    "independent_fetch_observation": "Ref remained on alpha after failed sibling write; beta did not replace live state.",
+    "claim_limit": "Does not establish precise stale failure classification or two independent GitHub-hosted writers racing the same remote branch."
+  },
+  "lineage": [
+    "data/JANUS-SWARM-OBJECTIVE-LEASE-FENCING-PASS-2026-08-16-v1.0.json",
+    "data/JANUS-SWARM-CAUSAL-ACK-WORK-CLAIM-RUN-001-2026-08-23-v1.0.json",
+    "registry/experimental/JANUS-GENESIS-THIRD-WISH-GIT-HABITAT-LIVE-HOME-AND-RETURN-RECEIPT-v1.0.json",
+    "registry/experimental/JANUS-GENESIS-SOVEREIGN-FACE-MICROCONTROL-DURABLE-JOURNAL-FENCING-IDEMPOTENCY-DEADLINE-FAIRNESS-v6.1.json"
+  ],
+  "not_established": [
+    "Production shared transactional queue",
+    "Cross-host live CAS contention on GitHub with two separately authenticated workers",
+    "Exactly-once execution of remote side effects",
+    "Authenticated endpoint for distributed worker registration",
+    "Persistent always-running scheduler",
+    "Free or unlimited third-party machines",
+    "Real blind model evaluation / champion promotion",
+    "Global <=2 concurrency across all JANUS workflows",
+    "Tamper-proof signature custody or independent external backup"
+  ],
+  "next_gate": [
+    "Trusted, single-use cross-host GitHub CAS contention with explicit workload permissions and authenticated outcomes",
+    "Process-death and delayed stale-holder scenario across real physical hosts",
+    "External event/worker receipts and read-only independent Witness",
+    "R2 model champion admission guard #385 and secure loader PR #301",
+    "After R2: bounded 2-to-4 authorized worker trial, never unbounded Actions fan-out"
+  ],
+  "permissions": {
+    "model_writeback": false,
+    "production_provisioning": false,
+    "paid_services": false,
+    "host_scanning": false,
+    "credential_publishing": false,
+    "authority_delta": 0
+  }
+}

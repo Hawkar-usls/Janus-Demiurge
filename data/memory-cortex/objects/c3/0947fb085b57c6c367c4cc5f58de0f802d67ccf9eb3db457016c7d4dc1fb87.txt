@@ -1,0 +1,123 @@
+{
+  "schema": "janus.music.sha256_prospective_control_prereg.v1",
+  "artifact_id": "JANUS-ROBERT-MILES-SHA256-PROSPECTIVE-CONTROL-PREREG-2026-09-01-v1.0",
+  "created_date": "2026-09-01",
+  "status": "FROZEN_BEFORE_NEW_HASH_RETRIEVAL",
+  "purpose": "Test whether the post-hoc Children observation 97254 generalizes prospectively to other related Robert Miles versions, while comparing against unrelated same-catalog controls retrieved through the same Bandcamp public mp3-128 pipeline.",
+  "known_calibration_not_inferential": {
+    "pair": "Children (Dream Version) vs Children (Original Version)",
+    "known_before_prereg": true,
+    "known_longest_common_contiguous_hex_substring": "97254",
+    "known_lcs_length": 5,
+    "known_bit_hamming_distance": 127,
+    "rule": "THIS_PAIR_MAY_BE_REPORTED_AS_CALIBRATION_ONLY_AND_MUST_NOT_BE_COUNTED_AS_PROSPECTIVE_EVIDENCE"
+  },
+  "source_provider": "Robert Miles official Bandcamp",
+  "stream_rule": "Use only the public mp3-128 URL exposed by Bandcamp trackinfo. Hash exact retrieved bytes. Do not substitute downloads, FLAC, alternate masters, or manually selected encodes.",
+  "prospective_related_pairs": [
+    {
+      "id": "R1",
+      "page": "https://robertmiles.bandcamp.com/album/dreamland",
+      "a": "Fable (Messagge Version)",
+      "b": "Fable (Dream Version)"
+    },
+    {
+      "id": "R2",
+      "page": "https://robertmiles.bandcamp.com/album/fable",
+      "a": "Fable (Dream Radio)",
+      "b": "Fable (Messagge Radio)"
+    },
+    {
+      "id": "R3",
+      "page": "https://robertmiles.bandcamp.com/album/one-and-one",
+      "a": "One And One (Robert Miles Radio Version)",
+      "b": "One And One (Radio Without The Beat)"
+    },
+    {
+      "id": "R4",
+      "page": "https://robertmiles.bandcamp.com/album/one-and-one",
+      "a": "One And One (Robert Miles Radio Version)",
+      "b": "One And One (Robert Miles Club Mix)"
+    },
+    {
+      "id": "R5",
+      "page": "https://robertmiles.bandcamp.com/album/one-and-one",
+      "a": "One And One (4us Mix)",
+      "b": "One And One (Robert Miles Club Mix)"
+    }
+  ],
+  "same_catalog_unrelated_controls": [
+    {
+      "id": "C1",
+      "page": "https://robertmiles.bandcamp.com/album/dreamland",
+      "a": "Fantasya",
+      "b": "Landscape"
+    },
+    {
+      "id": "C2",
+      "page": "https://robertmiles.bandcamp.com/album/dreamland",
+      "a": "In My Dream",
+      "b": "Princess Of Light"
+    },
+    {
+      "id": "C3",
+      "page": "https://robertmiles.bandcamp.com/album/dreamland",
+      "a": "In The Down",
+      "b": "Red Zone"
+    },
+    {
+      "id": "C4",
+      "page": "https://robertmiles.bandcamp.com/album/dreamland",
+      "a": "4 Us",
+      "b": "Fantasya"
+    },
+    {
+      "id": "C5",
+      "page": "https://robertmiles.bandcamp.com/album/dreamland",
+      "a": "Princess Of Light",
+      "b": "Red Zone"
+    }
+  ],
+  "frozen_metrics": {
+    "M1": "bit_hamming_distance over 256 SHA-256 bits",
+    "M2": "longest_common_contiguous_hex_substring_length anywhere in the two 64-hex digests",
+    "M3": "number_of_same_hex_nibbles_at_fixed_aligned_positions",
+    "M4": "indicator longest_common_contiguous_hex_substring_length >= 5"
+  },
+  "directional_hypothesis_if_any_structure_exists": {
+    "related_expected_relative_to_controls": [
+      "lower mean Hamming distance",
+      "higher mean LCS length",
+      "more fixed-position matches",
+      "higher fraction with LCS >= 5"
+    ],
+    "null": "Related and unrelated pairs are exchangeable with respect to these SHA-256 metrics apart from ordinary sampling noise."
+  },
+  "analysis_plan": {
+    "pair_level": "Report all metrics for every pair without omission.",
+    "group_level": "Compare arithmetic means for M1-M3 and counts for M4 between five related and five controls.",
+    "permutation_test": "Enumerate all choose(10,5)=252 assignments of the ten frozen pair records into two groups of five and compute one-sided tail probabilities for the preregistered directions. Because some pairs share tracks, label-permutation p-values are descriptive rather than a proof of independent sampling.",
+    "monte_carlo_null": "For LCS and fixed-position metrics, additionally simulate at least 100000 independent pairs of uniform random 256-bit digests to estimate null tails.",
+    "children_97254_rule": "Do not include the known Children pair in prospective p-values or group means."
+  },
+  "audio_similarity_parallel_witness": {
+    "status": "SEPARATE_GATE_NOT_THIS_SHA_RUN",
+    "rule": "SHA similarity test != audio similarity test.",
+    "future_metrics": ["PCM alignment", "chroma", "spectral features", "tempo/onset structure", "perceptual fingerprint"],
+    "reason": "SHA-256 intentionally destroys perceptual similarity information."
+  },
+  "ibm_boundary": {
+    "current_run_uses_ibm_quantum_hardware": false,
+    "reason": "No IBM Quantum hardware access is required to test SHA-256 avalanche/null behavior. Any future IBM/Qiskit experiment must be a separately preregistered gate and must not be described as reversing SHA-256."
+  },
+  "epistemic_firewall": [
+    "POST_HOC_97254 != PROSPECTIVE_EVIDENCE",
+    "RELATED_AUDIO != EXPECTED_RELATED_SHA256",
+    "SHA256 != AUDIO_FINGERPRINT",
+    "SAME_PROVIDER_PIPELINE_CONTROLS_ENCODING_CONFUSION_BUT_DOES_NOT_CREATE_SAMPLE_INDEPENDENCE",
+    "NULL_RESULT_MUST_BE_PRESERVED",
+    "NO_PATTERN_FOUND != PROOF_THAT_NO_OTHER_PATTERN_EXISTS",
+    "VISIBLE_PATTERN != MESSAGE"
+  ],
+  "canonical_seal": "FREEZE THE PAIRS AND METRICS BEFORE SEEING NEW DIGESTS. CHILDREN 97254 IS THE CALIBRATION THAT CREATED THE QUESTION, NOT THE ANSWER TO THE PROSPECTIVE TEST."
+}

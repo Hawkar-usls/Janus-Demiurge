@@ -1,0 +1,113 @@
+{
+  "artifact_id": "JANUS-PALOMAR-JPFM-2F-C2B1-SPATIAL-REFERENCE-SUPPORT-REPAIR-ADMISSION-v1.0",
+  "experiment_id": "JPFM-2F-C2B1",
+  "schema_version": "1.0",
+  "date": "2026-08-17",
+  "status": "PREREGISTERED_AFTER_C2B0_DIAGNOSTIC_BEFORE_C2B1_HOLDOUT_FREEZE_OR_PIXEL_REPLAY",
+  "purpose": "Repair C2A reference-support coverage by changing only the spatial support geometry while preserving the strict reference-star filters, minimum reference count, morphology metrics, and external-label firewall.",
+  "claim_ceiling": "REFERENCE_SUPPORT_ENGINEERING_ONLY__NO_MORPHOLOGY_ASSOCIATION_INFERENCE__NO_EXTERNAL_LABEL_REVEAL__NO_CAUSAL_OR_ORIGIN_CLAIM",
+  "bindings": {
+    "C2B0_result_path": "data/JANUS-PALOMAR-JPFM-2F-C2B0-REFERENCE-SUPPORT-DECOMPOSITION-RUN-001.json",
+    "C2B0_result_canonical_sha256": "35fa7afd83c5797f20c7a7e733f510503ed3080b901cd33e6e2e66fd3589d451",
+    "C2A_sample_path": "data/JANUS-PALOMAR-JPFM-2F-C2A-STRATIFIED-UPSTREAM-MORPHOLOGY-SAMPLE-FREEZE-RUN-001.csv.gz",
+    "C2A_sample_csv_sha256": "a3656b181648e5abf933859199b5712e945b932610fffdd6c810785cff341b21",
+    "C2A_sample_gzip_sha256": "3d4c7513b4add64324fddeedd04e9379b415f729fb36a76d977b871845638ca7",
+    "C0M_manifest_path": "data/JANUS-PALOMAR-JPFM-2F-C0M-FULL-S0-HEADER-ONLY-ACQUISITION-MAP-RUN-001.csv.gz",
+    "C0M_manifest_csv_sha256": "d41bfc95e9f0219d76ee383d057938287dcaaef8ba5005c66414d4a2422f75c0",
+    "C0M_manifest_gzip_sha256": "8493e1dc6b3d89ecd1984d0826b663f2a12ede9664a3c5bb4812b51b6d3a0eca",
+    "poss_commit": "4005e200541b321ead3d6608f0162a14430ef1c2"
+  },
+  "diagnostic_motivation": {
+    "frozen_group_delta_deviance": {
+      "wcs_context": 54.566182514290546,
+      "tile_plate_geometry": 31.435005639986485,
+      "sky_environment": 25.838918716472193,
+      "frozen_sampling_context": 20.50011554839446,
+      "target_brightness_detection": 3.02161727222321
+    },
+    "rule": "These values motivate spatial-support repair only; they do not authorize outcome-guided morphology thresholds or external-label joins."
+  },
+  "reference_star_contract": {
+    "minimum_reference_stars": 20,
+    "filters": [
+      "FLAGS == 0",
+      "CLASS_STAR >= 0.8",
+      "SNR_WIN >= 20",
+      "finite FWHM_IMAGE/ELONGATION/SPREAD_MODEL"
+    ],
+    "target_excluded": true,
+    "minimum_may_be_lowered": false,
+    "quality_filters_may_be_relaxed": false,
+    "normalization_formula": "median + 1.4826*MAD; z=(target-median)/robust_sigma; robust_sigma must be finite and >0"
+  },
+  "spatial_support_repair": {
+    "scope": "same POSS-I plate only",
+    "plate_grid": "frozen 7x7 tile grid reconstructed from exact named plate header and pinned upstream tile-id logic",
+    "unique_reference_assignment": "assign each strict reference star to exactly one nearest plate-grid cell in full-plate pixel coordinates; ties resolved by lexicographic tile_id",
+    "expansion_order": [
+      {
+        "ring": 0,
+        "cells": "target grid cell only"
+      },
+      {
+        "ring": 1,
+        "cells": "Chebyshev grid distance <=1"
+      },
+      {
+        "ring": 2,
+        "cells": "Chebyshev grid distance <=2"
+      },
+      {
+        "ring": 3,
+        "cells": "Chebyshev grid distance <=3 (entire 7x7 plate grid)"
+      }
+    ],
+    "stop_rule": "use the first ring with at least 20 unique strict reference stars; never continue to a larger ring once admitted",
+    "failure_rule": "if ring 3 has fewer than 20 unique strict references or robust sigma is nonpositive for any primary feature, target remains normalization-ineligible",
+    "no_cross_plate_pooling": true,
+    "no_nearest_source_recentering": true
+  },
+  "engineering_holdout": {
+    "rows": 128,
+    "clusters": 16,
+    "typical_per_cluster": 4,
+    "unusual_per_cluster": 4,
+    "selection_source": "C0M structural_cluster + anomaly_score only",
+    "must_exclude_all_C2A_src_ids": true,
+    "must_exclude_all_C2A_tile_ids": true,
+    "plate_overlap_with_C2A": "allowed but recorded; tile overlap forbidden",
+    "selection_rule": "within each cluster after exclusions: typical = smallest |anomaly_score - full-cluster median| with src_id tie-break; unusual = largest anomaly_score with src_id tie-break; roles are disjoint",
+    "pixel_or_morphology_features_used_for_selection": false,
+    "on_insufficient_pool": "FAIL_CLOSED; do not relax tile-disjointness after seeing availability"
+  },
+  "engineering_gates": {
+    "exact_tile_reconstruction_fraction_min": 0.95,
+    "exact_object_id_fraction_min": 0.9,
+    "sky_consistency_le10arcsec_fraction_min": 0.9,
+    "raw_upstream_morphology_finite_fraction_min": 0.95,
+    "shape_execution_fraction_min": 0.9,
+    "reference_normalization_coverage_fraction_min": 0.8,
+    "minimum_reference_stars": 20
+  },
+  "inference_boundary": {
+    "C2B1_morphology_association_test_authorized": false,
+    "C2B1_cluster_enrichment_test_authorized": false,
+    "if_engineering_PASS_next_step": "freeze C2B2 >=512-source holdout disjoint from both C2A and C2B1 before any morphology association inference",
+    "if_engineering_FAIL_next_step": "preserve negative certificate and localize failure; no threshold relaxation on C2B1"
+  },
+  "external_label_firewall": {
+    "external_label_reveal_authorized": false,
+    "date_or_external_environment_used": false,
+    "forbidden": [
+      "nuclear calendar",
+      "Blue Book/NUFORC temporal labels",
+      "Kp/Ap",
+      "lunar state",
+      "UAP event labels",
+      "DATE-OBS"
+    ]
+  },
+  "integrity": {
+    "canonical_payload_sha256_without_integrity": "27373cc8f40fe8a368d42e05c6541bc77a1c5f95eb589f1bc0ec9b8ceaafd751"
+  }
+}

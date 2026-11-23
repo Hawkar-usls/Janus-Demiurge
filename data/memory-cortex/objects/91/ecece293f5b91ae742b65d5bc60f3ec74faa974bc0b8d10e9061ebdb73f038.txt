@@ -1,0 +1,63 @@
+{
+  "schema": "JANUS/protocol/precognitive-semantic-return-gate/v0.2.0",
+  "artifact_uuid": "JANUS-PRECOGNITIVE-SEMANTIC-RETURN-GATE-V0.2",
+  "canonical_name": "JANUS Precognitive Semantic Return Gate — Red-Team Hardened",
+  "version": "v0.2.0",
+  "timestamp_utc": "2026-08-07T04:41:00Z",
+  "supersedes": "data/JANUS-PRECOGNITIVE-SEMANTIC-RETURN-GATE-v0.1.json",
+  "status": "PROTOCOL_LOGIC_REDTEAM_PASS_PHYSICAL_RETROCAUSALITY_NOT_TESTED",
+  "bundle": "B=(run_id,semantic_class,payload128,nonce128); Q=SHA256(canonical_json(B))",
+  "assignment": "Independent target generation only at SEND after channel isolation; target entropy/seed state must be unavailable to and causally isolated from tested channel, candidate record and operator before SEND.",
+  "candidate_formula": "G_v02=[J<-epsilon_clock] AND [P_gamma>epsilon_clock] AND [B_R=B_S] AND [return frozen before target assignment] AND [same local clock] AND [no leakage] AND [blind] AND all hardening gates",
+  "hardening_gates": [
+    "clock_integrity_valid",
+    "monotonic_counter_valid",
+    "no_clock_step_in_window",
+    "independent_time_anchor_valid",
+    "rng_independence_audited",
+    "candidate_slot_frozen_before_assignment",
+    "single_preregistered_candidate_slot",
+    "preassignment_commitment_anchored",
+    "canonicalization_frozen",
+    "target_independent_decoding"
+  ],
+  "selection_rule": "Exactly one preregistered candidate slot/window per trial; slot identity frozen before target assignment; all null records retained.",
+  "record_rule": "Raw candidate bytes, canonicalization version and commitment digest anchored before target assignment; parser/decoder frozen before run.",
+  "negative_controls": [
+    "clock-step with same clock ID",
+    "timestamp discontinuity",
+    "many-candidate post-selection",
+    "shared/leaked/influenced RNG seed",
+    "late commitment/re-hash",
+    "target-dependent decoder",
+    "semantic-class-only decoy",
+    "remote-clock-only decoy",
+    "known-channel leakage",
+    "NO_SEND sham"
+  ],
+  "redteam_evidence": {
+    "report": "data/proofs/JANUS-PRECOGNITIVE-SEMANTIC-RETURN-GATE-REDTEAM-REPORT-v0.2.json",
+    "cases": "23/23 hardened expected decisions",
+    "v0_1_false_accepts": [
+      "clock_step_attack",
+      "monotonic_counter_attack",
+      "time_anchor_missing",
+      "rng_seed_or_influence_attack",
+      "posthoc_candidate_selection",
+      "unanchored_preassignment_record",
+      "canonicalization_changed_after_target",
+      "target_dependent_decoder"
+    ],
+    "class_only_mc": "31217/1000000 = 0.031217 vs expected 0.03125",
+    "full_bundle_mc": "0 exact class+256-bit matches in 2000000 independent trials",
+    "reduced_surrogate_mc": "5 matches in 10000000 for class+16-bit surrogate vs 4.768 expected",
+    "sha256_bitflip_hamming": 132
+  },
+  "promotion_rule": "No discovery from one candidate. Requires preregistration, v0.2 gates, independent acquisition/audit, replication, prior-art review and exclusion of ordinary channels.",
+  "admission": {
+    "PROTOCOL_LOGIC_REDTEAM_PASS": true,
+    "PHYSICAL_TACHYON": false,
+    "PHYSICAL_RETROCAUSALITY": false,
+    "NEGATIVE_J_PHYSICAL_TEST": "BLOCKED_NO_ESTABLISHED_CHANNEL"
+  }
+}

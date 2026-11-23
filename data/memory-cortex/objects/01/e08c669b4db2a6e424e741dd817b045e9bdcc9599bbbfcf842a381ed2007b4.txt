@@ -1,0 +1,135 @@
+{
+  "artifact_uuid": "JANUS-WEDJAT-UNICODE-HIEROGLYPH-CONTROL-RESULT-2026-08-15-v0.3",
+  "version": "v0.3",
+  "timestamp_date": "2026-08-15",
+  "title": "Wedjat D011-D016 against all other Unicode Egyptian hieroglyphs: executed modern-glyph negative control",
+  "observer": "Oleksandr Ahapov / Hawkar + JANUS",
+  "node_type": "executed_modern_glyph_negative_control",
+  "status": "EXECUTED_MODERN_GLYPH_NEGATIVE_CONTROL",
+  "parents": [
+    "data/JANUS-WEDJAT-FRACTION-ORIGIN-PALEOGRAPHY-DEEPENING-2026-08-15-v0.1.json",
+    "data/JANUS-WEDJAT-PALEOGRAPHY-PRIMARY-SOURCE-LEDGER-2026-08-15-v0.1.json",
+    "data/JANUS-WEDJAT-COMPONENT-STATE-SPACE-RESULT-2026-08-15-v0.2.json"
+  ],
+  "scope": "MODERN_UNICODE_FONT_CONTROL_ONLY_NOT_PALEOGRAPHIC_GROUND_TRUTH",
+  "purpose": "Test the D011-D016 Wedjat fraction glyphs against the full original Unicode Egyptian Hieroglyphs block so that visual regularities are not judged without a large unrelated-hieroglyph baseline.",
+  "execution_provenance": {
+    "script_path": "research/wedjat/janus_wedjat_unicode_hieroglyph_control_v0_3.py",
+    "script_sha256_local_executed_bytes": "7fae78aad34b2567357dfbb64a468571d66acb5ce65bc11d3c76d54683714aab",
+    "stdout_sha256": "c940bcd6316a812048ef81f91c9dd55a455f9ec2cfcccf825a12fa3b3666bd68",
+    "font_family": "Noto Sans Egyptian Hieroglyphs",
+    "font_sha256": "ad50e535500acc88b9582c648cc84ca9a4679c1810a426aa85b7ba8bada8af15",
+    "font_file_redistributed": false,
+    "font_size_px": 220,
+    "random_seed": 20260815,
+    "random_ordered_six_glyph_sets": 50000,
+    "random_family_cohesion_sets": 20000,
+    "environment": {
+      "python": "3.13.5",
+      "pillow": "12.3.0",
+      "numpy": "2.3.5",
+      "opencv": "4.13.0",
+      "scipy": "1.17.0",
+      "scikit_image": "0.26.0"
+    }
+  },
+  "unicode_grounding": {
+    "block": "U+13000..U+1342F",
+    "rendered_glyph_count": 1072,
+    "full_wedjat": "U+13080 / D010 / udjat eye",
+    "targets": [
+      {"codepoint": "U+13081", "gardiner": "D011", "value_annotation": "1/2"},
+      {"codepoint": "U+13082", "gardiner": "D012", "value_annotation": "1/4"},
+      {"codepoint": "U+13083", "gardiner": "D013", "value_annotation": "1/8"},
+      {"codepoint": "U+13084", "gardiner": "D014", "value_annotation": "1/16"},
+      {"codepoint": "U+13085", "gardiner": "D015", "value_annotation": "1/32"},
+      {"codepoint": "U+13086", "gardiner": "D016", "value_annotation": "1/64"}
+    ],
+    "official_names_list": "https://www.unicode.org/charts/nameslist/n_13000.html",
+    "unicode_core_spec": "https://unicode.org/versions/Unicode16.0.0/core-spec/chapter-11/"
+  },
+  "test_A_geometric_halving_against_50000_random_six_glyph_sets": {
+    "hypothesis": "If the physical rendered geometry itself encoded repeated halving, the ordered D011-D016 metrics should approximate lambda=0.5 and outperform random ordered six-glyph sets.",
+    "ink_area": {
+      "values": [1731.0, 910.0, 1082.0, 1879.0, 1807.0, 2067.0],
+      "lambda_hat": 1.1050717614038466,
+      "r2_log_linear": 0.30927655966232004,
+      "dyadic_log2_mse": 9.266988146688577,
+      "empirical_p_random_set_as_dyadic_or_better": 0.4752104957900842
+    },
+    "bbox_diagonal": {
+      "values": [165.89454481688057, 101.82337649086284, 239.8520377232597, 177.74701122663075, 283.6406176837161, 226.645097012929],
+      "lambda_hat": 1.1318188873974857,
+      "r2_log_linear": 0.40787984825818024,
+      "dyadic_log2_mse": 11.433108799738056,
+      "empirical_p_random_set_as_dyadic_or_better": 0.883142337153257
+    },
+    "skeleton_length": {
+      "values": [355.0, 191.0, 231.0, 361.0, 344.0, 463.0],
+      "lambda_hat": 1.106422403592431,
+      "r2_log_linear": 0.33494820319194785,
+      "dyadic_log2_mse": 9.279833043136218,
+      "empirical_p_random_set_as_dyadic_or_better": 0.4778304433911322
+    },
+    "result": "NEGATIVE_FOR_GEOMETRIC_HALVING_IN_THE_MODERN_FONT",
+    "interpretation": "All three fitted lambdas are near 1.1, not 0.5, and random hieroglyph sets are frequently as dyadic or better. The exact six-bit structure therefore resides in the assigned fraction values, not in progressive rendered glyph size."
+  },
+  "test_B_shape_family_and_other_hieroglyph_controls": {
+    "descriptor": "robust-z morphology vector using aspect, ink density, normalized perimeter, skeleton length, endpoints, junctions, components, holes, Hu moments and coarse projections",
+    "target_family_mean_pairwise_distance": 11.1168982864425,
+    "random_six_glyph_median_distance": 9.517020307927346,
+    "empirical_p_random_set_as_cohesive_or_more": 0.8436578171091446,
+    "result": "TARGET_SIX_NOT_UNUSUALLY_COHESIVE_AS_A_MODERN_SHAPE_FAMILY",
+    "nearest_unrelated_top1": [
+      {"target": "D011 / 1/2", "control": "T026 / U+13326", "distance": 3.806265862130006},
+      {"target": "D012 / 1/4", "control": "Z013 / U+133F8", "distance": 4.822538626115488},
+      {"target": "D013 / 1/8", "control": "V031A / U+133A2", "distance": 3.2746875066470493},
+      {"target": "D014 / 1/16", "control": "D048A / U+130AB", "distance": 3.6925405710289816},
+      {"target": "D015 / 1/32", "control": "AA007B / U+13415", "distance": 3.2266939351855832},
+      {"target": "D016 / 1/64", "control": "T014 / U+13319", "distance": 1.705608828417929}
+    ],
+    "notable_false_positive_pressure": "D016 has an especially close unrelated modern-glyph neighbor: its nearest-neighbor distance lies near the 6th percentile of the control nearest-neighbor distribution. Shape resemblance alone is therefore unsafe as a genealogy criterion."
+  },
+  "test_C_morphological_complexity": {
+    "complexity_percentiles_D011_to_D016": [24.347014925373134, 0.5597014925373134, 14.832089552238806, 15.111940298507461, 25.839552238805968, 2.9850746268656714],
+    "ritter_historical_diagnosticity_categories": ["MEDIUM", "LOW", "LOW", "HIGH", "HIGH", "LOW"],
+    "post_hoc_spearman_rho": 0.8332380897952965,
+    "post_hoc_two_sided_p": 0.03939551647885117,
+    "status": "POST_HOC_SMALL_N_SANITY_CHECK_NOT_CONFIRMATORY",
+    "interpretation": "The modern complexity score happens to rank the six signs broadly in the same direction as Ritter's diagnosticity discussion, but this comparison was not preregistered, has n=6, and cannot make a modern font paleographic evidence."
+  },
+  "test_D_other_fraction_hieroglyphs_and_non_dyadic_fraction_practice": {
+    "unicode_adjacent_controls": [
+      {"codepoint": "U+1308C", "gardiner": "D022", "value": "2/3", "finite_binary": false, "binary": "0.(10)_2 repeating"},
+      {"codepoint": "U+1308D", "gardiner": "D023", "value": "3/4", "finite_binary": true, "binary": "0.11_2"}
+    ],
+    "ancient_text_control": "UCL Lahun UC32159 is a Middle Kingdom 2:n unit-fraction table; UCL's worked description explicitly includes 1/3 and 1/15 in the 2:5 row.",
+    "ucl_source": "https://www.ucl.ac.uk/museums-static/digitalegypt/lahun/uc32159.html",
+    "result": "EGYPTIAN_FRACTION_PRACTICE_IS_NOT_A_GENERAL_BINARY_SYSTEM",
+    "interpretation": "The 1/2..1/64 capacity-submultiple ladder is mathematically dyadic, but Egyptian fraction reckoning also used non-dyadic fractions. Any binary analogy must remain local to that dyadic sequence."
+  },
+  "historical_cross_check": {
+    "ritter_2003": "https://www.researchgate.net/publication/267166042_Closing_the_Eye_of_Horus_the_rise_and_fall_of_%27Horus-eye_fractions%27",
+    "ritter_2012": "https://onlinelibrary.wiley.com/doi/abs/10.1002/9781444338386.wbeah21178",
+    "important_points": [
+      "Ritter treats 1/16 and 1/32 as especially diagnostic hieratic forms, 1/2 as intermediate, and 1/4, 1/8 and 1/64 as less diagnostic.",
+      "Ritter reports that earlier third-millennium hieratic CSM signs increasingly diverge from the supposed Horus-eye counterparts.",
+      "Ritter identifies administration, mathematics and medical texts among the historical CSM source families, making cross-document and cross-domain testing appropriate."
+    ]
+  },
+  "highest_admissible_claim": "The full-block modern-hieroglyph control rejects the idea that the rendered D011-D016 shapes themselves geometrically halve with their 1/2..1/64 values, and shows substantial false-positive pressure from unrelated glyph morphology. The exact dyadic/six-bit mathematics remains real for the assigned value sequence, but it is not a general property of Egyptian fractions and is not evidence of ancient binary or Python intent. The next decisive test must use SHA-256-sealed, dated ancient CSM sign occurrences with same-document non-target hieratic controls.",
+  "next_gate": {
+    "id": "WEDJAT_CSM_SIGN_GENEALOGY_R1_PRIMARY_BYTES",
+    "required": "Acquire exact institutional image/facsimile bytes for dated CSM occurrences, SHA-256 seal before scoring, localize signs by edition locator, and compare each target against same-document stroke/complexity-matched non-target hieratic signs.",
+    "minimum": "60 target occurrences across at least 12 genuinely independent physical documents and at least 3 chronological bins.",
+    "critical_independence_rule": "Rhind EA10057, EA10058 and Brooklyn 37.1784Ea-b remain one physical-document independence group."
+  },
+  "claim_firewall": [
+    "NO_ANCIENT_BINARY_INTENT",
+    "NO_ANCIENT_PYTHON_OR_ASCII_INTENT",
+    "MODERN_FONT_SHAPES_ARE_NOT_HISTORICAL_HIERATIC_GROUND_TRUTH",
+    "UNICODE_CONTROL_CANNOT_CONFIRM_OR_REFUTE_ANCIENT_SIGN_GENEALOGY_BY_ITSELF",
+    "OTHER_HIEROGLYPH_RESEMBLANCE_MUST_BE_USED_AS_FALSE_POSITIVE_BASELINE",
+    "PRIMARY_PALEOGRAPHIC_GATE_STILL_REQUIRES_DATED_DOCUMENT_IMAGES_AND_SHA256_SEALING"
+  ]
+}

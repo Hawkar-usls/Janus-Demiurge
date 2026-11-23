@@ -1,0 +1,264 @@
+{
+  "schema": "janus.meta_registry.fallout3_fos_real_external_corpus_execution_gate.v3_2d",
+  "artifact_id": "FALLOUT-3-FOS-REAL-EXTERNAL-CORPUS-EXECUTION-GATE-v3.2d",
+  "title": "Fallout 3 — Real External FOS Corpus Execution and Baseline-Nonspecificity Gate v3.2d",
+  "created_at_local": "2026-08-14T16:28:00+03:00",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "artifact_class": "REAL_SAVE_FORMAT_EXECUTION_NEGATIVE_CONTROL_AND_CLAIM_CEILING_GATE",
+  "status": "PASS_REAL_EXTERNAL_FO3_CORPUS_PRESENCE_AND_RAW_PAYLOAD_HASH_REJECTED_AS_JAMES_DISCRIMINATORS",
+  "parents": [
+    "registry/myth_busted/FALLOUT-3-FOS-STRUCTURED-CHANGED-FORM-REFID-GATE-v3.2c.json",
+    "registry/myth_busted/FALLOUT-3-FOS-HEADER-PLUGIN-AUTHENTICATION-GATE-v3.2a.json",
+    "registry/myth_busted/FALLOUT-3-JAMES-RUNTIME-T0-T3-SAVEGAME-DIFFERENTIAL-PROTOCOL-v3.1.json"
+  ],
+  "question": "Does the v3.2c Fallout 3 structural save parser execute correctly on independent real .fos files, and what do those real files teach us about false-positive James runtime criteria before user T0/T1/T2/T3 saves exist?",
+  "external_corpus": {
+    "repository": "Nexus-Mods/Vortex",
+    "snapshot_commit": "87eb92131c2e85dd52d4fdb9a69d41b4eb9148e6",
+    "base_path": "extensions/gamebryo-savegame-management/test/saves/fallout3",
+    "fixture_count": 3,
+    "identity_rule": "PINNED_COMMIT_PLUS_GIT_BLOB_SHA1_PLUS_SIZE",
+    "fixtures": [
+      {
+        "name": "fallout3_1.fos",
+        "git_blob_sha1": "9a38323a96e9f59b7430c784304ecf4b65adc968",
+        "size_bytes": 1839887,
+        "observed_sha256": "8f63c0aef92a2953a635914f6691c17a1c5d93b254ad9ed607fcbe1d4cef9556",
+        "header_location": "Vault 101 Entrance",
+        "plugin_count": 6,
+        "changed_forms_declared": 4182,
+        "changed_forms_indexed": 4182,
+        "formid_array_count": 8788,
+        "exact_changed_forms_to_gdt2_boundary": true,
+        "unresolved_save_refids": 0
+      },
+      {
+        "name": "fallout3_2.fos",
+        "git_blob_sha1": "f9c11b2da0038d1528120cbd70eeac2322c44066",
+        "size_bytes": 1381193,
+        "observed_sha256": "729176a0835ff1f6397e928e9a177cbf26aa5a3c76859eff094ce93cfcd0e82f",
+        "header_location": "Vault 101 Entrance",
+        "plugin_count": 1,
+        "changed_forms_declared": 2687,
+        "changed_forms_indexed": 2687,
+        "formid_array_count": 5804,
+        "exact_changed_forms_to_gdt2_boundary": true,
+        "unresolved_save_refids": 0
+      },
+      {
+        "name": "fallout3_3.fos",
+        "git_blob_sha1": "16f87bc5f150465c105cc3187cf96f8cf39b0a31",
+        "size_bytes": 1870207,
+        "observed_sha256": "e50c001f3a3b2344c3e9c5331340f37129f9c99c5293d33d9040134aa2b3820c",
+        "header_location": "Vault 101 Entrance",
+        "plugin_count": 6,
+        "changed_forms_declared": 4042,
+        "changed_forms_indexed": 4042,
+        "formid_array_count": 8199,
+        "exact_changed_forms_to_gdt2_boundary": true,
+        "unresolved_save_refids": 0
+      }
+    ]
+  },
+  "ci_receipts": {
+    "initial_real_execution_run": {
+      "run_id": 31804560274,
+      "head_sha": "d54725d6de5ea4aa4094685d07ad61eb28573da1",
+      "conclusion": "success",
+      "artifact_id": 9220609672,
+      "artifact_digest": "sha256:ec91de141c94e500fd0f166439e02d3eebfb238bfcb5f4dcc9de85aeec23b57a"
+    },
+    "fingerprinted_negative_control_run": {
+      "run_id": 31804677347,
+      "head_sha": "fbb7f84a7ceef405e19887c54819f533e2f34f5d",
+      "conclusion": "success",
+      "artifact_id": 9220652903,
+      "artifact_digest": "sha256:4929630c6661647b8cc6c20545d8ad6e235e528fa698346571cdcd5dfda9d2dc",
+      "authority": "CURRENT_PR_HEAD_REAL_CORPUS_RECEIPT"
+    }
+  },
+  "real_format_execution": {
+    "status": "PASS_ON_ALL_THREE_PINNED_REAL_FO3_SAVES",
+    "established": [
+      "strict FO3 header parsing executes on all fixtures",
+      "0x6E File Location Table parsing executes on all fixtures",
+      "ChangedFormsCount records are indexed exactly on all fixtures",
+      "Changed Forms parsing ends exactly at Global Data Table 2 on all fixtures",
+      "3-byte save RefID resolution executes with zero unresolved RefIDs in this corpus",
+      "FormID-array backed and CREATED RefID classes both occur in real saves"
+    ],
+    "not_established": [
+      "user James/Vault 112 T0/T1/T2/T3 execution",
+      "James-specific persistence across Tranquility Lane exit",
+      "autobiographical memory payload semantics",
+      "Braun serialization or carrier binding"
+    ]
+  },
+  "negative_control_findings": {
+    "header_context": {
+      "all_three_locations": "Vault 101 Entrance",
+      "meaning": "These fixtures are external format controls, not a controlled Vault 112 James lineage. Their target records may only be used to discover nonspecific baseline behavior."
+    },
+    "MQ04": {
+      "formid": "00014E8A",
+      "present_in_all_three": true,
+      "xedit_change_type": "09 = QUST",
+      "fingerprint_all_three": {
+        "change_flags_hex": "0x40000000",
+        "change_type": 9,
+        "version": 21,
+        "data_length": 6,
+        "payload_sha256": "2692f445aab5ebb7902307dab8da6435406c63f1186516ee310c7cd5451b988b"
+      },
+      "xedit_flag_semantics": "For QUST, ChangedFlag30/0x40000000 selects Quest Script; ChangedFlag31/0x80000000 selects Quest Stages.",
+      "inference": "MQ04 Changed Form presence is not a sufficient indicator of a Vault 112/Tranquility Lane event. In this corpus it behaves as an identical quest-script baseline fingerprint."
+    },
+    "MQDadRef": {
+      "formid": "00019D09",
+      "present_in_all_three": true,
+      "xedit_change_type": "01 = ACHR",
+      "shared_header_fingerprint": {
+        "change_flags_hex": "0x80000000",
+        "change_type": 1,
+        "version": 21,
+        "data_length": 397
+      },
+      "payload_sha256_by_fixture": {
+        "fallout3_1.fos": "700fc40e42ed70b3d02ad790729c246f367c512e8a4b23481f47b49c46c4cd15",
+        "fallout3_2.fos": "1bbc68292a76ea3c2f8517e33fb3901107ccb39262f0cec281b57520eddb2920",
+        "fallout3_3.fos": "e66e4075625c91a34054ea5c7220da3f5216c5ac1336fc3b0aed2e0726505f79"
+      },
+      "xedit_flag_context": "The xEdit FO3 Changed Extra mask explicitly includes bit31 among reference/actor extra-state triggers; its comment associates that bit with the CHANGE_REFR_EXTRA_GAME_ONLY class. Exact field-level decomposition of these 397-byte payloads is not yet admitted.",
+      "inference": "MQDadRef payload hashes can differ while change type, change flags, form version and payload length remain identical in unrelated external fixtures. Therefore raw payload-hash difference alone is not a James/Vault112 event discriminator."
+    }
+  },
+  "falsified_admission_shortcuts": [
+    {
+      "shortcut": "MQDadRef Changed Form exists",
+      "status": "REJECTED",
+      "reason": "MQDadRef exists in all three unrelated real-save controls."
+    },
+    {
+      "shortcut": "MQ04 Changed Form exists",
+      "status": "REJECTED",
+      "reason": "MQ04 exists in all three unrelated real-save controls with an identical fingerprint."
+    },
+    {
+      "shortcut": "MQDadRef payload SHA-256 changed",
+      "status": "REJECTED_AS_STANDALONE_CRITERION",
+      "reason": "All three external controls share the same ACHR header fingerprint but have different MQDadRef payload hashes."
+    }
+  ],
+  "revised_james_runtime_admission_rule": {
+    "minimum": [
+      "controlled same-lineage T1/T2/T3 saves",
+      "exact plugin-manifest compatibility or an explicitly justified compatibility rule",
+      "MQDadRef and MQ04 target fingerprints at every timepoint",
+      "at least one no-op save pair near the same boundary",
+      "type-aware field decomposition for any candidate Changed Form whose payload difference is used as evidence",
+      "temporal localization of candidate changes to the Tranquility Lane/Vault112 boundary"
+    ],
+    "candidate_promotion_rule": "A James runtime candidate may be promoted only when the observed differential exceeds the nonspecific baseline classes demonstrated here and can be localized to semantically identified fields or a newly materialized handle.",
+    "presence_only": "FORBIDDEN",
+    "payload_hash_only": "FORBIDDEN"
+  },
+  "admission_ladder": [
+    {
+      "level": "C0",
+      "name": "FO3_HEADER_PLUGIN_AUTH",
+      "status": "PASS_REAL_EXTERNAL_CORPUS"
+    },
+    {
+      "level": "C1",
+      "name": "FO3_FILE_LOCATION_TABLE_GRAMMAR",
+      "status": "PASS_REAL_EXTERNAL_CORPUS"
+    },
+    {
+      "level": "C2",
+      "name": "FO3_CHANGED_FORM_HEADER_GRAMMAR",
+      "status": "PASS_REAL_EXTERNAL_CORPUS"
+    },
+    {
+      "level": "C3",
+      "name": "SAVE_REFID_TO_FORMID_RESOLUTION",
+      "status": "PASS_REAL_EXTERNAL_CORPUS"
+    },
+    {
+      "level": "C4A",
+      "name": "REAL_EXTERNAL_FO3_STRUCTURAL_EXECUTION",
+      "status": "PASS_3_OF_3"
+    },
+    {
+      "level": "C4B",
+      "name": "REAL_CONTROLLED_JAMES_T0_T3_STRUCTURAL_EXECUTION",
+      "status": "BLOCKED_NO_USER_FOS_LINEAGE"
+    },
+    {
+      "level": "C5",
+      "name": "JAMES_DIFFERENTIAL_ABOVE_NONSPECIFIC_BASELINE",
+      "status": "NOT_ESTABLISHED"
+    },
+    {
+      "level": "C6",
+      "name": "TYPE_AWARE_JAMES_RUNTIME_FIELD_BINDING",
+      "status": "NOT_ESTABLISHED"
+    },
+    {
+      "level": "C7",
+      "name": "CROSS_EXIT_JAMES_ENGINE_PERSISTENCE",
+      "status": "NOT_ESTABLISHED"
+    },
+    {
+      "level": "C8",
+      "name": "JAMES_AUTOBIOGRAPHICAL_PAYLOAD_SEMANTICS",
+      "status": "NOT_ESTABLISHED"
+    },
+    {
+      "level": "C9",
+      "name": "IN_WORLD_BRAUN_SERIALIZATION_EDGE",
+      "status": "NOT_ESTABLISHED"
+    }
+  ],
+  "first_break_model": {
+    "previous_first_break": "REAL_T0_T3_STRUCTURAL_EXECUTION",
+    "resolved_subproblem": "REAL_EXTERNAL_FO3_FORMAT_EXECUTION",
+    "current_first_break": "CONTROLLED_JAMES_LINEAGE_DIFFERENTIAL_PLUS_TYPE_AWARE_FIELD_BINDING",
+    "chain": "REAL_FO3_FORMAT_PASS -> [CONTROLLED_JAMES_T1_T2_T3] -> DIFFERENTIAL_ABOVE_BASELINE -> TYPE_AWARE_FIELD_BINDING -> CROSS_EXIT_PERSISTENCE -> PAYLOAD_SEMANTICS -> IN_WORLD_SERIALIZATION",
+    "meaning": "The parser now runs on real Fallout 3 saves. The limiting uncertainty is no longer format addressability; it is whether a controlled James lineage exhibits a semantically specific state transition beyond ordinary ACHR/QUST save-state baselines."
+  },
+  "implementation": {
+    "validator": "tools/fo3_fos_real_fixture_corpus_v0_1.py",
+    "workflow": ".github/workflows/fallout3-fos-real-corpus-v3-2d.yml",
+    "existing_structural_parser": "tools/fo3_fos_changed_form_header_index_v0_1.py",
+    "existing_header_parser": "tools/fo3_fos_header_plugin_manifest_v0_1.py"
+  },
+  "claim_ceiling": {
+    "allowed": [
+      "The v3.2c structural parser has executed successfully on three pinned real Fallout 3 saves from an external public corpus.",
+      "MQ04 and MQDadRef Changed Forms can exist outside a Vault112-localized test context.",
+      "MQDadRef raw Changed Form payload hashes can vary without changing its observed ChangeType, flags, version or payload length in this external corpus.",
+      "Future James testing must use controlled differential and type-aware semantics rather than presence or raw payload hash alone."
+    ],
+    "not_allowed": [
+      "The external fixtures are T0/T1/T2/T3 James saves.",
+      "The different MQDadRef hashes are James memories.",
+      "Bit31 alone identifies autobiographical state.",
+      "A Changed Form difference proves Braun serialization.",
+      "SAVE JAMES is a vanilla executable rescue path."
+    ]
+  },
+  "hard_rules": [
+    "REAL_EXTERNAL_FORMAT_PASS != CONTROLLED_JAMES_LINEAGE_PASS",
+    "TARGET_PRESENCE != EVENT_LOCALIZATION",
+    "RAW_PAYLOAD_HASH_DIFFERENCE != SEMANTIC_STATE_DIFFERENCE",
+    "ACHR_CHANGED_EXTRA != AUTOBIOGRAPHICAL_MEMORY",
+    "QUEST_SCRIPT_CHANGED_FORM != QUEST_STAGE_PROGRESSION",
+    "ENGINE_SAVE_STATE != IN_WORLD_MEMORY_CARRIER"
+  ],
+  "next_gate": {
+    "name": "FALLOUT-3-ACHR-TYPE1-CHANGED-EXTRA-FIELD-BASELINE-DECODER-v3.2e",
+    "status": "OPEN_SOURCE_AND_REAL_FIXTURE_WORK_AVAILABLE_WITHOUT_USER_T0_T3",
+    "purpose": "Decode enough of ChangeType 1 / bit31 Changed Extra to identify which MQDadRef fields vary across the three real controls, so a future T1/T2/T3 candidate can be tested against a semantic baseline rather than only a payload hash.",
+    "claim_limit": "This decoder may classify runtime actor/extra fields; it must not label any field as autobiographical memory without an independent authored semantic bridge."
+  }
+}

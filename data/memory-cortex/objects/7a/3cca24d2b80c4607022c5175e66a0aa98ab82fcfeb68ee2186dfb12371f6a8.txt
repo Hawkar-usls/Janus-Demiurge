@@ -1,0 +1,104 @@
+{
+  "artifact_uuid": "BHB-BLACK-HOLE-BOOM-KERR-R2-2026-10-18-v1.0",
+  "title": "BHB - Black Hole Boom: Kerr equatorial collision and hypothetical photon transport R2",
+  "schema_id": "janus.physics.bhb.kerr_equatorial_model_receipt.v1",
+  "date_utc": "2026-10-18",
+  "classification": "REPRODUCIBLE_THEORETICAL_KERR_GEODESIC_BENCHMARK__NO_DETECTED_BOOM",
+  "status": "MODEL_VERIFIED__ASTROPHYSICAL_CLAIM_NOT_ESTABLISHED",
+  "relation_to_previous_records": {
+    "r0_artifact": "BHB-BLACK-HOLE-BOOM-R0-2026-10-17-v1.0",
+    "r0_registry_file": "registry/physics/BHB-Black-Hole-Boom-2026-10-17-v1.0.json",
+    "r0_registry_commit": "5b41a09c0e7885a649610a9e3b3ffe2a1c4778f2",
+    "r1_cosmos_merge_commit": "d76736363c021d536ed992a865afa04c6b6143da",
+    "r0_and_r1_receipts_preserved_unchanged": true
+  },
+  "execution": {
+    "repository": "Hawkar-usls/Janus-Cosmos",
+    "merge_commit": "a1a205f025f6580378cbc2c4cc040823d9f51d95",
+    "pull_request": 34,
+    "engine": "workspace/janus_bhb_kerr.py",
+    "engine_sha256": "87427d0691da63951cd262afae84d3959f69e340e7e95c4e717f4de51fb02666",
+    "test_file": "tests/test_bhb_kerr.py",
+    "case_file": "data/bhb/BHB-COSMOS-R2-CASES-2026-10-18.json",
+    "case_file_sha256": "626ce202f168aa1c8f43e980f4368ae29b290220cf0d385d80f1b13253bcca71",
+    "result_file": "data/bhb/BHB-COSMOS-R2-RESULT-2026-10-18.json",
+    "result_file_sha256": "658841884a203410db2fb4bb77458b2ebdaaa58955e01771e7fb841b9f1005a8",
+    "result_internal_sha256": "91e6c8d866ce256c876f5ca99cc17144828f7b960a04a25eb8e0154bcac0e494",
+    "precision_digits": 90,
+    "local_unittest_count_r0_r1_r2": 19,
+    "github_actions_workflows_completed_success": 6,
+    "frozen_r2_scenarios": 7,
+    "replay_command": "python3 workspace/janus_bhb_kerr.py --batch data/bhb/BHB-COSMOS-R2-CASES-2026-10-18.json"
+  },
+  "model": {
+    "spacetime": "stationary uncharged Kerr, equatorial plane, signed a/M in [-1,1]",
+    "units": "geometrized G=M=c=1, radii r/M, conserved specific energy E and angular momentum Lz/M, rest energies GeV",
+    "region": "strictly exterior to r_+/M=1+sqrt(1-a^2); no collision exactly on horizon",
+    "massive_geodesic_radial_potential": "R=[E(r^2+a^2)-aL]^2-Delta*[r^2+(L-aE)^2], Delta=r^2-2r+a^2",
+    "collision_invariant": "E_cm^2=m1^2+m2^2-2*m1*m2*g(u1,u2), independently evaluated in local ZAMO tetrad and Kerr coordinate metric",
+    "infinity_infall_access": "E>=1, future-directed, inward, with strictly positive global minimum of R/r for all r>=r_event; rejects exterior barriers and asymptotic double-root separatrices",
+    "hypothetical_photon": "separately chosen outward equatorial null ray with ZAMO local azimuthal sine s; not tied to collision-product four-momentum",
+    "photon_energy_transfer": "E_infinity/E_ZAMO=alpha+omega*sqrt(g_phiphi)*s",
+    "photon_escape_condition": "positive E_infinity and positive global minimum over [r_emit,infinity) of R_null/r=r^3+(a^2-b^2)*r+2*(b-a)^2, with b=Lz/E_infinity",
+    "photon_transport_limit": "specific equatorial geodesic in stationary Kerr only, not a full emission cone or global radiative-transfer model"
+  },
+  "gates": {
+    "KERR_EQUATORIAL_INVARIANT": "PASS",
+    "RADIAL_TRAJECTORY_ACCESS": "MIXED_CHECK_PER_CASE",
+    "HYPOTHETICAL_EQUATORIAL_PHOTON_TRANSPORT": "CHECKED_PER_CASE",
+    "ESCAPED_COLLISION_SIGNAL": "OPEN_NO_PRODUCT_MODEL",
+    "REAL_BHB_DETECTION": "NOT_ESTABLISHED",
+    "OSIRIS_PROOF_AUTHORITY": "NO_CHANGE"
+  },
+  "results": [
+    {
+      "id": "R2-K0-SCHWARZSCHILD-CONTROL",
+      "a_over_M": "0", "r_over_M": "5", "local_E_cm_GeV": "1.876544",
+      "trajectory": "PASS", "hypothetical_ray": "ESCAPES", "E_infinity_over_E_ZAMO": "0.774596669241483377035853"
+    },
+    {
+      "id": "R2-K09-GENERIC-ACCESSIBLE",
+      "a_over_M": "0.9", "r_over_M": "1.6", "local_E_cm_GeV": "2.42981502143869415942048",
+      "trajectory": "PASS", "hypothetical_ray": "ESCAPES", "E_infinity_over_E_ZAMO": "0.196953407203940751291253"
+    },
+    {
+      "id": "R2-K09-LOCAL-BUT-INFINITY-BARRIER-NEGATIVE-CONTROL",
+      "a_over_M": "0.9", "r_over_M": "1.5", "local_E_cm_GeV": "4.23139827808569680688988",
+      "trajectory": "REJECTED_FORBIDDEN_RADIAL_BARRIER_FROM_INFINITY", "hypothetical_ray": "ESCAPES", "E_infinity_over_E_ZAMO": "0.120385853085769200762091"
+    },
+    {
+      "id": "R2-K1-CRITICAL-NEAR-HORIZON-LIMIT",
+      "a_over_M": "1", "r_over_M": "1.0001", "local_E_cm_GeV": "143.633128164547443424112",
+      "trajectory": "PASS_EXTERIOR_IDEALIZED_GEODESICS", "hypothetical_ray": "ESCAPES", "E_infinity_over_E_ZAMO": "0.0000499999998125124998046719"
+    },
+    {
+      "id": "R2-SCHWARZSCHILD-ESCAPE-CONE-BLOCKED",
+      "a_over_M": "0", "r_over_M": "2.5", "local_E_cm_GeV": "1.876544",
+      "trajectory": "PASS", "hypothetical_ray": "BLOCKED_RADIAL_BARRIER", "E_infinity_over_E_ZAMO": "0.447213595499957939281835"
+    },
+    {
+      "id": "R2-SCHWARZSCHILD-OUTSIDE-PHOTON-SPHERE",
+      "a_over_M": "0", "r_over_M": "4", "local_E_cm_GeV": "1.876544",
+      "trajectory": "PASS", "hypothetical_ray": "ESCAPES", "E_infinity_over_E_ZAMO": "0.707106781186547524400844"
+    },
+    {
+      "id": "R2-K09-OUTGOING-SOURCE-DEBT",
+      "a_over_M": "0.9", "r_over_M": "1.6", "local_E_cm_GeV": "9.99248613358796022916497",
+      "trajectory": "PROVENANCE_NOT_ESTABLISHED_LOCAL_PRODUCTION", "hypothetical_ray": "ESCAPES", "E_infinity_over_E_ZAMO": "0.196953407203940751291253"
+    }
+  ],
+  "claim_ceiling": "Large local E_cm and independently escaping hypothetical null rays do not establish photon production, collision luminosity, a black-hole explosion or detection; massive particles remain strictly subluminal in any physical local frame.",
+  "limitations": [
+    "No collision cross sections, final-state four-momentum, scattering, particle production or energy budget.",
+    "No photon escape probability over full sky, no out-of-plane Carter constant and no propagation through plasma/accretion disks.",
+    "No radiation flux, black-hole mass distribution, spin evolution, backreaction, gravitational-wave instrument response or observational input.",
+    "The extremal a/M=1 BSW result is an exterior limiting idealization; no event at the horizon is asserted and astrophysical practical limitations remain.",
+    "Outgoing local geodesics may exist kinematically without a verified producer; in that case provenance fails independently of E_cm."
+  ],
+  "primary_references": [
+    {"arxiv": "0909.0169", "authors": "Bañados, Silk, West", "role": "original Kerr near-horizon high-center-of-mass-energy proposal"},
+    {"arxiv": "0911.3363", "authors": "Jacobson, Sotiriou", "role": "practical constraints on near-horizon collisions"},
+    {"arxiv": "2104.07889", "authors": "Yan, Guo, Chen", "role": "photon escape probabilities and energy shifts for Kerr zero-angular-momentum sources"}
+  ],
+  "next_gate": "BHB-R3: specify conservation-compatible collision-product four-momenta and emitter rest frame; propagate resulting null geodesics with Carter constant and compute observable energy distributions under explicit production priors, while preserving all R0-R2 negative controls."
+}

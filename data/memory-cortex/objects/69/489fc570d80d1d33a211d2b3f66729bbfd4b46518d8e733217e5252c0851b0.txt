@@ -1,0 +1,217 @@
+{
+  "schema": "janus.meta_registry.fallout3_fos_structured_changed_form_refid_gate.v3_2c",
+  "artifact_id": "FALLOUT-3-FOS-STRUCTURED-CHANGED-FORM-REFID-GATE-v3.2c",
+  "title": "Fallout 3 — Structured Changed Form / Save RefID Resolution Gate v3.2c",
+  "created_at_local": "2026-08-14T15:48:00+03:00",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "artifact_class": "FORMAT_CORRECTION_STRUCTURAL_DECODER_AND_JAMES_BINDING_GATE",
+  "status": "FORMAT_GRAMMAR_PASS_REAL_T0_T3_EXECUTION_BLOCKED_NO_FOS_INPUT",
+  "parents": [
+    "registry/myth_busted/FALLOUT-3-FOS-BODY-CHANGE-STATE-FORMAT-EVIDENCE-GATE-v3.2b.json",
+    "registry/myth_busted/FALLOUT-3-FOS-HEADER-PLUGIN-AUTHENTICATION-GATE-v3.2a.json",
+    "registry/myth_busted/FALLOUT-3-JAMES-RUNTIME-T0-T3-SAVEGAME-DIFFERENTIAL-PROTOCOL-v3.1.json"
+  ],
+  "question": "Can Fallout 3 Changed Forms be structurally indexed and their 3-byte save RefIDs resolved to full FormIDs with FO3-specific implementation evidence, so future T0/T1/T2/T3 saves can test James runtime persistence without raw-byte coincidence?",
+  "correction_ledger": {
+    "wrye_bash_v3_2b_clue": {
+      "previous": "The shared Wrye Bash save-header module contains a six-named-offset rewrite path including changeFormsOffset; FO3 applicability was left OPEN.",
+      "source_level_resolution": "NEGATIVE_FOR_THAT_EXACT_PATH",
+      "finding": "FalloutNVSaveHeader overrides the base master rewrite with a five-offset path. Fallout3SaveHeader inherits FalloutNVSaveHeader and changes the game marker to 0x15. Therefore the generic six-named-offset comment is not itself the FO3 method-resolution proof.",
+      "effect": "The historical clue remains recorded, but it cannot be cited as proof of FO3 Changed Forms addressability."
+    },
+    "replacement_authority": {
+      "repository": "TES5Edit/TES5Edit",
+      "snapshot": "93cc0bc5a1251936c3c7859eee3150eda12a62d7",
+      "file": "Core/wbDefinitionsFO3Saves.pas",
+      "scope": "Direct Fallout 3 save definition; DefineFO3SavesS is annotated as based on the Runtime.",
+      "status": "PASS_FO3_SPECIFIC_IMPLEMENTATION_AUTHORITY"
+    }
+  },
+  "xedit_fo3_findings": {
+    "file_location_table": {
+      "status": "PASS",
+      "size_bytes": 110,
+      "fields": [
+        "RefID Array Count Offset",
+        "Unknown Table Offset",
+        "Global Data Table 1 Offset",
+        "Changed Forms Offset",
+        "Global Data Table 2 Offset",
+        "Global Data Table 1 Count",
+        "Global Data Table 2 Count",
+        "Changed Forms Count",
+        "Unknown Count"
+      ],
+      "significance": "Changed Forms are directly addressable in the FO3 save definition rather than inferred from a neighboring game."
+    },
+    "save_chapter_order": {
+      "status": "PASS",
+      "order": [
+        "Global Data 1",
+        "Changed Forms",
+        "Global Data 2",
+        "FormIDs",
+        "Visited Worldspace",
+        "Unknown Table"
+      ]
+    },
+    "changed_form_header": {
+      "status": "PASS",
+      "fields": [
+        "RefID (3-byte save RefID)",
+        "Change Flags (uint32)",
+        "Type/length-code byte",
+        "Version (uint8)",
+        "Data length selected by length code",
+        "Data payload"
+      ],
+      "type_semantics": "lower six bits encode change type; upper two bits encode length code",
+      "length_code_semantics": {
+        "0": "uint8 payload length",
+        "1": "uint16 payload length",
+        "2": "uint32 payload length",
+        "3": "not admitted by reviewed xEdit decoder branch"
+      }
+    },
+    "formid_array_resolution": {
+      "status": "PASS_FOR_ARRAY_BACKED_EXISTING_FORMS",
+      "finding": "xEdit initializes a SaveRefIDArray from the FormIDs chapter; for save RefID class 0, GetSaveRefID(index) resolves index-1 into that array.",
+      "created_form_boundary": "xEdit treats save RefID values whose top two bits equal 2 as constructed/created forms."
+    }
+  },
+  "independent_refid_crosscheck": {
+    "repository": "slfx77/fallout-xbox-360-utils",
+    "snapshot": "f3e3793224e84947d91916c09895c253ab5d874f",
+    "files": [
+      "src/FalloutXbox360Utils/Core/Formats/SaveGame/FileLocationTable.cs",
+      "src/FalloutXbox360Utils/Core/Formats/SaveGame/SaveFileParser.cs",
+      "src/FalloutXbox360Utils/Core/Formats/SaveGame/ChangedFormParser.cs",
+      "src/FalloutXbox360Utils/Core/Formats/SaveGame/SaveRefId.cs",
+      "src/FalloutXbox360Utils/Core/Formats/SaveGame/SaveRefIdType.cs"
+    ],
+    "findings": [
+      "3-byte save RefID is read big-endian within its three bytes.",
+      "top two bits encode RefID class and lower 22 bits encode value.",
+      "class 0 is a 1-based FormID-array lookup.",
+      "class 1 represents default/base-game FormID value.",
+      "class 2 resolves to runtime-created 0xFF000000 | value.",
+      "Changed Form parser independently agrees on 3-byte RefID, uint32 change flags, low-6-bit change type, high-2-bit length code, version byte and variable-width payload length.",
+      "File Location Table independently agrees on absolute ChangedFormsOffset and ChangedFormsCount."
+    ],
+    "authority_rule": "Used as an independent implementation cross-check; xEdit FO3 definition remains the primary format authority for this gate."
+  },
+  "implementation": {
+    "tool": "tools/fo3_fos_changed_form_header_index_v0_1.py",
+    "tests": "tests/test_fo3_fos_changed_form_header_index_v0_1.py",
+    "workflow": ".github/workflows/fallout3-fos-structured-james-v3-2c.yml",
+    "pipeline": [
+      "authenticate FO3 header and ordered plugin list with v3.2a",
+      "parse the 0x6E FO3 File Location Table immediately after plugin information",
+      "parse the FormID lookup array from its absolute offset",
+      "index exactly ChangedFormsCount records from ChangedFormsOffset",
+      "decode only Changed Form header grammar and payload length",
+      "hash but do not semantically decode Changed Form payload bytes",
+      "resolve save RefID to full FormID where class semantics are admitted",
+      "match resolved records against frozen James/MQ04 anchors",
+      "compare target record presence/header fingerprints across T0/T1/T2/T3 only when plugin manifests match"
+    ]
+  },
+  "frozen_targets": {
+    "MQ04": "00014E8A",
+    "MQDadRef": "00019D09",
+    "MQ04Doc_BASE": "0004E79C",
+    "MQ04Doc_REF": "0006023C",
+    "MQ04PlayerContainerRef_CONTROL": "0004C253",
+    "MQ04DadPod": "000B3644",
+    "Vault112PodTermDad_REF": "000B3645",
+    "MQ04DadPodShellRef": "000B3654"
+  },
+  "admission_ladder": [
+    {
+      "level": "C0",
+      "name": "FO3_HEADER_PLUGIN_AUTH",
+      "status": "IMPLEMENTED_NOT_REAL_T0_T3_EXECUTED"
+    },
+    {
+      "level": "C1",
+      "name": "FO3_FILE_LOCATION_TABLE_GRAMMAR",
+      "status": "PASS_SOURCE"
+    },
+    {
+      "level": "C2",
+      "name": "FO3_CHANGED_FORM_HEADER_GRAMMAR",
+      "status": "PASS_SOURCE"
+    },
+    {
+      "level": "C3",
+      "name": "SAVE_REFID_TO_FORMID_RESOLUTION",
+      "status": "PASS_SOURCE_AND_INDEPENDENT_CROSSCHECK"
+    },
+    {
+      "level": "C4",
+      "name": "REAL_T0_T3_STRUCTURAL_EXECUTION",
+      "status": "BLOCKED_NO_FOS_INPUT"
+    },
+    {
+      "level": "C5",
+      "name": "JAMES_CHANGED_FORM_BINDING",
+      "status": "NOT_ESTABLISHED"
+    },
+    {
+      "level": "C6",
+      "name": "CROSS_EXIT_JAMES_ENGINE_PERSISTENCE",
+      "status": "NOT_ESTABLISHED"
+    },
+    {
+      "level": "C7",
+      "name": "JAMES_AUTOBIOGRAPHICAL_PAYLOAD_SEMANTICS",
+      "status": "NOT_ESTABLISHED"
+    },
+    {
+      "level": "C8",
+      "name": "IN_WORLD_BRAUN_SERIALIZATION_EDGE",
+      "status": "NOT_ESTABLISHED"
+    }
+  ],
+  "first_break_model": {
+    "previous_first_break": "FO3_LOCATION_TABLE_APPLICABILITY",
+    "new_first_break": "REAL_T0_T3_STRUCTURAL_EXECUTION",
+    "chain": "FO3_HEADER_AUTH -> FLT_GRAMMAR -> CHANGED_FORM_GRAMMAR -> REFID_RESOLUTION -> [REAL_T0_T3_EXECUTION] -> JAMES_BINDING -> CROSS_EXIT_PERSISTENCE -> PAYLOAD_SEMANTICS -> IN_WORLD_SERIALIZATION",
+    "meaning": "The format path needed to ask the James runtime question is now implemented and source-bound. The remaining block is empirical: no real T0/T1/T2/T3 .fos set is currently present."
+  },
+  "claim_ceiling": {
+    "allowed": [
+      "Fallout 3 save definitions expose a directly addressable Changed Forms chapter and Changed Forms count.",
+      "Changed Form headers and save RefIDs can be structurally indexed without raw four-byte FormID searching.",
+      "Future authenticated saves can bind a Changed Form to MQDadRef or another frozen anchor through the save RefID/FormID-array mechanism."
+    ],
+    "not_allowed": [
+      "MQDadRef is already proven to have a Changed Form in any user save.",
+      "A Changed Form for James is autobiographical memory.",
+      "Persistence of a Changed Form across T2->T3 is a Braun memory backup.",
+      "A Changed Form payload is a portable carrier or memory chip.",
+      "SAVE JAMES is a shipped vanilla gameplay rescue branch."
+    ]
+  },
+  "hard_rules": [
+    "FORMAT_GRAMMAR_PASS != REAL_SAVE_EXECUTION_PASS",
+    "RESOLVED_FORMID != AUTOBIOGRAPHICAL_MEMORY",
+    "CHANGED_FORM_PAYLOAD_HASH != PAYLOAD_SEMANTICS",
+    "T2_T3_ENGINE_PERSISTENCE != IN_WORLD_MEMORY_SERIALIZATION",
+    "WRYE_BASH_GENERIC_SIX_OFFSET_PATH != FO3_APPLICABILITY_PROOF",
+    "XEDIT_FO3_RUNTIME_DEFINITION_SUPERSEDES_THE_AMBIGUOUS_WRYE_OFFSET_CLUE"
+  ],
+  "next_gate": {
+    "name": "FALLOUT-3-JAMES-REAL-T0-T3-STRUCTURED-CHANGED-FORM-EXECUTION-v3.3",
+    "status": "BLOCKED_NO_REAL_FOS_INPUT",
+    "minimum_input": "At least T1/T2/T3 authenticated Fallout 3 .fos saves from one controlled lineage; T0 and a no-op pair strongly preferred.",
+    "execution_order": [
+      "run v3.2a header/plugin authentication",
+      "run v3.2c structural Changed Form index",
+      "freeze FormID-array mapping per save",
+      "extract matches for MQDadRef and controls",
+      "compare record presence, change flags, type, version, size and payload hash across T1/T2/T3",
+      "only after a stable James-specific runtime record is established, inspect the xEdit per-change-type payload grammar relevant to that record"
+    ]
+  }
+}

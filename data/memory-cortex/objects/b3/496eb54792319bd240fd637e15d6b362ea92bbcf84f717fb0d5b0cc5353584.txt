@@ -1,0 +1,96 @@
+{
+  "schema_id": "janus.rowan.azurin_BMRB6243_1E5Y_structure_holdout.v1",
+  "date_utc": "2026-10-26",
+  "status": "FROZEN_BEFORE_FITTING",
+  "source": {
+    "bmrb_id": 6243,
+    "nmr_url": "https://bmrb.io/ftp/pub/bmrb/entry_directories/bmr6243/bmr6243_3.str",
+    "nmr_sha256": "4b70f8791324e16d098640db3709e6b8482d829956b1a09ebf9aa6aae375ea2a",
+    "pdb": "1E5Y",
+    "pdb_url": "https://files.rcsb.org/download/1E5Y.cif",
+    "pdb_sha256": "707e53b3720604678f87cf4df11bd0c39ba7bd4ddc316ed6cdca9c0a7a5adfe2"
+  },
+  "measurements": {
+    "train_fields_MHz": [
+      500,
+      600
+    ],
+    "test_field_MHz": 800,
+    "temperature_series": [
+      {
+        "condition_id": 1,
+        "temperature_K": 289,
+        "shared_residues": 116
+      },
+      {
+        "condition_id": 2,
+        "temperature_K": 317,
+        "shared_residues": 114
+      }
+    ],
+    "pH": 5.5,
+    "relaxation_units": "T1 and T2 in seconds; inverse-rate in s^-1; first-order propagated uncertainties",
+    "notes": "900MHz lacks NOE so not used. Each temperature fitted separately."
+  },
+  "geometry": {
+    "chain": "A",
+    "sequence_length": 128,
+    "nh_vector": "Approximate ideal amide N->H from measured CA_i,N_i,C_(i-1) planar geometry, skip prolines/missing peptide",
+    "shape_axis": "Largest PCA component from experimental CA positions of chain A; shape surrogate NOT measured diffusion tensor axis",
+    "nh_theta": "acos(abs(NH unit dot PCA long axis)); no arbitrary 45 degree NH"
+  },
+  "models": {
+    "global_tau_grid_ns": [
+      3,
+      4,
+      6,
+      8,
+      10,
+      14
+    ],
+    "global_axial_ratio_grid": [
+      0.5,
+      1,
+      1.5,
+      2
+    ],
+    "per_residue_S2_bounds": [
+      0.05,
+      1
+    ],
+    "per_residue_CSA_ppm_bounds": [
+      -220,
+      -120
+    ],
+    "fixed_CSA_ppm": -170,
+    "fast_tau_e_ns": 0.1,
+    "rex_s_inv": 0,
+    "fit_fields": [
+      500,
+      600
+    ],
+    "heldout_field": 800,
+    "source_module": "modules/rowan_observer/fn1_external_relax_bmrb_axial_csa_gate.py",
+    "variants": [
+      "isotropic fixed CSA",
+      "isotropic variable CSA",
+      "PDB NH oriented axial shared ratio fixed CSA",
+      "PDB NH oriented axial shared ratio variable CSA"
+    ],
+    "fit": "Globally select tau and D ratio using training error summed over residues; per-residue S2 and optional CSA fitted on training only"
+  },
+  "scoring": {
+    "primary": "median 800MHz per-residue sum of squared z_R1,z_R2,z_NOE, same residues for all models",
+    "secondary": "per-channel median absolute z, fraction all three within 2 reported SE, covariance caveat and CSA boundary counts",
+    "no_test_selection": true
+  },
+  "epistemic": {
+    "shape_PCA_axis_not_experimental_diffusion_axis": true,
+    "backbone_H_estimated_not_experimentally_observed": true,
+    "not_FNII": true,
+    "not_prospective_blind": true,
+    "zero_new_rowan_jobs": true,
+    "zero_new_rowan_credits": true,
+    "no_model_promotion": true
+  }
+}

@@ -1,0 +1,208 @@
+{
+  "schema": "janus.connection.six_state_benchmark.v1",
+  "benchmark_id": "JANUS-CONNECTION-SIX-STATE-BENCHMARK-2026-08-14-V1.0",
+  "execution_mode": "EXACT_ENUMERATION_FORMAL_RELATION_CORES",
+  "target_profile": {
+    "REAL": 1.0,
+    "BLIND": 1.0,
+    "TEMPORAL_REWIRED": 0.0,
+    "MATCHED_NULL": 0.0,
+    "FRESHNESS_ONLY_SHUFFLE": 1.0,
+    "ALTERNATIVE_PREDECESSOR": 0.0
+  },
+  "benchmark_count": 3,
+  "negative_comparator_count": 1,
+  "benchmarks": [
+    {
+      "edge_id": "B1-ADAPTIVE-HISTORY-COPY",
+      "relation": "complete prior history -> adaptive candidate -> later witness hit",
+      "source_refs": [
+        {
+          "path": "data/proofs/JANUS-SEQUENTIAL-ADAPTIVE-WITNESS-HARDENING-v0.6.json",
+          "sha": "7e5d8d53ca6332e0689544f3989612d7fc4348ae"
+        },
+        {
+          "path": "data/proofs/JANUS-ANYTIME-VALID-WITNESS-HARDENING-v0.7.json",
+          "sha": "b72891ff06178130c25e231ec699ce900c4642c4"
+        }
+      ],
+      "frozen_model": "T1~Bernoulli(1/2); B1=0. REAL: T2=T1 and B2=T1. REWIRED/NULL: T2 independent fair while B2=T1. ALT: T2=T1 while B2=U independent fair. FRESHNESS control changes only an orthogonal metadata bit.",
+      "result": {
+        "raw_metric_name": "P(any_hit_by_trial_2)",
+        "raw": {
+          "REAL": "1/1",
+          "BLIND": "1/1",
+          "TEMPORAL_REWIRED": "3/4",
+          "MATCHED_NULL": "3/4",
+          "FRESHNESS_ONLY_SHUFFLE": "1/1",
+          "ALTERNATIVE_PREDECESSOR": "3/4"
+        },
+        "raw_decimal": {
+          "REAL": 1.0,
+          "BLIND": 1.0,
+          "TEMPORAL_REWIRED": 0.75,
+          "MATCHED_NULL": 0.75,
+          "FRESHNESS_ONLY_SHUFFLE": 1.0,
+          "ALTERNATIVE_PREDECESSOR": 0.75
+        },
+        "matched_null_baseline": 0.75,
+        "effect_real_minus_null": 0.25,
+        "normalized_relation_score": {
+          "REAL": 1.0,
+          "BLIND": 1.0,
+          "TEMPORAL_REWIRED": 0.0,
+          "MATCHED_NULL": 0.0,
+          "FRESHNESS_ONLY_SHUFFLE": 1.0,
+          "ALTERNATIVE_PREDECESSOR": 0.0
+        },
+        "exact_state_count": {
+          "REAL": 2,
+          "REWIRED_OR_NULL": 4,
+          "ALT_PREDECESSOR": 4
+        }
+      },
+      "classification": "PASS_RELATION_SPECIFIC_SIX_STATE_PROFILE"
+    },
+    {
+      "edge_id": "B2-PRETURN-ANCHOR-TARGET",
+      "relation": "PRE_RETURN freeze -> external anchor -> later target generation",
+      "source_refs": [
+        {
+          "path": "data/proofs/JANUS-CAUSAL-CONSISTENCY-WITNESS-PRIORITY-CAPSULE-v1.0.json",
+          "sha": "c40191d2ec0dd3ce522e31f3f714da50df9c9206"
+        }
+      ],
+      "frozen_model": "Minimal critical core has exactly three phases. REAL uses required order. BLIND renames phases only. REWIRED violates phase order. NULL is the complete 3! permutation set. FRESHNESS changes an orthogonal freshness tag without moving phases. ALT replaces the required immediate predecessor relation with a matched wrong predecessor.",
+      "result": {
+        "raw_metric_name": "protocol_order_admissibility",
+        "raw": {
+          "REAL": "1/1",
+          "BLIND": "1/1",
+          "TEMPORAL_REWIRED": "0/1",
+          "MATCHED_NULL": "1/6",
+          "FRESHNESS_ONLY_SHUFFLE": "1/1",
+          "ALTERNATIVE_PREDECESSOR": "0/1"
+        },
+        "raw_decimal": {
+          "REAL": 1.0,
+          "BLIND": 1.0,
+          "TEMPORAL_REWIRED": 0.0,
+          "MATCHED_NULL": 0.16666666666666666,
+          "FRESHNESS_ONLY_SHUFFLE": 1.0,
+          "ALTERNATIVE_PREDECESSOR": 0.0
+        },
+        "matched_null_permutations": 6,
+        "matched_null_valid": 1,
+        "matched_null_rate": 0.16666666666666666,
+        "effect_real_minus_null": 0.8333333333333334,
+        "normalized_relation_score": {
+          "REAL": 1.0,
+          "BLIND": 1.0,
+          "TEMPORAL_REWIRED": 0.0,
+          "MATCHED_NULL": 0.0,
+          "FRESHNESS_ONLY_SHUFFLE": 1.0,
+          "ALTERNATIVE_PREDECESSOR": 0.0
+        }
+      },
+      "classification": "PASS_RELATION_SPECIFIC_SIX_STATE_PROFILE"
+    },
+    {
+      "edge_id": "B3-SIM3-COMMIT-BEFORE-REVEAL",
+      "relation": "router freeze -> external commitment -> public case reveal",
+      "source_refs": [
+        {
+          "path": "data/JANUS-SIM-3-EXTERNAL-WITNESS-GUEST-INVITATION-v1.0.json",
+          "sha": "a51974457bc61884f2bc83ea7ba18fdfac7d3731"
+        }
+      ],
+      "frozen_model": "Minimal ceremony core is phases ROUTER_FREEZE, EXTERNAL_COMMITMENT, PUBLIC_CASE_REVEAL. NULL enumerates all 3! phase orders. FRESHNESS changes an orthogonal timestamp/freshness tag only. ALT substitutes a matched wrong predecessor for EXTERNAL_COMMITMENT.",
+      "result": {
+        "raw_metric_name": "protocol_order_admissibility",
+        "raw": {
+          "REAL": "1/1",
+          "BLIND": "1/1",
+          "TEMPORAL_REWIRED": "0/1",
+          "MATCHED_NULL": "1/6",
+          "FRESHNESS_ONLY_SHUFFLE": "1/1",
+          "ALTERNATIVE_PREDECESSOR": "0/1"
+        },
+        "raw_decimal": {
+          "REAL": 1.0,
+          "BLIND": 1.0,
+          "TEMPORAL_REWIRED": 0.0,
+          "MATCHED_NULL": 0.16666666666666666,
+          "FRESHNESS_ONLY_SHUFFLE": 1.0,
+          "ALTERNATIVE_PREDECESSOR": 0.0
+        },
+        "matched_null_permutations": 6,
+        "matched_null_valid": 1,
+        "matched_null_rate": 0.16666666666666666,
+        "effect_real_minus_null": 0.8333333333333334,
+        "normalized_relation_score": {
+          "REAL": 1.0,
+          "BLIND": 1.0,
+          "TEMPORAL_REWIRED": 0.0,
+          "MATCHED_NULL": 0.0,
+          "FRESHNESS_ONLY_SHUFFLE": 1.0,
+          "ALTERNATIVE_PREDECESSOR": 0.0
+        }
+      },
+      "classification": "PASS_RELATION_SPECIFIC_SIX_STATE_PROFILE"
+    },
+    {
+      "edge_id": "NC1-AUTHENTICITY-FRESHNESS-CURRENTNESS",
+      "relation": "authentic checkpoint + external freshness root -> current admissibility",
+      "role": "NEGATIVE_COMPARATOR_FOR_PREDECESSOR_SPECIFIC_GATE",
+      "source_refs": [
+        {
+          "path": "data/proofs/JANUS-TEMPORAL-CONTINUITY-ROLLBACK-REPLAY-HARDENING-v0.9.json",
+          "sha": "6aeb342b9ceb91c05ab141d82dd15cfe0cbf96a2"
+        }
+      ],
+      "frozen_model": "Same 3-phase order benchmark, except FRESHNESS_ONLY_SHUFFLE deliberately breaks the freshness-root/currentness association because freshness is the mechanism rather than an orthogonal confounder.",
+      "result": {
+        "raw_metric_name": "protocol_order_admissibility",
+        "raw": {
+          "REAL": "1/1",
+          "BLIND": "1/1",
+          "TEMPORAL_REWIRED": "0/1",
+          "MATCHED_NULL": "1/6",
+          "FRESHNESS_ONLY_SHUFFLE": "0/1",
+          "ALTERNATIVE_PREDECESSOR": "0/1"
+        },
+        "raw_decimal": {
+          "REAL": 1.0,
+          "BLIND": 1.0,
+          "TEMPORAL_REWIRED": 0.0,
+          "MATCHED_NULL": 0.16666666666666666,
+          "FRESHNESS_ONLY_SHUFFLE": 0.0,
+          "ALTERNATIVE_PREDECESSOR": 0.0
+        },
+        "matched_null_permutations": 6,
+        "matched_null_valid": 1,
+        "matched_null_rate": 0.16666666666666666,
+        "effect_real_minus_null": 0.8333333333333334,
+        "normalized_relation_score": {
+          "REAL": 1.0,
+          "BLIND": 1.0,
+          "TEMPORAL_REWIRED": 0.0,
+          "MATCHED_NULL": 0.0,
+          "FRESHNESS_ONLY_SHUFFLE": 0.0,
+          "ALTERNATIVE_PREDECESSOR": 0.0
+        }
+      },
+      "classification": "RECLASSIFY_FRESHNESS_MEDIATED_NOT_PREDECESSOR_SPECIFIC"
+    }
+  ],
+  "summary": {
+    "candidate_pass_count": 3,
+    "candidate_total": 3,
+    "negative_comparator_expected_reclassification": "RECLASSIFY_FRESHNESS_MEDIATED_NOT_PREDECESSOR_SPECIFIC",
+    "claim_ceiling": "Executed exact benchmark of frozen formal relation cores. This is not yet a full raw-JSON field-permutation benchmark, external replication, causal proof, or scientific novelty claim."
+  },
+  "integrity": {
+    "canonical_sha256_pre_integrity": "3d2002a0ada2862ce5e837ff16d73d80af4115921e633a85d702e5d25b2776f3",
+    "local_executor_sha256": "cc48e757aa5f6d594ca07ad731d59fa9fe0ab911fc2d6d39464237711026b85c",
+    "local_result_file_sha256": "f83c75b719c689b3abf3e49c86cc3a7035598154176de267a60e46483d4b2cda"
+  }
+}

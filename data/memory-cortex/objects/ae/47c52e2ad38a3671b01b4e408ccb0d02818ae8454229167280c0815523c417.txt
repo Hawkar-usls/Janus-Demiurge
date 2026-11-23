@@ -1,0 +1,91 @@
+{
+  "schema": "janus.cosmos.seti.r42a8a.ood_stress.receipt.v1",
+  "stage": "R42A8A",
+  "date": "2026-11-21",
+  "status": "PASS_PREREGISTERED_SYNTHETIC_OOD_SCREEN__HOLD_REAL_GENERALIZATION_AND_PRODUCTION",
+  "repository": "Hawkar-usls/Janus-Cosmos",
+  "branch": "research/seti-r42a8-frozen-ood-stress-20261121",
+  "protocol": {
+    "path": "research/seti/r42a8_ood_stress_protocol.json",
+    "preregistered_commit": "4a796da8d34c82899e89ada6cce251edd6d060cf"
+  },
+  "implementation": {
+    "path": "research/seti/r42a8_ood_stress.py",
+    "initial_commit": "c9d8e9232769bd8c40302882cf9a3ddc8454b9d8",
+    "indexing_repair_commit": "3838b9dec08ca9bbf3f4e21ad3992027a83e0d8d",
+    "workflow_commit": "3943a2f163dba307478291dcbf331039a97d37a2"
+  },
+  "workflow": {
+    "initial_failed_run": 44911212359,
+    "initial_failure": "Advanced numpy indexing candidate-score shape mismatch, repaired without changing scoring rules or protocol",
+    "final_run": 44911310841,
+    "final_job": 136867528874,
+    "conclusion": "success",
+    "artifact_id": 14709483754,
+    "artifact_digest": "d11e2dd503270d8058b050dfdd3f0dd845c71b89a0a57f968b978dbc9bdd8d49"
+  },
+  "source_model": {
+    "stage": "R42A7A",
+    "model_run": 44901446300,
+    "model_artifact": 14706350937,
+    "frozen_fit_model_lock_sha256": "bb00bb9bff24cd3997a581291cd440794efdc1f8794ef62963badb31eff9056e",
+    "refit_performed": false,
+    "old_audit_groups_used": false
+  },
+  "new_synthetic_stress": {
+    "test_rows": 1024,
+    "positives": 512,
+    "nulls": 512,
+    "independent_generator_seed": 420826,
+    "panel_regimes": [
+      {
+        "name": "new_colored_noise_01",
+        "positives": 256,
+        "synthetic_controls": 256,
+        "previously_frozen_r42a7_shadow_auc": 0.7122802734375,
+        "untrained_ridge_energy_auc": 0.5998687744140625,
+        "blind_candidate_localizations": 243,
+        "weak_injections": 64,
+        "weak_blind_localizations": 57
+      },
+      {
+        "name": "new_impulse_and_comb_02",
+        "positives": 256,
+        "synthetic_controls": 256,
+        "previously_frozen_r42a7_shadow_auc": 0.71795654296875,
+        "untrained_ridge_energy_auc": 0.601470947265625,
+        "blind_candidate_localizations": 248,
+        "weak_injections": 64,
+        "weak_blind_localizations": 62
+      }
+    ],
+    "overall_blind_candidate_localizations": 491,
+    "overall_weak_injection_localizations": 119,
+    "frequency_shift_test": {
+      "shift_channels": 8,
+      "valid_spectra": 1023,
+      "median_abs_frozen_score_delta": 0.042270824929979134,
+      "p95_abs_delta": 0.19355384055630848,
+      "model_zero_margin_side_changed": 2
+    },
+    "qualified_criterion": "AUC>=0.7 and >=simple ridge score on each of two preregistered synthetic stress regimes",
+    "criterion_met": true
+  },
+  "caveats": [
+    "1024 examples are internally simulated, not independent astronomical observations or externally sealed blind test",
+    "Synthetic control/positive labels are generator-defined; their presence is not proof of terrestrial versus extraterrestrial physical origin",
+    "Research R42A7A shadow ranking tested, not full end-to-end JANUS radio detector or its actual working false-alert performance",
+    "Frozen R42A7A model still failed previous fit-group cross-validation mean AUC ~0.478; simulation-positive findings cannot override actual research panel failure",
+    "Blind path localization is simple line-search probe, NOT improvement of original JANUS pipeline",
+    "No historical audit 7–11 retraining/scoring, no production veto or model update",
+    "Only two simulation environments, unknown sensitivity to generator/model mismatch"
+  ],
+  "production": {
+    "unchanged": true,
+    "previous_historical_control_false_alerts": 51,
+    "previous_historical_control_localized": 318,
+    "previous_historical_weak": 69,
+    "auto_veto": false
+  },
+  "next_allowed": "R42A8B: test additional independently seeded adversarial simulation replications and physical perturbation stability of frozen model; freeze sample sizes and success gate before run. R42A7B3 real antenna pointing request #58509 continues as independent blocker for real blind end-to-end comparison."
+}

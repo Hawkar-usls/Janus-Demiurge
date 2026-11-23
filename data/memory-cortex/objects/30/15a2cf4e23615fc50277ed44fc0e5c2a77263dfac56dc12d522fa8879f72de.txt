@@ -1,0 +1,80 @@
+{
+  "artifact_id": "JANUS-PALOMAR-JPFM-3C-HALPHA-CROSS-CHANNEL-ADMISSION-v1.0",
+  "experiment_id": "JPFM-3C",
+  "date": "2026-08-15",
+  "status": "PREREGISTERED_BEFORE_HALPHA_TO_BLUEBOOK_OR_POSS_OUTCOME_JOIN",
+  "purpose": "Test whether official NOAA/NCEI H-alpha flare event dates are temporally associated with the frozen Blue Book STARLIKE human layer or with POSS-I S0 candidate rate, while conditioning both solar negatives and photographic inference on actual observation opportunity.",
+  "source_bindings": {
+    "halpha_event_patrol_freeze": "data/JANUS-PALOMAR-JPFM-3B-NOAA-EVENT-PATROL-SOURCE-FREEZE-v1.0.json",
+    "halpha_source_parser": "data/JANUS-PALOMAR-JPFM-3B-NOAA-EVENT-PATROL-PARSER-RUN-001.json",
+    "bluebook_starlike_freeze": "data/JANUS-BLUEBOOK-STARLIKE-DAY-FREEZE-v1.0.json",
+    "poss_release_commit": "4005e200541b321ead3d6608f0162a14430ef1c2",
+    "poss_release": "results/s0-642-20260814"
+  },
+  "solar_event_definition": {
+    "primary": "Any NOAA H-alpha event archive detailed record of stable legacy length 88 on the calendar date.",
+    "record_date_slice": "zero-based [10:16] YYMMDD",
+    "severity_not_used": true,
+    "short_27_character_records": "EXCLUDED_FROM_EVENT_DEFINITION_UNTIL_SEMANTICS_ARE_DOCUMENTED",
+    "pre_1955_reports": "CONTEXT_ONLY_POSITIVE_REPORT_LAYER_NOT_USED_FOR_NEGATIVE_BASELINE"
+  },
+  "solar_opportunity_gate": {
+    "official_patrol_data_code": "13",
+    "daily_coverage": "Union of all valid station H-alpha patrol intervals in UTC, with cross-midnight intervals split across dates.",
+    "primary_minimum_coverage_minutes": 720,
+    "primary_rationale": "At least half of the UTC day under network patrol. Threshold frozen from source-only coverage diagnostics before Blue Book/POSS-I join; it retains 697/849 days in the broader 1955-01-01..1957-04-28 diagnostic window.",
+    "sensitivity_threshold_minutes": [360, 1080],
+    "negative_day_rule": "A zero-event date may be used as a negative only if it meets the applicable patrol coverage threshold.",
+    "missing_or_subthreshold_day": "EXCLUDED_NOT_ZERO"
+  },
+  "temporal_scope": {
+    "primary_start": "1955-07-01",
+    "primary_end": "1957-04-28",
+    "reason": "The frozen 1955 official event file begins its detailed event/gap structure on 1955-07-01; earlier patrol availability alone does not establish complete event enumeration.",
+    "pre_primary_period": "CONTEXT_ONLY_NOT_INFERENTIAL"
+  },
+  "primary_endpoints": [
+    {
+      "id": "P1_BLUEBOOK_STARLIKE_EXACT_DAY",
+      "unit": "solar-opportunity-qualified calendar day",
+      "outcome": "any frozen Blue Book STARLIKE report day",
+      "exposure": "any official H-alpha event on same date",
+      "test": "Fisher exact plus year-month-blocked permutation preserving within-block flare-day count",
+      "positive_direction": "STARLIKE enrichment on flare days"
+    },
+    {
+      "id": "P2_POSS_RATE_EXACT_DAY",
+      "unit": "actually observed Palomar night also passing solar patrol opportunity gate",
+      "outcome": "POSS-I S0 candidate count",
+      "opportunity": "processed tile count offset",
+      "exposure": "any official H-alpha event on same date",
+      "model": "NB2 with month/year, sky footprint, exposure/WCS, lunar and geomagnetic nuisance terms as available from frozen JPFM lineage",
+      "positive_direction": "higher candidate rate on flare dates"
+    }
+  ],
+  "frozen_lag_sensitivities": {
+    "lags_days": [-3, -2, -1, 0, 1, 2, 3],
+    "plus_minus_1_window": true,
+    "interpretation": "A single isolated nominal lag is not admitted without multiplicity control and temporal localization; pre-event peaks are confounding warnings, not backward causation."
+  },
+  "coverage_sensitivities": [360, 720, 1080],
+  "multiplicity": {
+    "primary_exact_day_endpoints": "reported separately as two preregistered endpoints",
+    "lag_family": "Benjamini-Hochberg FDR within channel across seven lags",
+    "coverage_sensitivities": "sensitivity only; cannot rescue a failed primary 720-minute endpoint"
+  },
+  "admission_rule": {
+    "shared_external_pattern": "Requires positive direction in both Blue Book and POSS-I primary exact-day endpoints, each p<0.05, and no contradiction from the 720-minute opportunity gate. Lag-only findings cannot satisfy this rule.",
+    "single_channel_result": "May be retained as a channel-specific candidate only; no shared trigger claim.",
+    "null_or_inconsistent_result": "NO_HALPHA_CROSS_CHANNEL_PATTERN_ADMITTED"
+  },
+  "forbidden_inferences": [
+    "No claim that solar flares cause UAP or POSS-I candidates.",
+    "No claim that a common event in two channels is the same physical object.",
+    "No use of solar no-report dates as negatives without patrol opportunity.",
+    "No tuning of coverage threshold, event definition or lag family after outcome inspection.",
+    "No use of 1949-1954 report-only data for negative-baseline inference."
+  ],
+  "current_authority_changed": false,
+  "claim_ceiling": "PREREGISTRATION_ONLY__NO_HALPHA_STARLIKE_OR_POSS_ASSOCIATION_YET"
+}

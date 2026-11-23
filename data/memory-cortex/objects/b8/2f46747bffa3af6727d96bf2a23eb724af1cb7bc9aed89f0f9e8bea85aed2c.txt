@@ -1,0 +1,42 @@
+{
+  "schema": "janus.eye.r3_1.strict_order_gate_manifest.v1",
+  "artifact_id": "JANUS-EYE-R3.1-STRICT-ORDER-CONSTELLATION-GATE-MANIFEST-v1.0",
+  "date": "2026-09-01",
+  "status": "FROZEN_BEFORE_FIRST_R3_1_RUN",
+  "parent": "EYE/r3/EYE-R3-FIRST-RUN-RESEARCH-RECEIPT-2026-09-01-v1.0.json",
+  "purpose": "Test whether R3 ordered-machine candidates survive a stricter source-grounded order gate instead of inheriting order from tied textual anchors or deterministic tie-breaking.",
+  "target_scope": "PALOMAR/MUSIC/GENESIS R3 target constellation only for the first R3.1 run; no candidate receives a score bonus.",
+  "target_bonus": false,
+  "frozen_requirements": {
+    "source_sha256_matches_r3_provenance": true,
+    "strictly_increasing_earliest_operator_positions": true,
+    "distinct_earliest_anchor_tokens": true,
+    "minimum_independent_strict_order_lineages_per_domain": 2,
+    "candidate_order_must_beat_every_alternate_permutation_in_each_domain": true,
+    "same_lineage_repetition_counts_as_independent": false,
+    "derivative_memory_may_be_used_as_candidate_manifest_but_not_as_source_evidence": true
+  },
+  "control_design": {
+    "positive": "The frozen candidate operator order is evaluated against source files whose SHA-256 must equal the R3 provenance SHA-256.",
+    "negative": "Every alternate permutation of the same operator set is evaluated on the same source supports. A candidate does not pass if an alternate ordering ties or exceeds its strict-lineage support in any domain.",
+    "tie_policy": "Any equal earliest operator positions are ORDER_UNRESOLVED and do not count as strict-order support.",
+    "anchor_policy": "The earliest matching signal token for each operator must be distinct within a supporting document; shared earliest anchors do not count as an ordered witness."
+  },
+  "verdicts": [
+    "STRICT_ORDER_PASS__MECHANISM_VERIFY_STILL_REQUIRED",
+    "ORDER_CONTROL_FAIL",
+    "INSUFFICIENT_STRICT_ORDER_SUPPORT",
+    "SOURCE_DRIFT_BLOCKED",
+    "OPEN"
+  ],
+  "claim_ceiling": "A PASS establishes discriminating source-grounded textual operator order within the frozen corpus supports. It does not by itself prove temporal, causal, or physical mechanism identity across domains.",
+  "falsifier": "The candidate order lacks two independent strict-order lineages in any domain, shares tied/identical anchors, source SHA has drifted, or an alternate permutation matches/exceeds its support.",
+  "authority_firewall": [
+    "TEXTUAL_ORDER != CAUSAL_ORDER",
+    "STRICT_ORDER_PASS != MECHANISM_PROOF",
+    "CANDIDATE_MANIFEST != SOURCE_EVIDENCE",
+    "R3_1_PASS != INDEPENDENT_REPLICATION",
+    "VERIFY_DECIDES"
+  ],
+  "seal": "UNTIE THE STARS BEFORE CALLING THEM A CONSTELLATION."
+}

@@ -1,0 +1,89 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-R3C-1A-JS-TRAILING-COMMA-PARSER-CORRECTION-SPEC-2026-08-14-v0.1",
+  "timestamp": "2026-08-14T15:41:00+03:00",
+  "version": "v0.1",
+  "title": "Frozen generic non-evaluating JavaScript trailing-comma normalization for lineara Map payloads",
+  "observer": "Oleksandr Ahapov / Hawkar + JANUS",
+  "node_type": "parser_correction_spec",
+  "status": "FROZEN_BEFORE_PARSER_CORRECTION_EXECUTION",
+  "parent_failure_receipt": "data/JANUS-LINEAR-A-R3C-1A-PARSER-RECOVERY-RECEIPT-2026-08-14-v0.1.json",
+  "diagnostic_evidence": {
+    "path": "data/JANUS-LINEAR-A-R3C-1A-JS-PAYLOAD-DIAGNOSTIC-RESULT-2026-08-14-v0.1.json",
+    "source_bytes": 1609122,
+    "source_sha256": "b7b383b93db55b504eb00c552a8b18c19a588e83bba7ff0ab93ca32277d8bfe2",
+    "first_json_break": {
+      "line": 71780,
+      "column": 5,
+      "character_offset": 1405177,
+      "character": "]",
+      "previous_nonspace": ","
+    },
+    "classification": "JAVASCRIPT_TRAILING_COMMA_BEFORE_ARRAY_CLOSE",
+    "first_observed_document_context": "KH104",
+    "nearby_unsupported_features_observed": {
+      "line_comment": false,
+      "block_comment": false,
+      "undefined": false,
+      "NaN": false,
+      "Infinity": false,
+      "single_quote_string": false,
+      "template_literal": false
+    }
+  },
+  "frozen_transform": {
+    "id": "JANUS-JS-LITERAL-TRAILING-COMMA-ONLY-v0.1",
+    "input": "The exact character payload between new Map( and the terminal ); in source bytes.",
+    "algorithm": [
+      "Scan left-to-right while tracking whether the cursor is inside a JSON-style double-quoted string and whether the previous string character escaped the next character.",
+      "When outside a string and the current character is a comma, scan forward over whitespace only.",
+      "If and only if the next non-whitespace character is ] or }, omit that comma from the normalized parse view and record its original payload character position plus closing delimiter.",
+      "All other characters are copied byte-for-character into the normalized parse view.",
+      "Run strict Python json.loads only on the normalized parse view. Never eval or execute JavaScript."
+    ],
+    "may_remove": "comma outside a double-quoted string immediately followed, modulo whitespace, by ] or }",
+    "may_not_remove": [
+      "commas inside quoted strings",
+      "ordinary item/property separators",
+      "comments",
+      "identifiers",
+      "function calls",
+      "undefined/NaN/Infinity",
+      "single-quoted or template-literal syntax"
+    ],
+    "source_bytes_mutated": false,
+    "parse_view_is_additive": true,
+    "javascript_execution_allowed": false,
+    "eval_allowed": false
+  },
+  "required_receipt_fields": [
+    "original_file_bytes",
+    "original_file_sha256",
+    "payload_character_count",
+    "normalized_payload_sha256",
+    "trailing_comma_removal_count",
+    "trailing_comma_original_positions",
+    "strict_json_parse_success",
+    "document_count"
+  ],
+  "validation_canaries": [
+    "A synthetic array/object with trailing commas must parse after normalization.",
+    "A quoted string containing comma followed by closing-bracket-like text must remain byte-identical inside the string.",
+    "A payload with an unsupported identifier value must still fail strict JSON parsing after trailing-comma normalization.",
+    "Historical Briakos source and current JANUS frozen mwenge source must be processed by the same transform implementation."
+  ],
+  "anti_overfit": {
+    "document_specific_KH104_patch_forbidden": true,
+    "published_Briakos_metrics_used_to_define_transform": false,
+    "additional_JS_syntax_normalization_without_new_diagnostic_and_freeze": false,
+    "scientific_metric_execution_before_parser_validation": false
+  },
+  "claim_ceiling": {
+    "parser_rule_frozen": true,
+    "parser_correction_validated": false,
+    "Briakos_metrics_reproduced": false,
+    "R3B_effect": "NONE",
+    "independent_transcription_replication": false,
+    "new_anchor": false,
+    "decipherment": false
+  }
+}

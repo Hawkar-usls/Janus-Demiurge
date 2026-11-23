@@ -1,0 +1,161 @@
+{
+  "schema": "JANUS.boundary_source_ontology.v1",
+  "artifact_id": "JANUS-SING-WHEN-YOURE-WINNING-SOURCE-ONTOLOGY-PROTOCOL-AMENDMENT-v1.1",
+  "title": "Sing When You're Winning — SOURCE Ontology and Protocol Amendment",
+  "created_at_local": "2026-08-14T11:59:00+03:00",
+  "status": "FROZEN_AMENDMENT_BEFORE_CONFIRMATORY_BOUNDARY_RUN",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "amends": [
+    "data/JANUS-SING-WHEN-YOURE-WINNING-BLIND-100-200-PREREGISTRATION-v1.0.json",
+    "data/JANUS-SING-WHEN-YOURE-WINNING-BOUNDARY-LOCALIZED-SCORING-SPEC-v1.0.json",
+    "data/JANUS-SING-WHEN-YOURE-WINNING-ADVERSARIAL-DEADPOOL-BOUNDARY-CONTROLS-v1.0.json"
+  ],
+  "reason_for_amendment": "The original SOURCE definition grouped together same represented identity, shared lineage, cloning, multiverse variants, and shared mantles. Deadpool, Doctor Strange, Multiplicity, Orphan Black and Spider-Verse show that these relations are not equivalent. A confirmatory run therefore needs a strict identity endpoint plus separately reported relaxed lineage endpoints.",
+  "no_silent_rewrite": true,
+  "primary_source_endpoint": {
+    "name": "SOURCE_STRICT_IDENTITY",
+    "definition": "Multiple visible instances represent the same persistent subject/entity/identity, not merely genetically related copies, alternate-universe variants, actors playing different characters, or different people sharing a role/mantle.",
+    "target_relation": "SAME_REAL_SUBJECT_MULTIPLE_REPRESENTATIONS",
+    "pass_relation_types": [
+      "SAME_REAL_SUBJECT_MULTIPLE_REPRESENTATIONS",
+      "SAME_PERSISTENT_ENTITY_MULTIPLE_REPRESENTATIONS"
+    ],
+    "fail_relation_types": [
+      "DISTINCT_IDENTITIES",
+      "SHARED_ROLE_OR_MANTLE",
+      "SHARED_GENETIC_OR_CLONE_LINEAGE",
+      "MULTIVERSE_VARIANT_LINEAGE",
+      "SAME_ACTOR_DIFFERENT_CHARACTERS"
+    ],
+    "ambiguous_relation_types": [
+      "REPLICATED_PROCESS_OR_PROGRAM_WITH_UNCLEAR_PERSISTENT_IDENTITY",
+      "TEMPORAL_SELF_WITH_UNCLEAR_SIMULTANEITY",
+      "UNKNOWN_OR_INSUFFICIENT_PROVENANCE"
+    ]
+  },
+  "secondary_source_endpoints": {
+    "SOURCE_LINEAGE_SHARED": {
+      "definition": "Instances share a documented derivational lineage even if they are not the same persistent identity.",
+      "pass_relation_types": [
+        "SAME_REAL_SUBJECT_MULTIPLE_REPRESENTATIONS",
+        "SAME_PERSISTENT_ENTITY_MULTIPLE_REPRESENTATIONS",
+        "SHARED_GENETIC_OR_CLONE_LINEAGE",
+        "MULTIVERSE_VARIANT_LINEAGE",
+        "REPLICATED_PROCESS_OR_PROGRAM_WITH_UNCLEAR_PERSISTENT_IDENTITY"
+      ],
+      "purpose": "Allows Deadpool/Doctor Strange/clone systems to be used as relaxed-source adversarial controls without pretending they are strictly the same identity."
+    },
+    "SOURCE_ROLE_SHARED": {
+      "definition": "Instances share a mantle, title, role or archetype but are different identities.",
+      "examples": ["Spider-People", "different office-holders", "different players in the same team role"],
+      "confirmatory_status": "NOT_A_SOURCE_STRICT_PASS"
+    }
+  },
+  "relation_type_ontology": {
+    "SAME_REAL_SUBJECT_MULTIPLE_REPRESENTATIONS": {
+      "description": "The same real human or physical subject is composited/represented more than once.",
+      "strict_identity_pass": true,
+      "example": "Robbie Williams repeatedly depicted in the same artwork; Paul M. Smith multiple self-portrait technique."
+    },
+    "SAME_PERSISTENT_ENTITY_MULTIPLE_REPRESENTATIONS": {
+      "description": "The same persistent fictional/digital entity is represented multiple times without becoming independent identities.",
+      "strict_identity_pass": true,
+      "requires": "explicit provenance showing one persistent entity rather than descendants or variants"
+    },
+    "SHARED_GENETIC_OR_CLONE_LINEAGE": {
+      "description": "Distinct persons/organisms derive from cloning or common genetic source.",
+      "strict_identity_pass": false,
+      "lineage_pass": true,
+      "examples": ["Multiplicity clones", "Orphan Black clones"]
+    },
+    "MULTIVERSE_VARIANT_LINEAGE": {
+      "description": "Alternate-reality versions derive from a common character concept/lineage but are distinct world-bound identities.",
+      "strict_identity_pass": false,
+      "lineage_pass": true,
+      "examples": ["Deadpool variants", "Stephen Strange variants"]
+    },
+    "SHARED_ROLE_OR_MANTLE": {
+      "description": "Different identities share a title, mask, function or archetype.",
+      "strict_identity_pass": false,
+      "lineage_pass": false,
+      "role_pass": true,
+      "example": "Spider Society members are Spider-People but not one identity."
+    },
+    "SAME_ACTOR_DIFFERENT_CHARACTERS": {
+      "description": "One performer visually supplies multiple characters, but narrative identity differs.",
+      "strict_identity_pass": false,
+      "warning": "Actor-level visual sameness must not be confused with character-level identity."
+    },
+    "DISTINCT_IDENTITIES": {
+      "description": "Ordinary ensemble of different subjects.",
+      "strict_identity_pass": false,
+      "lineage_pass": false
+    },
+    "REPLICATED_PROCESS_OR_PROGRAM_WITH_UNCLEAR_PERSISTENT_IDENTITY": {
+      "description": "Software/process replication where persistence semantics decide whether replicas are views of one entity or independent descendants.",
+      "strict_identity_pass": null,
+      "lineage_pass": true,
+      "resolution_rule": "Require explicit state/authority provenance before strict classification."
+    },
+    "UNKNOWN_OR_INSUFFICIENT_PROVENANCE": {
+      "description": "Image alone cannot establish whether instances are the same identity, lineage variants, clones or unrelated lookalikes.",
+      "strict_identity_pass": null,
+      "lineage_pass": null
+    }
+  },
+  "dual_first_break_logic": {
+    "primary": {
+      "name": "first_break_strict",
+      "source_gate": "SOURCE_STRICT_IDENTITY",
+      "order": ["SOURCE", "WORLD", "RECEIPT"]
+    },
+    "secondary": {
+      "name": "first_break_lineage",
+      "source_gate": "SOURCE_LINEAGE_SHARED",
+      "order": ["SOURCE_LINEAGE", "WORLD", "RECEIPT"]
+    },
+    "why_two_modes": "A Deadpool or Doctor Strange control may fail SOURCE under strict identity while passing lineage and then failing WORLD. Reporting both prevents an ontological choice from hiding where the deeper structural divergence occurs."
+  },
+  "target_classification": {
+    "object": "Robbie Williams — Sing When You're Winning artwork",
+    "relation_type": "SAME_REAL_SUBJECT_MULTIPLE_REPRESENTATIONS",
+    "source_strict_identity": true,
+    "source_lineage_shared": true,
+    "evidence_basis": "Museum Helmond documents that Williams plays all players, police, fans and trainer; the museum also preserves Paul M. Smith's account that the brief used the multiple on Robbie and required extensive post-production to piece the images together.",
+    "sources": [
+      "https://museumhelmond.nl/en/collectie/object/2017-018",
+      "https://robbiewilliams.com/pages/timeline/entry-album-sing-when-youre-winning",
+      "https://robbiewilliams.com/blogs/news/new-sing-when-you-re-winning-photo-galleries-added"
+    ]
+  },
+  "matched_control_insight": {
+    "name": "Paul M. Smith prior multiple-self work",
+    "importance": "The photographer used multiple self-portraits before the Robbie commission. Therefore multiplicity itself is a known technique confound and cannot carry the anomaly claim.",
+    "expected_boundary_role": "SOURCE_STRICT=PASS and often WORLD=PASS, leaving RECEIPT as the discriminating boundary when no singular external outcome is present.",
+    "sources": [
+      "https://museumhelmond.nl/collectie/vervaardiger/Paul%2BSmith",
+      "https://www.christies.com/lot/lot-paul-smith-make-my-night-4510328/"
+    ]
+  },
+  "canonical_machine_record_extension": {
+    "required_new_fields": [
+      "source_relation_type",
+      "source_strict_identity",
+      "source_lineage_shared",
+      "source_role_shared",
+      "first_break_strict",
+      "first_break_lineage"
+    ],
+    "null_policy": "Use null when provenance does not resolve ontology; never promote resemblance alone to strict identity."
+  },
+  "epistemic_effect": {
+    "what_becomes_stronger": "The experiment now distinguishes exact identity continuity from lineage similarity and role similarity.",
+    "what_becomes_weaker": "Earlier language saying Deadpool variants simply PASS SOURCE is too broad for the primary endpoint. Under strict identity they fail SOURCE; only the relaxed lineage endpoint passes before WORLD fails.",
+    "claim_ceiling": "This ontology refinement improves falsifiability but does not establish rarity, causality or intentional signaling."
+  },
+  "versioning": {
+    "version": "1.1",
+    "effective_date": "2026-08-14",
+    "rule": "Future confirmatory boundary runs must name whether strict or lineage SOURCE semantics are used; strict identity is primary."
+  }
+}

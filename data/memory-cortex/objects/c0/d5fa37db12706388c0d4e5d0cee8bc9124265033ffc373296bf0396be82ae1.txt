@@ -1,0 +1,64 @@
+{
+  "schema": "janus.hrain.full_memory_contract.v1",
+  "artifact_id": "JANUS-HRAIN-FULL-MEMORY-CONTRACT-v1.0",
+  "status": "FULL_CURRENT_TRACKED_TREE_READ_ONLY_MEMORY_CONTRACT",
+  "purpose": "Expose every current tracked Meta Registry blob to HRAiN through a deterministic sharded catalog without forcing the browser to load the whole repository at once.",
+  "source_database": "Hawkar-usls/janus-meta-registry",
+  "consumer": "Hawkar-usls/Hrain",
+  "terminal_consumer": "Hawkar-usls/-Terminal-for-Janus",
+  "dataflow": [
+    "JANUS_META_REGISTRY_DB",
+    "FULL_CURRENT_MEMORY_MANIFEST",
+    "HRAIN_LAZY_STRUCTURAL_MEMORY",
+    "TERMINAL_MEMORY_VIEW"
+  ],
+  "modes": {
+    "ACTIVE": {
+      "existing_projection": "assets/hrain-registry-index.json",
+      "meaning": "Fast current/active working-memory projection selected by the existing production bridge."
+    },
+    "FULL_CURRENT": {
+      "manifest": "assets/hrain-full-memory/manifest.json",
+      "shards": "assets/hrain-full-memory/shards/*.json",
+      "meaning": "Every tracked blob in the current repository tree except the generated full-memory export itself, which is excluded only to prevent recursive self-indexing."
+    },
+    "HISTORICAL_LINEAGE": {
+      "status": "NOT_YET_IMPLEMENTED",
+      "meaning": "Git history across prior commits is a separate future layer and MUST NOT be implied by FULL_CURRENT."
+    }
+  },
+  "coverage_law": "TRACKED_BLOBS == CATALOGED_BLOBS + GENERATED_SELF_EXPORT_EXCLUSIONS",
+  "generated_self_export_prefix": "assets/hrain-full-memory/",
+  "sharding": {
+    "ordering": "PATH_ASC",
+    "objects_per_shard": 200,
+    "manifest_binds_each_shard_sha256": true,
+    "source_commit_is_exact": true,
+    "generated_at_uses_source_commit_time": true
+  },
+  "object_metadata": [
+    "path",
+    "git_blob_sha",
+    "sha256",
+    "size_bytes",
+    "extension",
+    "memory_class",
+    "namespace",
+    "github_url",
+    "raw_url"
+  ],
+  "authority": {
+    "read_only": true,
+    "delete_allowed": false,
+    "source_mutation_allowed": false,
+    "scientific_authority_granted": false,
+    "claim_promotion_authority_granted": false
+  },
+  "laws": [
+    "FULL_CURRENT != COMPLETE_GIT_HISTORY",
+    "HRAIN_GRAPH != REGISTRY_AUTHORITY",
+    "CATALOG_PRESENCE != SCIENTIFIC_VALIDITY",
+    "CATALOG_ABSENCE_WITHOUT_EXPLICIT_EXCLUSION = COVERAGE_FAILURE",
+    "TERMINAL_MEMORY_READOUT_MUST_PASS_THROUGH_HRAIN"
+  ]
+}

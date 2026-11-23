@@ -1,0 +1,14 @@
+{
+  "schema":"JANUS/META-REGISTRY/BCEG/V6-V8/SPIRAL-CHECKPOINT/v1.0",
+  "date":"2026-08-30",
+  "status":"APPEND_ONLY_CAUSAL_CHECKPOINT",
+  "research_rule":"Математика не сходится. Пока не сойдется.",
+  "causal_chain":[
+    {"stage":"V6_CYCLIC_NONAFFINE_ROBDD","result_commit":"88425d62c0dee9408873c37fcc65f1c564fae6bf","verdict":"PARTIAL_OR_REFUTED_CYCLIC_NONAFFINE","finding":"Boundary output stayed compact but global ROBDD compilation/apply work accelerated; k12→k15 paid 5.30x and ops 5.55x.","lesson":"SMALL_CERTIFICATE != CHEAP_COMPILATION"},
+    {"stage":"V7_FACTOR_DAG_REPRESENTATION_SWITCH","result_commit":"adbf2afe5748f4796b1cc4ae8896e83c5c05cb92","verdict":"FINITE_FACTOR_DAG_COMPILATION_ESCAPE","finding":"Fresh 20/20 exact factor-DAG; median work was 2.87% of global ROBDD for k>=15; local scope/internal width discovered as <=3.","lesson":"V6 bottleneck was representation-specific on bounded-local-width structure."},
+    {"stage":"V8_ARTICULATION_STATE_ON_CUT","result_commit":"65b7c068d00fe3d671995ad6fcdd82f4894b553a","verdict":"EXACT_TRELLIS_NO_FULL_ESCAPE","finding":"One internal component grows with k, yet max bag scope remains 5 and trellis paid work grows mildly while flat-bucket scope/work explodes. Frozen serialization-ratio gate remains FAIL.","lesson":"COMPONENT_SIZE is not the controlling parameter; LIVE_SEPARATOR_WIDTH is the next candidate resource."}
+  ],
+  "current_frontier":{"name":"GROWING_SEPARATOR_WIDTH","formal_shape":"T(n,w) ~ 2^w poly(n) for generic Boolean state messages unless state semantics admit a smaller exact representation.","research_question":"Can JANUS discover a typed/compressed exact state language whose information dimension is smaller than raw Boolean separator width w, or does adversarial separator width force exponential representation/discovery?"},
+  "spider_search_directives":["Search old C021/C024/C028/C046/C047 for boundary dimension, quotient core, semantic overlap, affine offsets and trellis state analogues.","Search RBLGANUL ProofMind/Anti-Dispersion history for representation selection that can rank state languages without pruning exact fallback.","Compare Boolean separator cardinality w with semantic state dimension/rank; do not confuse variable count with information dimension.","MAD-LAB should generate separators with same raw width but different semantic compressibility: affine, Horn, counting, mixed, random/non-structured.","Preserve all frozen failures and audit defects; do not retrofit thresholds."],
+  "scientific_boundary":{"P_VS_NP":"OPEN","P_EQUALS_NP":false,"universal_polynomial_boundary_elimination":"OPEN"}
+}

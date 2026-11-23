@@ -1,0 +1,91 @@
+{
+  "schema": "janus.meta_registry.cousteau_source_bound_intake.v1",
+  "artifact_id": "JANUS-COUSTEAU-SOUTHERN-OCEAN-SOURCE-INTAKE-2026-11-09-v1.0",
+  "created_date": "2026-11-09",
+  "provenance": {
+    "project_repo": "Hawkar-usls/Janus-Cosmos",
+    "project_manifest_path": "data/cousteau/southern_ocean/COUSTEAU-SOUTHERN-OCEAN-SOURCE-MANIFEST-2026-11-09.json",
+    "project_manifest_blob_sha": "2f5685cc874d6bb2f5bde26443c748140fe19eaa",
+    "project_branch": "experiment/cousteau-southern-ocean-20261109",
+    "draft_pr_url": "https://github.com/Hawkar-usls/Janus-Cosmos/pull/49",
+    "workflow_url": "https://github.com/Hawkar-usls/Janus-Cosmos/actions/runs/42583295501"
+  },
+  "scientific_state": "SOURCE_INTAKE_SAVED__CI_STARTED__TRAINING_OUTCOME_PENDING",
+  "source_registry": [
+    {
+      "id": "NOAA_ERSST_V5",
+      "purpose": "sea surface temperature training",
+      "status": "INGESTION_PIPELINE_IMPLEMENTED__EXECUTION_PENDING",
+      "access": "PUBLIC_OPEN_NO_RESTRICTIONS",
+      "source_url": "https://www.ncei.noaa.gov/pub/data/cmb/ersst/v5/netcdf/",
+      "reference_url": "https://www.ncei.noaa.gov/products/extended-reconstructed-sst",
+      "years_requested": "2013-01..2025-12",
+      "nominal_spatial_grid": "2 degree latitude/longitude",
+      "frozen_training_split": {
+        "training": "2014-01..2023-12",
+        "holdout": "2024-01..2025-12"
+      },
+      "quality_limits": "retrospective NOAA gridded reconstruction; not raw acoustic data; high latitude/sea ice bias; grid may be revised"
+    },
+    {
+      "id": "IBCSO_2025",
+      "purpose": "bathymetry and TID measured/interpolated provenance",
+      "status": "CATALOGUED_NOT_TRAINED",
+      "access": "CC-BY attribution required",
+      "source_url": "https://ibcso.org/ibcso-2025-annual-release/",
+      "immutable_archive": "https://source.coop/ausantarctic/ibcso",
+      "required_before_training": "Use bed + TID + RID simultaneously; retain measured vs interpolated distinctions; do not label morphology as artificial structures"
+    },
+    {
+      "id": "NOAA_NCEI_MULTIBEAM",
+      "purpose": "raw multibeam bathymetric surveys and instrument calibration",
+      "status": "CATALOGUED_NOT_TRAINED",
+      "access": "PUBLIC archive; source-specific surveys require acquisition and instrument metadata",
+      "source_url": "https://www.ngdc.noaa.gov/mgg/bathymetry/multibeam/",
+      "required_before_training": "survey ID/trackline/raw provenance and native sonar formats"
+    },
+    {
+      "id": "NSIDC_G02135",
+      "purpose": "Antarctic sea-ice extent time series",
+      "status": "CATALOGUED_NOT_TRAINED",
+      "access": "public with required citation",
+      "source_url": "https://nsidc.org/sea-ice-today/sea-ice-tools",
+      "required_before_training": "data version, coverage, standalone holdout and daily/monthly definitions"
+    },
+    {
+      "id": "COPERNICUS_MARINE",
+      "purpose": "ocean physics, hydrography, biogeochemistry",
+      "status": "CATALOGUED_NOT_TRAINED",
+      "access": "check product access conditions before fetch",
+      "source_url": "https://data.marine.copernicus.eu/",
+      "required_before_training": "select product ID, temporal/spatial subset, license and variables"
+    },
+    {
+      "id": "ARGO",
+      "purpose": "in situ salinity temperature profiles",
+      "status": "CATALOGUED_NOT_TRAINED",
+      "source_url": "https://www.ncei.noaa.gov/products/ocean-physics",
+      "required_before_training": "check per-profile QC flags, depth and time"
+    }
+  ],
+  "preregistration": {
+    "model": "fixed ridge with month dummy, trend, lag-1 and lag-12",
+    "comparison": "seasonal naive 12-month lag",
+    "evaluation": "retrospective rolling one-month horizon; test months held out of weight fitting",
+    "success_criterion": "RMSE of ridge strictly below seasonal naive RMSE on 2024–2025",
+    "promotion": "never automatic; blocked until independent replication and modality-specific gates",
+    "data_integrity": "SHA256 each NetCDF, processed time-series file hash",
+    "raw_data_storage": "GitHub Actions artifact retention 30 days; authoritative open NOAA copies accessible upstream",
+    "processed_data_storage": "append-only JSON committed to experiment branch",
+    "negative_outcomes": "retain failed/negative result receipts"
+  },
+  "discipline": {
+    "historical_cousteau_gates_unchanged": true,
+    "source_labels_not_training_labels": true,
+    "raw_sonar_not_yet_acquired": true,
+    "data_receipt_not_yet_verified": true,
+    "negative_results_must_be_kept": true,
+    "unverified_improvement_not_claimed": true
+  },
+  "next_evidence": "Upon CI completion, verify run-ID receipt and SHA-256 inventory; write a new immutable status record rather than mutating this intake snapshot."
+}

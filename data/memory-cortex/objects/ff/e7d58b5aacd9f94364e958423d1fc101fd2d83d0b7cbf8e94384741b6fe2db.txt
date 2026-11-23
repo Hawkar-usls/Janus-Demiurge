@@ -1,0 +1,117 @@
+{
+  "schema": "janus.demihead.reviewer_disagreement_gate.v1",
+  "artifact_id": "JANUS-DEMIHEAD-REVIEWER-DISAGREEMENT-GATE-v1.0",
+  "created_at_local": "2026-08-16T05:24:00+03:00",
+  "status": "PREIMPLEMENTATION_CONTRACT_FROZEN",
+  "target": {
+    "repo": "Hawkar-usls/Demi_Head",
+    "stack_base_sha": "dc042de527f6bb543ab695059cb05f5e07cdfd91",
+    "stack_base_pr": 4
+  },
+  "method_lineage": {
+    "source_repo": "Hawkar-usls/Fast-CAT-SHAiTan",
+    "exact_source_sha": "d316b2508371e8c407d9439a31f2797691039778",
+    "reviewed_sources": [
+      "docs/MULTI_REVIEWER_CONSENSUS.md",
+      "fastcat/reviewer_collection.py"
+    ],
+    "reused_pattern": [
+      "fail-closed reviewer-bundle readiness",
+      "waiting states are valid non-fail outcomes",
+      "same frozen package binding",
+      "distinct reviewer and attestation identities",
+      "exact-unanimity field consensus",
+      "DISAGREEMENT preserved rather than majority-voted or model-filled",
+      "software does not claim to prove human independence"
+    ],
+    "domain_claims_transferred": false,
+    "feline_claims_transferred": false
+  },
+  "collection_states": [
+    "WAITING_FOR_FIRST_REVIEWER",
+    "WAITING_FOR_SECOND_REVIEWER",
+    "READY_FOR_CONSENSUS",
+    "INVALID_COLLECTION"
+  ],
+  "reviewer_bundle_contract": {
+    "required_fields": [
+      "reviewer_id",
+      "attestation_id",
+      "frozen_package_id",
+      "verifier_status",
+      "declared_independent",
+      "labels_frozen_before_model_reveal",
+      "labels"
+    ],
+    "minimum_reviewers_for_consensus": 2,
+    "reviewer_ids_must_be_distinct": true,
+    "attestation_ids_must_be_distinct": true,
+    "frozen_package_id_must_match_collection": true,
+    "verifier_status_required": "PASS",
+    "declared_independence_required": true,
+    "labels_frozen_before_model_reveal_required": true,
+    "human_independence_proven_by_software": false
+  },
+  "consensus_rule": {
+    "name": "EXACT_UNANIMITY_PER_FIELD",
+    "all_reviewers_same": "PRESERVE_VALUE",
+    "any_non_unanimity": "DISAGREEMENT",
+    "majority_vote": false,
+    "averaging": false,
+    "model_fill": false,
+    "silent_drop": false,
+    "adjudication_in_v1": false
+  },
+  "hard_laws": [
+    "DISAGREEMENT != ERROR",
+    "DISAGREEMENT != MAJORITY_LOSS",
+    "REVIEWER_COUNT != TRUTH_WEIGHT",
+    "REVIEWER_ID != INDEPENDENCE_PROOF",
+    "ATTESTATION != PERSONHOOD_PROOF",
+    "UNANIMITY != OBJECTIVE_TRUTH",
+    "WAITING != FAILURE",
+    "MODEL_MAY_NOT_FILL_DISAGREEMENT",
+    "REVIEW_COLLECTION != WORLD_AUTHORITY",
+    "SYNTHETIC_REVIEWERS != REAL_HUMAN_EVIDENCE"
+  ],
+  "required_negative_tests": [
+    "zero reviewers -> WAITING_FOR_FIRST_REVIEWER PASS",
+    "one valid reviewer -> WAITING_FOR_SECOND_REVIEWER PASS",
+    "two valid distinct reviewers on same frozen package -> READY_FOR_CONSENSUS",
+    "duplicate reviewer ID -> INVALID_COLLECTION",
+    "duplicate attestation ID -> INVALID_COLLECTION",
+    "package mismatch -> INVALID_COLLECTION",
+    "verifier failure -> INVALID_COLLECTION",
+    "declared independence false -> INVALID_COLLECTION",
+    "labels not frozen before model reveal -> INVALID_COLLECTION",
+    "two unanimous field values -> unanimous value",
+    "one field disagreement -> DISAGREEMENT",
+    "three reviewers with 2-to-1 majority -> DISAGREEMENT",
+    "review processing never changes authority or mass-effect budget"
+  ],
+  "portal_relationship": {
+    "portal_may_route_review_request": true,
+    "portal_may_create_consensus": false,
+    "portal_may_override_disagreement": false,
+    "rule": "PORTAL_ROUTE != REVIEW_CONSENSUS"
+  },
+  "claim_ceiling": {
+    "allowed_after_L4": [
+      "DemiHead can deterministically classify a frozen synthetic reviewer collection as waiting, ready, or invalid under explicit artifact rules.",
+      "DemiHead can produce exact-unanimity per-field consensus while preserving any non-unanimity as DISAGREEMENT."
+    ],
+    "forbidden": [
+      "software proves human reviewer independence",
+      "reviewer unanimity proves objective truth",
+      "synthetic fixtures are real human evidence",
+      "reviewer majority may silently replace disagreement",
+      "reviewer count creates external authority"
+    ]
+  },
+  "registry_semantics": {
+    "history_preserved": true,
+    "additive_not_replacement": true,
+    "current_authority_modified": false,
+    "demihead_main_modified": false
+  }
+}

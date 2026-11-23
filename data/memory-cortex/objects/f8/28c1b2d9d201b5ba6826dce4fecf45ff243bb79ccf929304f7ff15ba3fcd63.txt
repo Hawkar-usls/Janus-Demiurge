@@ -1,0 +1,98 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-R7-C0-POSITIONAL-TEMPLATE-ROLE-SPEC-2026-08-15-v0.1",
+  "version": "v0.1",
+  "node_type": "frozen_cross_fitted_positional_template_role_spec",
+  "parent_canonical_target": "v2.27",
+  "objective": "Discover concrete source words with reproducible document/row/numeric-block structural roles on heldout documents, as a direct precursor to probable functional-role testing.",
+  "source": {
+    "repository": "Hawkar-usls/lineara.xyz",
+    "frozen_commit": "43fe7cf1abc8e6bb1ea3228c3a1bd5938709620a",
+    "source_word_labels_hidden_until_all_scoring_complete": true,
+    "translations_used": false,
+    "external_dictionaries_used": false,
+    "Linear_B_supervision_used": false,
+    "Notti_readings_used": false
+  },
+  "status_policy": {
+    "all_mechanically_parsed_source_readings_may_be_observed": true,
+    "certainty_status_is_recorded_but_not_used_for_candidate_selection": true,
+    "none_or_doubtful_is_never_reinterpreted_as_certain": true,
+    "claim_scope": "source-transcription positional/template behavior only"
+  },
+  "roles": {
+    "DOCUMENT_FIRST_LEXICAL": "word is the first lexical source word in a document containing at least two lexical words",
+    "DOCUMENT_LAST_LEXICAL": "word is the last lexical source word in a document containing at least two lexical words",
+    "ROW_FIRST_LEXICAL": "word belongs to exactly one source row and is the first lexical word of that row; row has at least two substantive source words",
+    "ROW_LAST_LEXICAL": "word belongs to exactly one source row and is the last lexical word of that row; row has at least two substantive source words",
+    "BEFORE_NUMERIC_BLOCK_GE2": "word immediately precedes at least two consecutive numeric-like source words on the same unambiguous row",
+    "AFTER_NUMERIC_BLOCK_GE2": "word immediately follows at least two consecutive numeric-like source words on the same unambiguous row",
+    "BETWEEN_NUMERIC_NEIGHBORS": "word is immediately preceded and followed by numeric-like source words on the same unambiguous row"
+  },
+  "numeric_like_policy": {
+    "supported_exact_numeric_words": "numeric",
+    "all-piece numeric-like but not exactly parseable words": "numeric-like structural type only",
+    "numeric_value_coercion": false
+  },
+  "cross_fitting": {
+    "folds": 5,
+    "unit": "document_id",
+    "operator": "reuse JANUS-LINA-R5-0-CV-v0.1 document folds",
+    "candidate_selection_train_only": true,
+    "heldout_documents_never_used_for_candidate_selection": true
+  },
+  "train_candidate_gate": {
+    "minimum_eligible_occurrences": 6,
+    "minimum_documents": 4,
+    "minimum_role_match_rate": 0.60,
+    "minimum_absolute_rate_lift_over_role_background": 0.25,
+    "manual_candidate_addition_forbidden": true,
+    "manual_candidate_removal_forbidden": true,
+    "top_k_truncation": false
+  },
+  "heldout_candidate_gate": {
+    "minimum_selected_folds": 3,
+    "minimum_heldout_occurrences": 6,
+    "minimum_heldout_documents": 4,
+    "minimum_heldout_match_rate": 0.60,
+    "multiple_testing": "Benjamini-Hochberg",
+    "FDR_q_max": 0.05,
+    "null": "cross-fitted Poisson-binomial upper tail; each heldout occurrence uses the matching train fold's generic background rate for the same structural role"
+  },
+  "postscore_descriptors": {
+    "include": [
+      "source word label after scoring",
+      "role",
+      "heldout document IDs",
+      "heldout regions",
+      "source-status distribution",
+      "matched versus unmatched examples",
+      "row/document position metadata",
+      "adjacent structural types for numeric-block roles"
+    ],
+    "descriptors_are_semantics": false
+  },
+  "positive_ladder": {
+    "R7_C0": "concrete positional/template behavior candidate",
+    "R7_C1": "unchanged candidate survives complete-region holdout where support permits",
+    "R7_C2": "candidate advantage collapses under structure-destroying within-document/within-row permutations that preserve word and numeric-type frequencies",
+    "R7_C3": "probable structural functional-role candidate may be admitted, such as opener-like, closer-like, numeric-block-introducer-like, or numeric-block-separator-like; exact lexical meaning remains forbidden",
+    "EXTERNAL": "independent editorial source required for external replication credit"
+  },
+  "claim_ceiling": {
+    "allowed": [
+      "cross-fitted positional/template behavior candidate",
+      "concrete source word with reproducible structural-role enrichment",
+      "candidate-specific source-transcription role profile"
+    ],
+    "forbidden": [
+      "probable function",
+      "exact word meaning",
+      "translation",
+      "phonetic assignment",
+      "language-family identification",
+      "new anchor",
+      "Linear A decipherment",
+      "R3B external replication"
+    ]
+  }
+}

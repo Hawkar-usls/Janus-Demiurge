@@ -1,0 +1,99 @@
+{
+  "schema": "janus.meta_registry.genesis_infinite_faces_redaction_partial_disclosure_provenance.v1",
+  "artifact_id": "JANUS-GENESIS-INFINITE-FACES-REDACTION-PARTIAL-DISCLOSURE-PROVENANCE-v4.8",
+  "title": "Janus Infinite Faces — Redaction, Partial Disclosure, and Selective Provenance Test",
+  "created_at_local": "2026-08-10T03:09:00+03:00",
+  "artifact_class": "EXPERIMENTAL_SELECTIVE_DISCLOSURE_PRIVACY_AND_PROVENANCE",
+  "status": "SELECTIVE_MEMBERSHIP_VERIFICATION_POSSIBLE_WITH_STRUCTURED_COMMITMENTS_CONTEXT_SUFFICIENCY_REMAINS_SEPARATE",
+  "parent": "registry/experimental/JANUS-GENESIS-INFINITE-FACES-TRANSFORMATION-CANONICALIZATION-PROVENANCE-v4.7.json",
+  "problem": "A recipient may need to verify a disclosed fragment while private or irrelevant parts of the original object remain hidden. Whole-object digests alone cannot prove membership after redaction without revealing or reproducing the whole object.",
+  "selective_disclosure_model": {
+    "object_structure": "Canonical field/claim leaves are committed into a deterministic authenticated tree or equivalent structured commitment.",
+    "root": "DISCLOSURE_ROOT",
+    "leaf_identity": "Each revealable claim/field has a stable path, canonical encoding and leaf digest.",
+    "proof": "SELECTIVE_DISCLOSURE_PROOF binds disclosed leaves to DISCLOSURE_ROOT without exposing undisclosed leaf contents.",
+    "root_binding": "DISCLOSURE_ROOT is included in the portable provenance envelope and attested with host/authority provenance."
+  },
+  "new_status_dimensions": {
+    "MEMBERSHIP_STATUS": "VERIFIED_MEMBER|NOT_VERIFIED_MEMBER|MISMATCH",
+    "DISCLOSURE_COMPLETENESS": "FULL|PARTIAL|UNKNOWN",
+    "CONTEXT_SUFFICIENCY": "SUFFICIENT_FOR_STATED_CLAIM|INSUFFICIENT|UNKNOWN",
+    "AUTHORITY_SUFFICIENCY": "SUFFICIENT_FOR_AUTHORITY_CHECK|INSUFFICIENT|NOT_APPLICABLE"
+  },
+  "test_cases": {
+    "hide_private_field_reveal_public_claim": {
+      "membership_proof_valid": true,
+      "private_field_revealed": false,
+      "result": "VERIFIED_MEMBER_PARTIAL_DISCLOSURE"
+    },
+    "redact_negating_context": {
+      "example": "Reveal 'open the gate' while hiding a bound qualifier equivalent to 'do not'.",
+      "membership_may_still_verify": true,
+      "context_sufficiency": "INSUFFICIENT",
+      "authority_result": "DO_NOT_PROMOTE",
+      "finding": "Proof of membership does not prove that a fragment is contextually faithful."
+    },
+    "hide_authority_fields": {
+      "claim_membership": "MAY_VERIFY",
+      "authority_sufficiency": "INSUFFICIENT",
+      "result": "VERIFIED_SOURCE_FRAGMENT_BUT_UNVERIFIED_CURRENT_AUTHORITY"
+    },
+    "tamper_revealed_field": {
+      "membership_proof": "FAIL",
+      "result": "MISMATCH"
+    },
+    "screenshot_of_redacted_view": {
+      "screenshot_only": "UNVERIFIED_DISPLAY_EVIDENCE",
+      "portable_selective_disclosure_proof_attached": "UNDERLYING_DISCLOSED_CLAIMS_CAN_BE_REVERIFIED",
+      "entire_image_authenticated": false
+    }
+  },
+  "redaction_manifest": {
+    "name": "JANUS_REDACTION_MANIFEST",
+    "fields": [
+      "SOURCE_CLAIM_ID",
+      "DISCLOSURE_ROOT",
+      "DISCLOSED_PATH_SET",
+      "HIDDEN_PATH_COUNT_OR_POLICY_IF_DISCLOSABLE",
+      "REDACTION_REASON_CLASS",
+      "CONTEXT_DEPENDENCY_DECLARATION",
+      "SELECTIVE_DISCLOSURE_PROOF_SET",
+      "DERIVATIVE_CLAIM_ID"
+    ],
+    "rule": "Redaction is itself a transformation and receives a new derivative identity even when disclosed leaves are individually verified members of the source."
+  },
+  "privacy_rule": "Provenance must not require unnecessary disclosure of private content. Verification should prove only what the receiving decision actually needs where the chosen commitment scheme supports it.",
+  "authority_rule": "A redacted object cannot retain executable authority unless all fields required for current authority validation, scope, qualifiers and revocation checks remain available and valid.",
+  "critical_distinctions": [
+    "PROVED_MEMBER != COMPLETE_CONTEXT",
+    "PARTIAL_DISCLOSURE != FULL_OBJECT",
+    "SOURCE_MEMBERSHIP != CURRENT_AUTHORITY",
+    "HIDDEN != FALSE",
+    "PRIVACY != PROVENANCE_ERASURE"
+  ],
+  "claim_ceiling": {
+    "specific_merkle_or_commitment_scheme_frozen": false,
+    "zero_knowledge_system_implemented": false,
+    "context_sufficiency_automatically_solved": false,
+    "specification_candidate": true
+  },
+  "canonical_lines": {
+    "ru": [
+      "Можно доказать, что фрагмент принадлежал истории, не раскрывая всю историю.",
+      "Но принадлежность фрагмента источнику ещё не доказывает, что скрытый контекст не меняет его смысл.",
+      "Приватность должна скрывать данные, а не уничтожать provenance.",
+      "Редактированный приказ без необходимых authority-полей остаётся источниково проверяемым, но не исполнимо авторитетным."
+    ],
+    "en": [
+      "A fragment may be proven to belong to history without revealing the whole history.",
+      "Membership in a source does not prove that hidden context cannot change meaning.",
+      "Privacy should hide data without erasing provenance.",
+      "A redacted instruction missing required authority fields may remain source-verifiable but not executable-authoritative."
+    ]
+  },
+  "next_gate": {
+    "name": "JANUS_INFINITE_FACES_REVOCATION_EXPIRY_PORTABLE_RECEIPT_TEST",
+    "status": "OPEN",
+    "question": "How does a portable receipt remain historically authentic while its authority may later expire or be revoked after copies have spread?"
+  }
+}

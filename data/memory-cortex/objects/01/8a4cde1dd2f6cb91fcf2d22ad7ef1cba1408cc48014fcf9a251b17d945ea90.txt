@@ -1,0 +1,63 @@
+{
+  "schema": "janus.meta_registry.fallout3_life_cycle_lexical_fingerprint_gate.v1",
+  "artifact_id": "FALLOUT-3-LIFE-CYCLE-LEXICAL-FINGERPRINT-GATE-v1.0",
+  "title": "Fallout 3 Life-Cycle Lexical Fingerprint Gate",
+  "version": "1.0",
+  "purpose": "Test whether the unusual CG02 birthday-poem lexical cluster recurs independently across Fallout 3 and DLC, rather than being an artifact of one note or translation.",
+  "seed_record": {
+    "editor_id": "CG02Note",
+    "form_id": "000744B7",
+    "source": "A birthday poem / Growing Up Fast"
+  },
+  "seed_terms": {
+    "rebirth": ["reborn", "purifying fluorescence"],
+    "authority": ["father to all", "overseeing", "eternities", "discipline", "obedience"],
+    "metamorphosis": ["larva", "pupa", "worker"],
+    "hive_identity": ["steel honeycomb"],
+    "numeric_identity": ["10", "101", "lies within"],
+    "aging": ["gray", "hair", "soul"],
+    "death": ["eternal slumber", "incineration"]
+  },
+  "test_layers": [
+    "exact_phrase_search",
+    "normalized_token_search",
+    "stemmed_token_search",
+    "cooccurrence_window_search",
+    "record_level_cluster_search",
+    "quest_and_cell_context_search",
+    "DLC_context_search",
+    "production_residue_crosscheck"
+  ],
+  "anti_false_positive_rules": [
+    "Do not treat a hit inside CG02Note itself as an independent recurrence.",
+    "Do not count generic words such as gray, father, death, or life as meaningful alone.",
+    "Require either an unusual lexical pair, a multi-term cluster, or a record-context relation.",
+    "Separate shipped ESM/DLC evidence from wiki prose and fan commentary.",
+    "Do not infer Zetan causality from thematic recurrence.",
+    "Do not use translation-only matches as primary evidence when the English record exists."
+  ],
+  "public_web_preflight_2026_08_10": {
+    "status": "PARTIAL",
+    "finding": "Exact web searches for the most distinctive CG02 phrases overwhelmingly resolve to the birthday poem itself or mirrors of that same artifact; no independent Fallout 3 record was established from this preflight alone.",
+    "independent_recurrence_established": false,
+    "authoritative_esm_corpus_available_to_gate": false,
+    "result": "NO_INDEPENDENT_RECURRENCE_ESTABLISHED_IN_PUBLIC_WEB_PREFLIGHT"
+  },
+  "required_full_corpus_input": [
+    "Fallout3.esm xEdit/FO3Edit export",
+    "official DLC ESM exports",
+    "record EditorID/FormID/type",
+    "script source where available",
+    "NOTE/INFO/QUST/SCPT/DIAL/TOPIC text",
+    "optional REFR/ACHR context for object-level clustering"
+  ],
+  "expected_admission_results": {
+    "UNIQUE_CG02_CLUSTER": "PASS_IF_NO_INDEPENDENT_CLUSTER",
+    "RECURRENT_LIFE_CYCLE_CLUSTER": "PASS_IF_INDEPENDENT_MULTI_TERM_HITS_FOUND",
+    "ZETA_SHARED_LEXICAL_CLUSTER": "SUPPORTED_ONLY_IF_INDEPENDENT_PRIMARY_RECORDS_MATCH",
+    "ZETANS_ORCHESTRATED_BIRTH": "NOT_A_TESTABLE_OUTPUT_OF_THIS_GATE",
+    "HIDDEN_MESSAGE": "NOT_ESTABLISHED_UNLESS_DETERMINISTIC_ENCODING_IS_FOUND"
+  },
+  "next_step": "Run against complete Fallout3.esm + DLC raw TSV/xEdit corpus and emit record-level hit inventory with FormID, EditorID, record type, matched terms, and context window.",
+  "claim_ceiling": "LEXICAL_RECURRENCE_ONLY; NO_CAUSAL_OR_AUTHORIAL_INTENT CLAIM"
+}

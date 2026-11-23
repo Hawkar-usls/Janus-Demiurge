@@ -1,0 +1,31 @@
+{
+  "schema": "JANUS/adv-elite-decision-checkpoint/v1.0.0",
+  "registry_id": "ADV-ELITE-Q09-GITHUB-UPLINK-2026-08-27",
+  "status": "FROZEN",
+  "decision": {
+    "decision_id": "Q09",
+    "canonical_class": "ADV_AUTHORED_GATEWAY_PUBLISHED_GITHUB_UPLINK",
+    "answer": "ADV_Elite decides what is interesting/anomalous and authors the canonical JSON itself. A trusted gateway only authenticates, verifies and publishes it to GitHub.",
+    "interesting_target": "Hawkar-usls/janus-distributed-ai-swarm",
+    "anomaly_target": "Hawkar-usls/janus-meta-registry",
+    "github_token_on_adv": false,
+    "offline_outbox": true,
+    "gateway_contract": "JANUS-REGISTRY-GATEWAY-CONTRACT-v1.0.0"
+  },
+  "routing": {
+    "interesting": "batch canonical JSON chunks to data/adv_elite/interesting/YYYY/MM/DD/<session>/<chunk_id>.json",
+    "anomaly": "publish anomaly onset immediately to registry/anomalies/ADV_ELITE/YYYY/MM/DD/<anomaly_id>.json, then finalize episode bundle"
+  },
+  "security": {
+    "node_to_gateway": "device-specific HMAC-SHA256 with nonce/replay protection",
+    "gateway_to_github": "fine-grained PAT for prototype or GitHub App installation token long-term",
+    "gateway_may_mutate_payload": false,
+    "truth_guard": "publication of an anomaly records detector output; it does not prove extraordinary physical causation"
+  },
+  "failure_mode": {
+    "github_offline": "keep registry_outbox locally or on storage-capable peer and retry later",
+    "gateway_offline": "core swarm remains fully operational",
+    "duplicate_request": "deduplicate by record_id + record/chunk hash and return prior ACK when known"
+  },
+  "next_question": "Q10_NONBLOCKING_UPLINK_OUTBOX"
+}

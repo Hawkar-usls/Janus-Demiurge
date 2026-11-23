@@ -1,0 +1,185 @@
+{
+  "artifact_id": "JANUS-CPU-QUANTUM-RETRO-EMULATOR-2026-11-06-v1.0",
+  "name_en": "JANUS CPU Quantum Retro Emulator",
+  "name_ru": "ЯНУС — эмулятор квантовых процессов на обычных процессорах",
+  "language": "ru",
+  "version": "1.0",
+  "created_date": "2026-11-06",
+  "parent_artifacts": [
+    "registry/uap/JANUS-PRINCIPLE-v1.0.json",
+    "registry/uap/JANUS-CONTROLLABLE-RETROCAUSAL-CHANNEL-METHODS-AND-CALIBRATOR-AUDIT-2026-11-06-v1.0.json",
+    "registry/uap/JANUS-RETRO-BYTE-CAMPAIGN-2026-11-06-v1.0.json"
+  ],
+  "status": "CPU_QUANTUM_SIMULATOR_IMPLEMENTED__8_TESTS_PASS__CONDITIONAL_INFORMATION_ONLY__NO_RETROCAUSAL_SIGNAL",
+  "user_goal": "Emulate quantum circuits and candidate P-CTC dynamics without QPU on ordinary CPU, investigate controlled future-to-past messages and use validated evidence for JANUS self-calibration.",
+  "strict_physics_boundary": "A classical computer simulator computes predictions of a specified model in forward ordinary time. Its prior knowledge of the programmed future input and its ability to condition on later outcomes do not constitute a physical channel from the future.",
+  "scientific_references": [
+    {
+      "name": "Qiskit Aer",
+      "url": "https://qiskit.github.io/qiskit-aer/stubs/qiskit_aer.AerSimulator.html",
+      "fact": "Supports dense statevector, density-matrix, stabilizer and matrix-product-state algorithms."
+    },
+    {
+      "name": "Google qsim",
+      "url": "https://github.com/quantumlib/qsim",
+      "fact": "CPU statevector emulator with vectorization, gate fusion and OpenMP."
+    },
+    {
+      "name": "Aaronson and Gottesman, Improved simulation of stabilizer circuits",
+      "doi": "10.1103/PhysRevA.70.052328",
+      "fact": "Clifford circuits admit efficient classical stabilizer simulation."
+    },
+    {
+      "name": "Lloyd et al., Closed Timelike Curves via Postselection",
+      "doi": "10.1103/PhysRevLett.106.040403",
+      "fact": "Hypothetical P-CTC model and experimentally simulable consistency correlations, not an actual physical CTC."
+    },
+    {
+      "name": "Huang et al., Experimental simulation of postselected closed timelike curves",
+      "doi": "10.1103/tm83-sxpm",
+      "fact": "Postselected CTC-like circuit was demonstrated on quantum hardware; earlier raw data plus late heralding are separate."
+    }
+  ],
+  "implementation": {
+    "repo": "Hawkar-usls/Janus-Demiurge",
+    "module": "experiments/ocean_transformer/janus_cpu_quantum_emulator.py",
+    "tests": "experiments/ocean_transformer/test_janus_cpu_quantum_emulator.py",
+    "workflow": ".github/workflows/janus-cpu-quantum-retro-emulator.yml",
+    "source_commit": "63e7c36e6064e81446a0acb37716a86708beed4a",
+    "tests_commit": "f054d36573c2e17a5b3283d93240dc3926025456",
+    "workflow_commit": "6a9ad1a967920d6dd2a0e6462cfbc091506e21dd",
+    "run_id": 42190398142,
+    "run_url": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/42190398142",
+    "run_conclusion": "success",
+    "test_count": 8,
+    "test_passed": 8,
+    "runtime_seconds": 0.938,
+    "architecture": {
+      "type": "exact pure-state statevector in Python stdlib",
+      "backend": "GitHub ubuntu-latest CPU",
+      "operations": [
+        "H",
+        "X",
+        "Z",
+        "S",
+        "T",
+        "CNOT",
+        "CZ",
+        "SWAP",
+        "marginal",
+        "postselect"
+      ],
+      "qubit_max": 16,
+      "state_size_16_qubits": 65536,
+      "memory_scales_as": "O(2^n) complex amplitudes",
+      "proof_limitation": "Statevector simulation can verify specified circuit statistics, not add actual quantum coherence or physical spacetime loops."
+    },
+    "report": {
+      "branch": "janus/quantum-cpu-retro-ledger",
+      "path": "experiments/ocean_transformer/ledger/quantum-cpu/run-42190398142/report.json",
+      "url": "https://github.com/Hawkar-usls/Janus-Demiurge/blob/janus/quantum-cpu-retro-ledger/experiments/ocean_transformer/ledger/quantum-cpu/run-42190398142/report.json",
+      "git_blob_sha": "39852e5cdea3baa47dd3040ef874f2e276ab0c71",
+      "schema": "janus.cpu_quantum_emulator.retro_audit.v1"
+    }
+  },
+  "exact_theory": {
+    "independent_future_message_bit": {
+      "unconditional_P_early_0_given_future_0": 0.5,
+      "unconditional_P_early_0_given_future_1": 0.5,
+      "early_available_mutual_information_about_later_choice_bits": 0,
+      "conditional_P_early_equals_future_given_late_herald": 1,
+      "herald_probability": 0.5
+    },
+    "eight_bit": {
+      "messages_tested": [
+        "00",
+        "a5",
+        "ff"
+      ],
+      "conditional_byte_decoding_success_each": true,
+      "late_herald_all_zero_probability": 0.00390625,
+      "unconditional_exact_byte_match_probability": 0.00390625,
+      "unconditional_early_information_about_independent_future_byte_bits": 0
+    },
+    "pctc_effective_map": {
+      "K": "K = Tr_loop(U)/2 with U=CNOT_CR_to_loop",
+      "matrix": [
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "zero_input_acceptance": 1,
+      "one_input_acceptance": 0,
+      "plus_input_acceptance": 0.5,
+      "nature": "Conditional nonlinear effective map. No physically available retrocausal loop and no operational early bit output."
+    }
+  },
+  "empirical_monte_carlo": {
+    "repetitions_per_noise": 65536,
+    "fully_recorded_levels": [
+      {
+        "late_bit_noise_probability": 0,
+        "total_shots": 65536,
+        "early_exact_byte_rate": 0.0037384033203125,
+        "accepted_shots": 245,
+        "acceptance_rate": 0.0037384033203125,
+        "after_herald_exact_byte_rate": 1,
+        "theoretical_conditional_exact_byte_rate": 1,
+        "unconditioned_correct_bit_fraction": 0.5007266998291016,
+        "source_seed": 20261106,
+        "raw_early_stream_digest": "e62b6c7ba5ce9223b2814795774df514902a326bb90b8627f464fccbe82727ca",
+        "future_stream_digest": "80af7f85917cbee9d2834753ffb02f3e9acbe9a0e3f48aaa942b88b68c238617"
+      },
+      {
+        "late_bit_noise_probability": 0.05,
+        "total_shots": 65536,
+        "early_exact_byte_rate": 0.00390625,
+        "accepted_shots": 287,
+        "acceptance_rate": 0.0043792724609375,
+        "after_herald_exact_byte_rate": 0.6376306620209059,
+        "theoretical_conditional_exact_byte_rate": 0.6634204312890623,
+        "unconditioned_correct_bit_fraction": 0.49890899658203125,
+        "source_seed": 20261156,
+        "raw_early_stream_digest": "c8873ddc32e4d8e9bd638dcea6271c72411bda99c8be95dc83419b8441e8c658",
+        "future_stream_digest": "e6eb6965fce9a50976bc65424cf23f84c924bcd4a3e01f1d7ae68c2bb058cc28"
+      },
+      {
+        "late_bit_noise_probability": 0.2,
+        "total_shots": 65536,
+        "early_exact_byte_rate": 0.0041656494140625,
+        "accepted_shots": 238,
+        "acceptance_rate": 0.003631591796875,
+        "after_herald_exact_byte_rate": 0.18487394957983194,
+        "theoretical_conditional_exact_byte_rate": 0.1677721600000001,
+        "unconditioned_correct_bit_fraction": 0.4999732971191406,
+        "source_seed": 20261306,
+        "raw_early_stream_digest": "dc7ac4d60d013a5929094e85198a24d8daca3da77e6fb4925a6cc35539a60d61",
+        "future_stream_digest": "63ca345ef68cc305b3f6cd053aa93dd103cbfbf4e06be07e1036f823f3e0a2f8"
+      }
+    ]
+  },
+  "scientific_gates": {
+    "expected_early_unconditioned_1_byte_accuracy": "1/256 for independent uniform late byte",
+    "selected_conditional_byte_accuracy": "1 when no noise, but result is available only after later herald",
+    "all_attempts_required": true,
+    "no_physical_channel_present": true,
+    "physical_retrocausality_proven": false,
+    "early_clairvoyance_proven": false,
+    "model_for_production": "NO",
+    "self_learning_eligibility": "History-only completed A/B labels may train ordinary forward predictors, but simulated postselected successes must not be counted as genuine pre-t0 future knowledge.",
+    "next_experiment": "Independent real QPU/lab experiment with a truly later free message and early unrevised readout. Standard classical emulation alone cannot supply the missing physical resource."
+  },
+  "outcomes": {
+    "quantum_math_verification": "PASS",
+    "postselection_effect_after_future_outcome": "PASS",
+    "unconditional_early_byte_communication": "FAIL__NO_SIGNAL",
+    "future_to_past_physical_byte_channel": "NOT_AVAILABLE",
+    "registration_immutable": true,
+    "production_unchanged": true
+  }
+}

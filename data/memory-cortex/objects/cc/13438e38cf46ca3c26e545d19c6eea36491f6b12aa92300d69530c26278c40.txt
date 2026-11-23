@@ -1,0 +1,76 @@
+{
+  "schema_id": "janus.rowan.fn1_109aa_uniprot_typeII_domain_decomposition_exploratory_prereg.v1",
+  "date_utc": "2026-10-26",
+  "timing": "FROZEN_AFTER_FIRST_ALL_21_NMR_GLOBAL_FOLD_BENCHMARK_BEFORE_NEW_DOMAIN_SCORING",
+  "analysis_class": "SECOND_STAGE_EXPLORATORY_NOT_PROSPECTIVELY_BLIND",
+  "discovered_motivation": "Preceding non-postselected 20+1 NMR comparison gave high global RMSD relative to local CA contact F1. Need determine whether mismatch predominantly lies in within-domain fold or interdomain relative pose; this is hypothesis-generating and cannot retroactively become pre-registered primary science.",
+  "original_receipt": "data/rowan/provenance/ROWAN-FN1-109AA-1E88-20NMR-1E8B-1NMR-REAL-2026-10-26-v1.json",
+  "source_pins": {
+    "previous_provider_uuid": "74a70ba9-8fa2-4011-b89a-70c761cc632f",
+    "original_rowan_mmcif_sha256": "67281aa7363212573cd8de4012dfe8a7345470ba09a4b561867103d1ea40b703",
+    "original_RCSB_1E88_mmcif_sha256": "0b91f9074f4e24f327c10d4d254e9fce543c14b741910b5fe15fac342bbf1f25",
+    "original_RCSB_1E8B_mmcif_sha256": "ad4960bfb9a4dcdb421892a577b5c0b32151f9f5fcbc60a86ec76d17fb873de6",
+    "frozen_reference_models": {
+      "1E88": 20,
+      "1E8B": 1
+    },
+    "primary_global_1E88_model1_RMSD_A": 9.201196,
+    "provenance": "UniProt P02751 live feature annotations through connected Yaksa: FN type-II 1 is residues 355–403; FN type-II 2 415–463 (one based, inclusive)."
+  },
+  "residue_domains": [
+    {
+      "name": "FNII_1",
+      "uniprot_one_based_inclusive": [
+        355,
+        403
+      ],
+      "rowan_109aa_zero_based_inclusive": [
+        0,
+        48
+      ],
+      "n": 49
+    },
+    {
+      "name": "LINKER",
+      "uniprot_one_based_inclusive": [
+        404,
+        414
+      ],
+      "rowan_109aa_zero_based_inclusive": [
+        49,
+        59
+      ],
+      "n": 11
+    },
+    {
+      "name": "FNII_2",
+      "uniprot_one_based_inclusive": [
+        415,
+        463
+      ],
+      "rowan_109aa_zero_based_inclusive": [
+        60,
+        108
+      ],
+      "n": 49
+    }
+  ],
+  "frozen_algorithms": [
+    "Compute Kabsch CA RMSD separately for each exactly pre-defined 49-residue domain, with >=45 identical-position CA coordinates; no secondary structure-dependent subset selection",
+    "Align predicted FNII_1 to reference FNII_1, then evaluate reference-vs-predicted FNII_2 RMSD without separate re-alignment; this anchored RMSD quantifies domain-relative-pose mismatch",
+    "Compare independently fitted FNII_2 RMSD with the anchored FNII_2 RMSD; report their difference without claiming a physical mechanism",
+    "Count inter-domain pairs FNII_1 × FNII_2 with CA separation <=8 Angstrom in both predicted and each reference; compute contact precision and recall where mathematically defined, otherwise JSON null",
+    "Retain all 20 1E88 NMR conformer rows, report median/full range (NOT best), retain 1E8B related reference separately",
+    "Read original provider structure and original RCSB NMR coordinates only; assert exact source hashes before computing"
+  ],
+  "no_auto_threshold_cherry_picking": true,
+  "no_new_rowan_job": true,
+  "no_new_rowan_credits": true,
+  "caveats": [
+    "NMR 20 conformers are correlated structures from one study",
+    "1E8B is from the same study, not an independent blind experiment",
+    "FN1 experimental NMR three-domain context includes upstream sixth FN type-I module omitted from short Rowan FNII input",
+    "No claim of molecular affinity, ECM function, cellulose interaction, structural mechanism certainty or experimental ΔΔG",
+    "Exploratory follow-up after primary readout, not an independent preregistered confirmation"
+  ]
+}

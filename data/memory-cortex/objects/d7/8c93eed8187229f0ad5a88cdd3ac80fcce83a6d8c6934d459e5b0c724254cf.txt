@@ -1,0 +1,70 @@
+{
+  "schema": "janus.meta_registry.execution_safety.v1",
+  "artifact_id": "JANUS-META-REGISTRY-EXECUTION-SAFETY-v1.0",
+  "audit_date": "2026-08-09",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "status": "HISTORICAL_EXECUTABLE_SOURCE_REQUIRES_ISOLATION",
+  "security_policy": "SECURITY.md",
+  "human_runtime_triage": "docs/RUNTIME_SOURCE_TRIAGE_2026-08-09.md",
+  "reviewed_runtime_surfaces": [
+    {
+      "path": "janus_core.py",
+      "risk": "HIGH",
+      "reason": "Dynamic module discovery/import/execution; model-assisted risk scoring is not a sandbox; local key/config and state integration."
+    },
+    {
+      "path": "server.py",
+      "risk": "HIGH",
+      "reason": "Historical aiohttp server binds 0.0.0.0:1138 and exposes state/device-command write routes without a visible authentication layer in the reviewed source."
+    },
+    {
+      "path": "keymaster.py",
+      "risk": "HIGH",
+      "reason": "Launches an external Windows executable, opens COM3, writes adaptive serial commands and operational files."
+    },
+    {
+      "path": "bridge_tachyon.py",
+      "risk": "HIGH",
+      "reason": "Opens COM3, reads local runtime state, changes gain parameters and sends SET commands; TachyonField is ordinary finite-difference extrapolation, not tachyon physics."
+    },
+    {
+      "path": "windows_optimizer.py",
+      "risk": "MEDIUM",
+      "reason": "Long/infinite local optimization loops can consume CPU/GPU resources and grow local histories."
+    },
+    {
+      "path": "igpu_offload.py",
+      "risk": "LOW_MEDIUM",
+      "reason": "Initializes OpenCL GPU execution and mutates linked environment state after repeated failures."
+    }
+  ],
+  "critical_boundaries": [
+    "A model-generated risk score is a heuristic, not a sandbox, capability boundary, code-signing mechanism or security review.",
+    "Dynamic Python import executes code with the permissions of the current process.",
+    "A historical network server is not safe for LAN/public exposure merely because it is archived.",
+    "Historical serial-control code can create real device side effects even when its variable names are metaphorical."
+  ],
+  "targeted_public_tree_marker_scan": {
+    "AIzaSy": "NO_EXACT_MATCH_FOUND",
+    "ghp_": "NO_EXACT_MATCH_FOUND",
+    "github_pat_": "NO_EXACT_MATCH_FOUND",
+    "sk-proj-": "NO_EXACT_MATCH_FOUND",
+    "generic_AAIza_prefix_note": "A generic AIza code-search hit was inspected and was a prefix check for locally ingested keys, not an embedded key value.",
+    "scope_boundary": "This targeted marker scan is not a complete secret-scanning proof and does not establish that Git history or every file is credential-free."
+  },
+  "historical_archive_boundary": {
+    "credential_shaped_values_reported_in_old_archives": true,
+    "secret_values_reproduced_in_public_audit": false,
+    "rotation_or_revocation_status_established": false,
+    "policy": "Any credential known to have appeared in historical archives or Git history should be treated as potentially compromised and replaced before reuse."
+  },
+  "safe_review_default": [
+    "prefer static inspection",
+    "use disposable non-privileged isolation for execution",
+    "provide no production credentials or private mounts",
+    "disable outbound networking unless explicitly required and controlled",
+    "review dynamic imports, subprocess/system calls, filesystem writes, deserialization and network paths before execution",
+    "use synthetic/test data"
+  ],
+  "interpretation": "Preserving historical executable source is useful for provenance and software archaeology. Registry presence is not a recommendation to run it."
+}

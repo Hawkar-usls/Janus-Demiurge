@@ -1,0 +1,153 @@
+{
+  "schema": "JANUS/meta/keymaster-topa-first-pivot-calibration-findings/v1.0.0",
+  "registry_id": "JANUS-KEYMASTER-TOPA-FIRST-PIVOT-CALIBRATION-FINDINGS-2026-08-28-v1.0",
+  "created_at": "2026-08-28T07:01:00+03:00",
+  "status": "FROZEN_FIRST_CALIBRATION_CYCLE__NEGATIVE_AND_POSITIVE_RELATIONS_PRESERVED",
+  "P_VS_NP": "OPEN",
+  "sources": {
+    "fundamentum_branch": "research/janus-keymaster-calibration-pivot-slime-topa-2026-08-28",
+    "fundamentum_head": "029f4c0515146f749eb87f63ee53b6f7124fda22",
+    "fundamentum_ci_run": 33140328159,
+    "fundamentum_ci": "SUCCESS",
+    "calibration_bundle_artifact_id": 9673680213,
+    "calibration_bundle_sha256": "86f9cb51555919c095221d68e526bf5cd6c48b78d3b52dfe5e4b9646032fef64",
+    "topa_branch": "research/keymaster-pivot-calibration-spider-2026-08-28",
+    "topa_head": "134c905223b1e8703d0f767f0d17dc3e6e7c142f",
+    "topa_ci_run": 33140536221,
+    "topa_ci": "SUCCESS",
+    "topa_relation_artifact_id": 9673756795,
+    "topa_relation_artifact_sha256": "5e2003d29608d9eb4606d6b7edc9ca697add0b1ce33b1b292a797e8242a39dc2"
+  },
+  "calibration_memory": {
+    "exact_episode_count": 15,
+    "formula_families": 2,
+    "pivot_slime_training_rows": 15,
+    "topa_seed_rows": 15,
+    "pivot_id_local_used_as_cross_formula_feature": false,
+    "memory_policy": "IMMUTABLE_EXACT_EPISODES_PLUS_RECOMPUTABLE_CONTEXT_AGGREGATES"
+  },
+  "topa_relations": [
+    {
+      "id": "H-UNIQUE-SURVIVING-RESOLVENT-MASS",
+      "status": "TWO_WITNESS_REPLICATED_CANDIDATE_NOT_THEOREM",
+      "finding": "More unique added/surviving resolvents tracks higher raw C025 cost in both frozen witness families.",
+      "25x25_spearman_unique_added_vs_raw": 0.9727272727272728,
+      "250x250_spearman_unique_added_vs_raw": 1.0,
+      "use": "Teacher/intermediate target: learn a cheap pre-pivot predictor for unique surviving resolver mass.",
+      "proof_authority": false
+    },
+    {
+      "id": "H-COLLISION-PROTECTS-RAW-CAP",
+      "status": "TWO_WITNESS_REPLICATED_CANDIDATE_NOT_THEOREM",
+      "finding": "Higher non-tautological resolvent collision rate tracks lower raw cost in both frozen witness families.",
+      "25x25_spearman_collision_vs_raw": -0.42727272727272725,
+      "250x250_spearman_collision_vs_raw": -0.816496580927726,
+      "use": "Search for cheap pre-pivot proxies for collision probability.",
+      "proof_authority": false
+    },
+    {
+      "id": "NEG-SINGLE-FEATURE-MONOCULTURE",
+      "status": "NEGATIVE_CALIBRATION_CERTIFICATE",
+      "finding": "Several intuitive one-feature rules reverse correlation sign between the two frozen formula families.",
+      "sign_unstable_features": [
+        "conflict_mass_per_pair",
+        "support_overlap_mass_per_pair",
+        "tautology_rate"
+      ],
+      "implication": "Keymaster must not use a single universal scalar heuristic; use context-conditioned multi-feature routing plus exact verification.",
+      "proof_authority": false
+    },
+    {
+      "id": "H-RAW-BEFORE-CANONICAL-COMPRESSION",
+      "status": "EXACT_LOCAL_MECHANISM",
+      "scope": "FROZEN_250x250_N8_WITNESS_AT_CAP_104_SQUARED",
+      "finding": "Overflow pivots have raw=10849 vs safe raw=10787 while their final canonical residual is smaller: 881 vs 931 units.",
+      "implication": "Final canonical compression cannot replace the monotone pre-subsumption raw cap; Keymaster must optimize survival under raw cap first.",
+      "contrast": {
+        "overflow_minus_safe_raw_units": 62,
+        "overflow_minus_safe_canonical_units": -50,
+        "overflow_minus_safe_unique_added": 12,
+        "overflow_minus_safe_tautology_rate": 0.006058666666666546,
+        "overflow_minus_safe_collision_rate_non_taut": -0.0010667886666666515
+      },
+      "proof_authority": false
+    }
+  ],
+  "cross_scale_shadow_negative_certificate": {
+    "model": "RIDGE_LINEAR_CHEAP_FEATURES_ONLY_LAMBDA_1E-6",
+    "holdout_rule": "formula family held out; local pivot ID excluded from features",
+    "features": [
+      "pos_mean_width",
+      "neg_mean_width",
+      "conflict_mass_per_pair",
+      "same_sign_mass_per_pair",
+      "support_overlap_mass_per_pair"
+    ],
+    "25x25_train_to_250x250_test": {
+      "chosen_local_pivot": 1,
+      "exact_best_local_pivot": 3,
+      "chosen_exact_raw": 10849,
+      "exact_best_raw": 10787,
+      "peak_raw_regret": 62,
+      "fit_under_104_squared": false,
+      "verdict": "NEGATIVE_TRANSFER"
+    },
+    "250x250_train_to_25x25_test": {
+      "chosen_local_pivot": 7,
+      "exact_best_local_pivot": 5,
+      "chosen_exact_raw": 949,
+      "exact_best_raw": 718,
+      "peak_raw_regret": 231,
+      "verdict": "NEGATIVE_TRANSFER"
+    },
+    "conclusion": "Naive coefficient transfer across scales fails in both directions on the two frozen families. This is evidence for context-conditioned M2R-PM and multi-formula Pivot-Slime training, not evidence that learned routing cannot work.",
+    "generalization_rate_claimed": false
+  },
+  "keymaster_design_update": {
+    "primary_navigation_target": "PREDICT_RAW_CAP_SURVIVAL_AND_UNIQUE_SURVIVING_RESOLVENT_MASS",
+    "secondary_targets": [
+      "collision_probability",
+      "raw_units",
+      "canonical_units_after_fit",
+      "terminal_depth",
+      "cumulative_pair_work"
+    ],
+    "route_policy": "top-k structurally diverse proposals -> exact replay -> immutable receipt -> online M2R-PM update",
+    "scale_conditioning_required": true,
+    "formula_context_required": true,
+    "single_feature_rule_forbidden_as_universal": true,
+    "numeric_pivot_label_transfer_forbidden": true
+  },
+  "pivot_slime_design_update": {
+    "teacher": "FULL_ADAPTIVE_TRANSFORMER_JGPT1_FAMILY",
+    "student": "MICROGPTSLIME_QUANTIZED",
+    "teacher_targets": [
+      "unique_added_resolvent_mass",
+      "raw_cap_overflow_risk",
+      "next_pivot_rank",
+      "trajectory_peak",
+      "terminal_depth"
+    ],
+    "student_promotion": "DISTILL_AND_QUANTIZE_ONLY_AFTER_FORMULA_FINGERPRINT_HOLDOUT_CHECK",
+    "online_learning_source": "EXACT_VERIFIED_RECEIPTS_ONLY",
+    "model_theorem_authority": false
+  },
+  "next_calibration_program": [
+    "Generate multiple independently constructed canonical formulas at each scale, not one formula per scale.",
+    "Run planned 25:25, 50:50, 100:100, 150:150, 200:200, 250:250 series with near-threshold stress caps.",
+    "Keep overflow and near-overflow examples as high-value training data.",
+    "Train/evaluate by formula fingerprint holdout.",
+    "Ablate Keymaster-only vs +M2R-PM vs +Pivot-Slime vs +TOPA features.",
+    "Measure exact checks saved at identical proof correctness, peak regret, overflow avoidance, pair-work savings and terminal-depth regret.",
+    "Search counterexamples to every TOPA relation before upgrading it from candidate heuristic."
+  ],
+  "epistemic_firewall": {
+    "P_VS_NP": "OPEN",
+    "TOPA_relation_is_proof": false,
+    "model_prediction_is_proof": false,
+    "two_formula_families_define_scaling_law": false,
+    "same_run_theorem_promotion": false,
+    "exact_JANUS_replay_remains_authority": true,
+    "negative_results_are_never_deleted": true
+  }
+}

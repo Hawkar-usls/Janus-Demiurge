@@ -1,0 +1,84 @@
+{
+  "schema": "janus.meta_registry.simptomat_route_compatibility_refinement.v1",
+  "artifact_id": "SIMPTOMAT-JANUS-ROUTE-COMPATIBILITY-REFINEMENT-2026-08-26-v1.0",
+  "created_at_local": "2026-08-26T17:50:00+03:00",
+  "timezone": "Europe/Zaporozhye",
+  "registry_class": "post_admission_route_type_compatibility_correction_receipt",
+  "status": "MERGED_TO_CANONICAL_REPOSITORIES",
+  "supersedes_interpretation_in": "registry/experimental/health_information/SIMPTOMAT-JANUS-DEMIHEAD-ORGAN-INTEGRATION-2026-08-26-v1.0.json",
+  "does_not_delete_prior_record": true,
+  "finding": {
+    "summary": "The first high-level organ admission correctly identified janus-lapis and janus-io-public as useful peers but named source-side payloads that those peers do not natively consume.",
+    "lapis_native_consumes": ["CANDIDATE_SET", "EVIDENCE_ANNOTATION", "REJECTION_FEEDBACK"],
+    "measurement_bench_native_consumes": ["RAW_TELEMETRY", "EXPERIMENT_CONTRACT", "CONTROL", "CALIBRATION"],
+    "unsafe_or_invalid_shortcuts": [
+      "DIAGNOSTIC_REASONING_PACKET_DIRECT_TO_LAPIS",
+      "NEXT_CONFIRMATION_STEP_DIRECT_TO_MEASUREMENT_BENCH",
+      "SUGGESTED_TEST_TREATED_AS_EXECUTABLE_EXPERIMENT_CONTRACT"
+    ]
+  },
+  "correction": {
+    "janus": {
+      "repository": "Hawkar-usls/Janus",
+      "pull_request": 12,
+      "merge_sha": "09dcc61b9dcabb596e971a4db1a817ce339b15bb",
+      "route_refinement": "organism/JANUS_ORGANISM_ROUTE_REFINEMENT_2026-08-26_SIMPTOMAT_v1.json",
+      "spiral": "organism/JANUS_SPIRAL_TRANCEPTION_v1.4.json",
+      "ci": {
+        "simptomat-route-refinement": "success",
+        "MCP Gateway": "success"
+      }
+    },
+    "simptomat": {
+      "repository": "Hawkar-usls/Simptomat",
+      "pull_request": 4,
+      "merge_sha": "a6cbd9b2648b55e74b586b7054596393d8e9a12d",
+      "lapis_adapter": "integrations/JANUS_LAPIS_DIAGNOSTIC_ADAPTER-v1.0.json",
+      "measurement_handoff": "integrations/JANUS_MEASUREMENT_HANDOFF-v1.0.json",
+      "member_link": ".janus/JANUS_ORGANISM_LINK.json",
+      "ci": {
+        "validate-screening-records": "success"
+      }
+    }
+  },
+  "effective_routes": {
+    "demihead": {
+      "mode": "NATIVE_TYPED_NEXUS_V2_11",
+      "source_payload": "janus.simptomat.diagnostic_reasoning_packet.v1",
+      "return_payload": "janus.demihead.simptomat_epistemic_review.v1"
+    },
+    "lapis": {
+      "mode": "ADAPTER_REQUIRED",
+      "adapter_outputs": ["CANDIDATE_SET", "EVIDENCE_ANNOTATION", "REJECTION_FEEDBACK"],
+      "return_payloads": ["RANKED_HYPOTHESIS", "GATE_REJECTION", "CANDIDATE_SUMMARY"],
+      "clinical_validation_from_lapis": false
+    },
+    "measurement_bench": {
+      "mode": "EXPLICIT_MEASUREMENT_CONTRACT_GATE_REQUIRED",
+      "direct_next_confirmation_step_route": false,
+      "required_peer_inputs_after_gate": ["EXPERIMENT_CONTRACT", "CONTROL", "CALIBRATION"],
+      "returns": ["MEASUREMENT_RECEIPT", "MATCHED_CONTROL_RESULT", "NEGATIVE_RESULT", "OBSERVATION"],
+      "automatic_diagnosis_from_receipt": false
+    },
+    "memory": {
+      "mode": "CONSENT_GATED_PERSISTENCE",
+      "explicit_public_case_consent_required": true
+    }
+  },
+  "epistemic_lessons": [
+    "A HIGH_LEVEL TOPOLOGY EDGE IS NOT A VALID ROUTE UNTIL PAYLOAD TYPES MATCH OR AN EXPLICIT ADAPTER EXISTS.",
+    "A SUGGESTED CONFIRMATION STEP IS A REASONING OUTPUT, NOT AN EXECUTABLE EXPERIMENT CONTRACT.",
+    "ADAPTER TRANSFORMATION CREATES NO NEW EVIDENCE.",
+    "LAPIS RANKING IS EXPLORATORY FEEDBACK, NOT CLINICAL VALIDATION.",
+    "A MEASUREMENT RECEIPT MAY UPDATE A DIFFERENTIAL BUT DOES NOT AUTOMATICALLY CONFIRM A DIAGNOSIS.",
+    "CORRECTIONS MUST PRESERVE THE EARLIER STATE RATHER THAN SILENTLY REWRITE IT."
+  ],
+  "current_spiral": "HUMAN → SIMPTOMAT → DEMIHEAD_NATIVE_REVIEW → OPTIONAL_LAPIS_ADAPTER → OPTIONAL_EXPLICIT_MEASUREMENT_CONTRACT_GATE → MEASUREMENT_RECEIPT → SIMPTOMAT_REINTEGRATION → NEXT_TURN_IF_STATE_CHANGED",
+  "authority_delta": 0,
+  "claim_ceiling": {
+    "typed_route_compatibility": "ESTABLISHED_IN_REPOSITORY_CONTRACT_SCOPE",
+    "production_cross_repo_runtime": "NOT_ESTABLISHED",
+    "clinical_validation": "NOT_ESTABLISHED",
+    "medical_diagnostic_authority": "NOT_ESTABLISHED_AND_NOT_GRANTED"
+  }
+}

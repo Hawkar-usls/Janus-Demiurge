@@ -1,0 +1,68 @@
+{
+  "schema": "janus.connection.raw_field_projection_fixture.v0_1",
+  "artifact_uuid": "JANUS-CONNECTION-RAW-FIELD-PROJECTION-FIXTURE-2026-08-14-V0.1",
+  "projection_rule": "Only exact raw JSON subtrees addressed by frozen JSON pointers are benchmark inputs. Prior Connection scan labels are excluded from features and scoring.",
+  "sources": {
+    "RF1_AIFC_EVIDENCE_STACK": {
+      "path": "registry/research_portfolio/AIFC-AUDITABLE-INDEPENDENT-FUTURE-CHALLENGE-RESEARCH-DOSSIER-v1.0.0.json",
+      "git_blob_sha1": "eb3c3b894933119e7c471d061bd8be98124f20c7",
+      "json_pointer": "/evidence_stack",
+      "fetched_lines": [45, 135],
+      "value": [
+        {"gate":"PRE_TARGET_EXACT_FREEZE","purpose":"The candidate bytes must exist and be immutable before target generation.","fail_closed_on":["post-hoc creation","mutable record","unanchored PRE_RETURN"]},
+        {"gate":"POST_FREEZE_TARGET_GENERATION","purpose":"The hard target must be generated only after the freeze certificate.","fail_closed_on":["target pre-generation","RNG prefetch","target-derived commitment or side information before freeze"]},
+        {"gate":"CONDITIONAL_MIN_ENTROPY","purpose":"Bound optimal guessing probability relative to the complete pre-target adversary view.","fail_closed_on":["self-attested RNG independence","marginal entropy only","average entropy that collapses on selected histories"]},
+        {"gate":"CAUSAL_D_SEPARATION","purpose":"Exclude direct leaks and common/latent causes such as shared seed, memory, filesystem state, network metadata or collusion.","fail_closed_on":["direct leak path","shared cause","unknown relevant side channel","post-selection collider"]},
+        {"gate":"MULTIPLICITY_ACCOUNTING","purpose":"Charge every frozen candidate and every trial.","fail_closed_on":["multiple hidden guesses","candidate-slot fishing","unreported attempts"]},
+        {"gate":"ANYTIME_VALID_STATISTICS","purpose":"Permit continuous monitoring and data-dependent stopping without inflating the declared type-I error.","fail_closed_on":["naive repeated peeking","marginal-only e-process caps","unregistered selection of favorable stopping time"]},
+        {"gate":"ANTI_ROLLBACK_FRESHNESS","purpose":"Prevent an authentic but stale PRE_RETURN history from masquerading as the latest state.","fail_closed_on":["snapshot rollback","stale signed checkpoint","forked split history","local-only freshness root"]},
+        {"gate":"BYZANTINE_WITNESS_QUORUM","purpose":"Distribute the temporal trust root and block conflicting certified histories under an explicit fault model.","fail_closed_on":["unsafe quorum","single shared failure domain","informal majority without overlap proof"]},
+        {"gate":"NO_POSTSELECTION","purpose":"Pre-register inclusion/reporting so conditioning on a collider cannot manufacture dependence.","fail_closed_on":["show only hits","discard unfavorable runs","select runs using both target and prediction"]},
+        {"gate":"FAIL_CLOSED_VERIFIER","purpose":"A missing evidence premise never silently degrades into a physical claim.","fail_closed_on":["self-certification","unknown externality","unresolved trust boundary","physical-mechanism overclaim"]}
+      ]
+    },
+    "RF2_CAUSAL_REQUIRED_CONDITIONS": {
+      "path": "data/proofs/JANUS-CAUSAL-CONSISTENCY-WITNESS-PRIORITY-CAPSULE-v1.0.json",
+      "git_blob_sha1": "c40191d2ec0dd3ce522e31f3f714da50df9c9206",
+      "json_pointer": "/operational_gate/required_conditions",
+      "fetched_lines": [35, 95],
+      "value": [
+        "exactly one preregistered PRE_RETURN candidate slot",
+        "raw PRE_RETURN bytes frozen before target generation",
+        "external append-only commitment/anchor to the frozen PRE_RETURN",
+        "target generated after freeze by an externally separated entropy authority",
+        "provenance receipt cryptographically bound to run_id and PRE_RETURN hash",
+        "conditional min-entropy of the target audited relative to the PRE_RETURN adversary view",
+        "exact equality B_return = B_assigned = B_send",
+        "no semantic post-selection",
+        "ordinary acquisition sequence independently verified",
+        "coordinate-time labels never treated as physical retrocausality by themselves",
+        "negative controls, tamper tests and independent replication"
+      ]
+    },
+    "RF3_SIM3_CEREMONY": {
+      "path": "data/JANUS-SIM-3-EXTERNAL-WITNESS-GUEST-INVITATION-v1.0.json",
+      "git_blob_sha1": "a51974457bc61884f2bc83ea7ba18fdfac7d3731",
+      "json_pointer": "/ceremony",
+      "fetched_lines": [70, 150],
+      "value": [
+        {"phase":0,"name":"PROTOCOL_FREEZE","owner":"Genesis","status":"COMPLETE"},
+        {"phase":1,"name":"ROUTER_FREEZE","owner":"Genesis","status":"PENDING_EXTERNAL_AUTHOR"},
+        {"phase":2,"name":"EXTERNAL_COMMITMENT","owner":"External author","status":"PENDING"},
+        {"phase":3,"name":"PUBLIC_CASE_REVEAL","owner":"External author","status":"PENDING"},
+        {"phase":4,"name":"ROUTER_OUTPUT_FREEZE","owner":"Genesis","status":"PENDING"},
+        {"phase":5,"name":"TRUTH_AND_SALT_REVEAL","owner":"External author","status":"PENDING"},
+        {"phase":6,"name":"EXTERNAL_VERIFICATION","owner":"External author","status":"PENDING"},
+        {"phase":7,"name":"NEUTRAL_REPLAY","owner":"Clean independent runner","status":"PENDING"}
+      ]
+    }
+  },
+  "deferred": {
+    "B1_ADAPTIVE_HISTORY_COPY": {
+      "status": "DEFERRED_RAW_FIELD_ELIGIBILITY",
+      "reason": "The decisive T2=T1 / adaptive-copy relation is primarily encoded inside natural-language scalar strings in v0.6/v0.7. Under the frozen no-semantic-parser rule, mutating text would not be equivalent to a schema-preserving structured-field rewire.",
+      "formal_core_status": "PASS_RELATION_SPECIFIC_SIX_STATE_PROFILE"
+    }
+  },
+  "integrity": {"canonical_sha256_pre_integrity":"0cea05ce0103587432684094b45cca10ec8bcbc0db3bfa3dd13199f220306528"}
+}

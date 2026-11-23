@@ -1,0 +1,107 @@
+{
+  "artifact_id": "JANUS-PALOMAR-JPFM-2F-C2B0-REFERENCE-SUPPORT-DECOMPOSITION-ADMISSION-v1.0",
+  "experiment_id": "JPFM-2F-C2B0",
+  "schema_version": "1.0",
+  "date": "2026-08-17",
+  "status": "PREREGISTERED_AFTER_C2A_NEGATIVE_CERTIFICATE_BEFORE_C2B0_DECOMPOSITION_OUTCOME",
+  "purpose": "Decompose the C2A local-reference support failure without changing the frozen minimum of 20 reference stars and without opening external temporal/human/nuclear/environment labels.",
+  "claim_ceiling": "REFERENCE_SUPPORT_FAILURE_DIAGNOSTIC_ONLY__NO_C2A_RESCUE__NO_MORPHOLOGY_INFERENCE__NO_EXTERNAL_LABEL_REVEAL__NO_CAUSAL_OR_ORIGIN_CLAIM",
+  "bindings": {
+    "C2A_result_path": "data/JANUS-PALOMAR-JPFM-2F-C2A-STRATIFIED-UPSTREAM-MORPHOLOGY-REPLAY-RUN-001.json",
+    "C2A_result_canonical_sha256": "ef0d238fa28380130fa9b540517c322a83c10e96c811379205eb6ac1c54ae510",
+    "C2A_sidecar_path": "data/JANUS-PALOMAR-JPFM-2F-C2A-STRATIFIED-UPSTREAM-MORPHOLOGY-REPLAY-SIDECAR-RUN-001.csv.gz",
+    "C2A_sidecar_csv_sha256": "032fccc7637b58ebfa5a63383765cc6a89b934503298855fe5f0880bf23467aa",
+    "C2A_sidecar_gzip_sha256": "624f316b5104064d742407162f603a552487e5e193603f65b4b0e6d86e9cda73",
+    "C0M_result_path": "data/JANUS-PALOMAR-JPFM-2F-C0M-FULL-S0-HEADER-ONLY-ACQUISITION-MAP-RUN-001.json",
+    "C0M_result_canonical_sha256": "2bc8ee104cb05d588a264a7f25d3d3713907f689da9aafb7c72f726627bdf5ba",
+    "C0M_manifest_path": "data/JANUS-PALOMAR-JPFM-2F-C0M-FULL-S0-HEADER-ONLY-ACQUISITION-MAP-RUN-001.csv.gz",
+    "C0M_manifest_csv_sha256": "d41bfc95e9f0219d76ee383d057938287dcaaef8ba5005c66414d4a2422f75c0",
+    "C0M_manifest_gzip_sha256": "8493e1dc6b3d89ecd1984d0826b663f2a12ede9664a3c5bb4812b51b6d3a0eca"
+  },
+  "frozen_reference_contract": {
+    "minimum_reference_stars": 20,
+    "reference_filters_unchanged": [
+      "FLAGS == 0",
+      "CLASS_STAR >= 0.8",
+      "SNR_WIN >= 20",
+      "finite FWHM_IMAGE/ELONGATION/SPREAD_MODEL",
+      "target NUMBER excluded"
+    ],
+    "eligibility_endpoint": "local_reference_star_count >= 20",
+    "count_endpoint": "local_reference_star_count",
+    "rule": "C2B0 may explain support variation but may not lower 20 or reinterpret C2A complete cases as an admitted morphology result."
+  },
+  "frozen_covariate_groups": {
+    "sky_environment": [
+      "abs_galactic_latitude_deg",
+      "plate_s0_candidate_count",
+      "tile_s0_candidate_count",
+      "plate_s0_candidates_per_active_tile",
+      "shape_stars_used"
+    ],
+    "target_brightness_detection": [
+      "pass2_mag_auto",
+      "log1p_pass2_snr_win"
+    ],
+    "tile_plate_geometry": [
+      "log1p_distance_to_tile_edge_px",
+      "plate_radius_norm"
+    ],
+    "wcs_context": [
+      "tan_refit_median_arcsec",
+      "tan_refit_max_arcsec",
+      "crpix_offset_norm_px",
+      "local_pixel_scale_arcsec"
+    ],
+    "frozen_sampling_context": [
+      "structural_cluster",
+      "sample_role"
+    ]
+  },
+  "stellar_density_semantics": {
+    "direct_external_catalog_density_used": false,
+    "internal_proxy_1": "shape_stars_used from the already executed upstream shape/profile stage",
+    "internal_proxy_2": "absolute Galactic latitude",
+    "internal_proxy_3": "full-S0 tile/plate candidate density",
+    "warning": "These are support/density proxies, not a Gaia star-count measurement."
+  },
+  "analysis_plan": {
+    "rows": 512,
+    "descriptive": [
+      "reference-count quantiles overall and by frozen structural cluster/sample role",
+      "eligibility fractions by preregistered covariate quartiles or fixed Galactic-latitude bins",
+      "Spearman rho between reference count and each numeric covariate"
+    ],
+    "multivariable_model": {
+      "family": "binomial logistic GLM",
+      "outcome": "reference_count >= 20",
+      "continuous_transform": "median-impute, add missing indicator, robust z by median/MAD; log transforms only where explicitly named",
+      "categorical": "structural_cluster fixed effects + sample_role",
+      "interpretation": "diagnostic association only"
+    },
+    "group_ablation": "drop each frozen covariate group from the full logistic model and report delta deviance; no winner-selected p-value",
+    "no_threshold_tuning": true
+  },
+  "repair_boundary_after_diagnostic": {
+    "C2B1_may_change_reference_support_geometry": true,
+    "C2B1_may_lower_minimum_reference_stars": false,
+    "C2B1_may_reclassify_C2A_as_PASS": false,
+    "future_inference_requires_new_nonoverlapping_holdout": true,
+    "external_label_reveal_before_new_holdout_admission": false
+  },
+  "external_label_firewall": {
+    "external_label_reveal_authorized": false,
+    "forbidden_sources_or_join_keys": [
+      "nuclear calendar",
+      "Blue Book temporal labels",
+      "NUFORC temporal labels",
+      "Kp/Ap",
+      "lunar state",
+      "UAP event labels",
+      "DATE-OBS"
+    ]
+  },
+  "integrity": {
+    "canonical_payload_sha256_without_integrity": "ccb70d6d01f411f4b666153dc3147db529be67f1c9d9cf0e5d63148840ace2e5"
+  }
+}

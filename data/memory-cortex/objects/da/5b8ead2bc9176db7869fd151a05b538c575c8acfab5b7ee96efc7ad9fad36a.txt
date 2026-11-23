@@ -1,0 +1,85 @@
+{
+  "artifact_id": "JANUS-PALOMAR-JPFM-2F-B2-SHAPE-COMPAT-CORRECTIVE-AUDIT-v1.0",
+  "experiment_id": "JPFM-2F-B2-CORRECTIVE-AUDIT",
+  "schema_version": "1.0",
+  "date": "2026-08-15",
+  "status": "DEFECT_LOCALIZED__B2_FAILURE_NOT_REINTERPRETED_AS_PASS",
+  "purpose": "Record the exact software-compatibility defect responsible for the JPFM-2F-B2 upstream shape-stage failure, while preserving the successful tile/object lineage findings and forbidding retrospective promotion of B2 to PASS.",
+  "parents": [
+    "data/JANUS-PALOMAR-JPFM-2F-B2-TILE-LINEAGE-REPLAY-ADMISSION-v1.0.json",
+    "data/JANUS-PALOMAR-JPFM-2F-B-SPARSE-PIXEL-MORPHOLOGY-PILOT-RUN-001.json"
+  ],
+  "B2_execution_receipt": {
+    "workflow_run_id": 31872201518,
+    "job_id": 94982489752,
+    "scientific_runner_completed_before_timeout": true,
+    "validator_printed_pass_before_timeout": true,
+    "artifact_upload_and_commit_completed": false,
+    "reason_not_persisted": "The 45-minute GitHub job budget expired immediately after the B2 artifact validator and before upload/commit.",
+    "runner_outcome": "FAIL_CLOSED_MORPHOLOGY_REPLAY",
+    "exact_NUMBER_recovered": 64,
+    "exact_NUMBER_total": 64,
+    "pass2_to_S0_sep_le10_fraction": 1.0,
+    "upstream_shape_success_fraction_among_exact": 0.0,
+    "lost_runner_sidecar_csv_sha256_from_log": "1009a96cc48fd9c02df22f3279902693c59b139c7c6f065c54cbcfcaea29b4a9",
+    "lost_runner_result_canonical_sha256_from_log": "b9c62b79ef35d3cbd91547cb145218c5954a8d28f4dbf7b924edf3b98d19e85c"
+  },
+  "one_source_diagnostic": {
+    "workflow_run_id": 31874279725,
+    "job_id": 94987544047,
+    "temporary_workflow_removed_after_diagnosis": true,
+    "source": {
+      "src_id": "tile_RA124.923_DECp42.468:1170",
+      "tile_id": "tile_RA124.923_DECp42.468",
+      "object_id": 1170,
+      "plate_id": "XE208"
+    },
+    "tile_replay": {
+      "status": "RECONSTRUCTED",
+      "shape_px": [2119, 2119],
+      "TAN_refit_median_arcsec": 0.09016410481506361,
+      "TAN_refit_max_arcsec": 0.2698305673735232
+    },
+    "detection_replay": {
+      "status": "PASS",
+      "pass2_rows": 2570,
+      "exact_NUMBER_recovered": true,
+      "pass2_to_S0_sep_arcsec": 0.33564405760620336,
+      "FWHM_IMAGE_px": 2.85564398765564,
+      "ELONGATION": 1.1275900602340698,
+      "SPREAD_MODEL": 0.000990416505374,
+      "SNR_WIN": 108.07788848876952
+    },
+    "shape_stage": {
+      "returncode": 1,
+      "failure_class": "OPENCV_CONVEXITY_DEFECT_ARRAY_LAYOUT_COMPATIBILITY",
+      "exception": "IndexError: invalid index to scalar variable",
+      "upstream_location": "scripts/stage_shape_post.py::_compute_contour_metrics",
+      "failing_expression": "defects[i, 0][3] / 256.0",
+      "interpretation": "The source was recovered with valid pixel and pass2 morphology inputs. Failure occurred only when the experimental contour helper assumed one particular ndarray nesting for cv2.convexityDefects output. This is a software-interface defect, not evidence that the source lacks measurable morphology."
+    }
+  },
+  "root_cause_boundary": {
+    "tile_identity_failure": false,
+    "sparse_transport_failure": false,
+    "SExtractor_detection_replay_failure": false,
+    "object_id_lineage_failure": false,
+    "pass2_raw_morphology_failure": false,
+    "experimental_shape_helper_compatibility_failure": true
+  },
+  "corrective_rule": {
+    "allowed": "Normalize cv2.convexityDefects output to rows whose final dimension has the four OpenCV defect fields, then sum field index 3 / 256.0 exactly as the upstream metric intended.",
+    "forbidden": [
+      "change the frozen 64-source sample",
+      "change object_id matching to nearest-neighbour matching",
+      "change B1/B2 thresholds",
+      "change contour thresholds 21,45",
+      "change convexity-defect depth /256 scaling",
+      "change shape_defect denominator max(width,height)",
+      "reclassify B2 as PASS",
+      "reveal nuclear, human, UAP, lunar or geomagnetic labels"
+    ]
+  },
+  "next_gate": "JPFM-2F-B3-SHAPE-COMPATIBILITY-REPLAY",
+  "claim_ceiling": "SOFTWARE_COMPATIBILITY_DEFECT_LOCALIZATION_ONLY__B2_REMAINS_FAIL_CLOSED_MORPHOLOGY_REPLAY__NO_EXTERNAL_LABEL_INFERENCE__NO_ORIGIN_CLAIM"
+}

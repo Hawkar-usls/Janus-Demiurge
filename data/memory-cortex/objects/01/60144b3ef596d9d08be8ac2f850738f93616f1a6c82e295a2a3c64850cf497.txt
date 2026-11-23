@@ -1,0 +1,156 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-HIGHER-ORDER-NEIGHBORHOOD-EXECUTION-SPEC-2026-08-14-v0.8",
+  "timestamp": "2026-08-14T12:56:00+03:00",
+  "version": "v0.8",
+  "title": "JANUS Linear A higher-order typed neighborhood / specialization execution specification",
+  "observer": "Oleksandr Ahapov / Hawkar + JANUS",
+  "node_type": "frozen_execution_specification",
+  "status": "FROZEN_BEFORE_CLAIM_BEARING_EXECUTION",
+  "canonical_parent": {
+    "path": "data/JANUS-LINEAR-A-RESEARCH-STATE-2026-08-14-v2.2.json",
+    "commit": "c45adaa5732600a27cea3f72d366efa36e8d68c3"
+  },
+  "shared_representation": {
+    "policy_id": "JANUS-LINA-TOKEN-TYPING-POLICY-v0.6.2",
+    "candidate_type": "SEMANTIC_CANDIDATE_ONLY",
+    "primary_representation": "WORD_ONLY",
+    "known_control_geometry": "FIXED_MASK_IN_NOVELTY_CHANNEL",
+    "punctuation_and_numeric_literals": "INELIGIBLE_FOR_SEMANTIC_IDENTITY"
+  },
+  "channels": {
+    "CONTROL_INCLUDED": {
+      "claim_bearing": false,
+      "purpose": "Positive/infrastructure control. Known personnel/accounting/commodity families may remain semantic identities so v0.8 can verify that higher-order structure is detectable when present."
+    },
+    "NOVELTY_MASKED": {
+      "claim_bearing": true,
+      "purpose": "Known VIR*, KU-RO, KI-RO, PO-TO-KU-RO and GRA families are converted to fixed MASK slots rather than deleted, preserving geometry while preventing them from becoming novelty candidates."
+    }
+  },
+  "partition_protocol": {
+    "HT_SCREEN": "deterministic 3/5 document-hash partition; family-wise controlled candidate generation",
+    "HT_CONFIRM": "deterministic disjoint 2/5 document-hash partition; locked candidate confirmation",
+    "NON_HT": "all non-HT documents; cross-region replication after HT confirmation",
+    "NON_HT_is_pristine_unseen_holdout": false,
+    "reason": "Earlier JANUS stages touched the full corpus; this remains same-corpus cross-region stress testing rather than external replication."
+  },
+  "frozen_numeric_buckets": [
+    "FRAC",
+    "ONE",
+    "2_4",
+    "5_9",
+    "10PLUS",
+    "UNCERTAIN"
+  ],
+  "numeric_bucket_rule": {
+    "FRAC": "0 < exact value < 1",
+    "ONE": "exact value = 1",
+    "2_4": "1 < exact value < 5",
+    "5_9": "5 <= exact value < 10",
+    "10PLUS": "exact value >= 10",
+    "UNCERTAIN": "typed numeric-like slot without an exact magnitude"
+  },
+  "predeclared_hypothesis_families": [
+    {
+      "id": "H1_TTT_DIRECTED_TRIGRAM",
+      "unit": "A -> B -> C over three consecutive semantic word identities inside the same row",
+      "self_identity_restriction": "No requirement that A, B, C differ, but all identities must be eligible semantic endpoints."
+    },
+    {
+      "id": "H2_T_NBUCKET_T",
+      "unit": "A -> NUMERIC_BUCKET -> B across an exact or uncertain typed numeric slot inside the same row",
+      "numeric_condition": "Bucket is frozen before scoring."
+    },
+    {
+      "id": "H3_ROW_PREFIX_TTT",
+      "unit": "First three row slots are semantic identities A -> B -> C"
+    },
+    {
+      "id": "H4_ROW_SUFFIX_TTT",
+      "unit": "Last three row slots are semantic identities A -> B -> C"
+    },
+    {
+      "id": "H5_NEIGHBOR_SPECIALIZATION_OUT",
+      "unit": "Candidate A has an unusually specialized distribution of immediate semantic/MASK/numeric-class successors relative to the partition-wide successor baseline."
+    },
+    {
+      "id": "H6_NEIGHBOR_SPECIALIZATION_IN",
+      "unit": "Candidate B has an unusually specialized distribution of immediate semantic/MASK/numeric-class predecessors relative to the partition-wide predecessor baseline."
+    }
+  ],
+  "specialization_statistic": {
+    "name": "G_TEST_DEVIANCE_FROM_PARTITION_NEIGHBOR_BASELINE",
+    "definition": "2 * sum(observed_category_count * ln(observed/expected)) over categories with positive observed count, using expected counts from the global typed-neighbor category distribution in the same partition.",
+    "minimum_candidate_occurrences": 8,
+    "minimum_candidate_documents": 5,
+    "note": "This aggregates many partner observations and therefore tests role specialization rather than selecting one rare pair."
+  },
+  "motif_eligibility": {
+    "minimum_screen_occurrences": 4,
+    "minimum_screen_documents": 3,
+    "minimum_confirm_occurrences": 3,
+    "minimum_confirm_documents": 2,
+    "minimum_non_HT_occurrences": 3,
+    "minimum_non_HT_documents": 2,
+    "minimum_non_HT_regions": 2
+  },
+  "destructive_nulls": [
+    {
+      "id": "N1_ROW_SHUFFLE",
+      "operator": "WITHIN_ROW_SEMANTIC_IDENTITY_SHUFFLE_PRESERVING_TYPED_SLOTS_MASKS_AND_ROW_TOKEN_MULTISET",
+      "preserves": ["row membership", "typed slot classes", "MASK positions", "semantic identity multiset per row"],
+      "destroys": "identity-specific higher-order order and neighborhood coupling"
+    },
+    {
+      "id": "N2_DOCUMENT_SHUFFLE",
+      "operator": "WITHIN_DOCUMENT_SEMANTIC_IDENTITY_SHUFFLE_PRESERVING_TYPED_SLOTS_MASKS_AND_DOCUMENT_TOKEN_MULTISET",
+      "preserves": ["document membership", "row/typed-slot geometry", "MASK positions", "semantic identity multiset per document"],
+      "destroys": "identity-specific row-local and document-local neighborhood coupling"
+    },
+    {
+      "id": "N3_TEMPLATE_ENDPOINT_REWIRE",
+      "operator": "TEMPLATE_ENDPOINT_REWIRE_PRESERVING_FAMILY_CONDITION_AND_ENDPOINT_MARGINALS",
+      "preserves": ["hypothesis-family event count", "numeric bucket or boundary condition", "eligible endpoint marginals"],
+      "destroys": "specific higher-order endpoint coupling"
+    }
+  ],
+  "screen_error_control": {
+    "rule": "MAX_T_FWER_UNDER_ALL_THREE_NULLS",
+    "alpha": 0.05,
+    "screen_permutations_per_null": 1500,
+    "selection": "Candidate/motif must meet frequency/document minima and FWER p <= 0.05 under every null."
+  },
+  "confirmation_error_control": {
+    "rule": "LOCKED_ONE_SIDED_EFFECT_PLUS_BONFERRONI_OVER_EVALUABLE_LOCKED_HYPOTHESES_X_THREE_NULLS",
+    "alpha": 0.05,
+    "confirm_permutations_per_null": 3000
+  },
+  "replication_error_control": {
+    "rule": "ONLY_HT_CONFIRMED_HYPOTHESES_ENTER_NON_HT; LOCKED_DIRECTION; BONFERRONI_OVER_EVALUABLE_CONFIRMED_HYPOTHESES_X_THREE_NULLS",
+    "alpha": 0.05,
+    "replication_permutations_per_null": 3000,
+    "not_evaluable_semantics": "Failure to meet predeclared non-HT occurrence/document/region support is NOT_EVALUABLE, not a statistical replication failure."
+  },
+  "reveal_policy": {
+    "semantic_labels": "FORBIDDEN_UNTIL_SCREEN_SELECTION_CONFIRMATION_AND_NON_HT_STATE_ARE_FROZEN",
+    "numeric_buckets": "STRUCTURAL_TYPES_PREDECLARED_AND_VISIBLE_TO_THE_ALGORITHM",
+    "known_control_membership": "USED_ONLY_FOR_CONTROL_CHANNEL_OR_FIXED_MASK_GEOMETRY"
+  },
+  "anti_cherry_pick_rules": [
+    "v0.7 near-signals OLE+DI->*304, NI->VIN, OLIV->*308 and SA·RA₂->GRA receive no privileged v0.8 eligibility or weighting.",
+    "No threshold may be lowered after execution begins.",
+    "No null family may be removed after seeing results.",
+    "No new numeric bucket may be introduced after execution begins.",
+    "CONTROL_INCLUDED discoveries do not count as novel anchors."
+  ],
+  "claim_ceiling": {
+    "new_anchor_established": false,
+    "decipherment_established": false,
+    "maximum_if_novelty_survivor": "HIGHER_ORDER_STRUCTURAL_RELATION_CANDIDATE_ONLY",
+    "external_replication_established": false
+  },
+  "predeclared_roadmap_branch": {
+    "if_novelty_cross_region_survivor_gt_0": "v0.8.1 alternative segmentation + identity novelty audit + independent implementation replay; no lexical claim yet",
+    "if_novelty_cross_region_survivor_eq_0": "preserve negative result and advance to fresh independent transcription/parser or a separately frozen nonlocal document-role model; do not relax v0.8 thresholds"
+  }
+}

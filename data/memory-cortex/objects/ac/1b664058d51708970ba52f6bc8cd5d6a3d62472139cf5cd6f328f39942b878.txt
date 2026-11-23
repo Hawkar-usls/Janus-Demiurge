@@ -1,0 +1,193 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1C5B2B2-E1-FOUR-COLOR-ACTIVE-CONNECTED-CORE-STRESS-RESULT-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "PASS_FOUR_COLOR_ACTIVE_EXPONENTIAL_NEGATIVE_CONTROL_WITH_POLYNOMIAL_STRUCTURAL_CARRIER",
+  "gate": "R5_B1B1C5B2B2_E1_FOUR_COLOR_ACTIVE_CONNECTED_CORE_STRESS_V1",
+  "binds": {
+    "prereg_blob": "eb6daf71a9a2227145b9c2b122bf031dc50447ab",
+    "B2B2_E_theorem_seal_blob": "d13ab0579ecaa2ac46b1c8dec3dd447e2752b5ed",
+    "B2B2_D_theorem_seal_blob": "c3e18ca190ec5b21eefec305d702b58aa867e51b",
+    "source_audit_path": "research/R5_B1B1C5B2B2_E1_BOUNDED4_PERMUTATION_LIST_COLORING_SOURCE_AUDIT_2026-09-21_v1.0.json",
+    "finite_checker_blob": "54a50795e7afee31db06925d8d3ed9a34fbb6640"
+  },
+  "theorem_bundle": [
+    "FOUR_COLOR_ACTIVE_CROSSED_CHAIN_FAMILY_Xk_V1",
+    "CROSSED_CHAIN_Xk_P7_FREE_V1",
+    "Xk_SOURCE_I_VI_V1",
+    "Xk_CONNECTED_QALL_EXPONENTIAL_PROFILE_MULTIPLICITY_V1",
+    "Xk_NO_GLOBAL_MISSING_COLOR_V1",
+    "Xk_ALL_FOUR_R2_ACTIVITY_V1",
+    "XK_BOUNDED4_PERMUTATION_LIST_CARRIER_V1",
+    "Xk_STRONG_NEGATIVE_FALSIFIED_BY_POLYNOMIAL_STRUCTURAL_CARRIER_V1"
+  ],
+  "family": {
+    "name": "FOUR_COLOR_ACTIVE_CROSSED_CHAIN_FAMILY_Xk",
+    "parameter": "integer k>=3",
+    "vertices": {
+      "seed": ["s1","s4"],
+      "left": "L={l_1,...,l_k}",
+      "right": "R={r_1,...,r_k}",
+      "residual": ["z"]
+    },
+    "seed_colors": {
+      "s1": 1,
+      "s4": 4
+    },
+    "edges": [
+      "s1-s4",
+      "s4 adjacent to every l_i and to no r_j or z",
+      "s1 adjacent to every r_j and to no l_i or z",
+      "l_i-r_j iff j<=i",
+      "z-r_j iff j<=k-1",
+      "no other edges"
+    ],
+    "bipartition": {
+      "A": "{s1,z} union L",
+      "B": "{s4} union R"
+    },
+    "chain_core": "H=G[(L union {z}) union R] is a chain graph on bipartition (L union {z},R), with N(l_i)={r_1,...,r_i} and N(z)={r_1,...,r_{k-1}}."
+  },
+  "P7_free_theorem": {
+    "name": "CROSSED_CHAIN_Xk_P7_FREE_V1",
+    "statement": "X_k is P7-free for every k>=3.",
+    "proof": [
+      "The full graph is bipartite with sides A={s1,z} union L and B={s4} union R.",
+      "s1 is universal to the B side: it is adjacent to s4 and every r_j. Hence no induced P7 can contain s1, because a 7-vertex bipartite path contains at least three B-side vertices, and every nonconsecutive B-side vertex would be a chord to s1.",
+      "After deleting s1, H=G[L union R union {z}] is a chain graph and hence P5-free.",
+      "Therefore an induced P7 avoiding s1 must contain s4; otherwise it lies in H and is impossible.",
+      "If B is the minority side of such a P7, s4 would occupy an even path position. Both path-neighbors of s4 must lie in L, while both other A-side path vertices would have to be nonneighbors of s4. The only A-side nonneighbor is z, so two distinct such vertices cannot exist.",
+      "Thus B is the majority side and, up to path reversal, the only possible 7-role form is r_t-z-r_j-l_i-s4-l_h-r_c.",
+      "Chordlessness gives r_j-l_h nonedge => h<j; the path edge r_j-l_i gives j<=i; chordlessness gives l_i-r_c nonedge => i<c; the path edge l_h-r_c gives c<=h.",
+      "Hence h<j<=i<c<=h, a contradiction."
+    ],
+    "authoritative_note": "No older informal statement about a maximum number of H-vertices around s4 is used."
+  },
+  "source_state": {
+    "root_partition": {
+      "S": "{s1,s4}",
+      "X0": "empty",
+      "X": "empty",
+      "Y": "L union R",
+      "Y0": "{z}"
+    },
+    "axiom_i": "G-X0 is connected.",
+    "axiom_ii": "S is connected by s1-s4; every L vertex misses s1, every R vertex misses s4, and z misses both, so no outside vertex is complete to S.",
+    "axiom_iii": "z is exactly the nonfixed vertex anticomplete to S.",
+    "axiom_iv": "Y0 is a singleton, so the no-mixing-on-Y0-edge condition is vacuous.",
+    "axiom_v": "Every l_i sees only seed color 4 and has source list {1,2,3}; every r_j sees only seed color 1 and has source list {2,3,4}; z has [4].",
+    "axiom_vi": "Y intersect N(Y0)={r_1,...,r_{k-1}}, and all such vertices have identical source 3-list {2,3,4}."
+  },
+  "root_QALL": {
+    "dynamic": "L union R with chain edges l_i-r_j iff j<=i",
+    "component_carrier": "[z] adjacent exactly to r_1,...,r_{k-1}",
+    "connected": "l_k is adjacent to every r_j, every l_i is adjacent to r_1, and [z] attaches to r_1,...,r_{k-1}; therefore Q_ALL is one connected block."
+  },
+  "authorized_profile_family": {
+    "optional_forcing_set": "{l_2,...,l_{k-1}}",
+    "retained_anchors": ["l_1","l_k"],
+    "forced_color": 1,
+    "profiles": "For each F subseteq {2,...,k-1}, force l_i=1 exactly for i in F.",
+    "reachability": [
+      "L is stable, so forced left vertices never conflict with each other.",
+      "Every l_i is nonadjacent to same-colored seed vertex s1 and remains adjacent only to seed color 4.",
+      "Forcing l_i=1 adds no new seed-color effect to any r_j, because every r_j already sees color 1 from s1.",
+      "Thus source lists of all still-live vertices remain unchanged and no Z0/Z1 promotion occurs.",
+      "A complete extension exists for every F: color every L vertex 1, every R vertex 4, and z color 2."
+    ],
+    "profile_count": "2^(k-2)"
+  },
+  "profile_injection": {
+    "role_marking": "L and R are canonically distinguished by their source/fixed-color masks: L has seed-color mask {4}, R has seed-color mask {1}.",
+    "degree_signature": "Each surviving l_i has exactly i neighbors in R.",
+    "recovery": "The set of surviving L-to-R degrees equals {i in {1,...,k}: i notin F}; l_1 and l_k always remain.",
+    "conclusion": "Different F yield pairwise distinct canonical effect profiles even after forcing-order confluence and new-seed identity erasure.",
+    "count": "2^(k-2), exponential in the connected Q_ALL block size Theta(k)."
+  },
+  "four_color_activity": {
+    "no_global_missing_color": {
+      "color_1": "available on every live L vertex",
+      "color_2": "available on live L and R",
+      "color_3": "available on live L and R",
+      "color_4": "available on every live R vertex",
+      "verdict": "PASS"
+    },
+    "all_four_R2_activity": {
+      "color_1": "R2(l_1,l_k,1) is authorized and satisfiable.",
+      "color_2": "R2(l_1,l_k,2) is authorized and satisfiable.",
+      "color_3": "R2(l_1,l_k,3) is authorized and satisfiable.",
+      "color_4": "R2(r_1,r_k,4) is authorized and satisfiable.",
+      "verdict": "PASS"
+    },
+    "common_List3_escape": "FALSIFIED: there is no single color absent from all live dynamic exact palettes."
+  },
+  "structural_carrier": {
+    "name": "XK_BOUNDED4_PERMUTATION_LIST_CARRIER_V1",
+    "static": "The indexed original chain graph H on L union {z} versus R, equivalently a permutation-graph representation/order.",
+    "dynamic_per_original_vertex": [
+      "ACTIVE/FIXED/DELETED status",
+      "4-bit current exact list A(v) when ACTIVE",
+      "fixed color when FIXED",
+      "reconstruction receipt pointer when DELETED"
+    ],
+    "size": "Polynomial; O(k) status/list words with the canonical chain ordering, or polynomial under explicit graph storage.",
+    "closure_under_updates": [
+      "Authorized forcing only fixes vertices and deletes their colors from neighboring active lists.",
+      "B2B1 may additionally delete independently solved components and store reconstruction receipts.",
+      "The remaining active graph is always an induced subgraph of the original chain graph H.",
+      "Induced subgraphs of a chain graph are chain graphs, hence permutation graphs."
+    ],
+    "decision_backend": "Enright-Stewart-Tardos: List Coloring is polynomial on permutation graphs when the total number of colors is bounded. Here the total palette is fixed [4].",
+    "R1": "Temporarily set A(u)={c} and run bounded-4 permutation-graph List Coloring on the active graph.",
+    "R2": "For a baseline nonedge uv, temporarily set A(u)=A(v)={c} and run the same bounded-4 List Coloring backend.",
+    "constructive_reconstruction": "Use self-reduction: for each active vertex try at most four singleton-list choices, retaining a choice whose decision instance remains YES. At most O(4n) decision calls.",
+    "update": "After a successful force, persist the fixed assignment, propagate color deletions to active lists, and invoke the sealed B2B1 canonical-return bookkeeping as required.",
+    "reconstruction": "Combine fixed assignments, the self-reduced active-chain coloring, and independent DELETED receipts.",
+    "lifecycle": "Polynomial storage, query, update and reconstruction."
+  },
+  "source_backend_audit": {
+    "paper": "Enright, Stewart, Tardos (2014), On List Coloring and List Homomorphism of Permutation and Interval Graphs",
+    "doi": "10.1137/13090465X",
+    "claim_used": "Polynomial List Coloring on permutation graphs with bounded total number of colors.",
+    "class_bridge": "Chain graphs are a subclass of bipartite permutation graphs/permutation graphs.",
+    "generic_solver_firewall": "No generic P7 List-4 or generic precoloring solver is inferred."
+  },
+  "finite_sanity": {
+    "checker_blob": "54a50795e7afee31db06925d8d3ed9a34fbb6640",
+    "checked_k": "3 through 8",
+    "P7_free": "PASS",
+    "source_i_vi": "PASS",
+    "connected_QALL": "PASS",
+    "no_global_missing_color": "PASS",
+    "all_four_R2_activity": "PASS",
+    "profile_count": "2^(k-2) PASS"
+  },
+  "verdict": {
+    "E1_candidate_found": "PASS",
+    "exponential_connected_profiles": "PASS",
+    "genuine_four_color_activity": "PASS",
+    "common_List3_escape": "FALSIFIED",
+    "polynomial_structural_carrier": "PASS",
+    "Xk_strong_negative": "FALSIFIED_BY_POLYNOMIAL_STRUCTURAL_CARRIER",
+    "interpretation": "Exponential profile multiplicity, connected Q_ALL, absence of a global missing color, and genuine all-four-color future activity are still not hardness proxies."
+  },
+  "next_frontier": {
+    "name": "R5_B1B1C5B2B2_E2_KNOWN_STRUCTURAL_CARRIER_ESCAPE_AUDIT_V1",
+    "status": "NEXT_NOT_EXECUTED",
+    "target": "Freeze an exhaustive-for-this-program list of already sealed or source-applicable polynomial carrier mechanisms that every later stress family must audit before promotion."
+  },
+  "scientific_ceiling": {
+    "B2B2_E1_Xk": "FOUR_COLOR_ACTIVE_EXPONENTIAL_NEGATIVE_CONTROL_WITH_POLYNOMIAL_CARRIER",
+    "PROFILE_COUNT_AS_HARDNESS_PROXY": "REJECTED",
+    "FOUR_COLOR_ACTIVITY_AS_HARDNESS_PROXY": "REJECTED",
+    "GENERAL_CONNECTED_QALL_CARRIER": "OPEN",
+    "GENERAL_R1_R2": "OPEN",
+    "RECURSIVE_GENERAL_R1_R2": "FORBIDDEN",
+    "C5C": "LOCKED",
+    "FULL_L2_REPAIR": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "stop": true,
+  "return_to_HQ": true
+}

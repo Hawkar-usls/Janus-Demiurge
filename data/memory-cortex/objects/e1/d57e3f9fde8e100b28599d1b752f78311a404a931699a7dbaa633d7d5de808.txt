@@ -1,0 +1,107 @@
+{
+  "artifact_id": "JANUS-LOGOS-001-R14-PROTOCOL-v1.0",
+  "version": "1.0.0",
+  "date_utc": "2026-11-01",
+  "research_program": "GOD_CODE/JANUS-LOGOS-001",
+  "prior_results": {
+    "R11": "NIST_REAL_DATA_NOT_BETTER_THAN_QUADRATIC",
+    "R12": "PARTIAL_1_OF_2_VS_POLY",
+    "R13": "0_OF_3_VS_STRONG_BASELINES"
+  },
+  "status": "PRE_REGISTERED_NO_EXTERNAL_DATA_OR_CUSTODIAN",
+  "primary_question": "Can a frozen symbolic equation selector generalize on previously inaccessible real-world physical measurements from independent scientific domains better than predeclared strong non-symbolic baselines?",
+  "disambiguation": {
+    "external_sealed": "Scientific data and ground-truth TEST labels held only by a third-party custodian outside participant-controlled GitHub/CI and unavailable to JANUS before one final submission.",
+    "synthetic_smoke": "Public deterministic synthetic samples allowed solely to validate the interface; NEVER count toward scientific results.",
+    "published_nist": "Prior public NIST data are excluded from R1.4 science."
+  },
+  "participant_submission": {
+    "repository": "Hawkar-usls/janus-meta-registry",
+    "root": "research/logos_001/r14_external",
+    "entrypoint": "r14_submission.py",
+    "interface": "JSON input: {domain_id,train:[[x,y]],validation:[[x,y]],test_x:[x]}. Return {model_status, predictions:[y], frozen_source_sha, scientific_claim:NO_CLAIM}. Holdout y MUST NOT be in input.",
+    "frozen_learner": "R1.2 analytic grammar and validation selector, reused via r12_discover.case_discovery, not trained against R1.3 holdout.",
+    "allowed_data": "normalized x in [0,1], finite scalar y; scale/normalization fixed by organizer from public TRAIN domain bounds before final TEST; input contains no source file name, labels, or public dataset IDs",
+    "no_network": true,
+    "no_secrets": true,
+    "no_model_lookup": true,
+    "no_test_label_access": true,
+    "one_final_submission": true,
+    "runtime": "Python 3.11 stdlib only, deterministic, bounded runtime and memory; external custodian isolates the container"
+  },
+  "eligible_domains": {
+    "minimum_distinct_domains": 3,
+    "examples": [
+      "optics/photometry",
+      "mechanics/materials",
+      "electromagnetism/thermal physics"
+    ],
+    "criteria": [
+      "Direct observed measurements, not formula-generated labels",
+      "External independent acquisition/provenance and rights confirmed by custodian",
+      "At least 30 unique x per domain, with non-overlapping group-wise TEST",
+      "TRAIN/VALIDATION values provided, TEST labels sealed",
+      "Identical x replicates assigned together",
+      "Test provenance and sampling protocol retained by evaluator and committed in signed receipt"
+    ],
+    "exclusions": [
+      "Pontius",
+      "Norris",
+      "Eckerle4",
+      "Chwirut2",
+      "Hahn1",
+      "Thurber",
+      "Bennett5",
+      "Any prior R0-R13 heldout source",
+      "Any domain where JANUS has already accessed sealed labels"
+    ]
+  },
+  "strong_baselines": {
+    "selection": "Custodian independently fits baselines on TRAIN, chooses by VALIDATION; TEST used exactly once.",
+    "families": [
+      "OLS polynomial degree0-5",
+      "Ridge polynomial degree5 alpha0.01",
+      "PCHIP interpolation",
+      "UnivariateSpline with smoothing 0.01/0.1/1.0 scaled train sigma",
+      "RandomForest 300 trees leaves1/3/5 seed1301",
+      "RBF KernelRidge gamma0.5/2/8/32 alpha0.001/0.1/1"
+    ],
+    "dependencies": "numpy==1.26.4 scipy==1.14.1 scikit-learn==1.5.2",
+    "predefined_no_tuning_on_test": true
+  },
+  "uncertainty": {
+    "primary": "RMSE per physical domain, gain=1-RMSE_JANUS/RMSE_best_baseline",
+    "resampling": "Paired bootstrap by independent TEST x-groups, 2000 resamples, fixed seed1301; percentile 95% interval for gain",
+    "limitations": "Descriptive conditional CI for frozen predictors. With small groups and correlated physical observations it is not a universal inference or full laboratory replicate.",
+    "report_abstention": "Explicit, always count as not winning. No post-hoc replacing with baseline to claim novelty.",
+    "no_repeated_sealed_feedback": true,
+    "scoring_gate": "3/3 distinct physical domains each PROPOSE, gain >= 5%, 95% bootstrap CI lower bound > 0.",
+    "all_outcomes_archive": true,
+    "no_automatic_model_promotion_even_on_success": true
+  },
+  "trust_gate": {
+    "external_custodian": "NOT_APPOINTED",
+    "custodian_public_key_ed25519_pem": "NOT_PROVIDED",
+    "approved_pubkey_sha256": "NOT_PINNED",
+    "external_scoring_receipt": "NOT_RECEIVED",
+    "external_signature": "NOT_RECEIVED",
+    "external_pass_status": "BLOCKED_PENDING_INDEPENDENT_EVALUATOR",
+    "requirement": "Independent custodian signs canonical result JSON with Ed25519; public key must be pinned by independent verification before receipt is accepted. GitHub Actions fixture or researcher-generated keys are not evidence.",
+    "cryptographic_note": "Signature authenticates a separately verified key identity and exact bytes; it does not establish honesty by itself. Never auto-trust arbitrary self-submitted key."
+  },
+  "comparison_to_R13": "R1.4 uses frozen R1.2 learner and R1.3 strong baselines without reading R1.3 TEST again; independent domains held outside JANUS.",
+  "theological_boundary": "No possible numeric score can establish or refute divine authorship; mathematics/physics interpretation separate from empirical fit.",
+  "other_boundaries": [
+    "No P=NP inference",
+    "No Rowan paid tasks",
+    "No NAS jobs",
+    "No new schedules",
+    "Do not write scientific PASS without external signed receipt"
+  ],
+  "refs": [
+    "https://docs.codabench.org/latest/Organizers/Benchmark_Creation/Competition-Design/",
+    "https://arxiv.org/abs/2609.01552",
+    "https://openadmet.ghost.io/open-sourcing-our-blind-challenge-platform/"
+  ],
+  "next_gate": "SECURE_EXTERNAL_CUSTODIAN_AND_SIGNING_KEY_WITHOUT_SECRET_TRANSFER_TO_GITHUB"
+}

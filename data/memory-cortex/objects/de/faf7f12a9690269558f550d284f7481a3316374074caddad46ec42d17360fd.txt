@@ -1,0 +1,82 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-SIGLA-CROSS-DIGITIZATION-INVENTORY-SPEC-2026-08-14-v1.0",
+  "timestamp": "2026-08-14T13:27:00+03:00",
+  "version": "v1.0",
+  "title": "JANUS Linear A R3A SigLA cross-digitization inventory audit specification",
+  "node_type": "frozen_execution_specification",
+  "status": "FROZEN_BEFORE_EXECUTION",
+  "canonical_parent": {
+    "path": "data/JANUS-LINEAR-A-RESEARCH-STATE-2026-08-14-v2.4.json",
+    "commit": "8ea6fd39c711fcdb1df1242a6ba1b42d74d2db84"
+  },
+  "provenance_audit_parent": {
+    "path": "data/JANUS-LINEAR-A-FRESH-SOURCE-PROVENANCE-AUDIT-2026-08-14-v1.0.json",
+    "commit": "3d45339e87f11116d0cce3414b91aab7c37a9cb4"
+  },
+  "source_A": {
+    "name": "mwenge/lineara.xyz",
+    "role": "CURRENT_FROZEN_DIGITAL_BASELINE",
+    "repository_commit": "43fe7cf1abc8e6bb1ea3228c3a1bd5938709620a",
+    "inventory_source": "items/*.html"
+  },
+  "source_B": {
+    "name": "SigLA — The Signs of Linear A",
+    "role": "INDEPENDENT_DIGITIZATION_SHARED_GORILA_TRANSCRIPTION_TRADITION",
+    "browse_url": "https://sigla.phis.me/browse.html",
+    "about_url": "https://sigla.phis.me/about.html",
+    "license": "CC BY-NC-SA 4.0",
+    "expected_public_document_count_at_spec_time": 802,
+    "external_transcription_independence": false
+  },
+  "question": "Does an independently maintained GORILA-derived digitization expose document-inventory/naming/coverage differences that could invalidate assumptions tied specifically to lineara.xyz before any content-level cross-digitization parser comparison?",
+  "execution": {
+    "network_rule": "Fetch SigLA browse.html during CI and record the exact HTTP bytes SHA-256; do not assume the live page is immutable.",
+    "baseline_rule": "Clone and checkout the frozen mwenge commit before deriving its item inventory.",
+    "parser_rule": "Use an independent HTMLParser-based SigLA inventory extractor. Do not import lineara.xyz parsing code for SigLA HTML.",
+    "normalization_rule": "Compare both raw document IDs and a separately declared conservative canonical-ID transform. Preserve all disagreements and collisions."
+  },
+  "conservative_id_normalization": {
+    "operations": [
+      "URL decode",
+      "Unicode NFC",
+      "trim leading/trailing whitespace",
+      "collapse repeated internal whitespace",
+      "insert no inferred characters",
+      "remove no side markers such as a/b",
+      "preserve punctuation, angle brackets, Greek suffixes and uncertain markers"
+    ],
+    "forbidden": [
+      "manual name equivalence based on expected overlap",
+      "dropping side suffixes to increase overlap",
+      "mapping one source identifier to another using semantic/transcription content"
+    ]
+  },
+  "predeclared_outputs": [
+    "SigLA browse HTTP status/final URL/content SHA-256/content length",
+    "SigLA extracted document count",
+    "frozen mwenge item count",
+    "raw exact overlap count",
+    "SigLA-only raw IDs",
+    "mwenge-only raw IDs",
+    "conservative-normalized overlap count",
+    "normalization collisions in either source",
+    "site/prefix distribution in each source",
+    "sample disagreements selected deterministically by lexical ordering",
+    "claim ceiling"
+  ],
+  "gates": {
+    "G1_FETCH": "SigLA browse page must return HTTP 200 and non-empty bytes.",
+    "G2_PARSE": "SigLA extractor must find at least 700 distinct document IDs and exactly match the page's stated corpus count if that count is parseable.",
+    "G3_BASELINE": "Frozen mwenge checkout must match the declared commit and contain at least 1500 item HTML files.",
+    "G4_NO_COLLISION_HIDING": "Any normalization collision is preserved and blocks using normalized IDs as a one-to-one identity bridge.",
+    "G5_CLAIM_CEILING": "This stage may establish cross-digitization inventory agreement/disagreement only; it cannot establish independent transcription replication, lexical meaning, anchor novelty, or decipherment."
+  },
+  "claim_ceiling": {
+    "cross_digitization_inventory_audit_established": false,
+    "cross_digitization_content_replication_established": false,
+    "external_transcription_replication_established": false,
+    "new_anchor_established": false,
+    "decipherment_established": false,
+    "promotion": "BLOCKED"
+  }
+}

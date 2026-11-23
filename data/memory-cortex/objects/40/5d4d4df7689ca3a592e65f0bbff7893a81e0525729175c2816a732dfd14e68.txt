@@ -1,0 +1,84 @@
+{
+  "schema": "hawkar.watchers.outbound_delivery_audit.v1",
+  "generated_date_utc": "2026-08-30",
+  "scope": "Permanent delivery failures observed in Gmail over the previous 7 days, with duplicate-avoidance and alternate-route status.",
+  "rules": [
+    "Do not resend when the same package already reached another valid address at the same organization.",
+    "Treat a Gmail permanent DSN as delivery failure for the listed failed recipient only.",
+    "Do not infer delivery failure for CC recipients unless they are listed in the DSN failed-recipient field or produce a separate bounce.",
+    "Prefer current official or institution-published alternate contacts."
+  ],
+  "cases": [
+    {
+      "organization": "ODNI / NCSC",
+      "failed_recipient": "NCSC-Safeguarding-Our-Future@dni.gov",
+      "failure": "550 5.4.1 Recipient address rejected: Access denied",
+      "same_message_cc": "NCSC_Outreach@odni.gov",
+      "cc_bounce_observed": false,
+      "state": "PARTIAL_DELIVERY_PRIMARY_FAILED_SECONDARY_ACCEPTED_NO_DUPLICATE_RESEND",
+      "note": "NCSC_Outreach@odni.gov is a current official NCSC outreach address and received the original message as CC."
+    },
+    {
+      "organization": "Akash Network",
+      "failed_recipient": "partners@akash.network",
+      "failure": "Google Group rejected external posting / group unavailable",
+      "alternate_already_sent": "hello@akash.network",
+      "alternate_bounce_observed": false,
+      "state": "RESOLVED_BY_PRIOR_ALTERNATE_ROUTE"
+    },
+    {
+      "organization": "OpenBet",
+      "failed_recipients": ["sales@openbet.com", "info@openbet.com"],
+      "failure": "550 5.4.1 Recipient address rejected",
+      "alternate_already_sent": "salesenquiries@openbet.com",
+      "alternate_bounce_observed": false,
+      "state": "RESOLVED_BY_PRIOR_ALTERNATE_ROUTE"
+    },
+    {
+      "organization": "Altenar",
+      "failed_recipients": ["luana.monje@altenar.com", "sam.hill@altenar.com", "luis.muscat@altenar.com", "hugo.llanos@altenar.com"],
+      "failure": "NoSuchUser",
+      "alternate_already_sent": "sales@altenar.com",
+      "alternate_bounce_observed": false,
+      "state": "RESOLVED_BY_PRIOR_ALTERNATE_ROUTE"
+    },
+    {
+      "organization": "Golem Network",
+      "failed_recipient": "developers@golem.network",
+      "failure": "550 5.1.1 NoSuchUser",
+      "alternate_already_sent": "contact@golem.network",
+      "alternate_bounce_observed": false,
+      "state": "RESOLVED_BY_PRIOR_ALTERNATE_ROUTE"
+    },
+    {
+      "organization": "IFAO Archives and Collections",
+      "failed_recipient": "archives@ifao.egnet.net",
+      "failure": "mail.ifao.egnet.net connection timeout after Gmail retry window",
+      "alternate_sent_2026_08_30": "clarcher@ifao.egnet.net",
+      "alternate_role": "Cédric Larcher, head of IFAO Archives and Collections Service",
+      "alternate_gmail_message_id": "1a054166cfd73c3a",
+      "immediate_bounce_observed": false,
+      "state": "RESENT_TO_CURRENT_DIRECT_OFFICIAL_CONTACT"
+    },
+    {
+      "organization": "IFAO Library",
+      "failed_recipient": "bibliotheque@ifao.egnet.net",
+      "failure": "mail.ifao.egnet.net connection timeout after Gmail retry window",
+      "alternate_sent_2026_08_30": "aciavatti@ifao.egnet.net",
+      "alternate_role": "Aurore Ciavatti, head of IFAO Library",
+      "alternate_gmail_message_id": "1a054168cbbe21cf",
+      "immediate_bounce_observed": false,
+      "state": "RESENT_TO_CURRENT_DIRECT_OFFICIAL_CONTACT"
+    },
+    {
+      "organization": "NARO / Polypedilum research",
+      "failed_recipient": "cornette@affrc.go.jp",
+      "failure": "550 5.1.0 Address rejected",
+      "current_contacts": ["cornette.richard704@naro.go.jp", "kikawada.takahiro911@naro.go.jp"],
+      "evidence_of_success": "Existing reply thread with Dr. Cornette and Dr. Kikawada on current NARO addresses",
+      "state": "ALREADY_RESOLVED_NO_RESEND"
+    }
+  ],
+  "unresolved_permanent_failures_after_audit": [],
+  "next_check": "Monitor Gmail for delayed DSNs or replies; do not duplicate-send unless a new permanent failure appears."
+}

@@ -1,0 +1,37 @@
+{
+  "schema":"janus.eye.r4_5.adversarial_model_expander_contract.v1",
+  "id":"EYE-R4.5-ADVERSARIAL-MODEL-EXPANDER-2026-09-02-v1.0",
+  "title":"EYE R4.5 — Adversarial Model Expander",
+  "status":"IMPLEMENTATION_CANDIDATE__CI_REQUIRED",
+  "law":"ROBUST_AGAINST_MODELS_WE_THOUGHT_OF != ROBUST_AGAINST_ADMISSIBLE_MODELS_WE_MISSED",
+  "machine":["ROBUST_POLICY","DECLARED_UNCERTAINTY_ENVELOPE","EVALUATE_POLICY_ON_UNSEEN_MODEL_VERTEX","SELECT_MAX_BREAKER","ADD_COUNTERMODEL","R4_4_REPLAN","REPEAT","STOP_OR_RESOURCE_CEILING"],
+  "objective":"Search a declared finite admissible model envelope for countermodels that invalidate or increase the cost of the current robust policy, add the strongest breaker, and replan until no declared vertex breaks the policy or a hard epistemic/resource gate fires.",
+  "breaker_order":["hard_failure_probability","cost_overrun","expected_cost_under_candidate","stable_vertex_id_tiebreak"],
+  "hard_failure_components":["wrong_confident_probability","unresolved_probability","out_of_policy_support_probability"],
+  "verdicts":[
+    "NO_ADMISSIBLE_BREAKER_FOUND_IN_FINITE_ENVELOPE",
+    "MODEL_SET_EXPLODES_UNDER_ADVERSARIAL_EXPANSION",
+    "ROBUST_NON_IDENTIFIABLE_AFTER_ADVERSARIAL_EXPANSION",
+    "BASELINE_NOT_ROBUSTLY_SOLVABLE",
+    "UNKNOWN_RESOURCE_LIMIT"
+  ],
+  "required_model_vertex_fields":["id","provenance"],
+  "epistemic_firewalls":[
+    "FINITE_VERTEX_COVERAGE != CONTINUOUS_ENVELOPE_COVERAGE",
+    "NO_BREAKER_FOUND != TRUE_WORLD_ROBUSTNESS",
+    "ADVERSARIAL_VERTEX != OBSERVED_WORLD",
+    "MODEL_SET != TRUE_WORLD",
+    "MODEL_PROVENANCE != MODEL_VALIDITY",
+    "BASELINE_NON_IDENTIFIABLE != ADVERSARIAL_BREAK",
+    "OUT_OF_POLICY_SUPPORT != NEGATIVE_EVIDENCE",
+    "UNKNOWN_RESOURCE_LIMIT != CONVERGENCE"
+  ],
+  "validation_plan":{
+    "synthetic":"A declared vertex jointly degrades the two cheap channels. R4.5 must break the old t_robust policy, add the countermodel, and force R4.4 onto the independent gold path.",
+    "search_proof":"A declared vertex jointly weakens provenance and verifier calibration while preserving end-to-end rebuild; the old robust policy must be attacked before replanning.",
+    "palomar":"No calibrated decision witness exists, so R4.5 must preserve baseline robust non-identifiability rather than fabricate an adversarial causal result.",
+    "adversarial_suite":"10 tests covering provenance, duplicate vertices, unknown tests, finite-vertex ceiling, round ceiling, support shift, no-breaker case, Palomar baseline, and counterexample-guided replanning."
+  },
+  "ceiling":"R4.5 v1 proves only exhaustive search over an explicitly declared finite vertex set. It does not prove robustness over continuous likelihood/prior intervals, contamination balls, or undiscovered model families.",
+  "next_frontier":"EYE-R4.6 — CONTINUOUS UNCERTAINTY ADVERSARY / INTERVAL AND CONTAMINATION ENVELOPE OPTIMIZER"
+}

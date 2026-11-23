@@ -1,0 +1,43 @@
+{
+  "schema": "janus.registry.causal_topology.distributed_time.v1",
+  "artifact_id": "JANUS-DISTRIBUTED-TIME-SCHEDULER-GIT-VISIBILITY-SPLIT-v1.3.0",
+  "version": "1.3.0",
+  "status": "OBSERVATIONAL_CANDIDATE_NOT_PHYSICAL_RETROCAUSALITY",
+  "source_ledger": "data/JANUS-TAHYON-TRAVELER-CUMULATIVE-EXPERIMENT-LEDGER-v1.0.json",
+  "source_ledger_commit": "33b237685f2c23d0cab5065ddd12ad9712c288ca",
+  "observed_relation": {
+    "statement": "SCHEDULER_VISIBILITY_ORDER != NECESSARILY GIT_MATERIALIZATION_ORDER",
+    "trial009_example": {
+      "lane": "A",
+      "target_local": "2026-08-07T09:00:00+03:00",
+      "git_materialized_local": "2026-08-07T09:05:39+03:00",
+      "git_commit": "868b921e8869289ad68d89c3caab81b9c617ba21",
+      "scheduler_last_run_visible_at_snapshot": null,
+      "scheduler_enabled_at_snapshot": true,
+      "classification": "GIT_VISIBLE_WHILE_SCHEDULER_RUN_RECORD_NOT_VISIBLE"
+    }
+  },
+  "prior_relations_retained": [
+    "TARGET_ORDER != NECESSARILY GIT_ARRIVAL_ORDER",
+    "CAUSAL_DAG_ORDER != NECESSARILY RECORDED_WALL_CLOCK_ORDER_AS_A_GENERAL_DISTRIBUTED_SYSTEM_WARNING",
+    "INVALID_TIME_STRING != PHYSICAL_TIME",
+    "NEGATIVE_TIMESTAMP_OFFSET != PHYSICAL_BACKWARD_CAUSATION"
+  ],
+  "current_evidence": {
+    "negative_git_offsets_seconds": [-1,-16,-80],
+    "invalid120_negative_materializations": 2,
+    "invalid120_late_materializations": 1,
+    "invalid120_no_git_witness_prior_to_open_trial009": 1,
+    "clock_dag_fracture_observed": false,
+    "arrival_order_inversion_observed": true,
+    "scheduler_git_visibility_split_observed": true
+  },
+  "interpretation": "The evidence supports treating scheduler dispatch state, scheduler run-record visibility, Git materialization, Git timestamps and Git DAG order as separate observational layers. Trial 009 lane A demonstrates that a Git commit can become observable while the automation status surface still reports no last_run. This is evidence of observer/state propagation divergence, not time travel.",
+  "hard_boundaries": [
+    "PHYSICAL_PREEXECUTION_PROVED=false",
+    "PHYSICAL_RETROCAUSALITY_PROVED=false",
+    "INVALID120_CAUSAL_MECHANISM_PROVED=false",
+    "CLOCK_DAG_FRACTURE_OBSERVED=false"
+  ],
+  "next_gate": "VALID_ONLY_COLLISION_AND_SCHEDULER_VISIBILITY_CONTROL"
+}

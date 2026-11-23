@@ -1,0 +1,99 @@
+{
+  "schema": "JANUS_ENGINEERING_CHECKPOINT_V1",
+  "id": "ADV-ELITE-Q29-TOYCASTLE-RADIO-PIXEL-SHOOTER-2026-08-28",
+  "date": "2026-08-28",
+  "project": "JANUS Cardputer ADV Elite",
+  "target_repo": "Hawkar-usls/janus-distributed-ai-swarm",
+  "target": "firmware/adv_elite/ADV_Elite.ino",
+  "parent_checkpoint": "ADV-ELITE-Q28-RC2-FIRST-FLASH-AUDIT-2026-08-27",
+  "status": "DIRECTIVES_FROZEN__IMPLEMENTATION_AND_BINARY_BUILD_IN_PROGRESS",
+  "truth_rule": "OBSERVED_REAL != DERIVED_FROM_REAL != PREDICTED != SIMULATED != CONTROL_STATE",
+  "directives": {
+    "wifi": {
+      "primary_ssid": "ToyCastle",
+      "boot_policy": "attempt primary known network automatically without user interaction",
+      "credential_policy": "embed the primary credential in the compiled firmware image via a private build secret; never serialize the password into this registry or public source",
+      "fallback": "if ToyCastle is unavailable, expose an on-device Wi-Fi scan, network picker and password entry UI",
+      "fallback_persistence": "save successful fallback credentials in NVS and prefer ToyCastle again when it becomes available",
+      "street_use_case": "allow a phone hotspot or other temporary network to be selected directly on Cardputer ADV"
+    },
+    "radio_audio_lease": {
+      "rule": "RADIO_R owns the speaker/audio path from mode entry until mode exit, not merely while MP3 engineRunning is true",
+      "brainwave_on_entry": "silence BrainWave immediately before catalogue/network/player work begins",
+      "brainwave_during_radio": "forbidden",
+      "speaker_i2s_competition": "forbidden",
+      "brainwave_restore": "restore the pre-radio BrainWave enabled state only after the Radio foreground lease is released",
+      "hard_mute": "absolute; radio and BrainWave both remain silent",
+      "radio_engine": "ESP8266Audio MP3 path through M5Cardputer Speaker with bounded buffering"
+    },
+    "input": {
+      "canonical_direction_control": "physical Cardputer ADV Fn-arrow layer",
+      "left": "Fn+,",
+      "right": "Fn+/",
+      "up": "Fn+;",
+      "down": "Fn+.",
+      "legacy_wasd": "not canonical; may remain only as optional compatibility if it does not conflict with HOME mode shortcuts",
+      "escape_home": [
+        "Fn+` / Fn+~ ESC semantic",
+        "top G0 / BtnA hardware HOME semantic"
+      ],
+      "game_fire": "SPACE",
+      "game_autofire_toggle": "I",
+      "game_pause": "P",
+      "game_gyro_toggle": "G"
+    },
+    "game": {
+      "foreground": "ALIEN_SURVIVAL_A",
+      "genre": "top-down pixel survival shooter",
+      "screen": "240x135 Cardputer ADV landscape",
+      "simulation_boundary": "game state is FICTION/SIMULATION and must never feed OBSERVED_REAL, anomaly evidence or M2R truth",
+      "preserve": [
+        "fixed-step update",
+        "waves",
+        "manual fire and autofire",
+        "gyro optional movement",
+        "enemy classes and bosses",
+        "XP, pickups and perks",
+        "health LED projection",
+        "resource courtesy governor"
+      ],
+      "visual_transplant": {
+        "donors": [
+          "Nice_TTD — копия.txt",
+          "Nice_TTD.txt",
+          "Spore_swarm.txt"
+        ],
+        "adopt": [
+          "deep-space / primordial-ooze pixel palette",
+          "procedural parallax drops/spores",
+          "organic neon silhouettes",
+          "role-readable enemy morphology rather than generic circles",
+          "short-lived projectile and impact particles",
+          "pulsing organic background structures",
+          "spatially bounded effects suitable for ESP32-S3"
+        ],
+        "do_not_adopt": [
+          "zero-player two-colony gameplay as the foreground game",
+          "128x128 assumptions",
+          "blocking restart delays",
+          "sound ownership inside game entities"
+        ]
+      },
+      "background_goal": "dense but legible animated pixel biome that remains subordinate to enemies/player/HUD and preserves ADV frame budget"
+    },
+    "brainwave": {
+      "game": "silent for the entire ALIEN_SURVIVAL_A foreground lease",
+      "radio": "silent for the entire RADIO_R foreground lease",
+      "home_and_nonexclusive_modes": "allowed subject to hardMute/masterVolume and existing policy"
+    }
+  },
+  "binary_release_contract": {
+    "deliverable": "single merged ESP32-S3 factory image",
+    "expected_name": "ADV_Elite_RC3_PIXEL_RADIO_FACTORY.bin",
+    "flash_offset": "0x0",
+    "source_credentials": "private CI/build secret injected into generated ADV_Elite_local_config.h before compile",
+    "public_source_contains_primary_password": false,
+    "hardware_validation": "required after first real Cardputer ADV flash; compile success alone is not hardware proof"
+  },
+  "epistemic_note": "The three supplied game files are design/code donors. Their rendering and ecosystem mechanics support the visual transplant, but they do not by themselves establish Cardputer ADV runtime performance; that remains a hardware measurement gate."
+}

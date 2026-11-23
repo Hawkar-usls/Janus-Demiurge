@@ -1,0 +1,92 @@
+{
+  "schema": "JANUS_EYE_R3_ORDER_GATE_AUDIT",
+  "schema_version": "1.0",
+  "record_id": "EYE-R3-RUN-002-ORDER-GATE-AUDIT-2026-09-01",
+  "version": "1.0",
+  "created_date": "2026-09-01",
+  "status": "R3_ORDER_GATE_DEFECT_FOUND__TARGET_CANDIDATES_NOT_PROMOTED",
+  "scope": "Manual/held-out audit of the automatically generated Palomar-Music-Genesis hidden-machine constellation before any candidate is treated as a real hidden machine.",
+  "source_artifacts": [
+    "EYE/r3/eye_r3_hidden_machine_miner.py",
+    "EYE/r2/eye_r2_novel_bridge_miner.py",
+    "EYE/r3/generated/EYE-R3-RECEIPT.json",
+    "EYE/r3/generated/EYE-R3-PALOMAR-MUSIC-GENESIS-CONSTELLATION.json"
+  ],
+  "automatic_run_snapshot": {
+    "input_records": 3543,
+    "recognized_domains": 19,
+    "eligible_ordered_machines": 370,
+    "palomar_music_genesis_matching_machines": 4,
+    "automatic_status": "CANDIDATE_FOUND__VERIFY_REQUIRED",
+    "named_target_bonus": false,
+    "derivative_memory_input_absent": true
+  },
+  "defect": {
+    "id": "R3-P1-ORDER-TIE-SHARED-SIGNAL",
+    "severity": "P1_EPISTEMIC_FALSE_ORDER_RISK",
+    "mechanism": [
+      "operator_event searches every configured signal and assigns the event position to the earliest occurrence of any hit",
+      "different operators share generic signals such as hash, sha256, context, exact, open, pass and change",
+      "two or more operators can therefore receive the same earliest character position",
+      "events are sorted by (position, operator_name), so equal-position events acquire a deterministic lexical order",
+      "machine_windows consumes the sorted operator names and can emit the resulting lexical tie-break as an ordered machine"
+    ],
+    "observed_evidence": "The highest-scoring Palomar-Music-Genesis candidate contains multiple provenance documents whose machine_normalized_positions are identical for all three operators, e.g. [0.02193975, 0.02193975, 0.02193975] and [0.00701663, 0.00701663, 0.00701663].",
+    "consequence": "operator_order_required=true is not yet equivalent to semantic or textual strict order. A candidate may survive because co-located shared vocabulary was alphabetically ordered rather than because the document instantiates O1 -> O2 -> O3."
+  },
+  "manual_candidate_audit": {
+    "EYE-R3-TRIPLE-245e565b907b65ca": {
+      "machine": ["EXACT_VS_SEMANTIC_IDENTITY", "PROVENANCE_CHAIN", "SEALED_CONTEXT_RECOVERY"],
+      "automatic_confidence": "STRONG_HIDDEN_MACHINE_CANDIDATE__VERIFY_REQUIRED",
+      "manual_status": "REJECT_PROMOTION_PENDING_STRICT_ORDER_RETEST",
+      "reason": "Repeated equal normalized positions demonstrate that the current evidence does not establish ordered composition."
+    },
+    "EYE-R3-TRIPLE-36e73df7576fe4db": {
+      "machine": ["CONTINUITY_CONTRAST", "SEALED_CONTEXT_RECOVERY", "STATE_TRANSITION"],
+      "automatic_confidence": "MEDIUM_HIDDEN_MACHINE_CANDIDATE__VERIFY_REQUIRED",
+      "manual_status": "RETEST_REQUIRED",
+      "reason": "Some lineages show separated positions, but operator specificity is zero and shared-context vocabulary can still generate pseudo-order."
+    },
+    "EYE-R3-TRIPLE-a3a348e0bd3a05ef": {
+      "machine": ["PROVENANCE_CHAIN", "EXACT_VS_SEMANTIC_IDENTITY", "SEALED_CONTEXT_RECOVERY"],
+      "automatic_confidence": "MEDIUM_HIDDEN_MACHINE_CANDIDATE__VERIFY_REQUIRED",
+      "manual_status": "RETEST_REQUIRED",
+      "reason": "Candidate is structurally plausible but still uses highly overlapping hash/identity/recovery vocabulary."
+    },
+    "EYE-R3-TRIPLE-deea70afb1512e33": {
+      "machine": ["PROVENANCE_CHAIN", "STATE_TRANSITION", "EXACT_VS_SEMANTIC_IDENTITY"],
+      "automatic_confidence": "MEDIUM_HIDDEN_MACHINE_CANDIDATE__VERIFY_REQUIRED",
+      "manual_status": "PARTIAL_SEMANTIC_SUPPORT__PALOMAR_IDENTITY_OPERATOR_WEAK",
+      "reason": "Two Genesis and two Music lineages contain a meaningful provenance -> transition -> claim/identity-boundary narrative, but sampled Palomar lineages often trigger EXACT_VS_SEMANTIC_IDENTITY through exact/hash/sha256 vocabulary without an explicit semantic-identity contrast."
+    }
+  },
+  "manual_provenance_examples": {
+    "GENESIS": [
+      "registry/experimental/JANUS-GENESIS-TOP100-ROUND1-FROZEN-SAMPLE-EXECUTION-RECEIPT-v0.4.json",
+      "data/JANUS-GENESIS-FIRST-WITNESS-LIFE-TESTIMONY-v1.0.json"
+    ],
+    "MUSIC": [
+      "data/JANUS-SIRIUS-0222-CAUSALITY-WORLD-VERIFICATION-TARGET-2026-09-01-v1.0.json",
+      "data/JANUS-ALAN-PARSONS-PROJECT-1976-1987-TRACK-CORPUS-RUN-2026-09-01-v1.0.json"
+    ],
+    "PALOMAR": [
+      ".github/workflows/palomar-jpfm-2f-b3-shape-compat.yml",
+      "tools/palomar/jpfm_2f_c2b1_freeze_engineering_holdout.py"
+    ]
+  },
+  "required_fix": {
+    "strict_order": "A machine window must require strictly increasing evidence anchors O1 < O2 < ... < On; equal positions are forbidden.",
+    "shared_signal_decontamination": "Ordering anchors should prefer operator-discriminative signals instead of generic signals shared by many operators.",
+    "semantic_minimum": "An operator may not be credited solely by generic hash/state/context boilerplate when its claimed invariant is more specific.",
+    "negative_control": "Reordered/shuffled operator controls must be run; a true ordered machine should outperform matched reordered controls.",
+    "authority": "All pre-fix R3 target candidates remain CANDIDATE_ONLY and must be re-mined/reverified after the stricter gate."
+  },
+  "canonical_laws": [
+    "CO_OCCURRENCE != ORDER",
+    "LEXICAL_TIE_BREAK != MACHINE_SEQUENCE",
+    "SHARED_SIGNAL != OPERATOR_IDENTITY",
+    "R3_SCORE != TRUTH",
+    "VERIFY_THE_MINER_BEFORE_VERIFYING_THE_WORLD"
+  ],
+  "verdict": "RUN-002 succeeds as a self-falsification run: the current Palomar-Music-Genesis constellation is not promoted, because the order detector itself admits a false-order pathway."
+}

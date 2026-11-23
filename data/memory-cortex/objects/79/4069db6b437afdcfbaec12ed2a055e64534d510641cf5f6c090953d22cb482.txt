@@ -1,0 +1,70 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1A-THREE-LAYER-COMPONENT-INCIDENCE-PREREG-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "FROZEN_PREREG__AUTHORIZED",
+  "gate": "R5_B1A_THREE_LAYER_COMPONENT_INCIDENCE_IMPORT_GATE_V1",
+  "binds": {
+    "B0_manifest_commit": "07017116bd8313161806cb8918587113bd388673",
+    "B0_manifest_blob": "5ee8397ff9fc84c1f6f0c1cc7106c11700470545",
+    "source_audit_commit_fund": "efc5039e171755eeb7db1f90fde69e2f54bf4421",
+    "source_audit_commit_meta": "e8849c14f10f6a8e99cc91a2b6af02350b870888",
+    "source_audit_blob": "be676c101deab882314d5f02f629f82f8e795a9d"
+  },
+  "frozen_input": {
+    "sigma": "one fixed B0 coarse source signature",
+    "S_sigma": "all surviving vertices with coarse_signature(v)=sigma",
+    "H_sigma": "G[S_sigma]",
+    "residual_components": "connected components of final residual G[Y0]",
+    "B0_uniformity": "for every survivor v and every residual component C, v is complete or anticomplete to C",
+    "ambient": "G is P7-free"
+  },
+  "allowed_external_imports": [
+    "Polynomial P7-free List-3-Colouring algorithm, used only to obtain an auxiliary proper coloring of H_sigma or reject H_sigma as not list-3-colorable.",
+    "Lozin-Zamaraev chain decomposition only after P7-freeness of each incidence layer is proved locally."
+  ],
+  "auxiliary_coloring_firewall": [
+    "phi_sigma is not committed as the coloring of any global extension.",
+    "Only the stable-set property of each color class R_i is imported into the local proof.",
+    "Failure of the List-3 instance on H_sigma is a sound rejection because every global extension would restrict to an L_sigma-respecting coloring of H_sigma."
+  ],
+  "construction": {
+    "stable_layers": "S_sigma = R1 disjoint_union R2 disjoint_union R3",
+    "incidence_graph": "I_{sigma,i} has left side R_i and right side the residual Y0 components; vC is an edge iff v is complete to C"
+  },
+  "theorem_target": {
+    "name": "MONOCHROMATIC_INCIDENCE_INDUCED_PATH_LIFT_V1",
+    "statement": "For every fixed sigma, every auxiliary stable layer R_i, every k>=1, and every induced P_k in I_{sigma,i}, choosing one arbitrary representative from every component-node yields an induced P_k in G.",
+    "corollary": "Because G is P7-free, every I_{sigma,i} is P7-free."
+  },
+  "acceptance": {
+    "PASS": [
+      "prove the lift for both possible bipartite path endpoint orientations",
+      "show preservation of all consecutive incidences",
+      "show absence of every nonconsecutive survivor-component chord using inducedness plus B0 complete/anticomplete",
+      "show absence of component-component chords because distinct Y0 components are anticomplete",
+      "show absence of survivor-survivor chords because R_i is stable",
+      "independent replay has zero logical mismatches",
+      "importability to existing P7-free bipartite decomposition is source-supported"
+    ],
+    "FAIL": [
+      "a source-valid configuration satisfying the frozen hypotheses where an induced path in I_{sigma,i} fails to lift inducedly to G",
+      "a missing edge/nonedge implication required by the proof"
+    ]
+  },
+  "forbidden_promotions": [
+    "THREE_P7_FREE_INCIDENCE_LAYERS => FULL_A_SOLVED",
+    "BOUNDED_MIM_WIDTH_PER_LAYER => BOUNDED_MIM_WIDTH_OF_UNION",
+    "LINEAR_DECOMPOSITION_TREE_SIZE => POLYNOMIAL_JOINT_DP_STATE_COUNT",
+    "AUXILIARY_3_COLORING => COMMITTED_GLOBAL_EXTENSION_COLORING",
+    "B1A_PASS => FULL_L2_REPAIR",
+    "B1A_PASS => LEMMA11_P7_LIFT",
+    "B1A_PASS => P7_FREE_4_COLOR_IN_P",
+    "B1A_PASS => P_EQUALS_NP"
+  ],
+  "successor_policy": {
+    "B1B_THREE_CHAIN_TREE_SYNCHRONIZATION_GATE_V1": "LOCKED_UNTIL_B1A_PASS_AND_SEAL_AND_NEW_HQ_AUTHORIZATION",
+    "broad_B1_inventory": "DEFERRED",
+    "module_transfer": "LOCKED"
+  }
+}

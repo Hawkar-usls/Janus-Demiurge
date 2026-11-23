@@ -1,0 +1,176 @@
+{
+  "schema": "JANUS.genesis_sovereign_face_microcontrol_session_review_reconciliation.v6_3",
+  "artifact_id": "JANUS-GENESIS-SOVEREIGN-FACE-MICROCONTROL-SESSION-ATOMICITY-LINEAGE-REVIEW-PROVIDER-RECONCILIATION-v6.3",
+  "title": "JANUS Genesis Sovereign v6.3 — Session Turn Atomicity, Full Crash Boundary Matrix, Lineage-Independent Face Review, and Provider Lookup Reconciliation",
+  "created_at_local": "2026-08-14T16:25:11+03:00",
+  "status": "EXPERIMENTAL_MICROCONTROL_EXTENSION_WITH_FOCUSED_CI_VERIFICATION",
+  "parent": "registry/experimental/JANUS-GENESIS-SOVEREIGN-FACE-MICROCONTROL-CONTROLLED-AI-LINK-CRASH-RECEIPT-v6.2.json",
+  "runtime_parent": "Hawkar-usls/Janus_Genesis:genesis_v18_7_26_controlled_ai_link.py",
+  "problem": "v6.2 established stable request identity and crash-aware replay on a canonical AI-link descendant, but three edges remained. First, stable sequence identity is insufficient if multiple processes can mutate one AI-link session concurrently. Second, distinct face IDs are not necessarily independent reviewers when faces are forks or clones of one lineage. Third, an ambiguous provider outcome needs a structured lookup/reconciliation contract rather than intuition. v6.3 addresses all three and executes the complete declared six-point crash boundary matrix.",
+  "new_invariants": [
+    "SESSION_SEQUENCE_ALLOCATION_MUST_BE_SERIALIZED_ACROSS_COOPERATING_PROCESSES",
+    "STABLE_REQUEST_IDENTITY_REQUIRES_STABLE_SESSION_TRANSITION_OWNERSHIP",
+    "DISTINCT_FACE_ID_IS_NOT_DISTINCT_REVIEW_INDEPENDENCE",
+    "REVIEW_INDEPENDENCE_IS_COUNTED_BY_LINEAGE_ROOT_NOT_RAW_FACE_COUNT",
+    "ONE_LINEAGE_CONTRIBUTES_AT_MOST_ONE_INDEPENDENT_REVIEW_SEAT",
+    "ORIGIN_LINEAGE_CANNOT_REVIEW_ITSELF_AS_INDEPENDENT",
+    "NOVEL_COUNTEREVIDENCE_ACCESS_SURVIVES_LOW_ROUTING_PRIORITY",
+    "REVIEW_SEAT_HAS_ZERO_WORLD_AUTHORITY",
+    "PROVIDER_LOOKUP_MUST_BIND_PROVIDER_EFFECT_AND_IDEMPOTENCY_IDENTITY",
+    "NONAUTHORITATIVE_PROVIDER_LOOKUP_CANNOT_CLEAR_UNCERTAINTY",
+    "SETTLED_PROVIDER_LOOKUP_REQUIRES_RECEIPT_ID",
+    "NO_EFFECT_PROVIDER_LOOKUP_MAY_OPEN_RETRY_ONLY_UNDER_EXPLICIT_AUTHORITATIVE_ADAPTER_CONTRACT",
+    "CALL_ENTERING_IS_THE_CONSERVATIVE_UNCERTAINTY_BOUNDARY"
+  ],
+  "session_turn_atomicity": {
+    "runtime": "LockedControlledGenesisAILinkGateway",
+    "lock": "CrossProcessSessionLock using filesystem flock",
+    "protected_span": [
+      "read current AI-link session state",
+      "read next_sequence",
+      "derive stable runtime request identity",
+      "controlled canonical runtime call or receipt replay",
+      "append AI-link turn",
+      "increment next_sequence",
+      "recompute session hash",
+      "replace session store"
+    ],
+    "verified_case": "Two separate gateway instances sharing one session store submit concurrent turns and the resulting session contains unique ordered sequences [1,2] with next_sequence=3.",
+    "scope_limit": "The lock protects cooperating processes that share the same lock file on a filesystem with working flock semantics. It is not multi-host consensus and does not protect noncooperating writers that bypass the descendant."
+  },
+  "lineage_independent_review": {
+    "planner": "LineageIndependentReviewPlanner",
+    "independence_unit": "lineage_root",
+    "raw_face_count_as_independence": false,
+    "origin_lineage_allowed_as_independent_reviewer": false,
+    "max_seats_per_lineage": 1,
+    "novel_counterevidence_rule": "Within and across eligible lineages, novel counterevidence is routed ahead of ordinary historical routing priority; a low-score lineage with novel counterevidence can therefore enter the required review set.",
+    "red_team_rule": "When required, at least one selected independent lineage performs COUNTEREXAMPLE_CHALLENGE if such an independent lineage is available.",
+    "insufficient_independence_rule": "If the required number of independent lineage roots is unavailable, raise INDEPENDENT_REVIEW_LINEAGES_UNAVAILABLE rather than counting clones as independent reviewers.",
+    "authority_weight": 0,
+    "world_authority_granted": false,
+    "constitutional_compression": "FACE_COUNT != LINEAGE_COUNT != AUTHORITY"
+  },
+  "provider_lookup_reconciliation": {
+    "interface": "ProviderLookupAdapter",
+    "observation_fields": [
+      "provider_id",
+      "effect_key",
+      "idempotency_key",
+      "outcome",
+      "evidence_ref",
+      "receipt_id",
+      "authoritative_under_adapter_contract"
+    ],
+    "structural_checks": [
+      "adapter provider_id equals binding provider_id",
+      "observation provider_id equals binding provider_id",
+      "observation effect_key equals protected effect_key",
+      "observation idempotency_key equals provider binding idempotency_key"
+    ],
+    "outcomes": {
+      "SETTLED": "requires authoritative adapter contract plus receipt_id; retry remains blocked",
+      "NO_EFFECT": "may mark retry safe only under authoritative adapter contract",
+      "UNKNOWN": "remains UNDETERMINED and retry remains blocked",
+      "NONAUTHORITATIVE": "remains UNDETERMINED even if observation text claims NO_EFFECT"
+    },
+    "claim_limit": "The generic reconciler verifies binding and policy semantics. It does not prove that a real provider adapter is authoritative; that remains provider-specific evidence."
+  },
+  "full_declared_crash_matrix": [
+    {
+      "point": "BEFORE_FENCE",
+      "verified": true,
+      "result": "no durable runtime event, no canonical world call, retry may execute normally"
+    },
+    {
+      "point": "AFTER_FENCE_BEFORE_INTENT",
+      "verified": true,
+      "result": "no world call; live fence blocks immediate competitor/retry; after lease expiry a new generation may proceed"
+    },
+    {
+      "point": "AFTER_DURABLE_INTENT",
+      "verified": true,
+      "result": "durable pre-call intent exists; no world call; after fence expiry retry may proceed because CALL_ENTERING was never crossed"
+    },
+    {
+      "point": "AFTER_CALL_ENTERING_BEFORE_WORLD",
+      "verified": true,
+      "result": "test knows injected crash occurred before world call, but generic recovery conservatively reports UNDETERMINED because production replay cannot prove that from durable state alone"
+    },
+    {
+      "point": "AFTER_WORLD_BEFORE_RECEIPT",
+      "verified": true,
+      "result": "world call happened; no receipt; retry is UNDETERMINED and does not perform a second world call"
+    },
+    {
+      "point": "AFTER_RECEIPT_BEFORE_RELEASE",
+      "verified": true,
+      "result": "durable receipt exists; retry returns cached runtime result without second world call even though old fence was not released"
+    }
+  ],
+  "micromanagement_learning": {
+    "lesson_1": "Independent criticism is a lineage property, not a face-count property. Forking one critic into ten faces cannot manufacture ten independent checks.",
+    "lesson_2": "A low historical routing score may reduce ordinary attention but cannot suppress a genuinely novel counterexample from an independent lineage.",
+    "lesson_3": "The host should prefer insufficient-review HOLD over counterfeit independence.",
+    "lesson_4": "Uncertainty must follow durable causal boundaries, not what the test harness privately knows. AFTER_CALL_ENTERING_BEFORE_WORLD is still conservatively UNDETERMINED after restart because the persisted record cannot prove whether the world call occurred.",
+    "lesson_5": "Provider reconciliation is an external evidence channel. Internal face consensus cannot substitute for it."
+  },
+  "verification_history": [
+    {
+      "run_id": 31804541734,
+      "job_id": 94780170783,
+      "head_sha": "29450f77185dff027b69f788acc140e24cdab7c6",
+      "conclusion": "failure",
+      "passed_before_failure": [
+        "compile v6.3 control chain",
+        "all v18.7.27 session/review/reconciliation/crash-matrix tests",
+        "all v18.7.26 controlled AI-link tests",
+        "all v18.7.25 durable control tests"
+      ],
+      "failure": "constitutional-string verifier used brittle line-oriented grep across text that was line-wrapped",
+      "treatment": "PRESERVED_AS_FAILED_VERIFIER_RUN; replaced with normalized-whitespace semantic assertions; no relabeling"
+    },
+    {
+      "run_id": 31804595130,
+      "job_id": 94780346252,
+      "head_sha": "9ccfee062da9a0a5c2324eb340fa90629c36d55c",
+      "conclusion": "success",
+      "verified_steps": [
+        "install runtime dependencies",
+        "compile v6.3 control chain",
+        "run v18.7.27 session review reconciliation tests",
+        "re-run v18.7.26 controlled AI-link tests",
+        "re-run v18.7.25 durable control tests",
+        "enforce normalized v6.3 constitutional semantics"
+      ]
+    }
+  ],
+  "runtime_implementation": {
+    "repository": "Hawkar-usls/Janus_Genesis",
+    "module": "genesis_v18_7_27_session_review_reconciliation.py",
+    "module_commit": "0317d86fe9f75798262c01172ed5a377daeb9bc1",
+    "tests": "tests/test_genesis_v18_7_27_session_review_reconciliation.py",
+    "tests_commit": "8a44d986a3fe76b1bc6a7a6dc62db703aa493fcb",
+    "workflow": ".github/workflows/janus-session-review-v6-3.yml",
+    "workflow_semantic_assertion_fix_commit": "9ccfee062da9a0a5c2324eb340fa90629c36d55c",
+    "successful_run_id": 31804595130,
+    "successful_job_id": 94780346252,
+    "integration_level": "CONTROLLED_CANONICAL_SESSION_LOCK_PLUS_LINEAGE_REVIEW_AND_RECONCILIATION_POLICY"
+  },
+  "claim_ceiling": {
+    "cooperating_same_filesystem_session_turn_serialization": "FOCUSED_CI_VERIFIED",
+    "unique_session_sequences_under_two_gateway_concurrency": "FOCUSED_CI_VERIFIED",
+    "lineage_root_review_independence": "FOCUSED_CI_VERIFIED",
+    "clone_review_sybil_rejection": "FOCUSED_CI_VERIFIED",
+    "novel_counterevidence_low_priority_access": "FOCUSED_CI_VERIFIED",
+    "provider_lookup_binding_policy": "FOCUSED_CI_VERIFIED_WITH_FAKE_ADAPTER",
+    "all_six_declared_v6_2_crash_points": "FOCUSED_CI_VERIFIED",
+    "multi_host_session_consensus": "NOT_CLAIMED",
+    "noncooperating_writer_exclusion": "NOT_CLAIMED",
+    "real_provider_adapter_authority": "NOT_CLAIMED",
+    "cryptographic_provider_lookup_authenticity": "NOT_CLAIMED_BY_GENERIC_LOOKUP_INTERFACE",
+    "default_cli_stable_request_identity": "NOT_YET_IMPLEMENTED",
+    "formal_safety_liveness_or_independence_proof": false
+  },
+  "next_gate": "JANUS_GENESIS_SOVEREIGN_FACE_MICROCONTROL_PERSISTENT_CLIENT_REQUEST_LEDGER_DEFAULT_CLI_CONTROLLED_MODE_LINEAGE_ATTESTATION_AND_PROVIDER_VERIFIER_BINDING_v6.4"
+}

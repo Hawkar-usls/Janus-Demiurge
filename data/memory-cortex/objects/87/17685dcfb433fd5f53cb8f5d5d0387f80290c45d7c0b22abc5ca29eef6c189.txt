@@ -1,0 +1,63 @@
+{
+  "schema": "janus.meta.trump_osiris_double_spiral_meet.r1_prereg.v1",
+  "artifact_id": "JANUS-TRUMP-OSIRIS-DOUBLE-SPIRAL-MEET-R1-ADVISORY-PREREG-2026-09-01-v1.0",
+  "status": "FROZEN_DESIGN_BEFORE_R1_HOLDOUT_EXECUTION",
+  "parent_R0_result": "data/JANUS-TRUMP-OSIRIS-DOUBLE-SPIRAL-MEET-R0-RESULT-2026-09-01-v1.0.json",
+  "parent_R0_result_commit": "10bebbd1fad616dc781fca3d71b73d8c5e7e25a1",
+  "R0_law": "THE_TWO_SPIRALS_MET_EXACTLY__THE_FIRST_WAY_OF_FINDING_THE_MEETING_PLACE_COST_TOO_MUCH",
+  "purpose": "Test whether the R0 exact meet can retain correctness while replacing exhaustive separator discovery with a cheap advisory proposal policy followed by exact separator verification.",
+  "training_and_design_disclosure": {
+    "R0_holdout_may_inform_R1_design": true,
+    "R0_holdout_may_validate_R1": false,
+    "observed_R0_failure": "separator discovery structural overhead dominated work",
+    "observed_structural_separation": "R0 structured family primal density was materially below dense controls; true/useful separator pairs were usually high degree-sum proposals.",
+    "frozen_density_skip_threshold": 0.70,
+    "frozen_pair_score": "degree(u)+degree(v), descending; lexicographic pair tie-break",
+    "frozen_max_pair_proposals": 12,
+    "reason": "Advisory route choice may use finalized prior evidence, but every chosen separator must still pass exact graph separation validation and root replay."
+  },
+  "R1_mechanism": {
+    "name": "ADVISORY_PAIR_PROPOSAL_EXACT_VERIFY_DOUBLE_SPIRAL",
+    "online_steps": [
+      "Build primal graph once.",
+      "If graph density > 0.70, skip meet discovery and exact-fallback immediately.",
+      "Otherwise score all variable pairs only by structural degree sum.",
+      "Try at most 12 ranked pairs in frozen order.",
+      "For each proposal, exact-check that removing S disconnects the primal graph and deterministically split resulting components into two nonempty wings.",
+      "On first exact-valid separator, run the unchanged exact left/right boundary meet and root replay.",
+      "If no proposal verifies, exact-fallback."
+    ],
+    "proposal_authority": false,
+    "separator_verification_authority": "exact graph connectivity only",
+    "SAT_UNSAT_authority": "independent exact root baseline in experiment; canonical TRUMP R5/C025 unchanged",
+    "same_holdout_learning": false
+  },
+  "fresh_holdout": {
+    "structured_sat_seeds": [8101,8102,8103,8104,8105,8106,8107,8108],
+    "structured_unsat_seeds": [8201,8202,8203,8204,8205,8206,8207,8208],
+    "dense_control_seeds": [8301,8302,8303,8304,8305,8306,8307,8308],
+    "case_count": 24,
+    "outcomes_seen_before_this_freeze": false,
+    "R0_seeds_reused_for_validation": false
+  },
+  "gates": {
+    "primary": [
+      "24/24 terminal agreement with independent exact root baseline",
+      "zero SAT root replay failures",
+      "zero truth contradictions",
+      "16/16 structured cases expose an exact verified meet",
+      "no holdout learning"
+    ],
+    "secondary_work": "candidate charged abstract ops < baseline exact nodes over all 24 fresh cases",
+    "dense_control": "Dense cases may skip to exact fallback; density skip itself has zero truth authority."
+  },
+  "claim_ceiling": {
+    "if_pass": "same-family frozen discovery-policy improvement only",
+    "natural_TRUMP_residual_generalization": false,
+    "general_solver_speedup": false,
+    "polynomial_time_SAT": false,
+    "P_equals_NP": false,
+    "P_VS_NP": "OPEN"
+  },
+  "next_if_pass": "R2 shadow-only trial on fresh natural unenriched TRUMP residuals with R5/C025 exact replay and R6 authority boundaries unchanged."
+}

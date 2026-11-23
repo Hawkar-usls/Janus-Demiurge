@@ -1,0 +1,75 @@
+{
+  "artifact_uuid": "JANUS-SOBEK-MUSEUM-ICONOGRAPHY-PROTOCOL-2026-08-16-v0.1",
+  "version": "v0.1",
+  "timestamp_date": "2026-08-16",
+  "status": "PREREGISTERED_NOT_YET_EXECUTED",
+  "parent": "data/JANUS-SOBEK-ICONOGRAPHIC-GRAMMAR-SOURCE-AUDIT-2026-08-16-v0.1.json",
+  "gate_id": "SOBEK_MUSEUM_ICONOGRAPHY_GENERALIZATION_R1",
+  "question": "Can Sobek identity be separated reproducibly from solar/crown/syncretic context across dated museum objects under blinded feature extraction and matched controls?",
+  "admission": {
+    "sobek_min": 30,
+    "period_groups_min": 3,
+    "full_crocodile_min": 8,
+    "crocodile_headed_anthropomorph_min": 8,
+    "solarized_or_sobek_re_min": 8,
+    "non_sobek_crocodile_controls_min": 20,
+    "non_sobek_crown_controls_min": 20,
+    "source_rule": "Museum or excavation catalogue with stable object identity and date/context. Exact image bytes must be SHA-256 sealed before image-derived scoring."
+  },
+  "blindness": {
+    "feature_annotators_hidden_from": ["object title", "deity label", "Sobek/Sobek-Re label", "site interpretation", "period group during primary feature marking"],
+    "visible": ["anonymized image", "feature definitions only"],
+    "unlock": "Identity/context labels are joined only after feature packages are frozen."
+  },
+  "feature_schema": {
+    "core": ["crocodilian_snout", "crocodilian_eye_position", "jaw_profile", "scale_or_body_crocodile_cues", "body_mode"],
+    "crown_context": ["plumes", "sun_disk", "ram_horns", "atef_core", "uraei", "double_crown_or_other_crown"],
+    "attributes": ["ankh", "was_scepter", "broad_collar", "royal_or_divine_dress"],
+    "syncretic": ["falcon_head", "other_non_crocodile_head", "hybrid_body"],
+    "context_after_unlock": ["companion_deities", "site", "period", "inscriptional_identity"]
+  },
+  "controls": {
+    "species_control": "Crocodiles appearing as dangerous animals, including Horus-cippus contexts, must be represented so crocodile morphology alone cannot be equated automatically with the deity Sobek.",
+    "crown_control": "Non-Sobek deities with plumes, sun disks, horns, atef or uraei must be included so headgear alone cannot drive classification.",
+    "syncretic_control": "Falcon-headed crocodiles are a held-out contextual branch and are not relabeled to maximize fit."
+  },
+  "primary_tests": [
+    {
+      "id": "T1_CORE_IDENTITY",
+      "prediction": "Crocodilian core plus body mode classifies catalogue-identified Sobek above matched controls without crown features."
+    },
+    {
+      "id": "T2_SOLAR_CONTEXT",
+      "prediction": "Adding sun-disk/crown modules improves discrimination of catalogue-identified Sobek-Re/solarized Sobek from non-solar Sobek, but crown modules alone do not identify Sobek reliably."
+    },
+    {
+      "id": "T3_SYNCRETIC_BRANCH",
+      "prediction": "Falcon-headed crocodile objects are better modeled as a context-dependent branch than as the canonical Sobek core."
+    },
+    {
+      "id": "T4_PERIOD_HOLDOUT",
+      "prediction": "Core-vs-context separation generalizes to a held-out period group without feature or threshold retuning."
+    },
+    {
+      "id": "T5_MODERN_LOGO_CANARY",
+      "prediction": "After the ancient classifier is frozen, the user-supplied SEBEK bottle emblem should be scored only as an out-of-sample modern visual query. Its result cannot establish designer intent."
+    }
+  ],
+  "wedjat_comparison_after_unlock": {
+    "allowed": "Compare architecture of feature roles: identity core vs contextual modules, hybrid anatomy, period effects and failure modes.",
+    "forbidden": "Do not infer a direct Sobek-Wedjat lineage, fraction mapping, text encoding or shared hidden code from structural analogy."
+  },
+  "promotion": {
+    "SOBEK_MULTILAYER_ICONOGRAPHIC_GRAMMAR_CANDIDATE": "T1, T2 and T4 replicate with matched controls and no retuning.",
+    "SOBEK_WEDJAT_SHARED_ARCHITECTURAL_PATTERN": "May be used only to describe the abstract analytical pattern core-plus-context; it is not a historical transmission claim.",
+    "SOBEK_WEDJAT_DIRECT_LINEAGE": "NOT_ADMISSIBLE_FROM_THIS_PROTOCOL"
+  },
+  "claim_firewall": [
+    "NO_SPECIES_EQUALS_DEITY_SHORTCUT",
+    "NO_CROWN_EQUALS_DEITY_SHORTCUT",
+    "NO_SOBEK_RE_WITHOUT_SOLAR_CONTEXT_EVIDENCE",
+    "NO_WADJET_WEDJAT_CONFLATION",
+    "NO_DIRECT_SOBEK_WEDJAT_LINEAGE",
+    "NO_FRACTION_OR_HIDDEN_TEXT_PROMOTION"
+  ]
+}

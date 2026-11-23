@@ -1,0 +1,106 @@
+{
+  "journal_id": "JANUS-PV11GOFRE-RUN-JOURNAL-20260825T013907Z",
+  "timestamp_local": "2026-08-25T04:39:07+03:00",
+  "timestamp_utc": "2026-08-25T01:39:07Z",
+  "last_amended_local": "2026-08-25T04:42:53+03:00",
+  "last_amended_utc": "2026-08-25T01:42:53Z",
+  "project": "Pv11Gofre",
+  "operation": "Derive an evidence-disciplined Pv11 recovery-state engine from OdontoForge, run the public-only fixture, and preserve the result.",
+  "parent_operator": "TRANSIENT_STATE_GROWTH_EXIT_REGENERATION",
+  "artifacts": [
+    {
+      "repository": "Hawkar-usls/janus-lapis",
+      "path": "tools/Pv11Gofre.py",
+      "initial_commit_sha": "8ecda103f73baa00521c10a49be5922ec6be0d32",
+      "current_commit_sha": "27a11ccaa7d2d99c124982f33b955e1331fbae7c",
+      "current_github_blob_sha": "40180cacb6eca35e992f8daf8a677937f9b629cb",
+      "executed_source_sha256": "d99fc930ed63c02a6ba415f984c53fa5d1078df35a43c8e50ac33f22028c410f"
+    },
+    {
+      "repository": "Hawkar-usls/janus-lapis",
+      "path": "data/resolution_gate/PV11GOFRE_REPAIR_FIRST_EXIT_GATE_2026-08-25.json",
+      "commit_sha": "1adca0ba8c557b97d4ef05e311e7da5a81fe353f",
+      "github_blob_sha": "2a08c6c6f239c3524d2134d55987e8574990e656"
+    },
+    {
+      "repository": "Hawkar-usls/janus-lapis",
+      "path": "reports/2026-08-25/PV11GOFRE_PUBLIC_FIXTURE_RUN_v0.1.json",
+      "initial_commit_sha": "ee1b86805ce26a6e0c962957e84659f9aaeed180",
+      "current_commit_sha": "923c2e92816e5525a0cabbdfd3a4d461542cc729",
+      "current_github_blob_sha": "647fa43216581f4500ea276b6055937c810696d0"
+    }
+  ],
+  "execution": {
+    "commands": [
+      "python Pv11Gofre.py selftest",
+      "python Pv11Gofre.py run --out pv11gofre_report.json"
+    ],
+    "selftest": "PASS",
+    "runtime_report_sha256": "3413afb5199e8222dd791b24a3dbcca6baae9998d681c94dbc976f45e7264f42",
+    "fixture_sha256": "ed3dbf29df68c862907d5655b995e7aaa3f7711583dbb7155d8c809734025969",
+    "result": {
+      "gate_status": "REPAIR_FIRST_PRECURSOR_SUPPORTED_CELL_CYCLE_GATE_OPEN",
+      "earliest_repair_evidence_h": 3.0,
+      "latest_repair_evidence_h": 24.0,
+      "earliest_population_assay_time_h": 24.0,
+      "proliferation_onset_h": null,
+      "first_direct_s_phase_h": null,
+      "repair_first_precursor_supported": true,
+      "causal_cell_cycle_release_proven": false,
+      "public_only": true
+    }
+  },
+  "semantic_correction": {
+    "status": "APPLIED_BEFORE_FINALIZATION",
+    "reason": "The first day-scale population-count timepoint must not be described as the onset of proliferation.",
+    "old_field": "first_direct_population_proliferation_h",
+    "new_fields": {
+      "earliest_population_assay_time_h": 24.0,
+      "proliferation_onset_h": null
+    }
+  },
+  "odonto_to_pv11_mapping": [
+    "ENTER_TRANSIENT_STATE -> REHYDRATE_ENTER_RECOVERY",
+    "GROW_OR_ACCUMULATE_STRUCTURE -> ACCUMULATE_REPAIR_AND_RECOVERY_ACTIVITY",
+    "TEST_LOCAL_CONSISTENCY_OR_VIABILITY -> TEST_GENOME_INTEGRITY_AND_CELL_CYCLE_COMPETENCE",
+    "CRYSTALLIZE_IF_VERIFIED -> CRYSTALLIZE_STABLE_RECOVERED_STATE_IF_SUPPORTED",
+    "EXIT_IF_TERMINAL -> RELEASE_CELL_CYCLE_ONLY_IF_DIRECTLY_MEASURED",
+    "REGENERATE_OR_REPLACE_IF_FAILED -> REPAIR_OR_REPLACE_FAILED_STATE",
+    "PRESERVE_LINEAGE_AND_COST -> PRESERVE_TIMEPOINT_REPLICATE_PROVENANCE"
+  ],
+  "public_evidence_anchors": [
+    {
+      "id": "Yamada2018_SciRep",
+      "doi": "10.1038/s41598-018-36124-6",
+      "role": "R3 RAD16-like Pv.07646 signal and R24 XPA-like/CCNH-like repair evidence"
+    },
+    {
+      "id": "Yamada2020_DRA008948",
+      "doi": "10.1371/journal.pone.0230218",
+      "accession": "DRA008948",
+      "role": "T0/T12/T24/T36/T48/R0/R3/R12/R24/R72 biological-triplicate RNA-seq time course"
+    },
+    {
+      "id": "Mazin2018_PNAS",
+      "doi": "10.1073/pnas.1719493115",
+      "role": "day-scale Pv11 post-rehydration population assay; not a first-S-phase clock and not a direct onset measurement"
+    }
+  ],
+  "epistemic_boundaries": [
+    "The engine is a hypothesis/test harness, not proof of a molecular regeneration mechanism.",
+    "Population growth timing is not substituted for direct first-S-phase timing.",
+    "Unpublished observations remain excluded from the public fixture until explicit permission exists.",
+    "A repair-first temporal ordering does not by itself prove that repair causally gates cell-cycle release."
+  ],
+  "next_gate": {
+    "name": "DRA008948_MATRIX_TRAJECTORY",
+    "requires": [
+      "exact run-to-condition manifest",
+      "raw or author-derived expression matrix with SHA-256 and provenance",
+      "frozen DNA_REPAIR / REPLICATION_LICENSING / S_PHASE / G1_S / G2_M / MITOSIS module trajectories",
+      "direct public first-S-phase measurement for ordering",
+      "prospective perturbation for causal promotion"
+    ]
+  },
+  "status": "RECORDED_CORRECTED_AND_OPEN_FOR_DATA_IMPORT"
+}

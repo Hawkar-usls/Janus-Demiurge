@@ -1,0 +1,40 @@
+{
+  "artifact_id": "JANUS-PALOMAR-JPFM-5A-LOCAL-WEATHER-ACQUISITION-GATE-v1.0",
+  "experiment_id": "JPFM-5A",
+  "date": "2026-08-15",
+  "status": "PREREGISTERED_SOURCE_ACQUISITION_GATE__NO_POSS_OR_BLUEBOOK_OUTCOME_JOIN",
+  "purpose": "Acquire the official NOAA/NCEI daily weather lineage for the Palomar Mountain Observatory area and quantify element/date completeness before using local weather as an acquisition/visibility covariate.",
+  "authority": {
+    "dataset": "NOAA/NCEI Global Historical Climatology Network Daily (GHCN-Daily)",
+    "station_inventory_url": "https://www.ncei.noaa.gov/pub/data/ghcn/daily/ghcnd-stations.txt",
+    "station_data_directory": "https://www.ncei.noaa.gov/pub/data/ghcn/daily/by_station/",
+    "historical_name_target": "PALOMAR MTN OBSERVATORY / PALOMAR MOUNTAIN OBSERVATORY",
+    "supporting_coop_inventory_hint": "COOP 046657-6 is associated with Palomar Mtn Observatory in the historical California station inventory; the GHCN station identifier must be resolved from the official NCEI station inventory rather than assumed."
+  },
+  "study_window": ["1949-11-19", "1957-04-28"],
+  "source_only_tasks": [
+    "Resolve all official GHCN station rows whose names contain PALOMAR and rank by distance to Palomar Schmidt coordinates.",
+    "Select the closest historically appropriate station only if its official record overlaps the study window.",
+    "Freeze station-inventory bytes and selected station-file bytes by SHA-256.",
+    "Report daily coverage for each available element (including PRCP, TMAX, TMIN when present) without joining POSS-I or Blue Book.",
+    "Preserve GHCN measurement, quality and source flags; a value failing quality control is not silently admitted.",
+    "Report date-level missingness explicitly."
+  ],
+  "initial_weather_roles": {
+    "PRCP": "acquisition/visibility proxy; precipitation may affect whether plates were taken and plate quality",
+    "TMAX_TMIN": "environment/acquisition covariates; not direct cloud measurements",
+    "SNOW_SNWD": "visibility/acquisition contextual variables if present",
+    "other_elements": "inventory only until separately admitted"
+  },
+  "hard_boundaries": [
+    "Daily precipitation is not cloud cover and may not be interpreted as clear-sky fraction.",
+    "A missing GHCN row or flagged value is not zero precipitation or normal weather.",
+    "Weather cannot be said to explain any POSS-I pattern before an outcome-blind coverage gate and a preregistered conditional-on-observation model.",
+    "Do not use weather to reclassify unobserved Palomar calendar days as observed zeros.",
+    "No Blue Book local-weather inference is permitted from a Palomar station; witness-local weather is a separate future problem."
+  ],
+  "admission_next": "If the selected station has adequate element coverage, freeze a JPFM-5B weather-adjusted POSS model before inspecting coefficients. The primary unit remains an actually observed Palomar night.",
+  "outcome_blindness": {"poss1_access": false, "bluebook_access": false, "nuclear_calendar_access": false, "association_computed": false},
+  "current_authority_changed": false,
+  "claim_ceiling": "PALOMAR_LOCAL_WEATHER_SOURCE_ACQUISITION_ONLY__NO_WEATHER_EFFECT_CLAIM"
+}

@@ -1,0 +1,38 @@
+{
+  "schema": "JANUS/hrain-telemetry-bridge/v1.0.0",
+  "schema_id": "janus.hrain.telemetry_bridge.v1",
+  "registry_id": "JANUS-HRAIN-TELEMETRY-BRIDGE-CONTRACT-v1.0.0",
+  "status": "ARCHITECTURE_FROZEN__IMPLEMENTATION_PENDING",
+  "purpose": "Expose ADV_Elite/JANUS swarm interesting events and anomalies in HRain through GitHub-backed canonical JSON without making HRain a write authority or embedding GitHub credentials in ESP32 firmware.",
+  "canonical_flow": [
+    "ADV_Elite/node authors JANUS canonical JSON",
+    "nonblocking registry_outbox queues publication",
+    "trusted Registry Gateway authenticates/verifies and publishes to GitHub",
+    "GitHub becomes durable source of published JSON",
+    "HRain fetches indexes/records read-only and visualizes relationships"
+  ],
+  "write_plane": {
+    "ADV_Elite": "author/select/queue",
+    "Registry_Gateway": "authenticate/verify/publish",
+    "GitHub": "durable published JSON",
+    "HRain": "NO_WRITE_AUTHORITY"
+  },
+  "read_plane": {
+    "HRain": "read-only cognitive graph projection",
+    "sources": [
+      {"class":"INTERESTING_SWARM_EVENTS","repository":"Hawkar-usls/janus-distributed-ai-swarm","proposed_root":"data/adv_elite/interesting/"},
+      {"class":"ANOMALY_EVENTS","repository":"Hawkar-usls/janus-meta-registry","proposed_root":"registry/anomalies/ADV_ELITE/"},
+      {"class":"CANONICAL_META_REGISTRY","repository":"Hawkar-usls/janus-meta-registry","mode":"existing HRain Registry Mode/read-only index"}
+    ]
+  },
+  "projection_rules": [
+    "OBSERVED_REAL, DERIVED_FROM_REAL, PREDICTED and SIMULATED remain distinct",
+    "anomaly means detector event, not extraordinary physical truth",
+    "source node/provenance remains visible",
+    "prediction links to later observation/score when available",
+    "peer disagreement remains visible",
+    "HRAIN_GRAPH != REGISTRY_AUTHORITY"
+  ],
+  "github_pages_constraint": "GitHub Pages is a static/read-only presentation surface and cannot be the authenticated ingest endpoint; the gateway performs writes while HRain consumes the resulting GitHub JSON.",
+  "future_hrain_ui": ["ADV_Elite recent/live projection","swarm event graph","M2R prediction to realized-observation edges","anomaly timeline","node disagreement edges","model-version lineage","Witness/session drill-down"]
+}

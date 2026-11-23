@@ -1,0 +1,111 @@
+{
+  "schema_id": "janus.hrain_inaihr_verified_source_json_pointer_atomic_fast_full_catalog_v1",
+  "date_utc": "2026-10-26",
+  "scientific_and_engineering_status": "IMPLEMENTED_CODE_MERGED_CI_PASS_REAL_CLI_AND_DUAL_BROWSER_PASS",
+  "purpose": "Give JANUS source-integrity-gated read-only JSON field DIVE and deterministic HRAiN structural/iNaiHR associative navigation across its existing public GitHub catalog. Eliminate race between changing main manifest and shards and reduce total traversal time.",
+  "origin": {
+    "HRAiN": "Hawkar-usls/Hrain",
+    "iNaiHR": "Hawkar-usls/iNaiHR",
+    "metaRegistry": "Hawkar-usls/janus-meta-registry",
+    "baseline_mindmap_archival": "data/JANUS-HRAIN-INAIHR-PUBLIC-GITHUB-JSON-MINDMAP-NAVIGATION-2026-10-26-v1.json",
+    "base_catalog_manifest": "https://github.com/Hawkar-usls/Hrain/blob/main/assets/janus-json-atlas/manifest.json",
+    "machine_navigator": "https://github.com/Hawkar-usls/Hrain/blob/main/tools/janus_mindmap_query.py",
+    "verified_source_module": "https://github.com/Hawkar-usls/Hrain/blob/main/tools/janus_verified_source.py",
+    "shared_HRAiN_iNaiHR_browser": "https://github.com/Hawkar-usls/Hrain/blob/main/assets/janus-json-map.js"
+  },
+  "implementation_revisions": [
+    {
+      "number": 28,
+      "url": "https://github.com/Hawkar-usls/Hrain/pull/28",
+      "mergeCommit": "6b83845bff425053e442e26cd87bdf9dc8face9",
+      "result": "CLI --read-source --pointer & browser on-demand verify/dive into actual JSON fields. Exact Git blob SHA1 and Meta Registry SHA256 verification; capped at 2MB; source untrusted data."
+    },
+    {
+      "number": 29,
+      "url": "https://github.com/Hawkar-usls/Hrain/pull/29",
+      "mergeCommit": "402a9c6cca5e891e9333b0556af88f81be656a12",
+      "result": "Resolve latest catalog manifest commit via exact GitHub history endpoint, then read both manifest and every shard using that single immutable source commit; refuse mutable main fallback. This repairs observed production SHA mismatch under concurrent automatic refresh."
+    },
+    {
+      "number": 30,
+      "url": "https://github.com/Hawkar-usls/Hrain/pull/30",
+      "mergeCommit": "cb405913bcf42e9b3c3dfb01dae498cfb0a93d7d",
+      "result": "Concurrent 8-worker bounded reading of immutable shards, SHA verification of all segments, deterministic index order, fail closed on any bad shard."
+    }
+  ],
+  "measured_live_state": {
+    "observation_time_utc": "2026-10-26",
+    "snapshot_generated_at_utc": "2026-10-26T21:23:01+00:00",
+    "public_repository_count": 14,
+    "catalog_json_files": 19621,
+    "sha256_verified_shard_count": 88,
+    "private_repositories_indexed": 0,
+    "historical_versions_indexed": false,
+    "immutable_file_source_links": true,
+    "source_contents_copied_to_atlas": false
+  },
+  "integration_checks": {
+    "CLI": {
+      "method": "Authorized user's Yaksa Windows terminal; checked against publicly published GitHub catalog, actual source file and remote verified blob bytes",
+      "exact_source_repo": "Hawkar-usls/janus-meta-registry",
+      "exact_source_path": "data/JANUS-HRAIN-META-REGISTRY-BRIDGE-v1.1.json",
+      "json_pointer": "/data_contract/mode",
+      "value": "READ_ONLY_ACTIVE_REGISTRY_PROJECTION",
+      "source_full_sha256": "871611ae268de119329ee277301b0cd79d5a43a0d52d2fd4e6d6d3aec631e722",
+      "verified_status": "VERIFIED_SOURCE_BYTES_AND_JSON_POINTER",
+      "index_commit_earlier_verified": "4ffe7e2ae17d91805bea865424403d50baef0cbd",
+      "registry_writes": 0,
+      "source_text_not_used_as_instructions": true
+    },
+    "HRAiN_BROWSER": {
+      "url": "https://hawkar-usls.github.io/Hrain/janus-map.html",
+      "method": "Actual headless Chrome launch through user's authorized Yaksa PC",
+      "source_repo": "Hawkar-usls/tranception",
+      "source_path": ".janus/HABITAT_LINK.json",
+      "source_commit": "8a9e2c7afa2c99f3a46b896bcedca102691eb984",
+      "source_bytes": 740,
+      "verified_json_pointer_count_in_bounded_preview": 17,
+      "verification": "VERIFIED SOURCE BYTES",
+      "result": "PASS"
+    },
+    "iNaiHR_BROWSER": {
+      "url": "https://hawkar-usls.github.io/iNaiHR/janus-map.html",
+      "same_source_as_hrain": true,
+      "source_bytes": 740,
+      "verified_json_pointer_count_in_bounded_preview": 17,
+      "verification": "VERIFIED SOURCE BYTES",
+      "result": "PASS"
+    },
+    "read_race": {
+      "observed_before_fix": "Real HRAiN CLI remote index failed closed with SHARD_SHA256_MISMATCH on assets/janus-json-atlas/shards/0018.json when raw mutable main manifest and shard were inconsistent.",
+      "after_fix": "All published manifest and shard reads pinned to immutable GitHub catalog commit SHA; successful real 88-shard traversal and verified original JSON pointer.",
+      "never_ignore_sha_to_keep_working": true
+    },
+    "measured_full_index_walltime": {
+      "sequential_real_remote_call_seconds": 43.64,
+      "concurrent_real_remote_call_seconds": 7.87,
+      "same_focus": "Hawkar-usls/janus-meta-registry:data/JANUS-HRAIN-META-REGISTRY-BRIDGE-v1.1.json",
+      "same_pointer": "/data_contract/mode",
+      "speedup_approx": 5.55,
+      "benchmark_caveat": "Single before/after wall-clock measurements over live public endpoints; not a controlled replicated throughput benchmark."
+    }
+  },
+  "engineering_firewalls": {
+    "source_byte_identity_is_not_scientific_fact_truth": true,
+    "semantic_path_overlap_is_not_proof": true,
+    "new_provider_model_weights_or_endpoints": false,
+    "no_model_promotion": true,
+    "no_paid_Rowan_inference": true,
+    "no_private_repo_scan": true,
+    "json_pointer_bounded_1024_chars": true,
+    "source_file_limit_bytes": 2000000,
+    "all_read_only_ui": true,
+    "no_browser_tokens_or_github_secrets": true,
+    "no_new_cross_repositories_write_authority": true,
+    "no_untrusted_source_content_execution": true,
+    "no_silent_hash_mismatch_recovery": true,
+    "catalog_source_commit_staleness_remains_possible_until_refresh": true,
+    "exact_source_pinned_sha_requires_source_exists": true
+  },
+  "next_improvement": "Use exact-source JSON pointer evidence links to build explicit source-grounded relations in the JANUS 5D knowledge graph. Do not promote associative/semantic similarity as truth; use TOPA before scientific claims."
+}

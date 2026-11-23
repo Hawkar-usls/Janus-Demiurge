@@ -1,0 +1,213 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-FRESH-SOURCE-CANDIDATE-AUDIT-2026-08-14-v0.1",
+  "timestamp": "2026-08-14T13:14:00+03:00",
+  "version": "v0.1",
+  "title": "JANUS Linear A fresh transcription/parser source candidate provenance audit",
+  "observer": "Oleksandr Ahapov / Hawkar + JANUS",
+  "node_type": "external_replication_source_provenance_audit",
+  "status": "R3_IN_PROGRESS_NO_SOURCE_PROMOTED_TO_EXTERNAL_REPLICATION_YET",
+  "canonical_parent": {
+    "path": "data/JANUS-LINEAR-A-RESEARCH-STATE-2026-08-14-v2.3.json",
+    "commit": "af977a0271daf807fafc2815a720c571b166c15c"
+  },
+  "audit_question": "Which available Linear A source is sufficiently independent in transcription/editorial encoding and sufficiently machine-accessible to support a genuinely new source-specific parser and later locked external-replication replay?",
+  "independence_definition": {
+    "not_sufficient": [
+      "different website",
+      "different file format",
+      "different frontend over the same structured transcription",
+      "copy of George Douros spreadsheet/JSON",
+      "copy of mwenge/lineara.xyz tokenization or word-break decisions"
+    ],
+    "required_or_strongly_preferred": [
+      "separately maintained/editorially curated transcription or sign-instance encoding",
+      "documented provenance to printed editions or artifact inspection",
+      "independent sign/word-boundary/editorial decisions or a route that allows us to derive them independently",
+      "machine-readable data or a feasible source-specific normalization path",
+      "numeric and punctuation conventions documented well enough to rebuild the typed-token ontology without mwenge-specific assumptions",
+      "license/access terms compatible with reproducible research",
+      "explicit demonstration of dependency relationships before claiming external replication"
+    ]
+  },
+  "current_mwenge_baseline_provenance": {
+    "source": "mwenge/lineara.xyz",
+    "frozen_commit": "43fe7cf1abc8e6bb1ea3228c3a1bd5938709620a",
+    "classification": "CURRENT_BASELINE_NOT_EXTERNAL",
+    "documented_pipeline": [
+      "The LinearA Explorer README states that George Douros produced a spreadsheet tabulating documents with word breaks, ideograms and numerals.",
+      "The spreadsheet was converted through CSV into the structured LinearAInscriptions.js data used by the explorer.",
+      "The project also uses GORILA images/transcriptions as the principal epigraphic foundation and separately incorporates John Younger's commentaries."
+    ],
+    "independence_consequence": "A future source must not be treated as external merely because it republishes GORILA or Younger if it imports the same Douros/mwenge structured transcription decisions.",
+    "primary_evidence_urls": [
+      "https://github.com/mwenge/lineara.xyz"
+    ]
+  },
+  "candidates": [
+    {
+      "candidate_id": "R3-CAND-SIGLA",
+      "name": "SigLA — The Signs of Linear A: a paleographical database",
+      "maintainers": ["Ester Salgarella", "Simon Castellan"],
+      "official_urls": [
+        "https://sigla.phis.me/",
+        "https://sigla.phis.me/about.html",
+        "https://sigla.phis.me/paper.html"
+      ],
+      "current_classification": "STRONG_CANDIDATE_PENDING_RAW_JSON_ACCESS_AND_DEPENDENCY_AUDIT",
+      "editorial_independence_from_mwenge": "STRONG_PARTIAL_PASS",
+      "machine_access": "PARTIAL_DOCUMENTED_NOT_YET_RESOLVED_TO_RAW_ENDPOINT",
+      "coverage": "BROAD_AND_ACTIVELY_UPDATED",
+      "license": "Dataset and drawings advertised under CC BY-NC-SA 4.0 on the official site.",
+      "provenance_evidence": [
+        "SigLA is maintained by Salgarella and Castellan as a separate open-access paleographical database.",
+        "The project paper describes creation of their own drawings of documents from the standard printed corpus, separation of individual signs into Krita layers, individual sign classification and epigraphic metadata assignment.",
+        "Their custom Import software converts the Krita corpus into a JSON database and generated document/sign images.",
+        "The interface is custom software rather than a wrapper around mwenge/lineara.xyz.",
+        "The official About page records continuing additions of documents, including updates in 2026."
+      ],
+      "shared_dependencies": [
+        "SigLA explicitly draws substantially from the printed GORILA corpus, so it is not independent at the level of underlying published epigraphic evidence.",
+        "This shared GORILA dependency must be separated conceptually from independence of digital encoding/editorial sign-instance annotation."
+      ],
+      "dependency_not_found_but_not_proven_absent": [
+        "No evidence has yet been found in the inspected official documentation that SigLA imports George Douros's spreadsheet, LinearAInscriptions.js, or mwenge tokenization.",
+        "Absence of such evidence is not proof of absence; source/data dependency audit remains open."
+      ],
+      "raw_access_state": {
+        "JSON_generation_documented": true,
+        "live_raw_JSON_endpoint_resolved": false,
+        "source_repository_exact_URL_resolved": false,
+        "source_code_existence_indicated_by_project_author_site": true,
+        "blocker": "Need an exact downloadable JSON/archive or source repository path before source-specific parser implementation can begin reproducibly."
+      },
+      "what_would_promote_to_R3_PASS": [
+        "Resolve the exact raw JSON/dataset or source-code repository path.",
+        "Verify the raw dataset can be obtained without passing through mwenge/lineara.xyz.",
+        "Inspect schema for document IDs, sign IDs, sign groups/word grouping, numerals, punctuation, uncertainty and variants.",
+        "Search source/import code and documentation for dependency on Douros, Younger structured exports or mwenge files.",
+        "Record an immutable source version/digest or repository commit."
+      ],
+      "external_replication_ready_now": false
+    },
+    {
+      "candidate_id": "R3-CAND-GORILA-DIRECT",
+      "name": "Direct GORILA editions via Cefael / École française d'Athènes",
+      "official_urls": [
+        "https://cefael.efa.gr/"
+      ],
+      "current_classification": "PRIMARY_EDITION_ROUTE_REQUIRES_NEW_TRANSCRIPTION_PIPELINE",
+      "editorial_independence_from_mwenge": "PASS_FOR_BYPASSING_DOUROS_DIGITAL_LAYER_BUT_SHARED_PRIMARY_EDITION",
+      "machine_access": "FAIL_FOR_READY_STRUCTURED_CORPUS",
+      "coverage": "FOUNDATIONAL_FIVE_VOLUME_CORPUS",
+      "provenance_evidence": [
+        "Cefael exposes the five Godart/Olivier Recueil des inscriptions en Linéaire A volumes (GORILA I-V), including tablets, nodules, roundels, other documents and addenda/corrigenda/sign plates.",
+        "This route bypasses the George Douros spreadsheet and mwenge JSON conversion layer."
+      ],
+      "limitations": [
+        "The inspected Cefael route is a digitized publication interface, not a ready machine-readable transcription dataset.",
+        "A JANUS parser would need a new transcription/normalization workflow derived from the editions themselves.",
+        "Because both mwenge and SigLA use GORILA heavily, direct GORILA is not independent at the underlying printed-edition level; its value is independence from downstream digital transcription decisions."
+      ],
+      "external_replication_ready_now": false,
+      "best_use": "Reference/ground-truth route for provenance checking, disagreement adjudication and potentially a genuinely fresh transcription pipeline if a reproducible extraction method is built."
+    },
+    {
+      "candidate_id": "R3-CAND-YOUNGER",
+      "name": "John Younger Linear A transliterations/commentaries",
+      "current_classification": "PARTIAL_NOT_CLEAN_EXTERNAL_SOURCE",
+      "editorial_independence_from_mwenge": "LOW_TO_PARTIAL",
+      "machine_access": "UNRESOLVED_IN_THIS_AUDIT",
+      "provenance_evidence": [
+        "SigLA documentation describes Younger as providing online Linear A transliterations based on GORILA with improved/updated readings.",
+        "mwenge/lineara.xyz separately states that it incorporates John Younger's commentaries."
+      ],
+      "limitations": [
+        "Younger is already inside the broader evidence ecosystem used by mwenge, so it is not a clean untouched external source for our present pipeline.",
+        "Its GORILA basis further reduces epigraphic-source independence."
+      ],
+      "external_replication_ready_now": false,
+      "best_use": "Reading-disagreement audit or alternative-reading comparison, not primary external replication corpus."
+    },
+    {
+      "candidate_id": "R3-CAND-PAITO",
+      "name": "The pa-i-to Linear A Epigraphic Project",
+      "official_urls": [
+        "https://www.paitoproject.it/the-pa-i-to-linear-a-epigraphic-project/",
+        "https://www.paitoproject.it/festos/"
+      ],
+      "current_classification": "PROMISING_SITE_SPECIFIC_NEW_CRITICAL_EDITION_PENDING_MACHINE_TRANSCRIPTION_ACCESS",
+      "editorial_independence_from_mwenge": "STRONG_FOR_SITE_SPECIFIC_RE-EDITION",
+      "machine_access": "PARTIAL_VISUAL_DIGITALIZATION_TRANSCRIPTION_ENDPOINT_NOT_CONFIRMED",
+      "coverage": "SITE_SPECIFIC_PHAISTOS_48_DOCUMENT_PROGRAM",
+      "provenance_evidence": [
+        "The project explicitly describes its goal as publication of a new critical edition of the Linear A documents from Phaistos.",
+        "It is a paleo-epigraphic/philological project involving Sapienza Università di Roma, Heraklion Archaeological Museum and other institutional partners.",
+        "The project documents 48 Phaistos Linear A objects and reports active digitalization and study, including 2D+/3D models."
+      ],
+      "limitations": [
+        "Coverage is site-specific and cannot replace a broad corpus for all-region replication.",
+        "The inspected public pages do not yet establish a downloadable machine-readable full transcription/sign-instance dataset.",
+        "Digital model licensing is scientific/non-profit with rights restrictions rather than the clearly reusable dataset licensing seen on SigLA."
+      ],
+      "external_replication_ready_now": false,
+      "best_use": "High-value independent site-specific validation source, especially for Phaistos, if structured transcription access can be obtained."
+    }
+  ],
+  "ranking": [
+    {
+      "rank": 1,
+      "candidate": "SigLA",
+      "reason": "Best combination currently observed of separate maintainers, custom sign-instance editorial pipeline, own drawings/classification, documented JSON generation, broad corpus scope and reusable dataset license. Raw access/dependency proof is the remaining gate."
+    },
+    {
+      "rank": 2,
+      "candidate": "Direct GORILA via Cefael",
+      "reason": "Strongest route for bypassing downstream digital transcription layers, but requires creation of a new reproducible transcription/parser and still shares the foundational printed edition used by other corpora."
+    },
+    {
+      "rank": 3,
+      "candidate": "pa-i-to",
+      "reason": "Potentially strong independent critical re-edition with object-level digital work, but presently site-limited and machine-readable transcription access is unconfirmed."
+    },
+    {
+      "rank": 4,
+      "candidate": "Younger",
+      "reason": "Useful alternate readings but not cleanly external because mwenge already incorporates Younger commentary and both are GORILA-based."
+    }
+  ],
+  "R3_gate_state": {
+    "fresh_source_selected_for_parser_implementation": null,
+    "external_replication_source_PASS": false,
+    "best_current_candidate": "SigLA",
+    "blocker": "Resolve a reproducible raw SigLA dataset/source-code path and verify dependency independence from Douros/mwenge structured data."
+  },
+  "next_actions": [
+    {
+      "order": 1,
+      "action": "Resolve SigLA raw JSON/archive/source repository URL and freeze a version/digest."
+    },
+    {
+      "order": 2,
+      "action": "Inspect SigLA schema and importer/source for Douros/Younger/mwenge dependencies and document sign-group/numeric/punctuation conventions."
+    },
+    {
+      "order": 3,
+      "action": "If SigLA passes raw-access/dependency audit, create a source-specific parser under research/linear_a/ without importing mwenge parser assumptions."
+    },
+    {
+      "order": 4,
+      "action": "Create a normalization-only receipt comparing document/sign coverage and disagreement structure before any external replication claim."
+    },
+    {
+      "order": 5,
+      "action": "Freeze a later external-replication spec that replays locked controls/transforms rather than rediscovering candidates on the fresh source."
+    }
+  ],
+  "claim_ceiling": {
+    "fresh_external_source_established": false,
+    "external_replication_established": false,
+    "new_anchor_established": false,
+    "decipherment_established": false,
+    "promotion": "BLOCKED_PENDING_RAW_SOURCE_ACCESS_AND_INDEPENDENCE_AUDIT"
+  }
+}

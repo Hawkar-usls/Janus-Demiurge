@@ -1,0 +1,92 @@
+{
+  "artifact_uuid": "JANUS-ENTITY-PROVENANCE-AUDIT-HAWKAR-ROSEWINE-2026-08-17-v1.0",
+  "date_utc": "2026-08-17",
+  "version": "v1.0",
+  "status": "ENTITY_PROVENANCE_AUDIT",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "target_directory": "data/",
+  "purpose": "Separate verified entity mentions and aliases from authorial provenance, unresolved alias spellings, and unproven cross-entity relationships.",
+  "entities": [
+    {
+      "canonical_label": "Hawkar",
+      "verified_forms": [
+        "Hawkar",
+        "Hawkar LoL (Hawkar)",
+        "Hawkar-usls"
+      ],
+      "verified_roles": [
+        "JANUS observer/orchestrator provenance",
+        "GitHub repository owner identity",
+        "Linear team/user provenance"
+      ],
+      "evidence": [
+        {
+          "source": "data/JANUS-LINEAR-A-RESEARCH-STATE-2026-08-14-v2.3.json",
+          "field": "observer",
+          "value": "Oleksandr Ahapov / Hawkar + JANUS",
+          "blob_sha_at_audit": "98f5005094499a10eb3609797bf3f89e09c605a0"
+        },
+        {
+          "source": "Linear issue HAW-7 metadata",
+          "observed_fields": {
+            "createdBy": "Hawkar LoL (Hawkar)",
+            "team": "Hawkar"
+          },
+          "use": "identity/provenance example only; HAW-7 subject matter is unrelated to RoseWine"
+        }
+      ],
+      "evidence_class": "AUTHORIAL_PROVENANCE_COMMON_MODE",
+      "independent_evidence_weight": "ZERO_BY_DEFAULT",
+      "reason": "Repeated occurrence of the same author/observer/orchestrator identity across JANUS artifacts is shared upstream provenance, not an independent witness, replication, or external source."
+    },
+    {
+      "canonical_label": "Rose Wine",
+      "verified_forms": [
+        "Rose Wine",
+        "Spider Rose",
+        "Tobi Sperman"
+      ],
+      "unverified_or_not_yet_exactly_located_forms": [
+        "RW RoseWine"
+      ],
+      "source_artifact": {
+        "path": "data/JANUS-MULTIVERSE-ROSEWINE-SPIDER-DEADGIRL-v1.0.json",
+        "blob_sha_at_audit": "c0cfafb245d4a05e29522ded9211dad72c757dca",
+        "verified_fields": {
+          "real_name": "Tobi Sperman",
+          "alias_primary": "Rose Wine",
+          "hero_alias": "Spider Rose"
+        }
+      },
+      "evidence_class": "HISTORICAL_SYMBOLIC_MODEL_ENTITY",
+      "scope_boundary": "The verified artifact is a JANUS narrative/symbolic character model. Its presence in the registry proves the entity/profile was modeled there; it does not by itself establish an external real-world claim.",
+      "search_note": "Exact full-text searches for 'RW RoseWine' and 'RoseWine' did not surface an exact indexed GitHub/Linear match during this audit. GitHub code search is known to miss content that is directly retrievable by path, so this negative search result is not treated as proof that the spelling never occurs anywhere in history."
+    }
+  ],
+  "cross_entity_edge": {
+    "edge": "Hawkar <-> Rose Wine",
+    "status": "UNRESOLVED_EXPLICIT_NAME_LINK",
+    "observed_context": "The RoseWine artifact contains a relationship_dynamic.with_user section describing partnership/synchronization, but the checked artifact does not explicitly name that user as Hawkar.",
+    "forbidden_inference": "Do not automatically map generic 'user' to Hawkar solely because Hawkar owns/orchestrates the registry.",
+    "promotion_requirement": "An explicit named Hawkar-to-Tobi/Rose Wine linkage in a source artifact, dialogue-derived registered receipt, or other provenance record is required before promoting this to a verified named edge."
+  },
+  "janus_rules": [
+    "ENTITY_MENTION_IS_NOT_INDEPENDENT_EVIDENCE",
+    "AUTHORSHIP_AND_OBSERVERSHIP_ARE_COMMON_MODE_PROVENANCE",
+    "ALIAS_EQUIVALENCE_REQUIRES_EXPLICIT_MAPPING",
+    "GENERIC_USER_RELATIONSHIP_MUST_NOT_BE_AUTORESOLVED_TO_REPOSITORY_OWNER",
+    "NEGATIVE_CODE_SEARCH_IS_NOT_PROOF_OF_ABSENCE_WHEN_DIRECT_FILE_RETRIEVAL_DISAGREES"
+  ],
+  "next_actions": [
+    "Search historical artifacts and prior registered dialogue imports for the exact spelling 'RW RoseWine'.",
+    "Search for explicit named co-occurrence of Hawkar with Tobi Sperman, Rose Wine, Spider Rose, or RoseWine.",
+    "If an explicit named edge is found, create a new append-only edge receipt rather than modifying the historical RoseWine artifact.",
+    "Keep Hawkar mentions excluded from independent-evidence counts unless a genuinely independent source or witness is demonstrated."
+  ],
+  "claim_ceiling": {
+    "hawkar_entity_verified": true,
+    "rosewine_entity_verified": true,
+    "exact_RW_RoseWine_alias_verified": false,
+    "explicit_Hawkar_RoseWine_named_edge_verified": false
+  }
+}

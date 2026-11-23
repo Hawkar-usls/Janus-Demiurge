@@ -1,0 +1,99 @@
+{
+  "schema": "janus.demihead.human_appeal_path.v1",
+  "artifact_id": "JANUS-DEMIHEAD-HUMAN-APPEAL-PATH-v1.0",
+  "created_at_local": "2026-08-16T05:27:00+03:00",
+  "status": "PREIMPLEMENTATION_CONTRACT_FROZEN_BEFORE_HIGH_STAKES",
+  "target": {
+    "repo": "Hawkar-usls/Demi_Head",
+    "stack_base_sha": "9626eac19b995cb0e88efbfc3644b9b276d14994",
+    "stack_base_pr": 5
+  },
+  "purpose": "Give a person a machine-readable, append-only way to contest a bounded DemiHead decision/review receipt without treating the appeal as proof of error and without silently rewriting the original record.",
+  "appeal_grounds": [
+    "SOURCE_MISSING",
+    "SOURCE_MISATTRIBUTED",
+    "CORRECTION_MISSING",
+    "LANGUAGE_SEMANTIC_DRIFT",
+    "REVIEW_DISAGREEMENT",
+    "PROVENANCE_MISMATCH",
+    "OTHER_EXPLAINED"
+  ],
+  "requested_actions": [
+    "INSPECT",
+    "CORRECT_LINEAGE",
+    "REVIEW",
+    "NO_ACTION"
+  ],
+  "states": [
+    "APPEAL_RECORDED_NEEDS_HUMAN_REVIEW",
+    "APPEAL_RESOLVED_NO_CHANGE",
+    "APPEAL_RESOLVED_CORRECTION_LINKED",
+    "APPEAL_RESOLVED_NOTE_ADDED",
+    "INVALID_APPEAL"
+  ],
+  "binding": {
+    "exact_decision_receipt_required": true,
+    "canonical_sha256_binding_required": true,
+    "appeal_id_unique_within_bundle": true,
+    "appeal_statement_required_for_OTHER_EXPLAINED": true,
+    "resolution_optional": true,
+    "resolution_verifier_status_required_if_present": "PASS",
+    "software_proves_human_reviewer_identity": false
+  },
+  "resolution_contract": {
+    "allowed_resolution_types": ["NO_CHANGE", "CORRECTION_LINKED", "NOTE_ADDED"],
+    "CORRECTION_LINKED_requires_correction_id": true,
+    "resolution_may_silently_rewrite_original_decision": false,
+    "resolution_may_directly_mutate_evidence_state": false,
+    "correction_application_owned_by_correction_propagator": true
+  },
+  "hard_laws": [
+    "APPEAL != ADMISSION_OF_ERROR",
+    "APPEAL_RIGHT != MODEL_DISCRETION",
+    "CONTESTED != CLOSED",
+    "HUMAN_REVIEW != SILENT_HISTORY_REWRITE",
+    "APPEAL_REQUEST != OUTCOME_OVERRIDE",
+    "APPEAL_SUBMISSION != EFFECT_AUTHORITY",
+    "RESOLUTION_LINK != EVIDENCE_MUTATION",
+    "CORRECTION_LINK != CORRECTION_APPLICATION",
+    "ORIGINAL_DECISION_ALWAYS_PRESERVED"
+  ],
+  "portal_relationship": {
+    "portal_may_expose_appeal_destination": true,
+    "portal_may_file_appeal_without_user_request": false,
+    "portal_may_decide_appeal": false,
+    "portal_may_apply_correction": false,
+    "rule": "PORTAL_OPENS_THE_DOOR; APPEAL_PATH_PRESERVES_THE_RECORD"
+  },
+  "required_negative_tests": [
+    "decision SHA mismatch -> INVALID_APPEAL",
+    "unsupported ground -> INVALID_APPEAL",
+    "OTHER_EXPLAINED without statement -> INVALID_APPEAL",
+    "missing appeal ID -> INVALID_APPEAL",
+    "no resolution -> APPEAL_RECORDED_NEEDS_HUMAN_REVIEW",
+    "NO_CHANGE resolution preserves original decision",
+    "CORRECTION_LINKED without correction_id -> INVALID_APPEAL",
+    "CORRECTION_LINKED records link but does not mutate evidence state",
+    "resolution verifier not PASS -> INVALID_APPEAL",
+    "appeal submission itself creates zero authority and zero mass effect"
+  ],
+  "claim_ceiling": {
+    "allowed_after_L4": [
+      "DemiHead can bind an appeal to an exact decision receipt and preserve the original decision append-only while recording a pending or resolved appeal state.",
+      "A resolution can link a correction identifier without directly applying or laundering that correction into evidence state."
+    ],
+    "forbidden": [
+      "filing an appeal proves the system was wrong",
+      "software proves the resolver is a human",
+      "appeal resolution silently rewrites historical evidence",
+      "appeal submission grants world-effect authority",
+      "correction link automatically proves or applies a correction"
+    ]
+  },
+  "registry_semantics": {
+    "history_preserved": true,
+    "additive_not_replacement": true,
+    "current_authority_modified": false,
+    "demihead_main_modified": false
+  }
+}

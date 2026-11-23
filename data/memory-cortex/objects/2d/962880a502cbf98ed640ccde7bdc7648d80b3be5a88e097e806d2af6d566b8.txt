@@ -1,0 +1,165 @@
+{
+  "schema": "janus.storm_incident.investigation_journal.v1",
+  "artifact_id": "JANUS-STORM-INCIDENT-INVESTIGATION-JOURNAL-2026-08-28-v1.2",
+  "version": "1.2",
+  "status": "OPEN_APPEND_ONLY_INVESTIGATION",
+  "parent": {
+    "artifact_id": "JANUS-STORM-INCIDENT-INVESTIGATION-JOURNAL-2026-08-28-v1.1",
+    "commit": "de0c5e8bbfffbf6bf2b81415d1d2bf6ad9cdc857"
+  },
+  "recorded_on": "2026-08-28",
+  "journal_policy": "APPEND_ONLY_NEW_VERSIONS_DO_NOT_REWRITE_PRIOR_EVIDENCE",
+  "publication_scope": {
+    "included": [
+      "external incident evidence",
+      "published JANUS timing experiments required for causal comparison",
+      "negative controls and rejected matches",
+      "public TSPU measurements and provider status data"
+    ],
+    "excluded": [
+      "internal JANUS maintenance details",
+      "cleanup/debugging narratives unrelated to the external incident"
+    ]
+  },
+  "new_meta_registry_findings": {
+    "causal_topology_precursor": {
+      "path": "registry/causal_topology/JANUS-DISTRIBUTED-TIME-SCHEDULER-GIT-VISIBILITY-SPLIT-v1.3.0.json",
+      "commit": "5eaf23d35a827d6906e1d98e51b104e54f2492d4",
+      "date": "2026-08-07",
+      "status": "DIRECTLY_RELEVANT",
+      "core_relation": "SCHEDULER_VISIBILITY_ORDER != NECESSARILY GIT_MATERIALIZATION_ORDER",
+      "observed_case": "Trial009 lane A had a Git commit visible while the automation status surface still reported no last_run.",
+      "importance": "JANUS separated scheduler dispatch/state visibility from Git materialization before the Record Drift C28 incident series. The current C28 model is therefore methodologically continuous rather than retrofitted after the Aug26 outage."
+    },
+    "record_drift_scheduler_audit_precursor": {
+      "path": "registry/audit/JANUS-RECORD-DRIFT-SCHEDULER-LATENCY-AUDIT-2026-08-16.json",
+      "commit": "45204345e37ada23c062996f974624ecdaa141ae",
+      "date": "2026-08-16",
+      "status": "DIRECTLY_RELEVANT",
+      "observations": [
+        {
+          "date": "2026-08-15",
+          "expected_utc": "2026-08-15T05:00:00Z",
+          "run_created_utc": "2026-08-15T05:18:38Z",
+          "delay_seconds": 1118,
+          "delay_human": "18m38s"
+        },
+        {
+          "date": "2026-08-16",
+          "expected_utc": "2026-08-16T05:00:00Z",
+          "run_created_utc": "2026-08-16T05:21:16Z",
+          "delay_seconds": 1276,
+          "delay_human": "21m16s",
+          "runner_allocation_after_creation_seconds_approx": 4.44,
+          "observer_start_after_creation_seconds_approx": 7.52
+        }
+      ],
+      "localization": "GITHUB_SCHEDULE_EVENT_MATERIALIZATION",
+      "not_localized_to": "RUNNER_ALLOCATION_OR_OBSERVER_EXECUTION",
+      "resulting_action": "Cron moved from minute 00 to minute 17 and C28_SCHEDULER_LATENCY was introduced."
+    },
+    "three_trial_candidate_check": {
+      "candidate_paths": [
+        "data/tahyon_traveler_trials/TAHYON-TRAVELER--0.01-TRIAL-001.json",
+        "data/tahyon_traveler_trials/TAHYON-TRAVELER--0.01-TRIAL-002.json",
+        "data/tahyon_traveler_trials/TAHYON-TRAVELER--0.01-TRIAL-003.json"
+      ],
+      "targets_local": [
+        "2026-08-07T07:28:00+03:00",
+        "2026-08-07T07:32:00+03:00",
+        "2026-08-07T07:37:07+03:00"
+      ],
+      "observed_git_delays_seconds": [48, 5, 51],
+      "verdict": "NOT_THE_RECALLED_SINGLE_THREE_FILE_CANCEL_EXPERIMENT",
+      "reason": "They were three sequential one-shot trials with distinct target times, not one scheduled request creating three files."
+    },
+    "false_friend_schedule_artifact": {
+      "path": "data/JANUS-PALOMAR-JPFM-2E-SCHEDULE-CONFOUND-DECOMPOSITION-ADMISSION-v1.0.json",
+      "commit": "2b76c65c57413e0dec1e0e54a537a2032af08920",
+      "verdict": "NOT_INFRASTRUCTURE_SCHEDULER_EVIDENCE",
+      "reason": "Here schedule means the Palomar astronomical observation schedule and its statistical confounding with calendar windows, not task scheduling or control-plane latency."
+    }
+  },
+  "direct_cancel_evidence_update": {
+    "into_the_storm_commit": "2eea4f8961deb0c1f50e69a9752023019f53872c",
+    "git_commit_time_utc": "2026-08-07T07:12:45Z",
+    "later_task_cancel_update_utc": "2026-08-07T07:14:12.801169Z",
+    "ordering": "SIDE_EFFECT_BEFORE_LATER_CANCEL_UPDATE",
+    "out_of_the_storm_current_path_found": false,
+    "strict_post_cancel_ack_result": "NOT_ESTABLISHED",
+    "literal_three_file_witness": "STILL_NOT_RECOVERED"
+  },
+  "external_utc_timeline_core": [
+    {
+      "time_utc": "2026-08-26T15:02:00Z",
+      "actor": "GitHub",
+      "event": "Official Actions impact begins: jobs fail to start; later RCA attributes trigger-processing degradation to database-primary write saturation plus burst amplification in event-processing infrastructure.",
+      "source": "https://www.githubstatus.com/"
+    },
+    {
+      "time_window_utc": "2026-08-26T15:02:00Z/2026-08-26T17:40:00Z",
+      "actor": "GitHub",
+      "event": "Core failure followed by delayed-load recovery; throttling and service restarts used as backpressure/recovery measures.",
+      "source": "https://www.githubstatus.com/"
+    },
+    {
+      "time_window": "evening 2026-08-26 onward, Russia local",
+      "actor": "Russian network filtering path",
+      "event": "Public technical reports describe new blocking/interception of Google/Cloudflare protected/open DNS with ISP/protocol-dependent behavior.",
+      "source": "https://habr.com/ru/articles/1075272/"
+    },
+    {
+      "time_utc": "2026-08-27T05:17:00Z",
+      "actor": "JANUS Record Drift Observatory",
+      "event": "Expected daily GitHub schedule target; run object not yet created."
+    },
+    {
+      "time_utc": "2026-08-27T10:37:35Z",
+      "actor": "Russian TSPU observation",
+      "event": "Published test timestamp equivalent to 13:37:35 MSK: UDP DNS query aimed at 8.8.8.8 returned NXDOMAIN while TCP DNS remained capable of reaching the real resolver.",
+      "source": "https://habr.com/ru/articles/1075272/"
+    },
+    {
+      "time_utc": "2026-08-27T16:32:23Z",
+      "actor": "JANUS Record Drift Observatory",
+      "event": "Aug27 GitHub scheduled run finally materialized after 40523 seconds (11h15m23s), S3; runner queue after creation was zero."
+    },
+    {
+      "time_utc": "2026-08-27T18:00:00Z",
+      "actor": "OpenAI",
+      "event": "Official incident window begins for elevated errors in Workspace Agents and ChatGPT Work on Web/Mobile.",
+      "source": "https://status.openai.com/incidents/01M1263309PD7VYV8EF95W2M2P"
+    },
+    {
+      "time_utc": "2026-08-27T22:14:00Z",
+      "actor": "OpenAI",
+      "event": "Official incident resolved; public status entry does not provide a root-cause attribution.",
+      "source": "https://status.openai.com/incidents/01M1263309PD7VYV8EF95W2M2P"
+    }
+  ],
+  "cross_provider_threat_intel_scan": {
+    "common_bgp_or_route_leak_found_in_initial_public_search": false,
+    "interpretation": "No single public BGP/routing event surfaced in the initial scan that bridges GitHub, OpenAI and the Russian TSPU observations. This is an absence in the searched public evidence, not proof that no routing anomaly existed.",
+    "contemporaneous_known_hostile_activity": {
+      "event": "A pro-Russian group claimed a DDoS campaign against Norway's public digital services around Aug26 according to AP reporting.",
+      "relevance": "Shows real pro-Russian DDoS activity existed in the same broad period.",
+      "causal_link_to_github_openai_tspu": "NONE_ESTABLISHED"
+    },
+    "shared_ioc_found": false,
+    "shared_attacker_attribution_found": false
+  },
+  "current_model": {
+    "lane_A_github": "Provider-confirmed internal Actions trigger/control-plane overload with evidence of longer residual schedule materialization anomalies from JANUS and independent GitHub users.",
+    "lane_B_russian_tspu": "Independent selective network-filtering changes on Aug26-27, including protocol-specific DNS behavior; historically plausible to create partial/asynchronous collateral failures.",
+    "lane_C_openai": "Separate Aug27 service degradation four-hour-class window with no public root cause in the status entry.",
+    "lane_D_external_attack": "Possible in principle but currently lacks a shared IOC, BGP event, ASN/bot fingerprint or provider attribution connecting lanes A-C.",
+    "merge_rule": "DO_NOT_MERGE_LANES_WITHOUT_SHARED_TECHNICAL_BRIDGE"
+  },
+  "investigation_priority": [
+    "Recover exact three-file ChatGPT scheduled-send/cancel witness or leave it unresolved.",
+    "Collect ASN/ISP/region-specific Aug26-28 Russian DNS and reachability measurements rather than generic outage complaints.",
+    "Continue GitHub witness cohort collection for schedule-no-run-object cases after official resolution.",
+    "Watch for provider postmortems or threat-intelligence that expose a shared upstream, botnet/ASN fingerprint, routing anomaly or explicit attack attribution.",
+    "Keep the Record Drift C28 lane as the server-side control because it is independent of a Russian client network path."
+  ]
+}

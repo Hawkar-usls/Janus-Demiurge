@@ -1,0 +1,198 @@
+{
+  "artifact_id": "JANUS-TRUMP-RIGID-SPLIT4-STATE-SCHEMA-RESULT-2026-09-20-v1.0",
+  "version": "v1.0",
+  "date": "2026-09-20",
+  "status": "CANDIDATE_SCHEMA_SPEC_CLOSED__UNPROVED",
+  "schema_name": "RIGID_SPLIT4_STATE_SCHEMA_V1",
+  "authority": "MATHEMATICAL_INTERFACE_SPECIFICATION__NO_IMPLEMENTATION__NO_SOUNDNESS_OR_COMPLETENESS_AUTHORITY",
+  "preregistration": {
+    "path": "research/TRUMP_CANDIDATE_SPLIT_STATE_SCHEMA_PREREGISTRATION_2026-09-20_v1.0.json",
+    "commit": "1076120e4d786f4308c6439b13a68240cbfc438f"
+  },
+  "parent_requirements": {
+    "path": "research/TRUMP_MINIMAL_SPLIT_STATE_REQUIREMENTS_RESULT_2026-09-20_v1.0.json",
+    "commit": "095b26df9190d98a33cb7f4c15b0bdf32909399e"
+  },
+  "source_binding": {
+    "paper": "Four-Coloring P6-Free Graphs. II. Finding an Excellent Precoloring",
+    "primary_pdf": "https://web.math.princeton.edu/~mchudnov/4colpaper2.pdf",
+    "verified_source_facts": [
+      "Legacy Q_{T,T'} states satisfy |P|=|M|<=|N|<=1 and therefore use only 000,001,111 cardinality patterns.",
+      "M is a subset of Y0 complete to P union N, while P is anticomplete to N.",
+      "S(Q) is the union of all local representative vertices.",
+      "Legacy Z(T,T') is defined separately for 000,001,111 and equals empty in 111.",
+      "Q-admissibility is defined on S(Q) union Z(Q) with endpoint restrictions, forced Z colors, and global properness.",
+      "The legacy polynomial count uses local support <=3, bounded S(Q), polynomially many Q, and unique admissible completion from a support precoloring.",
+      "Lemma 7 is stated for P6-free graphs.",
+      "Lemma 10 is stated for P6-free graphs."
+    ]
+  },
+  "local_language": {
+    "legacy_modes": [
+      "000",
+      "001",
+      "111"
+    ],
+    "new_mode": "SPLIT4",
+    "state_identity": {
+      "fields": [
+        "T",
+        "T_prime",
+        "p",
+        "a",
+        "b",
+        "n"
+      ],
+      "note": "The shortest-seed-path witness sigma=(s,s') is an auxiliary certificate, not part of semantic state identity and not an independent enumeration dimension."
+    },
+    "split4_membership": {
+      "role_constraints": [
+        "p in Y(T) intersect N(Y0)",
+        "n in Y(T_prime) intersect N(Y0)",
+        "a,b in Y0"
+      ],
+      "required_edges": [
+        "p-a",
+        "b-n"
+      ],
+      "required_nonedges": [
+        "p-n",
+        "p-b",
+        "a-n",
+        "a-b"
+      ],
+      "rigidity_certificate": {
+        "rule": "There exists a canonical shortest p-to-n seed path p-s-s_prime-n with interior in S such that a-p-s-s_prime-n-b is an induced P6.",
+        "certificate_choice": "Use the lexicographically first shortest seed path under the fixed total order induced by the input encoding; certificate verification is polynomial.",
+        "semantic_role": "certificate_only_not_support"
+      }
+    }
+  },
+  "contracts": {
+    "SUPPORT_PROJECTION": {
+      "split4_support": [
+        "p",
+        "a",
+        "b",
+        "n"
+      ],
+      "certificate_vertices_in_support": false,
+      "local_bound": 4,
+      "connectivity_derivation": [
+        "T and T_prime are nonempty because f(T),f(T_prime) are singleton-valued.",
+        "p has a seed neighbor in T and n has a seed neighbor in T_prime.",
+        "a is adjacent to p and b is adjacent to n.",
+        "Therefore every SPLIT4 support fragment attaches to the connected legacy seed S.",
+        "The union over all local fragments remains connected through S."
+      ]
+    },
+    "Z_SELECTOR": {
+      "legacy_modes": "identity with Paper-II definitions",
+      "split4_rule": "Z_SPLIT4(T,T_prime)=empty",
+      "status": "EXPLICIT_CANDIDATE_DEFINITION__NOT_INHERITED_FROM_LEGACY_111",
+      "warning": "Correctness of choosing empty Z is not promoted by schema closure; it must survive later raw representative-coverage and equivalence obligations."
+    },
+    "CARRIER_COLOR_AND_ADMISSIBILITY": {
+      "endpoint_rule": "f'(p),f'(n) belong to [4] minus (f(T) union f(T_prime))",
+      "attachment_carriers": "No additional local color equation for a,b; their colors are enumerated as support colors and retained only when f union f' is proper on the precolored induced graph.",
+      "global_properness": true,
+      "z_completion_contract": {
+        "mode": "UNIQUE_Z_COMPLETION",
+        "split4_reason": "vacuous because Z_SPLIT4 is empty",
+        "legacy_reason": "unchanged Paper-II admissibility mechanism"
+      }
+    },
+    "CONNECTIVITY_CONTRACT": {
+      "verifier_checks": [
+        "T nonempty",
+        "T_prime nonempty",
+        "p has a neighbor in T",
+        "n has a neighbor in T_prime",
+        "p-a edge",
+        "b-n edge"
+      ],
+      "theorem_target": "G[S union S(Qhat)] connected for every admitted global state",
+      "specification_derivation": "Each nonempty local fragment is connected to S; union with connected S is connected."
+    },
+    "POLYNOMIAL_BUDGET": {
+      "parameters": {
+        "n": "|V(G)|",
+        "s": "|S|",
+        "t": "number of relevant ordered type-pairs with t<=2^(2s)"
+      },
+      "local_choices_upper_bound": "1 + n + n^3 + n^4 <= 4n^4 for n>=1",
+      "certificate_enumeration_note": "sigma is chosen canonically and verified, so it does not multiply the semantic state count; even explicit enumeration of at most s^2 seed pairs would remain an s-dependent factor.",
+      "global_state_bound": "|Qhat| <= (4 n^4)^t",
+      "support_bound": "|S(Qhat)| <= 4t",
+      "support_coloring_bound": "<=4^(4t)",
+      "z_completion_multiplier": 1,
+      "combined_candidate_bound": "<=4^(5t) n^(4t)",
+      "explicit_n_only_bound_for_n_ge_2": "<= n^(14t)",
+      "fixed_seed_conclusion": "n^{q(s)} with q(s)=14*2^(2s) is a valid crude explicit bound",
+      "complexity_status": "SPECIFICATION_LEVEL_BOUND_ONLY__NO_IMPLEMENTATION_TIMING_CLAIM"
+    }
+  },
+  "conservative_embedding": {
+    "legacy_embedding": "identity on 000,001,111",
+    "commuting_equalities": [
+      "S_new(iota(Q))=S_old(Q)",
+      "Z_new(iota(Q))=Z_old(Q)",
+      "Adm_new(iota(Q))=Adm_old(Q)",
+      "P_new_{iota(Q),f'}=P_old_{Q,f'}"
+    ],
+    "status": "SPECIFIED_BY_IDENTITY"
+  },
+  "future_raw_gate": {
+    "scope_boundary": "STOP before Lemma 7, Lemma 10, acceptability, or any later P6-free transfer.",
+    "first_killer_refinement": {
+      "name": "RAW_REPRESENTATIVE_COVERAGE",
+      "statement": "For every fixed extension c and every relevant bad pair (p,n), prove that the local branch selected by the construction is either a legacy COMMON111 state or a valid SPLIT4 state whose stored colors agree with c.",
+      "reason": "Raw Ext-equivalence alone may be too weak because a normal-subcase precoloring obtained by simply fixing support colors is automatically restrictive; representative coverage tests the actual replacement for the common-z selection step."
+    },
+    "raw_soundness": {
+      "status": "NOT_TESTED",
+      "obligation": "Every extension of a generated raw normal subcase reconstructs an extension of P."
+    },
+    "raw_completeness": {
+      "status": "NOT_TESTED",
+      "obligation": "Every extension c of P is captured by at least one globally assembled Qhat,f' raw normal subcase."
+    },
+    "expected_local_completeness_branch": {
+      "common_neighbor_exists": "use legacy 111",
+      "no_common_neighbor": [
+        "choose a in N(p) intersect Y0 and b in N(n) intersect Y0",
+        "absence of common Y0 neighbor gives p-b and a-n nonedges",
+        "axiom (iv) plus p-a edge and p-b nonedge forces a-b nonedge",
+        "verified P7_CORRIDOR_RIGIDITY supplies the exact induced-P6 certificate",
+        "candidate branch is SPLIT4"
+      ],
+      "authority": "PROOF_PLAN_ONLY__NOT_YET_A_COMPLETENESS_PROOF"
+    }
+  },
+  "downstream_firewall": {
+    "LEMMA7_P7_TRANSFER": "NOT_CLAIMED",
+    "LEMMA10_P7_TRANSFER": "NOT_CLAIMED",
+    "reason": "Both lemmas are explicitly stated for P6-free graphs in Paper II; a raw SPLIT4 equivalence result cannot invoke them automatically on P7-free inputs.",
+    "BREAK_B": "NOT_STARTED",
+    "PAPER_I": "OUT_OF_SCOPE"
+  },
+  "verdict": {
+    "CANDIDATE_SPLIT_STATE_SCHEMA": "RIGID_SPLIT4_V1",
+    "SCHEMA_FIELDS_COMPLETE": "YES",
+    "UNKNOWN_INTERFACE_FIELDS": 0,
+    "IMPLEMENTATION": "NOT_STARTED",
+    "RAW_REPRESENTATIVE_COVERAGE": "NOT_TESTED",
+    "RAW_SOUNDNESS": "NOT_TESTED",
+    "RAW_COMPLETENESS": "NOT_TESTED",
+    "SUBGATE_A": "NOT_STARTED",
+    "LEMMA7_P7_TRANSFER": "NOT_CLAIMED",
+    "LEMMA10_P7_TRANSFER": "NOT_CLAIMED",
+    "SUBGATE_B": "NOT_STARTED",
+    "LEMMA11_P7_LIFT": "OPEN",
+    "PROOF_INFORMATION_LOCALIZED": "YES",
+    "HARDNESS_LOCALIZED": "NOT_CLAIMED",
+    "P_VS_NP": "OPEN"
+  },
+  "stop": true,
+  "next_allowed_object": "SEPARATE_PREREGISTRATION_FOR_RAW_REPRESENTATIVE_COVERAGE_AND_RAW_EQUIVALENCE_ONLY"
+}

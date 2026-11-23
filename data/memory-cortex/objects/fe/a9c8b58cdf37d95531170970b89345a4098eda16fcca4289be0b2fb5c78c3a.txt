@@ -1,0 +1,74 @@
+{
+  "artifact_id": "JANUS-PALOMAR-JPFM-2F-B3-SHAPE-COMPATIBILITY-REPLAY-ADMISSION-v1.0",
+  "experiment_id": "JPFM-2F-B3",
+  "schema_version": "1.0",
+  "date": "2026-08-15",
+  "status": "PREREGISTERED_AFTER_B2_DEFECT_LOCALIZATION_BEFORE_B3_OUTCOME",
+  "purpose": "Repeat the same frozen 64-source tile/object lineage pilot after one narrowly scoped OpenCV array-layout compatibility repair in the experimental contour helper. Preserve all candidate selection, object identity, detection configuration, morphology thresholds and external-label firewall from B2.",
+  "parents": [
+    "data/JANUS-PALOMAR-JPFM-2F-B2-TILE-LINEAGE-REPLAY-ADMISSION-v1.0.json",
+    "data/JANUS-PALOMAR-JPFM-2F-B2-SHAPE-COMPAT-CORRECTIVE-AUDIT-v1.0.json"
+  ],
+  "frozen_sample": {
+    "same_64_as_B1_and_B2": true,
+    "selection": "For each frozen structural cluster 0..15: two closest to cluster-median anomaly score plus two highest anomaly score, src_id tie-break.",
+    "manifest_csv_sha256": "34b0ccde7c3683d07626774e52dac0a197451f729242204e59aae81397bdbc2e",
+    "manifest_gzip_sha256": "166f5e6621ed2b065b7981b3c8208670f3c989b1394bd559c9005ab1fa6d07d9"
+  },
+  "unchanged_from_B2": [
+    "jannefi/poss1-plate-slice commit 4005e200541b321ead3d6608f0162a14430ef1c2",
+    "7x7 60-arcmin exact tile reconstruction",
+    "per-plate CRPIX correction table",
+    "Source Extractor pass1 configuration",
+    "PSFEx configuration",
+    "Source Extractor pass2 configuration",
+    "exact pass2 NUMBER == frozen object_id rule",
+    "no nearest-neighbour replacement",
+    "stage_shape_post neighborhood size and radial-profile method",
+    "OpenCV thresholds 21,45",
+    "profile_diff rejection threshold 0.05",
+    "elongation rejection threshold 1.10",
+    "circularity rejection threshold 0.80",
+    "convexity defect depth scaling /256.0",
+    "shape_defect denominator max(width,height)",
+    "external temporal/human/environmental label firewall"
+  ],
+  "single_allowed_code_repair": {
+    "location": "upstream clone scripts/stage_shape_post.py::_compute_contour_metrics",
+    "old_assumption": "cv2.convexityDefects output is always indexable as defects[i,0][3]",
+    "replacement_semantics": "Convert defects to np.asarray, require final dimension size 4, reshape to (-1,4), and sum row[3]/256.0. This yields the same four OpenCV defect fields regardless of an extra singleton dimension.",
+    "metric_formula_changed": false,
+    "contour_selection_changed": false,
+    "thresholds_changed": false,
+    "candidate_selection_changed": false
+  },
+  "operational_acceleration": {
+    "detection_workers": 10,
+    "B2_detection_workers": 4,
+    "scientific_semantics": "Independent tile jobs are unchanged; only wall-clock concurrency changes. Tile outputs and exact-number lineage are validated per tile/source after replay."
+  },
+  "predeclared_B3_gates": {
+    "tile_identity": "64/64 sample rows reconstructed from frozen tile_id",
+    "detection_chain": "At least 95% of distinct required tiles complete pass1+PSFEx+pass2",
+    "exact_object_id": "At least 90% of sample rows recover exact pass2 NUMBER == frozen object_id",
+    "sky_consistency": "At least 90% of exact rows have replay pass2 coordinate <=10 arcsec from frozen S0 coordinate",
+    "pass2_raw_morphology": "At least 95% of exact rows have finite FWHM_IMAGE, ELONGATION and SPREAD_MODEL",
+    "shape_execution": "At least 90% of exact rows finish repaired stage_shape_post with shape_failed=0",
+    "contour_metric_coverage": "Report finite circularity/shape_defect/circle_deviation coverage separately; do not tune contour thresholds to improve it",
+    "profile_metric_coverage": "Report profile_diff and stars_used coverage separately; local reference scarcity is not silently imputed",
+    "full_remote_plate_array_access": "Forbidden"
+  },
+  "outcome_codes": [
+    "PASS_SHAPE_COMPATIBILITY_REPLAY__PIXEL_MORPHOLOGY_PILOT_ADMITTED",
+    "FAIL_CLOSED_TILE_OR_DETECTION_REPLAY",
+    "FAIL_CLOSED_OBJECT_LINEAGE",
+    "FAIL_CLOSED_RAW_MORPHOLOGY",
+    "FAIL_CLOSED_SHAPE_COMPATIBILITY_REPAIR"
+  ],
+  "external_label_firewall": {
+    "external_label_reveal_after_B3": false,
+    "reason": "Even a successful 64-source B3 is a measurement pilot. External nuclear/human/geomagnetic/lunar labels remain sealed until a larger/full label-blind pixel-morphology manifest is constructed and frozen."
+  },
+  "post_PASS_gate": "JPFM-2F-C-LABEL-BLIND-PIXEL-MORPHOLOGY-SIDECAR-SCALEOUT",
+  "claim_ceiling": "OPEN_CV_COMPATIBILITY_REPAIRED_PIXEL_MORPHOLOGY_PILOT_ONLY__EXTERNAL_LABELS_SEALED__NO_CAUSAL_OR_ORIGIN_CLAIM"
+}

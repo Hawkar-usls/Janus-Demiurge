@@ -1,0 +1,96 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-R7-A0-ANCHORED-FORMULA-FAMILY-SPEC-2026-08-15-v0.1",
+  "version": "v0.1",
+  "node_type": "frozen_cross_fitted_anchored_formula_family_spec",
+  "parent_canonical_target": "v2.25",
+  "objective": "Test a distinct lower-sparsity structural hypothesis after the preserved R7-0 exact-frame negative: one immediate neighbor remains a concrete certain opaque anchor while the opposite neighbor is generalized only to an explicit lexical/numeric structural type with certainty state preserved.",
+  "source": {
+    "repository": "Hawkar-usls/lineara.xyz",
+    "frozen_commit": "43fe7cf1abc8e6bb1ea3228c3a1bd5938709620a",
+    "translations_used": false,
+    "external_dictionaries_used": false,
+    "Linear_B_supervision_used": false,
+    "Notti_readings_used": false
+  },
+  "families": [
+    "LEFT_EXACT_RIGHT_TYPE: exact certain left neighbor + typed right neighbor",
+    "LEFT_TYPE_RIGHT_EXACT: typed left neighbor + exact certain right neighbor"
+  ],
+  "typed_neighbor": {
+    "lexical": ["LEX|CERTAIN", "LEX|NONCERTAIN"],
+    "numeric": ["N:FRAC|CERTAIN", "N:ONE|CERTAIN", "N:2_4|CERTAIN", "N:5_9|CERTAIN", "N:10PLUS|CERTAIN", "N:UNCERTAIN|CERTAIN", "N:*|NONCERTAIN"],
+    "none_or_doubtful_is_never_reinterpreted_as_certain": true
+  },
+  "unit": {
+    "target": "all-certain lexical source word represented by opaque SHA-256 identity",
+    "target_must_be_internal": true,
+    "exact_anchor_must_be_certain": true,
+    "opposite_neighbor_may_be_noncertain_but_its_noncertain_state_is_encoded_in_the_frame": true,
+    "boundary_frames_allowed": false,
+    "numeric_target_allowed": false,
+    "source_labels_visible_during_selection_or_scoring": false
+  },
+  "cross_fitting": {
+    "folds": 5,
+    "operator": "reuse JANUS-LINA-R5-0-CV-v0.1 document folds",
+    "candidate_selection_train_only": true,
+    "heldout_documents_never_used_for_candidate_selection": true
+  },
+  "train_candidate_gate": {
+    "minimum_frame_occurrences": 6,
+    "minimum_frame_documents": 4,
+    "minimum_dominant_target_occurrences": 4,
+    "minimum_dominant_target_rate": 0.60,
+    "tie_policy": "reject tied dominant targets",
+    "top_k_truncation": false,
+    "manual_candidate_addition_forbidden": true,
+    "manual_candidate_removal_forbidden": true
+  },
+  "heldout_candidate_gate": {
+    "minimum_selected_folds": 3,
+    "minimum_heldout_occurrences": 6,
+    "minimum_heldout_documents": 4,
+    "minimum_heldout_precision": 0.60,
+    "multiple_testing": "Benjamini-Hochberg",
+    "FDR_q_max": 0.05,
+    "null": "cross-fitted Poisson-binomial upper tail using target train-unigram probability within the same anchored-family direction for each heldout occurrence"
+  },
+  "postscore_descriptors": {
+    "reveal_only_after_scoring": true,
+    "include": [
+      "target source label",
+      "exact anchor source label or numeric bucket",
+      "typed opposite-neighbor class",
+      "heldout exact opposite-neighbor distribution",
+      "heldout target alternatives",
+      "heldout documents",
+      "heldout regions"
+    ]
+  },
+  "positive_ladder": {
+    "R7_A0": "anchored formula-family candidate",
+    "R7_A1": "unchanged candidate survives full cross-region transfer",
+    "R7_A2": "unchanged candidate signal collapses under structure-destroying adversarial null",
+    "R7_A3": "probable functional-role candidate may be admitted; meaning/translation still forbidden"
+  },
+  "claim_ceiling": {
+    "allowed": [
+      "cross-fitted anchored formula-family candidate",
+      "concrete source-word target under a recurrent anchored structural context",
+      "candidate-specific heldout contextual constraint"
+    ],
+    "forbidden": [
+      "probable function",
+      "word meaning",
+      "semantic equivalence",
+      "grammatical label",
+      "commodity/person/transaction assignment",
+      "translation",
+      "phonetic assignment",
+      "language-family identification",
+      "new anchor",
+      "Linear A decipherment",
+      "R3B external replication"
+    ]
+  }
+}

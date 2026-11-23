@@ -1,0 +1,108 @@
+{
+  "schema_id": "janus.nas_live_ingress_screenshot_witness.v1",
+  "record_id": "JANUS-NAS-LIVE-INGRESS-SCREENSHOT-WITNESS-2026-08-17-v1.0",
+  "recorded_at": "2026-08-17T12:43:00+03:00",
+  "parent_records": [
+    "data/JANUS-QUANT-PC-NAS-HANDOFF-LINEAGE-2026-08-17-v1.0.json",
+    "data/JANUS-QUANT-PC-NAS-LIVE-INGRESS-GATE-2026-08-17-v1.0.json",
+    "data/JANUS-QUANT-PC-NAS-LIVE-INGRESS-HANDOFF-2026-08-17-v1.0.json"
+  ],
+  "evidence_class": "USER_SUPPLIED_SCREENSHOT_WITNESS",
+  "screenshots": [
+    {
+      "artifact_name": "5ab1334d-3cfc-4d24-bfd3-37665629e9bd.png",
+      "sha256": "84ff62d4af9171b7b02932b199788008caf15dd4a2dca4f06fb489a062cfcc98",
+      "bytes": 380066,
+      "dimensions_px": [1075, 972],
+      "subject": "janus_nas_brain container logs"
+    },
+    {
+      "artifact_name": "1ffb325a-76ae-4e35-83c7-6089e1daa9ab.png",
+      "sha256": "cb77dd2d53aae26b3ab1cb869a29da83d2a00a7b5e3000830b77f4165ab26b2e",
+      "bytes": 198991,
+      "dimensions_px": [973, 873],
+      "subject": "janus_nas_brain container logs, second view"
+    },
+    {
+      "artifact_name": "210256d3-7e31-4592-9372-f913a0fb5517.png",
+      "sha256": "9c7155f57df5a1fd15a76317e8652d354c463fe30aa2f01a55fe9f7794082e21",
+      "bytes": 465346,
+      "dimensions_px": [1099, 1025],
+      "subject": "janus_titan_core degraded proxy/persistence logs"
+    }
+  ],
+  "janus_nas_brain_observations": {
+    "container_state_displayed": "RUNNING",
+    "image_displayed": "janus-janus_nas_brain",
+    "command_displayed": "sh -c 'sh /app/nas_daemon.sh'",
+    "last_start_displayed": "2026/08/17 09:11:16",
+    "heartbeat_message": "NAS API HEARTBEAT",
+    "heartbeat_ready": true,
+    "import_dir": "/share/CACHEDEV1_DATA/Janus/quant_inbox_pc",
+    "ollama_endpoint": "http://127.0.0.1:11434",
+    "model": "qwen2.5:0.5b",
+    "heartbeat_window_observed_utc": "approximately 2026-08-17T09:30:30Z through 2026-08-17T09:38:30Z",
+    "hive_seen_observation": {
+      "device_id": "nas_blood",
+      "count": 30,
+      "repeated": true
+    }
+  },
+  "janus_titan_core_observations": {
+    "container_state_displayed": "RUNNING",
+    "image_displayed": "janus-janus_titan",
+    "command_displayed": "sh -c 'python main.py'",
+    "last_start_displayed": "2026/08/17 09:11:30",
+    "degradation": [
+      "Repeated HRAIN proxy POST /api/device/data TimeoutError against http://192.168.1.92:8008 and http://127.0.0.1:8008.",
+      "device hub mirror skipped after TimeoutError.",
+      "Repeated HRAIN proxy POST /api/agent/think TimeoutError against both remote and loopback targets.",
+      "SQLite busy messages report fallback to JSONL."
+    ]
+  },
+  "forensic_interpretation": {
+    "live_receiver_process": "SCREENSHOT_SUPPORTED",
+    "nas_api_ready_flag": "SCREENSHOT_SUPPORTED_TRUE",
+    "quant_inbox_binding": "SCREENSHOT_SUPPORTED",
+    "hive_activity": "SCREENSHOT_SUPPORTED",
+    "new_quant_file_exact_sha_receipt": "NOT_PROVEN_BY_SCREENSHOTS",
+    "quant_payload_loaded": "NOT_PROVEN",
+    "quant_payload_executed": "NOT_PROVEN",
+    "ollama_endpoint_liveness": "NOT_PROVEN_BY_HEARTBEAT_CONFIGURATION_FIELD_ALONE",
+    "titan_hrain_proxy_health": "DEGRADED",
+    "sqlite_primary_persistence": "DEGRADED_BUSY_WITH_JSONL_FALLBACK",
+    "data_loss": "NOT_ESTABLISHED_EITHER_WAY_FROM_SCREENSHOTS"
+  },
+  "gates": {
+    "GQ8_LIVE_RECEIVER_HEARTBEAT": "PASS_SCREENSHOT_WITNESS",
+    "GQ9_IMPORT_DIR_BINDING": "PASS_SCREENSHOT_WITNESS",
+    "GQ10_OLLAMA_CONFIGURATION_PRESENT": "PASS_SCREENSHOT_WITNESS",
+    "GQ11_HIVE_ACTIVITY_OBSERVED": "PASS_SCREENSHOT_WITNESS",
+    "GQ12_NEW_QUANT_FILE_ARRIVAL_EXACT_HASH": "OPEN",
+    "GQ13_RECEIVER_SIDE_APPEND_ONLY_RECEIPT": "OPEN",
+    "GQ14_LOAD_EXECUTE_PROOF": "OPEN",
+    "GT1_TITAN_HRAIN_PROXY_HEALTH": "DEGRADED_TIMEOUT",
+    "GT2_TITAN_SQLITE_PRIMARY_PATH": "DEGRADED_BUSY_JSONL_FALLBACK"
+  },
+  "nexus_handoff_relevance": {
+    "usable_as_passive_liveness_witness": true,
+    "usable_as_exactly_once_handoff_proof": false,
+    "next_required_receipt_fields": [
+      "arrival_file_sha256",
+      "event_id",
+      "dedupe_key",
+      "first_seen_at",
+      "receiver_service",
+      "parse_status",
+      "load_status",
+      "execute_status"
+    ],
+    "target_gate": "Hawkar-usls/Janus_Genesis#162"
+  },
+  "safety": {
+    "SOURCE_WRITEBACK_DEFAULT": "DENY",
+    "DESTRUCTIVE_ACTION": "FORBIDDEN",
+    "AUTHORITY_DELTA": 0,
+    "screenshot_receipt_does_not_grant_execution_authority": true
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1A-MONOCHROMATIC-INCIDENCE-INDUCED-PATH-LIFT-PROOF-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "PASS_MONOCHROMATIC_INCIDENCE_INDUCED_PATH_LIFT",
+  "gate": "R5_B1A_THREE_LAYER_COMPONENT_INCIDENCE_IMPORT_GATE_V1",
+  "theorem": "MONOCHROMATIC_INCIDENCE_INDUCED_PATH_LIFT_V1",
+  "binds": {
+    "B0_manifest_blob": "5ee8397ff9fc84c1f6f0c1cc7106c11700470545",
+    "B0_result_blob": "727ff69fdcb7532e4bcfbc82c9128a4f806adf94",
+    "source_audit_blob": "be676c101deab882314d5f02f629f82f8e795a9d",
+    "prereg_blob": "b4f3466714938c21d7fe8997818a56272a394510"
+  },
+  "setup": {
+    "H_sigma": "G[S_sigma], where S_sigma is one fixed B0 coarse source class and therefore every v in S_sigma has the same exact 3-list L_sigma.",
+    "auxiliary_step": "Run the known polynomial P7-free List-3-Colouring algorithm on H_sigma after relabeling L_sigma to {1,2,3}.",
+    "no_case": "If no such coloring exists, no global extension of the source branch exists because every global extension restricts to a proper L_sigma-respecting coloring of H_sigma.",
+    "yes_case": "Let phi_sigma be one returned auxiliary coloring and R_i={v in S_sigma:phi_sigma(v)=i}; each R_i is a stable set.",
+    "firewall": "phi_sigma is used only to certify stable layers and is not fixed as the coloring of a future global extension.",
+    "incidence": "I_{sigma,i} is bipartite with left side R_i and right side the connected components of residual G[Y0]; vC is an edge iff v is complete to C."
+  },
+  "statement": "For every fixed sigma, every i in {1,2,3}, every k>=1, and every induced path Q on k vertices in I_{sigma,i}, replacing each component-node C of Q by an arbitrary representative c_C in C produces an induced path on k vertices in G.",
+  "proof": {
+    "distinctness": [
+      "An induced path has distinct vertices, so its component-nodes denote distinct connected components of G[Y0].",
+      "Choosing one representative from each component-node therefore gives distinct vertices, all distinct from survivor vertices."
+    ],
+    "consecutive_edges": "Every path edge between survivor v and component C means v is complete to C by the definition of I_{sigma,i}; hence v is adjacent in G to the chosen representative c_C.",
+    "nonconsecutive_cross_pairs": "If survivor v and component C are nonconsecutive in Q, inducedness of Q gives vC nonedge in I_{sigma,i}. B0 component uniformity says v is either complete or anticomplete to C. Since it is not complete, it is anticomplete, so v is nonadjacent in G to c_C.",
+    "same_side_survivor_pairs": "Every two survivor-nodes of Q lie in R_i, which is stable because phi_sigma is a proper coloring; hence no survivor-survivor chord exists.",
+    "same_side_component_pairs": "Every two component-nodes of Q are distinct connected components of G[Y0], so no edge of G joins their chosen representatives; hence no component-component chord exists.",
+    "exhaustion": "Because I_{sigma,i} is bipartite, every pair of vertices in the lifted sequence is either a consecutive cross pair, a nonconsecutive cross pair, a survivor-survivor pair, or a component-component pair. The preceding cases establish exactly the path edges and exclude every chord.",
+    "orientation_check": [
+      "The argument does not depend on whether Q begins/ends on the survivor side or the component side.",
+      "In particular it covers both 7-vertex orientations v1-C1-v2-C2-v3-C3-v4 and C1-v1-C2-v2-C3-v3-C4."
+    ],
+    "conclusion": "The lifted sequence is an induced P_k in G."
+  },
+  "corollaries": [
+    {
+      "name": "P7_FREE_LAYER_COROLLARY",
+      "derivation": "If I_{sigma,i} contained an induced P7, the theorem would lift it to an induced P7 in G, contradicting the ambient P7-free hypothesis.",
+      "conclusion": "Every I_{sigma,i} is P7-free."
+    },
+    {
+      "name": "EXTERNAL_DECOMPOSITION_IMPORT",
+      "derivation": "Each I_{sigma,i} is bipartite by construction and P7-free by the preceding corollary.",
+      "conclusion": "The existing Lozin-Zamaraev P7-free bipartite chain-decomposition theorem applies to each layer separately."
+    }
+  ],
+  "proof_character": {
+    "arbitrary_N": true,
+    "finite_enumeration_used": false,
+    "synthetic_family_used": false,
+    "new_decomposition_theory_used": false
+  },
+  "scientific_consequence": {
+    "A_RAW_INCIDENCE": "DECOMPOSED_INTO_AT_MOST_THREE_P7_FREE_BIPARTITE_STRUCTURAL_LAYERS_PER_FIXED_COARSE_CLASS",
+    "A_FULL_ALGORITHMIC_COMPOSITION": "OPEN",
+    "B_SURVIVOR_RELATIONAL_STRUCTURE": "NOT_SOLVED_GLOBALLY; BYPASSED_ONLY_FOR_THE_PER_LAYER_INCIDENCE_LIFT"
+  },
+  "scientific_ceiling": {
+    "NONEDGE_Z_SURVIVOR_COMPRESSION": "OPEN",
+    "FINAL_L2_COVERAGE_HOLE": "OPEN",
+    "LEMMA11_P7_LIFT": "OPEN",
+    "DOWNSTREAM_P6_OBLIGATIONS": "LOCKED",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "successor_autoactivation": false,
+  "return_to_HQ_after_seal": true
+}

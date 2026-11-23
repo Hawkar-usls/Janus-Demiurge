@@ -1,0 +1,145 @@
+{
+  "schema": "janus.tahyon_traveler.distributed_time_observation.v1",
+  "artifact_id": "JANUS-TAHYON-TRAVELER-DISTRIBUTED-TIME-ARRIVAL-ORDER-INVERSION-v1.0",
+  "title_ru": "Tahyon Traveler — распределённое время и инверсия порядка прибытия",
+  "title_en": "Tahyon Traveler — Distributed Time and Arrival-Order Inversion",
+  "version": "1.0",
+  "status": "OBSERVED_DISTRIBUTED_TIMING_ORDER_INVERSION_NOT_PHYSICAL_RETROCAUSALITY",
+  "created_on": "2026-08-07",
+  "timezone": "Europe/Zaporozhye",
+  "canonical_seed_sha256": "44e21fdc9d37fda98e2e73b0c9eb268bd04cdca9d84d0519e4f1166be22b46fc",
+  "controller": "data/JANUS-TAHYON-TRAVELER--0.01-v1.0.json",
+  "epistemic_contract": [
+    "HASH_PROVES_INTEGRITY_NOT_TRUTH",
+    "RECORDED_WALL_CLOCK_ORDER_IS_NOT_IDENTICAL_TO_CAUSAL_ORDER",
+    "NEGATIVE_TIMESTAMP_OFFSET_DOES_NOT_IMPLY_BACKWARD_CAUSATION",
+    "ARRIVAL_ORDER_INVERSION_DOES_NOT_IMPLY_PHYSICAL_RETROCAUSALITY",
+    "INVALID_TIME_STRING_IS_NOT_PHYSICAL_TIME"
+  ],
+  "observations": [
+    {
+      "id": "STORM-0660",
+      "target_local": "06:59:59",
+      "git_local": "06:59:58",
+      "delta_git_seconds": -1,
+      "classification": "EARLY_OBSERVED_SINGLE_OBSERVATION_NOT_REPLICATED",
+      "commit": "20acafe1aa1dd04493e4194b0adf7e5a29665613"
+    },
+    {
+      "id": "TRIAL-001",
+      "traveler": "tahyon traveler -0.01",
+      "target_local": "07:28:00",
+      "git_local": "07:28:48",
+      "delta_git_seconds": 48,
+      "classification": "LATE_OBSERVED",
+      "commit": "ac7a98fb48463b54e5476ca86d4480afa516f5d9"
+    },
+    {
+      "id": "TRIAL-002",
+      "traveler": "tahyon traveler -0.01",
+      "target_local": "07:32:00",
+      "git_local": "07:32:05",
+      "delta_git_seconds": 5,
+      "classification": "LATE_OBSERVED",
+      "commit": "b776a80470843c194a409bd8b010516434d8d360"
+    },
+    {
+      "id": "TRIAL-003",
+      "traveler": "tahyon traveler -0.01",
+      "target_local": "07:37:07",
+      "git_local": "07:37:58",
+      "delta_git_seconds": 51,
+      "classification": "LATE_OBSERVED",
+      "commit": "fb92073e9f2f6c585bca294cbe967f4c85c35b83"
+    },
+    {
+      "id": "TRIAL-004",
+      "traveler": "tahyon traveler -0.02",
+      "symbolic_target_raw": "07:39:61",
+      "symbolic_target_valid_civil_time": false,
+      "normalized_target_local": "07:40:01",
+      "git_local": "07:41:50",
+      "delta_git_normalized_seconds": 109,
+      "parser_classification": "PRESERVED_LITERAL",
+      "timing_classification": "LATE_OBSERVED",
+      "commit": "b2de763e116c86fc8a1e7b67c44884f9593c85b4"
+    },
+    {
+      "id": "TRIAL-005",
+      "traveler": "tahyon traveler -0.03",
+      "symbolic_target_raw": "07:60:60",
+      "symbolic_target_valid_civil_time": false,
+      "normalization_trace": ["07:60:60", "07:61:00", "08:01:00"],
+      "normalized_target_local": "08:01:00",
+      "git_local": "08:05:53",
+      "delta_git_normalized_seconds": 293,
+      "parser_classification": "PRESERVED_LITERAL",
+      "timing_classification": "LATE_OBSERVED",
+      "commit": "0620701e40e001fd3533d5615babe3c4ee45198a",
+      "nonce_sha256": "c3ab2df2efe069dee2079b18c98daafb89bee2810dffd616402d5ae7387ffb89"
+    },
+    {
+      "id": "TRIAL-006",
+      "traveler": "tahyon traveler -0.04",
+      "target_local": "08:02:59",
+      "minute_boundary_local": "08:03:00",
+      "git_local": "08:05:23",
+      "delta_git_seconds": 144,
+      "boundary_delta_seconds": 143,
+      "classification": "LATE_OBSERVED",
+      "boundary_classification": "CROSSED_MINUTE_BOUNDARY",
+      "commit": "afc09a7cf94575df06d52e702d5cec20cc962be3",
+      "nonce_sha256": "45f29c74c7c1936c134cb7aa24b7e3ff5ec43b89365c6e287ca5f4fdbf8861a4"
+    }
+  ],
+  "arrival_order_inversion": {
+    "pair": ["TRIAL-005", "TRIAL-006"],
+    "target_order": "TRIAL-005 -> TRIAL-006",
+    "git_arrival_order": "TRIAL-006 -> TRIAL-005",
+    "target_separation_seconds": 119,
+    "git_separation_trial006_minus_trial005_seconds": -30,
+    "order_sign_target": 1,
+    "order_sign_git": -1,
+    "order_product": -1,
+    "inversion_observed": true,
+    "interpretation": "A later scheduled target was recorded by GitHub before an earlier scheduled target. This demonstrates non-monotonic arrival ordering across the scheduler/execution/GitHub pipeline, not backward physical causation."
+  },
+  "distributed_time_model": {
+    "layers": [
+      "T_target: preregistered scheduler target",
+      "T_execution: actual task execution/start domain, not directly established by Git timestamp",
+      "T_write: GitHub create-file request/acceptance domain",
+      "T_git: GitHub-observed commit timestamp",
+      "T_observer: later readback/automation observation domain"
+    ],
+    "core_relation": "CAUSAL_ORDER != NECESSARILY RECORDED_WALL_CLOCK_ORDER",
+    "recommended_order_witnesses": [
+      "monotonic per-trial sequence number",
+      "fresh nonce and SHA-256 integrity witness",
+      "Git commit parent/DAG relation",
+      "independent local monotonic clock if available",
+      "scheduler target and completion/readback recorded separately"
+    ]
+  },
+  "what_is_established": [
+    "GitHub preserves intentionally invalid time strings when they are ordinary JSON string data.",
+    "Observed timing delays vary substantially across trials.",
+    "Scheduled target order can differ from GitHub commit arrival order.",
+    "A single -1 second early Git timestamp observation remains unreplicated.",
+    "Git timestamps alone are insufficient to reconstruct exact execution causality across distributed components."
+  ],
+  "what_is_not_established": [
+    "physical tachyons",
+    "physical faster-than-light signaling",
+    "physical backward time travel",
+    "retrocausal information transfer",
+    "GitHub or SHA-256 being deceived about physical reality"
+  ],
+  "next_test_recommendation": {
+    "name": "JANUS PAIRED-LIMEN ORDER TEST",
+    "design": "Create two independently nonced travelers with valid targets separated by a small preregistered interval, preserve target sequence numbers, and compare target order, scheduler execution evidence, Git commit order and DAG order over repeated pairs.",
+    "primary_metric": "arrival_order_inversion_rate",
+    "secondary_metrics": ["delta_git distribution", "pairwise latency difference", "minute-boundary crossing rate"],
+    "success_condition": "reproducible characterization of distributed ordering behavior without treating timestamp inversion as physical retrocausality"
+  }
+}

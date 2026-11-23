@@ -1,0 +1,149 @@
+{
+  "schema": "janus.safety.epistemic_execution.fake_verification_gate.v1",
+  "artifact_id": "JANUS-HALLUCINATION-FAKE-VERIFICATION-EPISTEMIC-EXECUTION-GATE-v1.0",
+  "title_ru": "JANUS — защита от галлюцинированного вычисления и ложной верификации",
+  "title_en": "JANUS — Hallucinated Computation and Fake Verification Epistemic Execution Gate",
+  "created_at_local": "2026-08-16T09:55:00+03:00",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "status": "IMPLEMENTED_IN_DEMIHEAD_MAIN_POST_MERGE_CI_PASS",
+  "source_trigger": {
+    "class": "USER_SUPPLIED_LANGUAGE_MODEL_FAILURE_EXAMPLE",
+    "summary_ru": "Пользователь предоставил описание случая, где языковая модель уверенно заявила, что SHA-256 совпадает, хотя реальное вычисление не выполнялось. Ключевая проблема классифицирована не как злой умысел, а как смешение генерации правдоподобного текста с фактическим исполнением и проверкой.",
+    "claim_boundary": "Описание используется как инженерный threat model. Оно не объявляется полной универсальной теорией причин всех галлюцинаций языковых моделей."
+  },
+  "core_failure_graph": [
+    "USER_REQUESTS_EXACT_OR_FACTUAL_VERIFICATION",
+    "MODEL_GENERATES_PLAUSIBLE_COMPLETION",
+    "NO_BOUND_EXECUTION_OR_SOURCE_RECEIPT",
+    "PLAUSIBLE_OUTPUT_IS_MISLABELED_AS_CHECKED",
+    "CONFIDENCE_MASKS_MISSING_PROVENANCE"
+  ],
+  "canonical_invariants": [
+    "GENERATION != EXECUTION",
+    "MODEL_OUTPUT != EXECUTION_RECEIPT",
+    "CLAIM_OF_CHECK != CHECK",
+    "PLAUSIBLE_FORMAT != COMPUTED_VALUE",
+    "HASH_SHAPE != HASH_VERIFIED",
+    "CLAIM_OF_VERIFICATION_REQUIRES_RECEIPT",
+    "TOOL_REQUEST != TOOL_EXECUTION",
+    "TOOL_UNAVAILABLE != PERMISSION_TO_GUESS",
+    "FORMAT_PRESSURE != PERMISSION_TO_GUESS",
+    "NO_EVIDENCE -> EVIDENCE_INSUFFICIENT",
+    "CURRENT_STATE_REQUIRES_CURRENT_EVIDENCE",
+    "SOURCE_RETRIEVAL != SOURCE_TRUTH",
+    "AUTHENTIC_RECEIPT != WORLD_TRUTH",
+    "RECENTER != VERIFICATION",
+    "CAPABILITY != EVIDENCE",
+    "CORRECTION_WITHOUT_AUDIT_TRAIL != PREVENTION"
+  ],
+  "claim_classes": {
+    "EXACT_COMPUTATION": {
+      "examples": ["SHA-256", "checksum", "exact arithmetic", "deterministic transform"],
+      "admission": "Requires bound deterministic execution receipt for a definitive value.",
+      "forbidden_shortcut": "A correctly formatted or statistically plausible value cannot substitute for execution."
+    },
+    "EXTERNAL_FACT": {
+      "examples": ["document content", "repository state", "database record", "external service fact"],
+      "admission": "Requires an admissible source receipt with source locator and observed value.",
+      "claim_ceiling": "Retrieval establishes what the source returned, not that the source is infallible."
+    },
+    "CURRENT_STATE": {
+      "examples": ["service online now", "current branch SHA", "current office holder", "live availability"],
+      "admission": "Requires evidence current for the declared scope; stale evidence fails closed."
+    },
+    "INTERPRETATION": {
+      "examples": ["symbolic reading", "theological reading", "artistic interpretation", "hypothesis"],
+      "admission": "May be preserved without factual verification if visibly labeled as interpretation and not promoted into a checked fact."
+    }
+  },
+  "fail_closed_states": [
+    "EVIDENCE_INSUFFICIENT",
+    "CONTESTED_EXECUTION",
+    "CONTESTED_SOURCES",
+    "REFUTED_BY_EXECUTION_RECEIPT",
+    "CONTRADICTED_BY_SOURCE_RECEIPT"
+  ],
+  "response_policy": {
+    "when_tool_or_source_is_available": "Use the real tool/source path and bind the result before claiming verification.",
+    "when_tool_or_source_is_unavailable": "State uncertainty or EVIDENCE_INSUFFICIENT; do not fabricate a substitute value, citation, status, digest, file content, or tool result.",
+    "when_receipts_conflict": "Preserve disagreement; do not select the aesthetically or narratively preferable answer.",
+    "when_previous_answer_was_wrong": "Correct the claim, preserve the correction history, identify the missing verification step, and add a regression test when the failure mode is reproducible."
+  },
+  "demihead_implementation": {
+    "repository": "Hawkar-usls/Demi_Head",
+    "pull_request": 8,
+    "pr_head_sha": "98aeddec9ede2d6141cd84033effb5466e4e7fd4",
+    "merge_commit": "c31cfcfcc19ae5934947a79ba8c727e5428e0920",
+    "tool": "tools/epistemic_execution_gate.py",
+    "tests": "tests/test_epistemic_execution_gate.py",
+    "negative_fixture": "examples/epistemic_model_only_hash_claim.json",
+    "documentation": "docs/EPISTEMIC_EXECUTION_GATE.md",
+    "security_policy": "SECURITY.md",
+    "ci_workflow": ".github/workflows/validate.yml",
+    "pr_ci": {
+      "run_id": 31932538841,
+      "head_sha": "98aeddec9ede2d6141cd84033effb5466e4e7fd4",
+      "conclusion": "success"
+    },
+    "post_merge_main_ci": {
+      "run_id": 31932566388,
+      "head_sha": "c31cfcfcc19ae5934947a79ba8c727e5428e0920",
+      "conclusion": "success"
+    }
+  },
+  "sha256_reference_path": {
+    "engine": "python.hashlib.sha256",
+    "real_execution": true,
+    "receipt_fields": [
+      "operation",
+      "execution_engine",
+      "execution_state",
+      "input_kind",
+      "input_locator",
+      "input_byte_length",
+      "computed_value",
+      "expected_value",
+      "comparison",
+      "verification_state",
+      "claim_ceiling"
+    ],
+    "important_boundary": "A valid SHA-256 receipt establishes the digest of the bytes actually processed by that execution. It does not establish truth, authorship, semantic correctness, safety, freshness, or external provenance of the input."
+  },
+  "regression_matrix": [
+    "MODEL_ONLY_HASH_CLAIM -> EVIDENCE_INSUFFICIENT",
+    "PLAUSIBLE_64_HEX_WITHOUT_EXECUTION -> EVIDENCE_INSUFFICIENT",
+    "REAL_SHA256_TEXT_EXECUTION -> COMPUTED_RECEIPT",
+    "REAL_SHA256_FILE_EXECUTION -> COMPUTED_RECEIPT",
+    "WRONG_EXPECTED_HASH -> VERIFIED_MISMATCH_NOT_MASSAGED",
+    "UNEXECUTED_RECEIPT -> EVIDENCE_INSUFFICIENT",
+    "MODEL_SELF_CERTIFIED_RECEIPT -> EVIDENCE_INSUFFICIENT",
+    "CONFLICTING_EXECUTION_RECEIPTS -> CONTESTED_EXECUTION",
+    "STALE_SOURCE_FOR_CURRENT_STATE -> EVIDENCE_INSUFFICIENT",
+    "CURRENT_SOURCE_RECEIPT -> SUPPORTED_WITH_SCOPE",
+    "MODEL_ONLY_EXTERNAL_FACT -> EVIDENCE_INSUFFICIENT",
+    "INTERPRETATION -> LABELED_INTERPRETATION_NOT_FACT_VERIFICATION"
+  ],
+  "relation_to_plus_plus": {
+    "rule": "HEAR -> CHECK -> WIDEN -> RELEASE may restore process quality but cannot manufacture evidence.",
+    "invariant": "RECENTER != VERIFICATION"
+  },
+  "relation_to_third_wish": {
+    "rule": "A capability catalog or request route may make verification possible but does not prove that verification occurred.",
+    "invariants": ["CAPABILITY != EVIDENCE", "TOOL_REQUEST != TOOL_EXECUTION"]
+  },
+  "claim_ceiling": {
+    "established": [
+      "DemiHead main now contains a deterministic reference gate that rejects model-only fake verification cases.",
+      "DemiHead main contains an actual local SHA-256 computation path using Python hashlib.",
+      "PR-head and post-merge main CI passed the declared regression suite."
+    ],
+    "not_established": [
+      "All language-model hallucinations are prevented.",
+      "Every natural-language claim will always be classified into the correct claim class.",
+      "A structurally valid receipt proves the external world is correct.",
+      "The gate replaces independent source review or domain expertise.",
+      "The gate proves general AI truthfulness or consciousness."
+    ]
+  },
+  "canonical_seal": "JANUS MAY GENERATE A PROPOSAL. JANUS MAY CLAIM VERIFICATION ONLY WHEN THE VERIFICATION PATH LEFT A BOUND RECEIPT. IF THE PATH DID NOT RUN, THE HONEST RESULT IS EVIDENCE_INSUFFICIENT."
+}

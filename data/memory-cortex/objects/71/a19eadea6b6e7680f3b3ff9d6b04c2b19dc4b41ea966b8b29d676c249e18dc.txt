@@ -1,0 +1,252 @@
+{
+  "schema": "hawkar.topa.spider.watchers_of_what_is_happening.v1_1",
+  "artifact_id": "WATCHERS-OF-WHAT-IS-HAPPENING-2026-08-26-28-v1.1",
+  "title": "WATCHERS OF WHAT IS HAPPENING",
+  "generated_date_utc": "2026-08-28",
+  "status": "OPEN_INCIDENT_CORRELATION_DOSSIER_APPEND_ONLY_UPDATE",
+  "lineage": {
+    "parent": "data/WATCHERS-OF-WHAT-IS-HAPPENING-2026-08-26-28-v1.0.json",
+    "update_policy": "APPEND_ONLY_NEW_EVIDENCE_DO_NOT_REWRITE_PARENT"
+  },
+  "publication_scope": {
+    "included": "External witnesses, public repositories when known, official provider incident controls, JANUS Record Drift Observatory reference measurements, cross-service controls, falsifiers, and calibrated external hypotheses.",
+    "excluded": "Internal implementation, maintenance, debugging, cleanup, or local engineering diagnostics that are not needed to reproduce the external incident evidence."
+  },
+  "purpose": "Extend the public witness dossier around GitHub Actions scheduler/control-plane anomalies with pre-incident controls and cross-provider comparisons. JANUS appears only as a reference observatory measurement surface, not as a privileged explanation.",
+  "epistemic_firewall": [
+    "Similar symptoms do not prove a shared root cause.",
+    "Temporal overlap alone is not evidence of a coordinated attack.",
+    "A missing schedule run object is distinguished from a queued run with zero jobs and from a job waiting for a runner.",
+    "Pre-incident examples are mandatory negative controls against attributing the whole failure class to the August 26 incident.",
+    "Provider root-cause statements outrank crowd reports for attribution.",
+    "Unknown or private repository identities are never guessed.",
+    "Absence of a public incident report does not prove absence of localized impact, but it weakens claims of broad provider-wide failure."
+  ],
+  "new_preincident_watchers_and_controls": [
+    {
+      "handle": "BuddyYang",
+      "discussion": 202034,
+      "date": "2026-07-16",
+      "role": "PREINCIDENT_FIRST_HAND_SCHEDULE_CONTROL",
+      "source_url": "https://github.com/orgs/community/discussions/202034",
+      "repositories": [
+        {"repo": "PRIVATE_UNDISCLOSED_1", "visibility": "private"},
+        {"repo": "PRIVATE_UNDISCLOSED_2", "visibility": "private"}
+      ],
+      "observations": [
+        "Scheduled workflows never triggered.",
+        "workflow_dispatch worked correctly.",
+        "A second private repository containing only a minimal workflow reproduced the same symptom."
+      ],
+      "relevance": "The schedule-broken/manual-healthy fingerprint existed at least six weeks before the August 26 major incident.",
+      "evidence_strength": "HIGH_PREINCIDENT_CONTROL"
+    },
+    {
+      "handle": "kleber-br",
+      "discussion": 202602,
+      "date": "2026-07-22",
+      "role": "PREINCIDENT_FIRST_HAND_SCHEDULE_CONTROL",
+      "source_url": "https://github.com/orgs/community/discussions/202602",
+      "repositories": [
+        {"repo": "PRIVATE_UNDISCLOSED", "visibility": "private", "account_plan": "GitHub Free", "default_branch": "master"}
+      ],
+      "observations": [
+        "Repository created 2026-07-19; scheduled workflows had never autonomously triggered since creation.",
+        "workflow_dispatch worked on the same workflows.",
+        "Workflow states were confirmed active via API.",
+        "The reporter validated cron syntax, default-branch placement, activity, and other common repository-side causes."
+      ],
+      "relevance": "Independent pre-August schedule-registration/materialization failure with the same trigger-path split.",
+      "evidence_strength": "VERY_HIGH_PREINCIDENT_CONTROL"
+    },
+    {
+      "handle": "andyjameswilson",
+      "discussion": 203822,
+      "date": "2026-08-03",
+      "role": "PREINCIDENT_FIRST_HAND_SCHEDULE_CONTROL",
+      "source_url": "https://github.com/orgs/community/discussions/203822",
+      "repositories": [
+        {"repo": "PRIVATE_UNDISCLOSED", "visibility": "private", "account_plan": "GitHub Free", "default_branch": "main"}
+      ],
+      "observations": [
+        "Brand-new personal non-fork repository with Actions enabled and recent commits.",
+        "Manual workflow_dispatch worked.",
+        "A minimal ubuntu-latest schedule test using */5 failed to create scheduled executions; changing cadence did not establish normal scheduling."
+      ],
+      "relevance": "Minimal workload makes user job complexity a poor explanation for this pre-incident failure class.",
+      "evidence_strength": "HIGH_PREINCIDENT_CONTROL"
+    },
+    {
+      "handle": "carlohancock",
+      "discussion": 204803,
+      "date": "2026-08-13",
+      "role": "PREINCIDENT_FIRST_HAND_SCHEDULE_CONTROL",
+      "source_url": "https://github.com/orgs/community/discussions/204803",
+      "repositories": [
+        {"repo": "PRIVATE_UNDISCLOSED", "visibility": "private", "default_branch": "main"}
+      ],
+      "observations": [
+        "Workflow existed on main since 2026-08-06.",
+        "Several weekly cron slots passed with no run created.",
+        "An added */15 isolation schedule also produced no scheduled run.",
+        "The same workflow executed successfully via workflow_dispatch."
+      ],
+      "relevance": "Strong pre-incident instance of no-run-object schedule failure after multiple expected fire times.",
+      "evidence_strength": "VERY_HIGH_PREINCIDENT_CONTROL"
+    },
+    {
+      "handle": "Yikai-Liao",
+      "discussion": 158641,
+      "date": "2025-05-08",
+      "role": "HISTORICAL_WEAKER_SCHEDULE_CONTROL",
+      "source_url": "https://github.com/orgs/community/discussions/158641",
+      "repositories": [
+        {"repo": "Yikai-Liao/PaperDigest", "visibility": "public", "workflow": ".github/workflows/recommend.yaml"}
+      ],
+      "observations": [
+        "Daily scheduled Paper Recommendation Pipeline failed to trigger for multiple days while workflow_dispatch worked.",
+        "Changing schedule from 00:00 UTC to 01:30 UTC did not immediately solve the issue.",
+        "Another hourly scheduled workflow in the same repository continued to trigger."
+      ],
+      "relevance": "Shows the broad symptom family is historically older, but the simultaneously healthy hourly schedule makes this a weaker match to the 2026 repository-wide schedule disappearance cohort.",
+      "evidence_strength": "MEDIUM_HISTORICAL_NEGATIVE_CONTROL"
+    }
+  ],
+  "preincident_baseline_conclusion": {
+    "finding": "The class 'schedule creates no run object while workflow_dispatch works' clearly predates 2026-08-26.",
+    "consequence": "The August 26 incident cannot be treated as the origin of the entire failure class.",
+    "best_current_interpretation": "The August 26 control-plane overload may have amplified, widened, or exposed a pre-existing scheduler-registration/materialization weakness for some repositories/accounts, but public evidence does not yet prove that mechanism."
+  },
+  "new_official_github_controls": {
+    "2026_08_24_actions_start_delay": {
+      "source_url": "https://www.githubstatus.com/",
+      "impact_window_utc": "2026-08-24T13:33:00Z/2026-08-24T14:04:00Z",
+      "facts": [
+        "3.8% of Actions runs experienced start delays over five minutes.",
+        "1.25% of Actions runs failed outright.",
+        "Root cause was disk failure on a node hosting a service instance responsible for processing runner-assignment events.",
+        "The degraded node continued sending healthy signals, so events accumulated until automatic rebalance redirected work."
+      ],
+      "relevance": "A distinct Actions control-plane failure occurred only two days before the main August 26 trigger-database incident; the week contained multiple independent failure modes."
+    },
+    "2026_08_26_main_actions_incident": {
+      "source_url": "https://www.githubstatus.com/",
+      "impact_start_utc": "2026-08-26T15:02:00Z",
+      "facts": [
+        "Actions jobs failed to start from 15:02 to 15:45 UTC.",
+        "Runs then experienced delayed starts while backlog drained until approximately 17:40 UTC.",
+        "Root cause: saturation of writes to the database primary used by the service processing triggers for Actions workflows.",
+        "Primary failover alone did not fully recover the system.",
+        "Growing daily peak load combined with an upstream event-processing issue amplified bursts of already-high load.",
+        "Downstream throttles used for recovery had been set about 10% too high to protect the degraded system.",
+        "Throttling plus service restarts restored core health; admission limits were then raised gradually while queues drained."
+      ]
+    },
+    "2026_08_26_actions_and_pull_requests": {
+      "source_url": "https://www.githubstatus.com/",
+      "incident_start_utc": "2026-08-26T22:56:00Z",
+      "recovery_begin_utc": "2026-08-26T23:58:00Z",
+      "facts": [
+        "GitHub reported elevated delays and timeouts affecting Actions workflow runs triggered by pull request events.",
+        "20% of affected Actions runs had start delays over five minutes.",
+        "Up to 4% of affected runs failed to trigger."
+      ],
+      "relevance": "Officially confirms that a GitHub Actions control-plane incident can produce a 'failed to trigger' state, although this status update referred specifically to pull-request-triggered runs and is not direct proof about schedule events."
+    },
+    "2026_08_26_linked_upstream_incident": {
+      "source_url": "https://www.githubstatus.com/incidents/hcbtzksccj2f",
+      "window_utc": "2026-08-26T15:09:00Z/2026-08-26T16:07:00Z",
+      "public_description": "Disruption with some GitHub services; the detailed standalone root cause was not yet published in the checked public incident page.",
+      "relationship": "The main Actions RCA explicitly identifies this incident as the upstream event-processing issue that contributed burst amplification."
+    }
+  },
+  "postincident_schedule_cohort_update": {
+    "shinkunda_discussion_206027": {
+      "source_url": "https://github.com/orgs/community/discussions/206027",
+      "status": "FULL_BODY_RETRIEVED_2026_08_28",
+      "confirmed": [
+        "Repository shinkunda/my-virtual-company, formerly shinkunda/HypeLog.",
+        "hourly-snapshot cron 23 * * * * and daily-vods cron 17 4 * * *.",
+        "Last scheduled hourly run 2026-08-26 17:37 UTC.",
+        "Approximately 33 consecutive hourly slots plus one daily slot were missing by 2026-08-28 03:02 UTC.",
+        "No queued, startup_failure, failed, or other scheduled run objects existed for those missed slots.",
+        "A manual workflow_dispatch run succeeded, preserving the trigger-path split."
+      ]
+    },
+    "fmf1109_discussion_206028": {
+      "source_url": "https://github.com/orgs/community/discussions",
+      "status": "TITLE_CONFIRMED_BODY_NOT_YET_RETRIEVED",
+      "confirmed_title": "Scheduled GitHub Actions workflow not triggering, but workflow_dispatch works",
+      "evidence_strength": "TITLE_ONLY_DO_NOT_INFER_REPOSITORY_OR_TIMELINE"
+    }
+  },
+  "cross_service_controls": {
+    "OpenAI": {
+      "source_url": "https://status.openai.com/incidents/01M1263309PD7VYV8EF95W2M2P",
+      "finding": "No matching August 26 incident was found in the checked official history. On August 27, Workspace Agents and ChatGPT Work on Web/Mobile experienced elevated errors beginning around 18:00 UTC and recovered by 22:14 UTC.",
+      "correlation_with_github": "WEAK_NEGATIVE_CONTROL_DIFFERENT_DAY_AND_SURFACE"
+    },
+    "Cloudflare": {
+      "source_url": "https://www.cloudflarestatus.com/history",
+      "findings": [
+        "August 26: MCP Portal tool invocation logging instability, resolved 15:38 UTC.",
+        "August 26: Durable Objects and downstream service errors, resolved 21:30 UTC.",
+        "August 27: Realtimekit APIs failed due to database connectivity, resolved 08:42 UTC."
+      ],
+      "correlation_with_github": "REAL_INCIDENTS_BUT_HETEROGENEOUS_NO_SHARED_FINGERPRINT_ESTABLISHED"
+    },
+    "CircleCI": {
+      "source_url": "https://status.circleci.com/",
+      "finding": "August 26 15:43-16:10 UTC: intermittent errors were reported for plan-usage UIs/APIs; no matching pipeline/workflow trigger outage was reported in the checked official history.",
+      "correlation_with_github": "NEGATIVE_CONTROL_FOR_CI_TRIGGER_OUTAGE"
+    },
+    "DigitalOcean": {
+      "source_url": "https://status.digitalocean.com/",
+      "finding": "A public API/Cloud Control Panel incident began August 24 and was resolved August 25 19:04 UTC, before the August 26 GitHub Actions onset. August 26 entries around Spaces were scheduled/cancelled maintenance rather than a matching unexplained control-plane outage.",
+      "correlation_with_github": "TEMPORALLY_SEPARATE_CONTROL"
+    },
+    "Microsoft_Defender_XDR": {
+      "source_url": "https://mailservices.isc.upenn.edu/computing/email/penno365/alerts/ms-incidents.html",
+      "incident_id": "DZ1462187",
+      "finding": "On August 26 Microsoft reported delays in Defender for Endpoint detections caused by a section of detection-processing infrastructure, producing a detections-pipeline backlog.",
+      "correlation_with_github": "SEMANTIC_PIPELINE_BACKLOG_RESEMBLANCE_ONLY_NO_SHARED_TECHNICAL_CAUSE_OR_IOC"
+    }
+  },
+  "cross_provider_assessment": {
+    "finding": "Multiple providers had incidents in the surrounding days, but the checked incidents differ in affected products, root causes, timing, and failure layer.",
+    "shared_ioc_found": false,
+    "shared_asn_or_bgp_event_found": false,
+    "explicit_cross_provider_attack_attribution_found": false,
+    "current_state": "NO_DEFENSIBLE_COMMON_CAUSE_ESTABLISHED"
+  },
+  "updated_hypotheses": [
+    {
+      "hypothesis": "The August 26 GitHub incident created the entire schedule-no-run-object failure class.",
+      "state": "REFUTED_BY_PREINCIDENT_CONTROLS"
+    },
+    {
+      "hypothesis": "A latent GitHub schedule-registration/materialization weakness existed before August 26.",
+      "state": "STRONGLY_SUPPORTED_BY_INDEPENDENT_PREINCIDENT_REPORTS"
+    },
+    {
+      "hypothesis": "The August 26 Actions overload amplified or widened that pre-existing schedule weakness.",
+      "state": "PLAUSIBLE_AND_SUPPORTED_BY_TIMING_BUT_NOT_PROVEN_BY_PUBLIC_RCA"
+    },
+    {
+      "hypothesis": "Some repositories experienced residual schedule-registration/materialization failure after GitHub declared recovery.",
+      "state": "SUPPORTED_BY_MULTIPLE_POSTINCIDENT_FIRST_HAND_REPORTS"
+    },
+    {
+      "hypothesis": "The GitHub, OpenAI, Cloudflare, Microsoft, and Russian-service observations demonstrate one coordinated cross-provider cyberattack.",
+      "state": "WEAKENED_NO_SHARED_IOC_OR_TECHNICAL_FINGERPRINT"
+    }
+  ],
+  "next_collection_gates": [
+    "Resolve the full fmf1109 discussion body without inferring hidden details from its title.",
+    "Search older GitHub Community and issue archives for public schedule-no-run-object cases to estimate a baseline frequency before August 2026.",
+    "Separate account/repository registration failures from transient high-load dropped schedules using first-fire history and re-registration experiments.",
+    "Track whether GitHub publishes a detailed RCA for the linked upstream incident hcbtzksccj2f.",
+    "Seek shared network-level evidence only where providers expose ASNs, routing incidents, DDoS attribution, or common upstream dependencies.",
+    "Keep Russian-service observations in an independent lane until a matching technical fingerprint exists."
+  ]
+}

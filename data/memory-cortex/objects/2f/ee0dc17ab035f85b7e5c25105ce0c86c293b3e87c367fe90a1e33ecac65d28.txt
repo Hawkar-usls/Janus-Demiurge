@@ -1,0 +1,74 @@
+{
+  "artifact_id": "JANUS-TRUMP-TREEWIDTH2-LIST-COLORING-TERMINAL-RESULT-2026-09-20-v1.0",
+  "version": "v1.0",
+  "date": "2026-09-20",
+  "status": "PASS_TREEWIDTH2_LIST_COLORING_POLYNOMIAL_TERMINAL",
+  "authority": "STATIC_ALGORITHMIC_THEOREM_WITH_EXTERNAL_PRIMARY_AUTHORITY",
+  "preregistration": {
+    "path": "research/TRUMP_TREEWIDTH2_LIST_COLORING_TERMINAL_PREREG_2026-09-20_v1.0.json",
+    "commit": "deea4500404e8286c33d552fe1228676612d95df"
+  },
+  "external_authority": [
+    {
+      "source": "Jansen and Scheffler, Generalized coloring for tree-like graphs, Discrete Applied Mathematics 75(2):135-155 (1997)",
+      "doi": "10.1016/S0166-218X(96)00085-6",
+      "statement": "List Coloring on partial k-trees is solvable in linear time when the number of colors is bounded by a constant."
+    },
+    {
+      "source": "Hans L. Bodlaender, A Linear-Time Algorithm for Finding Tree-Decompositions of Small Treewidth, SIAM J. Comput. 25(6):1305-1317 (1996)",
+      "doi": "10.1137/S0097539793251219",
+      "statement": "For fixed k, treewidth<=k can be recognized and a width-k tree decomposition can be found in linear time."
+    },
+    {
+      "source": "Standard partial-2-tree characterization (Wald-Colbourn; later treewidth literature)",
+      "statement": "tw(G)<=2 iff G is a partial 2-tree iff G is K4-minor-free."
+    }
+  ],
+  "theorem": {
+    "recognition": {
+      "input": "Graph C.",
+      "algorithm": "Run a fixed-k treewidth recognition/decomposition algorithm for k=2.",
+      "positive_output": "Verified tree decomposition of width at most 2.",
+      "negative_semantic_condition": "tw(C)>2, equivalently C contains a K4 minor."
+    },
+    "list_coloring": {
+      "input": "Exact lists L(v) subseteq [4] and a width-2 decomposition.",
+      "bag_size_bound": 3,
+      "raw_state_bound_per_bag": 64,
+      "DP": [
+        "For each bag retain proper list-respecting assignments that extend to the processed subgraph.",
+        "Introduce transitions add one bag vertex/color while enforcing lists and bag edges.",
+        "Forget transitions project extendable states.",
+        "Join transitions combine child tables agreeing on the shared bag.",
+        "Accept iff a root state survives; store witnesses for reconstruction."
+      ],
+      "complexity": "Linear in graph/decomposition size up to a constant depending only on k=2 and palette size 4."
+    },
+    "certification": {
+      "positive": "Verifier checks width<=2 tree-decomposition axioms: every vertex appears, every edge is covered, and bags containing each vertex form a connected subtree.",
+      "negative": "A K4-minor model is four pairwise-disjoint connected branch sets with an edge between every pair of branch sets."
+    },
+    "P7_free_required": false
+  },
+  "applicability_to_C11_PI": {
+    "exact_use_condition": [
+      "Residual connected component C is obtained after frozen fixed-boundary propagation/preprocessing.",
+      "All boundary restrictions are already encoded in exact lists.",
+      "tw(C)<=2 is certified by a width-2 decomposition."
+    ],
+    "conclusion": "C is polynomially list-colorable without any general P7-free 4-coloring oracle."
+  },
+  "C4_control": {
+    "graph": "C4",
+    "treewidth": 2,
+    "K4_minor": false,
+    "conclusion": "The previously sealed T2 C4 is TW2_LIST_READY despite being cyclic and using all four colors across its lists."
+  },
+  "scientific_ceiling": {
+    "TREEWIDTH2_LIST_TERMINAL": "VERIFIED",
+    "TW_GT_2_RESIDUALS": "UNRESOLVED",
+    "K4_MINOR_RESIDUAL": "NOT_YET_VERIFIED",
+    "REPAIR": "NOT_STARTED"
+  },
+  "stop": true
+}

@@ -1,0 +1,100 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-SIGLA-DOCUMENT-IDENTITY-BRIDGE-SPEC-2026-08-14-v0.1",
+  "timestamp": "2026-08-14T13:25:00+03:00",
+  "version": "v0.1",
+  "title": "JANUS Linear A SigLA ↔ mwenge document identity bridge specification v0.1",
+  "observer": "Oleksandr Ahapov / Hawkar + JANUS",
+  "node_type": "frozen_bridge_specification",
+  "status": "FROZEN_BEFORE_BRIDGE_EXECUTION",
+  "parent_inventory_result": {
+    "path": "data/JANUS-LINEAR-A-SIGLA-CROSS-DIGITIZATION-INVENTORY-RESULT-2026-08-14-v1.0.json",
+    "commit": "e8e80311cb8b0ef8f250ef93ee82dc0e08de0448",
+    "sigla_snapshot_sha256": "c1d25f91dccf334c3cf24b52c1e4a279970cebd3f5c6f377569de076360170cd",
+    "sigla_document_count": 802,
+    "mwenge_item_count": 1720,
+    "raw_overlap_count": 0
+  },
+  "question": "How much document overlap can be established by a single predeclared source-syntax transform that removes only SigLA ASCII spaces while preserving every epigraphically meaningful or potentially meaningful marker?",
+  "source_freeze": {
+    "SIGLA": {
+      "url": "https://sigla.phis.me/browse.html",
+      "required_content_sha256": "c1d25f91dccf334c3cf24b52c1e4a279970cebd3f5c6f377569de076360170cd",
+      "required_document_count": 802,
+      "rule": "If the live page no longer has the frozen SHA-256, execution must stop and a new inventory freeze must be created instead of silently using changed data."
+    },
+    "MWENGE": {
+      "repository": "mwenge/lineara.xyz",
+      "commit": "43fe7cf1abc8e6bb1ea3228c3a1bd5938709620a",
+      "required_min_item_count": 1500
+    }
+  },
+  "bridge_transform": {
+    "name": "SIGLA_REMOVE_ASCII_SPACES_ONLY",
+    "SIGLA_operations_in_order": [
+      "URL decode document identifier",
+      "Unicode NFC",
+      "trim leading and trailing Unicode whitespace",
+      "remove every ASCII SPACE U+0020 inside the identifier"
+    ],
+    "MWENGE_operations_in_order": [
+      "Unicode NFC",
+      "trim leading and trailing Unicode whitespace"
+    ],
+    "preserve_exactly": [
+      "a/b side suffixes",
+      "r/v orientation suffixes",
+      "question marks",
+      "parentheses",
+      "angle brackets",
+      "backticks",
+      "hyphens",
+      "Greek or Latin letters",
+      "ter or other textual suffixes",
+      "all non-ASCII-space characters"
+    ]
+  },
+  "forbidden_transformations": [
+    "a->r",
+    "b->v",
+    "r->a",
+    "v->b",
+    "delete side/orientation suffixes",
+    "delete uncertainty markers",
+    "delete angle-bracket material",
+    "case-fold IDs after observing mismatches",
+    "semantic/sign-content matching",
+    "manual equivalence insertion",
+    "bibliographic equivalence inference in v0.1"
+  ],
+  "predeclared_outputs": [
+    "bridge overlap count and fractions",
+    "one-to-one matched pair list",
+    "SIGLA-only residue list",
+    "mwenge-only residue list",
+    "transform collision counts and collision members",
+    "prefix/site distribution of matched and unmatched IDs",
+    "deterministic lexical samples",
+    "classification of bridge usability"
+  ],
+  "gates": {
+    "B1_SNAPSHOT": "SigLA bytes SHA-256 must exactly equal the parent inventory snapshot hash.",
+    "B2_COUNT": "SigLA extraction must return exactly 802 distinct document IDs.",
+    "B3_COLLISIONS": "Any transformed-ID collision is preserved; collided IDs are excluded from one-to-one bridge matches and block calling the entire transform bijective.",
+    "B4_MATCH_RULE": "A bridge match exists only when the transformed SigLA ID exactly equals a transformed mwenge ID and both transformed keys are collision-free.",
+    "B5_NO_POSTHOC_EXTENSION": "Unmatched residues must remain unmatched in this execution. A different transform requires a new frozen bridge spec.",
+    "B6_CLAIM_CEILING": "Document ID bridging may establish cross-digitization document identity for matched keys only; it cannot establish transcription agreement, independent epigraphic replication, lexical meaning, anchor novelty, or decipherment."
+  },
+  "interpretation_policy": {
+    "high_overlap": "Supports using the collision-free matched subset for a later content-level cross-digitization audit.",
+    "low_overlap": "Does not imply different archaeological corpora; it means whitespace removal alone is insufficient and a separately frozen metadata/bibliographic bridge is needed.",
+    "unmatched_examples_such_as_GO_2a_vs_GO2r": "Remain unresolved regardless of apparent human plausibility."
+  },
+  "claim_ceiling": {
+    "document_identity_bridge_established": false,
+    "cross_digitization_content_replication_established": false,
+    "external_transcription_replication_established": false,
+    "new_anchor_established": false,
+    "decipherment_established": false,
+    "promotion": "BLOCKED"
+  }
+}

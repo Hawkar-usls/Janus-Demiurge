@@ -1,0 +1,41 @@
+{
+  "schema": "janus.independent_future.prereg_ordering_correction.v1",
+  "artifact_id": "JANUS-INDEPENDENT-FUTURE-DRAND-PREREG-ORDERING-CORRECTION-2026-09-01-v1.0",
+  "version": "1.0",
+  "status": "APPEND_ONLY_CORRECTION_TRIAL_01_INVALID_TRIAL_02_PLUS_ELIGIBLE",
+  "parent_prereg": "data/JANUS-INDEPENDENT-FUTURE-DRAND-BENCH-PREREG-2026-09-01-v1.0.json",
+  "parent_prereg_commit": "0cec26aabcee7d4dc7c057cc79d8d690b55e3321",
+  "parent_prereg_commit_utc": "2026-09-01T01:14:37Z",
+  "reason_for_correction": "The prereg JSON self-declared FROZEN_BEFORE_ALL_TARGET_ROUNDS, but Git commit provenance is authoritative for external freeze ordering. Trial 01 target was 2026-09-01T01:00:00Z, which predates the actual prereg commit by 14m37s.",
+  "trial_01": {
+    "target_utc": "2026-09-01T01:00:00Z",
+    "quicknet_round": 31807012,
+    "ordering": "TARGET_BEFORE_PREREG_COMMIT",
+    "classification": "PRE_REG_ORDERING_INVALID",
+    "scorable": false,
+    "rule": "DO_NOT_FETCH_OR_SCORE_AS_INDEPENDENT_FUTURE_EVIDENCE"
+  },
+  "trial_02": {
+    "target_utc": "2026-09-01T02:00:00Z",
+    "quicknet_round": 31808212,
+    "ordering": "PREREG_COMMIT_BEFORE_TARGET_BY_45M23S",
+    "classification": "FIRST_VALID_PROSPECTIVE_TRIAL",
+    "scorable_after_target": true
+  },
+  "trial_03_through_16": "ELIGIBLE_BY_ORDERING_IF_THEIR_FROZEN_FIELDS_ARE_UNCHANGED_AND_TARGETS_ARE_FETCHED_EXACTLY",
+  "hard_laws": [
+    "GIT_COMMIT_TIME_OVERRIDES_SELF_DECLARED_CREATED_AT_FOR_FREEZE_PROVENANCE",
+    "AN_INVALID_EARLY_TRIAL_MUST_BE_RETAINED_NOT_ERASED",
+    "DO_NOT_MOVE_THE_TARGET_TO_RESCUE_A_TRIAL",
+    "MISS_IS_DATA",
+    "MATCH_IS_ONLY_START_OF_AUDIT",
+    "PATTERN != CAUSAL_ANOMALY"
+  ],
+  "causal_difference_test": {
+    "H0": "The frozen PRE_RETURN candidate and later externally generated drand target differ, as overwhelmingly expected under ordinary forward-causal independence.",
+    "H1_operational_test_only": "The exact 256-bit frozen PRE_RETURN candidate equals the later externally generated target despite validated freeze ordering and target integrity.",
+    "discriminator": "EXACT_256_BIT_EQUALITY_ONLY",
+    "interpretation_ceiling": "Even an exact match would require leakage, entropy, signature, independence and replication audits before any retrocausal interpretation."
+  },
+  "canonical_seal": "THE FIRST DIFFERENCE TEST FOUND A DIFFERENCE IN OUR OWN PROVENANCE FIRST: TRIAL 01 WAS NOT PROSPECTIVE. KEEP THE FAILURE. TRIAL 02 IS THE FIRST CLEAN TARGET."
+}

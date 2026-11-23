@@ -1,0 +1,145 @@
+{
+  "schema": "janus.cosmos.seti.r41s1h3.retina.clock_intermod.receipt.v1",
+  "stage": "R41S1H3",
+  "date": "2026-11-21",
+  "status": "PASS_SYNTHETIC_SHADOW_DISCRIMINATION__FAIL_ZERO_LOSS_AND_SHIFT_STABILITY__HOLD_AUTO_VETO",
+  "scope": "Enhance existing R41S1H RETINA physical diagnostic with BLC1-inspired instrumental clock-sideband and intermod relation features; not separate Hawking project.",
+  "scientific_motivation": "Stephen Hawking co-launched Breakthrough Listen, but did not propose the detector features. BLC1 terrestrial-interference case motivates clock-related frequency families. Synthetic source type labels not valid astronomical origin evidence.",
+  "repository": "Hawkar-usls/Janus-Cosmos",
+  "branch": "research/seti-r41s1h3-hawking-rfi-20261121",
+  "protocol": {
+    "path": "research/seti/r41s1h3_retina_rfi_protocol.json",
+    "commit": "5146563c2134522f1d359615d57b6c03f8a6cda8"
+  },
+  "implementation": {
+    "path": "research/seti/r41s1h3_retina_rfi.py",
+    "commit": "3d2b682d9db1f116f21a733f6ba855b104a5f271"
+  },
+  "workflow": {
+    "file": ".github/workflows/seti-r41s1h3-retina-rfi.yml",
+    "commit": "17646611596963cb6eadb370dcfe4d21a4e86bb2",
+    "run": 44941844919,
+    "job": 136960546674,
+    "conclusion": "success",
+    "artifact_id": 14721932671,
+    "artifact_digest": "6240d6f292b1a9334337af237121f5f32bd3dc1ec8d96fce885fa25e0865675c"
+  },
+  "features": [
+    "four_sideband_min_strength",
+    "intermod_two_sideband_closure",
+    "offpath_tracks_above_mad",
+    "candidate_sideband_temporal_coherence",
+    "offpath_broadband_occupancy",
+    "offpath_commonmode_variability"
+  ],
+  "data": {
+    "development_rows": 768,
+    "new_heldout_rows": 512,
+    "fit_seeds": [
+      411103,
+      411107,
+      411113
+    ],
+    "heldout_seeds": [
+      411117,
+      411119
+    ],
+    "synthetic_positive_total": 256,
+    "synthetic_null_total": 256,
+    "simulation_only": true,
+    "all_native_telescope_data_unread": true,
+    "original_historical_38_controls_not_used": true,
+    "old_audit_7_to_11_not_used": true
+  },
+  "heldout": [
+    {
+      "seed": 411117,
+      "rows": 256,
+      "synthetic_positives": 128,
+      "synthetic_nulls": 128,
+      "rfi_model_auc": 0.87945556640625,
+      "simple_clock_auc": 0.5572509765625,
+      "hypothetical_control_rejections": 96,
+      "hypothetical_positive_losses": 0
+    },
+    {
+      "seed": 411119,
+      "rows": 256,
+      "synthetic_positives": 128,
+      "synthetic_nulls": 128,
+      "rfi_model_auc": 0.8538818359375,
+      "simple_clock_auc": 0.5721435546875,
+      "hypothetical_control_rejections": 96,
+      "hypothetical_positive_losses": 3
+    }
+  ],
+  "non_veto_localization": {
+    "simulated_positive_count": 256,
+    "blind_path_localized": 211,
+    "simulated_weak_count": 64,
+    "weak_blind_path_localized": 52,
+    "notice": "Blind straight-line candidate probe, not full JANUS detector result"
+  },
+  "failure_modes": {
+    "single_electronic_carrier": {
+      "n": 64,
+      "hypothetical_rejected": 0,
+      "conclusion": "Single RFI line cannot be reliably discriminated from an astronomical line from one spectrum alone."
+    },
+    "pos_rejected": 3,
+    "positive_family_losses": {
+      "faint_single": 1,
+      "drifting_single": 0,
+      "intermittent_single": 1,
+      "curved_single": 1
+    },
+    "shift": {
+      "bins": [
+        -16,
+        -8,
+        8,
+        16
+      ],
+      "hypothetical_threshold_crossings": [
+        19,
+        4,
+        2,
+        21
+      ],
+      "positive_crossings": [
+        13,
+        2,
+        1,
+        15
+      ],
+      "paired_shift_comparisons": 2048,
+      "threshold_crossing_fraction": 0.0224609375,
+      "max_p95_abs_score_shift": 1.2594630163974498
+    },
+    "strong_harmonic_2f0_coverage": false
+  },
+  "predeclared_gates": {
+    "discrimination_AUC_ge_0_70_each": true,
+    "zero_hypothetical_positive_losses": false,
+    "shift_flip_at_most_1_percent_and_p95_delta_at_most_0_2": false,
+    "external_validation": false,
+    "production_adoption": false,
+    "automatic_veto": false
+  },
+  "scientific_status": "Synthetic feature feasibility only. No real ON/OFF native comparison, no causal RFI origin for unlabeled astronomy. Need authentic frequency calibration, matched other frequency tracks and TCS plus external custodian. Heldout negative results cannot be tuned away without fresh, disjoint test.",
+  "program_priorities": {
+    "R42B": "CRITICAL_PATH_HOLD_EXTERNAL_INDEPENDENT_POINTING_AND_CUSTODIAN",
+    "R41S1H3": "INTEGRATED_RETINA_RESEARCH_ONLY",
+    "HAWKING_TRANSIENT": "HOLD_UNTIL_R42B",
+    "R42A8B": "Separate OOD replication protocol exists, not promoted or counted as R41S1H3 validation"
+  },
+  "reference": {
+    "R42_parent_controls": 38,
+    "R42_rescue_controls": 13,
+    "R42_total_false_alerts": 51,
+    "R42_correct_localizations": 318,
+    "R42_weak": 69,
+    "reference_is_historical_not_LIVE_PRODUCTION_MEASUREMENT": true
+  },
+  "next": "R41S1H3A: inspect frequency-translation failure without using heldout data to tune parameters, define physically calibrated feature extraction independent of window position with first-principles transforms; evaluate on entirely new groups only. R42B continue independent GBT/NRAO witness ticket #58509 and independent custodian; no auto-veto."
+}

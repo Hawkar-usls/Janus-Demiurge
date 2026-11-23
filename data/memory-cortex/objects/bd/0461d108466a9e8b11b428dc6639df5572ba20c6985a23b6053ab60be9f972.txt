@@ -1,0 +1,118 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1C5B2B2-A-FORCED-CANONICALIZATION-CONFLUENCE-RESULT-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "PASS_FORCED_CANONICALIZATION_CONFLUENCE__ASSIGNMENT_SET_MULTIPLICITY_OPEN",
+  "gate": "R5_B1B1C5B2B2_A_FORCED_CANONICALIZATION_CONFLUENCE_GATE_V1",
+  "binds": {
+    "prereg_blob": "8acd7d4252d6a15dd37fc5d3f911ecff910013ba",
+    "B2B2_representation_clarification_blob": "1bc410ac949161bde6541516c4f2ec67cefabdef",
+    "B2B1_theorem_seal_blob": "6767177d51a6854cf8d931cee90ddbc311034ba7",
+    "B2B1_result_blob": "d8161c9c3b976349f6465672096e98d5c1576ba8",
+    "finite_checker_commit": "ec2a90bf4753a7747fce581a6e110cdb40a59ff2",
+    "finite_checker_blob": "a95bbc9317b42898528f9cd45d0f92774a7277c9"
+  },
+  "theorem": {
+    "name": "FORCED_CANONICALIZATION_CONFLUENCE_V1",
+    "scope": "Let P be one authoritative hard state and F a finite compatible set of authorized forced assignments. Compare only histories that are jointly reachable: every assignment requested by a history is still dynamically forceable when requested, and all histories request exactly F.",
+    "statement": "The B2B1 canonical closure depends on the compatible forced assignment set F, not on the order in which the assignments of F are applied. Every nonterminal jointly reachable history ends in the same canonical source state up to canonical relabeling and equivalent independent reconstruction receipts. Every terminal history for F certifies that the batch F-closure is terminal UNSAT as well.",
+    "proof": {
+      "final_seed": [
+        "The final seed is S_F=S union dom(F), with the same fixed color attached to each forced identity in every history.",
+        "Set union of forced identities/assignments is order-independent."
+      ],
+      "source_masks_and_lists": [
+        "For every still-present vertex v, the set of colors seen on final seed neighbors is the union of the old seed-color set and the colors contributed by adjacent assignments in F.",
+        "This union is independent of order, so final source lists and source-list sizes are independent of order."
+      ],
+      "singleton_persistence": [
+        "If a vertex becomes source-singleton Z1 at some prefix, later seed growth can only remove additional available source colors.",
+        "Therefore the vertex either remains the same singleton or becomes Z0.",
+        "A jointly reachable nonterminal continuation cannot pass through Z0; hence every early promoted singleton is also a singleton of the same color under the final seed.",
+        "Conversely any final Z1 vertex appears as Z1 no later than the final canonicalization pass. Thus the final promoted X0 set and its fixed colors depend only on F."
+      ],
+      "fixed_conflict_confluence": [
+        "If an early mandatory singleton conflicts with a later forced assignment or another mandatory singleton, then the same final fixed assignment set contains that conflict.",
+        "Hence an early direct UNSAT is not an order artifact; every closure of F is UNSAT."
+      ],
+      "canonical_partition": [
+        "Final S_F and final X0_F are order-independent.",
+        "Source classes Z2/Z3/Z4 are deterministic functions of the final seed-color masks.",
+        "The canonical residual Y0_F is therefore order-independent.",
+        "Exact palettes A(v) are deterministic functions of final fixed-color effects from S_F union X0_F and are order-independent."
+      ],
+      "connectivity_repair_commutation": [
+        "At any B2B1 repair step, a deleted residual component C is a connected component of G minus the then-current X0 that does not contain the seed.",
+        "Therefore C has no nonfixed neighbor outside C at the moment of deletion.",
+        "Any later jointly reachable forced vertex lies outside C, so it was already a nonfixed outside vertex at deletion time and is nonadjacent to C.",
+        "Any later promoted X0 vertex outside C was likewise nonfixed outside C at deletion time and is nonadjacent to C.",
+        "Thus no later jointly reachable operation changes the boundary constraints of an already deleted C.",
+        "No future forced assignment may target a vertex of an already deleted C under the joint-reachability guard.",
+        "As X0 grows monotonically, removing more fixed vertices can split the retained seed-component but can never reconnect a deleted component.",
+        "Consequently sequential repair deletes exactly the vertices outside the seed-connected component of G minus final X0_F, possibly in earlier independent pieces."
+      ],
+      "List3_terminal_confluence": [
+        "If a separated component C is UNSAT under its exact P7 List-3 repair instance when deleted, no later jointly reachable force outside C can alter C's lists or boundary.",
+        "Therefore batch closure under F contains the same independent UNSAT obstruction.",
+        "If C is SAT, its stored coloring obligation remains independent of all later forcing outside C."
+      ],
+      "reconstruction": [
+        "Different histories may discover/delete independent repair components at different times and may store different valid List-3 witnesses.",
+        "The reconstruction obligation is nevertheless the same factorized relation: color each deleted component from its exact frozen local instance and combine with the final retained-state coloring.",
+        "After canonical ordering of deleted vertex sets and deterministic witness selection, receipts can be normalized to the same canonical receipt; without fixing witness selection, they are semantically equivalent up to independent witness choice."
+      ],
+      "downstream_stack": [
+        "C0 messages are deterministic functions of final residual components, final fixed-X0 base lists and final dynamic boundaries.",
+        "C2 incidences are deterministic functions of the same final remaining graph/component partition.",
+        "B2A transition signatures are recomputed from those final C0/C2 objects.",
+        "C3 selectors are deterministic functions of final MIN_BAD and D_C data.",
+        "Hence the final C0/C2/B2A/C3 architecture is history-order independent."
+      ]
+    }
+  },
+  "terminal_confluence": {
+    "direct_Z0_or_fixed_conflict": "ORDER_INDEPENDENT_UNSAT",
+    "List3_repair_failure": "ORDER_INDEPENDENT_UNSAT",
+    "nonterminal_return": "UNIQUE_CANONICAL_CLOSURE_BY_F_UP_TO_EQUIVALENT_RECONSTRUCTION_RECEIPTS"
+  },
+  "finite_sanity_receipt": {
+    "mask_union_order_independent": "PASS",
+    "singleton_persistence_or_unsat": "PASS",
+    "small_graph_seed_component_batch_vs_sequential": "PASS",
+    "status": "PASS_FINITE_SANITY",
+    "ceiling": "Finite sanity supports the algebra only; theorem authority is the structural proof."
+  },
+  "consequence": {
+    "history_order_is_state_coordinate": false,
+    "canonical_state_key_can_start_from": "compatible forced assignment set F plus deterministic closure, rather than forcing history",
+    "factorial_history_explosion": "ELIMINATED",
+    "compatible_assignment_set_count": "STILL_POTENTIALLY_EXPONENTIAL",
+    "representation_complexity": "OPEN"
+  },
+  "explicit_nonclaims": [
+    "No polynomial bound on the number of compatible forced assignment sets.",
+    "No polynomial quotient on assignment sets.",
+    "No new-seed identity erasure theorem.",
+    "No dependency factorization theorem for B2B2 states.",
+    "No recursive R1/R2 algorithm.",
+    "No C5C unlock."
+  ],
+  "next_frontier": {
+    "name": "R5_B1B1C5B2B2_B_NEW_SEED_IDENTITY_NECESSITY_AUDIT_V1",
+    "target": "Determine which future B0/C0/C2/C3/B2A/R1/R2 observables genuinely require identities of newly forced seed vertices beyond aggregate fixed-color effect masks and inherited original provenance."
+  },
+  "scientific_ceiling": {
+    "B2B2_A_CONFLUENCE": "PROVED",
+    "HISTORY_ORDER_EXPLOSION": "CLOSED",
+    "FORCED_ASSIGNMENT_SET_MULTIPLICITY": "OPEN",
+    "NEW_SEED_IDENTITY_ERASURE": "OPEN",
+    "FACTORIZED_REPRESENTATION": "OPEN",
+    "R1_DECIDABILITY": "OPEN",
+    "R2_DECIDABILITY": "OPEN",
+    "C5C": "LOCKED",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "stop": true,
+  "return_to_HQ": true
+}

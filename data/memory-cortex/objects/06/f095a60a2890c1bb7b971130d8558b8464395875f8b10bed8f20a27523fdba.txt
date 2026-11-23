@@ -1,0 +1,74 @@
+{
+  "artifact_id":"JANUS-TRUMP-R5-B1B1C5B2B2-E6-SIGNED-HUANG-SOURCE-RESTRICTION-AUDIT-2026-09-21-v1.0",
+  "version":"v1.0",
+  "date_local":"2026-09-21",
+  "status":"PASS_NO_ADDITIONAL_SOURCE_RESTRICTION",
+  "gate":"R5_B1B1C5B2B2_E6_SIGNED_HUANG_SOURCE_RESTRICTION_OR_PVNP_CARRIER_GATE_V1",
+  "binds":{
+    "prereg_blob":"bbe4d7f75e62261dbcfa442f67da3be7d127f7ca",
+    "E5_theorem_seal_blob":"8e340bf702cddf7658d746079be0cccd2ede7566",
+    "E5_result_blob":"24ce5d4e34270328ac00e98fdad8cdb596a8d666",
+    "checker_blob":"0008211bac97370115548c8ce5fad5ca3fc5437d"
+  },
+  "source_family":{
+    "input":"arbitrary 3-CNF Phi on optional Boolean variables y_1,...,y_n",
+    "graph":"Huang G_{C7,I(Phi)} with one distinguished positive anchor clause (x2,x1,x3) plus one C7 clause gadget for each clause of Phi using the corresponding positive/negative optional literal",
+    "graph_modification":"NONE beyond Huang's own construction",
+    "P7":"source-bound to Huang's theorem for the C7 construction"
+  },
+  "authoritative_seed_overlay":{
+    "S":["h1_0","x2","h1_1","h1_6"],
+    "colors":{"h1_0":2,"x2":1,"h1_1":3,"h1_6":4},
+    "root_source_singletons":{"~x2":2,"d2":1},
+    "root_X0":{"~x2":2,"d2":1},
+    "root_Z0":"empty",
+    "B0_competing_survivors":"NONE",
+    "reason":"Every Y vertex meeting residual C-type Y0 is U-type with source list {2,3,4}; optional X/~X/D vertices have source list {1,2}."
+  },
+  "arbitrary_polarity_coexistence":{
+    "statement":"Literal sign does not alter the source-state class: a C-type clause vertex remains residual Y0 whether attached to x_i or ~x_i, because both optional literal vertices are outside the frozen seed and both have the same binary source/exact palette.",
+    "all_eight_local_patterns":"All 2^3 polarity patterns may coexist in one authoritative canonical state on the same three optional variables.",
+    "finite_checker":"research/tools/r5_b1b1c5b2b2_e6_source_restriction/e6_all8_source_checker.py"
+  },
+  "permanent_binary_pair_state":{
+    "optional_x":"A(x_i)={1,2}",
+    "optional_not_x":"A(~x_i)={1,2}",
+    "optional_d":"A(d_i)={1,2}",
+    "opposition":"x_i and ~x_i are adjacent, so every proper coloring gives color(~x_i)=3-color(x_i)",
+    "e_i":"1 iff color(x_i)=color(d_i)"
+  },
+  "exact_clause_semantics":{
+    "positive_occurrence":"q=e_i",
+    "negative_occurrence":"q=1-e_i",
+    "root_C7_relation":"q_1 OR q_2 OR q_3",
+    "signed_clause":"therefore each arbitrary signed Huang clause gadget realizes exactly the corresponding 3-literal Boolean clause over the shared equality variables e_i"
+  },
+  "global_exact_embedding":{
+    "forward":"Any graph extension induces equality bits e_i satisfying every Boolean clause of Phi by the exact local C7 relation.",
+    "reverse":"Given any satisfying Boolean assignment e of Phi, choose independently a binary pair state (x_i,d_i) with equality bit e_i, set ~x_i to the opposite binary color, and use the stored/finite local C7 witness for every satisfied signed clause. Add the fixed seed/X0 colors.",
+    "equivalence":"authoritative signed-Huang source state has an extension iff Phi is satisfiable"
+  },
+  "QALL":{
+    "connected":"YES for every nonempty Phi under this construction",
+    "reason":"U-type vertices are complete to all live X/D vertices; every residual C carrier attaches to its literal/D boundary and its clause-U neighbors."
+  },
+  "restriction_audit":{
+    "literal_polarity":"UNRESTRICTED",
+    "coexistence_of_all_eight_signed_root_relations":"ALLOWED",
+    "P7":"does not remove mixed polarity because Huang's theorem already covers arbitrary formula occurrences",
+    "B0":"does not restrict polarity; B0 competing-survivor channel is vacuous",
+    "reconstruction":"local C7 reconstruction remains independent once pair states are fixed",
+    "global_renamability":"NOT_FORCED; arbitrary Phi may contain the same equality variable with both polarities"
+  },
+  "audit_verdict":{
+    "label":"PASS_NO_ADDITIONAL_SOURCE_RESTRICTION__PVNP_SCALE_CARRIER_FRONTIER",
+    "meaning":"The authoritative source class itself realizes unrestricted signed 3-clause composition on shared equality bits. No source-validity/P7/B0/reconstruction restriction collapses it to the renamable C10 subcase."
+  },
+  "firewalls":[
+    "This does not prove P!=NP.",
+    "This does not prove that a polynomial carrier is impossible.",
+    "It proves that a universal polynomial exact carrier for this unrestricted source family would solve arbitrary 3-SAT and hence imply P=NP.",
+    "No recursive general R1/R2 is authorized.",
+    "C5C remains locked."
+  ]
+}

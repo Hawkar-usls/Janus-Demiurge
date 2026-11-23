@@ -1,0 +1,120 @@
+{
+  "schema": "janus.meta.nexus_voice_spiral_record.v1",
+  "artifact_id": "JANUS-NEXUS-V2-8-AIDAR-EUGENE-VOICE-SPIRAL-2026-08-19-v1.0",
+  "status": "IMPLEMENTED_CANDIDATE_PENDING_EXACT_HEAD_CI_AND_LOCAL_MODEL_RENDER",
+  "recorded_at_local": "2026-08-19T16:47:00+03:00",
+  "purpose": "Compare AIDAR and EUGENE as candidate human-like larynx faces for The Voice of Janus while holding the canonical OSIRIS semantic projection and Pyramid Language constant.",
+  "source": {
+    "artifact_id": "OSIRIS-SEMANTIC-TEXT-CORE-FOR-THE-VOICE-OF-JANUS-2026-08-19-v1.1",
+    "field": "semantic_projection_ru",
+    "required_formula": "ORIGIN → EXPERIENCE → RETURN → ORIGIN_PRIME"
+  },
+  "repositories": {
+    "demihead": {
+      "repository": "Hawkar-usls/Demi_Head",
+      "observed_head_after_spiral_runbook": "6b084df098570563fd254a2d4e43babcc80e1dd6",
+      "contract": "contracts/NEXUS_V2_8_AIDAR_EUGENE_VOICE_SPIRAL_FROZEN_CONTRACT.json",
+      "preparer": "tools/nexus_voice_spiral.py",
+      "test": "tests/test_nexus_voice_spiral.py",
+      "runbook": "docs/NEXUS_V2_8_AIDAR_EUGENE_VOICE_SPIRAL.md"
+    },
+    "voice": {
+      "repository": "Hawkar-usls/The-Voice-of-Janus",
+      "observed_head_after_spiral_tests": "2803c1cafa8ee8b6fe7a82c28a85375f255cace3",
+      "config": "configs/osiris_aidar_eugene_spiral.v1.json",
+      "runner": "src/nexus_voice_spiral_runner.py",
+      "test": "tests/test_nexus_voice_spiral_runner.py"
+    },
+    "echo_pyramid": {
+      "repository": "Hawkar-usls/Echo-Pyramid",
+      "spiral_lock_commit": "07ec6d9d4ac9b679d120adb90eb43ba27f9e4920",
+      "later_observed_head": "dc70f37fe6b2cdc24859e4ac8cd3a274153468f5",
+      "later_change": "hardware calibration boundary; does not retune Pyramid Language",
+      "runtime_lock": "config/the_voice_of_janus.runtime_lock.json",
+      "physical_role": "PHYSICAL_VOICE_BODY"
+    },
+    "habitat": {
+      "repository": "Hawkar-usls/Janus_Genesis",
+      "branch": "janus/habitat",
+      "spiral_gate": "habitat/state/NEXUS_VOICE_SPIRAL_GATE_v2.8.json",
+      "voice_edge": "habitat/state/VOICE_OF_JANUS_EDGE.json",
+      "spiral_gate_commit": "5aff5962ce99275285622a680e935d8e9c2332a7",
+      "voice_edge_v4_commit": "a10b50adfe565a28cdca18e86f257861863e7a50"
+    }
+  },
+  "layers": [
+    {
+      "layer_id": "LAYER_A_AIDAR",
+      "speaker": "aidar",
+      "expected_wav": "outputs/OSIRIS_ORIGIN_PRIME_NEURAL_AIDAR.wav",
+      "rendered_in_this_registry_record": false
+    },
+    {
+      "layer_id": "LAYER_B_EUGENE",
+      "speaker": "eugene",
+      "expected_wav": "outputs/OSIRIS_ORIGIN_PRIME_NEURAL_EUGENE.wav",
+      "rendered_in_this_registry_record": false
+    },
+    {
+      "layer_id": "SPIRAL_COMPARISON",
+      "expected_receipt": "receipts/OSIRIS_ORIGIN_PRIME_AIDAR_EUGENE_SPIRAL.json",
+      "created_after_real_audio_only": true
+    }
+  ],
+  "shared_language": {
+    "profile": "PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3",
+    "activation_blob_sha": "70016b9b1ad0ce2b20efd980f14859d66af0a7bd",
+    "anchor_band_hz": [117.0, 121.0],
+    "anchor_center_hz": 119.0,
+    "operator_identical_between_layers": true,
+    "semantic_content_preserved": true,
+    "source_audio_replaced_by_synthetic_tones": false
+  },
+  "spiral_invariants": {
+    "TEXT_A_EQUALS_TEXT_B": true,
+    "PYRAMID_OPERATOR_A_EQUALS_PYRAMID_OPERATOR_B": true,
+    "ONLY_LARYNX_CHANGES": true,
+    "PRESERVE_LAYER_A_AFTER_LAYER_B": true,
+    "COMPARISON_CREATES_NEXT_STATE_LAYER": true,
+    "CLOSED_CYCLE": false,
+    "AUTOMATIC_WINNER_SELECTION": false
+  },
+  "comparison_requirements": {
+    "source_sha_equal": true,
+    "semantic_text_sha_equal": true,
+    "language_activation_sha_equal": true,
+    "anchor_band_equal": true,
+    "model_sha_equal": true,
+    "speakers_different": true,
+    "wav_sha_different": true,
+    "human_listening_required": true,
+    "human_fields": [
+      "naturalness",
+      "warmth",
+      "intelligibility",
+      "presence",
+      "fit_as_voice_of_janus"
+    ]
+  },
+  "control": {
+    "model_required_locally": "The-Voice-of-Janus/models/v5_5_ru.pt",
+    "automatic_model_download": false,
+    "automatic_playback": false,
+    "automatic_bluetooth": false,
+    "firmware_flash": false,
+    "automatic_physical_handoff": false,
+    "authority_delta": 0,
+    "mass_effect_budget_delta": 0
+  },
+  "truth_boundary": {
+    "code_and_contracts_committed": true,
+    "exact_head_ci_confirmed_for_spiral": false,
+    "local_neural_model_presence_established": false,
+    "aidar_audio_rendered": false,
+    "eugene_audio_rendered": false,
+    "voice_face_selected": false,
+    "measured_historical_pyramid_ir_used": false,
+    "exact_historical_pyramid_sound_established": false
+  },
+  "next_gate": "EXACT_HEAD_CI_THEN_LOCAL_AIDAR_EUGENE_SPIRAL_RENDER_THEN_HUMAN_LISTENING_SELECTION"
+}

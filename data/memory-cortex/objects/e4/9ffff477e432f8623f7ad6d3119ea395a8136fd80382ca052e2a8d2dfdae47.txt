@@ -1,0 +1,108 @@
+{
+  "artifact_uuid":"JANUS-LINEAR-A-ANCHOR-BENCH-v0.2-EXECUTION-SPEC",
+  "scan_type":"EXTERNAL_DECIPHERMENT_EXECUTION_SPEC",
+  "subject":"Linear A",
+  "status":"READY_FOR_BLIND_CORPUS_EXECUTION",
+  "purpose":"Turn the KU-RO/KI-RO behavioral-anchor idea into a frozen, reproducible machine-search procedure whose outputs can create new Linear A semantic or grammatical candidates without researcher-supplied meanings.",
+  "fixed_anchors":[
+    {"form":"KU-RO","meaning_exposed_to_detector":false,"external_role":"accounting total","anchor_type":"behavioral_arithmetic","status":"frozen_seed"},
+    {"form":"KI-RO","meaning_exposed_to_detector":false,"external_role":"accounting deficit/outstanding contrast","anchor_type":"behavioral_accounting_contrast","status":"frozen_seed"}
+  ],
+  "non_negotiable_blinding":[
+    "candidate gloss hidden",
+    "Unicode names hidden",
+    "Linear B phonetic values hidden for primary run",
+    "JANUS connection labels hidden",
+    "researcher-written interpretations hidden",
+    "language-family labels hidden during candidate generation"
+  ],
+  "execution_units":[
+    {
+      "id":"EA-01",
+      "name":"ACCOUNTING_CONTEXT_GRAPH",
+      "input":"inscriptions containing frozen anchors",
+      "features":["token position","neighbor tokens","numeric fields","document role","repeated formula context","co-occurrence edges"],
+      "exclusion":"no semantic glosses"
+    },
+    {
+      "id":"EA-02",
+      "name":"BEHAVIORAL_OPERATOR_REDISCOVERY",
+      "goal":"Recover the accounting-total relation from numeric structure without exposing the word total.",
+      "required_behavior":"candidate token predicts a quantity equal to the aggregate of associated preceding entries better than matched null",
+      "controls":["numeric permutation","token-position shuffle","frequency-matched random token"]
+    },
+    {
+      "id":"EA-03",
+      "name":"CONTRAST_DISCOVERY",
+      "goal":"Find tokens whose numeric/document behavior is systematically opposite or complementary to the KU-RO anchor.",
+      "features":["signed discrepancy","distance from aggregate","document position","co-occurrence with KU-RO","co-occurrence with quantity classes"],
+      "output":"blind candidate forms"
+    },
+    {
+      "id":"EA-04",
+      "name":"MORPHOLOGICAL_NEIGHBOR_SEARCH",
+      "goal":"Identify recurring prefixes/suffixes or positional variants around the blind candidates.",
+      "controls":["structure-preserving token rewiring","random morphology baseline"]
+    },
+    {
+      "id":"EA-05",
+      "name":"HELD_OUT_PREDICTION",
+      "goal":"Test whether a candidate predicts unseen inscriptions, regions, or document types.",
+      "promotion_requirement":"positive effect remains after holdout and null correction"
+    },
+    {
+      "id":"EA-06",
+      "name":"SEMANTIC_REVEAL_ONLY_AFTER_SCORING",
+      "rule":"Only after blind scoring may known scholarly glosses be revealed for comparison.",
+      "interpretation":"agreement with a scholarly interpretation increases interest but does not itself establish decipherment"
+    }
+  ],
+  "primary_target_outputs":[
+    "new_accounting_anchor_candidates",
+    "new_morphological_role_candidates",
+    "blind_context_clusters",
+    "held_out_predictions",
+    "null_effect_sizes",
+    "Linear_B_prior_ablation_delta",
+    "representation_blinding_delta",
+    "partition_survival_profile"
+  ],
+  "required_null_matrix":[
+    {"name":"NUMERIC_PERMUTATION","preserve":["numeric_distribution","record_count","field_count"],"destroy":"token-to-total relation"},
+    {"name":"POSITION_SHUFFLE","preserve":["token_frequency","token_inventory"],"destroy":"positional relation"},
+    {"name":"COOCCURRENCE_REWIRE","preserve":["degree-like marginals","token frequency"],"destroy":"context edges"},
+    {"name":"REGION_SWAP","preserve":["global corpus marginals"],"destroy":"regional assignment"},
+    {"name":"SCHEMA_MATCHED_SYNTHETIC","preserve":["schema shape","field counts","metadata statistics"],"destroy":"Linear A semantics"}
+  ],
+  "promotion_rules":[
+    {"level":"L0_CANDIDATE","requires":["blind generation"]},
+    {"level":"L1_STRUCTURAL","requires":["matched-null separation","replication in >=2 partitions"]},
+    {"level":"L2_BEHAVIORAL","requires":["external functional constraint","held-out success"]},
+    {"level":"L3_MORPHOLOGICAL","requires":["multiple positional contrasts","controlled variation","held-out replication"]},
+    {"level":"L4_LEXICAL","requires":["multiple attestations","cross-region survival","alternative segmentation defeated"]},
+    {"level":"L5_DECIPHERMENT_CANDIDATE","requires":["independent implementation","broad corpus coverage","competing-language-family tests","all major nulls passed"]}
+  ],
+  "critical_prediction":"A genuinely useful anchor discovered by the machine should remain detectable when the exact English meaning is hidden, should retain predictive power in held-out Linear A, and should weaken under relation-destroying nulls that preserve superficial statistics.",
+  "meta_registry_linkage":{
+    "CONN_LINA_024_001":"STRUCTURAL_INVARIANCE_UNDER_CORPUS_PARTITION",
+    "CONN_LINA_024_002":"FORMULA_VARIANTS_REVEAL_ROLE_WITHOUT_FULL_DECIPHERMENT",
+    "CONN_LINA_026_001":"BEHAVIORAL_ANCHOR_CAN_BREAK_THE_TRANSLATION_CIRCLE",
+    "CONN_2026_08_13_023":"shared relational vocabulary must be blinded",
+    "CONN_2026_08_13_025":"empirical null distribution required"
+  },
+  "external_corpus_requirements":[
+    "use a stable digitized Linear A corpus release",
+    "record exact corpus version and source identifiers",
+    "separate archaeological region/document type before candidate generation",
+    "retain original sign IDs and normalized structural encoding as separate layers",
+    "never replace sign IDs with semantic English labels in the machine input"
+  ],
+  "important_limits":[
+    "A candidate that matches a known scholarly translation is not automatically a decipherment.",
+    "Linear B overlap may be used only in a separately reported ablation/prior condition.",
+    "A coherent AI gloss without held-out predictive support is an OPEN hypothesis.",
+    "Failure to discover a candidate does not imply the candidate meaning is false; it means the frozen method did not establish it."
+  ],
+  "next_execution":"Run EA-01 through EA-06 on the digitized corpus; save raw candidate rankings, null distributions, and blind/held-out receipts before semantic reveal.",
+  "epistemic_status":{"decipherment_achieved":false,"new_anchor_achieved":false,"methodology_frozen":true,"ready_for_execution":true}
+}

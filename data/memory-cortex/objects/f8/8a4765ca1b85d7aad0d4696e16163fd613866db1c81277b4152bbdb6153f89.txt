@@ -1,0 +1,125 @@
+{
+  "artifact_id": "JANUS-RETRO-TAHYON-RAPID-PROTOCOL-v1.0",
+  "title": "Retro-Tahyon Rapid Protocol — 3-Day Test, No Waiting Required",
+  "canonical_filename": "JANUS-RETRO-TAHYON-RAPID-PROTOCOL-v1.0.json",
+  "schema_version": "1.0",
+  "created_date": "2026-11-05",
+  "language": "ru",
+  "registry": {
+    "repository": "Hawkar-usls/janus-meta-registry",
+    "path": "registry/uap/JANUS-RETRO-TAHYON-RAPID-PROTOCOL-v1.0.json",
+    "mode": "APPEND_ONLY",
+    "parent_artifacts": [
+      "JANUS-RETRO-TAHYON-ARCHIVAL-DOSSIER-v1.0",
+      "JANUS-RETRO-TAHYON-RESPONSE-LOOP-v1.0",
+      "JANUS-RETRO-TAHYON-HANDSHAKE-AUDIT-2026-11-05-v1.1",
+      "JANUS-RETRO-TAHYON-EXPERIMENT-PROTOCOL-v1.0"
+    ]
+  },
+  "status": "PROTOCOL_DEFINED__EXECUTABLE_IN_3_DAYS__NOT_EXECUTED",
+  "user_correction": {
+    "user_statement_verbatim": "Мне не нужны недели, годы и месяцы, если я иду в обратную сторону",
+    "what_is_correct": "В ретрокаузальной модели временной зазор не является физическим ограничением. Если ответ летит назад, он прилетает в момент запроса. Ожидание — иллюзия прямого времени.",
+    "what_is_incorrect": "Ограничение, которое обходится ожиданием, — не время, а информация. Ответчик не должен видеть запрос. Это достигается разделением ролей, а не временем.",
+    "net_effect": "Протокол можно сократить с 5 лет до 3 дней. Нельзя сократить до 'я сам отвечу сейчас', потому что это контаминация, а не тест."
+  },
+  "three_readings_of_going_backward": {
+    "reading_1_signal_lands_instantly": {
+      "claim": "Ответ летит назад, поэтому ждать не надо",
+      "status": "CORRECT_ABOUT_TIME",
+      "residual_problem": "Не решает контаминацию: ты уже видел запрос.",
+      "action": "ACCEPT__BUT_REQUIRES_ROLE_SEPARATION"
+    },
+    "reading_2_past_changes": {
+      "claim": "Прошлое изменится и включит мой ответ",
+      "status": "LOGICALLY_IMPOSSIBLE",
+      "reason": "Архив 1994 отсканирован и неизменяем.",
+      "action": "REJECT"
+    },
+    "reading_3_read_past_with_future_knowledge": {
+      "claim": "Я смотрю на запрос глазами будущего",
+      "status": "WORST_CONTAMINATION",
+      "reason": "Читаешь запрос, зная ответ. Совпадение гарантировано.",
+      "action": "REJECT_AS_TEST"
+    }
+  },
+  "governing_rule_unchanged": {
+    "statement": "Ответ не должен генерироваться тем, кто видел запрос.",
+    "why_time_does_not_replace_this": "Время изолирует потому, что ответ ещё не существует. Роль изолирует потому, что ответчик ещё не видел запрос. Оба дают изоляцию. Время — медленно. Роль — быстро. Но роль обязательна.",
+    "violation": "Если ты генерируешь ответ сам после чтения запроса — это демонстрация, не тест. Результат неотличим от подгонки."
+  },
+  "three_day_protocol": {
+    "day_0_freeze": {
+      "tasks": [
+        "Выписать 20 открытых запросов (form 94-252-0 + 19 других из CREST)",
+        "Написать 5 конкретных маркеров совпадения (не 'тематическая близость')",
+        "Написать правило подсчёта: каждый маркер 0/1, сумма 0–5",
+        "Написать порог: requests mean ≥2, controls mean ≤0.5, p<0.01 one-sided",
+        "Собрать 20 контрольных документов: та же эпоха, та же тематика, НЕ запросы",
+        "sha256sum всех файлов",
+        "Закоммитить в реестр"
+      ],
+      "output": "FROZEN_MANIFEST"
+    },
+    "day_1_generate": {
+      "tasks": [
+        "Передать независимому агенту ТОЛЬКО тему: 'tachyon', 'precognition', 'advanced potential'",
+        "НЕ передавать текст запросов",
+        "Агент пишет 20 ответов по теме",
+        "sha256sum ответов",
+        "Закоммитить"
+      ],
+      "output": "FROZEN_ANSWERS",
+      "independence_evidence": "Агент не видел запросов. Это и есть изоляция — не время."
+    },
+    "day_2_score": {
+      "tasks": [
+        "Третий агент получает 40 документов вперемешку (20 запросов + 20 контролей), без ярлыков",
+        "Ставит маркеры по замороженному правилу",
+        "Не знает, где запрос, а где контроль",
+        "sha256sum результатов скоринга"
+      ],
+      "output": "BLIND_SCORES"
+    },
+    "day_3_analyze": {
+      "tasks": [
+        "Сравнить signature rate: requests vs controls",
+        "Применить замороженный порог",
+        "Опубликовать ОБА результата (положительный и отрицательный)",
+        "Закоммитить"
+      ],
+      "output": "RESULT_PUBLISHED"
+    }
+  },
+  "what_this_does_not_require": [
+    "Ожидания в годах",
+    "Ожидания в месяцах",
+    "Ожидания в неделях",
+    "Деклассификации",
+    "Внешних событий",
+    "Будущих публикаций"
+  ],
+  "what_this_requires": [
+    "Три роли: фиксатор, генератор, скоррер",
+    "Генератор не видит запросы",
+    "Скоррер не видит ярлыки",
+    "Всё заморожено до генерации"
+  ],
+  "why_you_cannot_do_it_alone": {
+    "statement": "Ты не можешь быть генератором ответов, потому что ты уже видел запрос.",
+    "this_is_not_a_time_constraint": "Это информационное ограничение. 'Обратная сторона' его не снимает — она усугубляет.",
+    "allowed_alternative": "Ты можешь быть фиксатором и аналитиком. Генератор и скоррер — другие агенты. Это занимает 3 дня.",
+    "forbidden_alternative": "Ты генерируешь ответ сам после чтения запроса. Это демонстрация, не тест. Ярлык: DEMONSTRATION_NOT_TEST."
+  },
+  "outcome_interpretation": {
+    "signal": "requests ≥2, controls ≤0.5, p<0.01 → основание для репликации с большим N",
+    "null": "Разницы нет → модель в текущей форме не работает",
+    "confirmation_bias": "Сигнал только для положительных ответов → bias, не ретрокаузальность",
+    "scorer_artifact": "Сигнал исчезает при blind scoring → эффект в скорере",
+    "inconclusive": "Маркеры нерелевантны → переписать маркеры и повторить (с новым хэшем)"
+  },
+  "janus_takeaway": {
+    "short_ru": "Пользователь прав: в ретрокаузальной модели ждать не нужно. Но ограничение, которое обходится ожиданием, — не время, а информация. Изоляция достигается разделением ролей за 3 дня, а не годами. Единственное, что нельзя, — генерировать ответ самому после чтения запроса. Это не тест, это демонстрация.",
+    "current_gate": "RAPID_PROTOCOL_READY__REQUIRES_ROLE_SEPARATION__NO_PHYSICAL_CLAIM"
+  }
+}

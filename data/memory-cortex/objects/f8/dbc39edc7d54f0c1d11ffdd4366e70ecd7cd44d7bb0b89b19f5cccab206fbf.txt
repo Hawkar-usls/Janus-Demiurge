@@ -1,0 +1,129 @@
+{
+  "artifact_id":"JANUS-TRUMP-R5-B1B1C5B2B2-E3-HUANG-ALLTRIPLES-B0-VACUOUS-SOURCE-AND-CARRIER-AUDIT-2026-09-21-v1.0",
+  "version":"v1.0",
+  "date_local":"2026-09-21",
+  "status":"PASS_SOURCE_VALID_STRESS__UNCOVERED_BY_FROZEN_E2_C1_C9",
+  "gate":"R5_B1B1C5B2B2_E3_FOUR_COLOR_ACTIVE_NONCARRIER_CONNECTED_CORE_STRESS_V1",
+  "authority":{
+    "candidate":"HUANG_ALLTRIPLES_B0_VACUOUS_Hk_V2",
+    "supersedes_for_promotion":"research/R5_B1B1C5B2B2_E3_HUANG_ALLTRIPLES_SOURCE_AND_CARRIER_AUDIT_2026-09-21_v1.0.json",
+    "repair_path":"research/R5_B1B1C5B2B2_E3_HUANG_CANDIDATE_AUTHORITY_REPAIR_2026-09-21_v1.0.json",
+    "checker_blob":"9b67d868affc7d775ff281afa36f03cb9c622225"
+  },
+  "binds":{
+    "E2_theorem_seal_blob":"78630fa8fb925a3f8324f3423d63a7cd43a6ebbc",
+    "E2_source_audit_blob":"129748e8455964407c48fa5c4aa21ea428f65235",
+    "E3_prereg_path":"research/R5_B1B1C5B2B2_E3_FOUR_COLOR_ACTIVE_NONCARRIER_CONNECTED_CORE_STRESS_PREREG_2026-09-21_v1.0.json"
+  },
+  "published_source":{
+    "paper":"Shenwei Huang, Improved Complexity Results on k-Coloring P_t-Free Graphs, European Journal of Combinatorics 51 (2016) 336-346",
+    "doi":"10.1016/j.ejc.2015.06.005",
+    "arxiv":"1304.5808",
+    "imported_only":[
+      "the exact G_{H,I} construction",
+      "the theorem that H P_t-free for t>=6 implies G_{H,I} P_t-free",
+      "H=C7 for the P7-free four-coloring construction"
+    ],
+    "not_imported":"NP-hardness is not used as a carrier lower bound or hardness promotion."
+  },
+  "family":{
+    "parameter":"k>=3",
+    "anchors":["x1","x2","x3"],
+    "optional":"v_i=x_{i+3}, i=1,...,k",
+    "clauses":[
+      "distinguished ordered clause (x2,x1,x3)",
+      "one positive clause for every 3-subset of optional variables",
+      "for v_i, k^2+i copies of positive marker clause (x1,x3,v_i)"
+    ],
+    "underlying_graph":"exact Huang G_{C7,I_k}; no Janus-added graph edge",
+    "size":"Theta(k^3)"
+  },
+  "seed_and_root_canonicalization":{
+    "S":["h1_0","x2","h1_1","h1_6"],
+    "seed_colors":{"h1_0":2,"x2":1,"h1_1":3,"h1_6":4},
+    "seed_proper_connected":true,
+    "outside_complete_to_seed":"none",
+    "root_source_singletons":{"~x2":2,"d2":1},
+    "root_X0":["~x2","d2"],
+    "root_X0_colors":{"~x2":2,"d2":1},
+    "connectivity_after_X0":"PASS",
+    "B0_competing_survivors":"NONE: every Y vertex meeting residual Y0 has the same source list {2,3,4}."
+  },
+  "root_source_state":{
+    "generic_X_D":"source list {1,2}; they see seed colors 3 and 4 from h1_1,h1_6.",
+    "generic_U":"source list {2,3,4}; every U sees seed literal x2=1.",
+    "Y0":"all C-type vertices in core/marker clauses plus distinguished h1_4 that are anticomplete to S; Y0 is stable.",
+    "source_vi":"PASS with unique list {2,3,4} on Y intersect N(Y0).",
+    "exact_after_X0":{
+      "persistent_variable_side":"d1 has A={1,2}",
+      "persistent_clause_U_side":"ordinary U has A={3,4} because X0 vertices ~x2=2,d2=1 are complete to every U",
+      "global_union":"[4]"
+    }
+  },
+  "authorized_forcing":{
+    "choice":"arbitrary F subseteq {v_1,...,v_k}; force positive literal x(v_i)=1 for i in F",
+    "source_delta":[
+      "~v_i becomes the unique source singleton color 2 and is deterministically promoted to X0",
+      "all C-type occurrences of v_i move from residual Y0=[4] to dynamic Y={2,3,4}",
+      "d_i remains live with source list {1,2}",
+      "ordinary U source lists remain {2,3,4}; their exact A remains {3,4} once root X0 is present"
+    ],
+    "no_Z0":true,
+    "connectivity_repair":"not needed; G-X0 stays connected",
+    "B0_provenance":"vacuous in every descendant because Y intersect N(Y0) retains only source list {2,3,4}",
+    "explicit_extension":"for all F: d_i=x_i=1, ~x_i=2; every C-type=2; U positions 1,3,5=3 and position 6=4. This extends seed, root X0, optional forces and optional X0 promotions."
+  },
+  "QALL_profiles":{
+    "connected":"PASS in every descendant",
+    "reason":"live U vertices are complete to all live X/D vertices; every residual C carrier attaches to its literal/D and adjacent U vertices; d_i and the negative literal side remain after optional forcing.",
+    "optional_occurrence_count":"q_i=binom(k-1,2)+k^2+i",
+    "canonical_signature":"for optional d_i, (# residual C-carrier neighbors,# dynamic C-type neighbors)=(q_i,0) if unforced and (0,q_i) if forced",
+    "profile_count":"2^k",
+    "growth":"2^k=2^{Theta(|G_k|^(1/3))}, hence superpolynomial",
+    "new_seed_identity_independence":"signature does not use growing N(v)∩S_new identities or forcing-order history"
+  },
+  "four_color_future_activity":{
+    "C1_exact_failure":"persistent d1 has A={1,2}; persistent ordinary U has A={3,4}; no common palette of size <=3 contains all active exact lists",
+    "R2_color_1":"d1,d3 are permanent nonadjacent vertices colored 1 in the explicit witness",
+    "R2_color_2":"~x1,~x3 are permanent nonadjacent vertices colored 2",
+    "R2_color_3":"U-position-1 vertices in two different non-distinguished clauses are permanent nonadjacent vertices colored 3",
+    "R2_color_4":"U-position-6 vertices in two different non-distinguished clauses are permanent nonadjacent vertices colored 4",
+    "verdict":"ALL_FOUR_COLORS_EXACTLY_FUTURE_QUERY_ACTIVE"
+  },
+  "component_compilation":{
+    "residual_C":"singleton with base list [4]",
+    "C0":"MIN_BAD={[4]}",
+    "C3":"one [4]-selector with the same dynamic neighborhood D_C",
+    "C7_persistence":"after C3, every non-distinguished clause still contains an induced C7, with each residual C-position represented by its selector and each nonresidual C-position represented by the dynamic vertex",
+    "verdict":"APPLIES_EXACTLY_BUT_DOES_NOT_CLOSE_DYNAMIC_CORE"
+  },
+  "dependency_support":{
+    "optional_hyperedges":"one clause support for every 3-subset of optional variables",
+    "primal":"K_k",
+    "treewidth":"k-1",
+    "partition_property":"every nontrivial split of optional variables is crossed by an exact clause support",
+    "meaning":"no disconnected support factorization and no bounded singleton/pair/bounded-running-intersection variable interface under the frozen carriers",
+    "firewall":"not a lower bound against unknown algebraic representations"
+  },
+  "E2_receipt":{
+    "C1":{"status":"FAIL_TO_APPLY","reason":"exact persistent lists {1,2} and {3,4} have union [4]"},
+    "C2":{"status":"FAIL_TO_APPLY","reason":"future-complete Q_ALL remains one connected block"},
+    "C3":{"status":"APPLIES_BUT_DOES_NOT_CLOSE","reason":"singleton components compile to constant selectors while the K_k clause/variable support and 2^k profile injection survive"},
+    "C4":{"status":"FAIL_TO_CLOSE_UNDER_FROZEN_PRECONDITIONS","reason":[
+      "disconnected factorization fails",
+      "optional dependency primal K_k has no singleton/pair separator and running-intersection width grows as k-1",
+      "frozen bicameral bucket-specific carriers are not instantiated merely by graph similarity",
+      "no guarded bounded-output certificate satisfying its explicit guard is established"
+    ]},
+    "C5":{"status":"FAIL_TO_APPLY","reason":"compiled graph contains induced C7; interval graphs are chordal and permutation graphs are perfect"},
+    "C6":{"status":"FAIL_TO_APPLY_MISSING_REQUIRED_SOURCE_DECOMPOSITION","reason":"no source-bound constant mim-width/sim-width theorem plus polynomially supplied decomposition is bound to this family; E2 forbids width optimization/recognition as a substitute","firewall":"no unbounded-width theorem claimed"},
+    "C7":{"status":"FAIL_TO_APPLY","reason":"compiled unresolved core contains induced C7 and is not bipartite"},
+    "C8":{"status":"FAIL_TO_APPLY_NO_FROZEN_SECONDARY_SUPPORT_SEPARATION","reason":"complete 3-uniform optional support has primal K_k, so every nontrivial optional-variable split is crossed by a clause gadget; no frozen secondary exact bounded-interface decomposition is certified","firewall":"unknown new carriers remain possible"},
+    "C9":{"status":"FAIL_TO_APPLY","reason":"induced C7 contains induced P5, so active lifecycle is not certified P5-free"}
+  },
+  "audit_verdict":{
+    "classification":"UNCOVERED_BY_FROZEN_E2_CARRIER_LIST",
+    "maximum_interpretation":"OPEN_NO_KNOWN_POLYNOMIAL_CARRIER",
+    "does_not_mean":["hard","NP-hard","superpolynomial representation lower bound","no polynomial algorithm"]
+  }
+}

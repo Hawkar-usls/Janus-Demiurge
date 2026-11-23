@@ -1,0 +1,82 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-SOURCE-INTAKE-QUARANTINE-SPEC-2026-08-14-v0.1",
+  "timestamp": "2026-08-14T19:16:00+03:00",
+  "version": "v0.1",
+  "node_type": "generic_external_source_intake_quarantine_spec",
+  "status": "FROZEN_BEFORE_VALIDATION",
+  "purpose": "Provide one proof-carrying, non-executing byte-intake gate for future Linear A external source files before source-specific scientific inspection or scoring.",
+  "eligible_future_lanes": [
+    "R3B alternate-editorial source acquisition",
+    "R3C-1F Briakos method/supplement acquisition",
+    "R3C-3 Nepal/Perono paper-exact input acquisition",
+    "R3D Petrolito TEI-EpiDoc byte recovery"
+  ],
+  "supported_input_classes_v0_1": ["RAW_FILE", "ZIP", "TAR", "TAR_GZ", "TGZ", "TAR_BZ2", "TAR_XZ"],
+  "explicitly_not_supported_v0_1": ["RAR", "7Z", "DMG", "ISO", "installer execution", "arbitrary executable unpackers"],
+  "top_level_identity": {
+    "required": ["input_path_basename", "sha256", "bytes", "detected_container_class"],
+    "sha256_is_over_original_input_bytes": true,
+    "original_bytes_mutated": false
+  },
+  "archive_inventory_rules": {
+    "filesystem_extraction": false,
+    "entry_names_may_be_read": true,
+    "entry_metadata_may_be_read": true,
+    "entry_payload_may_be_streamed_only_for_cryptographic_hashing": true,
+    "entry_payload_may_be_semantically_parsed": false,
+    "entry_payload_may_be_executed": false,
+    "entry_sha256_required_when_safely_streamable_within_limits": true,
+    "entry_order_preserved": true,
+    "duplicate_entry_names_preserved_in_ledger": true,
+    "silent_overwrite_or_deduplication": false
+  },
+  "fail_closed_archive_flags": [
+    "absolute path",
+    "parent-directory traversal",
+    "Windows drive or UNC path",
+    "ZIP encrypted entry",
+    "symlink entry",
+    "hardlink entry",
+    "device/special filesystem node",
+    "declared entry size exceeding configured per-entry hashing ceiling",
+    "cumulative declared uncompressed size exceeding configured total ceiling",
+    "suspicious compression ratio above configured ceiling"
+  ],
+  "default_limits": {
+    "max_entry_uncompressed_bytes": 268435456,
+    "max_total_uncompressed_bytes": 2147483648,
+    "max_compression_ratio": 200.0,
+    "limits_are_transport_safety_limits_not_scientific_selection_rules": true,
+    "future_limit_change_requires_new_receipt_or_version_before_retry": true
+  },
+  "code_and_executable_policy": {
+    "code_like_or_executable_extensions_are_flagged_but_not_executed": true,
+    "presence_alone_does_not_make_source_scientifically_invalid": true,
+    "examples": [".exe", ".dll", ".py", ".js", ".sh", ".bat", ".ps1", ".jar"],
+    "static_content_inspection_before_source_specific_receipt": false
+  },
+  "allowed_quarantine_statuses": [
+    "SAFE_RAW_FILE_IDENTITY_COMPLETE_CONTENT_UNINSPECTED",
+    "SAFE_ARCHIVE_INVENTORY_COMPLETE_CONTENT_UNINSPECTED",
+    "QUARANTINE_HOLD_UNSAFE_ARCHIVE_STRUCTURE",
+    "QUARANTINE_HOLD_UNSUPPORTED_CONTAINER",
+    "QUARANTINE_HOLD_HASHING_LIMIT_EXCEEDED",
+    "QUARANTINE_INPUT_MISSING_OR_UNREADABLE"
+  ],
+  "source_specific_admission_firewall": {
+    "quarantine_PASS_is_not_source_provenance_admission": true,
+    "quarantine_PASS_is_not_R3B_admission": true,
+    "quarantine_PASS_is_not_paper_exact_identity": true,
+    "quarantine_PASS_is_not_independent_transcription_replication": true,
+    "next_required_step": "Apply the target lane's already-frozen source/acquisition receipt contract before semantic inspection, adapter design, candidate search, or scientific scoring."
+  },
+  "claim_ceiling": {
+    "generic_byte_intake_only": true,
+    "scientific_content_inspected": false,
+    "code_executed": false,
+    "source_provenance_admitted": false,
+    "R3B_effect": "NONE",
+    "new_anchor": false,
+    "decipherment": false
+  }
+}

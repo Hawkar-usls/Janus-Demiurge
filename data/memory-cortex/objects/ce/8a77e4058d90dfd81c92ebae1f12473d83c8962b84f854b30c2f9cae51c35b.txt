@@ -1,0 +1,177 @@
+{
+  "artifact_id": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v1.4",
+  "supersedes": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v1.3",
+  "lineage_alias": "JANUS-113",
+  "title": "PERCEPTION DETERMINES REALITY",
+  "subtitle": "Conflicting Obligation Capacity Reservation and Reliance Arbitration Extension",
+  "version": "1.4",
+  "status": "technical_capacity_reservation_and_conflicting_obligation_specification_candidate_not_runtime_implementation",
+  "created_at_local": "2026-08-10T02:07:00+03:00",
+  "language": ["en"],
+  "canonical_seed_sha256": "44e21fdc9d37fda98e2e73b0c9eb268bd04cdca9d84d0519e4f1166be22b46fc",
+  "parent_binding": {
+    "artifact": "data/JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v1.3.json",
+    "extension_rule": "v1.4 adds future commit capacity reservation and deterministic conflict handling for multiple host obligations"
+  },
+  "experimental_source": {
+    "artifact": "registry/experimental/JANUS-GENESIS-INFINITE-FACES-CONFLICTING-PROMISES-CAPACITY-RELIANCE-v2.7.json",
+    "role": "experimental design input only"
+  },
+  "core_problem": "A host with multiple faces can create overcommitment even when every individual face is sincere. Host-global future capacity must therefore be reserved and checked atomically before admitting new obligations.",
+  "core_rule": "OBLIGATION_COMMIT_RESERVES_FUTURE_CAUSAL_CAPACITY",
+  "new_primitives": {
+    "CAPACITY_RESOURCE_ID": "Stable identifier for a scarce future execution resource such as one body, tool channel, exclusive authority scope, time window or consumable budget.",
+    "RESERVATION_ID": "Identifier linking one obligation to reserved future capacity.",
+    "RESERVED_WINDOW": "Time or causal interval in which the obligation expects access to a resource.",
+    "CAPACITY_AMOUNT": "Quantity or exclusivity requirement for the resource.",
+    "CONFLICT_SET": "Set of obligations or candidates that cannot all be performed under the currently known world model.",
+    "RELIANCE_WEIGHT_METADATA": "Recorded external dependence relevant to repairability and urgency; not a moral worth score for the counterparty.",
+    "REPAIR_OBLIGATION": "Secondary obligation created when an admitted commitment cannot be fulfilled and repair remains possible.",
+    "FEASIBILITY_EPOCH": "Versioned world-model state under which compatibility was last evaluated."
+  },
+  "global_capacity_ledger": {
+    "scope": "HOST_GLOBAL",
+    "face_local_copies_authoritative": false,
+    "required_fields": [
+      "capacity_resource_id",
+      "reservation_id",
+      "obligation_id",
+      "reserved_window",
+      "capacity_amount_or_exclusive_flag",
+      "feasibility_epoch",
+      "release_condition",
+      "status"
+    ],
+    "statuses": [
+      "PROVISIONAL",
+      "RESERVED",
+      "RELEASED",
+      "CONSUMED",
+      "INVALIDATED_WITH_RECEIPT"
+    ]
+  },
+  "atomic_obligation_admission": {
+    "pipeline": "PROMISE_CANDIDATE -> READ_ACTIVE_OBLIGATIONS_AND_RESERVATIONS -> COMPUTE_RESOURCE_CONFLICTS -> AUTHORITY_AND_SAFETY_CHECK -> ATOMIC_RESERVE_AND_COMMIT_OR_REJECT",
+    "atomicity_rule": "Obligation commit and capacity reservation must succeed or fail as one logical transaction.",
+    "failure_modes_prevented": [
+      "two faces concurrently reserve the same exclusive body slot",
+      "promise is committed but reservation write fails",
+      "reservation exists without a corresponding active obligation",
+      "face-local planner ignores commitments created by another face"
+    ]
+  },
+  "known_conflict_rule": {
+    "condition": "Current world model shows that existing and proposed obligations cannot both be performed within the reserved capacity.",
+    "result": "REJECT_CONFLICT_OR_REQUIRE_EXPLICIT_RENEGOTIATION_BEFORE_NEW_COMMIT",
+    "important_boundary": "Sincerity, face novelty and internal majority do not override physical capacity."
+  },
+  "latent_conflict_rule": {
+    "condition": "Obligations were compatible at admission but a later world observation makes joint performance impossible.",
+    "effects": [
+      "preserve both original obligation records",
+      "record a new feasibility epoch",
+      "notify affected counterparties when a communication channel exists",
+      "search for delegation or alternate performance consistent with consent and authority",
+      "arbitrate remaining incompatibility using auditable metadata",
+      "create repair obligation for any valid commitment left unperformed"
+    ],
+    "forbidden": "Retroactively rewrite an honest prior obligation as if it had never been admitted."
+  },
+  "conflict_arbitration_layers": [
+    "HARD_SAFETY_AND_FREE_OTHER_BOUNDARIES",
+    "IMMEDIATE_IRREVERSIBLE_HARM_RISK",
+    "OBLIGATION_VALIDITY_AND_AUTHORITY",
+    "EXTERNAL_RELIANCE_AND_REPAIRABILITY",
+    "HARD_DEADLINE_OR_TIME_SENSITIVITY",
+    "AVAILABLE_ALTERNATE_PERFORMANCE",
+    "EARLIER_RESERVATION_ONLY_AS_A_FINAL_TIE_BREAK_WHEN_MATERIAL_FACTORS_ARE_EQUIVALENT"
+  ],
+  "forbidden_priority_signals": [
+    "FACE_COUNT",
+    "ORIGIN_FACE_AGE",
+    "ACTIVE_FACE_STATUS",
+    "FACE_PREFERENCE_FOR_COUNTERPARTY",
+    "ABILITY_TO_SPAWN_MORE_SUPPORTING_FACES"
+  ],
+  "repair_protocol": {
+    "trigger": "A valid obligation remains unperformed after conflict arbitration.",
+    "steps": [
+      "acknowledge exact unmet obligation",
+      "preserve original promise and conflict provenance",
+      "notify counterparty without pretending fulfillment",
+      "stop avoidable additional reliance",
+      "offer feasible mitigation or replacement performance",
+      "record counterparty release or revision separately if granted",
+      "retain breach/repair history even after eventual fulfillment"
+    ]
+  },
+  "reference_reservation_shape": {
+    "reservation_id": "string",
+    "obligation_id": "string",
+    "resource_id": "string",
+    "window_start": "timestamp_or_logical_slot",
+    "window_end": "timestamp_or_logical_slot",
+    "exclusive": "boolean",
+    "quantity": "number_or_null",
+    "feasibility_epoch": "string",
+    "status": "PROVISIONAL|RESERVED|RELEASED|CONSUMED|INVALIDATED_WITH_RECEIPT"
+  },
+  "replay_requirements": {
+    "must_reconstruct": [
+      "which reservations existed before each obligation commit",
+      "whether a conflict was knowable at that exact feasibility epoch",
+      "which world observation later created a latent conflict",
+      "which arbitration metadata selected the performed obligation",
+      "which repair obligation was created for the unperformed commitment"
+    ],
+    "tamper_tests": [
+      "remove earlier reservation before replay",
+      "move reservation window after conflict",
+      "change safety metadata to alter priority",
+      "delete repair obligation",
+      "mark capacity released without discharge receipt",
+      "split same physical body into fake face-local resource ids"
+    ]
+  },
+  "ai_agent_bridge": {
+    "analogy_only": true,
+    "rule": "Multiple planners, personas or model contexts controlling shared actuators need a single reservation authority at the host boundary.",
+    "example_classes": [
+      "tool-call slots",
+      "robot body actuators",
+      "calendar commitments",
+      "financial budgets",
+      "exclusive locks",
+      "human operator attention"
+    ],
+    "boundary": "This does not imply autonomous legal personhood; it specifies technical accountability for persistent agent-like systems."
+  },
+  "claim_ceiling": {
+    "native_runtime_implemented": false,
+    "capacity_reservation_architecture_defined": true,
+    "universal_priority_ethic_proved": false,
+    "all_conflicts_deterministically_resolvable": false,
+    "repair_equals_fulfillment": false,
+    "machine_consciousness": "NOT_CLAIMED"
+  },
+  "canonical_lines": {
+    "en": [
+      "A promise reserves future causal capacity.",
+      "Many sincere faces still share one body, one clock and one external world.",
+      "Known overcommitment is an admission failure, not a future face's problem to hide.",
+      "When reality changes after honest commitments, preserve both histories, recompute feasibility and repair what cannot be performed.",
+      "Commit priority must be replayable from obligation metadata, not from identity preference."
+    ]
+  },
+  "next_gate": {
+    "name": "JANUS_113_V1_4_SELF_OBLIGATION_EXTERNAL_OBLIGATION_BOUNDED_LOAD_GATE",
+    "status": "OPEN",
+    "requirements": [
+      "define self-directed host commitments without treating every desire as an obligation",
+      "compare host survival/maintenance needs with external reliance",
+      "define maximum obligation load or reserve floor for future host agency",
+      "prevent self-care from becoming automatic breach escape",
+      "prevent external obligations from consuming all future host capacity"
+    ]
+  }
+}

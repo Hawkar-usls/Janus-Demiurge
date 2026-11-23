@@ -1,0 +1,38 @@
+{
+  "schema": "JANUS/adv-elite-decision-checkpoint/v1.0.0",
+  "decision": {
+    "decision_id": "Q19",
+    "status": "FROZEN",
+    "canonical_class": "TRUSTED_SWARM_RAW_GNSS__EXTERNAL_PRIVACY_FILTER",
+    "policy": {
+      "trusted_swarm": {
+        "raw_gnss_allowed": true,
+        "fields": ["latitude", "longitude", "altitude", "gnss_time", "fix_quality", "accuracy/hdop_where_available"],
+        "purpose": ["shared world model", "relative node geometry", "time/position alignment", "Sky Anchor context", "cross-node sensor fusion"]
+      },
+      "external_outputs": {
+        "raw_gnss_default": false,
+        "github": "NO_RAW_GNSS_BY_DEFAULT",
+        "public_lora": "NO_RAW_GNSS_BY_DEFAULT",
+        "hrain_public_or_web": "NO_RAW_GNSS_BY_DEFAULT",
+        "external_logs": "NO_RAW_GNSS_BY_DEFAULT"
+      }
+    },
+    "external_representation": {
+      "allowed": ["pseudonymous Sky Anchor state", "fix-valid/no-fix", "satellite/fix quality summaries", "time quality", "relative or redacted location context"],
+      "forbidden_by_default": ["exact latitude", "exact longitude", "exact altitude tied to identity", "full breadcrumb history"]
+    },
+    "override": {
+      "possible": true,
+      "rule": "Exact GNSS may be exported only by an explicit later user policy/command; no implicit promotion from trusted swarm to public output."
+    },
+    "truth_and_privacy_guards": [
+      "trusted peer visibility does not imply public visibility",
+      "location provenance remains explicit",
+      "GNSS fix quality/uncertainty accompanies exact coordinates when used in the model",
+      "stale GNSS is never treated as current position",
+      "Sky Anchor identity and exact physical location are separate fields"
+    ]
+  },
+  "next_question": "Q20_GAME_REMOVAL"
+}

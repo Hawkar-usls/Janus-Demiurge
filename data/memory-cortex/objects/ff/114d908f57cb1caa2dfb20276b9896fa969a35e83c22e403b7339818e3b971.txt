@@ -1,0 +1,95 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-R7-0-CROSS-FITTED-FORMULA-SLOT-COMPLETION-SPEC-2026-08-15-v0.1",
+  "version": "v0.1",
+  "node_type": "frozen_cross_fitted_formula_slot_completion_spec",
+  "parent_canonical_target": "v2.24",
+  "objective": "Discover concrete recurrent source-word formula slots whose target identity is predictable on documents excluded from candidate selection, without assigning semantics.",
+  "source": {
+    "repository": "Hawkar-usls/lineara.xyz",
+    "frozen_commit": "43fe7cf1abc8e6bb1ea3228c3a1bd5938709620a",
+    "layer": "reading-spec",
+    "translations_used": false,
+    "external_language_dictionary_used": false,
+    "Notti_readings_used": false,
+    "Linear_B_supervision_used": false
+  },
+  "unit": {
+    "target": "source lexical word mechanically assembled by word_index and represented only by opaque SHA-256 identity until all scoring is complete",
+    "frame": "immediate two-sided internal context LEFT -> [TARGET] -> RIGHT",
+    "lexical_neighbor": "opaque source-word SHA-256 identity",
+    "numeric_neighbor": "typed numeric magnitude bucket FRAC|ONE|2_4|5_9|10PLUS|UNCERTAIN",
+    "boundary_frames_allowed": false,
+    "numeric_only_target_allowed": false
+  },
+  "certainty": {
+    "target_must_be_all_certain": true,
+    "lexical_or_numeric_neighbors_must_be_all_certain": true,
+    "none_reinterpreted_as_certain": false,
+    "doubtful_reinterpreted_as_certain": false
+  },
+  "cross_fitting": {
+    "folds": 5,
+    "unit": "document_id",
+    "operator": "reuse exact JANUS-LINA-R5-0-CV-v0.1 document fold assignment",
+    "candidate_selection_uses_train_only": true,
+    "heldout_fold_never_used_for_candidate_selection": true,
+    "source_labels_revealed_only_after_all_selection_and_scoring": true
+  },
+  "train_candidate_gate": {
+    "minimum_frame_occurrences": 5,
+    "minimum_frame_documents": 3,
+    "minimum_dominant_target_occurrences": 4,
+    "minimum_dominant_target_rate": 0.70,
+    "tie_policy": "reject tied dominant targets",
+    "manual_candidate_addition_forbidden": true,
+    "manual_candidate_removal_forbidden": true,
+    "top_k_truncation": false
+  },
+  "heldout_candidate_gate": {
+    "minimum_selected_folds": 2,
+    "minimum_heldout_occurrences": 5,
+    "minimum_heldout_documents": 3,
+    "minimum_heldout_precision": 0.70,
+    "multiple_testing": "Benjamini-Hochberg",
+    "FDR_q_max": 0.05,
+    "null": "cross-fitted Poisson-binomial upper tail using the selected target's train unigram probability separately for every heldout occurrence in its fold",
+    "required_result": "all thresholds including BH-FDR must pass"
+  },
+  "family_gate": {
+    "formula_slot_candidate_admitted_if_at_least_one_candidate_passes": true,
+    "candidate_level_not_family_level_meaning": true
+  },
+  "postscore_descriptors": {
+    "allowed": [
+      "source target label",
+      "source left/right labels or numeric buckets",
+      "heldout document IDs",
+      "heldout region set",
+      "heldout precision",
+      "heldout target alternatives",
+      "numeric-side profile"
+    ],
+    "descriptors_are_semantics": false
+  },
+  "next_if_positive": "Freeze admitted candidate family unchanged and execute R7-1 full cross-region formula transfer plus R7-2 structure-destroying adversarial null before any probable functional-role statement.",
+  "next_if_negative": "Preserve the negative result and move to preregistered typed/formula-family abstraction without relaxing R7-0 thresholds post hoc.",
+  "claim_ceiling": {
+    "allowed": [
+      "cross-fitted exact formula-slot predictability",
+      "concrete recurrent source-word formula candidate",
+      "candidate-specific contextual constraint"
+    ],
+    "forbidden": [
+      "word meaning",
+      "semantic equivalence",
+      "grammatical label",
+      "commodity/person/transaction assignment",
+      "translation",
+      "phonetic assignment",
+      "language-family identification",
+      "new anchor",
+      "Linear A decipherment",
+      "R3B external replication"
+    ]
+  }
+}

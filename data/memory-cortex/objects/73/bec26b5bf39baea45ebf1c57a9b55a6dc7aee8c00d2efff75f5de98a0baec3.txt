@@ -1,0 +1,80 @@
+{
+  "artifact_id": "JANUS-RAMANUJAN-FULL-UNIT-DISK-CERTIFICATE-2026-08-25-v1.0",
+  "status": "REMOTE_CI_PASS",
+  "mathematical_upgrade": {
+    "old_domain": "|Re(q)|+|Im(q)|<1 (L1 diamond)",
+    "new_domain": "all explicit exact Gaussian-rational q with |q|^2=(Re q)^2+(Im q)^2<1",
+    "exact_squared_modulus": "s=x^2+y^2 in Q",
+    "rational_euclidean_majorant": "rho_AMGM=(1+s)/2",
+    "proof": "(1-sqrt(s))^2>=0 => sqrt(s)<= (1+s)/2; if s<1 then rho_AMGM<1",
+    "selected_majorant": "rho=min(|x|+|y|,(1+s)/2)",
+    "consequence": "the exact complex proof domain now covers the full open Euclidean unit disk for Gaussian-rational inputs without floating or square-root arithmetic"
+  },
+  "closed_negative_control": {
+    "q": ["0.8", "0.3"],
+    "exact_squared_modulus": "73/100",
+    "old_l1_majorant": "11/10",
+    "new_amgm_majorant": "173/200",
+    "old_result": "OUTSIDE_L1_BOUND_DOMAIN",
+    "new_result": "CERTIFIED_ERROR_BOUND"
+  },
+  "general_ramanujan_f_upgrade": {
+    "convergence_gate": "exact |a*b|^2<1 rather than rho_L1(a)*rho_L1(b)<1",
+    "tail_method": "for m=N+1, positive first omitted term <= alpha^m gamma^(m(m-1)/2), ratio <= alpha*gamma^m; negative side uses beta; alpha>=|a|, beta>=|b|, gamma>=|ab|<1",
+    "negative_control": "a=0.8+0.6i, b=0.5-0.4i: old L1 product 1.4*0.9=1.26 rejects, exact ab=0.64-0.02i has |ab|^2=0.4100 and now certifies"
+  },
+  "certified_surface": [
+    "phi",
+    "theta3",
+    "theta4",
+    "psi",
+    "mock_theta_f",
+    "mock_theta_omega",
+    "ramanujan_f",
+    "phi_product",
+    "psi_product",
+    "ramanujan_f_product"
+  ],
+  "implementation": {
+    "path": "Hawkar-usls/Janus-Demiurge/restored/ramanujan_complex_unit_disk_certified.py",
+    "commit": "eecffd035c0678975aab8a87c7dac4965251078b",
+    "test_path": "tests/test_ramanujan_complex_unit_disk_certified.py",
+    "test_commit": "15084178de565aebd829b7ccd816ae15c5e68391",
+    "dispatcher_path": "Hawkar-usls/Janus-Demiurge/restored/ramanujan_proof_first_dispatcher.py",
+    "dispatcher_schema": "janus.ramanujan_proof_first_dispatcher.v6",
+    "dispatcher_commit": "37d1705d7e10c6c8274f8db8143de5cf8b1d98a0",
+    "dispatcher_test_commit": "e5eb73a677d02c657f32e5e471e15a9bece91cb1"
+  },
+  "remote_ci": {
+    "workflow": "Restoration Probation CI",
+    "run_id": 32870396845,
+    "head_sha": "e5eb73a677d02c657f32e5e471e15a9bece91cb1",
+    "result": "PASS_PY311_PY312_PY313"
+  },
+  "still_open": {
+    "complex_theta2": "OPEN: q^(1/4) needs branch-aware certified algebraic/ball arithmetic",
+    "ordinary_python_complex": "EMPIRICAL_ONLY: binary floats are not silently reinterpreted as exact Gaussian rationals",
+    "arbitrary_inexact_complex_inputs": "OPEN: rounding-aware interval/ball enclosure required"
+  },
+  "authority": {
+    "network": false,
+    "filesystem_mutation": false,
+    "scheduler": false,
+    "runtime_admission": false,
+    "mining_or_submit": false,
+    "proof_acceptance": false,
+    "automatic_control": false
+  },
+  "laws_added": [
+    "SQUARED_MODULUS_OF_GAUSSIAN_RATIONAL_IS_EXACT_RATIONAL",
+    "AMGM_RATIONAL_MAJORANT_GE_COMPLEX_MODULUS",
+    "MIN_OF_PROVED_MAJORANTS_REMAINS_A_PROVED_MAJORANT",
+    "EXACT_OPEN_UNIT_DISK_GT_L1_DIAMOND_AS_PROOF_DOMAIN",
+    "FULL_UNIT_DISK_CERTIFICATE_NE_RUNTIME_AUTHORITY"
+  ],
+  "next_frontier": [
+    "branch-aware certified complex theta2",
+    "validated algebraic/ball representation for q^(1/4)",
+    "retain proof-first separation between exact certificates and empirical floating numerics"
+  ]
+}

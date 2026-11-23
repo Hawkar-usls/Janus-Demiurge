@@ -1,0 +1,77 @@
+{
+  "artifact_uuid": "JANUS-RECORD-DRIFT-JOURNAL-GENESIS-v0.1",
+  "journal_id": "JANUS-RECORD-DRIFT-JOURNAL",
+  "entry_id": "GENESIS-0000",
+  "version": "0.1",
+  "observed_at": "2026-08-14T11:20:00+03:00",
+  "status": "GENESIS_NO_PRIOR_COMPARISON",
+  "protocol": {
+    "path": "data/JANUS-RECORD-DRIFT-OBSERVATORY-v0.1.json",
+    "commit": "addecb7959999da351e7a8d2d73bca6f269043b8"
+  },
+  "baseline": {
+    "path": "data/JANUS-RECORD-DRIFT-BASELINE-T0-v0.1.json",
+    "commit": "fc0c80201b731ee51fad2d1e214f5dd3fa442dca"
+  },
+  "previous_entry_identity": null,
+  "previous_entry_verification": "not_applicable_genesis",
+  "results": {
+    "valid_Tn_comparisons": 0,
+    "R0_STABLE": 0,
+    "R1_PRESENTATION_DRIFT": 0,
+    "R2_INTERPRETATION_DRIFT": 0,
+    "R3_DECLARED_SOURCE_REVISION": 0,
+    "R4_UNDECLARED_REMOTE_CONTENT_DRIFT": 0,
+    "R5_LOCAL_COPY_DRIFT": 0,
+    "R6_DISTRIBUTED_DIVERGENCE": 0,
+    "R7_IDENTITY_DRIFT": 0,
+    "R8_CLOCK_OR_TIMEZONE_DRIFT": 0,
+    "R9_JOURNAL_CHAIN_BREAK": 0,
+    "R10_UNEXPLAINED_CONFIRMED_DRIFT": 0
+  },
+  "subjects_registered_at_genesis": [
+    "GIT-IMM-001",
+    "GIT-IMM-002",
+    "GIT-IMM-003",
+    "GIT-LIVE-001",
+    "REG-SELF-001",
+    "RESULT-001",
+    "EXT-STATIC-001",
+    "EXT-STATIC-002",
+    "EXT-LIVE-POOL-001"
+  ],
+  "self_monitoring": {
+    "this_entry_is_not_self_hashed_inside_itself": true,
+    "reason": "A finite record cannot naively contain a final cryptographic hash of its own completed bytes without changing those bytes.",
+    "next_generation_rule": "The next journal entry MUST retrieve this committed genesis entry, record its Git identity/content hash, compare it with the expected committed generation, and classify the result.",
+    "automatic_subject_id_for_next_entry": "JOURNAL-SELF-GENESIS-0000"
+  },
+  "recursive_test_rule": {
+    "enabled": true,
+    "statement": "Every finalized observatory result, baseline, correction, receipt, and journal entry becomes an eligible subject of later drift checks.",
+    "anti_circularity": "Recursive monitoring is provenance evidence only; it is not counted as independent replication of an anomaly."
+  },
+  "journal_invariants": [
+    "history is append-only in logical meaning",
+    "corrections are new records rather than silent replacement",
+    "each non-genesis entry references and verifies the previous committed entry",
+    "the live branch may advance but pinned historical generations are expected to remain stable",
+    "a broken chain is R9 unless explicit repository history explains it"
+  ],
+  "claim_ceiling": {
+    "this_entry_proves_data_drift": false,
+    "this_entry_proves_retrocausality": false,
+    "this_entry_proves_timeline_change": false,
+    "this_entry_establishes_prospective_T0": true
+  },
+  "next_entry_gate": {
+    "minimum": [
+      "at least one later retrieval time T1",
+      "verify this genesis entry itself",
+      "verify immutable Git controls",
+      "check live main and map ordinary changes to commit history",
+      "capture raw SHA-256 for external static controls when possible",
+      "record any newly admitted external live subjects before inspecting them for drift"
+    ]
+  }
+}

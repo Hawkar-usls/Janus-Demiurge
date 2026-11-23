@@ -1,0 +1,176 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1C5B2B1-FORCED-COLOR-CLASS-RETURN-RESULT-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "PASS_ONE_STEP_CLASS_RETURN_WITH_STRICT_PROGRESS__GLOBAL_RECURSION_MULTIPLICITY_OPEN",
+  "gate": "R5_B1B1C5B2B1_FORCED_COLOR_CLASS_RETURN_GATE_V1",
+  "binds": {
+    "prereg_blob": "0a2d91385b8df9e63d46ae8bfc9ab708edf3b022",
+    "B2B0_theorem_seal_blob": "1e27139bc05ec8b44ddab0bfe0c31a004d941b68",
+    "P7_source_transfer_audit_blob": "8b86974af812aeaadb2ecef27a579503cd764933",
+    "B0_result_blob": "727ff69fdcb7532e4bcfbc82c9128a4f806adf94",
+    "C0_theorem_seal_blob": "0dbebe81f52a5b8411199fc44614bf8c17b6dd95",
+    "C2_theorem_seal_blob": "33d6b365728c703c43371b966d9ed26020f12b98",
+    "C3_theorem_seal_blob": "33fd966cd397ddecb173fd10797097b31921b0a5",
+    "finite_checker_blob": "11f027db4d6d999bfdd17947649c6dd2f481d112"
+  },
+  "scope": {
+    "single": "One B2B0-admissible forced-color state P[u<-c], u in U=X union Y, c in A(u).",
+    "pair": "One B2B0-admissible equal-color nonedge state P[u<-c,v<-c], uv nonedge, c in A(u) intersect A(v).",
+    "one_pass_only": true,
+    "recursive_reseed": false
+  },
+  "theorem_bundle": [
+    {
+      "name": "FORCED_SOURCE_LIST_REPARTITION_V1",
+      "statement": "For a B2B0 forced base state, source-list canonicalization can be performed deterministically. Let Zi be the nonfixed vertices with source-list size i under the enlarged seed. Z0 gives immediate UNSAT. Every Z1 has a unique source color; if assigning those colors is not proper against the already fixed set or within Z1, the state is immediate UNSAT. Otherwise move Z1 to X0 and set X=Z2, Y=Z3, Y0=Z4. This restores source axiom (v) while preserving (ii)-(iv); only axiom (i) may fail because X0 grew.",
+      "proof_points": [
+        "Source lists depend on the seed, not on X0, so moving Z1 to X0 creates no new source-list singleton cascade.",
+        "Z4 is exactly the B2B0 canonical residual Y0, so Y0 is unchanged by Z1 promotion.",
+        "Growing X0 only removes vertices from the domain quantified by axiom (iv), hence cannot create a new mixed outside vertex on a residual edge."
+      ]
+    },
+    {
+      "name": "FORCED_VI_PRESERVATION_V1",
+      "statement": "If the input final state satisfies source axiom (vi) with controlling seed color c0, then the canonical forced repartition also satisfies (vi) with the same controlling color c0.",
+      "proof": [
+        "An old X vertex has two distinct old seed colors and seed enlargement cannot reduce that number, so old X cannot become a new 3-list Y.",
+        "An old Y0 vertex has zero old seed colors. One forced vertex or an equal-color pair contributes at most one distinct new seed color, so a hit old-Y0 vertex may become 3-list Y but belongs to a whole removed old Y0 component by B2B0 and therefore has no neighbor in retained Y0.",
+        "Hence every new Y vertex with a retained-Y0 neighbor is an old Y vertex.",
+        "Such an old Y had exactly one old seed color. If it remains a 3-list vertex after forcing, the new seed-color set still has cardinality one and contains the old one, so it is identical to the old singleton set.",
+        "Old axiom (vi) therefore supplies the same controlling color c0."
+      ]
+    },
+    {
+      "name": "P7_FORCED_CONNECTIVITY_REPAIR_V1",
+      "statement": "After deterministic Z1 promotion, any failure of axiom (i) is repairable exactly and constructively using only the sealed P7-free List-3 backend: each connected component C of G minus X0_plus not containing the seed is either independently UNSAT or can be colored, deleted, and stored for reconstruction. Repeating this yields an equivalent state satisfying (i)-(vi).",
+      "proof": [
+        "By axiom (iii), every non-X0 vertex outside residual Y0 has a seed neighbor, so every component of G minus X0_plus disjoint from the seed is contained in residual Y0.",
+        "Before Z1 promotion, B2B0 preserved G minus old X0 connected. Hence every newly separated C has a neighbor x in Z1.",
+        "Under single/equal-color forcing, Z1 can originate only in old X: old Y can lose at most one source-list color from size 3 and old Y0 can gain at most one distinct forced seed color from size 4.",
+        "Thus x was an old dynamic vertex. Since C lies in retained old Y0, old axiom (iv) plus connectedness makes x complete or anticomplete to C; because x has a neighbor in C, x is complete to C.",
+        "Let d be the fixed color of x. Every vertex of C must avoid d. Exact constraints from all fixed X0_plus neighbors produce lists contained in the common three-color palette [4] minus {d}.",
+        "G[C] is induced P7-free, so constructive P7-free List-3 decides the component and provides a witness coloring.",
+        "If UNSAT, the whole forced state is UNSAT. If SAT, C has no nonfixed neighbor outside itself because it is a component of G minus X0_plus; store the witness and delete C.",
+        "At most O(n) such components exist. Deleting only residual components preserves (ii)-(vi) and reconstruction is the stored component colorings."
+      ]
+    },
+    {
+      "name": "B0_SURVIVOR_INHERITANCE_UNDER_FORCING_V1",
+      "statement": "After the forced canonical pass, every 3-list Y vertex adjacent to retained Y0 is an old Y survivor with the same source 3-list. Therefore B0 source-Z capture and survivor/component localization are inherited by restriction.",
+      "proof": [
+        "Old X cannot become 3-list Y.",
+        "Hit old-Y0 vertices that become 3-list Y lie in removed whole components and do not see retained Y0.",
+        "A surviving old Y that remains 3-list retains exactly the same one-color seed mask and therefore the same source 3-list.",
+        "Residual Y0 only shrinks by whole-component deletion.",
+        "Hence every new competing survivor was already an old competing survivor of the same list class, so old O1 provenance remains valid.",
+        "O2 component uniformity follows again from current axiom (iv); coarse source annotations are recomputed at seed size s+1 or s+2 without introducing a new unbounded local coordinate."
+      ]
+    },
+    {
+      "name": "FORCED_COMPONENT_STACK_REENTRY_V1",
+      "statement": "For every nonterminal forced successor after connectivity repair, the sealed C2/C0/C3 component architecture re-instantiates exactly after recomputation.",
+      "proof": [
+        "The repaired state satisfies (i), (iii), (iv) and has a nonempty seed.",
+        "The sealed C2 coupling argument re-applies: if a residual Y0 component had no dynamic complete neighbor, it would be a component of G minus X0 disjoint from the seed, contradicting axiom (i). Thus every remaining residual component has D_C nonempty.",
+        "C0 then recompiles each component message using the new fixed-X0 base lists; every queried nonempty boundary mask leaves at most three colors and is handled by the sealed P7 List-3 backend.",
+        "C2 rebuilds the full dynamic/component quotient with the recomputed complete/anticomplete incidence.",
+        "C3 rebuilds at most six selectors per component and stores new state-aware reconstruction pointers.",
+        "Any B2A component-transition signatures whose inputs changed can likewise be recomputed polynomially from the newly compiled state."
+      ]
+    },
+    {
+      "name": "FORCED_STEP_STRICT_UNFIXED_MEASURE_V1",
+      "statement": "For the authorized one-step successor relation, M(P)=|V(G) minus (S union X0)| is a strict non-regenerating measure. A single force decreases M by at least 1; an equal-color pair force decreases it by at least 2. Source-singleton promotion and connectivity-component deletion can only decrease it further.",
+      "one_step_successor_bound": "From a state on n vertices there are at most 4n R1 force choices and at most 4*binom(n,2) R2 equal-color nonedge choices, hence at most 2n^2+2n=O(n^2) immediate forced successors before source pruning.",
+      "nonregeneration": "The authorized canonical pass never moves a vertex out of S or X0 and never restores a deleted component.",
+      "global_firewall": "Strict depth <= n and polynomial immediate fanout do NOT imply a polynomial total recursion tree. Distinct forced subsets/color assignments may still generate exponentially many states. No global state-count/compression theorem is claimed."
+    }
+  ],
+  "terminal_trichotomy": {
+    "A_TERMINAL": {
+      "cases": [
+        "Z0 nonempty",
+        "unique Z1 assignments are not jointly proper with the current fixed coloring",
+        "a disconnected residual component fails its P7 List-3 repair instance",
+        "any remaining dynamic exact palette is empty under the recomputed fixed set"
+      ],
+      "verdict": "UNSAT with direct or List-3 certificate"
+    },
+    "B_HARD_RETURN_WITH_CERTIFIED_PROGRESS": {
+      "cases": "All nonterminal forced states after the deterministic one-pass canonicalization.",
+      "same_contract": "Source axioms (i)-(vi), B0 survivor provenance/localization, C0 messages, C2 coupled quotient, C3 selector/reconstruction stack are all restored/reinstantiated.",
+      "progress": "M strictly decreases and immediate successor fanout is O(n^2).",
+      "global_recursion": "OPEN"
+    },
+    "C_ESCAPE_FROM_AUTHORIZED_CLASS": {
+      "cases": "NONE REQUIRED by the proved restricted single/equal-color forced route.",
+      "note": "This does not authorize recursion; the remaining obstruction is global successor-state multiplicity, not a one-step class escape."
+    }
+  },
+  "FORCED_STEP_DELTA": {
+    "force_kind": "SINGLE_R1 or EQUAL_COLOR_PAIR_R2",
+    "forced_vertices": "one or two",
+    "forced_color": "the queried admissible color",
+    "seed_size_before_after": "+1 or +2",
+    "removed_Y0_components": "old residual components complete to at least one forced vertex, plus any independently solved connectivity-repair components",
+    "retained_Y0_components": "old residual components anticomplete to every forced vertex and not deleted by connectivity repair",
+    "vertices_whose_source_L_changed": "exactly vertices seeing a forced seed color not already represented among their old seed-neighbor colors",
+    "vertices_whose_exact_A_shrank": "source-list changes plus any additional exclusions created by newly promoted Z1 fixed vertices",
+    "source_list_class_changes": "recomputed deterministically by Z0..Z4",
+    "VI_before_after": "same controlling color on every residual-adjacent Y",
+    "VI_witnesses_if_false": null,
+    "B0_coarse_class_changes": "survivor set only shrinks; source types/signatures are recomputed for the enlarged seed",
+    "component_base_system_changes": "recompute for components touched by new X0 fixed-color neighborhoods",
+    "selector_message_recompilations_needed": "yes where X0 base lists or D_C changed",
+    "C2_assumption_changes": "restored after connectivity repair; every remaining component coupled",
+    "C3_assumption_changes": "selectors rebuilt from recomputed C0/C2 state",
+    "first_escape_invariant_or_null": null,
+    "terminal_backend_or_null": "direct contradiction or P7 List-3 for A_TERMINAL; null for hard return",
+    "candidate_monotone_coordinates_observed": [
+      "M_unfixed = |V minus (S union X0)| strictly decreases",
+      "|S union X0| never decreases on retained vertices",
+      "deleted residual components never return"
+    ]
+  },
+  "complexity": {
+    "canonical_repartition": "polynomial",
+    "connectivity_repair": "at most O(n) constructive P7 List-3 calls on induced residual components",
+    "component_recompilation": "polynomial by sealed C0/C2/C3 lifecycle",
+    "immediate_successor_count": "O(n^2)",
+    "global_recursive_state_count": "OPEN_NOT_BOUNDED"
+  },
+  "gate_verdict": {
+    "B2B0_BASE": "PASS_BY_SEAL",
+    "SOURCE_LIST_REPARTITION_V": "PASS_RESTRICTED_P7_ROUTE",
+    "VI_STATUS": "PASS_PRESERVED",
+    "B0_PROVENANCE": "PASS_BY_INHERITANCE",
+    "C0_COMPONENT_COMPILATION": "PASS_RECOMPILE",
+    "C2_DYNAMIC_COMPONENT_QUOTIENT": "PASS_RECOUPLED",
+    "C3_SELECTOR_RECONSTRUCTION": "PASS_REBUILT",
+    "ONE_STEP_CLASS_RETURN": "PASS",
+    "STRICT_PROGRESS_MEASURE": "PASS",
+    "POLYNOMIAL_IMMEDIATE_SUCCESSORS": "PASS",
+    "POLYNOMIAL_GLOBAL_RECURSION_DAG": "OPEN"
+  },
+  "next_frontier": {
+    "name": "R5_B1B1C5B2B2_FORCED_RESEED_STATE_MULTIPLICITY_GATE_V1",
+    "target": "Determine whether the source-valid forced-successor DAG admits a polynomial canonical quotient/memoization bound, or construct an arbitrary-N source-valid family with superpolynomially many proof-distinct forced states. Do not recurse operationally before this is resolved.",
+    "C5C": "REMAINS_LOCKED because exact R1/R2 decidability still lacks a polynomial global state-count theorem."
+  },
+  "scientific_ceiling": {
+    "B2B1_ONE_STEP_CLASS_RETURN": "PROVED",
+    "R1_ONE_STEP_REDUCTION": "SOURCE_LEGITIMATE",
+    "R2_ONE_STEP_REDUCTION": "SOURCE_LEGITIMATE",
+    "R1_DECIDABILITY": "OPEN_GLOBAL_STATE_MULTIPLICITY",
+    "R2_DECIDABILITY": "OPEN_GLOBAL_STATE_MULTIPLICITY",
+    "GLOBAL_DYNAMIC_CORE_TRANSITION_QUOTIENT": "OPEN",
+    "C5C": "LOCKED",
+    "FULL_L2_REPAIR": "OPEN",
+    "LEMMA11_P7_LIFT": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "stop": true,
+  "return_to_HQ": true
+}

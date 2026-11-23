@@ -1,0 +1,113 @@
+{
+  "schema": "janus.self_writer.real_operational_repair.v1",
+  "record_id": "JANUS_SELF_WRITER_REAL_REPAIR_001",
+  "event_date_utc": "2026-10-31",
+  "status": "INSTALLED_REAL_MAIN_AND_CLOUD_CANARY_PASS__FULL_AUTONOMY_NOT_PROVEN",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "evidence_source": "EXACT_GITHUB_COMMIT_AND_CLOUD_ACTIONS",
+  "defect": {
+    "target": "modules/autonomy_coder/real_operational_consumer.py",
+    "original_git_blob_sha": "7a28b110fef7c7458372ba50c9e5d37224d4c0a0",
+    "original_line": "age = int((clock - _timestamp(latest.get(\"last_observed_at_utc\"))).total_seconds())",
+    "class": "SIGNED_TIME_TRUNCATION_CAUSES_FUTURE_SUBSECOND_FALSE_FRESH",
+    "preregistered_regression": "observed_at = now + 0.5 seconds; old computed age = 0, correct sign = future/stale",
+    "second_boundary": "age 3600.000001 seconds must be stale, not accepted as age 3600",
+    "issue": "https://github.com/Hawkar-usls/janus-meta-registry/issues/386"
+  },
+  "model_proposal": {
+    "model": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+    "architecture": "EXTERNAL_OPEN_WEIGHTS_NOT_NATIVE_JANUS",
+    "revision": "2e1fd397ee46e1388853d2af2c993145b0f1098a",
+    "model_weights_sha256": "c1b9b30e907950516ba3c646bdf570d8084c25a6410a0cdca80cf04b11bc13a8",
+    "actual_run_id": 41181433808,
+    "original_bundle_file_sha256": "69ee0581fe9e8e41f14a83e14dc9eec67f94a31e1e3e6935a780ea8c8e17f604",
+    "original_rejected_evaluation_file_sha256": "1d465ca12ef2738160dce01bf6e6dfd5fe1a1eaab312b45d799018327ff5a450",
+    "raw_source_admitted": false,
+    "original_status": "HOLD_NO_VALID_MODEL_REPAIR",
+    "raw_variants": [
+      {
+        "index": 0,
+        "source_sha256": "2c30fc76a3fe71c105b00579043e01851ac24e608fb2feac9a0da6e349b0d9db",
+        "source": "import math\n\ndef floor_age_us(delta_us):\n    return math.floor(delta_us / 1_000_000)\n",
+        "original_verdict": "REJECTED_BY_NO_IMPORT_AST"
+      },
+      {
+        "index": 1,
+        "source_sha256": "78654cc0b67f730386381f8350e2d11d8b1c6d9c4250d9019883089228d3d843",
+        "source": "import math\n\ndef floor_age_us(delta_us):\n    return math.floor(delta_us / 1e6)\n",
+        "original_verdict": "REJECTED_BY_NO_IMPORT_AST"
+      }
+    ]
+  },
+  "typed_compilation": {
+    "approach": "EXACT_AST_WHITELIST_NO_EXECUTION_OF_RAW_MODEL",
+    "compiler_id": "janus.self_writer.typed_math_floor_to_integer_floor.v1",
+    "compiler_ci_run_id": 41181745142,
+    "source": "def floor_age_us(delta_us):\n    return delta_us // 1000000\n",
+    "source_sha256": "812096e5305073344e3a4e19a46e3f888f42f2d1760ef81ae8ba5fb76c625405",
+    "original_bundle_bound": true,
+    "original_verdict_bound": true,
+    "compiler_receipt_file_sha256": "3ae9888fdd1658e8bc69f06a0c94adff40bd7ee9369439fbb5f652ebfdd8e102",
+    "independent_evaluation_file_sha256": "aa03b4a855213785ad890332b9bede3fc56c6996131ba14241597fefd85ccf23",
+    "independent_variants_passed": 2,
+    "independent_cases_each": 417,
+    "compiler_replay_second_cloud_worker": "PASS",
+    "raw_code_becomes_trusted_directly": false
+  },
+  "installation": {
+    "integration_pr": "https://github.com/Hawkar-usls/janus-meta-registry/pull/394",
+    "merge_commit_sha": "1245c05f0002cce3193e50d8a5edb7f37a6c2d87",
+    "previous_commit_sha": "df024a40683da1dfa746a19338c8c1167c40d1f0",
+    "postmerge_target_git_blob_sha": "c787f96523442cf314f2327bf57af658a06e1a47",
+    "original_source_removed": true,
+    "exact_signed_integer_microseconds": true,
+    "exact_future_and_ttl_boundary_handling": true,
+    "old_model_is_fresh_runs_networkless": true,
+    "production_auto_import_of_untrusted_code": false,
+    "model_can_modify_main_directly": false,
+    "authority_delta": 0
+  },
+  "independent_canary": {
+    "premarge_consumer_ci_run_id": 41181925683,
+    "premerge_secret_guard_run_id": 41181925796,
+    "production_consumer_ci_run_id": 41181981029,
+    "production_secret_guard_run_id": 41181981061,
+    "regression_cases_status": "8_UNIT_TESTS_PASS",
+    "genuine_last_observed_at_utc": "2026-10-31T07:31:43Z",
+    "postmerge_observed_age_seconds": 964,
+    "source_status": "FRESH_SOURCE_DIAGNOSTIC_ONLY",
+    "external_is_fresh_module_source_sha256": "30a35a12b9c864af6ff066fe30dd94ece681e81fa6e8b95c3c4a43dc3fd9c5a2",
+    "source_writeback": false,
+    "secrets_guard": "PASS",
+    "attestation": "PRE_AND_POST_MERGE_INDEPENDENT_CLOUD_EXECUTION_PASS"
+  },
+  "rollback": {
+    "procedure": "SCOPED_COMPENSATING_GIT_REVERT_ONLY; NO_FORCE_PUSH; HISTORY_PRESERVED",
+    "target_merge_commit": "1245c05f0002cce3193e50d8a5edb7f37a6c2d87",
+    "expected_original_git_blob_sha": "7a28b110fef7c7458372ba50c9e5d37224d4c0a0",
+    "isolated_rehearsal": "PASS_IN_READONLY_INDEPENDENT_GIT_WORKER",
+    "automatic_main_revert_enabled": false,
+    "manual_review_required": true,
+    "rehearsal_run_id": 41182302141,
+    "ephemeral_compensating_commit_sha": "04202359a45b86eaaacf0b2d0fd00bcff9444408",
+    "rehearsal_receipt_file_sha256": "83f4f7ff3797c0257b9751b25cbd5301babe063550099337722a8fc3b68a7442",
+    "rehearsal_artifact_zip_sha256": "a66dcf40f8aa72fb53909c7bab502dce56019c02a30b9a02c5f03e3b814d8477",
+    "production_rollback_executed": false
+  },
+  "limits": {
+    "native_demiurge_authorship_proven": false,
+    "model_authored_raw_source_accepted": false,
+    "broadly_autonomous_self_repair_proven": false,
+    "independent_repair_task_count_proven": 1,
+    "p2_ten_independent_tasks_accepted": false,
+    "full_genesis_162_acceptance": false,
+    "full_autonomy_status": "PARTIAL",
+    "pending": [
+      "rehearse_revert_without_main_write",
+      "generic_source_bound_patch_orchestration",
+      "separate independent test custody",
+      "10 distinct independently verified real repairs",
+      "controlled unattended canaries and post-merge fallback"
+    ]
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "schema":"janus.eye.r4_6.continuous_uncertainty_adversary.contract.v1",
+  "id":"EYE-R4.6-CONTINUOUS-UNCERTAINTY-ADVERSARY-2026-09-02-v1.0",
+  "status":"IMPLEMENTATION_CANDIDATE__CI_REQUIRED",
+  "question":"Which still-admissible continuous likelihood model maximally breaks the current robust witness policy, and can the policy be repaired until the whole declared uncertainty box is certified?",
+  "machine":["ROBUST_POLICY","CONTINUOUS_UNCERTAINTY_BOX","EXACT_EXTREMUM_SEARCH","COUNTERMODEL","R4.4_REPLAN","REPEAT","CERTIFY_OR_FAIL_CLOSED"],
+  "continuous_class_v1":{
+    "name":"INDEPENDENT_BINARY_LIKELIHOOD_BOX",
+    "likelihood_rows":"one independent interval parameter per binary test/cause row; complementary outcome is 1-p",
+    "prior_uncertainty":"optional single binary-cause prior interval",
+    "replan_objective":"R4.4 minimax_expected_cost only",
+    "fixed_policy_requirements":["no repeated test on a root-to-leaf path","fixed test costs","declared calibrated decision tests only"]
+  },
+  "exactness_certificate":{
+    "theorem_label":"MULTI_AFFINE_BOX_EXTREMA_AT_VERTICES",
+    "statement":"For a fixed acyclic policy using each uncertain test at most once per path, policy decision-risk and expected cost are multi-affine in the declared independent binary likelihood parameters (and binary prior parameter when used); therefore maxima over the closed rectangular box are attained at box vertices.",
+    "consequence":"enumerating all 2^d corners is an exact continuous-box extremum certificate for this declared class, not merely a sampled finite approximation",
+    "not_claimed":["general nonlinear uncertainty certification","arbitrary correlated likelihood uncertainty","arbitrary multi-cause prior polytopes","true-world robustness"]
+  },
+  "adversary_objectives":[
+    "maximize generative policy decision-risk = wrong terminal + unresolved terminal + out-of-policy support",
+    "independently maximize expected policy cost when a cost gate is declared"
+  ],
+  "loop":"FIXED_POLICY -> EXACT_CONTINUOUS_ATTACK -> ADD_WORST_CORNER -> R4.4_REPLAN -> REATTACK",
+  "terminal_statuses":[
+    "CONTINUOUS_BOX_CERTIFIED_UNDER_DECLARED_CLASS",
+    "BASELINE_NOT_ROBUSTLY_SOLVABLE",
+    "MODEL_SET_EXPLODES_UNDER_CONTINUOUS_ADVERSARY",
+    "ROBUST_NON_IDENTIFIABLE_AFTER_CONTINUOUS_EXPANSION",
+    "R4_4_REPLAN_DOES_NOT_CONTROL_DECLARED_R4_6_GATE",
+    "UNSUPPORTED_CONTINUOUS_CLASS",
+    "UNKNOWN_RESOURCE_LIMIT"
+  ],
+  "firewalls":[
+    "CONTINUOUS_BOX_CERTIFICATE != TRUE_WORLD_ROBUSTNESS",
+    "UNCERTAINTY_SET != TRUE_WORLD",
+    "MULTI_AFFINE_CERTIFICATE != GENERAL_NONLINEAR_UNCERTAINTY_CERTIFICATE",
+    "NO_BREAKER_IN_BOX != NO_BREAKER_OUTSIDE_BOX",
+    "BASELINE_NON_IDENTIFIABLE != CONTINUOUS_ADVERSARIAL_BREAK",
+    "UNKNOWN_RESOURCE_LIMIT != CONTINUOUS_CERTIFICATION"
+  ],
+  "benchmarks":{
+    "synthetic":"continuous cheap-sensor degradation must force t_gold before certification",
+    "search_proof":"continuous provenance/verifier degradation must force a stronger policy before certification",
+    "palomar":"baseline robust non-identifiability must remain preserved; no invented calibrated likelihoods"
+  },
+  "validation_required":["python compile","10 adversarial unit tests","three frozen replay benchmarks","main-branch JSON receipt commit"],
+  "next_if_green":"EYE-R4.7 may extend the certified class to correlated/polyhedral uncertainty or distributionally robust ambiguity sets without weakening R4.6 firewalls."
+}

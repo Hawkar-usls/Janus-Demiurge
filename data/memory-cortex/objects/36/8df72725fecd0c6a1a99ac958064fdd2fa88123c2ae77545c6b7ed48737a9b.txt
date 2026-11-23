@@ -1,0 +1,218 @@
+{
+  "artifact_uuid": "JANUS-GENESIS-ACETATE-SOURCE-EQUIVALENCE-v0.2",
+  "timestamp": "2026-08-09T08:00:00+03:00",
+  "version": "v0.2",
+  "title": "JANUS Genesis — acetate source equivalence / context test",
+  "observer": "Oleksandr Ahapov / Hawkar",
+  "node_type": "computational_thought_experiment",
+  "status": "SIMULATION_ONLY_NOT_BIOLOGICALLY_VALIDATED",
+  "registry_classification": ["T3", "S1", "R1"],
+  "classification_note": "Self-classified for registry navigation; not an independent biological or clinical validation.",
+  "parent_concept": "data/SKYBU-SKINGPT-CIRCULAR-BIOMANUFACTURING-CONCEPT-v1.0.json",
+  "purpose": "Test whether acetate produced by an engineered SCOBY/acetic-acid-bacteria system should be modeled as intrinsically different from acetate arising after food fermentation, while separating molecular identity from route, matrix, microbiome contact, exposure and provenance.",
+  "repo_binding": {
+    "janus_genesis": {
+      "repository": "https://github.com/Hawkar-usls/Janus_Genesis",
+      "exact_commit": "98699273bc4dfc08d4eda795869b4bcfe1134b72",
+      "role": "authoritative local experiment-state semantics"
+    },
+    "esp32_twai_can": {
+      "repository": "https://github.com/Hawkar-usls/ESP32-TWAI-CAN",
+      "exact_commit": "5781b0644209b8aa26fcb8a50ccc29e8cf67a828",
+      "role": "TWAI/CAN telemetry and provenance separation abstraction",
+      "base_authorship_claimed_by_hawkar": false,
+      "upstream": "https://github.com/handmade0octopus/ESP32-TWAI-CAN"
+    }
+  },
+  "claim_ceiling": [
+    "Genetic modification of a producer does not by itself create a new molecular species of acetate.",
+    "Purified acetate is not claimed to have a special metabolic effect because of GMO provenance.",
+    "Equal molecular identity does not imply equal physiological outcome when route, concentration-time profile, counter-ion, pH, microbial contact, or accompanying matrix differ.",
+    "Unpurified kombucha-like fermentation broth is not equivalent to purified acetate.",
+    "The simulation does not establish safety, efficacy, nutrition, dosage, or clinical equivalence in humans.",
+    "No wet-lab genetic-engineering procedure or human dosing instruction is encoded."
+  ],
+  "canonical_acetate": {
+    "species": "acetate",
+    "formula": "CH3COO-",
+    "charge": -1,
+    "carbon_count": 2,
+    "metabolic_entry": "acetyl-CoA",
+    "source_is_part_of_molecular_identity": false
+  },
+  "experimental_design": {
+    "principle": "Source-blind metabolic comparison first; provenance is carried on a separate channel and must not affect the molecular-equivalence verdict.",
+    "controlled_variables_for_source_isolation": [
+      "acetate molecular species",
+      "normalized exposure",
+      "route",
+      "pH",
+      "counter-ion",
+      "broth-matrix flag",
+      "microbiome-contact flag"
+    ],
+    "separate_variable": "producer provenance / engineered status"
+  },
+  "can_profile": {
+    "bus": "TWAI/CAN",
+    "frame_format": "standard_11_bit",
+    "frames": {
+      "0x310": "ACETATE_CHEMISTRY — concentration-normalized chemistry only",
+      "0x311": "MATRIX_CONTEXT — route, pH, co-metabolite and microbial-context flags",
+      "0x312": "PROVENANCE — origin metadata only",
+      "0x313": "MICROBIOME_CONTEXT",
+      "0x31F": "EXPERIMENT_VERDICT"
+    },
+    "invariance_rule": "The metabolic-equivalence verdict must ignore 0x312 provenance."
+  },
+  "scenarios": [
+    {
+      "id": "A_POST_MEAL_COLONIC",
+      "source": "dietary_fiber_to_colonic_microbiota",
+      "engineered": false,
+      "purified": false,
+      "route": "colon",
+      "microbial_contact": true,
+      "broth_matrix": false,
+      "isotope13c": false,
+      "chemistry_hash": "1e04816c1642cddf654b74aa3440cf0e3ac71dbbcc46ed04857ed855a1a970af",
+      "context_hash": "dfecfe43161eeded8190879ea239f621eb1ff07e3e79aa4420542ea0d67a7b0a"
+    },
+    {
+      "id": "B_ENGINEERED_PURIFIED_MATCHED",
+      "source": "engineered_acetic_acid_bacteria_purified",
+      "engineered": true,
+      "purified": true,
+      "route": "colon",
+      "microbial_contact": true,
+      "broth_matrix": false,
+      "isotope13c": false,
+      "chemistry_hash": "1e04816c1642cddf654b74aa3440cf0e3ac71dbbcc46ed04857ed855a1a970af",
+      "context_hash": "dfecfe43161eeded8190879ea239f621eb1ff07e3e79aa4420542ea0d67a7b0a"
+    },
+    {
+      "id": "C_ENGINEERED_PURIFIED_PROXIMAL",
+      "source": "engineered_acetic_acid_bacteria_purified",
+      "engineered": true,
+      "purified": true,
+      "route": "proximal_gi",
+      "microbial_contact": false,
+      "broth_matrix": false,
+      "isotope13c": false,
+      "chemistry_hash": "1e04816c1642cddf654b74aa3440cf0e3ac71dbbcc46ed04857ed855a1a970af",
+      "context_hash": "3d76bf681d8d08d0e54c0fa3e354ac4b41e1f54c139ea0c083076c6662cf968f"
+    },
+    {
+      "id": "D_ENGINEERED_UNPURIFIED_BROTH",
+      "source": "engineered_kombucha_like_fermentation_broth",
+      "engineered": true,
+      "purified": false,
+      "route": "oral_broth",
+      "microbial_contact": true,
+      "broth_matrix": true,
+      "isotope13c": false,
+      "chemistry_hash": "1e04816c1642cddf654b74aa3440cf0e3ac71dbbcc46ed04857ed855a1a970af",
+      "context_hash": "129afe5edb642a67fdd19a71963b130cc61d152b5be7a8d851d94523b3ab3f00"
+    },
+    {
+      "id": "E_ENGINEERED_PURIFIED_13C_TRACE",
+      "source": "engineered_acetic_acid_bacteria_purified_isotope_trace",
+      "engineered": true,
+      "purified": true,
+      "route": "colon",
+      "microbial_contact": true,
+      "broth_matrix": false,
+      "isotope13c": true,
+      "chemistry_hash": "1e04816c1642cddf654b74aa3440cf0e3ac71dbbcc46ed04857ed855a1a970af",
+      "context_hash": "dfecfe43161eeded8190879ea239f621eb1ff07e3e79aa4420542ea0d67a7b0a"
+    }
+  ],
+  "pairwise_results": [
+    {
+      "left": "A_POST_MEAL_COLONIC",
+      "right": "B_ENGINEERED_PURIFIED_MATCHED",
+      "chemistry_equal": true,
+      "context_equal": true,
+      "provenance_equal": false,
+      "verdict": "SOURCE_ONLY_DIFFERENCE__METABOLIC_EQUIVALENCE_IN_MODEL"
+    },
+    {
+      "left": "A_POST_MEAL_COLONIC",
+      "right": "C_ENGINEERED_PURIFIED_PROXIMAL",
+      "chemistry_equal": true,
+      "context_equal": false,
+      "provenance_equal": false,
+      "verdict": "SAME_ACETATE__CONTEXT_DIFFERENT__EFFECTS_MAY_DIFFER"
+    },
+    {
+      "left": "A_POST_MEAL_COLONIC",
+      "right": "D_ENGINEERED_UNPURIFIED_BROTH",
+      "chemistry_equal": true,
+      "context_equal": false,
+      "provenance_equal": false,
+      "verdict": "SAME_ACETATE__CONTEXT_DIFFERENT__EFFECTS_MAY_DIFFER"
+    },
+    {
+      "left": "A_POST_MEAL_COLONIC",
+      "right": "E_ENGINEERED_PURIFIED_13C_TRACE",
+      "chemistry_equal": true,
+      "context_equal": true,
+      "provenance_equal": false,
+      "verdict": "SOURCE_ONLY_DIFFERENCE__METABOLIC_EQUIVALENCE_IN_MODEL"
+    }
+  ],
+  "test_run": {
+    "tests_run": 8,
+    "failures": 0,
+    "errors": 0,
+    "successful": true,
+    "standalone_verifier_tests_run": 3,
+    "standalone_verifier_exit_code": 0
+  },
+  "interpretation": {
+    "primary_result": "Within the source-blind model, matched purified acetate cannot be distinguished metabolically by producer provenance alone; differences arise when route, matrix, microbial contact, pH/counter-ion context, or an explicit analytical lineage marker differs.",
+    "gm_producer_not_equal_gm_molecule": true,
+    "same_molecule_not_equal_same_physiological_event": true,
+    "unpurified_broth_requires_separate_safety_and_composition_evaluation": true,
+    "isotope_lineage_can_be_detectable_without_creating_a_different_base_acetate_species": true
+  },
+  "evidence_constraints": {
+    "colonic_acetate_systemic_availability_reference": {
+      "mean_fraction": 0.36,
+      "sd_fraction": 0.21,
+      "boundary": "Stable-isotope study value recorded as evidence metadata, not a universal physiological constant."
+    },
+    "colonic_cross_feeding": "Reference stable-isotope work supports microbiota-dependent conversion/cross-feeding involving acetate; route therefore matters independently of molecular provenance.",
+    "kombucha_matrix": "A kombucha-like fermentation matrix can contain multiple organic acids, residual ethanol, polyphenols, microbes and other metabolites; it must not be treated as acetate-only."
+  },
+  "evidence_basis": [
+    {
+      "claim_supported": "Human tissues can take up and oxidize acetate.",
+      "identifier": "PMID: 9611145"
+    },
+    {
+      "claim_supported": "Colonic acetate has route-dependent systemic availability and participates in microbiota cross-feeding.",
+      "identifier": "PMCID: PMC5233652"
+    },
+    {
+      "claim_supported": "Metabolic engineering of acetic-acid bacteria can alter acetic-acid production performance without implying a novel acetate molecular species.",
+      "identifier": "PMID: 33174682"
+    }
+  ],
+  "source_artifact_integrity": {
+    "full_generated_file_name": "JANUS_GENESIS_ACETATE_SOURCE_EQUIVALENCE_v0.2.json",
+    "full_generated_file_sha256": "06596d8be09dd0678667b5a334eea54f53f6d98ca09da5be788a8896eabc90c2",
+    "embedded_content_sha256": "ec5401e32a959b5513031a84b9e73b50d28ffba5311bd289117b4d5c3aace0a0",
+    "registry_record_is_compact_summary": true
+  },
+  "next_gate": "Replace binary matched/unmatched context flags with literature-bounded pharmacokinetic and fermentation-composition distributions, then test whether any residual source effect remains after chemistry, route, exposure and matrix are explicitly controlled.",
+  "interpretation_rules": [
+    "GM_PRODUCER != NEW_ACETATE_SPECIES",
+    "MOLECULAR_EQUIVALENCE != CLINICAL_EQUIVALENCE",
+    "ROUTE_MATTERS",
+    "MATRIX_MATTERS",
+    "PROVENANCE_METADATA != METABOLIC_PROPERTY",
+    "SIMULATION_PASS != BIOLOGICAL_PASS",
+    "HYPOTHESIS != RESULT"
+  ]
+}

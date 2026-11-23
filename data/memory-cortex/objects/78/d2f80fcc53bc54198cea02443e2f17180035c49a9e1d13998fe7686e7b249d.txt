@@ -1,0 +1,140 @@
+{
+  "schema": "janus.research.public_photodiode_retrospective.v1",
+  "record_id": "LIGHT-008-OPEN-PHOTODIODE-RETROSPECTIVE-CHECK-2026-11-09",
+  "recorded_utc_date": "2026-11-09",
+  "status": "ACTUAL_THIRD_PARTY_PHOTODIODE_DATA_ANALYZED_RETROSPECTIVELY_NO_CAUSAL_PRECOMMIT",
+  "scientific_class": "POSTHOC_EXPLORATORY_EXTERNAL_OBSERVATIONAL_EVIDENCE_NOT_LIGHT008_PHYSICAL_PROTOCOL",
+  "purpose": "Test the feasibility of mathematical signal/noise analysis on openly published physical photodiode recordings, without falsely treating legacy records as prospective results of JANUS LIGHT-008.",
+  "source": {
+    "repo": "KonstantinosStamatakos/neuromorphic-vision-sensor",
+    "pinned_commit": "788b297955847d29ab128e7d1b486dd82282995e",
+    "source_description": "ESP32 two-pixel event vision sensor; photodiodes and LM324 analog signal conditioning; three separate publicly described tests: no-light, full-light and alternating motion.",
+    "source_url": "https://github.com/KonstantinosStamatakos/neuromorphic-vision-sensor/tree/788b297955847d29ab128e7d1b486dd82282995e",
+    "independent_origin": true,
+    "project_license_statement": "No repository license detected at time of audit. No third-party raw data are reproduced in this artifact; only source links and numeric summaries are retained.",
+    "raw_file_references": [
+      {
+        "condition": "no-light",
+        "path": "results/no-light/no light.csv",
+        "git_blob_sha": "1cf254d0183bfe7b7a6bdd006a354997f59c6044",
+        "n_rows": 33
+      },
+      {
+        "condition": "full-light",
+        "path": "results/full-light/full light.csv",
+        "git_blob_sha": "4fc0da71a0d73009a2621968e9ca4acd3db216fb",
+        "n_rows": 33
+      },
+      {
+        "condition": "changing-directions",
+        "path": "results/changing-directions/data.csv",
+        "git_blob_sha": "2169c199dfc4e2d9747d073758f320fc1109667c",
+        "n_rows": 33
+      }
+    ],
+    "column_names": [
+      "t_ms",
+      "VA",
+      "VB",
+      "spA_s",
+      "spB_s",
+      "dir"
+    ],
+    "source_units": "t_ms: relative logged milliseconds, VA/VB: analog channel voltage; spA_s and spB_s: event-rate fields. Not photon time-tag records."
+  },
+  "methods": {
+    "parse": "Read all numeric rows in each pinned CSV; preserve original ordering, do not filter rows or treat conditions as paired randomized trials.",
+    "summary": "Arithmetic sample mean and sample standard deviation (ddof=1) for channel A and B, plus mean and sample SD of adjacent t_ms differences.",
+    "contrast": "Full-light mean minus no-light mean per channel. Physical sensor output contrast is observational, not a controlled effect-size estimate with independent replication.",
+    "forecast_demonstration": "Within EACH separate condition, use first 16 points to estimate a constant training-mean predictor for VA, then score last 17 against constant train-mean and one-step persistence (previous observed VA). Both are simplistic baselines; not a fitted JANUS Ocean model.",
+    "errors": "Mean absolute error in raw volts on each 17-row holdout, calculated without removing samples.",
+    "no_external_timestamp_attestation": true,
+    "no_preexisting_preregistered_evaluation_on_this_dataset": true,
+    "no_retraining_or_hyperparameter_search_after_test": "Baseline formulas were chosen for this retrospective feasibility calculation, not before original public collection."
+  },
+  "measurements": {
+    "no-light": {
+      "rows": 33,
+      "duration_seconds": 31.997,
+      "timestep_ms_mean": 999.90625,
+      "timestep_ms_sample_sd": 2.5823142284,
+      "A_mean_V": 1.7323636364,
+      "A_sd_V": 0.0014962073,
+      "B_mean_V": 1.7323030303,
+      "B_sd_V": 0.0011035411,
+      "forecast_holdout_rows": 17,
+      "train_rows": 16,
+      "train_mean_baseline_MAE_V": 0.0006838235,
+      "persistence_baseline_MAE_V": 0.0012352941
+    },
+    "full-light": {
+      "rows": 33,
+      "duration_seconds": 32.004,
+      "timestep_ms_mean": 1000.125,
+      "timestep_ms_sample_sd": 2.3520752676,
+      "A_mean_V": 2.0126363636,
+      "A_sd_V": 0.0012946569,
+      "B_mean_V": 2.011969697,
+      "B_sd_V": 0.0011035411,
+      "forecast_holdout_rows": 17,
+      "train_rows": 16,
+      "train_mean_baseline_MAE_V": 0.0010808824,
+      "persistence_baseline_MAE_V": 0.0011764706
+    },
+    "changing-directions": {
+      "rows": 33,
+      "duration_seconds": 31.997,
+      "timestep_ms_mean": 999.90625,
+      "timestep_ms_sample_sd": 2.5823142284,
+      "A_mean_V": 1.7903636364,
+      "A_sd_V": 0.1086289033,
+      "B_mean_V": 1.7892121212,
+      "B_sd_V": 0.1095170528,
+      "labels": {
+        "L": 11,
+        "R": 11,
+        "none": 11
+      }
+    }
+  },
+  "computed_contrasts": {
+    "A_full_minus_dark_V": 0.2802727273,
+    "B_full_minus_dark_V": 0.2796666667,
+    "A_full_vs_dark_relative_percent_of_dark_mean": 16.1786314,
+    "B_full_vs_dark_relative_percent_of_dark_mean": 16.1442116,
+    "note": "Different physical recording sessions; the contrast may include uncontrolled offsets and conditions."
+  },
+  "conclusions": [
+    "Public raw recordings suffice for concrete numerical photodiode signal/noise and baseline-forecast calculations without running the user's own ESP32.",
+    "Two independent analog channels show a roughly 0.28-V mean shift between full-light and no-light published sessions.",
+    "Both stationary conditions have small ~1–1.5 mV sample standard deviation, but one-second sample rate cannot resolve small photon flight times.",
+    "Across the two separate, short 17-point holdouts, a constant training mean has lower MAE than naive one-step persistence; no superior JANUS model has yet been evaluated.",
+    "These data do not match the preregistered LIGHT-008 requirement of 256 calibration and 256 test observations at 50-ms bins with an independently witnessed precommit.",
+    "No independently randomized later free-choice intervention or photon time-tagging is recorded here. No retrocausality inference is supported."
+  ],
+  "cross_links": {
+    "historical_LIGHT": "data/proofs/stochastic_light_interface_model.json",
+    "historical_BANANA": "data/proofs/banana_dna_decoder.json",
+    "LIGHT007_controls": "data/experiments/LIGHT-TO-JANUS-OCEAN-CAUSALITY-CONTROLS-007-2026-11-09.json",
+    "LIGHT008_original_frozen": "data/experiments/JANUS-LIGHT-PHYSICAL-008-PREREG-2026-11-09-v1.json",
+    "QPU005_original": "data/experiments/JANUS-RETRO-PHYSICAL-005-PREREG-2026-11-09-v1.json"
+  },
+  "future_gate": {
+    "proposal": "LIGHT-009-PUBLIC-DATA-CROSSDATASET",
+    "conditions": "Choose and pin a larger open physical time-series dataset before examining its test labels; fix cutoff, model and baselines; log independent dataset acquisition date and checksum; report gains AND losses. Retrospective publication cannot be a prospective time experiment.",
+    "possible_sources": [
+      "https://data.mendeley.com/datasets/ghjkcjn4dj/1",
+      "https://pureportal.strath.ac.uk/en/datasets/data-for-photometric-stereo-imaging-using-sinusoidal-modulation-a/",
+      "https://zenodo.org/records/10536058"
+    ]
+  },
+  "safety": {
+    "original_light008_prereg_modified": false,
+    "original_qpu005_modified": false,
+    "actual_QPU_shots": 0,
+    "user_ESP32_operated": false,
+    "third_party_measurements_rebranded_as_own": false,
+    "external_assessment_approved": false,
+    "causal_anomaly_claim": false
+  }
+}

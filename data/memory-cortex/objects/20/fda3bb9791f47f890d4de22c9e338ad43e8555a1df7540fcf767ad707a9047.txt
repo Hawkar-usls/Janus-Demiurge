@@ -1,0 +1,139 @@
+{
+  "artifact_id": "JANUS-TRUMP-EXACT-CHANNEL-DECOMPOSITION-POLYNOMIAL-DISCOVERY-THEOREM-2026-09-20-v1.0",
+  "version": "v1.0",
+  "date": "2026-09-20",
+  "status": "PASS_EXACT_CHANNEL_DECOMPOSITION_POLYNOMIAL_DISCOVERY",
+  "scope": "PURE_GRAPH_RECOGNITION_THEOREM__NO_C11_NO_P7_NO_OCTAHEDRON_ASSUMPTIONS",
+  "parent": {
+    "path": "research/TRUMP_EXACT_CHANNEL_DECOMPOSITION_APPLICATION_CONTRACT_2026-09-20_v1.0.json",
+    "commit": "66837289255661c9b8ad61a819b01a47d88f6c11",
+    "blob": "d50bfa25e6c90a9d6e3885be60b68c542d9440c1"
+  },
+  "target_object": {
+    "graph": "Finite undirected simple graph G.",
+    "decomposition": "V(G)=L disjoint_union R disjoint_union {z}.",
+    "anchors": "c in L, f in R, with cz and zf edges.",
+    "ports": "P_L subseteq L\\{c}, P_R subseteq R\\{f}.",
+    "exact_channel_interface": [
+      "c is complete to P_L.",
+      "f is complete to P_R.",
+      "All L-R edges are exactly X=E(L,R), with X subseteq P_L x P_R.",
+      "No restriction is imposed on internal edges of G[L], G[R], or on additional z-L/z-R adjacencies."
+    ]
+  },
+  "canonical_ports_lemma": {
+    "statement": "Whenever an exact-channel decomposition exists for a fixed partition L/R, there is one with canonical minimal ports equal to the endpoints of crossing edges.",
+    "formulae": {
+      "P_L_star": "{u in L : N(u) intersect R is nonempty}",
+      "P_R_star": "{v in R : N(v) intersect L is nonempty}",
+      "X": "E(L,R)"
+    },
+    "reason": "Any non-boundary port can be deleted from P_L or P_R without changing X or violating completeness. Thus ports never need to be guessed during recognition."
+  },
+  "fixed_triple_2SAT_reduction": {
+    "fixed_data": "Choose distinct ordered vertices (z,c,f) with cz,zf in E(G).",
+    "variables": "For every v != z, Boolean x_v; x_v=0 means v in L and x_v=1 means v in R.",
+    "unary_forces": [
+      "x_c=0.",
+      "x_f=1.",
+      "For every v in N(c)\\{z}, force x_v=0.",
+      "For every v in N(f)\\{z}, force x_v=1."
+    ],
+    "edge_clauses": {
+      "convention": "For every undirected edge uv in E(G-z), process the ordered endpoint names u,v exactly as stored; both crossing orientations are constrained.",
+      "forbid_LR": {
+        "bad_condition": "If cu is not an edge OR fv is not an edge, the assignment x_u=0,x_v=1 is forbidden.",
+        "clause": "(x_u OR NOT x_v)."
+      },
+      "forbid_RL": {
+        "bad_condition": "If fu is not an edge OR cv is not an edge, the assignment x_u=1,x_v=0 is forbidden.",
+        "clause": "(NOT x_u OR x_v)."
+      }
+    },
+    "size": "O(n+m) variables/clauses for a fixed triple after adjacency lookup preprocessing."
+  },
+  "exact_equivalence": {
+    "forward_2SAT_to_decomposition": [
+      "Let a satisfying assignment define L={v!=z:x_v=0} and R={v!=z:x_v=1}. Unary clauses put c in L and f in R.",
+      "The forced neighborhoods ensure no edge from c crosses to R and no edge from f crosses to L, so c is not a canonical left port and f is not a canonical right port.",
+      "Define canonical P_L and P_R as endpoints of crossing edges and X=E(L,R).",
+      "For every crossing edge uv with u in L,v in R, the relevant forbidden-orientation clause can be satisfied only if cu and fv are both edges.",
+      "Hence c is complete to every canonical left port and f is complete to every canonical right port.",
+      "By construction every L-R edge is exactly an edge of X subseteq P_L x P_R.",
+      "Therefore the assignment yields a valid exact-channel decomposition."
+    ],
+    "reverse_decomposition_to_2SAT": [
+      "Take any valid exact-channel decomposition for the fixed triple and assign x_v by its L/R side.",
+      "Because c is not in P_L and f is not in P_R, no neighbor of c other than z lies in R and no neighbor of f other than z lies in L; all unary forces hold.",
+      "For any edge uv in G-z crossing from L to R, exact-channel validity gives cu and fv; therefore the LR orientation is never forbidden.",
+      "The symmetric argument handles an R-to-L crossing orientation.",
+      "Edges whose endpoints lie on the same side satisfy both binary clauses automatically.",
+      "Thus every valid decomposition yields a satisfying 2-SAT assignment."
+    ],
+    "theorem": "For fixed distinct (z,c,f) with cz,zf in E(G), an exact-channel decomposition exists iff the constructed 2-SAT instance is satisfiable."
+  },
+  "global_discovery_algorithm": {
+    "algorithm": [
+      "Enumerate every ordered triple of distinct vertices (z,c,f) with cz and zf edges.",
+      "Build the fixed-triple 2-SAT instance.",
+      "Solve it by SCC/implication-graph 2-SAT.",
+      "On the first SAT instance, output (z,c,f), the L/R assignment, canonical P_L/P_R, and X=E(L,R).",
+      "If every eligible triple is UNSAT, report that no exact-channel decomposition exists."
+    ],
+    "coarse_complexity": "O(n^3(n+m)).",
+    "refined_triple_count": "Only triples with c,f in N(z), c!=f are eligible; their number is sum_z d(z)(d(z)-1) <= 2m*Delta <= O(nm).",
+    "refined_complexity": "O(nm(n+m)) with O(1) adjacency queries after polynomial preprocessing; the coarse O(n^3(n+m)) bound is always sufficient.",
+    "graph_only": true,
+    "extension_oracle": false
+  },
+  "proof_carrying_output": {
+    "positive_certificate": [
+      "ordered triple (z,c,f)",
+      "satisfying 2-SAT assignment",
+      "L/R partition",
+      "canonical P_L and P_R",
+      "X=E(L,R)",
+      "direct verification of cz,zf",
+      "direct verification c complete to P_L",
+      "direct verification f complete to P_R",
+      "direct verification c notin P_L and f notin P_R",
+      "direct verification all crossing edges are exactly X subseteq P_L x P_R"
+    ],
+    "negative_certificate": [
+      "For every eligible ordered triple (z,c,f), a 2-SAT UNSAT certificate.",
+      "A standard proof-carrying UNSAT witness is a variable x_v such that x_v and NOT x_v lie in the same implication-graph SCC, optionally with explicit implication paths both ways."
+    ],
+    "verification_complexity": "Polynomial in the graph size and total certificate size."
+  },
+  "validation": {
+    "exhaustive_small_graph_sanity_check": {
+      "graph_orders": [
+        4,
+        5
+      ],
+      "method": "Enumerated every simple graph, every ordered distinct triple (z,c,f), and every direct L/R partition; compared direct-definition existence with the 2-SAT criterion.",
+      "fixed_triple_instances_checked": 62976,
+      "mismatches": 0,
+      "authority": "SANITY_CHECK_ONLY; theorem authority is the analytic iff proof above."
+    }
+  },
+  "application_firewall": {
+    "pure_interface_discovery": "YES_GRAPH_ONLY_POLYNOMIAL",
+    "future_semantic_restrictions": "NOT_AUTOMATICALLY_COVERED",
+    "rule": "Additional C11/P7/source-role restrictions must be separately encoded and analyzed. Graph-only unary filters on candidate triples/vertices preserve polynomiality by candidate filtering, but arbitrary extra semantic constraints may not.",
+    "forbidden_inference": "Do not infer polynomial discovery for a stronger future application contract merely because the pure exact-channel interface is polynomially recognizable."
+  },
+  "contract_consequences": {
+    "DECOMPOSITION_DISCOVERABLE": "YES_GRAPH_ONLY_POLYNOMIAL",
+    "LOCAL_FORMULA_CERTIFIED": "YES once a decomposition is returned, by the abstract exact-local channel theorem.",
+    "LOCAL_TO_GLOBAL_TRANSFER_CERTIFIED": "Polynomially decidable once a decomposition is returned, by computing nu(X), using the explicit upper cut, and independently computing exact vertex connectivity."
+  },
+  "scientific_ceiling": {
+    "PURE_EXACT_CHANNEL_DISCOVERY": "POLYNOMIAL",
+    "GENERAL_C11_EXACT_CHANNEL_DISCOVERY_WITH_EXTRA_SEMANTICS": "NOT_CLAIMED",
+    "UNIVERSAL_C11_APPLICABILITY": "NOT_CLAIMED",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "stop": true
+}

@@ -1,0 +1,86 @@
+{
+  "artifact_uuid": "JANUS-RECORD-DRIFT-SCHEDULER-LATENCY-AUDIT-2026-08-16",
+  "project": "JANUS Record Drift Observatory",
+  "audit_date": "2026-08-16",
+  "status": "EXPLAINED_OPERATIONAL_TIMING_SIGNAL",
+  "question": "Why did the daily Record Drift journal appear to be missing after the scheduled date/time had already arrived?",
+  "configured_schedule_before_audit": {
+    "cron_utc": "0 5 * * *",
+    "expected_local_europe_zaporozhye": "08:00:00+03:00"
+  },
+  "observations": [
+    {
+      "date": "2026-08-15",
+      "expected_schedule_utc": "2026-08-15T05:00:00Z",
+      "workflow_run_created_at_utc": "2026-08-15T05:18:38Z",
+      "scheduler_materialization_delay_seconds": 1118,
+      "delay_human": "18m38s",
+      "event": "schedule",
+      "conclusion": "success"
+    },
+    {
+      "date": "2026-08-16",
+      "expected_schedule_utc": "2026-08-16T05:00:00Z",
+      "workflow_run_created_at_utc": "2026-08-16T05:21:16Z",
+      "scheduler_materialization_delay_seconds": 1276,
+      "delay_human": "21m16s",
+      "event": "schedule",
+      "conclusion": "success",
+      "runner_log_first_timestamp_utc": "2026-08-16T05:21:20.4434830Z",
+      "runner_allocation_after_run_creation_seconds_approx": 4.44,
+      "observer_actual_start_utc": "2026-08-16T05:21:23.519266Z",
+      "observer_start_after_run_creation_seconds_approx": 7.52
+    }
+  ],
+  "localization": {
+    "delayed_layer": "GITHUB_SCHEDULE_EVENT_MATERIALIZATION",
+    "not_delayed_layer": "RUNNER_ALLOCATION_OR_OBSERVER_EXECUTION",
+    "reasoning": "Most of the ~21 minute delay elapsed before the Actions run object existed. Once the run was created, hosted-runner allocation and observer startup occurred within seconds.",
+    "repeatability": "Two consecutive schedule-triggered observations at minute 00 show delays of 18m38s and 21m16s. This is a small sample and is not treated as a universal distribution."
+  },
+  "platform_context": {
+    "official_github_documentation": "GitHub documents that schedule events may be delayed during high Actions load, that the start of every hour is a high-load period, and recommends scheduling at another minute of the hour to reduce delays.",
+    "incident_claim": "NO_SPECIFIC_PLATFORM_INCIDENT_ESTABLISHED_FOR_2026-08-16",
+    "note": "The successful run itself demonstrates service availability by 05:21 UTC; this audit does not attribute an undocumented outage."
+  },
+  "record_drift_result_2026_08_16": {
+    "instrument_gate_pass": true,
+    "countable_checks": 9,
+    "R0_STABLE": 8,
+    "R3_DECLARED_SOURCE_REVISION": 1,
+    "R9_JOURNAL_CHAIN_BREAK": 0,
+    "R10_UNEXPLAINED_CONFIRMED_DRIFT": 0,
+    "R3_subject": "README.md on moving main",
+    "R3_reason": "Git history and blob identity both show an ordinary declared source revision."
+  },
+  "corrective_action": {
+    "old_cron_utc": "0 5 * * *",
+    "new_cron_utc": "17 5 * * *",
+    "new_expected_local_europe_zaporozhye": "08:17:00+03:00",
+    "runner": "tools/record_drift/full_surface_runner_v0_2_2.py",
+    "new_control": "C28_SCHEDULER_LATENCY",
+    "measurements": [
+      "expected_schedule_utc",
+      "run_created_at_utc",
+      "run_started_at_utc",
+      "observer_start_utc",
+      "scheduler_materialization_delay_seconds",
+      "runner_queue_after_creation_seconds",
+      "observer_start_after_creation_seconds"
+    ],
+    "operational_classes": [
+      "S0_WITHIN_5_MIN",
+      "S1_SCHEDULE_DELAY_5_TO_30_MIN",
+      "S2_SCHEDULE_DELAY_30_TO_120_MIN",
+      "S3_SCHEDULE_DELAY_OVER_120_MIN"
+    ],
+    "boundary": "S classes are operational scheduler timing classes and never substitute for R0-R10 record-drift classifications."
+  },
+  "claim_ceiling": {
+    "record_rewrite_detected": false,
+    "timeline_change_detected": false,
+    "retrocausality_detected": false,
+    "scheduler_delay_observed": true,
+    "scheduler_delay_explained_by_known_platform_behavior": "SUPPORTED_AS_MOST_PLAUSIBLE_CURRENT_EXPLANATION_NOT_PLATFORM_ROOT_CAUSE_PROOF"
+  }
+}

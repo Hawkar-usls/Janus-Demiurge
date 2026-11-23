@@ -1,0 +1,212 @@
+{
+  "schema": "JANUS.genesis_sovereign_face_microcontrol_portable_receipt_durable_session_fresh_keys.v6_5",
+  "artifact_id": "JANUS-GENESIS-SOVEREIGN-FACE-MICROCONTROL-PORTABLE-RECEIPT-DURABLE-SESSION-FRESH-KEYS-v6.5",
+  "title": "JANUS Genesis Sovereign v6.5 — Process-Global Portable Locking, Full Runtime Receipts, Controlled Default CLI, Durable Session Saga, and Fresh Revocable Trust Keys",
+  "created_at_local": "2026-08-14T21:32:00+03:00",
+  "status": "EXPERIMENTAL_AUDIT_CHECKPOINT_WITH_WINDOWS_AND_UBUNTU_DESCENDANT_CI_RECEIPTS",
+  "parent": "registry/experimental/JANUS-GENESIS-SOVEREIGN-FACE-MICROCONTROL-PORTABLE-CLIENT-LEDGER-ATTESTED-ORIGIN-AUTH-BOUND-EVIDENCE-v6.4.json",
+  "audit_issue": "https://github.com/Hawkar-usls/Janus_Genesis/issues/78",
+  "summary": "v6.5 continued the audit by attacking boundaries that v6.4 had not proved: same-process cross-instance locking on Windows, replayable full runtime receipts, active-duplicate reconciliation, default CLI request identity, durable AI-link replacement, registration request binding, provider freshness, key revocation, and cross-platform file durability. Multiple failed descendants were preserved and used to drive narrower corrections until the final v18.7.35 acceptance run passed on both Ubuntu and Windows.",
+  "audit_findings": {
+    "A13_same_process_cross_instance_lock": {
+      "severity": "HIGH",
+      "pre_fix": "PortableProcessLock v1 used one Python RLock per lock object, so the Windows same-process cross-instance claim was not established. The old lifecycle test also placed a Barrier inside the critical section and therefore did not prove the intended exclusion property.",
+      "response": "janus_portable_lock_v2.py uses a process-global canonical-path RLock plus an OS lock. A new deterministic test places synchronization outside the critical section and measures maximum overlap.",
+      "status": "CLOSED_FOR_V2_DESCENDANT_PATH_BY_WINDOWS_AND_UBUNTU_CI"
+    },
+    "A14_legacy_v25_sqlite_lifetime": {
+      "severity": "HIGH",
+      "pre_fix": "Historical SQLiteEffectFenceStore still contains sqlite context-manager patterns that were not migrated by the v29 focused fix.",
+      "response": "v31 introduced a separate portable runtime-request store with explicit connection ownership; legacy v25 was not silently relabeled portable.",
+      "status": "OPEN_FOR_HISTORICAL_V25_PATH"
+    },
+    "A15_ai_link_durable_replace": {
+      "severity": "HIGH",
+      "pre_fix": "Base AI-link JSON replacement used one fixed .tmp path without fsync or directory durability semantics.",
+      "response": "v32 introduced unique same-directory temporary files, temp fsync, replacement, final-file fsync, and POSIX directory fsync. v35 corrected the Windows final-file fsync descriptor contract.",
+      "status": "FOCUSED_DESCENDANT_PATH_VERIFIED_WINDOWS_AND_UBUNTU_WITH_WINDOWS_DIRECTORY_FSYNC_CEILING"
+    },
+    "A16_cross_store_registration": {
+      "severity": "HIGH",
+      "pre_fix": "World registration occurred before session persistence, allowing an invisible world-first partial state after crash.",
+      "response": "v32 writes PENDING_WORLD_REGISTRATION before authoritative world registration; v34 durably binds registration_request_id to one normalized registration before the saga. Retry can reconcile a visible pending state.",
+      "status": "RECOVERABLE_SAGA_VERIFIED_NOT_CROSS_STORE_ATOMIC"
+    },
+    "A17_default_cli_raw_process_action": {
+      "severity": "HIGH",
+      "pre_fix": "play_genesis.py interactive actions and --action called world.process_action directly.",
+      "response": "Default normal process_action entries now route through the v18.7.33 descendant with stable request IDs, full receipts, --request-id, --request-state, and interactive /retry.",
+      "status": "CLOSED_FOR_NORMAL_PROCESS_ACTION_CLI_PATH_BY_WINDOWS_AND_UBUNTU_CI"
+    },
+    "A18_hash_only_settlement": {
+      "severity": "MEDIUM_HIGH",
+      "pre_fix": "Earlier client settlement stored only result_sha256 and therefore could not replay a completed result without re-entering runtime.",
+      "response": "v31 stores canonical full result_json plus result_sha256 and reconstructs WorldResult from the receipt. SETTLED replay does not call the world again.",
+      "status": "CLOSED_FOR_V31_V33_DESCENDANT_PATH"
+    },
+    "A19_provider_freshness_and_replay": {
+      "severity": "HIGH",
+      "pre_fix": "Authorization-bound signed provider evidence had no age, expiry, key lifecycle, or nonce-reuse policy.",
+      "response": "v32 introduced observed_at_tick, expires_at_tick, max-age enforcement, durable key eligibility, revocation, generation, and an idempotent nonce-to-payload binding. v34 corrected the typed outcome implementation bug.",
+      "status": "REFERENCE_CONTRACT_VERIFIED_REAL_PROVIDER_TRUTH_NOT_CLAIMED"
+    },
+    "A20_lineage_key_lifecycle": {
+      "severity": "HIGH",
+      "pre_fix": "A valid historical HMAC key remained indistinguishable from a currently eligible key.",
+      "response": "TrustKeyRegistry records purpose, generation, not-before, not-after, and revocation. Origin and reviewer attestations must verify under current policy.",
+      "status": "REFERENCE_KEY_POLICY_VERIFIED_REAL_GENEALOGY_TRUTH_NOT_CLAIMED"
+    },
+    "A21_thread_vs_process_evidence": {
+      "severity": "MEDIUM",
+      "pre_fix": "Two lock objects in threads and two processes had been conflated as one portability claim.",
+      "response": "v2 gates separately test same-process distinct instances, nonblocking local contention, and spawned-process contention.",
+      "status": "CLOSED_FOR_FOCUSED_V2_GATE"
+    },
+    "A22_multi_host_boundary": {
+      "severity": "OPEN_BOUNDARY",
+      "status": "NOT_CLAIMED",
+      "note": "Process-global plus OS locking remains same-host/shared-filesystem coordination, not distributed consensus."
+    },
+    "A23_forced_exit_and_other_mutators": {
+      "severity": "MEDIUM_HIGH",
+      "finding": "The new default CLI protection explicitly covers normal process_action entries. force_exit, save import/export, display-name mutation, and network publication have distinct mutation semantics and are not silently covered by the runtime receipt claim.",
+      "status": "OPEN_FOR_SEPARATE_BOUNDARY_DESIGN"
+    }
+  },
+  "runtime_descendants": [
+    {
+      "module": "janus_portable_lock_v2.py",
+      "commit": "29aeaa12257347acace9695a185d3644cf03bc01",
+      "purpose": "process-global canonical-path lock registry plus OS cross-process lock"
+    },
+    {
+      "module": "genesis_v18_7_31_portable_receipt_runtime.py",
+      "commit": "e504bb1e535c196256927e7bba951c16074bcad6",
+      "purpose": "stable caller request state, full result receipts, conservative crash boundary",
+      "historical_note": "First concurrency acceptance exposed an over-pessimistic active-duplicate decision order."
+    },
+    {
+      "module": "genesis_v18_7_33_inflight_duplicate_reconciliation.py",
+      "commit": "75be7a301947a7466e7234db7a9590449613d40c",
+      "purpose": "wait for canonical world lock, then distinguish settled predecessor from stale CALL_ENTERING residue"
+    },
+    {
+      "module": "genesis_v18_7_32_durable_session_key_lifecycle.py",
+      "commit": "30496d9b5fc3a9f9bb29799acef76ac12e5e122a",
+      "purpose": "durable session writer, pending registration saga, trust-key registry, freshness metadata",
+      "historical_note": "CI exposed registration-request binding and typed provider outcome defects plus a later Windows final-fsync portability defect."
+    },
+    {
+      "module": "genesis_v18_7_34_registration_binding_fresh_evidence_fix.py",
+      "commit": "457faac9bf3e3b588721692a912aecb74c127a88",
+      "purpose": "durable registration request binding and typed provider outcome correction"
+    },
+    {
+      "module": "genesis_v18_7_35_windows_safe_durable_writer.py",
+      "commit": "efcc5b1932a37363fa32eb5291d2951c7eb50617",
+      "purpose": "final-file fsync through explicit read/write OS descriptor on Windows and POSIX"
+    },
+    {
+      "module": "play_genesis.py",
+      "commit": "438d4f3ab696c42d1179128b963e22e59e7dbeab",
+      "purpose": "default normal action routing through stable request receipts"
+    }
+  ],
+  "verification_history": [
+    {
+      "run_id": 31828030265,
+      "conclusion": "FAILURE",
+      "platforms": ["ubuntu-latest", "windows-latest"],
+      "finding": "v18.7.31 second active caller classified CALL_ENTERING as UNDETERMINED before waiting for the predecessor world lock.",
+      "treatment": "PRESERVED; v18.7.33 descendant changed observation order without weakening stale-crash blocking."
+    },
+    {
+      "run_id": 31828656420,
+      "head_sha": "6d9a66bb8faac4cf4a976bf9e2ac225b8afff576",
+      "conclusion": "FAILURE",
+      "platforms": ["ubuntu-latest", "windows-latest"],
+      "finding": "Expanded real-runtime verifier omitted requirements installation and failed importing cryptography.",
+      "treatment": "PRESERVED_AS_VERIFIER_CONFIGURATION_FAILURE; later workflow installs requirements.txt."
+    },
+    {
+      "run_id": 31828707866,
+      "head_sha": "16d7881ef541314d45271a1d80a2e513a63a445e",
+      "conclusion": "FAILURE",
+      "platforms": ["ubuntu-latest", "windows-latest"],
+      "passed_before_failure": [
+        "portable lock v2 gates",
+        "v18.7.33 duplicate reconciliation",
+        "real v18.7.31 crash/replay integration"
+      ],
+      "finding": "v18.7.32 registration request binding and FreshProviderOutcome typing defects.",
+      "treatment": "PRESERVED; v18.7.34 descendant corrects both."
+    },
+    {
+      "run_id": 31828864663,
+      "head_sha": "006d44b14ead911e9baa34d1badab4c2d5004090",
+      "conclusion": "MIXED",
+      "ubuntu": "SUCCESS",
+      "windows": "FAILURE",
+      "finding": "Windows rejected os.fsync on the final JSON file reopened read-only with Bad file descriptor; Linux accepted it.",
+      "treatment": "PRESERVED_AS_PLATFORM_SPECIFIC_DURABILITY_FAILURE; v18.7.35 uses explicit O_RDWR final descriptor."
+    },
+    {
+      "run_id": 31829033820,
+      "head_sha": "549e4d96f77b0af196e34840aa3adeecbb4afb7c",
+      "conclusion": "SUCCESS",
+      "jobs": {
+        "ubuntu_latest": 94860077745,
+        "windows_latest": 94860077956
+      },
+      "verified": [
+        "process-global plus OS portable lock v2 same-process and spawned-process gates",
+        "v18.7.33 active duplicate convergence to one receipt and stale crash fail-closed behavior",
+        "real PlayableGenesisV187 receipt replay and after-world-before-receipt blocking",
+        "v18.7.35 durable writer and recoverable registration request saga on Ubuntu and Windows",
+        "v18.7.34 typed fresh provider evidence and revocation regression under v18.7.35",
+        "default play_genesis normal action path stable request ID, replay, conflict, and distinct-intent behavior",
+        "executable claim-boundary and failure-memory semantics"
+      ]
+    }
+  ],
+  "new_invariants": [
+    "ONE_LOCK_PATH_REQUIRES_ONE_PROCESS_GLOBAL_LOCK_DOMAIN_PLUS_OS_LOCK",
+    "THREAD_CONTENTION_AND_PROCESS_CONTENTION_ARE_DISTINCT_GATES",
+    "ACTIVE_DUPLICATE_MUST_WAIT_FOR_PREDECESSOR_LOCK_BEFORE_CALL_ENTERING_IS_DECLARED_STALE",
+    "CALL_ENTERING_AFTER_PREDECESSOR_LOCK_RELEASE_WITHOUT_RECEIPT_IS_UNDETERMINED",
+    "SETTLED_REQUEST_REPLAYS_FULL_HASH_VERIFIED_RECEIPT_WITHOUT_WORLD_REENTRY",
+    "IDENTICAL_ACTION_TEXT_PLUS_NEW_REQUEST_ID_IS_A_NEW_INTENT",
+    "REGISTRATION_REQUEST_ID_BINDS_ONE_NORMALIZED_REGISTRATION_BEFORE_SESSION_SAGA",
+    "PENDING_SESSION_MAKES_CROSS_STORE_PARTIAL_REGISTRATION_VISIBLE_BUT_NOT_ATOMIC",
+    "PROVIDER_EVIDENCE_MUST_BE_CURRENT_AUTHORIZATION_BOUND_FRESH_AND_KEY_ELIGIBLE",
+    "EXACT_EVIDENCE_NONCE_REPLAY_MAY_BE_IDEMPOTENT_BUT_NONCE_PAYLOAD_SUBSTITUTION_FAILS",
+    "KEY_GENERATION_WINDOW_AND_REVOCATION_ARE_SEPARATE_FROM_SIGNATURE_VALIDITY",
+    "WINDOWS_FILE_FSYNC_SEMANTICS_MUST_BE_TESTED_ON_WINDOWS_NOT_INFERRED_FROM_LINUX",
+    "WINDOWS_DIRECTORY_ENTRY_POWER_LOSS_DURABILITY_IS_NOT_CLAIMED_WITHOUT_A_DIRECTORY_FSYNC_PRIMITIVE",
+    "A_GREEN_DESCENDANT_DOES_NOT_ERASE_FAILED_PARENT_RUNS"
+  ],
+  "constitutional_compression": "MANY_FACES -> VERIFIED_CURRENT_LINEAGES -> PROCESS_GLOBAL_PLUS_OS_LOCAL_LOCK -> STABLE_CALLER_REQUEST -> ONE_CANONICAL_WORLD_ENTRY -> FULL_IMMUTABLE_RECEIPT_OR_DURABLE_UNCERTAINTY -> FRESH_AUTHORIZATION_BOUND_EXTERNAL_EVIDENCE -> RECOVERABLE_SESSION_SAGA -> APPEND_ONLY_SUCCESS_AND_FAILURE_LINEAGE",
+  "claim_ceiling": {
+    "portable_lock_v2_same_process_distinct_instances_windows_ubuntu": "FOCUSED_CI_VERIFIED",
+    "portable_lock_v2_spawned_process_contention_windows_ubuntu": "FOCUSED_CI_VERIFIED",
+    "portable_receipt_runtime_real_playable_genesis_windows_ubuntu": "FOCUSED_CI_VERIFIED",
+    "active_duplicate_one_world_call_receipt_convergence_windows_ubuntu": "FOCUSED_CI_VERIFIED",
+    "default_cli_normal_process_action_uses_stable_request_receipts": "FOCUSED_CI_VERIFIED_WINDOWS_AND_UBUNTU",
+    "full_result_receipt_replay_without_world_reentry": "FOCUSED_CI_VERIFIED_WINDOWS_AND_UBUNTU",
+    "durable_json_temp_and_final_file_fsync_windows_ubuntu": "FOCUSED_CI_VERIFIED",
+    "posix_directory_fsync": "FOCUSED_CI_VERIFIED_ON_UBUNTU",
+    "windows_directory_entry_power_loss_durability": "NOT_CLAIMED",
+    "recoverable_registration_saga": "FOCUSED_CI_VERIFIED_WINDOWS_AND_UBUNTU",
+    "cross_store_session_world_atomicity": "NOT_CLAIMED",
+    "reference_provider_freshness_and_revocation_policy": "FOCUSED_CI_VERIFIED",
+    "reference_lineage_key_lifecycle": "FOCUSED_CI_VERIFIED",
+    "real_provider_world_truth": "NOT_CLAIMED",
+    "real_lineage_genealogy_truth": "NOT_CLAIMED",
+    "legacy_v18_7_25_v18_7_27_native_windows_portability": "OPEN",
+    "legacy_v18_7_25_sqlite_handle_lifetime": "OPEN",
+    "force_exit_and_non_process_action_cli_mutation_receipts": "OPEN",
+    "multi_host_consensus": "NOT_CLAIMED",
+    "formal_exactly_once_or_full_system_safety_proof": false
+  },
+  "next_gate": "JANUS_GENESIS_SOVEREIGN_FACE_MICROCONTROL_MUTATION_SURFACE_LEGACY_PORTABILITY_KEY_STORAGE_AND_MULTI_PROCESS_REGISTRATION_v6.6"
+}

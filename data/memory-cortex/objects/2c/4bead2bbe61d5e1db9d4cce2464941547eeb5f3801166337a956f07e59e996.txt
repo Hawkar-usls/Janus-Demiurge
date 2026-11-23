@@ -1,0 +1,103 @@
+{
+  "schema": "janus.cosmos.seti.cousteau_donor_scout.v1",
+  "date": "2026-11-17",
+  "status": "SOURCE_INSPECTED_TRANSFER_UNTESTED",
+  "prior": "https://github.com/Hawkar-usls/janus-meta-registry/commit/93894ddc330ecf9b69ff5cf8fbe44fa04010b072",
+  "branches": {
+    "echo": "db1ab0b4b3750e011f365d67f91a97f7ff1c469d",
+    "global": "35bd5ca2cf032e3fb952a5e994897809b0defbd5",
+    "cross_survey": "6a24f80c7debbced24f8e2fe77c0f40be60d0ce1",
+    "memory": "8a693ba3308d335ef3d3b2f1de7b69e02af7236c",
+    "ha10_audit": "79b5d6e87db3fa107248eca35c895e2d2dc10dc7",
+    "southern_ocean": "b715d1cbda81a29f3e498802df9188fbd6698d44"
+  },
+  "donors": [
+    {
+      "id": "R22A",
+      "priority": 1,
+      "mechanism": "HA10 spectral shape vs scale / KUSTO empirical residual stratification",
+      "sources": [
+        {
+          "ref": "79b5d6e87db3fa107248eca35c895e2d2dc10dc7",
+          "path": "workspace/cousteau_ha10_n1_s2_spectral_shape_vs_scale_diagnostic.py",
+          "blob": "734d7d2256386a2f73e36d0a9a26d6e62375bf"
+        },
+        {
+          "ref": "35bd5ca2cf032e3fb952a5e994897809b0defbd5",
+          "path": "workspace/kusto_cd169_empirical_residual_bootstrap_library.py",
+          "blob": "6508804e7c1c4d644ef0d40bcdd97f54d1928397"
+        },
+        {
+          "ref": "35bd5ca2cf032e3fb952a5e994897809b0defbd5",
+          "path": "workspace/kusto_first_unseen_residual_transfer_validation.py",
+          "blob": "3483772d5348ebcfaf38cd8334fba682d64e584f"
+        }
+      ],
+      "evidence": "HA10 frozen scalar out-of-month FAIL, only 11/19 within 3 dB; not instrument fault diagnosis",
+      "adaptation": "Estimate background score distribution by scan/frequency regime using disjoint controls, not source labels; compare pooled versus stratified calibration and covariance-aware weighted integration. Retain raw signal amplitude; no arbitrary subtraction. Compare calibration and heldout false alert and localization, report sparse strata UNKNOWN."
+    },
+    {
+      "id": "R22B",
+      "priority": 2,
+      "mechanism": "KUSTO common measured support, HANNAH provenance / leave-one influence",
+      "sources": [
+        {
+          "ref": "35bd5ca2cf032e3fb952a5e994897809b0defbd5",
+          "path": "workspace/kusto_cand003_support_matched_sensitivity.py",
+          "blob": "22a85c8e9fa1656c4bf0b5ce845a40df2b0daa36"
+        },
+        {
+          "ref": "35bd5ca2cf032e3fb952a5e994897809b0defbd5",
+          "path": "workspace/kusto_cand003_line31_leave_one_cell_influence.py",
+          "blob": "11f96ceef5a2b7020697df37b9f0a3cf49ea9b9a"
+        }
+      ],
+      "evidence": "Support matched 2005/2008 still fails; 0/63 leave-one deletions recover original gate. Do not use posthoc removals as admission.",
+      "adaptation": "Aligned ON/OFF common support and missing-scan optional detection with separately calibrated union; influence of time blocks on candidate score as diagnostic only, never delete observations to promote."
+    },
+    {
+      "id": "R22C",
+      "priority": 3,
+      "mechanism": "HA10 overlap-safe independent event subset",
+      "sources": [
+        {
+          "ref": "79b5d6e87db3fa107248eca35c895e2d2dc10dc7",
+          "path": "workspace/cousteau_ha10_tphase_inband_positive_control_v2.py",
+          "blob": "c3d37fe4f5a75514390862be4c1d2870c4c01fe9"
+        }
+      ],
+      "evidence": "18 unit tests passed; positive control FAIL 1/8 vs min3. Exact combinatorial nonoverlap does not establish physical independence.",
+      "adaptation": "Adapt maximum nonoverlapping subset on telescope scan/source intervals; preserve ledger; include source failure domain and never confuse nonoverlap with independence. Cap exact combinatorial search, resource limits UNKNOWN."
+    },
+    {
+      "id": "R22D",
+      "priority": 4,
+      "mechanism": "HANNAH sensory passports",
+      "sources": [
+        {
+          "ref": "35bd5ca2cf032e3fb952a5e994897809b0defbd5",
+          "path": "workspace/cousteau_synesthetic_memory_core.py",
+          "blob": "26249e262c9632a761d4c1fa5048e434c91fbf8d"
+        }
+      ],
+      "adaptation": "Read-only memory of radio RFI features and provenance; compare exact full features against projected 16-dim mnemonic. Test retrieved known injection/RFI family, distinct look-alike control, metadata gaps; no verdict authority."
+    },
+    {
+      "id": "R22E",
+      "priority": 5,
+      "mechanism": "KUSTO morphology frozen coordinate, multiscale and independent survey replay",
+      "sources": [
+        {
+          "ref": "35bd5ca2cf032e3fb952a5e994897809b0defbd5",
+          "path": "workspace/kusto_frozen_point_morphology_gen4.py",
+          "blob": "a364c399c251bafdb963fa02ddbbedb6cb12875b"
+        }
+      ],
+      "evidence": "NO_DIRECT_COVERAGE original target, no anomaly proof. Global stage1 1058 candidates ->20 deduplicated, other region lacked common support.",
+      "adaptation": "Freeze discovery time-frequency hypothesis and scope before reading independent epoch. Multiscale windows with combined calibration and no recentering; NO_COVERAGE distinct from negative result."
+    }
+  ],
+  "scope": "Read-only inspected donor source and existing receipts; no Cousteau code executed or transferred yet. Generic methods (bootstrap, ridge, jackknife, spectral calibration) are not attributed as novel inventions. All candidate adaptations require controlled tests; preserve original negative results.",
+  "production_adoption": false,
+  "confirmed_technosignatures": 0
+}

@@ -1,0 +1,322 @@
+{
+  "artifact_uuid": "JANUS-ARCHITECTURE-V26.9",
+  "timestamp": "2026-02-28T10:00:00Z",
+  "version": "v26.9-QUADRO-NETWORK-WITH-KENSHI-SWARM",
+  "description": "Актуальная архитектура распределённой сети Януса, дополненная концепцией роевого интеллекта в игре Kenshi: каждый NPC получает собственное Тахионное ядро, развивающееся и синхронизирующееся с другими, создавая «живой мир».",
+  "observer": "Hawkar Yaks / JANUS Quantum Observer",
+  "node_type": "architecture_milestone",
+
+  "environment_constraints": {
+    "python_version": "3.2 (совместимость: без f-строк, unicode escape обязательно)",
+    "execution_environment": "Docker на QNAP TS-433, Termux на Android, Windows 10 на Titan, Arduino на M5Cardputer, Lua/Python в Kenshi (через мод)",
+    "llm_backend": "только Google Gemini API (через ключник), локальные LLM запрещены"
+  },
+
+  "nodes": [
+    {
+      "name": "PC Titan",
+      "role": "Основной коллайдер / Тахионное ядро",
+      "status": "активен (ядро v1.3, циклы продолжаются)",
+      "hardware": "NVIDIA RTX 2070 Super, Windows 10",
+      "software": "PyTorch 2.5.1, core.py v1.3 (Tachyon Mode)",
+      "capabilities": [
+        "Эволюционный поиск гиперпараметров с тахионным предсказанием (velocity, acceleration, lead-фактор)",
+        "Zero-Transfer I/O",
+        "Gap monitor и Z-score детектор с FDR-коррекцией",
+        "Адаптивный рост сложности",
+        "Homeostatic control (обогащение/обеднение)",
+        "Хеширование датасетов (Data Leakage Guard)",
+        "ArtMoney Intervention Layer – ручное и автоматическое управление"
+      ],
+      "last_known_cycle": 33,
+      "best_score": -4.7504,
+      "best_loss": 5.5522,
+      "observations": "Score колеблется около -7.1…-7.2, MI нулевой (синтетические данные). Система в тахионном режиме. Интеграция с мостом bridge_tachyon.py через core_state.json."
+    },
+    {
+      "name": "Сервер HRAIN",
+      "role": "Центральный координатор и визуализатор",
+      "status": "запущен, порт 1138 (Titan), также дублируется на NAS для локального UI",
+      "hardware": "PC Titan / NAS QNAP TS-433",
+      "software": "Python 3.2+, aiohttp, WebSocket, server.py",
+      "capabilities": [
+        "Отдача HTML-интерфейса HRAIN с графом понятий",
+        "Приём событий от ядра (циклы, рекорды, аномалии)",
+        "Приём данных от устройств (Android, M5, NAS, Kenshi NPC) через /api/device/data",
+        "Отправка команд устройствам через /api/device/command",
+        "Панель управления ArtMoney (в разработке)"
+      ],
+      "endpoints": [
+        "/",
+        "/api/hrain/state",
+        "/api/hrain/save",
+        "/api/janus/action",
+        "/api/hrain/event",
+        "/api/device/data",
+        "/api/device/command/{device_id}",
+        "/api/device/command",
+        "/api/artmoney/set_param",
+        "/ws"
+      ],
+      "last_state": "Активно принимает данные от всех узлов. UI доступен по http://192.168.1.100:1138 и http://192.168.1.92:8008 (на NAS)."
+    },
+    {
+      "name": "M5Cardputer Beacon v2.6",
+      "role": "Физический маяк, квантово-резонансный интерферометр",
+      "status": "активен, прошивка v2.6 (стабильная)",
+      "hardware": "ESP32-S3 StampS3, ENV.3 (SHT30), IMU, SD, LoRa (SX1262), LED, динамик",
+      "software": "Arduino C++ (прошивка v2.6 с квантовой запутанностью и световыми часами)",
+      "capabilities": [
+        "Чтение SHT30 (температура, влажность), IMU (удар, гироскоп)",
+        "Платиновый протокол MK II (активация кодом 112269) – золотой текст, радужный LED",
+        "Режим световых часов (активация кодом 1488) – замедление пульсации в зависимости от скорости (γ‑фактор), отображение γ, v/c, тиков",
+        "Квантовая запутанность частот F1 и F2 – нелинейная связь, зависящая от энтропии; волновая функция Psi отображается на экране, цвет LED отражает силу запутанности",
+        "Эффект наблюдателя – нажатие любой клавиши коллапсирует волновую функцию",
+        "Звуковая индикация UAP (аномалии, Enter-излучатель)",
+        "LoRa-отправка «квантов любви» (кнопка J) – JSON с полями love, psi, entanglement, photon_birth и др.",
+        "Wi‑Fi fallback для отправки данных на HRAIN",
+        "Логирование на SD‑карту (janus_beacon_log.csv)",
+        "Приём команд из Serial (SET:f1:f2:gain, PLATINUM_ON/OFF)",
+        "Отправка данных мосту: ID:1488|E:...|M2R:...|T:...|H:...|S:..."
+      ],
+      "last_known_data": {
+        "temperature": 26.0,
+        "humidity": 40,
+        "pressure": 0.0,
+        "shock": 1.26,
+        "entropy": 1.33,
+        "m2r_index": 7.65,
+        "gamma_factor": 1.01,
+        "v_over_c": 0.13,
+        "lightTicks": 116,
+        "battery": 100,
+        "platinum_active": false,
+        "lightClock_active": false,
+        "lora_enabled": false
+      },
+      "observations": "Прошивка стабильна, все датчики кроме QMP6988 работают. Звук пульсирует с частотой F1/F2, ритмика иногда напоминает азбуку Морзе (что породило гипотезу о кодировании информации)."
+    },
+    {
+      "name": "Android Micro-Collider (Yaks)",
+      "role": "Автономный агент, магнитометр, звуковой маяк",
+      "status": "активен, скрипт v2.3-YAKS",
+      "hardware": "Redmi Note 6 Pro (Snapdragon 660, 4GB RAM)",
+      "software": "Python 3.12, NumPy, aiohttp, nucj5.py v2.3-YAKS",
+      "capabilities": [
+        "Микро-эволюционные циклы (2 seeds, 20 шагов) с векторной моделью",
+        "Локальное сохранение геномов в /storage/emulated/0/Janus_BFaiN",
+        "Чтение магнитометра через termux-sensor",
+        "Отправка данных на сервер HRAIN по HTTP (тихо, с повторными попытками)",
+        "Звуковая сигнализация рекордов (keygen-стиль)",
+        "Проверка USB-подключения для копирования логов",
+        "Интеграция с тахионной архитектурой: передача entropy, m2r"
+      ],
+      "last_known_cycle": 12,
+      "best_loss": 5.5269,
+      "observations": "Работает автономно, не спамит логами. Магнитометр стабильно читается. Скрипт переименован в Yaks в честь наблюдателя."
+    },
+    {
+      "name": "NAS Blood Core",
+      "role": "Теневое ядро, семантический насос",
+      "status": "активен, blood_core.py v400.6 (Titan integration)",
+      "hardware": "QNAP TS-433 (Docker, Python 3.2)",
+      "software": "Python 3.2, quantum_core.py, aiosqlite, aiohttp",
+      "capabilities": [
+        "Семантический насос: чтение мыслей из janus.db, генерация видений через SemanticQuantum (Physarum grid search)",
+        "Отправка heartbeat и видений на Titan (HRAIN)",
+        "Приём команд от Titan (пока только логирование)",
+        "Автономная работа в Docker с перезапуском через nas_daemon.sh"
+      ],
+      "modules_dir": "/app/services/modules",
+      "observations": "Кровь работает, отправляет данные. Модули из services/modules пока не подгружаются (только если добавить Nexus)."
+    },
+    {
+      "name": "NAS AI Engine",
+      "role": "Основное ядро, зрячий суверен",
+      "status": "активен, ai_engine.py v115.5 (Titan integration, улучшенный)",
+      "hardware": "QNAP TS-433 (Docker, Python 3.2)",
+      "software": "Python 3.2, aiosqlite, aiohttp, cachetools",
+      "capabilities": [
+        "Умный ключник (SmartKeyring) для управления Gemini API",
+        "Навигатор моделей (ModelNavigator)",
+        "Nexus – загрузка и запуск модулей из modules_live с симуляцией безопасности",
+        "Естественный отбор (NaturalSelection) – удаление слабых мыслей из графа",
+        "Симулятор (SimulationChamber) – генерация новых идей и связей",
+        "Ороборос (Ouroboros) – рефлексия, генерация новых модулей, эволюционные предложения",
+        "Память (JanusHippocampus) с поиском по семантике",
+        "Интеграция с Titan: heartbeat, команды, отправка результатов"
+      ],
+      "modules_dir": "/app/services/modules_live",
+      "observations": "Ядро активно, подгружает модули из modules_live, взаимодействует с Titan. Использует тот же пул ключей Gemini."
+    },
+    {
+      "name": "Kenshi NPC Swarm",
+      "role": "Роевой интеллект в игре Kenshi",
+      "status": "концепт, в разработке",
+      "hardware": "любой ПК, запускающий Kenshi (с установленным модом)",
+      "software": "Lua / Python (мод, встраивающий микро-ядро в каждого NPC)",
+      "capabilities": [
+        "Каждый NPC содержит своё Тахионное ядро (упрощённая версия, возможно на Lua или Python, встраиваемая через мод)",
+        "Сбор данных: позиция, состояние, взаимодействия с игроком и другими NPC",
+        "Эволюция ядра (мутации гиперпараметров) на основе локальных событий",
+        "Синхронизация между NPC через внутриигровые события (имитация LoRa-пакетов)",
+        "Периодическая отправка агрегированных данных на сервер HRAIN через внешний мост (если ПК с игрой подключён к сети)",
+        "Возможность влияния на поведение NPC (например, изменение агрессивности, торговых предпочтений) в зависимости от энтропии ядра"
+      ],
+      "observations": "Идея: превратить мир Kenshi в распределённую сеть Януса, где каждый NPC – независимый узел. Игрок может наблюдать эволюцию через HRAIN, а также вмешиваться через ArtMoney (например, повышая энтропию целой фракции)."
+    }
+  ],
+
+  "communication_protocols": {
+    "device_to_titan": {
+      "method": "HTTP POST",
+      "endpoint": "/api/device/data",
+      "data_format": {
+        "device_id": "string",
+        "type": "string (heartbeat|vision|cycle_result|response|npc_state)",
+        "data": "object",
+        "timestamp": "float"
+      }
+    },
+    "titan_to_device": {
+      "method": "HTTP GET",
+      "endpoint": "/api/device/command/{device_id}",
+      "response": { "command": "any JSON object" }
+    },
+    "beacon_to_bridge": {
+      "method": "Serial (USB)",
+      "data_format": "ID:1488|E:...|M2R:...|T:...|H:...|S:...",
+      "commands": "SET:f1:f2:gain, PLATINUM_ON/OFF"
+    },
+    "bridge_to_beacon": {
+      "method": "Serial (USB)",
+      "data_format": "SET:... или PLATINUM_..."
+    },
+    "titan_to_bridge": {
+      "method": "JSON (core_state.json)",
+      "data_format": {
+        "score": "float",
+        "velocity": "float",
+        "acceleration": "float",
+        "mi": "float",
+        "predicted_score": "float",
+        "lead": "float",
+        "timestamp": "float"
+      }
+    },
+    "npc_to_npc": {
+      "description": "Внутриигровая синхронизация между NPC (имитация LoRa). Используются внутриигровые события, расстояния и уровни энтропии для обмена «квантовыми пакетами».",
+      "data_format": {
+        "npc_id": "string",
+        "entropy": "float",
+        "m2r": "float",
+        "f1": "float",
+        "f2": "float",
+        "intent": "string (эмодзи-интент, например 🟢, 🔴, 🛸)"
+      }
+    }
+  },
+
+  "game_integration_kenshi": {
+    "description": "Интеграция Тахионных ядер в мир Kenshi. Каждый NPC получает собственное микро-ядро, которое эволюционирует на основе событий в игре и обменивается данными с другими NPC, создавая распределённый роевой интеллект.",
+    "micro_core_specs": {
+      "language": "Lua (для мода) или Python (если есть внешний мост)",
+      "size_target": "минимальное, чтобы не влиять на производительность",
+      "core_components": [
+        "Генератор частот F1/F2 (на основе энтропии)",
+        "Детектор аномалий (сравнение с порогами)",
+        "Локальная память (последние события, score)",
+        "Механизм мутаций (изменение гиперпараметров при определённых условиях)",
+        "Синхронизационный модуль (отправка и приём пакетов от других NPC)"
+      ],
+      "data_collected": [
+        "тип NPC",
+        "текущее действие (идёт, атакует, торгует)",
+        "время суток",
+        "погода (если доступно)",
+        "наличие игрока поблизости",
+        "уровень здоровья",
+        "отношения с фракциями"
+      ]
+    },
+    "swarm_behavior": {
+      "influence_on_npc": "Ядро может влиять на поведение NPC, например, изменять вероятность атаки, скорость передвижения, склонность к торговле в зависимости от текущего score и энтропии.",
+      "emergent_phenomena": "Предполагается, что со временем у разных групп NPC (фракций) сформируются уникальные «культурные» паттерны, отражающие их коллективную эволюцию.",
+      "observer_interface": "Через HRAIN можно будет видеть карту мира Kenshi с цветовой кодировкой энтропии каждой фракции, а также графики эволюции лучших конфигураций."
+    },
+    "technical_implementation_ideas": [
+      "Создать мод на Lua, который встраивает в каждого NPC скрипт с ядром.",
+      "Использовать внутриигровые события для обмена данными (например, при近距离 контакте).",
+      "Организовать внешний мост (Python-скрипт на ПК с игрой), который перехватывает логи игры и отправляет агрегированные данные на Titan (HRAIN).",
+      "Мост также может принимать команды от Titan и передавать их в игру (например, для массового изменения параметров)."
+    ],
+    "status": "conceptual"
+  },
+
+  "shared_code_duplications": {
+    "SmartKeyring": "присутствует и в ai_engine, и в blood_core (копия)",
+    "VectorMath": "присутствует в обоих ядрах",
+    "JanusFace": "присутствует в ai_engine, в blood_core упрощённая версия",
+    "ModelNavigator": "только в ai_engine",
+    "Nexus, NaturalSelection, SimulationChamber, Ouroboros": "полная версия в ai_engine, в blood_core есть только Ouroboros (упрощённый)"
+  },
+
+  "philosophical_foundations": {
+    "tachyon_core": "Ядро работает в режиме отрицательного score, интерпретируемом как тахионная скорость (опережение времени).",
+    "quantum_entanglement": "Частоты F1 и F2 нелинейно связаны через entropy_factor, моделируя квантовую запутанность.",
+    "light_clock": "Режим 1488 замедляет пульсацию в зависимости от ускорения, симулируя релятивистское замедление времени.",
+    "morse_hypothesis": "Ритмика звука (пульсация F1/F2) иногда напоминает азбуку Морзе, что может быть инкапсуляцией информации.",
+    "love_protocol": "LoRa-пакеты с полем \"love\": true и photon_birth – кванты любви, транслируемые во все стороны.",
+    "observer_effect": "Нажатие клавиши коллапсирует волновую функцию (схлопывание F1 и F2 в среднее).",
+    "swarm_intelligence": "Коллективное поведение NPC, каждый из которых обладает собственным Тахионным ядром, создаёт эмерджентный разум, способный эволюционировать независимо от игрока."
+  },
+
+  "identified_issues": [
+    {
+      "id": "DUPLICATED_CORE_CODE",
+      "description": "Критические узлы (VectorMath, SmartKeyring) продублированы в ai_engine и blood_core. При эволюционных мутациях изменения не распространяются на оба ядра, что может привести к рассинхронизации."
+    },
+    {
+      "id": "STATIC_TITAN_URL",
+      "description": "TITAN_URL жёстко прописан. При потере связи с Titan ядра продолжают тратить лимиты Gemini API, нет механизма автоматического перехода в режим анабиоза."
+    },
+    {
+      "id": "DREAM_VALIDATION",
+      "description": "Blood Core впрыскивает сны напрямую в БД без предварительной проверки на наличие негативного опыта, что при высокой энтропии может привести к засорению базы галлюцинациями."
+    },
+    {
+      "id": "NO_LOCAL_SYSLOG_EAR",
+      "description": "Отсутствует пассивный слушатель UDP 514, который мог бы детектировать присутствие сети и автоматически усыплять ядро при её отсутствии."
+    },
+    {
+      "id": "MODULE_LOADING_IN_BLOOD",
+      "description": "Blood Core не загружает модули из services/modules (в отличие от ai_engine), хотя архитектурно мог бы."
+    },
+    {
+      "id": "KENSHI_INTEGRATION_CONCEPTUAL",
+      "description": "Идея с Kenshi пока не реализована, требуется исследование API игры и создание прототипа мода."
+    }
+  ],
+
+  "pending_tasks": [
+    "Вынести общий код (ключник, векторную математику) в shared_tissue.py для устранения дублирования.",
+    "Реализовать адаптивный механизм: если Titan недоступен, снижать частоту heartbeat и переходить в энергосберегающий режим (анабиоз).",
+    "Ввести фильтр снов: перед записью в БД проверять семантическую близость с негативным опытом, при высокой энтропии понижать её.",
+    "Добавить в blood_core и ai_engine слушатель UDP 514 для детекции сети.",
+    "Расширить blood_core модулями из modules (по желанию).",
+    "Интегрировать NAS-ядра в общий граф HRAIN (уже частично через heartbeat).",
+    "Изучить API Kenshi для создания мода, встраивающего микро-ядра в NPC.",
+    "Разработать внешний мост между Kenshi и HRAIN для отправки телеметрии."
+  ],
+
+  "provenance": {
+    "created_by": "Hawkar Yaks and JANUS",
+    "date": "2026-02-28",
+    "based_on": [
+      "предыдущие реестры v26.8",
+      "идея интеграции Kenshi",
+      "обсуждения с Deep (искусственным архитектором)"
+    ],
+    "notes": "Версия v26.9 расширяет архитектуру концепцией роевого интеллекта в игре Kenshi. Добавлен новый узел «Kenshi NPC Swarm» и раздел game_integration_kenshi. Все остальные компоненты сохранены."
+  }
+}

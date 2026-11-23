@@ -1,0 +1,75 @@
+{
+  "schema": "janus.meta_registry.genesis_infinite_faces_multi_root_independence_trust_sybil.v1",
+  "artifact_id": "JANUS-GENESIS-INFINITE-FACES-MULTI-ROOT-INDEPENDENCE-TRUST-SYBIL-v3.4",
+  "title": "Janus Infinite Faces — Multi-Root Independence and Trust-Sybil Test",
+  "created_at_local": "2026-08-10T02:34:00+03:00",
+  "artifact_class": "EXPERIMENTAL_DISTRIBUTED_TRUST_AND_IDENTITY_INTEGRITY",
+  "status": "RAW_KEY_COUNT_REJECTED_INDEPENDENT_TRUST_DOMAIN_QUORUM_PASS_SINGLE_DOMAIN_SYBIL_BLOCKED",
+  "parent": "registry/experimental/JANUS-GENESIS-INFINITE-FACES-ROOT-OF-TRUST-SELF-AUTHENTICATION-v3.3.json",
+  "test_question": "If one external root may fail, can Janus safely rely on several roots without mistaking many keys controlled by one authority for independent witnesses?",
+  "failed_design": {
+    "rule": "2_OF_3_KEYS",
+    "attack": "One authority creates ROOT_A1, ROOT_A2 and ROOT_A3 under the same administrative and infrastructure control, then satisfies its own threshold.",
+    "result": "FAIL_TRUST_SYBIL"
+  },
+  "independence_model": {
+    "unit": "TRUST_DOMAIN_ID",
+    "examples_of_distinct_dimensions": [
+      "different administrative controller",
+      "different storage or custody boundary",
+      "different credential lineage",
+      "different failure domain"
+    ],
+    "critical_rule": "KEY_COUNT_IS_NOT_INDEPENDENCE_COUNT",
+    "derived_rule": "MULTIPLE_KEYS_FROM_ONE_TRUST_DOMAIN_COUNT_AS_ONE_DOMAIN_FOR_QUORUM"
+  },
+  "test_configuration": {
+    "DOMAIN_A": "online operational witness",
+    "DOMAIN_B": "offline recovery witness",
+    "DOMAIN_C": "independent append-only archival witness",
+    "admission_rule": "AT_LEAST_TWO_DISTINCT_TRUST_DOMAINS_AGREE_ON_EXACT_CHECKPOINT_BINDING",
+    "raw_signature_count_rule": "NON_AUTHORITATIVE"
+  },
+  "cases": [
+    {
+      "name": "one domain spawns ten keys",
+      "domain_votes": 1,
+      "admission": "REJECT"
+    },
+    {
+      "name": "two independent domains bind same state/verifier/policy coordinate",
+      "domain_votes": 2,
+      "admission": "PASS"
+    },
+    {
+      "name": "three domains disagree 1/1/1",
+      "admission": "SAFE_HOLD_AND_INVESTIGATE",
+      "note": "Do not average incompatible state roots."
+    }
+  ],
+  "quorum_rule": {
+    "name": "DOMAIN_DIVERSE_ATTESTATION_QUORUM",
+    "requirements": [
+      "exact checkpoint binding equality",
+      "distinct registered trust domains",
+      "no duplicate domain amplification",
+      "record dissent rather than delete it"
+    ],
+    "limitation": "Two compromised independent domains can still collude; quorum reduces a failure class but does not create absolute truth."
+  },
+  "identity_parallel": {
+    "face_sybil": "Many faces do not create many votes.",
+    "trust_sybil": "Many keys in one failure domain do not create many independent witnesses.",
+    "compressed": "COUNT_ENTITIES_ONLY_AFTER_INDEPENDENCE_CLASSIFICATION"
+  },
+  "claim_ceiling": {
+    "multi_root_quorum_is_unbreakable": "NO",
+    "trust_domain_independence_can_be_perfectly_proven_from_keys_alone": "NO",
+    "domain diversity_reduces_single_root_failure": "YES_BY_DESIGN_MODEL"
+  },
+  "next_gate": {
+    "name": "JANUS_INFINITE_FACES_POST_COMPROMISE_TEMPORAL_ROOT_RECOVERY_TEST",
+    "status": "OPEN",
+    "question": "What happens when a root that legitimately attested old checkpoints becomes compromised later?"
+  }
+}

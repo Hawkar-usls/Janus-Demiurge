@@ -1,0 +1,171 @@
+{
+  "artifact_uuid": "JANUS-POSS1-PLATE-DAY-EXPOSURE-PHASE0-ACQUISITION-GATE-v1.0",
+  "title": "JANUS POSS-I Plate-Day Exposure — Phase-0 Acquisition, Provenance and H0/H1 Admission Gate",
+  "version": "v1.0",
+  "timestamp": "2026-08-14T23:37:00+03:00",
+  "status": "PIPELINE_READY__REAL_ANALYSIS_BLOCKED_ON_CLOSED_VASCO_INPUTS_AND_CALENDAR_RECONCILIATION",
+  "purpose": "Turn the POSS-I nuclear/UAP correlation question into a byte-frozen, plate-day exposure-normalized test of H0 schedule/artifact versus H1 non-zero baseline plus nuclear trigger/modulator, without silently substituting public but non-equivalent catalogs.",
+  "lineage": {
+    "active_corrective_audit": "registry/cosmology/JANUS-UAP-POSS1-NONNUCLEAR-BASELINE-TRIGGER-AUDIT-v1.0.json",
+    "uap_domain_index": "data/JANUS-UAP-DOMAIN-INDEX-2026-08-14-v1.0.json",
+    "prior_reproducibility_manifest": "registry/cosmology/JANUS-CROSS-REGISTRY-BRANCHING-REANALYSIS-02-PHASE0-SOURCE-MANIFEST-v1.0.json",
+    "current_authority_changed": false
+  },
+  "exact_target_input_family": {
+    "source_level_catalog": {
+      "expected_filename_from_independent_replication": "SUPERVIKTIG_HELAVASCO.csv",
+      "expected_rows": 107875,
+      "expected_unique_plates": 635,
+      "expected_fields_at_minimum": ["J2000 position", "UTC observation timestamp", "plate identifier/metadata"],
+      "availability": "NOT_PUBLICLY_DISTRIBUTED__AVAILABLE_FROM_ORIGINAL_AUTHORS_ON_REASONABLE_REQUEST",
+      "substitution_forbidden": [
+        "the public SVO 5,399-candidate final unidentified catalog",
+        "an independently regenerated catalog such as the Hayes 2.85M-feature catalog",
+        "aggregate daily counts without the 107,875 source-to-plate binding"
+      ],
+      "reason": "Those are scientifically useful controls but are not byte-equivalent to the catalog used for the target association."
+    },
+    "daily_master": {
+      "expected_filename_from_independent_replication": "Transient_Nuclear_Analyzed_Dataset_ScientificReports.xlsx",
+      "expected_rows": 2718,
+      "study_start": "1949-11-19",
+      "study_end": "1957-04-28",
+      "reported_transient_total_in_independent_replication": 107862,
+      "availability": "NOT_PUBLICLY_DISTRIBUTED__AVAILABLE_FROM_ORIGINAL_AUTHORS_ON_REASONABLE_REQUEST"
+    },
+    "validated_catalog": {
+      "expected_filename_from_independent_replication": "SUPERVIKTIG_HELAVASCO_validated_v4.csv",
+      "availability": "NOT_PUBLICLY_DISTRIBUTED_IN_THE_REPLICATION_REPOSITORY",
+      "role": "candidate-quality/ML sensitivity only; thresholds must be frozen before inspection of nuclear effect"
+    },
+    "count_reconciliation_gate": {
+      "source_catalog_rows": 107875,
+      "daily_master_reported_sum": 107862,
+      "difference": 13,
+      "status": "UNEXPLAINED_UNTIL_RAW_INPUTS_ARE_RECEIVED",
+      "rule": "Do not delete, add, normalize or silently date-filter the 13-record difference. Identify exact row membership and transformation responsible before admission."
+    }
+  },
+  "public_plate_provenance": {
+    "STScI_MAST_DSS_plate_list": {
+      "resource": "SurveyPlateListLatest.csv / legacy SurveyPlateList.txt",
+      "status": "PUBLIC_BUT_MUTABLE",
+      "known_current_context": "MAST describes POSS-I E / XE as a 936-plate survey and notes that plate metadata files are updated when errors are corrected.",
+      "freeze_rule": "Download once for an analysis release, record retrieval timestamp, raw SHA-256 and source URL, and never let a later mutable download silently replace the frozen bytes.",
+      "primary_denominator_rule": "Do not treat all 936 POSS-I E plates as target exposure unless source-level provenance shows they were actually eligible for the 107,875-candidate pipeline. The primary matrix is bound to the 635 target plate IDs; the full STScI schedule is a separate sensitivity/control layer."
+    },
+    "digitization_provenance": {
+      "known_context": "STScI/CASB documentation identifies First Generation POSS-I E DSS material as glass-copy material; original plate, copy generation, scanner and processing lineage must therefore be stored separately rather than collapsed into a generic 'plate' field.",
+      "required_fields": ["physical_source_class", "copy_generation", "scanner", "scan_product/version", "FITS/header provenance where available"]
+    },
+    "exposure_time": {
+      "source": "DSS FITS header EXPOSURE keyword / plate metadata",
+      "rule": "Use exact per-plate values where available; do not hard-code one nominal exposure for all plates in the admitted matrix."
+    }
+  },
+  "nuclear_calendar_freeze": {
+    "original_study_reproduction": {
+      "status": "ROW_LEVEL_FREEZE_REQUIRED",
+      "reported_source_family": [
+        "DOE/NV-209 Rev.16 for United States tests",
+        "the source used by the 2025 paper for Soviet tests",
+        "the source used by the 2025 paper for British tests"
+      ],
+      "reported_above_ground_test_count_in_2025_study": 124,
+      "rule": "First reproduce the exact source definitions used by the target paper, even where a later or more authoritative source is preferred for sensitivity analysis."
+    },
+    "independent_control_calendar": {
+      "status": "SOURCE_DEFINITION_DISCREPANCY_DETECTED",
+      "reported_count_in_Hayes_2026": 126,
+      "importance": "124 versus 126 is not a rounding difference; both calendars must be frozen before looking at beta_nuclear and run as preregistered sensitivity definitions."
+    },
+    "authoritative_anchors": {
+      "US": "DOE/NV--209-Rev16, September 2015, official NNSA compilation",
+      "UK": "UK Parliament/Hansard table of overseas atmospheric nuclear weapons tests provides dated/type/height records",
+      "USSR": "An authoritative row-complete source must be frozen before the authoritative-calendar branch is admitted; do not infer missing Soviet rows from memory."
+    },
+    "required_columns": [
+      "test_id", "country", "test_name", "detonation_date_utc", "detonation_time_utc_if_known",
+      "location", "burst_type", "above_ground", "source_id", "source_row_or_page", "calendar_version"
+    ]
+  },
+  "plate_day_matrix_contract": {
+    "grain": "one row per target plate_id x UTC observation date/exposure opportunity",
+    "required_core": [
+      "plate_id", "obs_date_utc", "candidate_count", "first_candidate_timestamp_utc", "last_candidate_timestamp_utc",
+      "exposure_seconds", "plate_area_deg2", "exposure_deg2_min", "nuclear_window_m1_p1"
+    ],
+    "provenance_covariates": ["copy_generation", "scanner", "survey_code", "emulsion"],
+    "geometry_covariates": ["plate_center_ra_deg", "plate_center_dec_deg", "edge_distance_or_center_subset_when_available"],
+    "environmental_covariates_required_when_source_complete": ["Kp", "Ap", "lunar", "precipitation", "cloud/visibility"],
+    "exposure_definition_primary": "observed/processed sky area multiplied by exposure time, preferably exact algorithmically eligible footprint rather than nominal plate area",
+    "fallback": "plate-day counts without area-time exposure are descriptive schedule diagnostics only and cannot admit primary beta_nuclear"
+  },
+  "hypotheses": {
+    "H0_schedule_artifact": "Given actual observation opportunity and plate/copy/scanner/environmental covariates, candidate counts require no nuclear term; beta_nuclear = 0 within uncertainty.",
+    "H1_baseline_plus_trigger": "A non-zero baseline exists outside nuclear windows, but a nuclear-window term remains after frozen exposure and artifact/environmental controls; beta_nuclear != 0.",
+    "causal_boundary": "H1 support would establish residual association only. It would not identify the transient features as physical sky events, UAP, non-human objects, or a nuclear causal mechanism."
+  },
+  "analysis_preregistration": {
+    "primary_model": "Negative Binomial NB2 count model with estimated dispersion and log(exposure_deg2_min) exposure term",
+    "primary_term": "nuclear_window_m1_p1",
+    "primary_outputs": ["beta_nuclear", "IRR", "95% CI", "p-value", "H0/H1 AIC", "nested likelihood-ratio statistic"],
+    "mandatory_sensitivity": [
+      "alternate frozen nuclear calendars without post-hoc choice",
+      "+/-2 and +/-4 day windows",
+      "block/cluster permutation preserving observation schedule and seasonality",
+      "plate/copy/scanner controls",
+      "geomagnetic and weather covariates where source-complete",
+      "center-versus-edge strata",
+      "candidate-quality/ML thresholds only when threshold is preregistered"
+    ],
+    "multiple_testing_rule": "The +/-1 day full-catalog test is primary. Alternate windows, quality thresholds and geometry strata are sensitivity analyses and may not replace the primary result post hoc."
+  },
+  "software": {
+    "phase0_gate": {
+      "path": "research/uap_poss1/janus_poss1_phase0_gate_v0_1.py",
+      "creation_commit": "85ae9b7a1e3c51f64ec7df7210c77ef3a5531f2b",
+      "functions": ["SHA-256 freeze", "exact row/plate identity gate", "107875-vs-107862 reconciliation block", "plate-day matrix build", "nuclear lag/window flags", "area-time exposure admission"]
+    },
+    "model_runner": {
+      "path": "research/uap_poss1/janus_poss1_h0_h1_v0_1.py",
+      "creation_commit": "9ce2e086cc17dbc5a6fd6e9e21d00202fb41af15",
+      "functions": ["NB2 estimated dispersion", "exposure normalization", "robust/observation-date clustered covariance", "Poisson sensitivity", "beta/IRR/CI/p/AIC/LRT output"]
+    },
+    "column_mapping_contract": {
+      "path": "research/uap_poss1/schema_mapping.example.json",
+      "creation_commit": "4d84097fa4edb40061b8a86c42354887e293d8bd",
+      "rule": "Column names are mapped explicitly after receipt; the runner must not guess schema aliases from scientific meaning."
+    },
+    "local_software_verification": {
+      "python_compile": "PASS",
+      "synthetic_matrix_test": "PASS",
+      "synthetic_model_execution": "PASS",
+      "scientific_result_from_synthetic_data": "NONE__SOFTWARE_TEST_ONLY"
+    }
+  },
+  "independent_external_control": {
+    "Hayes_2026_full_footprint": {
+      "catalog_relation": "INDEPENDENT_NON_EQUIVALENT_CATALOG__DO_NOT_POOL_AS_IF_SAME_INPUT",
+      "reported_observation_nights_in_study_window": 368,
+      "reported_primary_plus_minus_1_day_IRR": 1.03,
+      "reported_95CI": [0.89, 1.18],
+      "reported_p": 0.71,
+      "interpretation": "An explicit observation-footprint/exposure analysis on an independently generated POSS-I feature catalog reports no nuclear enhancement. This raises the prior probability that schedule/exposure can explain the original calendar-day association, but it does not compute beta_nuclear for the closed 107,875 VASCO catalog."
+    }
+  },
+  "admission_gates": [
+    {"gate": "G0_EXACT_CLOSED_INPUT_RECEIPT", "status": "BLOCKED", "pass": "107,875-row/635-plate catalog plus 2,718-row daily master received and byte-hashed"},
+    {"gate": "G1_COUNT_RECONCILIATION", "status": "BLOCKED", "pass": "13-record 107875-vs-107862 difference explained by explicit row transformation"},
+    {"gate": "G2_PLATE_PROVENANCE", "status": "PARTIAL_PUBLIC_SOURCE_IDENTIFIED", "pass": "635 plate IDs joined to frozen schedule, exposure and original/copy/scanner provenance with no ambiguous joins"},
+    {"gate": "G3_NUCLEAR_CALENDAR", "status": "BLOCKED_ON_ROW_LEVEL_FREEZE", "pass": "124-study reproduction calendar and 126-control definition both frozen before effect inspection"},
+    {"gate": "G4_PLATE_DAY_MATRIX", "status": "SOFTWARE_READY_DATA_BLOCKED", "pass": "candidate sum and plate identities reconcile and every primary row has positive exposure denominator"},
+    {"gate": "G5_H0_VS_H1", "status": "NOT_RUN_ON_REAL_DATA", "pass": "primary and mandatory sensitivity outputs emitted from frozen inputs"},
+    {"gate": "G6_CURRENT_AUTHORITY", "status": "UNCHANGED", "pass": "only an explicitly admitted result may create/switch a current-authority pointer"}
+  ],
+  "next_external_action": {
+    "required": "Obtain the exact three VASCO input files from the original authors/replication data custodians under the paper's reasonable-request condition.",
+    "after_receipt": "Run phase0 validate immediately before inspecting nuclear effect size; freeze raw hashes and column mapping; then join plate provenance and execute the preregistered matrix/model path."
+  },
+  "claim_ceiling": "PIPELINE_READY__TARGET_BETA_NUCLEAR_NOT_COMPUTED"
+}

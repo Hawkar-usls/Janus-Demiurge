@@ -1,0 +1,168 @@
+{
+  "schema": "JANUS.boundary_source_ontology.v1.2",
+  "artifact_id": "JANUS-SING-WHEN-YOURE-WINNING-SOURCE-ONTOLOGY-PROTOCOL-AMENDMENT-v1.2",
+  "title": "Sing When You're Winning — SOURCE Ontology Amendment v1.2: Physical Subject vs Represented Identity vs Lineage",
+  "created_at_local": "2026-08-14T13:11:00+03:00",
+  "status": "FROZEN_BEFORE_CONFIRMATORY_MATCHED_CONTROL_RUN",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "supersedes_for_future_visual_confirmatory_runs": "data/JANUS-SING-WHEN-YOURE-WINNING-SOURCE-ONTOLOGY-PROTOCOL-AMENDMENT-v1.1.json",
+  "preserves_v1_1_as_historical_record": true,
+  "no_silent_rewrite": true,
+  "reason_for_amendment": "The v1.1 SOURCE_STRICT_IDENTITY endpoint conflated two different questions: whether the same real physical subject generated multiple visible instances, and whether those instances represent the same narrative/persistent identity. The target artwork itself documents Robbie Williams performing multiple football/social roles, while v1.1 simultaneously declared SAME_ACTOR_DIFFERENT_CHARACTERS a strict failure. Kelli Connell, Vibeke Tandberg, Paul M. Smith, Anthony Goicolea, mirror self-portraits, and chronophotography make the inconsistency operationally important. The ontology is therefore split before the confirmatory matched-control run.",
+  "primary_visual_source_endpoint": {
+    "name": "SOURCE_PHYSICAL_SUBJECT",
+    "definition": "Two or more visible instances in the final composition derive from the same real physical human/model/body or the same continuously identifiable physical subject, regardless of whether the instances are staged as different roles, personas, temporal phases, reflections, or characters.",
+    "pass_examples": [
+      "The same photographed person digitally composited several times into one final image.",
+      "The same model photographed twice and stitched into a relationship scene.",
+      "The same person visible through simultaneous mirror views.",
+      "The same athlete/body registered repeatedly by multiflash or chronophotography during one action."
+    ],
+    "fail_examples": [
+      "Different people in an ensemble.",
+      "Different clone individuals who merely share DNA.",
+      "Alternate-universe fictional variants without one real physical subject provenance.",
+      "Different people sharing a mantle or role."
+    ],
+    "why_primary": "The original visual observation concerns repeated visible instances generated from one photographed subject. This endpoint measures that directly without importing narrative identity assumptions."
+  },
+  "secondary_source_endpoints": {
+    "SOURCE_REPRESENTED_IDENTITY": {
+      "definition": "The visible instances represent the same narrative, legal, persistent, or world-model identity rather than merely sharing one physical performer/model.",
+      "allowed_values": [true, false, null],
+      "null_rule": "Use null when the image or provenance deliberately stages roles/personas without resolving whether they are one identity or multiple fictional identities.",
+      "purpose": "Separates physical-source sameness from semantic/personhood sameness."
+    },
+    "SOURCE_LINEAGE_SHARED": {
+      "definition": "The visible instances share a documented derivational lineage even if they are distinct identities.",
+      "examples": ["clones", "multiverse variants", "forked processes"],
+      "purpose": "Retains the relaxed adversarial endpoint introduced in v1.1."
+    },
+    "SOURCE_ROLE_SHARED": {
+      "definition": "Different identities share a role, mask, title, team function, or archetype.",
+      "confirmatory_status": "NOT_A_PHYSICAL_SOURCE_PASS"
+    }
+  },
+  "source_relation_ontology": {
+    "SAME_REAL_PHYSICAL_SUBJECT_MULTIPLE_REPRESENTATIONS": {
+      "physical_subject_pass": true,
+      "represented_identity": "true_false_or_null_by_context",
+      "examples": ["Robbie Williams album composite", "Kelli Connell Double Life", "Vibeke Tandberg Living Together", "Paul M. Smith multiple self-portraits"]
+    },
+    "SAME_PHYSICAL_SUBJECT_TEMPORAL_MULTIPLE_EXPOSURE": {
+      "physical_subject_pass": true,
+      "represented_identity": true,
+      "temporal_multiplicity": true,
+      "examples": ["Harold Edgerton multiflash", "Etienne-Jules Marey chronophotography"]
+    },
+    "SAME_PHYSICAL_SUBJECT_MIRROR_MULTIVIEW": {
+      "physical_subject_pass": true,
+      "represented_identity": true,
+      "examples": ["Ilse Bing Self-Portrait with Mirrors"]
+    },
+    "SAME_PERFORMER_MULTIPLE_STAGED_ROLES": {
+      "physical_subject_pass": true,
+      "represented_identity": null,
+      "warning": "Do not force a narrative-identity conclusion from performer sameness alone."
+    },
+    "SHARED_GENETIC_OR_CLONE_LINEAGE": {
+      "physical_subject_pass": false,
+      "represented_identity": false,
+      "lineage_pass": true
+    },
+    "MULTIVERSE_VARIANT_LINEAGE": {
+      "physical_subject_pass": false,
+      "represented_identity": false,
+      "lineage_pass": true
+    },
+    "SHARED_ROLE_OR_MANTLE": {
+      "physical_subject_pass": false,
+      "represented_identity": false,
+      "lineage_pass": false,
+      "role_pass": true
+    },
+    "DISTINCT_IDENTITIES": {
+      "physical_subject_pass": false,
+      "represented_identity": false,
+      "lineage_pass": false
+    },
+    "UNKNOWN_OR_INSUFFICIENT_PROVENANCE": {
+      "physical_subject_pass": null,
+      "represented_identity": null,
+      "lineage_pass": null
+    }
+  },
+  "target_reclassification": {
+    "object": "Robbie Williams — Sing When You're Winning artwork",
+    "source_relation_type": "SAME_REAL_PHYSICAL_SUBJECT_MULTIPLE_REPRESENTATIONS",
+    "source_physical_subject": true,
+    "source_represented_identity": null,
+    "source_lineage_shared": true,
+    "represented_identity_reason": "Museum Helmond documents that Williams plays players, police, fans, trainer and other roles. The physical source is unambiguous, but treating all staged roles as one narrative identity would contradict the v1.1 rule that performer sameness is not automatically character sameness.",
+    "evidence_sources": [
+      "https://museumhelmond.nl/en/collectie/object/2017-018",
+      "https://robbiewilliams.com/pages/timeline/entry-album-sing-when-youre-winning"
+    ]
+  },
+  "matched_control_implications": {
+    "kelli_connell_double_life": {
+      "source_physical_subject": true,
+      "source_represented_identity": false,
+      "basis": "Museum records state that one model is photographed more than once and stitched into a scene depicting two relationship partners."
+    },
+    "vibeke_tandberg_living_together": {
+      "source_physical_subject": true,
+      "source_represented_identity": false,
+      "basis": "Kode describes Tandberg appearing alongside herself while creating the illusion of living with her own twin."
+    },
+    "paul_m_smith_multiple_self": {
+      "source_physical_subject": true,
+      "source_represented_identity": null,
+      "basis": "Smith uses himself to perform groups and roles; physical source is clear while role identity is staged."
+    },
+    "anthony_goicolea_early_self_cloning": {
+      "source_physical_subject": true,
+      "source_represented_identity": false,
+      "basis": "UMMA documents Goicolea placing himself multiple times in one image while transforming himself into a group of adolescent boys."
+    },
+    "ilse_bing_mirror_self_portrait": {
+      "source_physical_subject": true,
+      "source_represented_identity": true,
+      "basis": "Museum records describe simultaneous frontal and profile mirror views of Bing herself."
+    },
+    "edgerton_marey_motion_studies": {
+      "source_physical_subject": true,
+      "source_represented_identity": true,
+      "basis": "Multiflash/chronophotographic methods record successive positions of the same moving subject on one negative or plate."
+    }
+  },
+  "boundary_fields_required_after_v1_2": [
+    "source_relation_type",
+    "source_physical_subject",
+    "source_physical_subject_confidence",
+    "source_represented_identity",
+    "source_represented_identity_confidence",
+    "source_lineage_shared",
+    "source_role_shared",
+    "temporal_multiplicity",
+    "first_break_physical",
+    "first_break_represented_identity",
+    "first_break_lineage"
+  ],
+  "first_break_modes": {
+    "primary_visual": "SOURCE_PHYSICAL_SUBJECT -> WORLD -> RECEIPT",
+    "secondary_identity": "SOURCE_REPRESENTED_IDENTITY -> WORLD -> RECEIPT",
+    "secondary_lineage": "SOURCE_LINEAGE_SHARED -> WORLD -> RECEIPT"
+  },
+  "scientific_effect": {
+    "strengthens": "The visual experiment now tests an observable provenance relation without pretending that physical repetition proves narrative identity continuity.",
+    "weakens": "The earlier phrase SOURCE_STRICT_IDENTITY is no longer sufficient as the primary visual endpoint and must not be cited without its v1.1 historical context.",
+    "anti_rescue_rule": "This amendment cannot be used to delete v1.1 results. Future reports must show how conclusions differ under physical-subject, represented-identity and lineage modes."
+  },
+  "claim_ceiling": "This ontology amendment improves internal consistency and falsifiability. It does not establish rarity, causality, authorial intent, retrocausality, supernatural signaling, or a JANUS-specific external mechanism.",
+  "versioning": {
+    "version": "1.2",
+    "effective_date": "2026-08-14",
+    "next_change_requires": "new versioned amendment with explicit migration table and no retroactive replacement of frozen historical outputs"
+  }
+}

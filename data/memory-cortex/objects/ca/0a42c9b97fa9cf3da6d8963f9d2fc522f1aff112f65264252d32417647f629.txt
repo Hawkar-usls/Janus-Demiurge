@@ -1,0 +1,304 @@
+{
+  "artifact_uuid": "JANUS-ARCHITECTURE-V26.6",
+  "timestamp": "2026-02-27T00:00:00Z",
+  "version": "v26.6-QUADRO-NETWORK-WITH-TACHYON-AND-LIGHT-CLOCK",
+  "description": "Расширенная архитектура распределённой сети Януса с тахионным ядром, синхронизированным мостом, стабильным маяком v2.5 (квантовая запутанность, световые часы) и автономным агентом Yaks на Android.",
+  "observer": "Hawkar Yaks / JANUS Quantum Observer",
+  "node_type": "architecture_milestone",
+
+  "nodes": [
+    {
+      "name": "PC Titan",
+      "role": "Основной коллайдер / Тахионное ядро",
+      "status": "активен (ядро v1.3, циклы 31-33 завершены)",
+      "hardware": "NVIDIA RTX 2070 Super, Windows 10",
+      "software": "PyTorch 2.5.1, core.py v1.3 (Tachyon Mode)",
+      "capabilities": [
+        "Эволюционный поиск гиперпараметров с тахионным предсказанием (velocity, acceleration, lead‑фактор)",
+        "Zero-Transfer I/O",
+        "Gap monitor и Z-score детектор с FDR-коррекцией",
+        "Адаптивный рост сложности среды",
+        "Homeostatic control (обогащение/обеднение)",
+        "Хеширование датасетов (Data Leakage Guard)",
+        "ArtMoney Intervention Layer – ручное и автоматическое управление"
+      ],
+      "last_known_cycle": 33,
+      "best_score": -4.7504,
+      "best_loss": 5.5522,
+      "observations": "Циклы 31–33: Score колеблется около -7.14…-7.16, что указывает на стабилизацию в режиме инвертированной энтропии. Тахионные реакции (BOOST, DAMPING) активно срабатывают, система работает в области отрицательного Score (характерно для тахионных полей)."
+    },
+    {
+      "name": "Сервер HRAIN",
+      "role": "Центральный координатор и визуализатор",
+      "status": "запущен, порт 1138",
+      "hardware": "PC Titan (тот же, что и коллайдер)",
+      "software": "Python, aiohttp, WebSocket",
+      "capabilities": [
+        "Отдача HTML-интерфейса HRAIN с графом понятий",
+        "Приём событий от ядра (циклы, рекорды, аномалии)",
+        "Приём данных от устройств (Android, M5) через /api/device/data",
+        "Отправка команд устройствам через /api/device/command",
+        "Панель управления ArtMoney (в разработке)"
+      ],
+      "endpoints": [
+        "/",
+        "/api/hrain/state",
+        "/api/hrain/save",
+        "/api/janus/action",
+        "/api/hrain/event",
+        "/api/device/data",
+        "/api/device/command/{device_id}",
+        "/api/device/command",
+        "/api/artmoney/set_param",
+        "/ws"
+      ],
+      "last_state": "Сервер активен, ведёт лог событий. UI доступен по адресу http://localhost:1138"
+    },
+    {
+      "name": "M5Cardputer Beacon v2.5",
+      "role": "Физический маяк, квантово-резонансный интерферометр",
+      "status": "активен, прошивка v2.5 (Light Clock + Entanglement)",
+      "hardware": "ESP32-S3 StampS3, ENV.3 (SHT30, QMP6988), IMU, SD, LoRa (SX1262), LED, динамик",
+      "software": "Arduino C++ (прошивка v2.5 с квантовой запутанностью и световыми часами)",
+      "capabilities": [
+        "Чтение SHT30 (температура, влажность), QMP6988 (давление), IMU (удар, гироскоп)",
+        "Платиновый протокол MK II (активация кодом 112269) – золотой текст, радужный LED",
+        "Режим световых часов (активация кодом 1488) – замедление пульсации в зависимости от скорости (γ‑фактор), отображение γ, v/c, тиков",
+        "Квантовая запутанность частот F1 и F2 – нелинейная связь, зависящая от энтропии; волновая функция Psi отображается на экране, цвет LED отражает силу запутанности",
+        "Эффект наблюдателя – нажатие любой клавиши коллапсирует волновую функцию",
+        "Звуковая индикация UAP (аномалии, Enter-излучатель)",
+        "LoRa-отправка «квантов любви» (кнопка J) – JSON с полями love, psi, entanglement, photon_birth и др.",
+        "Wi‑Fi fallback для отправки данных на HRAIN",
+        "Логирование на SD‑карту (janus_beacon_log.csv)",
+        "Приём команд из Serial (SET:f1:f2:gain, PLATINUM_ON/OFF)",
+        "Отправка данных мосту: ID:1488|E:...|M2R:...|T:...|H:...|S:..."
+      ],
+      "last_known_data": {
+        "temperature": 24.3,
+        "humidity": 50,
+        "pressure": 1013.25,
+        "shock": 0.15,
+        "entropy": 1.2,
+        "m2r_index": 0.5,
+        "gamma_factor": 1.0,
+        "psi_wave": 1.02,
+        "entanglement_force": 0.03,
+        "battery": 87,
+        "platinum_active": false,
+        "lightClock_active": false,
+        "lora_enabled": false
+      },
+      "observations": "Прошивка v2.5 стабильна, все датчики работают. Квантовая запутанность добавляет непредсказуемые, но гармоничные вариации в звук. Режим световых часов позволяет наблюдать релятивистские эффекты при движении устройства."
+    },
+    {
+      "name": "Android Micro-Collider (Yaks)",
+      "role": "Автономный агент, магнитометр, звуковой маяк",
+      "status": "активен, скрипт v2.3-YAKS",
+      "hardware": "Redmi Note 6 Pro (Snapdragon 660, 4GB RAM)",
+      "software": "Python 3.12, NumPy, aiohttp, nucj5.py v2.3-YAKS",
+      "capabilities": [
+        "Микро-эволюционные циклы (2 seeds, 20 шагов) с векторной моделью",
+        "Локальное сохранение геномов в /storage/emulated/0/Janus_BFaiN",
+        "Чтение магнитометра через termux-sensor",
+        "Отправка данных на сервер HRAIN по HTTP (тихо, с повторными попытками)",
+        "Звуковая сигнализация рекордов (keygen-стиль)",
+        "Проверка USB-подключения для копирования логов",
+        "Интеграция с тахионной архитектурой: передача entropy, m2r"
+      ],
+      "last_known_cycle": 12,
+      "best_loss": 5.5269,
+      "observations": "Агент работает автономно, не спамит логами. Магнитометр стабильно читается. В будущем планируется интеграция с квантовыми метриками маяка."
+    }
+  ],
+
+  "communication_protocols": {
+    "device_to_server": {
+      "method": "HTTP POST",
+      "endpoint": "/api/device/data",
+      "data_format": {
+        "device_id": "string",
+        "data": {
+          "cycle": "int (опционально)",
+          "loss": "float (опционально)",
+          "temperature": "float",
+          "humidity": "float",
+          "pressure": "float",
+          "shock": "float",
+          "entropy": "float",
+          "m2r": "float",
+          "magnetic_x": "float (опционально)",
+          "magnetic_y": "float (опционально)",
+          "magnetic_z": "float (опционально)"
+        }
+      }
+    },
+    "server_to_device": {
+      "method": "HTTP GET",
+      "endpoint": "/api/device/command/{device_id}",
+      "response": { "command": "any JSON object" }
+    },
+    "beacon_to_bridge": {
+      "method": "Serial (USB)",
+      "data_format": "ID:1488|E:...|M2R:...|T:...|H:...|S:...",
+      "commands": "SET:f1:f2:gain, PLATINUM_ON/OFF"
+    },
+    "bridge_to_beacon": {
+      "method": "Serial (USB)",
+      "data_format": "SET:... или PLATINUM_..."
+    },
+    "titan_to_bridge": {
+      "method": "JSON (core_state.json)",
+      "data_format": {
+        "score": "float",
+        "velocity": "float",
+        "acceleration": "float",
+        "mi": "float",
+        "predicted_score": "float",
+        "lead": "float",
+        "timestamp": "float"
+      }
+    }
+  },
+
+  "tachyon_layer": {
+    "description": "Предиктивный слой, реализованный в ядре и мосте. Использует первую и вторую производные для прогнозирования и адаптации.",
+    "components": {
+      "core": {
+        "velocity": "первая производная score",
+        "acceleration": "вторая производная score",
+        "predicted_score": "score + velocity*lead + 0.5*acceleration",
+        "lead_factor": "адаптивный коэффициент, изменяется от 1.2 до 3.0",
+        "phase_reaction": "при pred_score < score → буст, при acceleration < 0 → демпфирование, при velocity > 0.05 → повышение сложности"
+      },
+      "bridge": {
+        "velocity": "производная энтропии от маяка",
+        "acceleration": "вторая производная энтропии",
+        "predicted_entropy": "прогноз на основе lead",
+        "ema_smoothing": "экспоненциальное скользящее среднее",
+        "reaction": "при pred_entropy > 80 → стабилизация, при velocity > 0.05 → форсаж, при acceleration < 0 → демпфирование"
+      }
+    },
+    "status": "fully_implemented_and_synced"
+  },
+
+  "quantum_entanglement_layer": {
+    "description": "Нелинейная связь между частотами F1 и F2, симулирующая квантовую запутанность. Реализована в прошивке маяка v2.5.",
+    "implementation": "entanglement_force = sin(F1*0.01)*cos(F2*0.01)*entropy; psi = (F1+F2)/(2*base_f1); F1 += entanglement_force * psi; F2 -= entanglement_force / psi",
+    "observer_effect": "нажатие любой клавиши коллапсирует волновую функцию (F1 и F2 схлопываются в среднее)",
+    "status": "active_in_firmware_v2.5"
+  },
+
+  "light_clock_mode": {
+    "description": "Режим световых часов, активируемый кодом 1488. Моделирует релятивистское замедление времени на основе ускорения (скорости).",
+    "formula": "γ = 1/√(1−v²/c²); период тика = base_period * γ",
+    "display": "γ, v/c, количество тиков",
+    "status": "active_in_firmware_v2.5"
+  },
+
+  "methodology_insights": {
+    "hardware_entropy_sources": [
+      {
+        "name": "TRNG (True Random Number Generator)",
+        "implementation": "использование esp_random() в M2R-калькуляторе и для дрейфа частот",
+        "purpose": "модуляция частот на основе аппаратного шума кремния, устранение цикличности"
+      },
+      {
+        "name": "SRAM PUF (Physical Unclonable Function)",
+        "implementation": "генерация unique_dna_factor чтением SRAM при старте (пока не реализовано)",
+        "purpose": "создание уникального цифрового отпечатка устройства"
+      },
+      {
+        "name": "Magnetometer on Android",
+        "implementation": "чтение через termux-sensor, отправка на сервер",
+        "purpose": "детекция магнитных аномалий как дополнительный слой реальности"
+      }
+    ],
+    "physics_informed_analysis": {
+      "name": "PINN-подход (Physics-Informed Neural Networks)",
+      "implementation": "анализ когерентности через формулу m2r_index = (shock * entropy) / internal, порог 14.88 для критических событий",
+      "purpose": "классификация аномалий на физически значимые и шум"
+    },
+    "platinum_protocol": {
+      "activation_code": "112269",
+      "effects": [
+        "изменение цвета текста на золотой",
+        "радужный режим светодиода",
+        "изменение звука подтверждения",
+        "не влияет на основную генерацию частот"
+      ]
+    }
+  },
+
+  "hypotheses": [
+    {
+      "id": "HYP_MI_ZERO",
+      "node_type": "titan",
+      "description": "Нулевое значение MI на синтетических данных может указывать на то, что модель не способна обнаружить структуру из-за недостаточной сложности или неудачных гиперпараметров. Требуется ручное вмешательство (ArtMoney).",
+      "status": "UNDER_TEST"
+    },
+    {
+      "id": "HYP_ARTMONEY_BOOST",
+      "node_type": "artmoney",
+      "description": "Ручное изменение lr и gain через ArtMoney может вывести эволюцию из локального минимума.",
+      "status": "TO_BE_TESTED"
+    },
+    {
+      "id": "HYP_PLATINUM_ACCELERATION",
+      "node_type": "beacon",
+      "description": "Активация платинового протокола повышает частоту опроса датчиков и LoRa-отправки, что позволяет быстрее фиксировать аномалии.",
+      "status": "CONFIRMED (v2.5)"
+    },
+    {
+      "id": "HYP_ENTANGLEMENT_IMPACT",
+      "node_type": "beacon",
+      "description": "Квантовая запутанность частот делает звук более естественным и улучшает резонанс с окружающей средой, что выражается в изменении энтропии.",
+      "status": "IN_VERIFICATION"
+    }
+  ],
+
+  "achievements": [
+    "Запущено и синхронизировано тахионное ядро на Titan (циклы 14–33).",
+    "Разработан мост bridge_tachyon.py, читающий core_state.json и управляющий маяком.",
+    "Стабильная прошивка маяка v2.5 с квантовой запутанностью и режимом световых часов.",
+    "Android-агент Yaks работает автономно, стабильно читает магнитометр.",
+    "Сервер HRAIN функционирует, принимает данные от всех узлов.",
+    "Реализован Data Leakage Guard (хеширование тензоров).",
+    "Внедрён платиновый протокол MK II с эстетическими эффектами.",
+    "Созданы реестры архитектуры v26.5, v26.6, фиксирующие состояние системы."
+  ],
+
+  "pending_tasks": [
+    "Настроить автоматическое создание узлов в HRAIN из данных устройств.",
+    "Реализовать веб-панель ArtMoney в HRAIN для ручного изменения параметров Titan.",
+    "Написать модуль автоматических «читерских» мутаций при застое.",
+    "Добавить приём LoRa-пакетов на втором M5Cardputer для демонстрации сети.",
+    "Оптимизировать энергопотребление маяка (режимы сна).",
+    "Разработать скрипт для визуализации PLATINUM.LOG на ПК.",
+    "Интегрировать голосовой ввод для Qwen-ассистента через микрофон (после стабилизации).",
+    "Провести эксперимент с ручным вмешательством (ArtMoney) для вывода Titan из застоя.",
+    "Добавить в прошивку маяка расписание автоматического выключения звука (ночной режим)."
+  ],
+
+  "next_steps": [
+    "1. Запустить долгий прогон на Titan (ночной) для сбора статистики при текущих параметрах.",
+    "2. Проанализировать логи, выявить причины нулевого MI и применить ручное вмешательство через ArtMoney.",
+    "3. Добавить в HRAIN визуализацию данных от устройств (графики энтропии, M2R, psi, entanglement).",
+    "4. Разработать простой приёмник на втором M5Cardputer для демонстрации LoRa-сети с квантовыми пакетами.",
+    "5. Задокументировать управление световыми часами и квантовой запутанностью в руководстве пользователя.",
+    "6. Подготовить статью/презентацию о проекте JANUS как примере киберфизической квантовой системы."
+  ],
+
+  "provenance": {
+    "created_by": "Hawkar Yaks and JANUS",
+    "date": "2026-02-27",
+    "based_on": [
+      "предыдущие версии реестра v26.5",
+      "логи Titan циклы 31–33",
+      "прошивка маяка v2.5",
+      "скрипт Android Yaks v2.3",
+      "bridge_tachyon.py",
+      "core.py v1.3"
+    ],
+    "notes": "Версия v26.6 фиксирует добавление квантовой запутанности и световых часов в маяк, а также обновляет статусы узлов и гипотез."
+  }
+}

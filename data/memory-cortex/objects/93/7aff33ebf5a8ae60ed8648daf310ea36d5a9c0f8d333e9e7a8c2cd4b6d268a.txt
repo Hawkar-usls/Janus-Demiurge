@@ -1,0 +1,72 @@
+{
+  "artifact_id": "JANUS-PALOMAR-JPFM-3C-IDENTIFIABILITY-CORRECTIVE-AUDIT-v1.0",
+  "experiment_id": "JPFM-3C",
+  "date": "2026-08-15",
+  "status": "CORRECTIVE_INTERPRETATION_AUDIT__SHARED_PATTERN_REJECTED__NEGATIVE_POSS_COEFFICIENT_NOT_ADMITTED",
+  "bindings": {
+    "admission": "data/JANUS-PALOMAR-JPFM-3C-HALPHA-CROSS-CHANNEL-ADMISSION-v1.0.json",
+    "result": "data/JANUS-PALOMAR-JPFM-3C-HALPHA-CROSS-CHANNEL-RUN-001.json",
+    "result_blob_sha": "6f90a214a866b22df3216e2828398b0ee0985447",
+    "result_commit": "09ddac9b52ce9540aec137fd8fb097b8d0c8f4db",
+    "successful_workflow_run": 31873102419,
+    "successful_artifact_id": 9243981781,
+    "successful_artifact_digest": "sha256:3908cef4eeb61edaddc361704b531a557b4368aa661c6bdc3049c5ef984403df",
+    "technical_fail_closed_wrapper_commit": "a6ae1d85374271dec1eaab4d244118788f024a04",
+    "workflow_hotfix_commit": "04e610def873e86c0977eb67cc8259016ee797d5",
+    "current_authority_changed": false
+  },
+  "primary_result": {
+    "solar_coverage_threshold_minutes": 720,
+    "eligible_calendar_days": 572,
+    "flare_days": 504,
+    "bluebook": {
+      "starlike_flare_days": 20,
+      "starlike_nonflare_days": 1,
+      "odds_ratio": 2.768595041322314,
+      "fisher_p_two_sided": 0.4948788403248827,
+      "year_month_blocked_null_mean": 18.71856,
+      "year_month_blocked_positive_tail_p": 0.2715745685086298,
+      "interpretation": "No significant STARLIKE enrichment on H-alpha flare dates."
+    },
+    "poss": {
+      "eligible_palomar_nights": 20,
+      "flare_nights": 18,
+      "nonflare_nights": 2,
+      "adjusted_irr": 0.4614497779147478,
+      "adjusted_ci95": [0.257921271590352, 0.8255848624838096],
+      "adjusted_p_two_sided": 0.009167927197125789,
+      "crude_rate_ratio": 0.8036437246963564,
+      "interpretation": "Numerically negative exact-day coefficient, but not admitted as a solar-suppression effect because only two primary non-flare Palomar nights remain and the full nuisance model is high-dimensional relative to n=20."
+    },
+    "shared_pattern": "NOT_ADMITTED"
+  },
+  "technical_failure_audit": {
+    "first_run": 31872980439,
+    "failure_class": "NONFINITE_MODEL_COVARIANCE_SERIALIZATION",
+    "scientific_design_failed": false,
+    "admission_gate_passed_before_failure": true,
+    "repair": "Any NB2 fit with non-finite standard error, p-value or confidence interval is now explicitly classified MODEL_NONFINITE_INFERENCE_FAIL_CLOSED and excluded from admission rather than serialized as NaN.",
+    "thresholds_or_endpoints_changed": false
+  },
+  "identifiability_warnings": [
+    "Primary POSS exact-day analysis has 18 flare versus only 2 non-flare nights.",
+    "The preregistered full nuisance design is high-dimensional for n=20, so asymptotic covariance may be fragile even when finite.",
+    "Six of seven POSS lag fits failed finite covariance inference and were correctly excluded; only lag 0 was finite.",
+    "The 360-minute sensitivity retains 26 Palomar nights with 23 flare and 3 non-flare and remains negative (IRR approximately 0.601, p approximately 0.023), but this does not solve the sparse-control problem.",
+    "The 1080-minute sensitivity has no event variation among the six retained Palomar nights and therefore cannot estimate a flare effect."
+  ],
+  "admission_decisions": {
+    "solar_flare_shared_human_photographic_trigger": "NOT_SUPPORTED",
+    "solar_flare_increases_bluebook_starlike": "NOT_SUPPORTED",
+    "solar_flare_increases_poss_rate": "NOT_SUPPORTED",
+    "solar_flare_suppresses_poss_rate": "NOT_ADMITTED__SPARSE_NONFLARE_CONTROL_AND_OVERPARAMETERIZATION",
+    "negative_poss_exact_day_coefficient": "OPEN_IDENTIFIABILITY_DIAGNOSTIC"
+  },
+  "required_followup": [
+    "Do not rescue the negative coefficient by tuning the patrol threshold or lag window.",
+    "If the negative POSS association is revisited, use a deliberately low-dimensional or exact randomization estimator frozen before rerun and report the leverage of each non-flare control night.",
+    "Prioritize independent event families with better exposed/unexposed balance, including complete sounding-rocket and high-altitude-balloon manifests.",
+    "Retain the official NOAA event+patrol denominator as the template for all future external-event calendars."
+  ],
+  "claim_ceiling": "NO_HALPHA_SHARED_CROSS_CHANNEL_PATTERN__NEGATIVE_POSS_POINT_ESTIMATE_IS_NOT_A_PHYSICAL_SUPPRESSION_CLAIM"
+}

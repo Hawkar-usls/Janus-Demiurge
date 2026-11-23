@@ -1,0 +1,246 @@
+{
+  "id": "EYE-R4-MINIMAL-INDEPENDENT-EVIDENCE-IDENTIFIABILITY-CONTRACT-2026-09-01-v1.0",
+  "schema_version": "1.0",
+  "created_at": "2026-09-01",
+  "status": "ACTIVE_RESEARCH_CONTRACT",
+  "program": "EYE",
+  "stage": "R4",
+  "title": "Minimal Independent Evidence Set for Cause-Class Identifiability",
+  "canonical_question": "What is the minimal additional set of independent evidence required to recover a cause class from an ambiguous output-symbol?",
+  "motivation": {
+    "origin": "An ambiguous punctate visual output can be compatible with multiple retinal, neural, optical, environmental, or particle-interaction causes; the useful general problem is therefore not naming one cause from one symbol, but determining which additional evidence makes the cause class identifiable.",
+    "scope": [
+      "human perception",
+      "astronomical imaging",
+      "physical sensors",
+      "computer vision",
+      "causal inference",
+      "forensic traces",
+      "search systems",
+      "proof systems"
+    ],
+    "epistemic_ceiling": "This contract identifies the evidence needed to discriminate cause classes. It does not authorize a medical diagnosis, physical-cause claim, or causal claim from the output-symbol alone."
+  },
+  "core_objects": {
+    "C": "finite or structured set of candidate cause classes",
+    "y": "observed output-symbol shared by two or more candidate causes",
+    "E": "universe of candidate additional evidence channels",
+    "S": "selected subset of E",
+    "compatibility_set": "K(y,S) = {c in C : c remains compatible with y and the observed evidence in S}",
+    "target_partition": "the desired granularity of cause classification; exact mechanism recovery is not required when class recovery is sufficient"
+  },
+  "minimal_identifiability_objective": {
+    "definition": "Find S* with minimum evidence cost such that the remaining compatible causes belong to exactly one target cause class and this conclusion survives independence and robustness gates.",
+    "cardinality_form": "S* = argmin_S |S| subject to IDENTIFIABLE(y,S)=true",
+    "cost_form": "S* = argmin_S sum_i cost(e_i) subject to IDENTIFIABLE(y,S)=true",
+    "probabilistic_form": "Where calibrated likelihoods exist, require posterior decision risk <= epsilon and a pre-registered separation margin between the winning class and all alternatives.",
+    "non_identifiability_rule": "If two cause classes remain observationally equivalent under every admissible evidence subset, verdict = NON_IDENTIFIABLE_UNDER_CURRENT_MEASUREMENT_MODEL, not NEGATIVE."
+  },
+  "independence_contract": {
+    "principle": "MULTIPLE_EVIDENCE != INDEPENDENT_EVIDENCE",
+    "dimensions": [
+      {
+        "name": "provenance_independence",
+        "question": "Did the evidence arise from distinct acquisition or analysis lineages rather than copies or transformations of the same source?"
+      },
+      {
+        "name": "failure_mode_independence",
+        "question": "Can one latent fault, artifact, bias, or preprocessing step generate all selected witnesses simultaneously?"
+      },
+      {
+        "name": "mechanism_orthogonality",
+        "question": "Do the witnesses interrogate different consequences of the candidate cause rather than repeatedly measuring one consequence?"
+      },
+      {
+        "name": "modality_independence",
+        "question": "When possible, are distinct physical or informational modalities used?"
+      },
+      {
+        "name": "interventional_independence",
+        "question": "Does at least one witness come from a controlled perturbation or counterfactual test when intervention is feasible and safe?"
+      }
+    ],
+    "hard_warning": "Statistical conditional independence alone is neither necessary nor sufficient for epistemic independence of evidence channels."
+  },
+  "witness_families": [
+    "temporal_profile",
+    "spatial_geometry",
+    "spectral_or_frequency_signature",
+    "cross_sensor_coincidence",
+    "repeatability_and_recurrence",
+    "controlled_perturbation_response",
+    "environmental_covariates",
+    "substrate_or_location_specificity",
+    "raw_vs_processed_comparison",
+    "negative_control",
+    "positive_control",
+    "independent_observer_or_instrument",
+    "provenance_and_chain_of_custody",
+    "mechanism_specific_side_effect"
+  ],
+  "pairwise_discrimination_matrix": {
+    "construction": "For every pair of target cause classes (c_i,c_j), record which evidence channels can distinguish them under the declared assumptions.",
+    "coverage_rule": "Every unresolved pair must be separated by at least one valid witness family; high-risk claims should require more than one failure-mode-independent separator.",
+    "set_cover_interpretation": "The minimal evidence problem can be represented as a weighted set-cover or hitting-set problem over unresolved cause-class pairs.",
+    "anti_shortcut": "A witness that distinguishes many pairs but shares one catastrophic failure mode with the output channel must not automatically dominate the set."
+  },
+  "identifiability_gate": {
+    "PASS": [
+      "The target cause class is uniquely determined at the predeclared granularity under the measurement model.",
+      "Every rival target class is separated by explicit evidence rather than absence of unexplained evidence.",
+      "The selected witness set passes the independence contract.",
+      "Required controls pass.",
+      "Leave-one-out minimality is evaluated: removing any witness either breaks identifiability or demonstrates that the removed witness was redundant.",
+      "Alternative plausible measurement models have been stress-tested where material."
+    ],
+    "PARTIAL": "Some cause classes are excluded but two or more target classes remain observationally compatible.",
+    "UNKNOWN_RESOURCE_LIMIT": "The required evidence exists in principle but was not acquired or processed due resource or access limits.",
+    "NON_IDENTIFIABLE_UNDER_CURRENT_MEASUREMENT_MODEL": "No admissible witness set separates the remaining classes under current assumptions.",
+    "FAIL_INVALID_EVIDENCE": "The apparent discrimination depends on leakage, duplicated provenance, circular inference, invalid controls, or a shared unmodeled failure mode."
+  },
+  "minimality_tests": {
+    "leave_one_out": "For each e in S*, recompute identifiability on S*\\{e}.",
+    "permutation_negative_control": "Where sequence/order carries meaning, permute evidence order or labels to test whether the discriminator depends on accidental ordering conventions.",
+    "duplicate_lineage_control": "Replace one witness with a derivative of another; the independence score must fall and should not create a stronger verdict.",
+    "null_symbol_control": "Run the same selector on outputs lacking the target symbol to estimate spurious cause-class recovery.",
+    "adversarial_common_cause_control": "Introduce or simulate a shared artifact capable of contaminating multiple witnesses and verify that the gate detects the dependency."
+  },
+  "domain_instantiations": {
+    "eye_punctate_flash": {
+      "output_symbol": "brief punctate flash or pixel-like percept",
+      "candidate_class_examples": [
+        "retinal phototransduction/dark-noise class",
+        "mechanical/retinal stimulation class",
+        "cortical visual phenomenon class",
+        "external photon class",
+        "ionizing-particle interaction class"
+      ],
+      "useful_witness_examples": [
+        "monocular vs binocular localization",
+        "duration and temporal evolution",
+        "relationship to eye movement or mechanical pressure",
+        "dark adaptation dependence",
+        "repeatability",
+        "external detector coincidence if specifically testing particle hypotheses"
+      ],
+      "safety_note": "This is a research discrimination framework, not a diagnostic protocol. New persistent flashes, floaters, field loss, or other concerning visual changes warrant professional eye evaluation."
+    },
+    "palomar_imaging": {
+      "output_symbol": "point-like or transient image feature",
+      "useful_witness_examples": [
+        "multiple exposures",
+        "independent plate or detector",
+        "PSF morphology",
+        "astrometric persistence or motion",
+        "spectral information",
+        "raw plate inspection",
+        "processing-pipeline negative controls"
+      ]
+    },
+    "computer_vision": {
+      "output_symbol": "detected object, pixel anomaly, segmentation region, or classifier token",
+      "useful_witness_examples": [
+        "independent camera/view",
+        "depth",
+        "temporal continuity",
+        "raw sensor data",
+        "model-family disagreement",
+        "controlled viewpoint or illumination perturbation"
+      ]
+    },
+    "forensics": {
+      "output_symbol": "trace compatible with several causal histories",
+      "useful_witness_examples": [
+        "independent material modality",
+        "chain of custody",
+        "time ordering",
+        "mechanism-specific trace",
+        "negative controls",
+        "alternative-source testing"
+      ]
+    },
+    "search_and_proof_systems": {
+      "output_symbol": "candidate answer, witness, proof state, or apparent recurrence",
+      "useful_witness_examples": [
+        "independent derivation lineage",
+        "fresh-checkout replay",
+        "independent verifier",
+        "counterexample search",
+        "adversarial mutation",
+        "provenance-preserving exact replay"
+      ]
+    }
+  },
+  "machine": {
+    "name": "AMBIGUOUS-SYMBOL-TO-CAUSE-CLASS",
+    "operators": [
+      "OBSERVE_SYMBOL",
+      "ENUMERATE_CAUSE_CLASSES",
+      "ENUMERATE_DISCRIMINATING_WITNESSES",
+      "AUDIT_WITNESS_INDEPENDENCE",
+      "SELECT_MINIMUM_COVER",
+      "ACQUIRE_OR_QUERY_WITNESSES",
+      "ELIMINATE_INCOMPATIBLE_CLASSES",
+      "RUN_CONTROLS",
+      "LEAVE_ONE_OUT_MINIMALITY",
+      "VERIFY_CAUSE_CLASS_CEILING",
+      "PRESERVE_PROVENANCE"
+    ],
+    "compact_form": "SYMBOL -> HYPOTHESIS_SET -> DISCRIMINATOR_SET -> INDEPENDENCE_GATE -> MINIMUM_WITNESS_SET -> CLASS_RECOVERY -> VERIFY"
+  },
+  "new_laws": [
+    "OUTPUT_SYMBOL != CAUSE",
+    "MORE_EVIDENCE != MORE_INDEPENDENT_EVIDENCE",
+    "INDEPENDENT_MODALITIES != INDEPENDENT_FAILURE_MODES",
+    "IDENTIFIABILITY_REQUIRES_RIVAL_SEPARATION",
+    "ABSENCE_OF_A_WITNESS != EVIDENCE_AGAINST_A_CAUSE_UNLESS_DETECTION_POWER_IS_ESTABLISHED",
+    "MINIMALITY_REQUIRES_LEAVE_ONE_OUT",
+    "NON_IDENTIFIABLE != FALSE",
+    "CAUSE_CLASS_RECOVERY != EXACT_MECHANISM_RECOVERY"
+  ],
+  "research_grounding": [
+    {
+      "topic": "causal identifiability and data fusion",
+      "reference": "Bareinboim and Pearl, Causal inference and the data-fusion problem, PNAS 2016",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4941504/",
+      "relevance": "Formalizes identifiability and combining heterogeneous data sources."
+    },
+    {
+      "topic": "multi-view identifiability",
+      "reference": "Gresele et al., The Incomplete Rosetta Stone problem: Identifiability results for Multi-view Nonlinear ICA, UAI 2020",
+      "url": "https://proceedings.mlr.press/v115/gresele20a.html",
+      "relevance": "Shows that multiple sufficiently different noisy views can make latent-source recovery identifiable when a single view cannot."
+    },
+    {
+      "topic": "sensor selection by information",
+      "reference": "Yan and Chen, Sensor Selection via Maximizing Hybrid Bayesian Fisher Information and Mutual Information in Unreliable Sensor Networks, Electronics 2020",
+      "url": "https://www.mdpi.com/2079-9292/9/2/283",
+      "relevance": "Connects sensor subset selection with information gain and uncertainty reduction."
+    },
+    {
+      "topic": "measurement-error identifiability",
+      "reference": "Multiple Indicators, Multiple Causes Measurement Error Models",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4184955/",
+      "relevance": "Emphasizes that identifiability of latent causal quantities requires additional information about the measurement process."
+    }
+  ],
+  "next_executable_stage": {
+    "id": "EYE-R4.1-MINIMUM-WITNESS-SET-SOLVER",
+    "goal": "Build a domain-agnostic solver that accepts candidate cause classes and evidence channels, constructs a pairwise discrimination matrix, penalizes dependent witnesses, and returns the lowest-cost witness set plus unresolved pairs and falsification controls.",
+    "required_outputs": [
+      "cause_class_catalog.json",
+      "witness_catalog.json",
+      "independence_matrix.json",
+      "pairwise_discrimination_matrix.json",
+      "minimum_witness_sets.json",
+      "leave_one_out_receipt.json",
+      "unresolved_equivalence_classes.json"
+    ],
+    "verdict_ceiling": "IDENTIFIABILITY_CANDIDATE_ONLY until replayed on at least one synthetic benchmark with known causes and one real cross-domain benchmark."
+  },
+  "provenance": {
+    "concept_origin": "JANUS EYE discussion, 2026-09-01",
+    "relationship_to_r3": "Generalizes R3 hidden-machine falsification from detecting shared operator machines to determining the minimal independent evidence needed to distinguish rival causal explanations for the same observable output.",
+    "preservation_rule": "Future refinements must supersede rather than silently rewrite this contract."
+  }
+}

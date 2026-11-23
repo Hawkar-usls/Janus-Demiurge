@@ -1,0 +1,116 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1B-WALL-SEMANTIC-COMPONENT-COLLAPSE-RESULT-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "PASS_WALL_NONMIM_SEMANTIC_COLLAPSE",
+  "gate": "R5_B1B1B_WALL_SEMANTIC_COMPONENT_COLLAPSE_GATE_V1",
+  "binds": {
+    "prereg_fund_commit": "472a99edd77f69f4ec8320c1ddabc0db5a5a6887",
+    "prereg_meta_commit": "f887e879fce52355f047a5cc057ba5e2727b46f9",
+    "prereg_blob": "c6dffa896dde5b5c50e78ed533e96c2238465b61",
+    "wall_source_embedding_seal_blob": "005862bd8a14b46d63eb89ae1d30c7a2d34085ed"
+  },
+  "theorem_1": {
+    "name": "WALL_Y0_GREEDY_PEEL_V1",
+    "statement": "For every sealed wall-family instance G_n, with post-seed-two residual Y0=Z_n, G_n is 4-colorable iff G_n-Z_n is 4-colorable; every coloring of G_n-Z_n extending the frozen source colors extends to G_n in O(|Z_n|) time.",
+    "proof": {
+      "forward": "Restriction of any proper coloring of G_n to G_n-Z_n is proper.",
+      "reverse": [
+        "Take any proper 4-coloring phi of G_n-Z_n extending the frozen source colors.",
+        "For an ordinary z_e, N(z_e)={a,b}, so at most two colors appear on N(z_e); since L(z_e)=[4], choose a color outside phi(N(z_e)).",
+        "For the special z*, N(z*)={a*,b*,r}, so at most three colors appear on N(z*); again a color in [4]\\phi(N(z*)) exists.",
+        "Z_n is stable, so coloring one z_e creates no constraint on any other z_f.",
+        "Therefore all z_e can be reinserted independently."
+      ],
+      "runtime": "Every z_e has degree at most 3, so scanning its neighbor colors and choosing the least available color is O(1) per vertex and O(|Z_n|) total.",
+      "exactness": "No branching, global state, separator, mim-width decomposition, or semijoin is used."
+    },
+    "verdict": "PASS"
+  },
+  "theorem_2": {
+    "name": "WALL_CORE_EXPLICIT_EXTENSION_V1",
+    "statement": "For every n>=7, the graph G_n-Z_n has an explicit proper coloring extending all frozen source colors.",
+    "assignment": {
+      "s1": 1,
+      "s2": 2,
+      "p": 3,
+      "m": 2,
+      "n0": 4,
+      "a1": 1,
+      "a2": 3,
+      "w": 2,
+      "r": 4,
+      "A_n": 2,
+      "B_n": 3
+    },
+    "edge_check": [
+      "s1-s2:1-2, s1-p:1-3, p-m:3-2, m-n0:2-4, n0-s2:4-2",
+      "s2-a1:2-1, s2-a2:2-3, a1-w:1-2, a2-w:3-2",
+      "s2-r:2-4, m-r:2-4",
+      "s1-A:1-2 and s1-B:1-3",
+      "A-B complete edges:2-3",
+      "r-A:4-2 and r-B:4-3"
+    ],
+    "verdict": "PASS"
+  },
+  "component_message_analysis": {
+    "definition": "For a residual connected Y0 component C and forbidden-color mask F subseteq [4] induced by complete outside neighbors, mu_C(F)=1 iff C can be properly colored subject to every color in F being unavailable throughout C, with frozen internal/source constraints retained.",
+    "wall_ordinary": {
+      "C": "{z_e}",
+      "message": "mu_C(F)=1 for all |F|<=3",
+      "reachable": "|F|<=2 because z_e has only its two wall-survivor complete neighbors",
+      "effective_constraint": "TAUTOLOGY_ON_REACHABLE_STATES"
+    },
+    "wall_special": {
+      "C": "{z*}",
+      "message": "mu_C(F)=1 for all |F|<=3",
+      "reachable": "|F|<=3 because z* has wall endpoints plus r",
+      "effective_constraint": "TAUTOLOGY_ON_REACHABLE_STATES"
+    },
+    "joint_consequence": "Every residual wall-component message is tautological on every coloring state reachable from the core. Hence the wall incidence pattern contributes zero nontrivial semantic coupling among survivor color decisions."
+  },
+  "algorithmic_interpretation": {
+    "structural_width": "mimw(I_sigma)>=sqrt(n)/50 is unbounded by the sealed wall theorem.",
+    "semantic_interface": "The entire residual Y0 interface peels locally with O(1) information per component and no cross-component coupling.",
+    "principle": "UNBOUNDED_INCIDENCE_MIM_WIDTH_DOES_NOT_IMPLY_UNBOUNDED_SEMANTIC_INTERFACE_COMPLEXITY.",
+    "wall_status": "NOT_AN_ALGORITHMIC_OBSTRUCTION_TO_POLYNOMIAL_L2_REPAIR"
+  },
+  "relation_to_old_router_stack": {
+    "FACTORIZED_FEEDBACK": "NOT_NEEDED_FOR_WALL; Z_n components disappear by local peel.",
+    "CUT_SUPPORT_OR_SEMIJOIN": "NOT_NEEDED; every wall component has full reachable support.",
+    "DERIVED_TWO_RELATION": "NOT_REACHED.",
+    "MINCUT_PAIR_SEPARATOR": "NOT_REACHED.",
+    "GUARDED_ELIMINATION": "NOT_REACHED.",
+    "firewall": "No existing carrier scope is reinterpreted or promoted; WALL_Y0_GREEDY_PEEL_V1 is a new source-specific local rule preceding the old stack."
+  },
+  "proposed_router_update": [
+    "FIRST: LOCAL_FULL_LIST_EXTENSION_PEEL on any component whose extension is certified for every reachable outside-color mask.",
+    "IF peel does not apply: route to existing exact carrier stack under its frozen preconditions."
+  ],
+  "new_primary_object": {
+    "name": "SOURCE_COMPONENT_MESSAGE_LANGUAGE",
+    "question": "Can source-valid hard C11 states realize arbitrarily many nontrivial residual-Y0 component messages that genuinely couple survivor choices?",
+    "hard_family_requirements": [
+      "source-valid arbitrary N",
+      "hard post-seed-two VI state",
+      "nontrivial component messages",
+      "components not locally/greedily extension-redundant",
+      "no existing exact carrier route",
+      "proof-distinct component constraints that genuinely couple survivor choices"
+    ]
+  },
+  "scientific_ceiling": {
+    "WALL_SEMANTIC_COLLAPSE": "PROVED",
+    "WALL_ALGORITHMIC_OBSTRUCTION": "FALSIFIED",
+    "RAW_INCIDENCE_COMPLEXITY_AS_HARDNESS_PROXY": "REJECTED",
+    "GENERAL_COMPONENT_MESSAGE_LANGUAGE": "OPEN",
+    "GENERAL_INTERFACE_COMPRESSION": "OPEN",
+    "NONEDGE_Z_SURVIVOR_COMPRESSION": "OPEN",
+    "FULL_L2_REPAIR": "OPEN",
+    "LEMMA11_P7_LIFT": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "stop": true,
+  "return_to_HQ": true
+}

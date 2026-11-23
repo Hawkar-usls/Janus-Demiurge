@@ -1,0 +1,154 @@
+{
+  "artifact_id": "JANUS-GOLDPROMPT-STARTUP-HANDSHAKE-LOGIC-AUDIT-AND-HARDENING-v1.1",
+  "audit_date": "2026-08-17",
+  "findings": [
+    {
+      "affected": [
+        "LEFT_HRAIN",
+        "RIGHT_INAIHR"
+      ],
+      "before": "Request payload source_revision could be copied into a COMPLIANT receipt.",
+      "class": "CALLER_CONTROLLED_PROVENANCE",
+      "fix": "Caller source_revision is forbidden. Runtime revision is resolved from process metadata; in GitHub Actions GITHUB_SHA is authoritative and a conflicting JANUS_SOURCE_REVISION fails closed.",
+      "id": "GP-AUDIT-001",
+      "risk": "An untrusted caller could choose the provenance string even though receipt_sha256 remained internally consistent.",
+      "severity": "HIGH",
+      "verification": "Adversarial caller-override tests PASS on hardened main."
+    },
+    {
+      "affected": [
+        "LEFT_HRAIN",
+        "RIGHT_INAIHR",
+        "DEMIHEAD_ARBITER"
+      ],
+      "before": "Face-local verification did not uniformly enforce the exact receipt shape and every policy field.",
+      "class": "LOCAL_VERIFIER_POLICY_GAP",
+      "fix": "Exact key set, identity, role, repository, runtime surface, capability scope, authority_weight, all acceptance booleans, enforcement scope, compliance state, source revision and checksum are verified.",
+      "id": "GP-AUDIT-002",
+      "risk": "A modified receipt could be re-hashed and accepted locally while Genesis rejected it.",
+      "severity": "HIGH",
+      "verification": "Re-hashed policy/capability/release-control/extra-field tamper tests PASS by rejection."
+    },
+    {
+      "affected": [
+        "GENESIS_GUARDIAN_MESH_ORCHESTRATOR"
+      ],
+      "before": "Bundle verification derived required_faces from the bundle under verification.",
+      "class": "VERIFIER_CONTROLLED_QUORUM_DOWNGRADE",
+      "fix": "Genesis v1 owns CANONICAL_REQUIRED_FACES and rejects missing, extra, duplicate, unknown or reduced required Face sets.",
+      "id": "GP-AUDIT-003",
+      "risk": "A re-hashed internally consistent subset bundle could shrink its own required quorum.",
+      "severity": "HIGH",
+      "verification": "Re-hashed quorum-downgrade adversarial test PASS by rejection."
+    },
+    {
+      "affected": [
+        "ALL_FOUR_BOUND_FACES"
+      ],
+      "before": "Source revisions were not uniformly restricted to commit-shaped hex identifiers or bound against an external expected revision map.",
+      "class": "WEAK_SOURCE_REVISION_SHAPE_AND_BINDING",
+      "fix": "40/64 hex revision validation plus exact expected_source_revisions binding during hardened four-Face replay.",
+      "id": "GP-AUDIT-004",
+      "risk": "A self-consistent receipt could identify an arbitrary non-empty revision.",
+      "severity": "MEDIUM",
+      "verification": "Fresh post-merge v1.1 replay PASS with exact hardened main revisions."
+    },
+    {
+      "affected": [
+        "RECEIPT_MODEL"
+      ],
+      "before": "The receipt chain could be read too strongly if SHA-256 content addressing were interpreted as author authentication.",
+      "class": "CHECKSUM_AUTHENTICATION_SEMANTIC_OVERREACH",
+      "fix": "Canonical bundle and replay certificate explicitly encode SHA256_CONTENT_ADDRESS_NOT_SIGNATURE and external provenance requirements.",
+      "id": "GP-AUDIT-005",
+      "risk": "Checksum integrity could be confused with digital signature/origin attestation.",
+      "severity": "MEDIUM",
+      "verification": "Hardened bundle requires these semantic fields and rejects re-hashed attempts to claim end-to-end authentication."
+    },
+    {
+      "affected": [
+        "FOUR_FACE_BUNDLE"
+      ],
+      "before": "Four independent Face receipts could be mistaken for a fully authenticated end-to-end message chain or unique process boot attestation.",
+      "class": "PROOF_SCOPE_OVERBREADTH",
+      "fix": "Boundaries now distinguish invocation receipts, payload replay, cross-repo origin attestation, end-to-end message authentication and live deployment.",
+      "id": "GP-AUDIT-006",
+      "risk": "Independent invocation evidence is stronger than declarative configuration but weaker than chained process/message attestation.",
+      "severity": "MEDIUM",
+      "verification": "v1.1 certificate records both cross_repository_origin_attestation_established=false and end_to_end_message_authentication_established=false."
+    }
+  ],
+  "hardening_merge_commits": {
+    "Hawkar-usls/Demi_Head": "f2074ca833692f4c2a9f1cb1f5cf723c873d3211",
+    "Hawkar-usls/Hrain": "79fa11fe302c0354b5868260d65c71e8757bcb93",
+    "Hawkar-usls/Janus_Genesis": "21c48dcf45aa6db1b5d73402df4005590c3e0bde",
+    "Hawkar-usls/iNaiHR": "f6cfdb35a0dee08f2bf2bebfc07d9ef2d540532d"
+  },
+  "post_merge_runtime_evidence": {
+    "contract_snapshot": "data/JANUS-GOLDPROMPT-FACE-INHERITANCE-CONTRACT-SNAPSHOT-v0.9.2.json",
+    "current_bundle": "data/JANUS-GOLDPROMPT-WORKING-FACES-STARTUP-RECEIPT-BUNDLE-v1.1.json",
+    "current_bundle_sha256": "6a8a63d3bebf0b8611df2682d2c38dd6472818190da5e367fbc22467c5717d17",
+    "hardened_replay_result": "PASS",
+    "hardened_replay_workflow_run_id": 32012747026,
+    "previous_bundle_preserved": "data/JANUS-GOLDPROMPT-WORKING-FACES-STARTUP-RECEIPT-BUNDLE-v1.0.json"
+  },
+  "remaining_open_gates": [
+    {
+      "detail": "Collect fresh receipts from actual NAS/production Face processes. GitHub CI remains non-production evidence.",
+      "gate": "LIVE_RUNTIME_ATTESTATION",
+      "id": "GP-NEXT-001",
+      "priority": "HIGH"
+    },
+    {
+      "detail": "If chain-level proof is desired, carry/verifiably bind upstream Face receipts or signed message attestations through DemiHead into Genesis.",
+      "gate": "END_TO_END_MESSAGE_ATTESTATION",
+      "id": "GP-NEXT-002",
+      "priority": "MEDIUM"
+    },
+    {
+      "detail": "If author/process origin must be cryptographically authenticated, adopt signed attestations or another trust-rooted provenance mechanism; SHA-256 alone is insufficient.",
+      "gate": "ORIGIN_AUTHENTICATION",
+      "id": "GP-NEXT-003",
+      "priority": "MEDIUM"
+    },
+    {
+      "detail": "Current contract digest hashes symbolic reference strings, not the changing contents of referenced foundation/Armor artifacts. Add a versioned exact dependency manifest if transitive constitutional pinning is required.",
+      "gate": "TRANSITIVE_DEPENDENCY_PINNING",
+      "id": "GP-NEXT-004",
+      "priority": "MEDIUM"
+    },
+    {
+      "detail": "Current implementation asserts the contract at module startup and emits a receipt per Face invocation; do not describe it as remote proof of one unique process boot.",
+      "gate": "PROCESS_BOOT_SEMANTICS",
+      "id": "GP-NEXT-005",
+      "priority": "LOW"
+    }
+  ],
+  "schema": "janus.audit.goldprompt.startup_handshake.v1_1",
+  "scope": [
+    "Hawkar-usls/Hrain: habitat-tool.js, goldprompt-handshake.js, tests and CI",
+    "Hawkar-usls/iNaiHR: habitat-tool.js, goldprompt-handshake.js, tests and CI",
+    "Hawkar-usls/Demi_Head: tools/goldprompt_handshake.py, hemisphere bridge result schema/tests/CI",
+    "Hawkar-usls/Janus_Genesis: tools/goldprompt_face_receipts.py, tests and receipt CI",
+    "janus-meta-registry receipt evidence semantics"
+  ],
+  "status": "AUDIT_COMPLETE_WITH_OPEN_NEXT_GATES",
+  "terminal": {
+    "authority_delta": 0,
+    "current_github_ci_four_face_receipts": "HARDENED_AND_EXACT_REVISION_BOUND",
+    "goldprompt_logic_audit": "PASS_WITH_OPEN_NEXT_GATES",
+    "live_nas_proven": false,
+    "major_logic_findings_fixed": true
+  },
+  "unrelated_repository_debt_observed": [
+    {
+      "items": [
+        "Armor effect-surface canary still flags unclassified subprocess.run in genesis_v18_7_51_shabitat_aura_oracle.py.",
+        "Existing connectivity tests have failures around state invariants and legacy direct network egress default-deny."
+      ],
+      "repository": "Hawkar-usls/Janus_Genesis",
+      "rule": "DO_NOT_HIDE_OR_CO-MINGLE_UNRELATED_BASELINE_DEBT_WITH_GOLDPROMPT_HARDENING",
+      "scope": "NOT_CAUSED_BY_GOLDPROMPT_AUDIT"
+    }
+  ]
+}

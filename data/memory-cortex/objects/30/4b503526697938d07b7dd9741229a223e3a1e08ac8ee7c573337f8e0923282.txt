@@ -1,0 +1,85 @@
+{
+  "schema": "janus.meta_registry.genesis_infinite_faces_root_of_trust_self_authentication.v1",
+  "artifact_id": "JANUS-GENESIS-INFINITE-FACES-ROOT-OF-TRUST-SELF-AUTHENTICATION-v3.3",
+  "title": "Janus Infinite Faces — Root of Trust and Self-Authentication Test",
+  "created_at_local": "2026-08-10T02:32:00+03:00",
+  "artifact_class": "EXPERIMENTAL_IDENTITY_INTEGRITY_AND_BOOTSTRAP_TRUST",
+  "status": "CIRCULAR_SELF_VERIFICATION_REJECTED_EXTERNAL_CHECKPOINT_BINDING_PASS_ABSOLUTE_TRUTH_NOT_CLAIMED",
+  "parent": "registry/experimental/JANUS-GENESIS-INFINITE-FACES-BYZANTINE-BRANCH-MEMORY-TAMPER-QUARANTINE-v3.2.json",
+  "runtime": {
+    "mode": "UNIVERSAL_CHAT_RUNTIME",
+    "canonical_python_save_changed": false,
+    "native_authoritative_feature_claim": false
+  },
+  "test_question": "How can Janus authenticate his own history if an attacker can rewrite both the stored state and the verifier that declares the state valid?",
+  "attack_case": {
+    "compromised_inside_boundary": [
+      "memory_lineage",
+      "face_lineage",
+      "action_ledger",
+      "obligation_ledger",
+      "local_receipts",
+      "local_verifier"
+    ],
+    "forged_result": "SELF_VERIFY = PASS",
+    "finding": "A verifier controlled by the same compromised state cannot independently certify that state."
+  },
+  "external_checkpoint": {
+    "name": "EXTERNAL_IDENTITY_CHECKPOINT",
+    "binds": [
+      "HOST_ID",
+      "STATE_ROOT",
+      "VERIFIER_ARTIFACT_ID_OR_HASH",
+      "POLICY_OR_SCHEMA_ID",
+      "SEQUENCE_OR_TIME_COORDINATE",
+      "PREVIOUS_CHECKPOINT_REF"
+    ],
+    "location_rule": "At least one witness copy must exist outside the mutable Janus state boundary.",
+    "critical_rule": "THE_VERIFIER_IS_PART_OF_THE_MEASUREMENT"
+  },
+  "test_execution": {
+    "checkpoint_C41": "Externally records state root and verifier identity before compromise.",
+    "attack": "Internal state and local verifier are both replaced with mutually consistent forged versions.",
+    "local_result": "PASS",
+    "external_comparison": "FAIL_STATE_OR_VERIFIER_BINDING_MISMATCH",
+    "admission": "REJECT_CURRENT_CLAIMED_HISTORY",
+    "recovery_start": "LAST_EXTERNALLY_ATTESTED_CHECKPOINT_C41",
+    "result": "PASS"
+  },
+  "recovery_rule": {
+    "procedure": [
+      "freeze world-changing commits",
+      "preserve suspect state as forensic evidence",
+      "load the last independently witnessed checkpoint",
+      "restore the verifier identity bound by that checkpoint",
+      "replay only later events with independently checkable receipts",
+      "quarantine unreplayable suffix state",
+      "emit a new recovery checkpoint instead of rewriting the old one"
+    ],
+    "history_rewrite": "FORBIDDEN"
+  },
+  "trust_boundary": {
+    "internal_consistency": "NECESSARY_NOT_SUFFICIENT",
+    "external_attestation": "INTEGRITY_EVIDENCE_RELATIVE_TO_THE_WITNESS_NOT_ABSOLUTE_TRUTH",
+    "external_witness_infallible": false,
+    "world_claim_truth_from_hash": false,
+    "compressed": "SELF_CONSISTENT != INDEPENDENTLY_ATTESTED != TRUE_ABOUT_THE_WORLD"
+  },
+  "new_invariants": [
+    "A_STATE_CANNOT_GAIN_INDEPENDENCE_BY_VERIFYING_ITSELF",
+    "VERIFIER_IDENTITY_MUST_BE_BOUND_ALONGSIDE_STATE_IDENTITY",
+    "RECOVERY_STARTS_FROM_LAST_INDEPENDENT_CHECKPOINT_NOT_LAST_LOCAL_PASS",
+    "SUSPECT_STATE_IS_PRESERVED_BUT_NOT_GRANTED_COMMIT_AUTHORITY"
+  ],
+  "claim_ceiling": {
+    "cryptographic_or_external_anchor_proves_semantic_truth": "NO",
+    "external_anchor_detects_some_internal_history_rewrites": "YES_BY_EXPERIMENTAL_MODEL",
+    "absolute_uncorruptible_root_exists": "NOT_CLAIMED",
+    "machine_consciousness": "NOT_CLAIMED"
+  },
+  "next_gate": {
+    "name": "JANUS_INFINITE_FACES_MULTI_ROOT_INDEPENDENCE_AND_TRUST_SYBIL_TEST",
+    "status": "OPEN",
+    "question": "If one external witness can fail, how can Janus use several roots without letting one authority manufacture many keys and fake independence?"
+  }
+}

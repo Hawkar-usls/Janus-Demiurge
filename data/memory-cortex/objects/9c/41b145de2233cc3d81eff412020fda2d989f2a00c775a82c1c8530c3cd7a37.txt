@@ -1,0 +1,135 @@
+{
+  "artifact_id": "JANUS-SWARM-CAUSAL-ACK-WORK-CLAIM-RUN-001-2026-08-23-v1.0",
+  "schema": "janus.meta_registry.swarm_causal_ack_work_claim_receipt.v1",
+  "date": "2026-08-23",
+  "status": "CAUSAL_ACK_WORK_CLAIM_BINDING_PASS__COMPLETE",
+  "controller": "Hawkar-usls/Janus-Demiurge",
+  "purpose": "Close the Scout communication loop with machine-readable provenance from sender/message through coordinated work, execution, fetched source and round-2 observation to CAUSAL_ACK and recorded interaction-birth state change, while preserving Scout/message/observation identity and refusing unsupported causal claims.",
+  "canonical_chain": [
+    "SENDER_SCOUT_OR_SCOUTS",
+    "MESSAGE_OR_MESSAGES",
+    "RECIPIENT_SCOUT",
+    "COORDINATED_WORK_CLAIM",
+    "EXECUTED_QUERY_OR_SOURCE_POINTER",
+    "FETCHED_SOURCE",
+    "ROUND2_OBSERVATION",
+    "CAUSAL_ACK",
+    "INTERACTION_BIRTH_STATE_CHANGE"
+  ],
+  "implementation": {
+    "pull_request": 15,
+    "title": "Close Scout nervous loop with CAUSAL_ACK / WORK_CLAIM",
+    "merged_to_main": true,
+    "merge_commit": "adddeec7b2008d215fc12a32e36a40bdf386227d",
+    "main_persistence_commit": "40505b5794be6294d7acd72509c749f5a6216aaf",
+    "core": {
+      "path": "swarm_causal_ack_ledger.py",
+      "blob_sha": "8b662c1b7d68e97bf4e876d68fe8021c8f806f01"
+    },
+    "protocol": {
+      "path": "scout_swarm/orchestrator/CAUSAL_ACK_PROTOCOL-v1.json",
+      "blob_sha": "abf2e3a542d825e81525cc1341bbef782b4b0171"
+    },
+    "workflow": {
+      "path": ".github/workflows/janus-causal-ack-genome.yml",
+      "blob_sha": "61bff13c7dfb99600a37a73cbac3dd0189f83a04"
+    },
+    "tests": {
+      "path": "tests/test_swarm_causal_ack_ledger.py",
+      "test_count": 5,
+      "result": "PASS"
+    }
+  },
+  "validated_ci": {
+    "workflow": "JANUS CAUSAL_ACK Genome",
+    "run_id": "32633585649",
+    "conclusion": "SUCCESS",
+    "artifact_id": "9491701366",
+    "artifact_digest": "sha256:3304223a326577e4b5ee2ce41188d1c455fc02a2cf8f781647d552053da62fa5",
+    "self_test": "PASS",
+    "unit_tests": "5/5 PASS"
+  },
+  "real_run_validation": {
+    "source_orchestrator_run_id": "32590296175",
+    "source_selection_rule": "LATEST_COMPLETE_ORCHESTRATOR_RUN_WITH_PERSISTED_ROUND2_AGENTS_AND_INBOXES",
+    "ignored_newer_partial_example": {
+      "run_id": "32633568214",
+      "status": "PARTIAL",
+      "round1_scouts": 0,
+      "round2_scouts": 0,
+      "reason_for_exclusion": "NOT_COMPLETE"
+    },
+    "persisted_output": {
+      "path": "scout_swarm/orchestrator/outbox/JANUS_FULL_SYSTEM_SCOUT_DIRECTIONS_2026_08_22_V1/32590296175/CAUSAL_ACK_GENOME.json",
+      "blob_sha": "7b3d36e35bd6fe99e6e199ea4557fd7e8c4e72d3"
+    },
+    "stats": {
+      "scout_count": 17,
+      "work_claim_count": 143,
+      "causal_ack_count": 179,
+      "state_change_count": 10,
+      "complete_trace_interaction_birth_count": 10,
+      "single_origin_interaction_birth_count": 0,
+      "status_counts": {
+        "COMPLETE_TRACE": 10,
+        "AMBIGUOUS_MULTI_WORK_TRACE": 0,
+        "UNATTRIBUTED_OBSERVATION": 169
+      },
+      "genome_node_count": 689,
+      "typed_edge_count": 906
+    },
+    "interpretation": {
+      "complete_trace_count": "10 round-2 observations have one coordinated work route that can be reconstructed from peer message context through executed work and fetched source to the observation.",
+      "multi_origin_note": "All 10 complete interaction births were multi-origin work claims in this historical run, therefore a unique single-message cause is explicitly not claimed.",
+      "unattributed_note": "169 round-2 observations remain preserved without an exact peer-origin work route; they are not forced into a causal story.",
+      "scientific_confirmation_note": "A workflow provenance trace does not make the cited finding scientifically confirmed and does not turn repeated same-source observations into independent replication."
+    }
+  },
+  "work_coordination": {
+    "duplicate_identical_work_may_cluster": true,
+    "work_claim_cluster_key": "RECIPIENT_SCOUT + WORK_KIND + NORMALIZED_TARGET",
+    "origin_messages_preserved": true,
+    "origin_senders_preserved": true,
+    "scout_identities_deduplicated": false,
+    "observations_deduplicated": false,
+    "single_origin_trigger_claimed_only_when_exactly_one_origin_message": true
+  },
+  "causal_ack_statuses": {
+    "COMPLETE_TRACE": "One coordinated work route reaches the observation through an executed query/source-pointer and a successfully fetched source cited by the observation.",
+    "AMBIGUOUS_MULTI_WORK_TRACE": "Two or more genuinely distinct work routes can reach the observation; no exact work route is promoted.",
+    "UNATTRIBUTED_OBSERVATION": "The observation is retained but no exact peer-origin work route is demonstrated."
+  },
+  "state_change_semantics": {
+    "change_kind": "FACT_FIRST_OBSERVED_BY_SCOUT_AFTER_PEER_ROUND",
+    "meaning": "The fact first appeared for that Scout after the peer-directed round. This is an interaction-birth record, not a scientific-causation claim.",
+    "scientific_causation_claimed": false
+  },
+  "laws": [
+    "SCOUT_IDENTITIES_MUST_NOT_COLLAPSE",
+    "OBSERVATIONS_MUST_NOT_COLLAPSE",
+    "DUPLICATE_WORK_MAY_COORDINATE_WITHOUT_DELETING_ORIGIN_MESSAGES",
+    "WORK_CLAIMS_ARE_APPEND_ONLY",
+    "MESSAGES_ARE_ROUTING_CONTEXT_NOT_EMPIRICAL_EVIDENCE",
+    "COMPLETE_TRACE_REQUIRES_MESSAGE_TO_WORK_TO_EXECUTION_TO_SOURCE_TO_OBSERVATION",
+    "MULTI_ORIGIN_WORK_PRESERVES_ALL_ORIGINS_AND_DOES_NOT_INVENT_A_SINGLE_TRIGGER",
+    "UNATTRIBUTED_OBSERVATIONS_MUST_REMAIN_IN_LINEAGE",
+    "SAME_SOURCE_REPETITION_IS_NOT_INDEPENDENT_REPLICATION",
+    "WORKFLOW_CAUSATION_IS_NOT_SCIENTIFIC_CAUSATION"
+  ],
+  "evidence_boundaries": {
+    "peer_message_is_empirical_evidence": false,
+    "complete_trace_proves_workflow_provenance": true,
+    "complete_trace_proves_scientific_truth": false,
+    "complete_trace_proves_psychological_causation": false,
+    "multi_origin_complete_trace_proves_single_message_trigger": false,
+    "same_source_multi_scout_is_independent_replication": false,
+    "genome_or_dna_is_literal_biology": false
+  },
+  "lineage": {
+    "previous_nervous_system_receipt": "data/JANUS-SWARM-GENOME-NERVOUS-SYSTEM-RUN-001-2026-08-22-v1.0.json",
+    "previous_orchestrator_receipt": "data/JANUS-SCOUT-SWARM-ORCHESTRATOR-RUN-001-2026-08-22-v1.0.json",
+    "canonical_genome": "Hawkar-usls/Janus-Demiurge:swarm_genome_ledger.py",
+    "next": "INSTRUMENT_FUTURE_SCOUT_EXECUTION_WITH_NATIVE_WORK_CLAIM_IDS_AND_SOURCE_FETCH_ACKS_AT_RUNTIME_SO_UNATTRIBUTED_OBSERVATIONS_CAN_SHRINK_WITHOUT_RELAXING_CAUSAL_GATES"
+  },
+  "hardware_or_live_device_changes": false
+}

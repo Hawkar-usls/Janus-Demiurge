@@ -1,0 +1,90 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-R3C-1A-MAP-BOUNDARY-PARSER-CORRECTION-SPEC-2026-08-14-v0.3",
+  "timestamp": "2026-08-14T15:55:00+03:00",
+  "version": "v0.3",
+  "title": "Frozen source-level boundary extraction for the first lineara JavaScript Map array",
+  "observer": "Oleksandr Ahapov / Hawkar + JANUS",
+  "node_type": "parser_correction_spec",
+  "status": "FROZEN_BEFORE_V0_3_EXECUTION",
+  "parent_parser": {
+    "v0_2_spec": "data/JANUS-LINEAR-A-R3C-1A-JS-LITERAL-SUBSET-PARSER-CORRECTION-SPEC-2026-08-14-v0.2.json",
+    "v0_2_validation": "data/JANUS-LINEAR-A-R3C-1A-JS-LITERAL-SUBSET-PARSER-CORRECTION-VALIDATION-RESULT-2026-08-14-v0.2.json",
+    "v0_2_status": "PARSER_V0_2_NOT_ADMITTED",
+    "reason": "The literal transform itself passed synthetic canaries, but the old source extractor used rfind(');') and captured later JavaScript Maps, producing Extra data after the first valid top-level array."
+  },
+  "boundary_diagnostic": {
+    "path": "data/JANUS-LINEAR-A-R3C-1A-MAP-BOUNDARY-DIAGNOSTIC-RESULT-2026-08-14-v0.1.json",
+    "historical": {
+      "top_level_value_type": "list",
+      "top_level_length": 1722,
+      "first_extra_character": ")",
+      "post_value_prefix": "]); var lexicon = new Map([",
+      "first_source_delimiter_candidate_offset": 1411473
+    },
+    "current": {
+      "top_level_value_type": "list",
+      "top_level_length": 1722,
+      "first_extra_character": ")",
+      "post_value_prefix": "]); var lexicon = new Map([",
+      "first_source_delimiter_candidate_offset": 1411488
+    },
+    "same_structural_break": true
+  },
+  "frozen_boundary_algorithm": {
+    "id": "JANUS-JS-NEW-MAP-FIRST-ARRAY-BOUNDARY-v0.3",
+    "steps": [
+      "Locate the literal marker new Map( selected by the source-specific adapter contract.",
+      "Advance over whitespace only and require the first argument character to be [.",
+      "Scan the original source left-to-right without executing JavaScript, tracking double-quoted string state and backslash escaping.",
+      "Outside strings, increment square-bracket depth on [ and decrement on ].",
+      "The payload ends at the first ] that returns the initial array depth from 1 to 0.",
+      "After that closing ], advance over whitespace only and require the exact source terminator );.",
+      "Extract only the original source substring from the initial [ through its matching top-level ].",
+      "Apply the separately frozen JANUS-JS-LITERAL-SUBSET-v0.2 normalization only to that extracted payload, then require strict JSON parsing."
+    ],
+    "string_rule": "Inside a double-quoted string, a backslash consumes the following source character for quote-boundary purposes; brackets inside strings never affect structural depth.",
+    "javascript_execution": false,
+    "eval": false,
+    "rfind_global_terminator_forbidden": true,
+    "first_textual_delimiter_without_string_depth_forbidden": true,
+    "source_bytes_mutated": false
+  },
+  "required_boundary_receipt": [
+    "source_file_sha256",
+    "source_file_bytes",
+    "map_marker_source_offset",
+    "payload_start_source_offset",
+    "payload_end_source_offset_inclusive",
+    "terminator_source_offset",
+    "raw_payload_characters",
+    "raw_payload_sha256",
+    "top_level_document_count_after_parse",
+    "literal_transform_receipt"
+  ],
+  "validation_canaries": [
+    "A synthetic first Map followed by a second Map must return only the first Map array.",
+    "A string containing the characters ]); must not terminate the payload.",
+    "Escaped quotes inside source strings must not alter structural depth.",
+    "The exact characters after the matching top-level ] must be ); modulo whitespace.",
+    "Historical and current frozen lineara sources must both parse through the same boundary scanner and the same v0.2 literal transform.",
+    "Historical source identity must remain exactly 1609122 bytes / SHA-256 b7b383b93db55b504eb00c552a8b18c19a588e83bba7ff0ab93ca32277d8bfe2."
+  ],
+  "anti_overfit": {
+    "hardcoded_historical_end_offset_forbidden": true,
+    "hardcoded_current_end_offset_forbidden": true,
+    "hardcoded_document_count_used_to_choose_boundary": false,
+    "Briakos_target_metrics_used_to_choose_boundary": false,
+    "later_Map_content_inspected_for_scientific_selection": false,
+    "new_JS_syntax_normalization_without_new_diagnostic_and_freeze": false
+  },
+  "claim_ceiling": {
+    "boundary_rule_frozen": true,
+    "parser_v0_3_validated": false,
+    "Briakos_metrics_reproduced": false,
+    "logos_D5_D6_replay_completed": false,
+    "R3B_effect": "NONE",
+    "independent_transcription_replication": false,
+    "new_anchor": false,
+    "decipherment": false
+  }
+}

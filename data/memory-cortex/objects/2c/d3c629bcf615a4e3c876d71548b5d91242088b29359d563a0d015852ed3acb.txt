@@ -1,0 +1,151 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-TRANSCRIPTION-IR-HARDENING-SPEC-2026-08-14-v1.2.1",
+  "timestamp": "2026-08-14T17:55:00+03:00",
+  "version": "v1.2.1",
+  "title": "Corrected additive Linear A IR hardening for typed or unresolved continuation boundaries",
+  "observer": "Oleksandr Ahapov / Hawkar + JANUS",
+  "node_type": "transcription_ir_hardening_spec",
+  "status": "FROZEN_BEFORE_IMPLEMENTATION_VALIDATION",
+  "corrects": {
+    "rejected_spec": "data/JANUS-LINEAR-A-TRANSCRIPTION-IR-HARDENING-SPEC-2026-08-14-v1.2.json",
+    "review_receipt": "data/JANUS-LINEAR-A-TRANSCRIPTION-IR-HARDENING-PREVALIDATION-REVIEW-2026-08-14-v1.2.json",
+    "v1_2_admitted": false,
+    "scientific_or_validation_result_inherited": false
+  },
+  "parents": {
+    "base_ir_format": "JANUS-LINEAR-TRANSCRIPTION-IR-v1.0",
+    "base_ir_core": "research/linear_a/janus_linear_a_transcription_ir_v1_0.py",
+    "v1_1_validation": "data/JANUS-LINEAR-A-TRANSCRIPTION-IR-HARDENING-VALIDATION-RESULT-2026-08-14-v1.1.json",
+    "v1_1_required_status": "HARDENING_V1_1_ADMITTED",
+    "v1_1_modified": false,
+    "base_ir_format_changed": false
+  },
+  "empirical_trigger": {
+    "coverage_result": "data/JANUS-LINEAR-A-R3C-2B-REAL-IR-HARDENING-COVERAGE-AUDIT-RESULT-2026-08-14-v0.1.json",
+    "required_status": "V1_1_D6_COVERED_D5_BOUNDARY_COVERAGE_GAP",
+    "real_D5_cases": 4,
+    "observed_boundary_class": "NEWLINE_OR_LINE_BREAK_ONLY_BOUNDARY_KIND_UNRESOLVED",
+    "explicit_distinct_surface_cases": 0,
+    "D6_v1_1_direct_cases": 3
+  },
+  "exact_base_taxonomy_binding": {
+    "allowed_evidence_classes_imported_from_v1_0": [
+      "SOURCE_NATIVE",
+      "MECHANICAL_EXACT",
+      "MECHANICAL_COMPATIBLE",
+      "EDITORIAL_ASSERTION",
+      "HUMAN_VERIFIED",
+      "INFERRED_FROZEN_RULE"
+    ],
+    "allowed_unresolved_boundary_witness_token_types": [
+      "SEPARATOR",
+      "PUNCTUATION",
+      "DAMAGE",
+      "GAP",
+      "ILLEGIBLE",
+      "EDITORIAL_MARK",
+      "UNKNOWN_SOURCE_TOKEN",
+      "MASK"
+    ],
+    "forbidden_witness_token_types_include": [
+      "SIGN",
+      "SIGN_UNCERTAIN",
+      "SIGN_ALTERNATIVE_SET",
+      "NUMERIC_EXACT",
+      "FRACTION_EXACT",
+      "LOGOGRAM_SOURCE_LABEL"
+    ]
+  },
+  "extension_profile": {
+    "profile_id": "JANUS-LINEAR-TRANSCRIPTION-IR-HARDENING-v1.2.1",
+    "top_level_field": "janus_hardening_v1_2_1",
+    "requires_valid_v1_1_extension": true,
+    "required_collection": "cross_boundary_continuations",
+    "relation_type": "SOURCE_CONTINUATION_ACROSS_BOUNDARY",
+    "allowed_boundary_classes": ["SURFACE", "LINE", "UNRESOLVED_SURFACE_OR_LINE"],
+    "required_fields": [
+      "continuation_id",
+      "continuation_type",
+      "source_group_ref",
+      "target_group_ref",
+      "boundary_class",
+      "boundary_witness_token_refs",
+      "evidence_class",
+      "provenance_refs",
+      "source_boundaries_preserved",
+      "destructive_merge_performed",
+      "linguistic_wordhood_claimed"
+    ]
+  },
+  "boundary_rules": {
+    "global": [
+      "source_group_ref and target_group_ref resolve to distinct base groups",
+      "provenance refs resolve",
+      "source_boundaries_preserved == true",
+      "destructive_merge_performed == false",
+      "linguistic_wordhood_claimed == false"
+    ],
+    "SURFACE": [
+      "source_surface_ref and target_surface_ref are required, resolve, and are distinct",
+      "boundary_resolution_claimed == true"
+    ],
+    "LINE": [
+      "source_segment_ref and target_segment_ref are required, resolve, and are distinct",
+      "when both segments have source surface IDs they must be on the same surface",
+      "at least one allowed boundary witness token OR explicit source-line provenance is required",
+      "boundary_resolution_claimed == true"
+    ],
+    "UNRESOLVED_SURFACE_OR_LINE": [
+      "at least one boundary_witness_token_ref is required",
+      "every witness token type belongs to the exact nonsemantic allowlist in exact_base_taxonomy_binding",
+      "boundary_resolution_claimed == false",
+      "optional surface/segment refs may be preserved if present but do not resolve boundary kind"
+    ]
+  },
+  "scientific_view_firewall": {
+    "inherits_v1_1_firewall": true,
+    "cross_boundary_continuations_present_requires": {
+      "boundary_continuation_policy": "PRESERVE_BOUNDARY_CLASS_AND_SOURCE_GROUPS"
+    },
+    "unresolved_boundary_present_requires": {
+      "unresolved_boundary_policy": "NO_BOUNDARY_KIND_PROMOTION"
+    },
+    "forbidden_promotions": [
+      "UNRESOLVED_SURFACE_OR_LINE -> SURFACE without new source evidence",
+      "UNRESOLVED_SURFACE_OR_LINE -> LINE without new source evidence",
+      "technical continuation -> destructive group merge",
+      "technical continuation -> linguistic wordhood claim"
+    ]
+  },
+  "validation_canaries": [
+    "v1.0 self-test passes",
+    "v1.1 self-test passes with positive canaries true and firewall canaries false",
+    "valid inherited v1.1 document with empty v1.2.1 collection passes",
+    "valid unresolved boundary with SEPARATOR witness and MECHANICAL_EXACT evidence passes",
+    "unresolved boundary with no witness fails",
+    "unresolved boundary with SIGN witness fails",
+    "SURFACE relation with same surface fails",
+    "LINE relation with same segment fails",
+    "same source/target group fails",
+    "destructive merge fails",
+    "linguistic wordhood claim fails",
+    "claim view without boundary policy fails",
+    "claim view without unresolved-boundary policy fails",
+    "claim view with both fail-closed policies passes"
+  ],
+  "real_projection_after_admission": {
+    "D5": "Preserve each fixed lineage part as a separate SOURCE_WORD group; preserve the intervening newline as a SEPARATOR witness; set boundary_class UNRESOLVED_SURFACE_OR_LINE; do not invent surface or line identity.",
+    "D6": "Use inherited v1.1 SIGN_ID_CONFLICT binding preserving SOURCE_LABEL and ENCODED_GLYPH assertions, resolution UNRESOLVED, semantic authority false."
+  },
+  "claim_ceiling": {
+    "generic_source_fidelity_hardening": true,
+    "v1_1_invalidated": false,
+    "v1_2_admitted": false,
+    "D5_boundary_kind_resolved": false,
+    "linguistic_wordhood_proved": false,
+    "JANUS_independent_D5_D6_discovery": false,
+    "R3B_effect": "NONE",
+    "new_anchor": false,
+    "decipherment": false
+  }
+}

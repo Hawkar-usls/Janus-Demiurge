@@ -1,0 +1,83 @@
+{
+  "artifact_id": "JANUS-RAMANUJAN-COMPLEX-CERTIFIED-LANE-2026-08-25-v1.0",
+  "status": "EXACT_GAUSSIAN_RATIONAL_COMPLEX_CERTIFICATES_REMOTE_CI_PASS",
+  "core_idea": "Use exact Gaussian-rational finite arithmetic and the rational L1 majorant rho(z)=|Re z|+|Im z|>=|z| to obtain rigorous complex tail bounds without silently relying on floating arithmetic.",
+  "direct_series": {
+    "implementation": "Hawkar-usls/Janus-Demiurge/restored/ramanujan_complex_certified.py",
+    "implementation_commit": "fc497f9736bebb08e6c473f249b0895adeb8fbe0",
+    "test_path": "tests/test_ramanujan_complex_certified.py",
+    "test_commit": "6ade36f8b89f9ded83cd3c9dbd3e8509430224c5",
+    "remote_ci_run": 32863601869,
+    "remote_ci": "PASS_PY311_PY312_PY313",
+    "certified_functions": ["phi", "theta3", "theta4", "psi", "mock_theta_f", "mock_theta_omega", "ramanujan_f"],
+    "domain": "exact rational real/imag components with rho(q)<1, or rho(a)*rho(b)<1 for direct f(a,b)",
+    "tail_strategy": "replace complex modulus by exact rational L1 majorant in the already-proved geometric tail majorants"
+  },
+  "product_side": {
+    "implementation": "Hawkar-usls/Janus-Demiurge/restored/ramanujan_complex_product_certified.py",
+    "implementation_commit": "77cb5307d3a187a835f33024941f514e01a264f3",
+    "test_path": "tests/test_ramanujan_complex_product_certified.py",
+    "test_commit": "e488a7a458616ec6bcdda6d780146567a8ddf5cb",
+    "remote_ci_run": 32864101114,
+    "remote_ci": "PASS_PY311_PY312_PY313",
+    "certified_functions": ["phi_product", "psi_product", "ramanujan_f_product"],
+    "proof_primitive": "For tail factors T=product(1+u_j), if S=sum |u_j|<1 then |T-1|<=S/(1-S); exact finite Gaussian-rational product gives |P-P_N|<=||P_N||_1*S/(1-S). Quotient psi_product additionally uses a rigorous lower bound on the denominator tail modulus."
+  },
+  "dispatcher": {
+    "path": "Hawkar-usls/Janus-Demiurge/restored/ramanujan_proof_first_dispatcher.py",
+    "schema": "janus.ramanujan_proof_first_dispatcher.v5",
+    "implementation_commit": "084103dfa970e573fbcbb3fbb18c392dcaaf29e7",
+    "test_commit": "4f8de9409cd10b4fa27e42de03dcec21dedd0f5b",
+    "remote_ci_run": 32864323814,
+    "remote_ci": "PASS_PY311_PY312_PY313",
+    "input_contract": {
+      "exact_complex": ["[re,im]", "(re,im)", "{re:...,im:...}"],
+      "python_complex": "EMPIRICAL_ONLY__binary floating components are not silently promoted to exact evidence"
+    }
+  },
+  "current_complex_certified_surface": [
+    "phi",
+    "phi_product",
+    "psi",
+    "psi_product",
+    "theta3",
+    "theta4",
+    "mock_theta_f",
+    "mock_theta_omega",
+    "ramanujan_f",
+    "ramanujan_f_product"
+  ],
+  "still_open": {
+    "complex_theta2": "OPEN__q^(1/4) requires branch-aware validated algebraic or ball arithmetic",
+    "outside_l1_diamond": "OPEN__Euclidean |q| may be <1 even when |Re q|+|Im q|>=1; current certificate must fail or fall back rather than overclaim",
+    "arbitrary_machine_float_certification": "OPEN__requires rounding-aware interval/ball enclosure"
+  },
+  "negative_controls": [
+    "Exact q=(0.8,0.3) has Euclidean modulus <1 but rho_L1>1, so the current complex proof must return OUTSIDE_CURRENT_COMPLEX_BOUND_DOMAIN and may only fall back empirically.",
+    "Ordinary Python complex input remains empirical-only even when the same decimal-looking pair would certify if supplied explicitly as exact rational components.",
+    "Complex theta2 remains empirical-only until the branch/fractional-power arithmetic model is certified."
+  ],
+  "authority": {
+    "network": false,
+    "filesystem_mutation": false,
+    "scheduler": false,
+    "runtime_admission": false,
+    "mining_or_submit": false,
+    "proof_acceptance": false,
+    "automatic_control": false
+  },
+  "laws_added": [
+    "GAUSSIAN_RATIONAL_FINITE_ARITHMETIC_IS_EXACT",
+    "L1_MAJORANT_GE_COMPLEX_MODULUS",
+    "EXACT_COMPLEX_INPUT_MUST_BE_EXPLICIT_NOT_INFERRED_FROM_PYTHON_COMPLEX_FLOAT",
+    "COMPLEX_CERTIFICATE_DOMAIN_MUST_REMAIN_VISIBLE",
+    "COMPLEX_PRODUCT_PROOF_DOMAIN_MUST_REMAIN_VISIBLE",
+    "CERTIFIED_ERROR_BOUND_NE_RUNTIME_AUTHORITY"
+  ],
+  "next_frontier": [
+    "branch-aware certified complex theta2",
+    "validated complex ball arithmetic to expand beyond the conservative L1 diamond",
+    "sharper Euclidean-modulus rational bounds using squared modulus where possible",
+    "independent high-precision implementation cross-check below analytic-proof authority"
+  ]
+}

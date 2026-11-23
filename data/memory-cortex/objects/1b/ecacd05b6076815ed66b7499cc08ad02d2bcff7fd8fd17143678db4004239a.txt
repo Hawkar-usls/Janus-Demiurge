@@ -1,0 +1,23 @@
+{
+  "schema":"janus.p_n_junction.repository_audit.integrity_note.v1",
+  "integrity_note":{
+    "coverage_assessment":"HIGH_BUT_NOT_SINGLE_TREE_COMPLETE",
+    "estimated_coverage":0.94,
+    "strengths":[
+      "All 51 open Draft PRs returned by the GitHub connector were enumerated with exact head SHA, base/head branch, mergeability, phase, and observed CI evidence.",
+      "All 85 research/ branches returned by the branch search were classified as active, non-draft active, reserved, superseded, or historical/unclassified.",
+      "The active C049.1 route, canonical C039-C044 allocation, C046-C049 allocation, exact top-stack terminal, and C043/C044 review state were read from repository files and PR metadata.",
+      "Executable proof artifacts, documentation, proposals, schemas, and workflow paths were aggregated from the complete changed-file lists of the open Draft PR set."
+    ],
+    "limitations":[
+      "The repository is a stacked-branch research graph: no single commit contains the entire active state, so this report is an aggregation across PR heads rather than a byte-for-byte tree walk of one ref.",
+      "GitHub fetch_file rejects directory paths; directory inventories were reconstructed from all open Draft PR changed-file lists. Files present only on main or on non-open historical branches may be absent from the artifact, proposal, schema, documentation, or workflow arrays.",
+      "Blob SHA or content digest was not extracted for every artifact, proposal, schema, and Markdown file; such fields are explicitly marked not extracted. Proposal presence/status is reported instead of an invented digest.",
+      "Workflow-run responses exposed run IDs, run numbers, status, and conclusion but not completion timestamps; completion times are explicitly marked not found.",
+      "PR #22 had no exact-head workflow runs returned by the connector; its body references successful run 30759544324, recorded only as PR-body evidence.",
+      "PR #35 and PR #36 each had a successful specialized workflow but a failing JANUS registry workflow at the audited head.",
+      "PR #47 and PR #57 are Draft and CI-green but non-mergeable; PR #22 is also non-mergeable and lacks exact-head CI evidence."
+    ],
+    "non_fabrication_statement":"Every unavailable datum is marked absent, not found, not extracted, branch-dependent, or unclassified; no missing SHA, digest, timestamp, workflow result, or freeze state was inferred as fact."
+  }
+}

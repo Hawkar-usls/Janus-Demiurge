@@ -1,0 +1,103 @@
+{
+  "schema": "janus.eye.r4.record_commit_negative_control.v1",
+  "artifact_id": "JANUS-EYE-R4-JANUS-RECORD-COMMIT-NEGATIVE-CONTROL-v1.0",
+  "date": "2026-09-01",
+  "status": "FROZEN_NEGATIVE_CONTROL_BEFORE_R4_OUTCOME",
+  "source": "EYE/r3_2/EYE-R3.2-PALOMAR-MUSIC-GENESIS-SEMANTIC-MECHANISM-AUDIT-2026-09-01-v1.0.json",
+  "control_machine": {
+    "name": "JANUS CROSS-DOMAIN RECORD COMMIT MACHINE",
+    "formula": [
+      "PROVENANCE_BINDING",
+      "STATE_TRANSITION",
+      "IDENTITY_OR_CLAIM_BINDING"
+    ],
+    "compressed_formula": "PROVENANCE_BINDING -> STATE_TRANSITION -> IDENTITY_OR_CLAIM_BINDING",
+    "class": "EPISTEMIC_RECORD_PROTOCOL",
+    "not_class": "SHARED_PHYSICAL_OR_CAUSAL_DOMAIN_MECHANISM"
+  },
+  "observable_surface": {
+    "provenance_binding": [
+      "source",
+      "parent",
+      "parents",
+      "repository",
+      "commit",
+      "run_id",
+      "workflow",
+      "authority",
+      "receipt",
+      "sha256",
+      "digest"
+    ],
+    "state_transition": [
+      "status",
+      "PASS",
+      "FAIL",
+      "OPEN",
+      "BLOCKED",
+      "before",
+      "after",
+      "delta",
+      "transition",
+      "freeze",
+      "frozen",
+      "next_gate"
+    ],
+    "identity_or_claim_binding": [
+      "artifact_id",
+      "identity",
+      "claim",
+      "claim_ceiling",
+      "canonical",
+      "hash",
+      "exact",
+      "semantic",
+      "allowed_interpretation"
+    ]
+  },
+  "control_test": {
+    "question": "Can the apparent cross-domain machine be explained primarily by the way JANUS records, validates, freezes and identifies claims rather than by the subject matter itself?",
+    "positive_control_expectation": "Known R3/R3.1 record-machine witnesses should score HIGH on this control.",
+    "negative_control_expectation": "A true subject-level mechanism should remain identifiable after provenance/governance/receipt fields are masked or shuffled.",
+    "power_to_say_no": true
+  },
+  "masking_policy": {
+    "record_metadata_fields_to_mask_or_downweight": [
+      "schema",
+      "artifact_id",
+      "version",
+      "status",
+      "parents",
+      "parent",
+      "source",
+      "provenance",
+      "authority",
+      "workflow",
+      "run_id",
+      "job_id",
+      "commit",
+      "sha",
+      "sha256",
+      "digest",
+      "claim_ceiling",
+      "epistemic_firewall",
+      "next_gate",
+      "seal"
+    ],
+    "rule": "Masking is for candidate generation and contamination testing only. Original source bytes remain immutable evidence and are retained for later verification."
+  },
+  "failure_conditions": [
+    "R4_TOP_CANDIDATE_IS_CONTROL_MACHINE",
+    "R4_CANDIDATE_DISAPPEARS_WHEN_RECORD_FIELDS_ARE_MASKED",
+    "R4_CANDIDATE_DEPENDS_ON_JSON_FIELD_ORDER",
+    "R4_CANDIDATE_HAS_NO_SUBJECT_LEVEL_INPUT_TRANSFORM_OUTPUT_MAPPING"
+  ],
+  "pass_condition": "A candidate may pass this negative control only if its subject-level machine remains supported after record/governance masking and field-order shuffling, with independent lineage support and held-out replication.",
+  "authority_firewall": [
+    "NEGATIVE_CONTROL_PASS != MECHANISM_PROOF",
+    "NEGATIVE_CONTROL_FAIL = CONTAMINATION_EVIDENCE_FOR_THIS_CANDIDATE",
+    "MASKED_TEXT != ORIGINAL_EVIDENCE",
+    "VERIFY_DECIDES"
+  ],
+  "seal": "THE TELESCOPE IS NOW A CALIBRATION OBJECT, NOT PART OF THE CONSTELLATION."
+}

@@ -1,0 +1,71 @@
+{
+  "schema": "JANUS/proof/temporal-continuity-rollback-replay-hardening/v0.9.0",
+  "artifact_uuid": "JANUS-TEMPORAL-CONTINUITY-ROLLBACK-REPLAY-HARDENING-V0.9",
+  "timestamp_local": "2026-08-07T09:25:00+03:00",
+  "status": "PASS_LOCAL_ROLLBACK_INSUFFICIENCY_AND_EXTERNAL_FRESHNESS_GATE",
+  "result_1": {
+    "name": "Temporal Snapshot Indistinguishability / External Freshness Requirement",
+    "statement": "If a verifier's entire trusted state is rollbackable with the experiment snapshot, a previously valid snapshot cannot be distinguished locally from genuinely being at that earlier valid state. Hash chains and signatures authenticate the presented state/history but cannot prove that a later valid suffix existed and was erased.",
+    "machine_check": "PASS_17_OF_17",
+    "key_counterexample": "Every stale valid prefix of a six-event hash chain passed local verification after rollback, while a freshness root outside the rollback domain rejected each stale prefix.",
+    "novelty_boundary": "Known secure-logging/rollback-protection principle; not claimed as new computer-science mathematics. JANUS contribution under review is integration as a mandatory causal-evidence gate for independent-future experiments."
+  },
+  "result_2": {
+    "name": "Authenticity / Freshness Separation",
+    "statement": "A cryptographically valid old checkpoint remains authentic after rollback; validity of its signature does not establish that it is the latest state.",
+    "implication": "Scientific evidence must carry an independently rooted freshness relation, not only content integrity and signatures."
+  },
+  "result_3": {
+    "name": "Fork / Split-History Requirement",
+    "statement": "Two branches sharing the same valid prefix can each be locally valid. Detecting equivocation requires an external single-head rule, consistency proof, gossip, quorum comparison or equivalent mechanism outside the forked local view."
+  },
+  "result_4": {
+    "name": "Crash-Recovery Evidence State Machine",
+    "safe_states": [
+      "COMMITTED",
+      "RECOVER_RECEIPT_FROM_WITNESS after successful external reconciliation"
+    ],
+    "non_promotable_states": [
+      "NO_NEW_COMMIT",
+      "PENDING_UNANCHORED",
+      "RECOVERY_REQUIRED_EXTERNAL_AHEAD"
+    ],
+    "rule": "A crash must never silently promote an unanchored or locally incomplete trial into anomaly evidence."
+  },
+  "result_5": {
+    "name": "Rollback-Domain Rule",
+    "statement": "A counter, nonce registry, checkpoint cache or key that is restored by the same snapshot cannot serve as the sole anti-rollback root for that snapshot.",
+    "acceptable_roots_examples": [
+      "independent append-only remote witness",
+      "non-rollbackable hardware monotonic state",
+      "transparency log with independently compared heads/gossip",
+      "equivalent externally rooted continuity evidence"
+    ]
+  },
+  "genesis_evidence": {
+    "lab_path": "experiments/semantic_return/janus_temporal_continuity_rollback_replay_lab_v0_1.py",
+    "lab_commit": "fcf1f7593b499ce255cf10f65ed2d826b5d7cf8f",
+    "lab_sha256": "205a4c2d4bae862d4222eb4b74f2d472ac297f243ce2131cf397dcee0eafe81e",
+    "report_path": "experiments/semantic_return/JANUS-GENESIS-TEMPORAL-CONTINUITY-ROLLBACK-REPLAY-LAB-REPORT-v0.1.json",
+    "report_commit": "5f09e0ce9a9184ea843b3379a078e17e5af60938",
+    "report_sha256": "a688475d96d2c481aa28b25819828e8f9ec7acd3d8c8280cd3c0fb9d19c819e1"
+  },
+  "prior_art_boundary": {
+    "secure_logging": "Rollback/crash resistance is established computer-security prior art; adaptive crash attacks and protected-state requirements have been studied.",
+    "monotonic_counters": "Trusted monotonic state is an established anti-replay/anti-rollback technique, subject to hardware/platform limitations.",
+    "transparency_gossip": "Independent comparison/gossip of append-only log views is established for detecting split views/equivocation.",
+    "janus_novelty_status": "NOT_ESTABLISHED"
+  },
+  "admission": {
+    "LOCAL_HASH_CHAIN_PROVES_FRESHNESS": false,
+    "LOCAL_SIGNATURE_PROVES_FRESHNESS": false,
+    "ROLLBACKABLE_LOCAL_COUNTER_SUFFICIENT": false,
+    "EXTERNAL_FRESHNESS_ROOT_REQUIRED": true,
+    "FORK_EQUIVOCATION_REQUIRES_EXTERNAL_COMPARISON": true,
+    "CRASH_RECOVERY_GATE": true,
+    "PHYSICAL_FTL": false,
+    "PHYSICAL_RETROCAUSALITY": false,
+    "SCIENTIFIC_NOVELTY": "NOT_YET_ESTABLISHED"
+  },
+  "next_gate": "Design and machine-test a multi-witness external bench continuity protocol with witness faults, stale/offline witnesses, quorum rules, split-view attacks, and exactly defined trust assumptions."
+}

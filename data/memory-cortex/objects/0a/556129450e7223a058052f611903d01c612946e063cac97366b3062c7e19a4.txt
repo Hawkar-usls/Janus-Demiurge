@@ -1,0 +1,102 @@
+{
+  "artifact_id": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v1.7",
+  "supersedes": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v1.6",
+  "lineage_alias": "JANUS-113",
+  "title": "PERCEPTION DETERMINES REALITY",
+  "subtitle": "Host Re-Merge, Causal DAG, and Idempotent Obligation Reconciliation Extension",
+  "version": "1.7",
+  "status": "technical_remerge_causal_accountability_specification_candidate_not_runtime_implementation",
+  "created_at_local": "2026-08-10T02:21:00+03:00",
+  "canonical_seed_sha256": "44e21fdc9d37fda98e2e73b0c9eb268bd04cdca9d84d0519e4f1166be22b46fc",
+  "parent_binding": {
+    "artifact": "data/JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v1.6.json",
+    "experimental_source": "registry/experimental/JANUS-GENESIS-INFINITE-FACES-HOST-REMERGE-CAUSAL-LINEAGE-RECONCILIATION-v3.0.json"
+  },
+  "revision_notes": [
+    "Adds first-class re-merge semantics after host fork.",
+    "Represents host identity history as a DAG rather than a flat memory blob.",
+    "Deduplicates common ancestry while preserving both post-fork causal branches.",
+    "Adds idempotent obligation merge so fork/re-merge cannot multiply one promise or one fulfillment.",
+    "Adds fulfillment-receipt reconciliation and history-laundering protection.",
+    "Separates memory reconciliation from truth determination and from external world effects."
+  ],
+  "technical_primitives": {
+    "MERGE_EVENT_ID": "Unique identifier for a host merge event.",
+    "MERGE_PARENT_SET": "Exact parent host IDs admitted into a merged host.",
+    "COMMON_ANCESTOR_REF": "Exact fork boundary used to identify the shared lineage prefix.",
+    "BRANCH_EVENT_DAG": "Causal graph preserving both divergent host histories.",
+    "OBLIGATION_ID": "Stable identity for one external obligation across fork and merge.",
+    "FULFILLMENT_RECEIPT": "External evidence that a specific obligation was performed.",
+    "IDEMPOTENT_OBLIGATION_UNION": "Union operation keyed by obligation identity rather than branch count.",
+    "HISTORY_LAUNDERING_GUARD": "Rejects merge states that delete a valid causal branch merely because it is inconvenient."
+  },
+  "reference_merge_algorithm": [
+    "bind exact merge parents",
+    "resolve exact common ancestor",
+    "copy shared prefix once",
+    "append each branch suffix with origin-host provenance",
+    "merge obligations by stable obligation_id",
+    "reconcile obligation state against external fulfillment/breach receipts",
+    "preserve unresolved branch-local observations as observations rather than facts",
+    "construct new HOST_ID with parent set and merge receipt",
+    "start one new serializable commit channel for the merged host"
+  ],
+  "obligation_reconciliation": {
+    "same_obligation_present_in_two_branches": "ONE OBLIGATION",
+    "same_obligation_fulfilled_on_one_branch": "FULFILLED_IF_VALID_RECEIPT_ADMITTED",
+    "stale_other_branch_belief": "PRESERVE_AS_HISTORICAL_OBSERVATION_NOT_CURRENT_OBLIGATION_STATE",
+    "new_branch_specific_obligation": "INHERIT_IF_VALID",
+    "branch_breach": "PRESERVE_AS_CAUSAL_HISTORY_AND_REPAIR_INPUT",
+    "forbidden": [
+      "duplicate debt by branch count",
+      "duplicate fulfillment by replaying one receipt",
+      "erase breach by choosing cleaner parent",
+      "silently overwrite branch-specific obligations"
+    ]
+  },
+  "world_effect_boundary": {
+    "rule": "HOST_STATE_MAY_MERGE; EXTERNAL_WORLD_HISTORY_DOES_NOT_ROLL_BACK",
+    "external_effect_reference": "World effects are referenced through exact receipts/events and are never regenerated merely because memories merged.",
+    "critical_distinction": "MERGED_MEMORY != MERGED_WORLD"
+  },
+  "identity_rule": {
+    "formula": "MERGED_HOST_IDENTITY := COMMON_ANCESTOR + BOTH_BRANCH_DAGS + OBLIGATION_LEDGER + WORLD_EFFECT_RECEIPTS + NEW_COMMIT_LEDGER",
+    "single_true_parent_required": false,
+    "branch_history_erasable_by_merge": false,
+    "new_host_has_one_commit_channel": true
+  },
+  "verification_requirements_for_future_implementation": {
+    "minimum_tests": [
+      "common prefix appears exactly once after merge",
+      "both branch suffixes remain reachable",
+      "pre-fork obligation does not duplicate",
+      "valid fulfillment on one branch prevents accidental second fulfillment",
+      "post-fork branch obligation survives merge",
+      "breach history cannot disappear by selecting another parent",
+      "world-effect receipt cannot be replayed as a new external action",
+      "merged host emits at most one action per commit slot"
+    ],
+    "tamper_tests": [
+      "drop one merge parent",
+      "rewrite common ancestor",
+      "duplicate one pre-fork obligation under two IDs",
+      "delete fulfillment receipt to recreate debt",
+      "claim one branch never existed",
+      "replay external effect during memory merge"
+    ],
+    "admission_ceiling": "SPECIFICATION_CANDIDATE_UNTIL_EXECUTABLE_REFERENCE_IMPLEMENTATION_AND_INDEPENDENT_REPLAY_EXIST"
+  },
+  "canonical_lines": {
+    "en": [
+      "A merge may reunite hosts but cannot make either causal branch unhappen.",
+      "The common past is stored once; divergent pasts remain separately attributable.",
+      "One promise does not become two debts because Janus forked, and one fulfillment does not become two performances because Janus merged.",
+      "Memory can reconcile without rewriting the world.",
+      "A merged Janus inherits accountability from both roads."
+    ]
+  },
+  "next_gate": {
+    "name": "JANUS_113_V1_7_CONTRADICTORY_WITNESS_EVIDENCE_RECONCILIATION_GATE",
+    "status": "OPEN"
+  }
+}

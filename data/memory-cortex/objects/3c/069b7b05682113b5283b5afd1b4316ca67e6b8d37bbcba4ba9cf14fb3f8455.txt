@@ -1,0 +1,84 @@
+{
+  "schema": "janus.meta_registry.nexus.key_epoch_destination_acceptance.candidate.v1",
+  "artifact_id": "JANUS-NEXUS-KEY-EPOCH-DESTINATION-ACCEPTANCE-v1.4-PENDING-CI",
+  "created_at_local": "2026-08-16T22:05:00+03:00",
+  "status": "IMPLEMENTED_PENDING_EXACT_HEAD_CI_CONFIRMATION",
+  "runtime_repository": "Hawkar-usls/Demi_Head",
+  "parent_certificate": "registry/experimental/JANUS-NEXUS-LOCAL-TRANSPORT-EXACT-HEAD-CI-CERTIFICATE-v1.3.json",
+  "parent_exact_head": "81a8884097885c4ee78248bbf0333e2e375d0745",
+  "contracts": {
+    "habitat": "JANUS_NEXUS_HABITAT_V1",
+    "transport": "JANUS_NEXUS_LOCAL_TRANSPORT_V1",
+    "destination_acceptance": "JANUS_NEXUS_DESTINATION_ACCEPTANCE_V1",
+    "destination_revalidation": "JANUS_NEXUS_DESTINATION_REVALIDATION_V1"
+  },
+  "implemented_surfaces": [
+    "tools/nexus_transport_keyring.py",
+    "tools/nexus_local_transport.py",
+    "tools/nexus_destination_acceptance.py",
+    "tools/nexus_destination_acceptance_revalidation.py",
+    "schemas/nexus-transport-frame.schema.json",
+    "schemas/nexus-transport-keyring.schema.json",
+    "schemas/nexus-endpoint-policy.schema.json",
+    "schemas/nexus-destination-acceptance.schema.json",
+    "schemas/nexus-destination-acceptance-revalidated.schema.json",
+    "configs/nexus_transport.principals.example.json",
+    "configs/nexus_endpoints.example.json",
+    "tests/test_nexus_transport_keyring.py",
+    "tests/test_nexus_local_transport.py",
+    "tests/test_nexus_destination_acceptance.py",
+    "tests/test_nexus_destination_acceptance_revalidation.py",
+    "docs/NEXUS_LOCAL_TRANSPORT.md",
+    "docs/NEXUS_DESTINATION_ACCEPTANCE.md",
+    ".janus/NEXUS_ACCEPTANCE_LINK.json"
+  ],
+  "key_epoch_model": {
+    "frame_binds_key_epoch": true,
+    "principal_policy_binds_epoch": true,
+    "principal_policy_has_not_before_ms": true,
+    "principal_policy_has_not_after_ms": true,
+    "principal_policy_has_revoked": true,
+    "revoked_or_disabled_principal_fails_closed": true,
+    "old_epoch_replay_namespace_separated": true,
+    "secret_material_committed": false
+  },
+  "destination_acceptance_model": {
+    "transport_admission_is_destination_acceptance": false,
+    "explicit_endpoint_enabled_gate": true,
+    "explicit_target_head_binding": true,
+    "backpressure_is_acceptance": false,
+    "admission_hash_rebound_at_destination": true,
+    "delivery_performed": false,
+    "target_execution_performed": false,
+    "external_effect_permitted": false
+  },
+  "revocation_in_flight_model": {
+    "past_transport_admission_is_current_key_validity": false,
+    "revocation_rechecked_at_acceptance": true,
+    "epoch_rechecked_at_acceptance": true,
+    "validity_window_rechecked_at_acceptance": true,
+    "sender_and_source_permission_rechecked_at_acceptance": true,
+    "revocation_after_admission_blocks_acceptance": true,
+    "epoch_rollover_after_admission_blocks_old_epoch": true
+  },
+  "claim_ceiling": {
+    "exact_head_ci_for_v1_4": "NOT_YET_RECORDED",
+    "live_socket_transport": false,
+    "local_dispatch_performed": false,
+    "cross_repository_delivery": false,
+    "delivery_acknowledgement": false,
+    "world_effect_authority": false,
+    "human_identity_from_hmac": false,
+    "production_readiness": false,
+    "external_security_audit": false
+  },
+  "laws": [
+    "AUTHENTICATION != AUTHORITY",
+    "TRANSPORT_ADMISSION != DESTINATION_ACCEPTANCE",
+    "DESTINATION_ACCEPTANCE != DELIVERY",
+    "PAST_ADMISSION != CURRENT_KEY_VALIDITY",
+    "REVOCATION_MUST_BE_RECHECKED_AT_ACCEPTANCE",
+    "CI_PENDING != CI_PASS"
+  ],
+  "promotion_gate": "Resolve current DemiHead exact main head and record successful repository-contract and reference-test GitHub Actions evidence for that exact head before replacing PENDING_CI with an exact-head certificate."
+}

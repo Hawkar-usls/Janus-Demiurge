@@ -1,0 +1,65 @@
+{
+  "artifact_id": "JANUS-PALOMAR-JPFM-2F-C2A-STRATIFIED-UPSTREAM-MORPHOLOGY-SAMPLE-FREEZE-ADMISSION-v1.0",
+  "experiment_id": "JPFM-2F-C2A-SAMPLE-FREEZE",
+  "schema_version": "1.0",
+  "date": "2026-08-15",
+  "status": "PREREGISTERED_BEFORE_C2A_SAMPLE_MANIFEST_AND_BEFORE_ANY_C2A_PIXEL_REPLAY",
+  "purpose": "Freeze a larger label-blind source/tile corpus for actual upstream Source Extractor/PSFEx morphology replay after the direct moment-surrogate branch was negatively certified. Selection uses only the already-frozen 2F-A structural_cluster and anomaly_score fields plus src_id deterministic tie-breaks; no pixel morphology or external temporal/human/environment labels may influence membership.",
+  "parents": [
+    "data/JANUS-PALOMAR-JPFM-2F-A-BLIND-STRUCTURAL-STRATIFICATION-RUN-001.json",
+    "data/JANUS-PALOMAR-JPFM-2F-C0M-FULL-S0-HEADER-ONLY-ACQUISITION-MAP-RUN-001.json",
+    "data/JANUS-PALOMAR-JPFM-2F-C1A2-MOMENT-SURROGATE-NEGATIVE-CERTIFICATE-v1.0.json"
+  ],
+  "frozen_parent_bindings": {
+    "C0M_rows": 122820,
+    "C0M_manifest_csv_sha256": "d41bfc95e9f0219d76ee383d057938287dcaaef8ba5005c66414d4a2422f75c0",
+    "C0M_result_canonical_sha256": "2bc8ee104cb05d588a264a7f25d3d3713907f689da9aafb7c72f726627bdf5ba"
+  },
+  "selection_contract": {
+    "structural_clusters": 16,
+    "sources_per_cluster": 32,
+    "typical_per_cluster": 16,
+    "unusual_per_cluster": 16,
+    "total_sources": 512,
+    "typical_rule": "Within each frozen structural_cluster, compute the median frozen anomaly_score. Sort by absolute distance to that median, then src_id ascending; take the first 16.",
+    "unusual_rule": "Exclude the 16 typical sources. Sort remaining rows by frozen anomaly_score descending then src_id ascending; take the first 16.",
+    "pixel_or_morphology_features_used": false,
+    "absolute_date_or_external_labels_used": false,
+    "source_replacement_after_tile_replay_failure": false
+  },
+  "expected_pre_pixel_topology": {
+    "sources": 512,
+    "distinct_tiles": 360,
+    "distinct_plates": 234,
+    "note": "These counts are deterministic consequences of applying the selection rule to the already-frozen C0M map and are frozen before any C2A pixels are replayed."
+  },
+  "manifest_columns": [
+    "src_id",
+    "tile_id",
+    "object_id",
+    "plate_id",
+    "ra",
+    "dec",
+    "structural_cluster",
+    "sample_role",
+    "anomaly_score",
+    "tile_x0",
+    "tile_y0",
+    "fullplate_x0",
+    "fullplate_y0",
+    "distance_to_tile_edge_px"
+  ],
+  "sample_freeze_gates": {
+    "row_count": "Exactly 512 rows and 512 unique src_id values.",
+    "cluster_balance": "Exactly 32 sources for every cluster 0..15.",
+    "role_balance": "Exactly 16 typical + 16 unusual per cluster.",
+    "topology": "Exactly 360 distinct tile_id and 234 distinct plate_id values.",
+    "parent_membership": "Every selected src_id must occur exactly once in the frozen 122,820-row C0M acquisition map.",
+    "external_label_firewall": "Selection code and manifest must contain no nuclear, Blue Book, NUFORC, Kp/ap, lunar or solar temporal labels."
+  },
+  "post_freeze_rule": "After the manifest hashes are committed, C2A pixel replay may use only the exact frozen 512 sources and the exact union of their 360 tiles. Failed tiles/sources remain failures; no replacement sources or tiles may be selected.",
+  "external_label_firewall": {
+    "external_label_reveal_authorized": false
+  },
+  "claim_ceiling": "LABEL_BLIND_SAMPLE_FREEZE_ONLY__NO_NEW_PIXEL_MEASUREMENT__NO_EXTERNAL_LABEL_INFERENCE__NO_ORIGIN_CLAIM"
+}

@@ -1,0 +1,158 @@
+{
+  "schema": "janus.first_portal.door_boundary.v1",
+  "artifact_id": "JANUS-FIRST-PORTAL-DOOR-AND-DEMIHEAD-BOUNDARY-v1.0",
+  "title_en": "JANUS First Portal — Thin Door to DemiHead and Typed Destinations",
+  "title_ru": "JANUS Первый Портал — лёгкая Дверь к DemiHead и типизированным направлениям",
+  "created_at_local": "2026-08-16T05:12:00+03:00",
+  "status": "PROVENANCE_BOUND_PORTAL_ARCHITECTURE_NOT_PRODUCTION_DEPLOYMENT",
+  "portal_repository": {
+    "repo": "Hawkar-usls/Janus",
+    "exact_main_sha": "d937738510ccd7423d7565acbafc24cc9846d2ec",
+    "current_maturity": "ACTIVE_PROTOTYPE",
+    "historical_role": "LOCAL_CLOUD_LLM_GATEWAY_AND_PUBLIC_METADATA_HUB"
+  },
+  "target_guardian_repository": {
+    "repo": "Hawkar-usls/Demi_Head",
+    "main_sha_at_binding": "f9c87ef48e333169a8cceac4bc9ec376be871c11",
+    "role": "GUARDIAN_MESH_EVIDENCE_AND_ROUTING_HEAD"
+  },
+  "concept": {
+    "canonical_name": "JANUS_FIRST_PORTAL",
+    "symbolic_role": "DOOR",
+    "design_goal": "One simple human- and machine-readable entry surface that can discover and route toward bounded JANUS destinations without inheriting their authority or exposing arbitrary network proxy power.",
+    "simple_user_model": "OPEN_DOOR -> CHOOSE_DESTINATION -> RECEIVE_ROUTE_RECEIPT -> DESTINATION_APPLIES_ITS_OWN_GATES",
+    "anywhere_semantics": "Extensible typed destination catalog, not arbitrary URL forwarding.",
+    "portal_is_truth_authority": false,
+    "portal_is_effect_authority": false,
+    "portal_is_identity_authority": false
+  },
+  "historical_evidence": {
+    "readme": "Janus already describes itself as a supporting local/cloud LLM gateway and public metadata hub.",
+    "runtime": "janus_core.py already exposes multiple /api routes and provider/model routing, so Portal is a normalization and narrowing of an existing architectural role rather than a newly invented identity.",
+    "important_legacy_boundary": "The historical janus_core.py is monolithic and mixes provider routing, memory, narrative/RPG, health prototype, casino/payment/webhook and application routes. It must not be equated with the new thin Portal contract."
+  },
+  "portal_contract": {
+    "allowed": [
+      "LIST_DESTINATIONS",
+      "INSPECT_DESTINATION",
+      "RESOLVE_TYPED_ROUTE",
+      "RETURN_ROUTE_RECEIPT",
+      "DECLINE_ROUTE"
+    ],
+    "not_allowed_by_reference_portal": [
+      "ARBITRARY_URL_PROXY",
+      "RAW_SECRET_READ",
+      "CREDENTIAL_EXPORT",
+      "AUTOMATIC_EXTERNAL_EFFECT",
+      "AUTOMATIC_HIGH_IMPACT_EXECUTION",
+      "TRUTH_DECISION",
+      "EVIDENCE_STATE_MUTATION",
+      "CONSTITUTION_MUTATION",
+      "USER_IDENTITY_CREATION",
+      "PUBLICATION_BY_DISCOVERY"
+    ],
+    "laws": [
+      "PORTAL_ROUTE != WORLD_EFFECT",
+      "PORTAL_DISCOVERY != AUTHORITY",
+      "DESTINATION_VISIBILITY != DESTINATION_PERMISSION",
+      "ROUTE_RECEIPT != PROVIDER_REALIZATION",
+      "ANYWHERE != ARBITRARY_ENDPOINT",
+      "PORTAL_LATENCY != TRUTH_PRIORITY",
+      "PORTAL_FAILURE != USER_LOCK_IN",
+      "DECLINE_ROUTE_IS_VALID"
+    ]
+  },
+  "initial_destination_classes": [
+    {
+      "id": "DEMIHEAD",
+      "class": "GUARDIAN_EVIDENCE_HEAD",
+      "effect_scope": "LOCAL_REFERENCE_BY_DEFAULT",
+      "inherits_portal_authority": false
+    },
+    {
+      "id": "GENESIS",
+      "class": "CONSTITUTIONAL_CREATIVE_RUNTIME",
+      "effect_scope": "DESTINATION_DEFINED",
+      "inherits_portal_authority": false
+    },
+    {
+      "id": "HRAIN",
+      "class": "HUMAN_VISIBLE_GRAPH_INTERFACE",
+      "effect_scope": "DESTINATION_DEFINED",
+      "inherits_portal_authority": false
+    },
+    {
+      "id": "INAIHR",
+      "class": "SEMANTIC_DECOMPOSITION_INTERFACE",
+      "effect_scope": "DESTINATION_DEFINED",
+      "inherits_portal_authority": false
+    },
+    {
+      "id": "LOCAL_MODEL",
+      "class": "MODEL_PROVIDER_ROUTE",
+      "effect_scope": "MODEL_RESPONSE_ONLY_UNLESS_DESTINATION_ADDS_SEPARATE_EFFECT_GATE",
+      "inherits_portal_authority": false
+    }
+  ],
+  "security_review_findings": [
+    {
+      "id": "PORTAL-SEC-001",
+      "severity": "HIGH",
+      "finding": "Historical janus_core.py combines unrelated trust domains in one aiohttp application.",
+      "remediation": "New Portal must be a separate small contract/module and must not expose legacy casino/health/RPG routes merely because they share the repository."
+    },
+    {
+      "id": "PORTAL-SEC-002",
+      "severity": "HIGH",
+      "finding": "Historical core configures wildcard CORS across all registered routes.",
+      "remediation": "Reference Portal should have no network listener by default; any future HTTP adapter needs explicit origin allowlisting and separate threat-model review."
+    },
+    {
+      "id": "PORTAL-SEC-003",
+      "severity": "MEDIUM_HIGH",
+      "finding": "Historical core contains provider secrets/key management and application state in the same process.",
+      "remediation": "Portal catalog stores destination metadata only; raw secrets and provider credentials remain outside the route receipt."
+    },
+    {
+      "id": "PORTAL-SEC-004",
+      "severity": "MEDIUM",
+      "finding": "Historical local-model URL is a deployment-specific private-network endpoint embedded in source.",
+      "remediation": "Portal destination records use symbolic provider IDs or environment-resolved adapters rather than committed private endpoints."
+    }
+  ],
+  "demihead_critical_front_binding": {
+    "correction_propagator": "Portal may carry a correction-aware route receipt but does not apply evidence corrections itself; DemiHead owns correction propagation semantics.",
+    "language_invariance": "Portal may carry requested presentation language but must not alter canonical evidence fields; DemiHead language invariance gate validates semantic equality across UA/RU/EN renderings.",
+    "disagreement_ledger": "Portal may route a review request but cannot convert reviewer disagreement into consensus.",
+    "human_appeal": "Portal may expose an appeal destination when implemented, but appeal rights and receipts are owned by the destination governance layer."
+  },
+  "recommended_implementation_order": [
+    "Create a deterministic Janus Portal manifest and local route-resolver with zero network side effects.",
+    "Add tests proving unknown destinations fail closed and arbitrary URLs are rejected.",
+    "Expose DemiHead as an initial typed destination without granting provider/effect authority.",
+    "Implement DemiHead Correction Propagator and Language Invariance as separate local gates.",
+    "Only later add an HTTP adapter around Portal after authentication, CORS, rate-limit and threat-model review."
+  ],
+  "claim_ceiling": {
+    "established": [
+      "The existing Janus repository already functions conceptually as a gateway/metadata hub and contains multiple application routes.",
+      "A thin typed Portal is a defensible narrowing of that historical role.",
+      "The historical monolithic core should not itself be treated as the new constitutional Portal boundary."
+    ],
+    "not_established": [
+      "production security",
+      "public internet readiness",
+      "universal connectivity to any external system",
+      "provider availability",
+      "automatic permission to use a destination",
+      "truth or authority from routing"
+    ]
+  },
+  "registry_semantics": {
+    "history_preserved": true,
+    "additive_not_replacement": true,
+    "current_authority_modified": false,
+    "janus_main_modified_by_this_record": false,
+    "demihead_main_modified_by_this_record": false
+  }
+}

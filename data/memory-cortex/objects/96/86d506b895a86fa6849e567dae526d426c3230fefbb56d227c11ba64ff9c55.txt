@@ -1,0 +1,74 @@
+{
+  "schema": "janus.meta_registry.technical_evidence.v1",
+  "artifact_id": "JANUS-HASH-RITUAL-V1_2-STAGED-OFFLINE-CI-2026-11-10-v1.0",
+  "date_utc": "2026-11-10",
+  "title": "JANUS Hash Ritual v1.2 CPU optimization and DHCP recovery: bounded offline verification",
+  "status": "STAGED_VALIDATED_NOT_DEPLOYED",
+  "publication_class": "sanitized_summary_no_wallet_no_lan_address_no_raw_runtime",
+  "scope": "Hash Ritual worker only; private JANUS I0 offline CI. No pool mining on GitHub Actions.",
+  "source_provenance": {
+    "repository": "Hawkar-usls/janus-io",
+    "draft_pr": "https://github.com/Hawkar-usls/janus-io/pull/18",
+    "reproducible_patch": "patches/hash_ritual_v1_2.patch",
+    "original_worker_sha256": "3916446fbbd5485d7f4965065885e319f5b68f2921a895f1d1cca47ac2d5c2ac",
+    "candidate_worker_sha256": "1edf243045fbe4ecb9ed8602b13c624fe07bdd57a5bbdd052784695925f30d39",
+    "patch_sha256": "c276d789aa4af0f73fd4093ee1e5d3fa08a6f591a0faa351330a47550d7ab407",
+    "ci_run": "https://github.com/Hawkar-usls/janus-io/actions/runs/42880080302"
+  },
+  "confirmed_local_checks": {
+    "backup_copy_hash_verified": true,
+    "candidate_python_compile": "PASS",
+    "synthetic_sha256d_byte_equivalence": {
+      "cases": 10000,
+      "result": "PASS"
+    },
+    "simulated_network_changes": {
+      "ip_change": "PASS",
+      "route_lost": "PASS",
+      "route_restored": "PASS"
+    },
+    "offline_pool_wire_semantics_synthetic": {
+      "batches": [
+        1,
+        64,
+        256
+      ],
+      "total_header_and_candidate_cases": 321,
+      "result": "IDENTICAL_TO_V1_1",
+      "footnote": "Target forced to accept synthetic candidates to verify payload equivalence; NOT real accepted pool shares."
+    },
+    "patch_replay": {
+      "result": "TEXT_EQUIVALENT_TO_STAGED_CANDIDATE",
+      "note": "Windows/Linux line endings normalized for semantic comparison"
+    },
+    "github_actions_offline_ci": {
+      "jobs": 4,
+      "passed": 4,
+      "failed": 0,
+      "mode": "BOUNDED_SYNTHETIC_ONLY"
+    },
+    "preliminary_cpu_microbenchmark": {
+      "speedup_ratio": 1.166,
+      "execution_host": "connected Windows PC",
+      "nas_validated": false
+    }
+  },
+  "unverified_or_blocked": {
+    "actual_nas_cpu_speedup": "NOT_MEASURED",
+    "production_docker_logs": "UNAVAILABLE_WITHOUT_AUTHENTICATED_DOCKER_ACCESS",
+    "live_container_redeployment": "NOT_PERFORMED",
+    "real_mining_profitability": "NOT_ESTABLISHED",
+    "nas_current_runtime_snapshot_version": "janus_hash_ritual_ziggurat_v1_1",
+    "video_safety_gate": "CURRENT_STALE_MARKER_FAIL_CLOSED; DO_NOT_DISABLE_WITHOUT_INDEPENDENT_VIDEO_IDLE_EVIDENCE"
+  },
+  "invariants": {
+    "github_actions_real_mining": false,
+    "github_actions_access_to_nas": false,
+    "live_nas_container_modified": false,
+    "other_container_mutations": false,
+    "pool_submission_byte_contract_change": false,
+    "video_cpu_pause_disabled": false
+  },
+  "next_gate": "Obtain authenticated read-only Docker inspect and logs for janus_hash_ritual, validate Compose, then deploy only that container with roll-back and NAS benchmarks if approved.",
+  "claim_boundary": "No cryptographic shortcut or BTC block discovery claimed. Synthetic equivalence and local CPU speedups do not imply economic gain."
+}

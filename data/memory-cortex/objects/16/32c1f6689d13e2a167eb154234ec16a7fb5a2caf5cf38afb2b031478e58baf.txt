@@ -1,0 +1,263 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1A-SUBDIVIDED-WALL-SOURCE-EMBEDDING-RESULT-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "PASS_SOURCE_VALID_UNBOUNDED_MIM_FAMILY",
+  "gate": "R5_B1B1A_SUBDIVIDED_WALL_SOURCE_EMBEDDING_GATE_V1",
+  "binds": {
+    "prereg_fund_commit": "7bf134d7732be86a755fe63962cdb1a0c12726b4",
+    "prereg_meta_commit": "2d6071f9e820f553a9dd9a1daa5e3a9e0898397b",
+    "prereg_blob": "9ddcf751fd422b6730e3f0355289fa7b2c2fdad3",
+    "role_graph_checker_commit": "ccd405cc0106d50b6c569d71e6a31d51a69ee5d3",
+    "role_graph_checker_blob": "446f2354d8e68dcb93e393a960c058f18f22ac9f",
+    "parent_11v_source_witness_blob": "8e976b444766e7787c7947fb2800803e83c9a104",
+    "B0_result_blob": "727ff69fdcb7532e4bcfbc82c9128a4f806adf94",
+    "common_layer_union_mim_seal_blob": "ef7d0672d17bd7839b0a5a20b0d0e1c3f938f396"
+  },
+  "family_definition": {
+    "parameter": "n>=7",
+    "wall": "W_n is an elementary (n x n)-wall with bipartition A_n,B_n; every wall edge e=ab receives one subdivision/component vertex z_e.",
+    "constant_vertices": [
+      "s1",
+      "s2",
+      "p",
+      "m",
+      "n0",
+      "a1",
+      "a2",
+      "w",
+      "r"
+    ],
+    "vertices": "A_n union B_n union Z_n union constant_vertices",
+    "edges": [
+      "s1-s2, s1-p, p-m, m-n0, n0-s2",
+      "s2-a1, s2-a2, a1-w, a2-w",
+      "s2-r, m-r",
+      "s1 is complete to A_n union B_n",
+      "A_n is complete to B_n",
+      "r is complete to A_n union B_n",
+      "for each original wall edge e=ab, z_e-a and z_e-b",
+      "for one fixed wall edge e*=a*b*, additionally r-z_{e*}",
+      "no other edges"
+    ]
+  },
+  "extension": {
+    "colors": {
+      "s1": 1,
+      "s2": 2,
+      "p": 3,
+      "m": 2,
+      "n0": 4,
+      "a1": 1,
+      "a2": 3,
+      "w": 2,
+      "r": 4,
+      "A_n": 2,
+      "B_n": 3,
+      "z_special": 1,
+      "z_other": 4
+    },
+    "proof": "Every declared edge joins different assigned colors: support/selection gadget is proper; A-B edges are 2-3; r-wall edges are 4-(2/3); ordinary z_e sees only colors 2,3 and receives 4; special z* sees 2,3,4 and receives 1.",
+    "verdict": "PASS_PROPER_EXTENSION_ARBITRARY_N"
+  },
+  "original_seeded_precoloring": {
+    "S": [
+      "s1",
+      "s2"
+    ],
+    "X0": [],
+    "X": [],
+    "Y0": "{m,w} union Z_n",
+    "Y": "{p,n0,a1,a2,r} union A_n union B_n",
+    "f": {
+      "s1": 1,
+      "s2": 2
+    },
+    "axioms": {
+      "i": "PASS: G is connected; seed connects the constant gadget, every wall survivor sees s1, every z_e sees wall endpoints, w sees a1,a2, and m sees p,n0,r.",
+      "ii": "PASS: S induces edge s1-s2; no outside vertex is adjacent to both s1 and s2.",
+      "iii": "PASS: exactly m,w,Z_n are anticomplete to S and hence form Y0.",
+      "iv": "PASS VACUOUS: G[Y0] is stable, so there is no Y0 edge on which an outside vertex could be mixed.",
+      "v": "PASS: p and every wall survivor have list {2,3,4}; n0,a1,a2,r have list {1,3,4}; m,w,Z_n have list [4]."
+    }
+  },
+  "exact_Q_ancestry": {
+    "types": {
+      "T": "{s1}, f(T)={1}",
+      "T_prime": "{s2}, f(T')={2}"
+    },
+    "ordered_states": [
+      "Q_{T,T'}=(P={p},M={m},N={n0})",
+      "Q_{T',T}=(P={n0},M={m},N={p})"
+    ],
+    "structural_checks": [
+      "P and N lie in the required Y(type) sets.",
+      "M={m} lies in Y0 and is complete to P union N.",
+      "P is anticomplete to N.",
+      "All three sets have size one, so Z(T,T')=Z(T',T)=empty by the source definition."
+    ],
+    "admissible_colors": {
+      "p": 3,
+      "m": 2,
+      "n0": 4
+    },
+    "admissibility_checks": [
+      "p,n0 colors lie in [4]\\({1} union {2})={3,4} in both ordered states.",
+      "f union f_Q is proper on S union S(Q): s1-s2-n0-m-p-s1 is properly colored 1-2-4-2-3-1.",
+      "Z(Q)=empty."
+    ],
+    "post_Q_state": {
+      "seed": "S0={s1,s2,p,m,n0}",
+      "Y0": "{w} union Z_n",
+      "Y": "{a1,a2,r} union A_n union B_n",
+      "lists": {
+        "wall": "{2,3,4}",
+        "a1_a2_r": "{1,3,4}",
+        "w_and_Z": "[4]"
+      },
+      "lemma10": "Identity after canonical repartition; there are no size-1/2 vertices and G remains connected.",
+      "axioms_i_v": "PASS"
+    },
+    "verdict": "PASS_EXACT_SOURCE_Q_LEMMA10_ANCESTRY"
+  },
+  "seed_two_replay": {
+    "selected": [
+      {
+        "vertex": "a1",
+        "color": 1
+      },
+      {
+        "vertex": "a2",
+        "color": 3
+      }
+    ],
+    "L0": "{1,3,4}",
+    "normal_subcase": [
+      "Add only a1,a2 to the seed.",
+      "w is hit by the new seed and leaves residual Y0 before Lemma10.",
+      "No z_e is adjacent to a1 or a2, so residual Y0 is exactly Z_n."
+    ],
+    "lemma10_classes": {
+      "X": "{w}, with list {2,4}",
+      "Y": "{r} union A_n union B_n",
+      "Y0": "Z_n",
+      "wall_list": "L'={2,3,4}",
+      "r_list": "L0={1,3,4}"
+    },
+    "VI_failure": "PASS: every wall vertex has a residual-Y0 neighbor and list L', while r has residual-Y0 neighbor z* and list L0; therefore at least two exact 3-list classes meet residual Y0.",
+    "verdict": "PASS_SOURCE_HARD_STATE__NOT_VI_TERMINAL"
+  },
+  "one_coarse_class_sigma": {
+    "S_sigma": "A_n union B_n",
+    "coordinates": {
+      "exact_list": "L'={2,3,4}",
+      "old_source_type": "{s1}; every wall survivor is nonadjacent to s2,p,m,n0",
+      "selected_witness_mask": "J={2}; c2=3 is in L' and every wall survivor is nonadjacent to a2; c1=1 is not in L'",
+      "stored_support_profile": "000 on ordered support vertices p,m,n0"
+    },
+    "source_Z": "Every wall survivor belongs to the original source Z(L') because a2 is its nonneighbor and g(a2)=3 belongs to L'.",
+    "verdict": "PASS_SINGLE_B0_COARSE_CLASS_ARBITRARY_N"
+  },
+  "component_incidence": {
+    "residual_Y0": "Z_n is stable, so every component is singleton {z_e}.",
+    "B0_uniformity": "Automatic for singleton components.",
+    "incidence": "For v in S_sigma and C={z_e}, v is complete to C iff v is an endpoint of wall edge e.",
+    "conclusion": "I_sigma is exactly J_n, the graph obtained from W_n by 1-subdividing every wall edge."
+  },
+  "P7_free_theorem": {
+    "name": "SUBDIVIDED_WALL_SOURCE_FAMILY_P7_FREE_V1",
+    "step1_Z_simplicial": [
+      "For ordinary z_e, N(z_e)={a,b} with a in A_n,b in B_n, and ab is an edge because A_n is complete to B_n.",
+      "For special z*, N(z*)={a*,b*,r}; these three vertices are pairwise adjacent because A-B is complete and r is complete to all wall survivors.",
+      "Thus every z_e is simplicial. A simplicial vertex cannot be an internal vertex of an induced path with at least three vertices, so Z_n vertices can occur only as path endpoints."
+    ],
+    "step2_false_twin_reduction": {
+      "classes": [
+        "A_n",
+        "B_n",
+        "{a1,a2}"
+      ],
+      "lemma": "An induced path on at least four vertices contains at most one vertex from any independent false-twin class.",
+      "proof": "If false twins u,v occur at path-distance >=3, the neighbor of u toward v is also adjacent to v, a chord. If their distance is 2, then in a path with at least four vertices one of u,v has a second path-neighbor, which is also adjacent to the other twin, again a chord.",
+      "consequence": "Every induced P5/P6/P7 in R=G-Z_n maps injectively to the fixed 10-role graph."
+    },
+    "role_graph": {
+      "vertices": [
+        "A",
+        "B",
+        "r",
+        "s1",
+        "s2",
+        "p",
+        "m",
+        "n0",
+        "alpha",
+        "w"
+      ],
+      "edges": [
+        "A-B",
+        "A-r",
+        "B-r",
+        "A-s1",
+        "B-s1",
+        "r-s2",
+        "r-m",
+        "s1-s2",
+        "s1-p",
+        "s2-n0",
+        "s2-alpha",
+        "p-m",
+        "m-n0",
+        "alpha-w"
+      ],
+      "independent_checker": "research/tools/r5_b1b1a_subdivided_wall_source_embedding/role_graph_checker.py",
+      "finite_certificate": {
+        "induced_P7_count": 0,
+        "induced_P6_patterns_up_to_reversal": [
+          "p-m-n0-s2-alpha-w",
+          "p-m-r-s2-alpha-w",
+          "m-p-s1-s2-alpha-w"
+        ],
+        "induced_P6_endpoint_property": "Every P6 endpoint lies outside D={A,B,r}.",
+        "induced_P5_endpoint_property": "No induced P5 has both endpoints in D={A,B,r}."
+      }
+    },
+    "final_case_split": [
+      "If a hypothetical induced P7 contains no Z vertex, it is an induced P7 of R, impossible by the role certificate.",
+      "If it contains exactly one Z endpoint, deleting it leaves an induced P6 of R whose adjacent endpoint lies in D=N(Z); no P6 of R has an endpoint in D.",
+      "If it contains two Z endpoints, deleting them leaves an induced P5 of R with both endpoints in D; no such P5 exists."
+    ],
+    "verdict": "PASS_ARBITRARY_N_P7_FREE"
+  },
+  "mim_width": {
+    "external_theorems": [
+      "Theorem 8, IPEC 2020: mimw(W_n)>=sqrt(n)/50 for elementary (n x n)-walls, n>=7.",
+      "Lemma 2, IPEC 2020: 1-subdividing an edge does not decrease mim-width."
+    ],
+    "derivation": "Apply Lemma 2 sequentially to every wall edge. Since I_sigma=J_n is the all-edge 1-subdivision, mimw(I_sigma)>=mimw(W_n)>=sqrt(n)/50.",
+    "verdict": "PASS_UNBOUNDED_MIM_WIDTH"
+  },
+  "gate_verdict": {
+    "terminal": "PASS_SOURCE_EMBEDDING",
+    "SOURCE_VALID_UNBOUNDED_MIM_FAMILY": "PROVED",
+    "GLOBAL_SEED_BOUNDED_COMMON_LAYOUT_FOR_ARBITRARY_B0_COARSE_CLASS": "FALSIFIED",
+    "reason": "A fixed-seed, fixed-coarse-signature, P7-free, exact Q/Lemma10/seed-two source family exists whose union-incidence graph has mim-width growing at least sqrt(n)/50."
+  },
+  "consequences": [
+    "B1A per-layer P7-freeness, full-quotient P7-freeness, fixed coarse signature, and exact source ancestry do not force bounded mim-width of I_sigma.",
+    "No universal B1B1A theorem of the form 'every B0 coarse class has seed-bounded common-layer mim-width' can hold.",
+    "Conditional D1 counting remains correct but cannot be made universal by proving a seed-bounded common mim layout for every coarse class.",
+    "Future positive repair must either route this wall family through a different already-sealed source mechanism, exploit additional restrictions not shared by this family, or abandon common-mim as the universal composition mechanism."
+  ],
+  "scientific_ceiling": {
+    "COMMON_LAYOUT_EXISTENCE_UNIVERSAL_BOUNDED_MIM_ROUTE": "FALSIFIED",
+    "ALL_POSSIBLE_COMMON_LAYOUT_OR_NON_MIM_REPAIRS": "OPEN",
+    "NONEDGE_Z_SURVIVOR_COMPRESSION": "OPEN",
+    "FULL_L2_REPAIR": "OPEN",
+    "LEMMA11_P7_LIFT": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "return_to_HQ": true,
+  "stop": true
+}

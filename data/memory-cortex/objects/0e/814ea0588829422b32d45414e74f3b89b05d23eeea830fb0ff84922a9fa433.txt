@@ -1,0 +1,51 @@
+{
+  "artifact_id": "JANUS-NAS-GITHUB-LINK-GITHUB-SIDE-2026-08-25-v1.0",
+  "status": "GITHUB_SIDE_READY__NAS_SIDE_NOT_TOUCHED",
+  "scope": "Prepare the GitHub half of a future NAS<->GitHub pairing only. No NAS access, Titan restoration, HRAIN runtime change, container change, or Telegram interaction was performed.",
+  "canonical_repository": "Hawkar-usls/Janus",
+  "implementation_branch": "nas-git-link-v1",
+  "pull_request": {
+    "number": 9,
+    "title": "Prepare GitHub side of JANUS NAS link",
+    "state": "OPEN",
+    "mergeable": true,
+    "head_sha": "50713de363684664b90cdcede30020afe99d680d"
+  },
+  "added_surfaces": [
+    ".janus/NAS_GIT_LINK_CONTRACT.json",
+    "nas_sync/checkpoint.schema.json",
+    "nas_sync/validate_checkpoint.py",
+    "nas_sync/tests/test_validate_checkpoint.py",
+    "nas_sync/examples/checkpoint.json",
+    "nas_sync/README.md",
+    ".github/workflows/nas-git-link.yml"
+  ],
+  "git_contract": {
+    "main_direct_write_from_nas": false,
+    "machine_branch_prefix": "nas/",
+    "dirty_tree_policy": "NO_PULL",
+    "divergence_policy": "NO_AUTOMERGE",
+    "automatic_deploy": false,
+    "automatic_container_restart": false,
+    "docker_socket": false,
+    "public_checkpoint": "SANITIZED_ONLY"
+  },
+  "remote_ci": {
+    "workflow": "NAS Git Link Contract",
+    "run_id": 32888193055,
+    "head_sha": "50713de363684664b90cdcede30020afe99d680d",
+    "status": "COMPLETED",
+    "conclusion": "SUCCESS"
+  },
+  "boundaries": [
+    "SYNC_NE_EXECUTION_AUTHORITY",
+    "LOCAL_CHANGE_NE_AUTOMATIC_MAIN_MERGE",
+    "NAS_RUNTIME_STATE_NE_GITHUB_PUBLIC_STATE",
+    "DIRTY_TREE_NE_PULL_TARGET",
+    "DIVERGENCE_NE_AUTOMERGE_PERMISSION",
+    "CHECKPOINT_NE_TRUTH_AUTHORITY",
+    "TELEGRAM_METADATA_NE_PUBLIC_CHECKPOINT",
+    "AUTHORITY_DELTA_ON_TRANSPORT = 0"
+  ],
+  "next_gate": "Merge PR #9 after review, then bind a future NAS with a dedicated minimum-scope credential and implement the NAS-side sync agent separately."
+}

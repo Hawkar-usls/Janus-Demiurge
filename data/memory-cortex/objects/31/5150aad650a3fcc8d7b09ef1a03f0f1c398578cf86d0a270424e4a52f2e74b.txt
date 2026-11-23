@@ -1,0 +1,59 @@
+{
+  "schema": "JANUS.genesis_face_authority_epoch_runtime_receipt.v1",
+  "artifact_id": "JANUS-GENESIS-FACE-AUTHORITY-EPOCH-MICROREVIEW-RUNTIME-EXECUTION-RECEIPT-v1.0",
+  "title": "JANUS Genesis Face Authority Epoch and Micro-Review — Runtime Execution Receipt",
+  "created_at_local": "2026-08-14T15:53:57+03:00",
+  "status": "FOCUSED_AUTHORITY_EPOCH_AND_MICROREVIEW_CI_VERIFIED",
+  "architecture": "registry/experimental/JANUS-GENESIS-SOVEREIGN-FACE-MICROCONTROL-AUTHORITY-EPOCH-v5.9.json",
+  "parent_receipt": "data/JANUS-GENESIS-FACE-MICROCONTROL-SWR-RUNTIME-EXECUTION-RECEIPT-v1.0.json",
+  "runtime": {
+    "repository": "Hawkar-usls/Janus_Genesis",
+    "module": "genesis_v18_7_22_face_authority_epoch.py",
+    "module_commit": "82a2c50f39d2db60716891d402f367ae32675f98",
+    "tests": "tests/test_genesis_v18_7_22_face_authority_epoch.py",
+    "tests_commit": "bef30ebc442995c8228a5080b8ec98dfb349b944",
+    "workflow": ".github/workflows/janus-face-authority-epoch.yml",
+    "workflow_head_sha": "f5ce7e6a53a77a8cb39c4952752caad74d48a8ef"
+  },
+  "github_actions": {
+    "run_id": 31802232951,
+    "job_id": 94772660638,
+    "workflow_name": "JANUS face authority epoch and micro-review",
+    "job_name": "verify-authority-epoch",
+    "conclusion": "success",
+    "steps": {
+      "compile_face_control_modules": "success",
+      "run_authority_epoch_and_microreview_tests": "success",
+      "rerun_base_microcontrol_tests_for_compatibility": "success"
+    }
+  },
+  "verified_behaviors": [
+    "confused-deputy scope mismatch is denied",
+    "capability lease is non-transferable across faces",
+    "revocation after host authorization but before dispatch blocks dispatch",
+    "authority epoch rotation invalidates stale leases",
+    "prepared dispatch permit is revalidated immediately before effect and can be invalidated by revocation",
+    "capability dispatch budget cannot be reused after exhaustion",
+    "high-risk/irreversible micro-review uses independent challenge assignments with authority_weight=0",
+    "a low-routing-priority face carrying novel counterevidence is not starved",
+    "v18.7.21 base microcontrol tests remain compatible"
+  ],
+  "known_open_edge": {
+    "name": "AUTHORIZED_BUT_REVOKED_RECOVERY",
+    "status": "OPEN_LIVENESS_GAP_FAILS_CLOSED",
+    "description": "Revocation safely blocks dispatch, but explicit cancellation/recovery of a now-stale underlying authorization is not yet implemented.",
+    "external_effect_risk_under_tested_path": "BLOCKED",
+    "liveness_risk": "POSSIBLE_STUCK_AUTHORIZED_EFFECT_UNTIL_RECOVERY_PRIMITIVE"
+  },
+  "claim_ceiling": {
+    "focused_guard_implemented": true,
+    "focused_tests_passed": true,
+    "ci_verified": true,
+    "default_runtime_integration": "NOT_YET_CLAIMED",
+    "external_side_effect_execution_in_guard": false,
+    "authorization_recovery_after_revocation": "OPEN",
+    "multi_effect_atomicity": "OPEN",
+    "formal_safety_proof": false
+  },
+  "next_gate": "JANUS_GENESIS_SOVEREIGN_FACE_MICROCONTROL_AUTHORIZATION_CANCELLATION_RECOVERY_MULTI_EFFECT_SAGA_AND_DEADLOCK_FAIRNESS_v6.0"
+}

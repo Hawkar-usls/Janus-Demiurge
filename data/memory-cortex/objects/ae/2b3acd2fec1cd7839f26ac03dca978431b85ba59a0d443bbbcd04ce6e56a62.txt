@@ -1,0 +1,86 @@
+{
+  "schema": "JANUS.genesis_face_recovery_saga_fairness_runtime_receipt.v1",
+  "artifact_id": "JANUS-GENESIS-FACE-RECOVERY-SAGA-FAIRNESS-RUNTIME-EXECUTION-RECEIPT-v1.0",
+  "title": "JANUS Genesis Face Recovery, Saga, and Fairness v6 — Runtime Execution Receipt",
+  "created_at_local": "2026-08-14T16:04:00+03:00",
+  "status": "FOCUSED_RECOVERY_SAGA_FAIRNESS_CI_VERIFIED",
+  "architecture": "registry/experimental/JANUS-GENESIS-SOVEREIGN-FACE-MICROCONTROL-RECOVERY-SAGA-FAIRNESS-v6.0.json",
+  "parent_receipt": "data/JANUS-GENESIS-FACE-AUTHORITY-EPOCH-MICROREVIEW-RUNTIME-EXECUTION-RECEIPT-v1.0.json",
+  "runtime": {
+    "repository": "Hawkar-usls/Janus_Genesis",
+    "draft_module": "genesis_v18_7_23_face_recovery_saga.py",
+    "draft_module_commit": "9e0af6b4e9ad1b6f56306ebb2eb80ba3d910e491",
+    "hardened_module": "genesis_v18_7_24_face_recovery_saga_hardened.py",
+    "hardened_module_commit": "815f03c1f2291bace08254fb01cf01034781f8c2",
+    "tests": "tests/test_genesis_v18_7_24_face_recovery_saga_hardened.py",
+    "tests_commit": "1cd04d481c9ff2729557b155257282a1c375c649",
+    "workflow": ".github/workflows/janus-face-recovery-saga-v6.yml",
+    "workflow_head_sha": "9e3cdf71bf01f993f1ae805e8cf34a9d44b076f3"
+  },
+  "github_actions": {
+    "successful_run_id": 31803003912,
+    "successful_job_id": 94775171325,
+    "workflow_name": "JANUS face recovery saga v6",
+    "job_name": "verify-recovery-saga-v6",
+    "conclusion": "success",
+    "steps": {
+      "compile_face_control_chain": "success",
+      "run_v18_7_24_recovery_saga_tests": "success",
+      "rerun_v18_7_22_authority_epoch_tests": "success",
+      "rerun_v18_7_21_microcontrol_tests": "success",
+      "enforce_v6_invariant_strings": "success"
+    }
+  },
+  "verified_behaviors": [
+    "pre-dispatch cancellation invalidates the old permit and releases the protected effect authorization slot",
+    "recovery requires a distinct replacement authorization linked to the canceled authorization",
+    "a validated but unreceipted dispatch remains UNDETERMINED and blocks automatic recovery",
+    "an authoritative late receipt can settle an uncertain validated dispatch without reviving the canceled permit",
+    "authoritative NO_EFFECT reconciliation can release an uncertain effect for explicit recovery",
+    "a contradictory late receipt after NO_EFFECT reconciliation/recovery is quarantined rather than silently merged",
+    "saga forward steps are receipt-ordered",
+    "compensation is a distinct protected effect with its own authorization and receipt",
+    "irreversible partial settlement is surfaced as PARTIAL_IRREVERSIBLE_REQUIRES_HOST_DECISION",
+    "bounded-bypass fairness forces an old low-priority review ticket after the configured bypass bound",
+    "fairness and review routing grant zero world authority",
+    "v18.7.22 authority epoch tests remain compatible",
+    "v18.7.21 base microcontrol tests remain compatible"
+  ],
+  "failed_run_preservation": {
+    "run_id": 31802955738,
+    "job_id": 94775020771,
+    "conclusion": "failure",
+    "passed_before_failure": [
+      "compile face control chain",
+      "v18.7.24 recovery saga tests",
+      "v18.7.22 authority epoch tests",
+      "v18.7.21 microcontrol tests"
+    ],
+    "failure_location": "Enforce v6 invariant strings",
+    "cause_class": "WORKFLOW_ASSERTION_TEXT_MISMATCH",
+    "treatment": "PRESERVED_AS_FAILED_RUN; workflow assertion corrected; new complete run executed",
+    "not_promoted_to_success": true
+  },
+  "runtime_safety_boundary": {
+    "external_side_effect_execution_in_guard": false,
+    "default_genesis_world_executor_replaced": false,
+    "distributed_atomicity_claimed": false,
+    "provider_idempotency_assumed": false,
+    "meaning": "The verified modules are additive authorization/recovery/saga/fairness control surfaces. They do not themselves send mail, payments, tool calls, actuator commands, or other external effects."
+  },
+  "claim_ceiling": {
+    "focused_guard_implemented": true,
+    "focused_tests_passed": true,
+    "ci_verified": true,
+    "pre_dispatch_recovery_gap_closed_in_tested_surface": true,
+    "ambiguous_dispatch_auto_retry_blocked_in_tested_surface": true,
+    "saga_compensation_control_surface_verified": true,
+    "bounded_bypass_queue_verified": true,
+    "default_runtime_integration": "NOT_YET_CLAIMED",
+    "durable_crash_recovery": "OPEN",
+    "multi_process_fencing": "OPEN",
+    "external_provider_idempotency_binding": "OPEN",
+    "formal_safety_or_liveness_proof": false
+  },
+  "next_gate": "JANUS_GENESIS_SOVEREIGN_FACE_MICROCONTROL_DURABLE_JOURNAL_CRASH_REPLAY_MULTI_PROCESS_FENCING_PROVIDER_IDEMPOTENCY_AND_DEADLINE_FAIRNESS_v6.1"
+}

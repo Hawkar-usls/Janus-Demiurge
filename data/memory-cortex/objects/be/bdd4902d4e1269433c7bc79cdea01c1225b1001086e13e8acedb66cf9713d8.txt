@@ -1,0 +1,264 @@
+{
+  "schema": "janus.cosmos.seti.r26.weakness_diagnostic.v1",
+  "date": "2026-11-17",
+  "status": "SYNTHETIC_DEVELOPMENT_GAIN_REFERENCE_MISMATCH_HOLD",
+  "production_adoption": false,
+  "archive_baseline": {
+    "run": 44161667779,
+    "localized": 110,
+    "positives": 512,
+    "control_alerts": 22,
+    "controls": 512,
+    "amplitudes": [
+      0.75,
+      1.25,
+      1.5,
+      2
+    ],
+    "localized_by_amplitude": [
+      2,
+      8,
+      25,
+      75
+    ],
+    "each": 128,
+    "continuous_localized": 77,
+    "gap_localized": 33,
+    "each_presence": 256
+  },
+  "r25a": {
+    "run": 44163808716,
+    "boundary_cases": 180,
+    "archive_mismatches": 0,
+    "trace_bytes_128": [
+      3641344,
+      1376256
+    ],
+    "wall_seconds_128": [
+      1.610014532,
+      3.154044631
+    ],
+    "synthetic_long_localized": 0
+  },
+  "r25b": {
+    "run": 44164191787,
+    "synthetic_true_pairs_global": 4663,
+    "synthetic_true_pairs_greedy": 4544,
+    "wrong_pairs_global": 285,
+    "wrong_pairs_greedy": 357
+  },
+  "local_diagnostics": {
+    "scope": "Local reproduction of zero-gap max-plus DP; simulated backgrounds and separate simulated reference scans; seeds distinct between calibration and exam within each arm; each length and diagnostic 512 positive and 512 paired control examples; localization over entire path including gaps; chance localization not subtracted; no real archive or external validation",
+    "reference": {
+      "seeds": [
+        26011,
+        26012
+      ],
+      "sha256": "11b31196b40a75d6641fdb4c9bc07854e23749b9f69e6c8ba20cdd2d3747e8f7",
+      "length16": {
+        "raw": [
+          3,
+          32
+        ],
+        "candidate_local": [
+          3,
+          29
+        ],
+        "off_reference": [
+          0,
+          34
+        ],
+        "off_common": [
+          0,
+          22
+        ]
+      },
+      "length64": {
+        "raw": [
+          1,
+          29
+        ],
+        "candidate_local": [
+          3,
+          33
+        ],
+        "off_reference": [
+          1,
+          27
+        ],
+        "off_common": [
+          2,
+          31
+        ]
+      }
+    },
+    "corridor": {
+      "seeds": [
+        26021,
+        26022
+      ],
+      "sha256": "ea1140d783ed289c7b04b15963e5fed4e18cc697bb1ed7ec99e53fc6d640c761",
+      "length16": {
+        "raw": [
+          2,
+          16
+        ],
+        "off_reference": [
+          3,
+          24
+        ],
+        "corridor1": [
+          1,
+          27
+        ],
+        "corridor3": [
+          2,
+          25
+        ]
+      },
+      "length64": {
+        "raw": [
+          2,
+          32
+        ],
+        "off_reference": [
+          1,
+          23
+        ],
+        "corridor1": [
+          0,
+          15
+        ],
+        "corridor3": [
+          4,
+          21
+        ]
+      }
+    },
+    "envelope": {
+      "seeds": [
+        26031,
+        26032,
+        26033
+      ],
+      "sha256": "7dd5a2d495a578606415a0743676e1e658d02ae6fdd4a1392a77661070c144e8",
+      "method": "Separate per-reference temporal median, maximum across two reference scans, maximum over ±3 bins; upper envelope 1.3 times max only where max>=2 robust scale units. Developed after negative pilots; known bounded shifts in generator.",
+      "length16": {
+        "raw": [
+          3,
+          30
+        ],
+        "pooled_corridor": [
+          1,
+          20
+        ],
+        "max_corridor": [
+          80,
+          23
+        ],
+        "upper_envelope": [
+          123,
+          20
+        ]
+      },
+      "length64": {
+        "raw": [
+          3,
+          24
+        ],
+        "pooled_corridor": [
+          1,
+          29
+        ],
+        "max_corridor": [
+          191,
+          32
+        ],
+        "upper_envelope": [
+          174,
+          20
+        ]
+      },
+      "upper_envelope_localized_by_amplitude_64": [
+        0,
+        26,
+        54,
+        94
+      ],
+      "max_corridor_localized_by_amplitude_64": [
+        2,
+        35,
+        58,
+        96
+      ],
+      "stress_shifted_reference_16": {
+        "raw": [
+          2,
+          28
+        ],
+        "upper_envelope": [
+          101,
+          157
+        ]
+      },
+      "stress_shifted_reference_64": {
+        "raw": [
+          0,
+          26
+        ],
+        "upper_envelope": [
+          159,
+          142
+        ]
+      },
+      "interpretation": "Large conditional synthetic gain under reference shift model; out-of-model false alerts unacceptable; 0.75 scale no reliable recovery; no promotion."
+    },
+    "units": [
+      "localized_positive",
+      "control_alerts"
+    ],
+    "archive_zip_sha256": "ea1621b6a321b6ab62379920dce6da8e0800c89953d2833cd366ed87f2ce592f",
+    "archive_location": "ChatGPT user downloadable; no source files uploaded to GitHub"
+  },
+  "donors": [
+    {
+      "repo": "Janus-Cosmos",
+      "ref": "c27386111e69b65c918548699c1c77d452ad7221",
+      "path": "research/seti/r11_control_calibration.py",
+      "blob": "fe1ef7fcf3ae8fa40031a92f1be8bef72c58a003",
+      "role": "ON/OFF time and frequency matching; forward/reverse sham; injection sensitivity check"
+    },
+    {
+      "repo": "Janus-Cosmos",
+      "ref": "c27386111e69b65c918548699c1c77d452ad7221",
+      "path": "research/seti/r17_rfi_genome.py",
+      "blob": "348253081a84070498e55f675527f19eeaea468b",
+      "role": "Provenance-preserving RFI feature library; not confirmed classifier"
+    },
+    {
+      "repo": "Janus-Cosmos",
+      "ref": "35bd5ca2cf032e3fb952a5e994897809b0defbd5",
+      "path": "workspace/kusto_cand003_support_matched_sensitivity.py",
+      "role": "common measured support, missing coverage HOLD"
+    },
+    {
+      "repo": "Janus-Fundamentum",
+      "ref": "4433c4673f818aa9ad68155e2e0deb612990b480",
+      "path": "experiments/r5_e46_conflict_line_graph_matching.py",
+      "role": "exact association with ambiguity checks, no identity proof"
+    },
+    {
+      "repo": "Janus-Cosmos",
+      "ref": "35bd5ca2cf032e3fb952a5e994897809b0defbd5",
+      "path": "workspace/cousteau_synesthetic_memory_core.py",
+      "role": "HANNAH reference signatures, advisory retrieval only"
+    }
+  ],
+  "next": [
+    "Freeze R26A independent OFF reference transfer across receiver/day, verify coverage and drift using candidate-independent reference features; mismatch UNKNOWN with raw retained; report risk coverage and false alerts without hiding abstentions.",
+    "R26B candidate bank: retain multiple disjoint tracks with explicit search trials rather than max only, calibrate whole window false alerts, audit near interferers.",
+    "R26C full-window blind known BLC1 positive control and real new long scans, independent hidden injected tracks and target-cluster uncertainty; do not confuse known RFI anchor with technosignature.",
+    "No production adoption or autonomous change until real and independent checks."
+  ],
+  "confirmed_technosignatures": 0
+}

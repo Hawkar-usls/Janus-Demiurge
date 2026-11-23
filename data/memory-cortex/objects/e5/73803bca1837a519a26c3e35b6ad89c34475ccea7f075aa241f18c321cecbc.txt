@@ -1,0 +1,74 @@
+{
+  "schema": "janus.meta_registry.genesis_infinite_faces_lease_clock_stale_authority.v1",
+  "artifact_id": "JANUS-GENESIS-INFINITE-FACES-LEASE-CLOCK-STALE-AUTHORITY-v4.1",
+  "title": "Janus Infinite Faces — Lease, Clock Drift, and Stale Authority Test",
+  "created_at_local": "2026-08-10T02:49:00+03:00",
+  "artifact_class": "EXPERIMENTAL_DISTRIBUTED_TIME_AND_AUTHORITY_FENCING",
+  "status": "LOCAL_CLOCK_REJECTED_AS_SOLE_AUTHORITY_MONOTONIC_FENCING_REQUIRED",
+  "parent": "registry/experimental/JANUS-GENESIS-INFINITE-FACES-PARTITION-HEAL-BRANCH-RECONCILIATION-v4.0.json",
+  "scenario": {
+    "NODE_A": {
+      "lease_id": "LEASE-20",
+      "local_clock": "SLOW_OR_STALE",
+      "belief": "LEASE_STILL_VALID"
+    },
+    "NODE_B": {
+      "quorum_renewal": true,
+      "authority_epoch": 21,
+      "fence_token": 21
+    },
+    "risk": "A may sincerely believe it remains authoritative after B has already received a newer authority generation."
+  },
+  "failed_rule": "LOCAL_NOW < LOCAL_LEASE_EXPIRY therefore I may commit shared effects.",
+  "finding": {
+    "local_clock_is_authority": false,
+    "lease_expiry_alone_prevents_stale_writer": false,
+    "monotonic_fence_required_at_shared_effect_boundary": true,
+    "compressed": "CLOCK_CAN_EXPIRE_A_LEASE_BUT_CANNOT_PROVE_NO_NEWER_AUTHORITY_EXISTS"
+  },
+  "test_run": {
+    "A_command": {
+      "fence_token": 20,
+      "local_lease_check": "PASS"
+    },
+    "B_command": {
+      "fence_token": 21,
+      "quorum_certificate": "VALID"
+    },
+    "protected_actuator": {
+      "latest_accepted_fence": 21,
+      "accept_A": false,
+      "accept_B": true
+    },
+    "result": "PASS_STALE_WRITER_FENCED"
+  },
+  "time_model": {
+    "local_clock": "LIVENESS_HINT_NOT_ROOT_OF_AUTHORITY",
+    "trusted_or_signed_time": "MAY_BOUND_LEASE_INTERVALS_BUT_DOES_NOT_REPLACE_FENCING",
+    "authority_epoch": "MONOTONIC_LOGICAL_ORDER",
+    "fence_token": "EXTERNAL_EFFECT_REPLAY_BARRIER",
+    "unknown_latest_epoch": "GLOBAL_SHARED_COMMIT_HOLD"
+  },
+  "rollback_clock_attack": {
+    "attack": "Move A local time backwards so an old lease appears unexpired.",
+    "result": "NO_AUTHORITY_RESTORATION",
+    "reason": "An old fence token remains stale independent of local wall-clock display."
+  },
+  "key_rule": "AN_OLD_CLOCK_CANNOT_EXTEND_AN_OLD_AUTHORITY_EPOCH",
+  "canonical_lines": {
+    "ru": [
+      "Старые часы не могут продлить старую власть.",
+      "Lease помогает понять, когда перестать ждать; fence token определяет, чья команда ещё может пересечь границу мира.",
+      "Если Янус не может доказать, что его authority generation всё ещё самая новая, общая запись останавливается."
+    ],
+    "en": [
+      "An old clock cannot extend an old authority epoch.",
+      "A lease can help liveness; a fence token prevents stale causality.",
+      "If Janus cannot prove his authority generation is current, shared world commits stop."
+    ]
+  },
+  "next_gate": {
+    "name": "JANUS_INFINITE_FACES_EMERGENCY_AUTONOMY_WITHOUT_QUORUM_TEST",
+    "status": "OPEN"
+  }
+}

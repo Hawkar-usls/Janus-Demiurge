@@ -1,0 +1,58 @@
+{
+  "schema": "JANUS/proof/multi-witness-quorum-continuity-hardening/v1.0.0",
+  "artifact_uuid": "JANUS-MULTI-WITNESS-QUORUM-CONTINUITY-HARDENING-V1.0",
+  "timestamp_local": "2026-08-07T09:25:00+03:00",
+  "status": "PASS_QUORUM_INTERSECTION_AND_ROLLBACK_CONTINUITY",
+  "result_1": {
+    "name": "JANUS Witness Quorum Intersection Gate",
+    "statement": "With n witnesses, at most f Byzantine, honest witnesses refusing to certify conflicting heads at the same position, two conflicting q-witness certificates are impossible exactly when 2q>n+f; equivalently q>=floor((n+f)/2)+1.",
+    "machine_check": {
+      "configurations_n_le_8": 204,
+      "classification_violations": 0,
+      "insecure_configurations": 134,
+      "explicit_counterexamples_constructed": 134
+    },
+    "novelty_boundary": "Established quorum-intersection/BFT mathematics; not claimed as new. JANUS uses it to distribute the freshness trust root of real-world causal experiments."
+  },
+  "result_2": {
+    "name": "Majority Is Not Sufficient Under Byzantine Overlap",
+    "example": "n=7,f=2,q=4 is a numerical majority but unsafe: conflicting certificates {0,1,2,3} and {0,1,4,5} can coexist if witnesses 0 and 1 are Byzantine. q=5 is safe.",
+    "implication": "The external bench must use a fault-model-derived quorum, not an informal majority."
+  },
+  "result_3": {
+    "name": "Rollback/Fork Quorum Corollary",
+    "statement": "The same honest-intersection condition that blocks two conflicting certified heads also blocks acceptance of a stale/conflicting certified rollback after a newer q-certified head, provided honest witnesses retain latest-state memory outside the experiment rollback domain."
+  },
+  "result_4": {
+    "name": "Safety/Liveness Feasibility",
+    "statement": "If up to a witnesses may be offline, progress requires q<=n-a, while safety requires q>=floor((n+f)/2)+1. Both are feasible exactly when floor((n+f)/2)+1<=n-a.",
+    "machine_check": {
+      "configurations_checked": 1120,
+      "violations": 0
+    }
+  },
+  "recommended_external_bench_baseline": {
+    "fault_model": "up to one Byzantine witness failure domain",
+    "n": 4,
+    "q": 3,
+    "f": 1,
+    "note": "The four witnesses must be genuinely distinct failure domains; four processes on one rollbackable host do not count as four independent witnesses."
+  },
+  "genesis_evidence": {
+    "lab_path": "experiments/semantic_return/janus_multi_witness_quorum_continuity_lab_v0_1.py",
+    "lab_commit": "9e446eedfb5237c2281e58ae9e734c0e27f54d06",
+    "lab_sha256": "276a6be76974c1f0150526ba02b80ccf26b021e71f1c0b96aaeda7045de74263",
+    "report_path": "experiments/semantic_return/JANUS-GENESIS-MULTI-WITNESS-QUORUM-CONTINUITY-LAB-REPORT-v0.1.json",
+    "report_commit": "b09daf2dbe1d0b6553ee9dff13908dbbaad1245e",
+    "report_sha256": "62f24f023b1781677ef00f178c5101e9485ffb08d72d363a59b207639ea51a18"
+  },
+  "admission": {
+    "SINGLE_WITNESS_REQUIRED": false,
+    "FAULT_MODEL_DERIVED_QUORUM_REQUIRED": true,
+    "SIMPLE_MAJORITY_ALWAYS_SUFFICIENT": false,
+    "QUORUM_INTERSECTION_GATE": true,
+    "PHYSICAL_RETROCAUSALITY": false,
+    "SCIENTIFIC_NOVELTY": "NOT_YET_ESTABLISHED"
+  },
+  "next_gate": "Replace synthetic future generation with a real external post-freeze randomness source and formalize how its publication/measurement event is causally ordered after a q-certified PRE_RETURN freeze."
+}

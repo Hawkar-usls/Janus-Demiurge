@@ -1,0 +1,60 @@
+{
+  "artifact_id": "JANUS-NAS-LIVE-TAKEOVER-CHECKPOINT-2026-08-25-v1.0",
+  "status": "OPERATOR_TRANSCRIPT_CAPTURED__REMOTE_RECHECK_CURRENTLY_BLOCKED",
+  "source_class": "OPERATOR_SUPPLIED_CODEX_SESSION_TRANSCRIPT",
+  "independent_reverification": false,
+  "transcript_findings": {
+    "nas_execution_access_was_obtained_in_prior_session": true,
+    "docker_server_reported": "27.1.2-qnap8",
+    "baseline_saved_on_nas": true,
+    "protected_boundary_reported": [
+      "Telegram/video/radio/music containers",
+      "Storj",
+      "UNKNOWN containers"
+    ],
+    "reported_live_failures": [
+      "memory_bridge attempted writes against a read-only database",
+      "titan_core repeatedly timed out against API port 8008",
+      "legacy references to 127.0.0.1:5000 remained in the runtime path",
+      "GET /api/graph could hang behind a shared SQLite queue while direct read-only access was fast"
+    ],
+    "reported_changes_already_made_before_handoff": [
+      "TitanAgentLoop autonomy default changed to OFF while HRAIN/API remained active",
+      "only janus_titan_core was restarted for that targeted change",
+      "an attempted rich graph read through janus_nas_brain was rolled back after reproducing SQLite blocking",
+      "a separate read-only HRAIN viewer was prepared to use exact Static assets and SQLite mode=ro"
+    ],
+    "handoff_edge": "The new read-only viewer failed to start because the QNAP UID mapping could not traverse a recovery directory with mode 700; baseline data remained mode 600. The prior session was about to grant traversal only to the deployment path and restart only the new viewer."
+  },
+  "current_assistant_access_attempt": {
+    "tool": "Remote Desktop Commander",
+    "result": "ACCESS_BLOCKER_NO_DEVICE_AVAILABLE",
+    "interpretation": "ACCESS_BLOCKER_NOT_SOURCE_ABSENCE",
+    "nas_state_mutated_by_current_assistant": false
+  },
+  "github_side_now": {
+    "repository": "Hawkar-usls/Janus",
+    "nas_git_link_pr": 9,
+    "merge_commit": "a044225b13a0085bbb780ed16df8e5a8ed7512df",
+    "status": "MERGED",
+    "scope": "GitHub-side NAS link contract, sanitized checkpoint schema, validator, tests, workflow and writeback conventions"
+  },
+  "resume_order_when_remote_access_returns": [
+    "read-only verify current container IDs and protected freeze-list before any write",
+    "verify whether the new read-only HRAIN viewer container exists and its exact stopped/running state",
+    "inspect only deployment-directory execute/traversal permissions required by the viewer; do not widen baseline-data permissions",
+    "restart only the new viewer if its configuration and mounts are proven isolated",
+    "smoke-test Static UI and GET /api/graph through the viewer",
+    "confirm Telegram/Storj/radio container IDs and running state unchanged",
+    "do not continue Titan work unless separately requested"
+  ],
+  "laws": [
+    "OPERATOR_TRANSCRIPT_NE_INDEPENDENT_REVERIFICATION",
+    "ACCESS_BLOCKER_NE_SOURCE_ABSENCE",
+    "PROTECTED_CONTAINER_MEANS_NO_TOUCH",
+    "READ_ONLY_VIEWER_NE_DATABASE_OWNER",
+    "SQLITE_READER_NE_WRITER_QUEUE_PARTICIPANT",
+    "TARGETED_RESTART_NE_PROJECT_RECREATE",
+    "SYNC_NE_EXECUTION_AUTHORITY"
+  ]
+}

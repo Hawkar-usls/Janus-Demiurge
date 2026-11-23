@@ -1,0 +1,72 @@
+{
+  "artifact_uuid": "JANUS-ENGINE-R2A-SELF-DRIVE-NET-GENERATION-v1.0",
+  "timestamp": "2026-08-30T00:11:00+03:00",
+  "version": "v1.0",
+  "title": "Janus Engine R2A — self-drive and net-generation gate",
+  "observer": "Hawkar / JANUS",
+  "node_type": "energy_autonomy_gate",
+  "branch_name": "Janus Engine",
+  "branch_id": "JANUS_ENGINE",
+  "parent": "data/JANUS-ENGINE-BRANCH-CHECKPOINT-v1.1.json",
+  "status": "OPEN_MODEL_GATE_UNVERIFIED",
+  "nickname": "Howl's Moving Castle",
+  "design_transition": "Move from SELF_SERVICE, where internal streams perform multiple useful duties, to SELF_DRIVE, where the central energy-conversion core pays the auxiliary power bill, and finally to NET_GENERATION, where useful power remains after every internal load is counted.",
+  "energy_source_boundary": "No energy is created by oxygen extraction, nitrogen recycling, heat recuperation or closed mass loops. The central core requires a real external energy source such as stored chemical fuel, electrochemical reactants, an external thermal gradient or another explicitly modeled source. Oxygen is an oxidizer, not a fuel.",
+  "states": {
+    "SELF_SERVICE": "Process streams such as N2, recovered water and thermal gradients are cascaded through multiple useful duties before recycle or discharge.",
+    "SELF_DRIVE": "The central core supplies enough shaft/electrical power to run gill rotation, water circulation or hydrodynamic losses, gas separation, drying, sorbent regeneration, compression, refrigeration, pumps, valves and control electronics.",
+    "NET_GENERATION": "After all auxiliary loads are paid, positive power remains for storage, propulsion or an external electrical/mechanical load."
+  },
+  "shaft_architecture": {
+    "concept": "A central common mechanical/electrical bus replaces the permanent external drive motor during steady operation.",
+    "candidate_loads": [
+      "rotating gill / Axle rotor",
+      "gas compressor or blower",
+      "working-fluid and water pumps where required",
+      "refrigeration compressor / expander support",
+      "generator",
+      "control and valve power through a DC bus"
+    ],
+    "starter_generator_mode": "A motor-generator may start the system from stored electrical energy; once the core is stable the power direction reverses and the same bus charges storage and supports auxiliaries.",
+    "steady_state_rule": "Starter energy is not counted as proof of autonomy; only sustained post-start steady-state balances may pass R2A."
+  },
+  "governing_equations": {
+    "auxiliary_power": "P_aux = P_gills + P_water_hydraulic + P_separation + P_drying + P_compression + P_refrigeration + P_sorbent + P_pumps + P_controls + P_losses",
+    "shaft_surplus": "P_net_shaft = P_core_shaft - P_aux",
+    "electrical_output": "P_net_electric = eta_generator * max(P_net_shaft, 0)",
+    "autonomy_margin": "M_autonomy = P_net_shaft / P_core_shaft",
+    "pass_condition": "P_core_shaft > P_aux for a sustained defined operating point with all mass and heat balances closed",
+    "oxygen_mass_condition": "m_dot_O2_extracted >= m_dot_O2_core + m_dot_O2_product + m_dot_O2_losses",
+    "water_hydraulic_power": "P_water = DeltaP_water * Q_water / eta_pump",
+    "oxygen_from_water": "m_dot_O2 = Q_water * C_DO * eta_extraction"
+  },
+  "system_invariants": [
+    "EVERY_AUXILIARY_LOAD_MUST_BE_COUNTED",
+    "NO_RECUPERATED_HEAT_OR_RECYCLED_GAS_IS_COUNTED_AS NEW ENERGY",
+    "STARTER_BATTERY_ENERGY_CANNOT_HIDE_A_STEADY_STATE_DEFICIT",
+    "OXYGEN_IS_AN_OXIDIZER_NOT_PRIMARY_ENERGY",
+    "WATER_FLOW_PRESSURE_DROP_IS_AN ENERGY COST EVEN WHEN CREATED BY VEHICLE MOTION",
+    "LOX_PRODUCTION_IS_OPTIONAL_AND_MUST_NOT_BE REQUIRED FOR FIRST_SELF_DRIVE_TEST",
+    "WASTE_HEAT_REQUIRES_AN_EXTERNAL_SINK",
+    "NET_GENERATION_REQUIRES_P_NET_GREATER_THAN_ZERO_AFTER_ALL_PARASITICS"
+  ],
+  "recommended_start_sequence": [
+    "STARTER: battery / external motor spins pumps, gill rotor and control system",
+    "PRIME: establish water flow, dissolved-gas extraction and safe gas conditioning",
+    "CORE_LIGHT: enable the selected non-cryogenic energy-conversion core at low load",
+    "LOAD_TRANSFER: progressively transfer gill, pump, separation and control loads from starter supply to core bus",
+    "SELF_DRIVE_GATE: disconnect external steady-state drive and verify P_net_shaft > 0",
+    "GENERATION_GATE: connect generator load only from measured surplus",
+    "CRYOGENIC_OPTION: add LOX branch only after gaseous-O2 self-drive has positive margin"
+  ],
+  "first_simulation_target": "JANUS-ENGINE-SIM-HOWL-CASTLE-RUN-001-v1.0",
+  "linked_records": [
+    "data/JANUS-ENGINE-v1.0.json",
+    "data/JANUS-ENGINE-R0-ROTATING-GILL-RING-v1.0.json",
+    "data/JANUS-ENGINE-R0B-WATER-CONDENSATE-REOXYGENATION-v1.0.json",
+    "data/JANUS-ENGINE-R0C-THREE-STATE-SORBENT-CAROUSEL-v1.0.json",
+    "data/JANUS-ENGINE-LEGACY-ASU-REFERENCE-v1.0.json",
+    "data/JANUS-ENGINE-BRANCH-CHECKPOINT-v1.1.json"
+  ],
+  "validation_boundary": "This record defines a first-principles gate, not a claim that a working autonomous engine exists. Numerical simulations must mark assumed parameters separately from measured parameters."
+}

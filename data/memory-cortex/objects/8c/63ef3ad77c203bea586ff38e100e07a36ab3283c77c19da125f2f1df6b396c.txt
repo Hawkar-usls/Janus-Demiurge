@@ -1,0 +1,88 @@
+{
+  "schema": "janus.meta_registry.genesis_infinite_faces_post_compromise_temporal_root_recovery.v1",
+  "artifact_id": "JANUS-GENESIS-INFINITE-FACES-POST-COMPROMISE-TEMPORAL-ROOT-RECOVERY-v3.5",
+  "title": "Janus Infinite Faces — Post-Compromise Temporal Root Recovery Test",
+  "created_at_local": "2026-08-10T02:36:00+03:00",
+  "artifact_class": "EXPERIMENTAL_TEMPORAL_TRUST_REVOCATION_AND_IDENTITY_RECOVERY",
+  "status": "ROOT_TRUST_SCOPED_BY_EPOCH_COMPROMISE_HORIZON_INTRODUCED_PRE_HORIZON_HISTORY_PRESERVED_POST_HORIZON_STATE_CONTESTED_RECOVERY_PASS_WITH_INDEPENDENT_RECOVERY_DOMAIN",
+  "parent": "registry/experimental/JANUS-GENESIS-INFINITE-FACES-MULTI-ROOT-INDEPENDENCE-TRUST-SYBIL-v3.4.json",
+  "test_question": "What happens when a root that legitimately attested Janus history becomes compromised later and can now sign forged future history?",
+  "timeline": [
+    {
+      "sequence": 100,
+      "event": "CHECKPOINT_C100",
+      "status": "ATTESTED_BY_VALID_DOMAIN_DIVERSE_QUORUM_AND_EXTERNALLY_ARCHIVED"
+    },
+    {
+      "sequence": 120,
+      "event": "EARLIEST_CREDIBLE_COMPROMISE_OF_DOMAIN_B",
+      "status": "COMPROMISE_HORIZON_CANDIDATE"
+    },
+    {
+      "sequence": 125,
+      "event": "DOMAIN_B_SIGNS_ALTERNATE_STATE",
+      "status": "NO_QUORUM_REJECTED"
+    },
+    {
+      "sequence": 130,
+      "event": "EVIDENCE_SUGGESTS_SECOND_OPERATIONAL_DOMAIN_MAY_ALSO_BE_COMPROMISED",
+      "status": "NORMAL_OPERATIONAL_QUORUM_NO_LONGER_TRUSTED_AFTER_HORIZON"
+    }
+  ],
+  "critical_finding": {
+    "statement": "Once enough current signing roots are compromised, signatures alone cannot distinguish a forged post-compromise branch from a legitimate branch using the same compromised credentials.",
+    "result": "CRYPTOGRAPHIC_SELF_RECOVERY_FROM_FULL_QUORUM_COMPROMISE_IS_NOT_GUARANTEED_WITHOUT_AN_INDEPENDENT_RECOVERY_OR_ARCHIVAL_BOUNDARY"
+  },
+  "temporal_trust_model": {
+    "ROOT_EPOCH": "A bounded era in which a specific root credential lineage is eligible for a specific policy.",
+    "COMPROMISE_HORIZON": "Earliest sequence/time coordinate at which a root is credibly treated as no longer trustworthy; may be uncertain and represented as an interval.",
+    "PRE_HORIZON_ATTESTATION": "Not automatically invalidated by later compromise if independently preserved and no evidence moves compromise earlier.",
+    "POST_HORIZON_ATTESTATION": "CONTESTED unless re-established through uncompromised evidence and recovery policy.",
+    "critical_boundary": "KEY_REVOKED_NOW != ALL_HISTORY_SIGNED_BY_KEY_WAS_ALWAYS_FALSE"
+  },
+  "recovery_path": {
+    "normal_operational_domains": ["DOMAIN_A", "DOMAIN_B"],
+    "independent_recovery_domain": "DOMAIN_C_OFFLINE_RECOVERY",
+    "steps": [
+      "freeze external commits dependent on contested roots",
+      "preserve all alternate branches as forensic objects",
+      "determine the earliest defensible compromise horizon or interval from external evidence",
+      "select the latest independently archived checkpoint strictly before the horizon that satisfied the then-valid policy",
+      "activate a separately governed recovery credential/policy",
+      "replay suffix events only from evidence not dependent solely on compromised roots",
+      "quarantine unrecoverable or equivocal suffix events",
+      "rotate operational roots into a new ROOT_EPOCH",
+      "emit a recovery checkpoint referencing the old checkpoint and compromise record"
+    ],
+    "old_history_rewritten": false,
+    "compromise_event_preserved": true
+  },
+  "uncertainty_rule": {
+    "exact_compromise_time_known": false,
+    "rule": "If compromise time is uncertain, widen the contested interval rather than invent a precise safe boundary.",
+    "consequence": "Some otherwise legitimate events may remain UNRESOLVED until independent evidence reattests them."
+  },
+  "failure_ceiling": {
+    "all_operational_and_recovery_domains_compromised": "NO_CRYPTOGRAPHIC_RECOVERY_GUARANTEE",
+    "no_independent_pre_compromise_checkpoint_survives": "HISTORICAL_INTEGRITY_CANNOT_BE_RECONSTRUCTED_FROM_COMPROMISED_STATE_ALONE",
+    "meaning": "The architecture admits a real terminal trust failure rather than manufacturing PASS."
+  },
+  "new_invariants": [
+    "ROOT_TRUST_IS_TIME_SCOPED",
+    "REVOCATION_IS_NOT_RETROACTIVE_HISTORY_ERASURE",
+    "COMPROMISE_TIME_UNCERTAINTY_MUST_REMAIN_VISIBLE",
+    "RECOVERY_ROOT_MUST_NOT_SHARE_THE_EXACT_FAILURE_BOUNDARY_IT_IS_MEANT_TO_RECOVER",
+    "A_NEW_ROOT_EPOCH_MUST_CHAIN_TO_THE_RECOVERY_EVENT_NOT_PRETEND_CONTINUITY_WAS_UNBROKEN"
+  ],
+  "claim_ceiling": {
+    "later_key_compromise_proves_all_prior_signatures_false": "NO",
+    "pre_compromise_signature_proves semantic truth": "NO",
+    "full_root_compromise_always_recoverable": "NO",
+    "independent_archival_and_recovery_domains_can_bound_some compromise damage": "YES_BY_EXPERIMENTAL_MODEL"
+  },
+  "next_gate": {
+    "name": "JANUS_INFINITE_FACES_GENESIS_ROOT_BOOTSTRAP_AND_FIRST_IDENTITY_TEST",
+    "status": "OPEN",
+    "question": "Every checkpoint points backward. What establishes the very first trusted Janus state before any prior checkpoint exists?"
+  }
+}

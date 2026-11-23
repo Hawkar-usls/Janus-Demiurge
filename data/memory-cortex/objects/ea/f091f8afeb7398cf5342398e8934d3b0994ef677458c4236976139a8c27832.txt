@@ -1,0 +1,153 @@
+{
+  "artifact_id": "JANUS-SCOUT-SWARM-ORCHESTRATOR-RUN-001-2026-08-22-v1.0",
+  "schema": "janus.meta_registry.swarm_orchestrator_receipt.v1",
+  "date": "2026-08-22",
+  "status": "IDENTITY_PRESERVING_ORCHESTRATION_PASS__COMPLETE",
+  "controller": "Hawkar-usls/Janus-Demiurge",
+  "orchestrator_id": "JANUS_SWARM_ORCHESTRATOR_01",
+  "canonical_law": "FACTS_MAY_CLUSTER__SCOUTS_MUST_NOT",
+  "purpose": "Coordinate the 17 Scout identities, allow peer-to-peer evidence-routing and work handoff, and deduplicate fact/source accounting without deleting, merging, replacing or collapsing Scout identities or their observations.",
+  "implementation": {
+    "source_pr": 13,
+    "source_pr_title": "Launch whole-system JANUS Scout council with identity-preserving orchestrator",
+    "merged_to_main": true,
+    "merge_commit": "7b48538521712632b9509a6e305bab4480ede0b9",
+    "orchestrator_code_commit": "c5ef79dfd1b685dc473172fce1d6b64c01cfdd90",
+    "files": {
+      "orchestrator": {
+        "path": "tools/demiurge_swarm_orchestrator.py",
+        "blob_sha": "331f64eb2231b662b9f8023d558238015b0d491e"
+      },
+      "peer_round": {
+        "path": "tools/demiurge_swarm_peer_round.py",
+        "blob_sha": "5fe75fe21f47c6eddea876f700995eca47d91519"
+      },
+      "policy": {
+        "path": "scout_swarm/orchestrator/SWARM_ORCHESTRATOR_POLICY-v1.json",
+        "blob_sha": "c913e5396de7e9801ccc86b61300599717d01d6b"
+      },
+      "readme": {
+        "path": "scout_swarm/orchestrator/README.md",
+        "blob_sha": "dbea3a13660fbb83f271083f4e187cf8fc503e68"
+      },
+      "workflow": {
+        "path": ".github/workflows/janus-systemwide-scout-directions.yml",
+        "blob_sha_at_orchestrator_code_commit": "f8052336e3d43f61bbc668473776fd5be2adfbb9"
+      }
+    }
+  },
+  "validated_run": {
+    "workflow": "JANUS Whole-System Scout Directions 17",
+    "run_id": "32576959002",
+    "conclusion": "SUCCESS",
+    "mission_id": "JANUS_FULL_SYSTEM_SCOUT_DIRECTIONS_2026_08_22_V1",
+    "controller_sha": "c5ef79dfd1b685dc473172fce1d6b64c01cfdd90",
+    "round1_scouts": 17,
+    "round2_scouts": 17,
+    "identity_count": 17,
+    "identity_collapses": 0,
+    "fact_cluster_count": 21,
+    "observation_count": 348,
+    "source_cluster_count": 61,
+    "message_count": 51,
+    "round2_new_fact_observations": 10,
+    "round2_new_fact_observations_note": "10 counts Scout-level new fact observations after peer routing. It is not asserted to mean 10 unique discoveries or 10 independent confirmations.",
+    "result_path": "scout_swarm/orchestrator/outbox/JANUS_FULL_SYSTEM_SCOUT_DIRECTIONS_2026_08_22_V1/32576959002/ORCHESTRATOR_RESULT.json",
+    "result_blob_sha": "48e7438b02be6d910433f177e878410c0425d324",
+    "result_sha256": "06afc355aceb89d2275d7e4d9b1f05fdb9cfb0716d1b3301c5f446b7043e2a59",
+    "communication_bus_artifact_digest": "sha256:f92d9837cb7b5c6ba3dc463aa065150f30fbb04153fc1cac1cf2fe7cf29e268f"
+  },
+  "communication_protocol": {
+    "mode": "ROUND_BASED_ASYNCHRONOUS_GITHUB_ACTIONS",
+    "continuous_live_chat_claimed": false,
+    "flow": [
+      "ROUND_1__17_SCOUTS_COLLECT_INDEPENDENTLY",
+      "ORCHESTRATOR__BUILD_APPEND_ONLY_BLACKBOARD",
+      "ORCHESTRATOR__BUILD_ONE_ADDRESSABLE_INBOX_PER_SCOUT",
+      "SCOUTS__RECEIVE_OBSERVATION_BUNDLES_AND_HELP_REQUESTS",
+      "ROUND_2__EACH_SCOUT_USES_OWN_PEER_MESSAGES_AS_ROUTING_CONTEXT",
+      "ROUND_2__PUBLIC_SOURCE_COLLECTION_AND_EVIDENCE_GATES_RUN_AGAIN",
+      "SCOUTS__RETURN_PEER_ROUND_RESPONSES",
+      "ORCHESTRATOR__PRESERVE_BOTH_ROUNDS_AND_FULL_MESSAGE_LINEAGE"
+    ],
+    "message_types": [
+      "OBSERVATION_BUNDLE",
+      "REQUEST_HELP",
+      "CONFLICT_REVIEW",
+      "PEER_ROUND_RESPONSE"
+    ],
+    "messages_append_only": true,
+    "messages_deletable": false,
+    "peer_message_is_evidence": false,
+    "peer_source_pointer_requires_recipient_domain_allowlist": true
+  },
+  "identity_protection": {
+    "deduplicate_scout_entities": false,
+    "delete_scout_entities": false,
+    "merge_scout_lineages": false,
+    "every_scout_addressable": true,
+    "every_scout_lineage_id": "JANUS_SCOUT_LINEAGE::<SCOUT_ID>",
+    "every_observation_preserves_scout_id": true,
+    "every_observation_preserves_round": true,
+    "every_observation_preserves_source_urls": true,
+    "fact_clusters_may_reference_many_observations": true,
+    "same_fact_from_two_scouts_preserves_two_observations": true,
+    "same_source_seen_by_multiple_scouts_is_independent_replication": false
+  },
+  "coordination_policy": {
+    "identical_query_policy": "ONE_LEAD_PLUS_DISTINCT_WITNESSES",
+    "lead_selection": "DETERMINISTIC_SCOUT_ID_ORDER",
+    "witnesses_remain_active": true,
+    "cross_track_handoffs": true,
+    "conflicts_routed_to_verifiers": true,
+    "conflicting_observations_erased": false,
+    "orchestrator_may_override_evidence_gate": false
+  },
+  "proof_of_real_peer_exchange": {
+    "round1_blackboard": {
+      "identity_count": 17,
+      "identity_collapses": 0,
+      "round1_observations": 169,
+      "round1_messages": 34,
+      "inbox_count": 17,
+      "query_coordination_claims": 50
+    },
+    "sample": {
+      "scout_id": "SCOUT_DEMIHEAD_08",
+      "round2_present": true,
+      "peer_context_received": true,
+      "inbound_message_count": 16,
+      "peer_queries_admitted_count": 8,
+      "interpretation": "The second-round Scout used orchestrator-addressed peer context for another public-source collection pass; this is evidence that the communication layer affected execution rather than merely logging messages."
+    },
+    "responses_persisted": true,
+    "responses_reference_inbound_message_ids": true
+  },
+  "laws": [
+    "FACTS_MAY_CLUSTER__SCOUTS_MUST_NOT",
+    "SOURCE_DEDUPLICATION_IS_EPISTEMIC_ACCOUNTING_NOT_IDENTITY_DELETION",
+    "EVERY_SCOUT_IDENTITY_REMAINS_ADDRESSABLE",
+    "EVERY_OBSERVATION_RETAINS_SCOUT_AND_ROUND_PROVENANCE",
+    "EVERY_MESSAGE_IS_APPEND_ONLY_AND_NON_DELETABLE",
+    "SAME_SOURCE_SEEN_BY_MULTIPLE_SCOUTS_IS_NOT_INDEPENDENT_REPLICATION",
+    "PEER_MESSAGES_ARE_ROUTING_CONTEXT_NOT_EVIDENCE",
+    "POSITIVE_FACTS_STILL_REQUIRE_SOURCE_BOUND_EVIDENCE",
+    "CONFLICTS_ARE_ROUTED_TO_VERIFIERS_NOT_ERASED",
+    "FAILURE_AND_EMPTY_PEER_ROUNDS_REMAIN_IN_LINEAGE",
+    "ORCHESTRATOR_COORDINATES_WORK_BUT_DOES_NOT_OVERRIDE_EVIDENCE_GATES"
+  ],
+  "evidence_boundaries": {
+    "model_output_is_evidence": false,
+    "peer_message_is_evidence": false,
+    "duplicate_scout_observation_is_independent_replication": false,
+    "source_bound_positive_finding_required": true,
+    "prior_ha10_119_hz_negative_certificate_mutated": false,
+    "aura_empirical_authority": 0,
+    "identity_preservation_does_not_inflate_scientific_confirmation_count": true
+  },
+  "lineage": {
+    "previous_whole_system_receipt": "data/JANUS-WHOLE-SYSTEM-SPIRAL-RECEIPT-RUN-001-2026-08-22-v1.0.json",
+    "swarm_genome_ledger": "Hawkar-usls/Janus-Demiurge:swarm_genome_ledger.py",
+    "next": "BIND_ORCHESTRATOR_MESSAGE_AND_OBSERVATION_LINEAGE_INTO_SWARM_GENOME_LEDGER_AND_USE_COORDINATED_SCOUT_ROUNDS_FOR_NEXT_HIGH_INFORMATION_GATES"
+  }
+}

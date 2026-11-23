@@ -1,0 +1,100 @@
+{
+  "artifact_id": "JANUS-TRUMP-EXACT-CHANNEL-REPRESENTATION-SPACE-POSET-NORMAL-FORM-2026-09-20-v1.0",
+  "version": "v1.0",
+  "date": "2026-09-20",
+  "status": "PASS_EXACT_CHANNEL_REPRESENTATION_SPACE_POSET_NORMAL_FORM",
+  "scope": "PURE_GRAPH_NORMAL_FORM_AND_COMPLEXITY_FIREWALL__NO_C11_NO_P7_ASSUMPTIONS",
+  "parents": {
+    "forced_flexible_scc": {
+      "path": "research/TRUMP_EXACT_CHANNEL_FORCED_FLEXIBLE_SCC_NORMAL_FORM_2026-09-20_v1.0.json",
+      "commit": "af5eeb4f176cb51bf7eed983c9e70799bab68970",
+      "blob": "e8f4d26c5d6c7975fa51daf838e1d2354ecfa634",
+      "status": "PASS_EXACT_CHANNEL_FORCED_FLEXIBLE_SCC_NORMAL_FORM"
+    },
+    "unique_hub": {
+      "path": "research/TRUMP_EXACT_CHANNEL_UNIQUE_HUB_ANCHOR_NORMAL_FORM_2026-09-20_v1.0.json",
+      "commit": "25a3df866ec5ac4ae96e3ae0c457645fc8991cbd",
+      "blob": "7dc88baf048c91814aef161fa5a09c5e1910a5ed"
+    },
+    "capacity_invariance": {
+      "path": "research/TRUMP_EXACT_CHANNEL_MATCHING_NUMBER_DECOMPOSITION_INVARIANCE_2026-09-20_v1.0.json",
+      "commit": "c90aeee8b104c5416a0def3179e4ec1c2c8b16f0",
+      "blob": "17985954997039f414070dce87dcbaaeca87390d"
+    },
+    "reversal_duality": {
+      "path": "research/TRUMP_EXACT_CHANNEL_ANCHOR_REVERSAL_DUALITY_2026-09-20_v1.0.json",
+      "commit": "9f0c41e16e2dc1cc244a594a5dd0cb21a38713f4",
+      "blob": "fdf4fe9515757bbc6b5a5105042245ef83eb9546"
+    }
+  },
+  "canonical_fixed_anchor_object": {
+    "unordered_anchor_pair": "{c,f}",
+    "unique_hub": "z=N(c) intersect N(f)",
+    "chosen_orientation": "One orientation (c,f) only to name L/R.",
+    "forced_R": "F_R=Reach_D(R0)",
+    "forced_L": "F_L=Pred_D(L0)",
+    "flexible": "F_star=V\\({z} union F_R union F_L)",
+    "flexible_SCC_poset": "H = condensation DAG / reachability poset of D[F_star].",
+    "statement": "Up to anchor reversal duality, the tuple ({c,f},z,F_R,F_L,H) is a compact normal form carrying all representation freedom."
+  },
+  "representation_bijection": {
+    "exact_map": "For every upper set U of H, R=F_R union vertices(U) is a valid representation; every valid representation arises uniquely this way.",
+    "formula": "R_lattice isomorphic to Up(H).",
+    "representation_count": "|R_lattice|=|Up(H)|."
+  },
+  "antichain_correspondence": {
+    "theorem": "For every finite poset, upper sets, lower ideals, and antichains are in canonical bijection.",
+    "consequence": "|R_lattice| = |Up(H)| = #Antichains(H).",
+    "explicit_bijection_note": "An upper set is determined by its set of minimal elements, which is an antichain; conversely an antichain generates its upward closure."
+  },
+  "uniqueness_and_size": {
+    "unique_representation": "iff F_star is empty iff H has zero vertices iff |R_lattice|=1.",
+    "exponential_size_possible": "A compact poset can have exponentially many upper sets; for example, an antichain on q flexible SCCs has 2^q upper sets.",
+    "consequence": "Polynomial construction of H does not imply polynomial-size explicit representation list."
+  },
+  "algorithmic_firewall": {
+    "formula": "POLYNOMIAL_COMPACT_LATTICE_DESCRIPTION != POLYNOMIAL_EXPLICIT_ENUMERATION_OR_COUNTING",
+    "polynomial_tasks": [
+      "construct D, F_R, F_L, F_star",
+      "compute SCCs and condensation DAG H",
+      "construct bottom/top representations",
+      "test whether a proposed representation is implication-closed / corresponds to an upper set",
+      "compute representation-invariant channel capacity from one canonical representation"
+    ],
+    "enumeration_warning": "Explicit enumeration of every representation can require exponential output size when |Up(H)| is exponential.",
+    "counting_warning": "Counting antichains/ideals of an arbitrary finite poset is #P-complete in the general poset problem. Therefore the existence of a compact H does not by itself imply an efficient exact counting algorithm.",
+    "exact_channel_counting_complexity_firewall": "Do NOT claim #P-completeness of counting exact-channel representations from this fact alone. Such a claim would require a separate realization/reduction theorem showing that sufficiently general posets arise as flexible SCC-posets of exact-channel instances.",
+    "exact_channel_counting_status": "NOT_CLASSIFIED_BY_THIS_THEOREM"
+  },
+  "capacity_nonbranching": {
+    "theorem": "Channel matching capacity is constant across the full representation lattice.",
+    "canonical_choice": "Use bottom R_min=F_R.",
+    "consequence": "Neither enumeration nor counting of Up(H) is required to compute rho_G(c,f)=nu(X)=lambda_G(c,f)-1."
+  },
+  "proof_carrying_outputs": {
+    "compact_normal_form": [
+      "unordered anchors {c,f}",
+      "unique hub z",
+      "forced vertex sets F_R,F_L",
+      "flexible SCC membership map",
+      "condensation DAG H"
+    ],
+    "representation_certificate": "An upper set U of H; reconstruct R=F_R union vertices(U).",
+    "membership_verifier": "Check SCC-union and successor closure in H.",
+    "uniqueness_certificate": "F_star empty.",
+    "nonuniqueness_certificate": "Any flexible SCC; bottom and top give two distinct representations."
+  },
+  "scientific_ceiling": {
+    "REPRESENTATION_SPACE": "EXACTLY_UPPER_SET_LATTICE_OF_H",
+    "REPRESENTATION_COUNT_FORMULA": "|Up(H)|=#Antichains(H)",
+    "COMPACT_DESCRIPTION": "POLYNOMIAL",
+    "EXPLICIT_ENUMERATION": "NOT_CLAIMED_POLYNOMIAL",
+    "EXACT_COUNTING_EXACT_CHANNEL_REPRESENTATIONS": "NOT_CLASSIFIED",
+    "GENERIC_POSET_ANTICHAIN_COUNTING": "#P_COMPLETE_EXTERNAL_FACT",
+    "CAPACITY_REQUIRES_ENUMERATION": false,
+    "NEW_C11_GATE": "NOT_OPENED",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "stop": true
+}

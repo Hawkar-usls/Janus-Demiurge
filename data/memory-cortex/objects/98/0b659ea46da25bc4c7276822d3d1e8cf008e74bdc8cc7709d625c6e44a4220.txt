@@ -1,0 +1,166 @@
+{
+  "schema": "janus.research.light_physical_preregistration.v1",
+  "record_id": "JANUS-LIGHT-PHYSICAL-008-PREREG-2026-11-09-v1",
+  "experiment_id": "JANUS-LIGHT-PHYSICAL-008",
+  "date": "2026-11-09",
+  "record_type": "NEW_PHYSICAL_EXPERIMENT_PREREGISTRATION_BEFORE_DATA",
+  "status": "PROTOCOL_FROZEN_OFFLINE_ADMITTED__REAL_SENSOR_NOT_CONNECTED",
+  "provenance": {
+    "history": [
+      {
+        "id": "BANANA_JANUARY_2026",
+        "creation_commit": "05af9149c4d8f94bba56c740194760d8f5353221",
+        "path": "data/proofs/banana_dna_decoder.json",
+        "evidence_class": "CONCEPTUAL_HISTORY"
+      },
+      {
+        "id": "LIGHT_JANUARY_2026",
+        "creation_commit": "8fa51d5ec7b79a67f473613552e5740293857511",
+        "path": "data/proofs/stochastic_light_interface_model.json",
+        "original_blob_sha": "d86db6212d62b23621fb023c0317f38b94c21ef4",
+        "evidence_class": "CONCEPTUAL_HISTORY"
+      },
+      {
+        "id": "BANANA_LIGHT_CAUSAL_CONTROLS_006",
+        "path": "data/experiments/BANANA-TO-JANUS-CAUSALITY-CONTROLS-006-OFFLINE-RESULT-2026-11-09.json",
+        "evidence_class": "SYNTHETIC"
+      },
+      {
+        "id": "LIGHT_CAUSAL_CONTROLS_007",
+        "path": "data/experiments/LIGHT-TO-JANUS-OCEAN-CAUSALITY-CONTROLS-007-2026-11-09.json",
+        "evidence_class": "ANALYTIC_AND_SYNTHETIC"
+      },
+      {
+        "id": "ORIGINAL_QPU005",
+        "path": "data/experiments/JANUS-RETRO-PHYSICAL-005-PREREG-2026-11-09-v1.json",
+        "evidence_class": "INDEPENDENT_PREREGISTRATION_NO_HARDWARE_RUN"
+      }
+    ],
+    "protocol_repository": "Hawkar-usls/Janus-Demiurge",
+    "protocol_merge_pr": "https://github.com/Hawkar-usls/Janus-Demiurge/pull/489",
+    "protocol_merge_commit": "5526ef34396c3afbb06732fb1fb39edf385f8a33",
+    "original_scientific_files_changed": false,
+    "code_blob_shas": {
+      "experiments/ocean_transformer/light_physical_008/physical_light_008.py": "b860e65f5afa15fdcb9dfe63da370eb55c5b908d",
+      "experiments/ocean_transformer/light_physical_008/capture_host_008.py": "716fd3e2727006187673e1f327d763e1fdce1f42",
+      "experiments/ocean_transformer/light_physical_008/esp32_led_photodetector_008.py": "341efca04daddcd0378d48748ec35e949a0e9ae3",
+      "experiments/ocean_transformer/light_physical_008/test_physical_light_008.py": "594eb387d6b9b13ee3434e7f33702ff0f89eaf17"
+    }
+  },
+  "hypothesis": {
+    "H0": "A fixed forward-response model learned from the calibration stream does not improve MAE versus the fixed calibration-mean baseline on all later sensor readings.",
+    "H1": "A fixed forward-response model learned from the calibration stream improves MAE versus the fixed calibration-mean baseline on all later sensor readings.",
+    "scientific_target": "Conventional prospective sensor/LED response forecasting and data-lineage verification, not retrocausality.",
+    "negative_or_zero_gain_interpretation": "Model fails to beat fixed mean; preserve this outcome. It may reflect weak contrast, sensor noise, calibration drift or inadequate model; do not retune after test.",
+    "retrocausality_claim_allowed": false
+  },
+  "fixed_protocol": {
+    "hardware_scope": "Classic ESP32 MicroPython, low-power LED on GPIO25 with current limiting, 0-3.3V analog light-sensor module on GPIO34 ADC1; exact board and sensor require operator verification.",
+    "operation": "LED commanded by future precomputed random balanced schedule. ADC sampled 5 ms after command.",
+    "sampling_period_ms": 50,
+    "settling_delay_ms": 5,
+    "train_samples": 256,
+    "test_samples": 256,
+    "test_rows_excluded_allowed": 0,
+    "plan": "One new 256+256 balanced LED bit schedule with cryptographic SHA-256, unique plan_id, source classes and complete raw frames; schedule published/frozen before physical train.",
+    "prediction": "Two-state sensor ADC means trained on source LED bit delayed by lag 0..4 bins. Select lag using calibration MSE only. Freeze every future test prediction before test acquisition.",
+    "primary_endpoint": "MAE of the fixed trained prediction on all 256 test ADC readings versus MAE of constant mean ADC from 256 training records.",
+    "primary_decision_rule": "Observed model MAE strictly lower than calibration-mean baseline MAE; otherwise report not improved. No significance claim predeclared for this pilot.",
+    "secondary_diagnostics": [
+      "Training delay lag 0..4 bins",
+      "Calibration source-to-sensor mean contrast",
+      "ADC saturation fraction",
+      "Missing/reordered frames and observed UTC/monotonic clock chronology",
+      "Raw file SHA-256 and code Git blobs"
+    ],
+    "unobserved_early_time": "MicroPython relative microsecond counter. This is not independent wall-clock timing.",
+    "recorded_absolute_time": "Host-received UTC, not optical emission or photodiode event time; must be independently audited for publication chronology.",
+    "physical_light_propagation_speed_measurable_with_setup": false
+  },
+  "prospective_steps": [
+    {
+      "number": 1,
+      "name": "FREEZE_PLAN",
+      "requirement": "Create a fresh balanced schedule with source code revision and public/escrowed SHA before calibration."
+    },
+    {
+      "number": 2,
+      "name": "REAL_CALIBRATION",
+      "requirement": "Manually authorized and checked optical rig, full unfiltered 256-row host/device raw file."
+    },
+    {
+      "number": 3,
+      "name": "PROSPECTIVE_PRECOMMIT",
+      "requirement": "Freeze model and all 256 future predictions into write-once JSON; reference training raw hash and plan."
+    },
+    {
+      "number": 4,
+      "name": "EXTERNAL_TIMESTAMP_WITNESS",
+      "requirement": "An independent custodian verifies published commitment hash, full forecast and service timestamp before first TEST frame. Local self-reported time alone is insufficient."
+    },
+    {
+      "number": 5,
+      "name": "REAL_HOLDOUT_CAPTURE",
+      "requirement": "Run the complete 256-row test sequence exactly once after witness gate, preserving any failed/incomplete attempt as rejected evidence."
+    },
+    {
+      "number": 6,
+      "name": "SCORE_AND_REVIEW",
+      "requirement": "No refitting, postselection or missing-shot removal. Verify sensor lineage, hashes, timestamp chronology and raw data before publishing results."
+    },
+    {
+      "number": 7,
+      "name": "APPEND_RESULT",
+      "requirement": "Create new results JSON with raw hashes and independent review outcome; never overwrite this registration or LIGHT-007."
+    }
+  ],
+  "premeasurement_access": {
+    "physical_hardware_connected_to_chatgpt": false,
+    "serial_device_present_in_github_ci": false,
+    "LED_activated": false,
+    "flash_performed": false,
+    "physical_measurements_available": false,
+    "device_identification_independently_verified": false,
+    "forecast_commit_external_attestation_available": false,
+    "hardware_operator_permission_still_required": true,
+    "setup_status": "NO_REAL_RECORDINGS_YET"
+  },
+  "offline_admission": {
+    "test_commit": "62e2d4e8ac5e9c96b12f33da29e81d6d9e87a3e0",
+    "ci_url": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/42693974593",
+    "ci_status": "success",
+    "offline_tests_passed": 24,
+    "offline_tests_run": 24,
+    "artifact_id": 13708152573,
+    "artifact_zip_sha256": "0c34dfee1e78498f7222c63f3160a5120bff97f75a7f7c153c4b8a029ba90438",
+    "evidence_class": "SYNTHETIC_PROTOCOL_TESTS_ONLY",
+    "IBM_provider_called": false,
+    "QPU_minutes_used": 0,
+    "real_photon_readings": 0
+  },
+  "failure_policy": {
+    "refuse_missing_or_filtered_samples": true,
+    "reject_mixed_synthetic_and_physical_data": true,
+    "reject_nonmonotonic_device_or_host_timestamps": true,
+    "reject_unrecorded_protocol_changes": true,
+    "retain_incomplete_as_rejected_ledger": true,
+    "no_repeated_trials_until_lucky": true,
+    "do_not_promote_result_without_independent_witness": true
+  },
+  "scientific_limitations": [
+    "Photoelectric sensor readings are not individual photon arrivals or photon flight times.",
+    "Timing uncertainty is dominated by 50 ms sampling, firmware switching, ADC, serial transport and local clock drift.",
+    "Future LED command sequence is known in advance; prediction does not demonstrate information transfer from future to past.",
+    "A runtime JSON label ESP32_USB_CAPTURE is an operator assertion, not an independent cryptographic proof.",
+    "External GitHub witness and independent hardware attestation are separate steps not satisfied by the current CI.",
+    "No actual photodetector, raw physical data or IBM QPU experiment has been accessed."
+  ],
+  "safety": {
+    "board_wiring_not_modified_by_assistant": true,
+    "NAS_containers_not_modified": true,
+    "no_credentials_or_private_data_uploaded": true,
+    "original_QPU005_and_LIGHT007_preserved": true,
+    "no_production_device_autonomy_enabled": true
+  },
+  "next_gate": "Authorized operator identifies a compatible ESP32 photodetector rig and validates 3.3V-safe wiring. Perform initial train capture only after plan freeze; no TEST capture until independently witnessed forecast."
+}

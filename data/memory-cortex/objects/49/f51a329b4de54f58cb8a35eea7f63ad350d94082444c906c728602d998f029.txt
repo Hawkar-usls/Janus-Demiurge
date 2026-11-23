@@ -1,0 +1,73 @@
+{
+  "schema_id": "janus.rowan.fireprot.first_external_wt_single_case_prereg.v1",
+  "preregistered_utc_date": "2026-10-26",
+  "state": "PRE_REGISTERED_METADATA_ONLY_NOT_EXECUTED",
+  "ordered_fixed_source_manifest": "data/rowan/protocols/ROWAN-FIREPROT-HF-10X20-LABEL-FREE-INPUT-2026-10-26-v1.json",
+  "manifest_sha256": "9a44fd6c01afca2b21990b0f4364cb3dbf89ad61686295f55005f86001ce7b92",
+  "source_archive_url": "https://zenodo.org/records/8169289",
+  "source_archive_sha256": "b1403d86b43307f3a7dfc95ff6b72386c64068e8be1191bc7685d37bc8d654b2",
+  "selection_rule": "First PDB listed in immutable earlier 10-domain source manifest; no outcome, no computed model score and no condition-dependent resorting.",
+  "fixed_candidate": {
+    "pdb_id": "1EY0",
+    "chain": "A",
+    "uniprot_id": "P00644",
+    "expected_wt_length": 136,
+    "wildtype_sha256": "94a6f4324114f9e643076e2bfcb727145d400345f4c5feff0607e5c1fb787be1",
+    "pdb_archive_member": "fireprot_upload/pdbs/1EY0.pdb",
+    "pdb_member_sha256": "1fc8450e820f02840fee1720904df38498ddef12995ea6c4e40cb2c37fe7354d",
+    "protein_family_description": "Staphylococcal nuclease",
+    "expected_source_note": "External WT only, no mutant source scores; dataset publicly released in 2023 and not prospective blind."
+  },
+  "mandatory_before_wt_inference": [
+    "Verify exact manifest SHA256 and source archive ZIP SHA256 plus published MD5.",
+    "Read only frozen label-free manifest and PDB archive member, NOT the measurement CSV.",
+    "Reconstruct original PDB ATOM sequence including chain and insertion/gap effects; compare bytewise with exactly frozen 136-aa WT and chain A.",
+    "Verify all 20 precommitted single-substitution source and mutation sequence digests, but DO NOT run mutant inference.",
+    "Fail closed on ambiguous multimers, chain mismatch, gaps, residue mismatch, ZIP/schema/license or provenance drift.",
+    "Use existing isolated local Boltz2 2.2.1 with same predeclared public ColabFold MSA parameters as BBC1, at most one WT structure, no paid Rowan provider.",
+    "Freeze input YAML and MSA bytes, checkpoint digest, output confidence JSON, 1D residue pLDDT array and code receipt before exploring any candidate model differences."
+  ],
+  "technical_run_if_only_if_gate_passes": {
+    "python": "3.12.15",
+    "gpu": "NVIDIA RTX 2070 SUPER 8GB",
+    "model": "Boltz2 2.2.1",
+    "msa_provider": "https://api.colabfold.com",
+    "no_kernels": true,
+    "recycling_steps": 3,
+    "sampling_steps": 200,
+    "diffusion_samples": 1,
+    "seed": 20261026,
+    "num_workers": 0,
+    "max_parallel_samples": 1,
+    "max_local_wt_jobs": 1,
+    "max_minutes": 3,
+    "rowan_provider_api_jobs": 0,
+    "FireProt_mutant_jobs": 0,
+    "consider_output_as_model_stability_prediction": false
+  },
+  "hard_science_constraints": {
+    "source_experimental_labels_still_public": true,
+    "true_blind": false,
+    "independent_label_custodian_assigned": false,
+    "mutation_effect_not_tested": true,
+    "source_score_direction_provisionally_documented": "FireProtDB negative ΔΔG stabilizing, positive destabilizing; verify each source assay before use",
+    "source_dataset_ddG_mutant_minus_WT_definition": "ThermoMPNN dataset readme",
+    "source_definition_urls": [
+      "https://zenodo.org/records/8169289",
+      "https://loschmidt.chemi.muni.cz/fireprotdb/help/",
+      "https://github.com/Kuhlman-Lab/ThermoMPNN/blob/main/preprocessing/2_seqalign_fireprot_dataset.py",
+      "https://github.com/Kuhlman-Lab/ThermoMPNN/blob/main/datasets.py"
+    ],
+    "retrained_shadow_weights": false,
+    "no_production_promotion": true,
+    "no_FireProt_210": true,
+    "current_permitted_conclusion": "Technical input validity only, not transfer/generalization or biological validation."
+  },
+  "result_state": {
+    "real_source_archive_pdb_atom_identity_check": "NOT_EXECUTED_NOT_ATTESTED",
+    "reason": "Previous remote archival inspection attempt was blocked by security. Do not substitute synthetic unit tests for real source gate.",
+    "real_external_wt_inference": "NOT_RUN",
+    "real_external_wt_confidence_output": "NOT_AVAILABLE",
+    "local_model_inference_credit_cost": "NONE_SPENT"
+  }
+}

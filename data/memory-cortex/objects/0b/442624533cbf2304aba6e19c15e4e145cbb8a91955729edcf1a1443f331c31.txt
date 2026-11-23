@@ -1,0 +1,81 @@
+{
+  "schema": "janus.math_only.php_hall_cardinality_repair.v1_0",
+  "artifact": "JANUS-PHP-HALL-CARDINALITY-REPAIR-2026-08-27-v1.0",
+  "status": "PROVED_FOR_INJECTIVE_ASSIGNMENT_CNF_FAMILY_NOT_GENERAL_SAT",
+  "registered_local": "2026-08-27T08:36:00+03:00",
+  "purpose": "Replace the PHP54 Cartesian-resolution wall with an exact polynomial matching/cardinality quotient when the CNF is exactly recognized as an injective-assignment instance.",
+  "scientific_boundary": {
+    "P_VS_NP": "OPEN",
+    "SRR_ENFC": "OPEN_FOR_ARBITRARY_CNF",
+    "general_FRP_nested_closure": "OPEN",
+    "claim": "This closes the known PHP-family representation barrier only; it is not a P=NP proof."
+  },
+  "exact_recognizer_contract": {
+    "input_family": "INJECTIVE_ASSIGNMENT_CNF",
+    "requirements": [
+      "Variables bijectively encode allowed left-right edges x[p,h].",
+      "For every left vertex p there is exactly one positive clause OR_h x[p,h] over its allowed neighbors.",
+      "For every right vertex h, pairwise negative clauses forbid two distinct left vertices from simultaneously using h.",
+      "No extra clauses are admitted by this lane.",
+      "Recognition is syntactic/structural and polynomial; ambiguity returns OPEN."
+    ],
+    "heuristic_scoring": false
+  },
+  "graph_semantics": {
+    "graph": "G=(P,H,E)",
+    "edge_meaning": "(p,h) in E iff variable x[p,h] is allowed",
+    "sat_criterion": "The CNF is satisfiable iff G has a matching covering every p in P.",
+    "unsat_certificate": "A Hall-deficient set S subseteq P with |N(S)| < |S|, or an independently replayable maximum-matching certificate from which such deficiency is derived."
+  },
+  "hall_tension": {
+    "definition": "tau_H(G)=|P|-nu(G), where nu(G) is the cardinality of a maximum matching",
+    "equivalent_deficiency": "tau_H(G)=max_{S subseteq P} (|S|-|N(S)|)",
+    "meaning": {
+      "0": "A matching covering all left vertices exists.",
+      ">0": "At least tau_H left vertices cannot be injectively assigned."
+    },
+    "authority": "Exact diagnostic/certificate quantity, not a confidence score."
+  },
+  "php_family_theorem": {
+    "statement": "For full PHP_{m,n}, G=K_{m,n}, nu(G)=min(m,n). Therefore if m>n then tau_H=m-n>0 and the CNF is UNSAT.",
+    "PHP_5_4": {
+      "left_vertices": 5,
+      "right_vertices": 4,
+      "maximum_matching": 4,
+      "hall_tension": 1,
+      "result": "UNSAT"
+    }
+  },
+  "cardinality_quotient": {
+    "free_hole": "Free_h(R)=AND_{p in R} NOT x[p,h]",
+    "after_eliminating_k_left_vertices": "The exact residual condition contributed by the eliminated prefix is: at least k distinct holes are free of all remaining left vertices.",
+    "forward_form": "AtLeast_k({Free_h(R): h in H})",
+    "proof_sketch": [
+      "If an extension for k eliminated left vertices exists, choose one occupied hole per eliminated vertex; hole exclusivity makes these k holes distinct and unused by remaining vertices.",
+      "Conversely, if k holes are free of all remaining vertices, assign the k eliminated vertices injectively to those free holes; all original positive-demand and right-capacity clauses for the eliminated vertices are satisfied."
+    ],
+    "terminal_contradiction": "If k>|H|, AtLeast_k over |H| holes is false."
+  },
+  "algorithmic_repair": {
+    "old_route": "PHP -> generic resolution/FRP -> 121 raw pivot pairs -> 105 non-tautological resolvents -> cap failure",
+    "new_route": "EXACT_RECOGNIZE_INJECTIVE_ASSIGNMENT -> BUILD_BIPARTITE_GRAPH -> MAXIMUM_MATCHING/HALL_CERTIFICATE -> SAT_WITNESS or UNSAT_CERTIFICATE",
+    "complexity": "Polynomial in the graph/CNF encoding size using a standard exact bipartite maximum-matching algorithm.",
+    "FRP_requirement_for_this_family": "BYPASSED",
+    "runtime_grammar_discovery": false
+  },
+  "m2r_backward_interpretation": {
+    "future_contract": "All left demands must be satisfiable under unit capacity of right resources.",
+    "backward_return": "Pull back the terminal feasibility requirement to the present Hall-capacity condition.",
+    "returned_exact_quantity": "tau_H",
+    "dirac_reset": "The predictive/research trace may be discarded after producing the independently replayable matching/Hall receipt; source CNF remains unchanged."
+  },
+  "consequence_for_stage4": {
+    "PHP54_old_status": "NEGATIVE_SPECIMEN_FOR_GENERIC_STAGE4_REPRESENTATION",
+    "PHP54_new_interpretation": "The 105-resolvent wall is evidence that generic explicit resolution missed a tractable matching/cardinality quotient; it is not evidence of intrinsic hardness of the PHP family.",
+    "new_exact_lane": "MATCHING_HALL_CARDINALITY_ESCAPE"
+  },
+  "next_open_target": {
+    "requirement": "Choose a connected arbitrary-CNF family that is not already discharged by exact Schaefer/algebraic/component/matching-cardinality lanes, then test nested factor-interface closure under a frozen schedule.",
+    "forbidden_shortcut": "Do not treat failure of one representation on a tractable family as evidence for general SAT hardness."
+  }
+}

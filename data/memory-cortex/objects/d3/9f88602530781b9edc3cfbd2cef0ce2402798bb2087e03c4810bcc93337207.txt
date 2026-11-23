@@ -1,0 +1,90 @@
+{
+  "schema": "janus.meta_registry.nas_earliest_db_backup_lineage.v1",
+  "artifact_id": "JANUS-NAS-FIRST-DB-APRIL-MAY-2026-BACKUP-LINEAGE-2026-10-31",
+  "recorded_date_utc": "2026-10-31",
+  "evidence_class": "OWNER_NAS_READONLY_FILE_METADATA_AND_SMALL_SQLITE_VERIFICATION",
+  "title": "Original JANUS 2026 SQLite historical backups, corrupt exclusion and low-I/O custody",
+  "related_primary_inventory": "registry/experimental/JANUS-NAS-LEGACY-SHRINES-CORES-FIRST-DATABASES-2026-10-31-v1.json",
+  "observations": [
+    {
+      "relative_path": "janus.db.backup_dead_20260424_173722",
+      "size_bytes": 1448513536,
+      "sha256": null,
+      "sqlite_integrity": "NOT_CHECKED_SIZE_BOUND",
+      "status": "ORIGINAL_PRESERVED_NAS_ONLY"
+    },
+    {
+      "relative_path": "janus.db.backup_20260509_184455",
+      "size_bytes": 1448513536,
+      "sha256": null,
+      "sqlite_integrity": "NOT_CHECKED_SIZE_BOUND",
+      "status": "ORIGINAL_PRESERVED_NAS_ONLY"
+    },
+    {
+      "relative_path": "janus.db.backup_20260509_193743",
+      "size_bytes": 1448513536,
+      "sha256": null,
+      "sqlite_integrity": "NOT_CHECKED_SIZE_BOUND",
+      "status": "ORIGINAL_PRESERVED_NAS_ONLY"
+    },
+    {
+      "relative_path": "janus.db.corrupt_20260601_180215",
+      "size_bytes": 569344,
+      "sha256": "3a8dd04dd3ab3f0bed59cfb32713ecec6c7819f04da6613f3b00965a80d9e746",
+      "sqlite_integrity": "DATABASE_ERROR",
+      "status": "QUARANTINED_DO_NOT_LOAD"
+    },
+    {
+      "relative_path": "services/janus.db",
+      "size_bytes": 32768,
+      "sha256": "0872fbb6d41e6f4b0aa9ebbe6f0e5e188ac6cbc357a7cd865f4d653e9682c440",
+      "sqlite_integrity": "ok",
+      "tables": [
+        "evolution_log",
+        "graph_state",
+        "quarantine_simulation",
+        "thoughts",
+        "vault"
+      ],
+      "status": "PRIVATE_ROWS_NOT_EXPORTED"
+    },
+    {
+      "relative_path": "janus.db",
+      "size_bytes": 45056,
+      "sha256": "0654b7c5a92362cc2368f0b98220a84fdcd9f237ec58cfe80bf32668af2018fd",
+      "sqlite_integrity": "ok",
+      "tables": [
+        "chat_history",
+        "memory",
+        "radar_state",
+        "thoughts",
+        "vault"
+      ],
+      "status": "PRIVATE_ROWS_NOT_EXPORTED"
+    }
+  ],
+  "preservation_policy": {
+    "original_files_modified": false,
+    "huge_archives_streamed_for_full_sha": false,
+    "reason": "Three 1.45GB backups would require over 4GB of NAS reads; user prefers the NAS to avoid sustained I/O, and exact equality cannot be inferred from file sizes.",
+    "private_vault_chat_memory_rows_uploaded": false,
+    "corrupted_archive_replayed": false,
+    "valid_restoration_from_old_backups_proven": false,
+    "source_custody": "OWNER_NAS_ONLY",
+    "any_public_repo_raw_database": false,
+    "approved_future_test": "One separately selected snapshot using an owner-scheduled off-peak, read-only SQLite integrity and WAL-aware validation, without accessing credentials or publishing rows."
+  },
+  "recovery_recommendations": [
+    "Keep all three 1.45GB source snapshots intact; identical sizes are not proof of identical contents.",
+    "Do not blindly copy a live SQLite DB without consistent backup/WAL semantics.",
+    "Extract exact schemas and redacted aggregate structure before attempting any private-only migration.",
+    "Use SHA-256 streaming in an explicit off-peak slot if needed; do not run full-disk background scrapes.",
+    "Do not import raw vault/chat/memory data into publicly indexed HRAiN or Meta Registry.",
+    "Do not reinterpret old performance logs as scientific model validation."
+  ],
+  "useful_current_repositories": [
+    "janus-meta-registry: schema, provenance, private archive pointers",
+    "HRAiN and iNaiHR: potential read-only semantic history adapter after privacy filtering",
+    "Janus-Demiurge: isolated historical DB writer and original MicroGPT source, not weights"
+  ]
+}

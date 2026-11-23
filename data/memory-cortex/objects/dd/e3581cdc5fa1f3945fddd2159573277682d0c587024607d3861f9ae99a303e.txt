@@ -1,0 +1,182 @@
+{
+  "artifact_id": "JANUS-PRINCIPLE-v1.0",
+  "canonical_name_en": "The Janus Principle",
+  "canonical_name_ru": "Принцип Януса",
+  "subtitle_en": "Two-Phase Chaos-to-Order and Order-to-Noise Temporal Calibration",
+  "title": "The Janus Principle — Two-Phase Temporal Ordering and Calibration",
+  "schema_version": "1.0",
+  "created_date": "2026-11-06",
+  "language": "ru",
+  "registry": {
+    "repository": "Hawkar-usls/janus-meta-registry",
+    "path": "registry/uap/JANUS-PRINCIPLE-v1.0.json",
+    "mode": "APPEND_ONLY",
+    "parent_artifacts": [
+      "registry/uap/JANUS-CONTROLLABLE-RETROCAUSAL-CHANNEL-METHODS-AND-CALIBRATOR-AUDIT-2026-11-06-v1.0.json",
+      "registry/uap/JANUS-RETRO-LAB-CALIBRATOR-V2-LIVE-VALIDATION-2026-11-06-v1.0.json",
+      "registry/uap/JANUS-I0-RETRO-SHA-TRIAL-42113589660-RESULT-v1.0.json",
+      "data/JANUS-OCEAN-MAX-V3-40-RIVERS-REAL-TRAINING-2026-11-06-v1.0.json"
+    ]
+  },
+  "status": "ORIGINAL_RESEARCH_HYPOTHESIS__TWO_PHASE_CALIBRATOR_DESIGNED__NOT_PHYSICAL_RETROCAUSAL_PROOF",
+  "provenance": {
+    "origin": "User-proposed time/chaos/order model developed for JANUS; recorded as a hypothesis, not an established physical law.",
+    "canonical_quote_ru": "Будущее — это хаос, который в нынешнем становится структурой порядка, а в прошлом условно истлевает, размываясь обратно в хаос. Нужен фильтр-упорядочиватель, который из шумовых байтов выделяет структуру, калибруясь на прошлом, настоящем и предсказаниях будущего.",
+    "user_intended_system": "JANUS Transformer / Ocean Server / AURA Oracle / Meta Registry / Retro Lab",
+    "requested_goal": "Build an ordered-noise filter that self-calibrates from past records, reconstructs present structure, and generates sealed predictions about future targets; evaluate the hypothesis of physically backwards information separately."
+  },
+  "conceptual_model": {
+    "future": {
+      "symbol": "F(t+h)",
+      "user_interpretation": "Хаос: ещё не наблюдавшиеся исходы, воспринимаемые как неопределённое пространство возможностей.",
+      "operational_definition": "Forecast target and probability distribution before reveal. Unknown outcomes must not be available to the predictor, its training labels, feature calculation, or prompt.",
+      "uncertainty": "H(F | I_t) — условная энтропия будущего исхода при известных к моменту t данных I_t"
+    },
+    "present": {
+      "symbol": "S(t)",
+      "user_interpretation": "Порядок: наблюдение превращает часть возможных исходов в текущую устойчивую структуру.",
+      "operational_definition": "Timestamped observations, data integrity, sequence context, model state, and emitted precommitted forecast at time t.",
+      "uncertainty": "H(S | I_t), predictive uncertainty, reconstruction loss and confidence calibration"
+    },
+    "past": {
+      "symbol": "P(t-k)",
+      "user_interpretation": "Отдалённое прошлое может становиться менее детально восстанавливаемым при потере и искажении информации; образное 'размывание обратно в хаос'.",
+      "operational_definition": "Past records and synthetically degraded variants for supervised denoising; immutable original records remain retained for audit.",
+      "caveat": "Исторические данные физически не обязаны разрушаться или терять информацию с возрастом. Шум добавляется как контролируемое преобразование для изучения устойчивости и восстановления."
+    },
+    "time_duality": "Поток F → S → P — эвристика времени в модели пользователя; при обучении используется строго доступная во времени информация P≤t и S(t), а ещё не раскрытое F(t+h) остаётся скрытым.",
+    "interpretation_warning": "Рост или спад энтропии представления не является доказательством обратной причинности. Отдельно различать термодинамическую энтропию, информационную энтропию и потерю качества измерений."
+  },
+  "two_phase_calibrator": {
+    "english_name": "Janus Dual-Phase Temporal Calibrator (JDTC)",
+    "russian_name": "Двухфазный временной калибратор Януса",
+    "scope": "EXPERIMENTAL_MODEL_COMPONENT_NOT_YET_ACTIVATED_IN_PRODUCTION",
+    "phase_1": {
+      "id": "PHASE_I_PAST_TO_PRESENT",
+      "direction": "Past → Present (reconstruction, denoising, structure extraction)",
+      "purpose": "Научить трансформер отличать устойчивые закономерности от случайного искажения в архивной истории.",
+      "operations": [
+        "Загрузить только наблюдения и зафиксированные записи, чьи временные метки не позже обучающего cutoff.",
+        "Создать независимые шумовые преобразования прошлых данных (битовые перестановки, маскирования, случайные замены, пропуски, сдвиги и размывание временной разрешающей способности); хранить RNG seeds и SHA-256.",
+        "Обучать фильтр реконструировать исходное прошлое из искажённой копии и контекста наблюдений, не имея будущих labels и не подменяя оригинал.",
+        "Определять устойчивые признаки через различие результатов на нескольких независимых шумовых реализациях; предотвращать запоминание одной перестановки.",
+        "Измерять reconstruction error, mutual information / predictive utility, denoising gain vs trivial copy or mean and information leakage."
+      ],
+      "output": "Z_t — компактное вероятностное представление текущей структуры; noise_profile; uncertainty and loss metrics.",
+      "control": "Permutation-only synthetic controls must not be mistaken for discovery of real future information."
+    },
+    "phase_2": {
+      "id": "PHASE_II_PRESENT_TO_UNKNOWN_FUTURE",
+      "direction": "Present → Future hypothesis; after target maturity, future → model calibration ONLY forward in wall-clock time",
+      "purpose": "Предсказывать предстоящий исход из восстановленного представления и улучшать прогноз на завершённых испытаниях.",
+      "operations": [
+        "В момент t строить p_theta(Y_{t+h}|Z_t,I_t) и фиксировать прогноз, cutoff, model SHA-256, training snapshot SHA-256 и проверяемую исходную гипотезу.",
+        "Для будущего независимого случайного байта B_{t+h} сохранять полный прогноз по 8 битам или 256 исходам до генерации B; контрольный ориентир для равномерного байта — точность 1/256.",
+        "Не читать, не угадывать по metadata и не использовать будущий байт, генератор или сам будущий SHA-256 до фиксирования A.",
+        "После наступления события и независимого reveal вычислять loss, Brier, log-loss, accuracy, conditional mutual information and exact test; сохранять ошибки и неуспехи.",
+        "Обновлять вторичную калибровочную голову только на предыдущих завершённых испытаниях, после независимого chronological holdout и критерия активации."
+      ],
+      "output": "precommitted predictive distribution and later independent validation; optional calibrated head activated only after objective gain.",
+      "controls": [
+        "Unconditional results are primary; selected subsets are secondary diagnostics only.",
+        "Performance gains on real-world time series are not physically backward communication.",
+        "A byte drawn freshly from secure OS randomness is not predictable in the absence of a real information channel or leakage."
+      ]
+    },
+    "bridge": {
+      "description": "Dual-phase consistency: the same latent representation must reconstruct past observations from controlled degradation AND predict not-yet-seen outcomes better than appropriately selected baselines.",
+      "total_loss": "L = λ_rec*L_reconstruction + λ_pred*L_prospective + λ_cal*L_calibration + λ_cons*L_cross_noise_consistency",
+      "training_eligibility": "L_prospective and L_calibration use only outcomes already revealed by training cutoff. Future target of any active trial is never used in training.",
+      "candidate_selection": "Tuned only on chronologically earlier validation blocks; untouched future and cross-domain test results reserved for evaluation."
+    }
+  },
+  "probabilistic_noise_filter": {
+    "proposed_name": "Janus Order-From-Noise Filter (JONF)",
+    "data_types": [
+      "JSON registry events: timestamp, path category, schema shape with nonsecret features",
+      "hourly weather and other public time series",
+      "finished A/B future RNG control pairs",
+      "optional public alert archive only for non-safety research"
+    ],
+    "representations": [
+      "Discrete token embeddings for byte ranges (0..255), timestamp relative position and provenance class.",
+      "Causal attention over previously observed tokens; no lookahead attention into the future target.",
+      "Controlled corruption schedule q(tilde_x|x,noise_level), with explicit noise level n.",
+      "Posterior reconstruction p_theta(x|tilde_x,observed_context,n).",
+      "Predictive head p_theta(y_future|z_t), trained only on resolved labels.",
+      "Confidence head producing calibrated uncertainty; abstain/hold decision when uncertainty or baseline comparison fails."
+    ],
+    "meaningful_signal_test": "Require improving genuinely unseen outcomes, not merely choosing, reweighting or rearranging already known random bytes to obtain coincidences.",
+    "non_claim": "No filtering of independent cryptographic randomness can reveal a later independent random byte before it exists, absent a physical backward channel or leakage."
+  },
+  "gate_and_leakage_controls": {
+    "G0": "Canonical input, model snapshot, trial ID and time scope committed by SHA before future draw.",
+    "G1": "Phase I mask seeds and corruption RNG completely separate from future target RNG; no shared seeds or hidden cross-channel metadata.",
+    "G2": "Phase II prediction hash and timestamp precede target generation/announcement (two-minute lower separation if using existing JANUS I0 protocol).",
+    "G3": "Independent data sets by complete trials (never split correlated bytes of one trial between fitting and validation); locked chronological holdout.",
+    "G4": "Exact match and unconditional bit accuracy vs appropriate chance baselines (byte=1/256 for one uniformly random byte, bit=1/2).",
+    "G5": "No retroactive label selection, window shifting, post-hoc matching or discarding failures; track all attempts and no-result cases.",
+    "G6": "Calibration activation requires loss/Brier improvement against raw model AND chance baseline with predeclared alpha control.",
+    "G7": "Any physically claimed backward channel requires an independently verified physical B→A interface and third-party replication; software simulation alone cannot pass.",
+    "G8": "Production JANUS checkpoint and any user-safety alerting remain unchanged until separate security and utility gates pass."
+  },
+  "integration_plan": {
+    "components": [
+      {
+        "name": "JONF",
+        "target": "Hawkar-usls/Janus-Demiurge/experiments/ocean_transformer",
+        "role": "Build denoising/structure stage on archived public or permitted JSON sequences; new files, development only",
+        "status": "SPECIFIED"
+      },
+      {
+        "name": "JDTC",
+        "target": "Hawkar-usls/Janus-Demiurge/experiments/ocean_transformer/retro_calibrator.py",
+        "role": "Add a separate two-phase research adapter or optional evidence metrics, preserve history-only fail-closed calibrator",
+        "status": "SPECIFIED_NOT_YET_CODED"
+      },
+      {
+        "name": "A/B experimental ledger",
+        "target": "Hawkar-usls/Janus-Demiurge/janus/retro-quantum-lab-ledger",
+        "role": "Every prediction hashed before a new target; outcomes appended after reveal; never rewrite history",
+        "status": "EXISTING"
+      },
+      {
+        "name": "Ocean GitHub workers",
+        "target": "Hawkar-usls/Janus-Demiurge/.github/workflows",
+        "role": "Limited cloud matrix: learn noise filtering only from previous confirmed outcomes, aggregate and test before any promotion",
+        "status": "EXISTING_INFRASTRUCTURE_CAN_BE_REUSED"
+      },
+      {
+        "name": "Meta Registry",
+        "target": "Hawkar-usls/janus-meta-registry",
+        "role": "Append hypotheses, scripts/results provenance, seeds, hashes, failures, baselines and decision gates",
+        "status": "ACTIVE_ARCHIVE"
+      }
+    ],
+    "minimum_viable_experiment": [
+      "Pre-register fixed noise kernels, sequence length, sample split, loss weights, byte target definition, and acceptance threshold.",
+      "Fit phase I on past records with controlled corruption. Test denoising on untouched historical blocks.",
+      "Fit phase II only using already matured outcomes. Compare with majority/Markov, persistence and uniform future RNG.",
+      "Prepare early sealed byte probability vector. Future independent OS generator chooses the byte at least 120 seconds later.",
+      "Compute unselected exact-byte success, Brier, log-loss, entropy and external reproducibility. Persist all attempts.",
+      "If gains hold only for reconstructions, declare 'forecast/denoising improvement', NOT retrocausal proof.",
+      "If an independently validated physical protocol yields excess accessible early information, require strict repeatability and independent laboratory audit before any backward-time claim."
+    ]
+  },
+  "prior_evidence": {
+    "successful_engineering": [
+      "JANUS Ocean v3 trained distributed Tiny Transformer on public ERA5 weather data with 40 GitHub workers and retained controls.",
+      "JANUS Retro Lab has successfully sealed early model predictions, generated later OS random bits and evaluated them after 120 seconds.",
+      "History-only calibrator passed regression tests and was not activated with insufficient prior complete trials."
+    ],
+    "physical_retrocausality_proven": false,
+    "independent_future_rng_forecast_success": "NOT_ESTABLISHED",
+    "interpretation": "This artifact preserves an original research architecture and falsifiable experimental plan; it does not report a new experimental demonstration."
+  },
+  "user_requested_outcome": {
+    "title_en": "The Janus Principle",
+    "title_ru": "Принцип Януса",
+    "conceptual_motto_en": "Future as uncertainty; present as emerging order; past as increasingly noisy reconstruction.",
+    "intended_long_term_result": "A self-calibrating JANUS that uses completed historical evidence to improve forecasts and, if a real physical backwards-time channel is ever verified, separately tests received information under strict temporal and leakage controls."
+  }
+}

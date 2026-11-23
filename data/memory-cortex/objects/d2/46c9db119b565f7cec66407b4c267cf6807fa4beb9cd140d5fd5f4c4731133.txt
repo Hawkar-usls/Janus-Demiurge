@@ -1,0 +1,767 @@
+{
+  "title": "Python самоучитель для начинающей ИИ модели",
+  "description": "Обширное структурированное руководство по языку программирования Python, охватывающее синтаксис, основные конструкции, парадигмы и ключевые библиотеки. Предназначено для обучения искусственной нейронной сети или языковой модели основам Python с нуля.",
+  "version": "1.0",
+  "language": "ru",
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "Введение в Python",
+      "content": {
+        "overview": "Python — высокоуровневый интерпретируемый язык программирования с динамической типизацией и автоматическим управлением памятью. Широко используется в веб-разработке, анализе данных, искусственном интеллекте, автоматизации и научных вычислениях.",
+        "features": [
+          "Простой и читаемый синтаксис",
+          "Интерпретируемость",
+          "Динамическая типизация",
+          "Автоматическое управление памятью (сборщик мусора)",
+          "Богатая стандартная библиотека",
+          "Поддержка множества парадигм (объектно-ориентированное, функциональное, процедурное программирование)",
+          "Кроссплатформенность"
+        ],
+        "installation": "Рекомендуется установка последней версии Python с официального сайта python.org. Для управления зависимостями и виртуальными окружениями используется pip и venv."
+      }
+    },
+    {
+      "id": "syntax_basics",
+      "title": "Основы синтаксиса",
+      "subsections": [
+        {
+          "name": "Комментарии",
+          "description": "Комментарии используются для пояснения кода и игнорируются интерпретатором.",
+          "examples": [
+            "# Это однострочный комментарий",
+            "''' Это многострочный комментарий '''",
+            "\"\"\" Или такой многострочный комментарий \"\"\""
+          ]
+        },
+        {
+          "name": "Переменные и присваивание",
+          "description": "Переменные создаются при первом присваивании значения. Тип переменной определяется динамически.",
+          "syntax": "variable_name = value",
+          "examples": [
+            "x = 10",
+            "name = 'Alice'",
+            "is_valid = True",
+            "pi = 3.14159"
+          ],
+          "naming_rules": [
+            "Может содержать буквы, цифры, символ подчёркивания",
+            "Не может начинаться с цифры",
+            "Чувствительность к регистру (name и Name — разные переменные)",
+            "Нельзя использовать зарезервированные слова (if, for, while и т.д.)"
+          ]
+        },
+        {
+          "name": "Вывод данных",
+          "description": "Функция print() выводит данные в стандартный поток вывода (консоль).",
+          "syntax": "print(*objects, sep=' ', end='\\n', file=sys.stdout, flush=False)",
+          "examples": [
+            "print('Hello, World!')",
+            "print('Значение x:', x)",
+            "print('a', 'b', 'c', sep='-')  # a-b-c",
+            "print('Привет', end='!')  # Привет!"
+          ]
+        },
+        {
+          "name": "Ввод данных",
+          "description": "Функция input() считывает строку из стандартного ввода.",
+          "syntax": "input(prompt='')",
+          "examples": [
+            "name = input('Введите ваше имя: ')",
+            "age = int(input('Введите возраст: '))  # преобразование строки в число"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "data_types",
+      "title": "Типы данных",
+      "subsections": [
+        {
+          "type": "Числа",
+          "description": "Целые числа (int), числа с плавающей точкой (float), комплексные числа (complex).",
+          "examples": [
+            "a = 42          # int",
+            "b = 3.14        # float",
+            "c = 1 + 2j      # complex",
+            "x = int(5.7)    # 5",
+            "y = float('3.14')"
+          ],
+          "operations": [
+            "Сложение +, вычитание -, умножение *, деление /, целочисленное деление //, остаток %, возведение в степень **",
+            "abs(), round(), pow(), divmod()"
+          ]
+        },
+        {
+          "type": "Строки",
+          "description": "Неизменяемая последовательность символов Unicode. Заключаются в одинарные или двойные кавычки.",
+          "examples": [
+            "s1 = 'Привет'",
+            "s2 = \"Мир\"",
+            "multiline = '''Первая строка\nВторая строка'''",
+            "raw = r'C:\\Users\\Name'  # сырая строка, escape-последовательности игнорируются"
+          ],
+          "operations": [
+            "Конкатенация: s1 + s2",
+            "Повторение: s1 * 3",
+            "Индексация: s[0], s[-1]",
+            "Срез: s[start:end:step]",
+            "Длина: len(s)",
+            "Методы: upper(), lower(), strip(), split(), join(), replace(), find(), startswith(), endswith() и др."
+          ],
+          "f_strings": "Форматирование строк с префиксом f: f'Привет, {name}! Тебе {age} лет.'"
+        },
+        {
+          "type": "Логический тип",
+          "description": "bool принимает значения True или False. Результат сравнений и логических операций.",
+          "operations": [
+            "and, or, not",
+            "Сравнения: ==, !=, <, >, <=, >=",
+            "В Python любое значение может быть интерпретировано как логическое: False для None, False, 0, 0.0, '', [], {}, set(); иначе True."
+          ]
+        },
+        {
+          "type": "Списки",
+          "description": "Изменяемая упорядоченная последовательность объектов любого типа.",
+          "syntax": "list_name = [item1, item2, ...]",
+          "examples": [
+            "fruits = ['яблоко', 'банан', 'вишня']",
+            "mixed = [1, 'два', 3.0, [4, 5]]",
+            "empty = []",
+            "list_from_range = list(range(5))  # [0,1,2,3,4]"
+          ],
+          "methods": [
+            "append(item) – добавить в конец",
+            "extend(iterable) – расширить список элементами итерируемого объекта",
+            "insert(index, item) – вставить по индексу",
+            "remove(item) – удалить первое вхождение",
+            "pop(index=-1) – удалить и вернуть элемент по индексу",
+            "index(item) – найти индекс первого вхождения",
+            "count(item) – количество вхождений",
+            "sort(), reverse() – сортировка и разворот на месте",
+            "sorted(list) – возвращает новый отсортированный список"
+          ],
+          "comprehensions": "[expression for item in iterable if condition]"
+        },
+        {
+          "type": "Кортежи",
+          "description": "Неизменяемая упорядоченная последовательность. Эффективнее списков по памяти.",
+          "syntax": "tuple_name = (item1, item2, ...)",
+          "examples": [
+            "point = (10, 20)",
+            "single = (42,)  # запятая обязательна для кортежа из одного элемента",
+            "coordinates = 3, 4  # упаковка кортежа без скобок",
+            "a, b = coordinates  # распаковка"
+          ],
+          "methods": [
+            "count(item), index(item)",
+            "len(tuple), in оператор"
+          ]
+        },
+        {
+          "type": "Множества",
+          "description": "Неупорядоченная коллекция уникальных хешируемых объектов. Изменяемый тип set, неизменяемый frozenset.",
+          "syntax": "set_name = {item1, item2, ...} или set(iterable)",
+          "examples": [
+            "colors = {'красный', 'зелёный', 'синий'}",
+            "unique_numbers = set([1,2,2,3])  # {1,2,3}"
+          ],
+          "operations": [
+            "Добавление: add(item), update(iterable)",
+            "Удаление: remove(item) (ошибка если нет), discard(item) (без ошибки), pop()",
+            "Объединение: | или union()",
+            "Пересечение: & или intersection()",
+            "Разность: - или difference()",
+            "Симметрическая разность: ^ или symmetric_difference()",
+            "Проверка подмножества: <=, >=, issubset(), issuperset()"
+          ],
+          "comprehensions": "{expression for item in iterable if condition}"
+        },
+        {
+          "type": "Словари",
+          "description": "Неупорядоченная коллекция пар ключ-значение (с версии 3.7 порядок вставки сохраняется). Ключи должны быть хешируемыми.",
+          "syntax": "dict_name = {key1: value1, key2: value2, ...}",
+          "examples": [
+            "person = {'name': 'Иван', 'age': 30}",
+            "empty = {}",
+            "d = dict(name='Анна', age=25)  # создание с помощью конструктора"
+          ],
+          "methods": [
+            "get(key, default) – безопасное получение значения",
+            "keys(), values(), items() – представления ключей, значений, пар",
+            "update(other_dict) – обновить/добавить пары",
+            "pop(key, default) – удалить ключ и вернуть значение",
+            "popitem() – удалить последнюю вставленную пару",
+            "setdefault(key, default) – вернуть значение ключа, если нет – установить default и вернуть его",
+            "clear() – очистить словарь"
+          ],
+          "comprehensions": "{key_expr: value_expr for item in iterable if condition}"
+        },
+        {
+          "type": "NoneType",
+          "description": "Единственное значение None обозначает отсутствие значения или пустоту.",
+          "examples": [
+            "result = None",
+            "if result is None: print('Нет данных')"
+          ]
+        },
+        {
+          "type": "Преобразование типов",
+          "description": "Явное приведение с помощью функций: int(), float(), str(), bool(), list(), tuple(), set(), dict().",
+          "examples": [
+            "int('123') -> 123",
+            "list('abc') -> ['a','b','c']",
+            "set([1,2,2]) -> {1,2}",
+            "tuple([1,2]) -> (1,2)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "control_flow",
+      "title": "Управляющие конструкции",
+      "subsections": [
+        {
+          "name": "Условный оператор if-elif-else",
+          "description": "Выполнение блока кода в зависимости от условия.",
+          "syntax": "if condition1:\n    блок1\nelif condition2:\n    блок2\nelse:\n    блок3",
+          "examples": [
+            "x = 10\nif x > 0:\n    print('Положительное')\nelif x < 0:\n    print('Отрицательное')\nelse:\n    print('Ноль')"
+          ],
+          "ternary": "value_if_true if condition else value_if_false"
+        },
+        {
+          "name": "Цикл while",
+          "description": "Повторяет блок, пока условие истинно.",
+          "syntax": "while condition:\n    блок\n    [break]\n    [continue]\n[else: ...]",
+          "examples": [
+            "i = 0\nwhile i < 5:\n    print(i)\n    i += 1"
+          ],
+          "else_in_loops": "Блок else выполняется, если цикл завершился нормально (не был прерван break)."
+        },
+        {
+          "name": "Цикл for",
+          "description": "Итерация по элементам последовательности или итератора.",
+          "syntax": "for item in iterable:\n    блок\n[else: ...]",
+          "examples": [
+            "fruits = ['яблоко', 'банан']\nfor fruit in fruits:\n    print(fruit)",
+            "for i in range(5):\n    print(i)",
+            "for key, value in dict.items():\n    print(key, value)"
+          ],
+          "range": "range(stop) или range(start, stop, step) – генерирует последовательность чисел (лениво)."
+        },
+        {
+          "name": "break, continue, pass",
+          "description": "break – немедленный выход из цикла; continue – переход к следующей итерации; pass – пустой оператор-заглушка."
+        }
+      ]
+    },
+    {
+      "id": "functions",
+      "title": "Функции",
+      "subsections": [
+        {
+          "name": "Определение и вызов",
+          "syntax": "def function_name(parameters):\n    '''docstring'''\n    тело функции\n    return value",
+          "examples": [
+            "def greet(name):\n    return f'Привет, {name}!'\nprint(greet('Алиса'))"
+          ],
+          "docstring": "Строка документации в тройных кавычках сразу после заголовка, доступна через help() или .__doc__."
+        },
+        {
+          "name": "Аргументы функций",
+          "description": "Позиционные, именованные, значения по умолчанию, *args, **kwargs.",
+          "subtypes": [
+            {
+              "type": "Позиционные",
+              "example": "def func(a, b): pass"
+            },
+            {
+              "type": "Со значением по умолчанию",
+              "example": "def func(a, b=10): pass"
+            },
+            {
+              "type": "Произвольное число позиционных аргументов (*args)",
+              "description": "Собирает все лишние позиционные аргументы в кортеж.",
+              "example": "def func(*args):\n    for arg in args: print(arg)"
+            },
+            {
+              "type": "Произвольное число именованных аргументов (**kwargs)",
+              "description": "Собирает лишние именованные аргументы в словарь.",
+              "example": "def func(**kwargs):\n    for key, value in kwargs.items(): print(key, value)"
+            }
+          ],
+          "argument_passing": "При вызове можно использовать позиционные аргументы по порядку и/или именованные (ключ=значение).",
+          "mutable_default_issue": "Не рекомендуется использовать изменяемые объекты (списки, словари) как значения по умолчанию, т.к. они сохраняются между вызовами."
+        },
+        {
+          "name": "Возврат значений",
+          "description": "return завершает функцию и возвращает значение. Если return отсутствует, возвращается None. Можно вернуть несколько значений через запятую — фактически возвращается кортеж.",
+          "example": "def min_max(numbers):\n    return min(numbers), max(numbers)"
+        },
+        {
+          "name": "Лямбда-функции",
+          "description": "Анонимные функции, задаваемые выражением lambda.",
+          "syntax": "lambda arguments: expression",
+          "examples": [
+            "square = lambda x: x ** 2",
+            "sorted(students, key=lambda s: s['age'])"
+          ]
+        },
+        {
+          "name": "Области видимости (LEGB)",
+          "description": "Local -> Enclosing -> Global -> Built-in. Переменные, объявленные внутри функции, локальны. global и nonlocal позволяют изменять переменные из внешних областей."
+        }
+      ]
+    },
+    {
+      "id": "oop",
+      "title": "Объектно-ориентированное программирование",
+      "subsections": [
+        {
+          "name": "Классы и объекты",
+          "syntax": "class ClassName:\n    '''docstring'''\n    class_attribute = value\n    \n    def __init__(self, parameters):\n        self.instance_attribute = value\n\n    def method(self, ...):\n        ...",
+          "examples": [
+            "class Dog:\n    species = 'Canis familiaris'\n\n    def __init__(self, name, age):\n        self.name = name\n        self.age = age\n\n    def bark(self):\n        return f'{self.name} говорит Гав!'\n\nbuddy = Dog('Бадди', 5)\nprint(buddy.bark())"
+          ],
+          "self": "Первый параметр методов экземпляра — ссылка на сам объект."
+        },
+        {
+          "name": "Атрибуты и методы",
+          "description": "Атрибуты класса общие для всех экземпляров; атрибуты экземпляра уникальны. Методы экземпляра, методы класса (@classmethod), статические методы (@staticmethod).",
+          "classmethod": "Принимает cls как первый аргумент, работает с классом.",
+          "staticmethod": "Не принимает специальных аргументов, просто функция внутри класса."
+        },
+        {
+          "name": "Наследование",
+          "description": "Создание класса на основе другого. Поддерживается множественное наследование.",
+          "syntax": "class DerivedClassName(BaseClass):",
+          "examples": [
+            "class Animal:\n    def speak(self): pass\n\nclass Cat(Animal):\n    def speak(self):\n        return 'Мяу!'\n\nclass Dog(Animal):\n    def speak(self):\n        return 'Гав!'"
+          ],
+          "super()": "Вызов методов родительского класса. super().__init__(...)"
+        },
+        {
+          "name": "Полиморфизм",
+          "description": "Способность объектов разных классов отвечать на один и тот же интерфейс."
+        },
+        {
+          "name": "Инкапсуляция",
+          "description": "Соглашение об именовании: _protected (защищённый), __private (приватный, искажение имени). Реального сокрытия нет, но __ приводит к name mangling."
+        },
+        {
+          "name": "Специальные методы (магические)",
+          "description": "Методы с двойным подчёркиванием, определяющие поведение объекта в различных контекстах.",
+          "examples": [
+            "__init__(self, ...) – конструктор",
+            "__str__(self) – строковое представление для пользователя (print, str)",
+            "__repr__(self) – официальное строковое представление для разработчика (repr)",
+            "__len__(self) – длина объекта",
+            "__getitem__(self, key) – доступ по индексу/ключу",
+            "__setitem__(self, key, value) – присваивание по индексу/ключу",
+            "__call__(self, ...) – делает объект вызываемым",
+            "__eq__(self, other) – оператор равенства ==",
+            "__add__(self, other) – оператор +",
+            "и многие другие для перегрузки операторов"
+          ]
+        },
+        {
+          "name": "Свойства (property)",
+          "description": "Позволяют управлять доступом к атрибутам, делая методы геттерами, сеттерами и делетерами.",
+          "syntax": "@property\ndef name(self):\n    return self._name\n\n@name.setter\ndef name(self, value):\n    self._name = value"
+        }
+      ]
+    },
+    {
+      "id": "modules_packages",
+      "title": "Модули и пакеты",
+      "subsections": [
+        {
+          "name": "Импорт модулей",
+          "description": "Модуль — файл с расширением .py, содержащий определения и инструкции.",
+          "syntax": [
+            "import module_name",
+            "import module_name as alias",
+            "from module_name import name1, name2",
+            "from module_name import *  # импортирует всё (не рекомендуется)"
+          ],
+          "examples": [
+            "import math\nprint(math.sqrt(16))",
+            "from datetime import datetime\nnow = datetime.now()"
+          ]
+        },
+        {
+          "name": "Пакеты",
+          "description": "Пакет — директория, содержащая файл __init__.py (может быть пустым). Вложенные пакеты поддерживаются.",
+          "import_package": "from package.subpackage import module"
+        },
+        {
+          "name": "Стандартная библиотека",
+          "description": "Богатый набор модулей, поставляемых с Python. Некоторые важные:",
+          "modules_list": [
+            "os – работа с ОС (переменные окружения, файловая система)",
+            "sys – параметры и функции, специфичные для системы",
+            "math – математические функции",
+            "random – генерация случайных чисел",
+            "datetime – работа с датой и временем",
+            "json – работа с JSON",
+            "re – регулярные выражения",
+            "collections – специализированные структуры данных (Counter, deque, defaultdict, namedtuple)",
+            "itertools – итераторы для эффективных циклов",
+            "functools – функциональные инструменты (reduce, partial, lru_cache)",
+            "pathlib – объектно-ориентированный интерфейс для файловых путей",
+            "argparse – разбор аргументов командной строки",
+            "logging – гибкое ведение журналов событий",
+            "unittest – модульное тестирование"
+          ]
+        },
+        {
+          "name": "Установка сторонних пакетов",
+          "description": "Используется менеджер пакетов pip. Рекомендуется использовать виртуальные окружения (venv, virtualenv) для изоляции зависимостей.",
+          "commands": [
+            "pip install package_name",
+            "pip install -r requirements.txt",
+            "pip freeze > requirements.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "exceptions",
+      "title": "Исключения и обработка ошибок",
+      "subsections": [
+        {
+          "name": "Обработка исключений",
+          "syntax": "try:\n    блок, где может возникнуть исключение\nexcept ExceptionType1 as e:\n    обработка1\n[except ExceptionType2: ...]\n[else: выполняется, если исключений не было]\n[finally: выполняется всегда]",
+          "examples": [
+            "try:\n    x = 1 / 0\nexcept ZeroDivisionError:\n    print('Деление на ноль!')"
+          ]
+        },
+        {
+          "name": "Генерация исключений",
+          "syntax": "raise ExceptionType('Сообщение об ошибке')"
+        },
+        {
+          "name": "Пользовательские исключения",
+          "description": "Создаются наследованием от класса Exception или его подклассов."
+        },
+        {
+          "name": "Иерархия исключений",
+          "base": "BaseException -> Exception -> большинство встроенных исключений (ValueError, TypeError, KeyError, IndexError, IOError и т.д.)"
+        }
+      ]
+    },
+    {
+      "id": "file_io",
+      "title": "Работа с файлами",
+      "subsections": [
+        {
+          "name": "Открытие и закрытие файлов",
+          "description": "Функция open() возвращает файловый объект. Рекомендуется использовать менеджер контекста with, который автоматически закрывает файл.",
+          "modes": [
+            "'r' – чтение (по умолчанию)",
+            "'w' – запись (перезапись файла)",
+            "'a' – добавление в конец",
+            "'x' – эксклюзивное создание (ошибка, если файл существует)",
+            "'b' – двоичный режим",
+            "'t' – текстовый режим (по умолчанию)",
+            "'+' – чтение и запись"
+          ],
+          "examples": [
+            "with open('file.txt', 'r', encoding='utf-8') as f:\n    content = f.read()",
+            "with open('output.txt', 'w') as f:\n    f.write('Hello\\n')"
+          ]
+        },
+        {
+          "name": "Чтение",
+          "methods": [
+            "read(size=-1) – читает size символов/байт, по умолчанию всё",
+            "readline() – читает одну строку",
+            "readlines() – читает все строки в список"
+          ]
+        },
+        {
+          "name": "Запись",
+          "methods": [
+            "write(string) – записывает строку",
+            "writelines(list_of_strings) – записывает список строк"
+          ]
+        },
+        {
+          "name": "Работа с файловой системой",
+          "modules": "os, os.path, shutil, pathlib",
+          "common_operations": [
+            "os.path.exists(path)",
+            "os.path.join(path, *paths)",
+            "os.listdir(path)",
+            "os.mkdir(path), os.makedirs(path, exist_ok=True)",
+            "shutil.copy(src, dst), shutil.move(src, dst)",
+            "pathlib.Path('dir/file.txt').read_text()"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "iterators_generators",
+      "title": "Итераторы и генераторы",
+      "subsections": [
+        {
+          "name": "Итераторы",
+          "description": "Объект, реализующий метод __next__() (или next() в Python 2) и __iter__(). Возвращает элементы по одному.",
+          "builtin_iterators": "Списки, кортежи, строки, словари, множества, файлы — все являются итерируемыми, но не всегда итераторами. Функция iter() получает итератор из итерируемого объекта.",
+          "example": "it = iter([1,2,3])\nprint(next(it))  # 1"
+        },
+        {
+          "name": "Генераторы",
+          "description": "Функции, которые используют yield вместо return. Возвращают генератор — ленивый итератор, вычисляющий значения по требованию.",
+          "syntax": "def generator():\n    yield value1\n    yield value2",
+          "example": "def countdown(n):\n    while n > 0:\n        yield n\n        n -= 1\nfor num in countdown(5):\n    print(num)"
+        },
+        {
+          "name": "Генераторные выражения",
+          "syntax": "(expression for item in iterable if condition)",
+          "difference": "В отличие от списковых включений, не создают список целиком, а генерируют элементы по одному, экономя память."
+        }
+      ]
+    },
+    {
+      "id": "decorators",
+      "title": "Декораторы",
+      "subsections": [
+        {
+          "name": "Что такое декоратор",
+          "description": "Функция, которая принимает другую функцию и расширяет или изменяет её поведение, не меняя код самой функции. Синтаксический сахар с символом @.",
+          "syntax": "@decorator\ndef func():\n    pass"
+        },
+        {
+          "name": "Написание декоратора",
+          "description": "Декоратор — это обычно функция, возвращающая обёртку (wrapper). Часто используется functools.wraps для сохранения метаданных исходной функции.",
+          "example": "import functools\n\ndef logger(func):\n    @functools.wraps(func)\n    def wrapper(*args, **kwargs):\n        print(f'Вызов {func.__name__} с {args} {kwargs}')\n        result = func(*args, **kwargs)\n        print(f'Результат: {result}')\n        return result\n    return wrapper\n\n@logger\ndef add(a, b):\n    return a + b"
+        },
+        {
+          "name": "Декораторы с аргументами",
+          "description": "Требуют дополнительного уровня вложенности: функция, принимающая аргументы и возвращающая сам декоратор."
+        },
+        {
+          "name": "Встроенные декораторы",
+          "examples": [
+            "@staticmethod",
+            "@classmethod",
+            "@property",
+            "@functools.lru_cache – кеширование результатов",
+            "@dataclass.dataclass – автоматическая генерация __init__, __repr__ и др. для классов данных"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "functional_programming",
+      "title": "Функциональное программирование",
+      "subsections": [
+        {
+          "name": "Функции высшего порядка",
+          "description": "Функции, принимающие другие функции в качестве аргументов или возвращающие функции. map, filter, reduce, sorted (с key).",
+          "map": "map(function, iterable) – применяет функцию к каждому элементу.",
+          "filter": "filter(function, iterable) – оставляет элементы, для которых функция возвращает True.",
+          "reduce": "from functools import reduce; reduce(function, iterable[, initial]) – кумулятивно применяет функцию к элементам, сводя к одному значению."
+        },
+        {
+          "name": "Замыкания",
+          "description": "Функция, определённая внутри другой функции и имеющая доступ к переменным внешней функции даже после завершения её выполнения."
+        }
+      ]
+    },
+    {
+      "id": "context_managers",
+      "title": "Контекстные менеджеры",
+      "subsections": [
+        {
+          "name": "Оператор with",
+          "description": "Обеспечивает выполнение подготовительных и завершающих действий (например, открытие и закрытие файла, блокировка и освобождение ресурса).",
+          "implementation": "Объект должен реализовывать методы __enter__() и __exit__().",
+          "example": "class ManagedFile:\n    def __init__(self, filename):\n        self.filename = filename\n    def __enter__(self):\n        self.file = open(self.filename, 'w')\n        return self.file\n    def __exit__(self, exc_type, exc_val, exc_tb):\n        if self.file:\n            self.file.close()\n\nwith ManagedFile('hello.txt') as f:\n    f.write('Hello, world!')"
+        },
+        {
+          "name": "contextlib",
+          "description": "Модуль для упрощения создания контекстных менеджеров. Декоратор @contextmanager позволяет создавать их из генераторов."
+        }
+      ]
+    },
+    {
+      "id": "async_await",
+      "title": "Асинхронное программирование (основы)",
+      "subsections": [
+        {
+          "name": "Событийный цикл и корутины",
+          "description": "Корутина определяется с помощью async def. Для запуска корутины нужен событийный цикл. Ключевые слова: async, await.",
+          "example": "import asyncio\n\nasync def say_hello():\n    await asyncio.sleep(1)\n    print('Hello')\n\nasync def main():\n    await say_hello()\n\nasyncio.run(main())"
+        },
+        {
+          "name": "Модуль asyncio",
+          "description": "Предоставляет инструменты для написания однопоточного конкурентного кода с использованием корутин."
+        }
+      ]
+    },
+    {
+      "id": "common_libraries_for_ai",
+      "title": "Популярные библиотеки для ИИ и анализа данных",
+      "subsections": [
+        {
+          "name": "NumPy",
+          "description": "Библиотека для работы с многомерными массивами и математическими функциями. Основа для многих научных вычислений.",
+          "key_features": [
+            "ndarray — n-мерный массив",
+            "Векторизованные операции",
+            "Линейная алгебра (numpy.linalg)",
+            "Генерация случайных чисел (numpy.random)"
+          ]
+        },
+        {
+          "name": "Pandas",
+          "description": "Библиотека для обработки и анализа табличных данных. Предоставляет DataFrame и Series.",
+          "key_features": [
+            "Чтение/запись данных из CSV, Excel, SQL и др.",
+            "Фильтрация, группировка, агрегация",
+            "Работа с пропущенными значениями",
+            "Объединение и слияние таблиц"
+          ]
+        },
+        {
+          "name": "Matplotlib и Seaborn",
+          "description": "Библиотеки для визуализации данных. Matplotlib — низкоуровневое построение графиков, Seaborn — надстройка для статистических графиков."
+        },
+        {
+          "name": "Scikit-learn",
+          "description": "Библиотека машинного обучения с реализацией множества алгоритмов классификации, регрессии, кластеризации, уменьшения размерности, предобработки данных и метрик."
+        },
+        {
+          "name": "TensorFlow / PyTorch",
+          "description": "Фреймворки для глубокого обучения. Позволяют строить и обучать нейронные сети с использованием GPU."
+        },
+        {
+          "name": "Jupyter Notebook / JupyterLab",
+          "description": "Интерактивная среда для разработки и документирования кода, широко используется в data science."
+        }
+      ]
+    },
+    {
+      "id": "testing_debugging",
+      "title": "Тестирование и отладка",
+      "subsections": [
+        {
+          "name": "Модуль unittest",
+          "description": "Фреймворк для модульного тестирования, вдохновлённый JUnit.",
+          "example": "import unittest\n\nclass TestMath(unittest.TestCase):\n    def test_add(self):\n        self.assertEqual(1 + 1, 2)\n\nif __name__ == '__main__':\n    unittest.main()"
+        },
+        {
+          "name": "pytest",
+          "description": "Популярный сторонний фреймворк для тестирования, более лаконичный и мощный."
+        },
+        {
+          "name": "Отладка с помощью pdb",
+          "description": "Интерактивный отладчик. breakpoint() (Python 3.7+) вставляет точку останова."
+        },
+        {
+          "name": "Логирование",
+          "description": "Модуль logging предоставляет гибкую систему ведения журналов событий с уровнями DEBUG, INFO, WARNING, ERROR, CRITICAL."
+        }
+      ]
+    },
+    {
+      "id": "pep8_best_practices",
+      "title": "Стиль кода и лучшие практики",
+      "subsections": [
+        {
+          "name": "PEP 8",
+          "description": "Руководство по стилю кода Python. Рекомендации по именованию, отступам, длине строк, пробелам и т.д."
+        },
+        {
+          "name": "Именование",
+          "conventions": [
+            "Классы: CamelCase (MyClass)",
+            "Функции, переменные, методы: snake_case (my_function)",
+            "Константы: UPPER_CASE (MAX_SIZE)",
+            "Приватные атрибуты: _single_leading_underscore, __double_leading_underscore (для name mangling)"
+          ]
+        },
+        {
+          "name": "Документирование",
+          "description": "Docstrings для модулей, классов, функций. Форматы: reStructuredText, Google, NumPy."
+        },
+        {
+          "name": "Виртуальные окружения",
+          "importance": "Изоляция зависимостей проектов предотвращает конфликты версий пакетов."
+        },
+        {
+          "name": "Форматирование кода",
+          "tools": [
+            "black – автоматическое форматирование",
+            "flake8 – проверка на соответствие PEP 8 и ошибки",
+            "isort – сортировка импортов",
+            "mypy – статическая проверка типов"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "practice_problems",
+      "title": "Задачи для самопроверки",
+      "description": "Набор упражнений для закрепления материала.",
+      "problems": [
+        {
+          "id": 1,
+          "topic": "Базовый синтаксис",
+          "task": "Напишите программу, которая запрашивает у пользователя два числа и выводит их сумму, разность, произведение и частное.",
+          "hint": "Используйте input(), int(), print()."
+        },
+        {
+          "id": 2,
+          "topic": "Строки",
+          "task": "Напишите функцию, которая принимает строку и возвращает её с перевёрнутыми словами (порядок слов сохраняется). Например, 'Hello World' -> 'olleH dlroW'.",
+          "hint": "Используйте split(), срезы [::-1], join()."
+        },
+        {
+          "id": 3,
+          "topic": "Списки и циклы",
+          "task": "Дан список чисел. Верните новый список, содержащий только чётные числа, возведённые в квадрат.",
+          "hint": "Используйте списковое включение с условием."
+        },
+        {
+          "id": 4,
+          "topic": "Словари",
+          "task": "Даны два списка: keys = ['a', 'b', 'c'], values = [1, 2, 3]. Создайте словарь, объединяющий их.",
+          "hint": "dict(zip(keys, values))."
+        },
+        {
+          "id": 5,
+          "topic": "Функции",
+          "task": "Напишите функцию-генератор fibonacci(n), которая возвращает первые n чисел Фибоначчи.",
+          "hint": "Используйте yield."
+        },
+        {
+          "id": 6,
+          "topic": "ООП",
+          "task": "Создайте класс Rectangle с атрибутами width и height и методами area() и perimeter().",
+          "hint": "Используйте __init__ и self."
+        },
+        {
+          "id": 7,
+          "topic": "Исключения",
+          "task": "Напишите код, который пытается открыть файл 'data.txt' и обрабатывает возможное исключение FileNotFoundError, выводя сообщение об ошибке.",
+          "hint": "try...except."
+        },
+        {
+          "id": 8,
+          "topic": "Декораторы",
+          "task": "Создайте декоратор timer, который измеряет время выполнения функции и выводит его.",
+          "hint": "Используйте модуль time, time.time() до и после вызова."
+        }
+      ]
+    },
+    {
+      "id": "conclusion",
+      "title": "Заключение",
+      "content": "Данное руководство охватывает основные аспекты языка Python, необходимые для начала работы и дальнейшего углубления в специализированные области, включая машинное обучение и искусственный интеллект. Для более глубокого изучения рекомендуется ознакомиться с официальной документацией Python и специализированной литературой."
+    }
+  ]
+}

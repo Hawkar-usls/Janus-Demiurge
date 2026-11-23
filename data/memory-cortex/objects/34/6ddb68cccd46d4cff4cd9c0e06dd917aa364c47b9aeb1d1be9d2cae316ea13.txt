@@ -1,0 +1,108 @@
+{
+  "artifact_uuid": "JANUS-WEDJAT-FULL-EYE-COMPOSITION-CONTROL-RESULT-2026-08-15-v0.6",
+  "version": "v0.6",
+  "timestamp_date": "2026-08-15",
+  "title": "Wedjat eye-first deepening: can modern D011-D016 reconstruct full D010 better than unrelated hieroglyphs?",
+  "observer": "Oleksandr Ahapov / Hawkar + JANUS",
+  "node_type": "executed_modern_full_eye_composition_negative_positive_control",
+  "status": "MODERN_FULL_EYE_COMPOSITION_SIGNAL_WITH_NONEXACT_TILING",
+  "parents": [
+    "data/JANUS-WEDJAT-EYE-INTERNAL-GRAMMAR-PILOT-RESULT-2026-08-15-v0.4.json",
+    "data/JANUS-WEDJAT-EYE-IDENTITY-POLARITY-HYBRID-ANATOMY-RESULT-2026-08-15-v0.5.json",
+    "data/JANUS-WEDJAT-UNICODE-HIEROGLYPH-CONTROL-RESULT-2026-08-15-v0.3.json"
+  ],
+  "research_question": "Ignoring the 1/2..1/64 values, do the six modern standardized D011-D016 eye-part glyphs collectively have specific compositional affinity to the full Wedjat glyph D010 beyond unrelated Egyptian hieroglyphs?",
+  "scope": "MODERN_UNICODE_GARDINER_FONT_CONTROL_ONLY_NOT_ANCIENT_PALEOGRAPHY",
+  "execution_receipt": {
+    "script_path": "research/wedjat/janus_wedjat_full_eye_composition_probe_v0_6.py",
+    "repository_git_blob_sha1": "18801cd10c3756ca936ed232e51e2f857dc8b389",
+    "script_sha256_exact_executed_and_repository_bytes": "76b52541c4708a4a0b5d26c086a02eb40adfc29a14cb45c6ded31ee07296ed4c",
+    "py_compile_pass": true,
+    "reported_run_exit_status": 0,
+    "random_seed": 20260815,
+    "draws_per_control": 100000,
+    "font_family": "Noto Sans Egyptian Hieroglyphs",
+    "font_sha256": "ad50e535500acc88b9582c648cc84ca9a4679c1810a426aa85b7ba8bada8af15",
+    "font_file_redistributed": false,
+    "environment": {"python": "3.13.5", "numpy": "2.3.5", "opencv": "4.13.0"}
+  },
+  "method": {
+    "target": "D010 / U+13080 full Wedjat",
+    "target_parts": ["D011", "D012", "D013", "D014", "D015", "D016"],
+    "rendered_block_size": 1072,
+    "gardiner_D_class_size": 92,
+    "scale_grid": [0.3, 0.39375, 0.4875, 0.58125, 0.675, 0.76875, 0.8625, 0.95625, 1.05],
+    "rotation_allowed": false,
+    "translation": "All placements that keep the candidate inside the D010 bounding box.",
+    "single_glyph_fit": "Choose scale and translation maximizing F1 overlap against D010.",
+    "six_glyph_score": "Union the six independently best-aligned masks and calculate F1, recall and precision against D010.",
+    "control_fairness": "Every unrelated glyph receives the identical alignment search before random six-glyph sets are sampled."
+  },
+  "target_set_result": {
+    "f1": 0.5306782825140013,
+    "recall_target_coverage": 0.5220372184133203,
+    "precision_union_inside_target": 0.539610225259428,
+    "overlap_pixels": 2132,
+    "union_pixels": 3951,
+    "target_pixels": 4084
+  },
+  "full_block_control": {
+    "draws": 100000,
+    "exceedances_ge_target": 0,
+    "plus_one_empirical_p": 0.00000999990000099999,
+    "median_f1": 0.2856299168494991,
+    "p99_f1": 0.35827972999080904,
+    "p999_f1": 0.3977409452110658,
+    "maximum_random_f1": 0.49264776549735706,
+    "interpretation": "No sampled six-glyph set from the full unrelated block reached the D011-D016 union score."
+  },
+  "gardiner_D_class_hard_control": {
+    "draws": 100000,
+    "exceedances_ge_target": 18,
+    "plus_one_empirical_p": 0.00018999810001899982,
+    "median_f1": 0.30957864869742546,
+    "p99_f1": 0.433696157762943,
+    "p999_f1": 0.49114045204122087,
+    "maximum_random_f1": 0.5747214020382894,
+    "interpretation": "Even against the harder same-Gardiner-D body-part class, D011-D016 are unusually good as a six-member reconstruction set, although rare unrelated D-class sets can score higher."
+  },
+  "leave_one_out": [
+    {"part": "D011", "unique_target_pixels": 357, "f1_without_part": 0.4761266094420601, "delta_without_minus_full": -0.0545516730719412},
+    {"part": "D012", "unique_target_pixels": 62, "f1_without_part": 0.5220022695750851, "delta_without_minus_full": -0.008676012938916178},
+    {"part": "D013", "unique_target_pixels": 176, "f1_without_part": 0.5210442194992009, "delta_without_minus_full": -0.00963406301480041},
+    {"part": "D014", "unique_target_pixels": 362, "f1_without_part": 0.46757363624356096, "delta_without_minus_full": -0.06310464627044032},
+    {"part": "D015", "unique_target_pixels": 58, "f1_without_part": 0.5541750167000667, "delta_without_minus_full": 0.02349673418606546},
+    {"part": "D016", "unique_target_pixels": 460, "f1_without_part": 0.4724498445888669, "delta_without_minus_full": -0.05822843792513438}
+  ],
+  "important_asymmetry": {
+    "finding": "Removing D015 improves the union F1 from 0.53068 to 0.55418.",
+    "meaning": "The six standardized signs are not a literal exact jigsaw tiling of D010. D015 supplies only 58 target pixels unique relative to the other five under this fit while introducing substantial nonmatching shape. The positive set-level signal therefore must not be described as exact reconstruction."
+  },
+  "relation_to_previous_results": {
+    "v0_3_geometric_halving": "NEGATIVE",
+    "v0_4_fraction_assignment_from_geometry": "NEGATIVE",
+    "v0_6_compositional_affinity_to_whole_eye": "POSITIVE_MODERN_CONTROL",
+    "synthesis": "The useful modern-eye signal is compositional specificity, not repeated halving or proportional encoding of 1/2..1/64."
+  },
+  "highest_admissible_claim": "In the modern standardized Gardiner/Unicode rendering, D011-D016 as a six-member set have statistically unusual compositional affinity to the full Wedjat D010 glyph under a constrained scale-and-translation overlap test. The result survives 100,000 full-block random sets and a harder 100,000-set Gardiner-D-class control. However the union covers only about 52% of D010 and is not an exact six-piece tiling; D015 even worsens aggregate F1 under this simple registration. This demonstrates modern sign-family coherence, not ancient CSM derivation, fraction encoding, binary intent, or a historical six-piece puzzle.",
+  "new_eye_first_gate": {
+    "id": "WEDJAT_ANCIENT_COMPOSITIONAL_AFFINITY_R4",
+    "priority": "TEST_EYE_SUBSTRUCTURE_AFFINITY_BEFORE_NUMERIC_MAGNITUDE",
+    "question": "On dated ancient witnesses, does each CSM sign align more specifically to its proposed Wedjat eye substructure than to same-document stroke/complexity-matched controls, and does that affinity appear early or emerge later?",
+    "required": [
+      "Exact SHA-256-sealed ancient image/facsimile bytes.",
+      "Fraction labels frozen independently of visual fit.",
+      "Same-document non-target hieratic controls.",
+      "No post-hoc mirroring or part reassignment.",
+      "Chronological holdout to distinguish primordial derivation from later secondary association."
+    ]
+  },
+  "claim_firewall": [
+    "MODERN_SIGN_FAMILY_COHERENCE_IS_NOT_ANCIENT_GENEALOGY",
+    "RECONSTRUCTION_SIGNAL_IS_NOT_DYADIC_SIZE_ENCODING",
+    "NONEXACT_TILING_MUST_BE_REPORTED",
+    "NO_ANCIENT_BINARY_ASCII_OR_PYTHON_INTENT",
+    "NO_SENSORY_MAPPING_PROMOTION",
+    "ANCIENT_CSM_COMPOSITION_REQUIRES_DATED_PRIMARY_SIGN_IMAGES_AND_SAME_DOCUMENT_CONTROLS"
+  ]
+}

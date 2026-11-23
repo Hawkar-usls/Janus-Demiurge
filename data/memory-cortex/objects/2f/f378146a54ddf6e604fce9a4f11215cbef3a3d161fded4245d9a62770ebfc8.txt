@@ -1,0 +1,142 @@
+{
+  "schema": "janus.meta_registry.daddy_keymaster.archival_and_physical_backup_evidence.v1",
+  "artifact_id": "JANUS-DADDY-KEYMASTER-R3-ARCHIVE-AND-PHYSICAL-BACKUP-2026-10-31",
+  "date_utc": "2026-10-31",
+  "title": "JANUS DADDY_KEYMASTER R3: live atomic queue rollover, independent CPU witness, owner-local second-copy proof",
+  "scientific_status": "SOURCE_LINKED_ENGINEERING_EVIDENCE_NOT_UNBOUNDED_AUTONOMY",
+  "evidence_class": "OBSERVED_GITHUB_EXACT_RUN_AND_OWNER_DEVICE_BACKUP_EXECUTION",
+  "provenance": {
+    "source_repository": "Hawkar-usls/Janus-Demiurge",
+    "implementation": [
+      "daddy_keymaster/queue_rotation.py",
+      "daddy_keymaster/bounded_ci.py",
+      "daddy_keymaster/git_cas_queue.py",
+      "tests/test_daddy_keymaster_queue_rotation.py"
+    ],
+    "source_prs": [
+      {
+        "pr": 392,
+        "merged": true,
+        "merge_commit": "f17e9f4ceef34f8a532cdcfbfa682f8d192cacb8",
+        "purpose": "atomic archive segments"
+      },
+      {
+        "pr": 393,
+        "merged": true,
+        "merge_commit": "767ff4cd99c0b3264b4cd80c7c1021457cb6ae2c",
+        "purpose": "force-add exact ignored archive files in isolated state branch"
+      },
+      {
+        "pr": 394,
+        "merged": true,
+        "merge_commit": "fdd759c0d22b2e2674929971e2a91d9b1d3a889e",
+        "purpose": "archive source updates trigger bounded heartbeat"
+      }
+    ],
+    "github_live_run": {
+      "url": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/41206480254",
+      "run_id": 41206480254,
+      "source_sha": "fdd759c0d22b2e2674929971e2a91d9b1d3a889e",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "validate",
+          "conclusion": "success"
+        },
+        {
+          "name": "prepare",
+          "conclusion": "success"
+        },
+        {
+          "name": "worker ARM64",
+          "conclusion": "success"
+        },
+        {
+          "name": "worker X64",
+          "conclusion": "success"
+        },
+        {
+          "name": "independent-witness",
+          "conclusion": "success"
+        }
+      ]
+    }
+  },
+  "archive": {
+    "repository": "Hawkar-usls/Janus-Demiurge",
+    "branch": "janus/daddy-keymaster-ci-queue-state",
+    "path": "state/archive_segments/00000001.json",
+    "archive_number": 1,
+    "archived_epoch": 8,
+    "archived_task_states": [
+      "COMPLETE",
+      "COMPLETE"
+    ],
+    "archive_receipt_sha256": "9ce587debcd76eb6f1e6f2cd67fd955c918ef7f49db00cdbcbcb919c5505d3c9",
+    "archive_head_path": "state/relay_archive_head.json",
+    "archive_head_receipt_sha256": "603a9aae18a3289d537b031fc53ad44b379d83ec1a75ee57a94ceef6105e88e4",
+    "active_queue_after_rollover": {
+      "epoch": 8,
+      "complete_task_count": 2,
+      "state_ref_sha": "028b980b8218dc9192aa3bb94c3bcc0f6c08de2d"
+    },
+    "security_semantics": [
+      "Remote CAS atomic update: immutable complete queue segment, source dedup marker, chain head, empty next queue in one ordinary non-force Git commit",
+      "Uncertain HOLD or LEASED tasks never silently retired or replayed",
+      "Previously archived source SHA is recognized as IDLE on exact main revert",
+      "Initial production regression from .gitignore caught in failed run 41206081295, corrected by PR 393; live successor run 41206480254 verified",
+      "Archive expansion finite by storage and segment cap; not infinite or disaster-proof"
+    ]
+  },
+  "physical_backup": {
+    "status": "OWNER_PHYSICAL_DISK_SNAPSHOT_VERIFIED",
+    "captured_source_ref": "028b980b8218dc9192aa3bb94c3bcc0f6c08de2d",
+    "snapshot_zip_sha256": "0255e64ad4be4add76c1cd4d593b1ca7e4af551e757d0da202b1dcaa50378bda",
+    "captured_paths": [
+      "state/archive_segments/00000001.json",
+      "state/processed_sources/<digest>.json",
+      "state/relay_archive_head.json",
+      "state/relay_queue.json"
+    ],
+    "independent_of_github_action_artifact_retention": true,
+    "source_authenticated_by": "public Git remote exact commit object",
+    "backup_auth": "NONE_NO_TOKEN",
+    "behavior": "Twice-daily best-effort Windows Scheduled Task with local SHA receipt and source-SHA dedup, no host scanning or model execution",
+    "scheduled_task_last_result": 0,
+    "retains_prior_snapshots": true,
+    "github_ancestry_cross_check": {
+      "older_ref": "e08e14e3dec217ffd46e8ffee8cafbdf399d78cb",
+      "new_ref": "028b980b8218dc9192aa3bb94c3bcc0f6c08de2d",
+      "github_compare_status": "ahead",
+      "ahead_by": 9,
+      "behind_by": 0
+    },
+    "limitations": [
+      "Home machine need not be powered or online 24/7",
+      "Backup script itself is not independently signed or remotely monitored",
+      "Daily backup schedule may miss changes between snapshots",
+      "Physical disk copy does not constitute an independent data center or replication quorum",
+      "Checksum-only public snapshot does not prevent an attacker with access to every copy from rewriting history"
+    ]
+  },
+  "unmet_gates": {
+    "always_on_authorized_compute_nodes": 0,
+    "external_compute_providers_verified": 0,
+    "general_compute_dispatcher_enabled": false,
+    "native_model_champion_safe_promotion": false,
+    "r2_model_blind_final": "HOLD: Janus-Demiurge issue 385",
+    "secure_model_loader": "HOLD: Janus-Demiurge PR 301",
+    "independent_consumer_ack_and_rollback": "HOLD"
+  },
+  "privacy_and_authority": {
+    "no_host_names_in_public_record": true,
+    "no_personal_path_or_account_names": true,
+    "secrets_published": false,
+    "paid_work_started": false,
+    "rowan_credits_spent": false,
+    "arbitrary_external_remote_execution": false,
+    "authority_delta": 0
+  },
+  "conclusion": "Automatic bounded Git-CAS queue segmentation and source-idempotent CI execution verified in live GitHub Actions; owner-device physical backup successfully captured exact archive and active state. Full always-on heterogeneous compute autonomy remains unproven."
+}

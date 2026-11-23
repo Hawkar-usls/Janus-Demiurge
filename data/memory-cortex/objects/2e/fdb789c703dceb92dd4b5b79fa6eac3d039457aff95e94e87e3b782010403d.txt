@@ -1,0 +1,178 @@
+{
+  "schema_id": "janus.rowan.azurin6243_rpy_rotational_hydrodynamics_CSA_Rex_NH_sensitivity_topa_v1",
+  "date_utc": "2026-10-26",
+  "status": "HYDRODYNAMIC_STRUCTURE_ONLY_TENSOR_COMPUTED_STABLE_IN_BEAD_RADIUS_BUT_FITTED_NMR_ABSOLUTE_ADEQUACY_FAIL",
+  "repo": "Hawkar-usls/janus-meta-registry",
+  "real_computation": {
+    "execution": "Authorized Yaksa Windows computer, python source committed in PR321; separate real numerical execution not independently repeated in GitHub Actions",
+    "source_ci": "https://github.com/Hawkar-usls/janus-meta-registry/actions/runs/40387669690",
+    "unit_tests": "7/7 specialized source/rotational tensor tests PASS; general verify, security, train-audit pass",
+    "software_pr": "https://github.com/Hawkar-usls/janus-meta-registry/pull/321",
+    "software": "modules/rowan_observer/nmr_azurin6243_rpy_rex_csa_nh_sensitivity.py",
+    "frozen_protocol": "data/rowan/protocols/ROWAN-AZURIN6243-RPY-HYDRODYNAMIC-CSA-REX-NH-SENSITIVITY-2026-10-26-v1.json",
+    "original_result_path": "data/rowan/provenance/ROWAN-NMR-AZURIN6243-RPY-INDEPENDENT-TENSOR-CSA-REX-NH-REAL-2026-10-26-v1.json",
+    "original_result_sha256": "b24d2f5c58584d400084843a56c64e258877afcac2ae011addc526307c11eafb",
+    "original_result_bytes": 1896644,
+    "source_nmr_sha256": "4b70f8791324e16d098640db3709e6b8482d829956b1a09ebf9aa6aae375ea2a",
+    "source_pdb_sha256": "707e53b3720604678f87cf4df11bd0c39ba7bd4ddc316ed6cdca9c0a7a5adfe2",
+    "primary_scientific_references": [
+      "https://pmc.ncbi.nlm.nih.gov/articles/PMC6127458/",
+      "https://pubmed.ncbi.nlm.nih.gov/11042057/",
+      "https://pubmed.ncbi.nlm.nih.gov/12975584/"
+    ]
+  },
+  "independent_structural_tensor": {
+    "method": "128 actual C-alpha heavy atom locations of exact 1E5Y chain A represented as overlapping identical hydrodynamic spheres, projected Rotne-Prager-Yamakawa rigid grand translational/rotational mobility. eta set to unity for ratios; NOT official HYDRONMR or measured diffusion coefficients.",
+    "bead_radius_A": [
+      2.5,
+      3,
+      3.5
+    ],
+    "fast_axis_ratio_Dpar_over_mean_Dtransverse": [
+      1.403531121722853,
+      1.3880536221154558,
+      1.3738296262243455
+    ],
+    "primary_3A_transverse_eigenvalue_max_over_min": 1.0946624318513711,
+    "primary_3A_abs_dot_fast_axis_with_PDB_PCA_long_axis": 0.9998802584935156,
+    "robustness_conclusion": "Fast tensor axis and diffusion anisotropy ratio are numerically relatively stable against this restricted bead-radius change. Axis is almost identical to old CA PCA shape axis, which explains limited gain compared with previous PCA-based model.",
+    "not_measured_hydrodynamic_tensor": true,
+    "not_correct_absolute_tau_without_solvent_viscosity_and_hydration": true,
+    "not_proven_exact_axial_symmetry": true
+  },
+  "training_evaluation": {
+    "real_protein": "Reduced Cu(I) Pseudomonas aeruginosa azurin PDB 1E5Y NMR BMRB6243",
+    "separate_series": [
+      {
+        "id": 1,
+        "T_K": 289,
+        "n": 116
+      },
+      {
+        "id": 2,
+        "T_K": 317,
+        "n": 114
+      }
+    ],
+    "shared_training_proton_fields_MHz": [
+      500,
+      600
+    ],
+    "heldout_proton_field_MHz": 800,
+    "retrospective_not_prospective": "Original 800MHz data had already been inspected in prior azurin work; no new selection or hyperparameter choices from that test in this run, but this is NOT independent blind evidence.",
+    "source_T1_T2_unit": "seconds; R1/R2 = reciprocal with first-order standard-error propagation",
+    "global_tau_selection_from_training_only": true,
+    "global_Rex_grid_s_inv": [
+      0,
+      1,
+      2
+    ],
+    "global_ratio_locked_from_PDB": true,
+    "local_S2_and_optional_CSA_train_only": true,
+    "test_metric": "Median over residues of sum of three squared standardized residuals at 800MHz (R1,R2,heteronuclear NOE); 0 means perfect; nominal SE are not calibrated covariances",
+    "models": {
+      "temp289K": {
+        "RPY_CSA_FIXED_REX0": {
+          "tau_ns": 10,
+          "Rex": 0,
+          "median_total_z2": 1554.6194479810927,
+          "joint_2SE_count": 0
+        },
+        "RPY_CSA_VAR_REX0": {
+          "tau_ns": 10,
+          "Rex": 0,
+          "median_total_z2": 756.2813675325473,
+          "joint_2SE_count": 0,
+          "CSA_upper_bound_count": 67
+        },
+        "RPY_CSA_FIXED_REX_GLOBAL": {
+          "tau_ns": 10,
+          "Rex": 0,
+          "median_total_z2": 1554.6194479810927,
+          "joint_2SE_count": 0
+        },
+        "RPY_CSA_VAR_REX_GLOBAL": {
+          "tau_ns": 10,
+          "Rex": 1,
+          "median_total_z2": 652.64945316006,
+          "joint_2SE_count": 0,
+          "CSA_upper_bound_count": 98
+        }
+      },
+      "temp317K": {
+        "RPY_CSA_FIXED_REX0": {
+          "tau_ns": 6,
+          "Rex": 0,
+          "median_total_z2": 2454.5471553361967,
+          "joint_2SE_count": 0
+        },
+        "RPY_CSA_VAR_REX0": {
+          "tau_ns": 6,
+          "Rex": 0,
+          "median_total_z2": 1579.5530812081063,
+          "joint_2SE_count": 0,
+          "CSA_upper_bound_count": 50
+        },
+        "RPY_CSA_FIXED_REX_GLOBAL": {
+          "tau_ns": 6,
+          "Rex": 0,
+          "median_total_z2": 2454.5471553361967,
+          "joint_2SE_count": 0
+        },
+        "RPY_CSA_VAR_REX_GLOBAL": {
+          "tau_ns": 6,
+          "Rex": 0,
+          "median_total_z2": 1579.5530812081063,
+          "joint_2SE_count": 0,
+          "CSA_upper_bound_count": 50
+        }
+      }
+    },
+    "direct_FN1_inference": false
+  },
+  "hydrogen_direction_uncertainty": {
+    "NH_angles_reconstructed_from": "PDB1E5Y Cprev, N, Ca heavy atoms; H assumed ideal external bisector, all measured source residues happen to have geometric coverage; 123 reconstructible NH vectors total.",
+    "angles_deg": [
+      0,
+      5,
+      10
+    ],
+    "nonzero_angle_azimuth_deg": [
+      0,
+      90,
+      180,
+      270
+    ],
+    "amplitude_is_illustrative_sensitivity_not_experimental_error_distribution": true,
+    "selection": "Use already frozen fitted RPY_CSA_VAR_REX0 500/600MHz site params, never refit while perturbing hydrogen vector or optimize perturbation to match 800MHz test.",
+    "median_range_over_NH_scenarios_at_800": {
+      "series289K": {
+        "R1_s_inv": 0.02287486815656742,
+        "R2_s_inv": 0.3005663638681604,
+        "NOE": 0.0005396668160789209
+      },
+      "series317K": {
+        "R1_s_inv": 0.0266617329081561,
+        "R2_s_inv": 0.1624979978466068,
+        "NOE": 0.0008850607128569332
+      }
+    },
+    "conclusion": "Plausible illustrative 10-degree NH variations produce finite rates changes, but do not remedy many-large-SE experimental discrepancies; don't transform envelope into a statistical confidence interval."
+  },
+  "independent_science_gate": {
+    "physics_scope": "An isotropic/axial spectral density model using one common tau per temperature plus fixed independent RPY ratio, ideal NH and bounded local S2/CSA cannot account for all independent azurin relaxation observables.",
+    "absolute_result": "No residue in either 289K (116) or 317K (114) satisfies simultaneous 800MHz R1,R2,NOE within 2 reported SE, across all four preselected models.",
+    "identifiability_failure": "CSA reaches upper bound in 67/116 and 98/116 at 289K or 50/114 at 317K. This is consistent with poor parameter identification or model mismatch, not measured CSA values.",
+    "Rex_warning": "Selecting global Rex=1 s^-1 for one 289K variant from only training is a sensitivity to added model flexibility; no proof of microsecond-to-millisecond conformational exchange.",
+    "hydrodynamics_warning": "CA-bead RPY is an approximating geometric hydrodynamics model, not independent laboratory measurement or state-of-art HYDRONMR. True diffusion may have translation rotation coupling, hydration, hydrodynamic modeling error and departures from axiality.",
+    "geometry_warning": "PDB X-ray H positions are estimated, not observed; NH vector uncertainty assessed with finite angular grid.",
+    "data_warning": "NMR field 800 has been seen in earlier study and is used only for scoring in this run, so no new blind out-of-sample scientific claim.",
+    "no_FNII_pair_angle_or_population_identified": true,
+    "no_PSE4_rescoring_or_train_test_tuning": true,
+    "no_claim_P_equals_NP_or_materials": true,
+    "zero_rowan_paid_jobs": true,
+    "zero_rowan_credits": true,
+    "no_shadow_training": true
+  },
+  "next_action": "Independent hydrodynamic code such as HYDRONMR/GRPY with proper atomic bead shells and hydration and measured viscosity; obtain experimental cross-correlated rates or field-dependent exchange to constrain CSA and Rex, explicitly verify in independent proteins with new untouched field. Do not promote these models to Rowan FNII ensemble predictions."
+}

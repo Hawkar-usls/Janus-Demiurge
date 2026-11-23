@@ -1,0 +1,84 @@
+{
+  "artifact_uuid": "JANUS-WEDJAT-MUSEUM-IMAGE-ELIGIBILITY-AUDIT-2026-08-15-v0.7",
+  "version": "v0.7",
+  "timestamp_date": "2026-08-15",
+  "title": "Wedjat eye-first museum corpus image eligibility audit before primary geometry execution",
+  "observer": "Oleksandr Ahapov / Hawkar + JANUS",
+  "node_type": "additive_protocol_quality_audit",
+  "status": "PRIMARY_CORPUS_IMAGE_ELIGIBILITY_PARTIALLY_AUDITED_ONE_COMPOSITE_IMAGE_FLAGGED",
+  "parent_protocol": "data/JANUS-WEDJAT-MUSEUM-GEOMETRY-PROTOCOL-2026-08-15-v0.1.json",
+  "purpose": "Prevent a frozen object ID from being treated as a single isolated eye image when the museum's primary displayed image is a multi-object plate or otherwise unsuitable for direct whole-frame geometry.",
+  "audit_method": "Open each official Met object page first. Treat the museum object record as identity authority and the linked public-domain image as a separate measurement asset. No geometry is admitted merely because an object ID is in the frozen corpus.",
+  "confirmed_cases": [
+    {
+      "met_object_id": 555588,
+      "official_page": "https://www.metmuseum.org/art/collection/search/555588",
+      "period": "Late Old Kingdom-Early Middle Kingdom",
+      "official_date": "ca. 2150-1950 B.C.",
+      "primary_image_url": "https://collectionapi.metmuseum.org/api/collection/v1/iiif/555588/2232938/main-image",
+      "image_structure": "SINGLE_ISOLATED_WEDJAT_ON_PLAIN_BACKGROUND",
+      "whole_frame_direct_geometry_eligible": true,
+      "note": "Still requires exact source-byte SHA-256 sealing before primary measurement."
+    },
+    {
+      "met_object_id": 546821,
+      "official_page": "https://www.metmuseum.org/art/collection/search/546821",
+      "period": "Late Middle Kingdom",
+      "official_date": "ca. 1850-1700 B.C.",
+      "primary_image_url": "https://collectionapi.metmuseum.org/api/collection/v1/iiif/546821/1225458/main-image",
+      "image_structure": "MULTI_OBJECT_COMPOSITE_PLATE",
+      "whole_frame_direct_geometry_eligible": false,
+      "required_resolution": "LOCALIZE_AND_CROP_THE_SPECIFIC_22.1.128_WEDJAT_FROM_THE_SEALED_SOURCE_IMAGE_OR_FIND_AN_OFFICIAL_ISOLATED_VIEW_BEFORE_MEASUREMENT",
+      "protocol_risk": "Feeding the entire primary image into an eye-shape detector would measure a group of unrelated amulets and create a source-selection artifact."
+    },
+    {
+      "met_object_id": 547767,
+      "official_page": "https://www.metmuseum.org/art/collection/search/547767",
+      "period": "Ptolemaic Period",
+      "official_date": "332-30 B.C.",
+      "primary_image_url": "https://collectionapi.metmuseum.org/api/collection/v1/iiif/547767/1084242/main-image",
+      "image_structure": "SINGLE_ISOLATED_ORNATE_WEDJAT_ON_PLAIN_BACKGROUND",
+      "whole_frame_direct_geometry_eligible": true,
+      "note": "Ornamentation/material style must be recorded because it can alter edge-based geometry relative to simpler amulets. Exact source-byte SHA-256 sealing still required."
+    }
+  ],
+  "official_pages_verified_but_primary_image_bytes_not_newly_retrieved_in_this_audit": [
+    574178, 559002, 551391, 551482, 566845, 553504, 552491, 558320, 550998
+  ],
+  "important_protocol_correction": {
+    "old_unsafe_assumption": "One frozen museum object ID equals one directly measurable single-eye image.",
+    "replacement_rule": "OBJECT_IDENTITY and IMAGE_MEASUREMENT_ELIGIBILITY are separate gates.",
+    "eligibility_states": [
+      "SINGLE_ISOLATED_DIRECT",
+      "COMPOSITE_REQUIRES_TARGET_LOCALIZATION",
+      "MULTIVIEW_SELECT_PREDECLARED_VIEW",
+      "OBLIQUE_OR_DAMAGED_REQUIRES_EXCLUSION_OR_SPECIAL_RULE",
+      "UNVERIFIED"
+    ],
+    "crop_rule": "Cropping is allowed only after exact source bytes are sealed; crop coordinates and target-localization rationale must be recorded and cannot be tuned using dyadic or chronology outcomes."
+  },
+  "relation_to_eye_first_lane": {
+    "v0_4_spiral_canary": "Exploratory only and unchanged.",
+    "v0_5_orientation_model": "Orientation must remain unmirrored during eligibility review.",
+    "v0_6_full_eye_composition": "Modern standardized-glyph control only; does not change museum-image eligibility.",
+    "primary_priority": "Build a clean, provenance-sealed eye-object corpus before returning to fraction magnitudes."
+  },
+  "next_gate": {
+    "id": "WEDJAT_EYE_CANONICALIZATION_R2_IMAGE_RECEIPTS",
+    "required": [
+      "Retrieve exact official primary-image bytes for all frozen candidate object IDs where legally available.",
+      "SHA-256 seal each original image before crop or landmark scoring.",
+      "Assign one image-eligibility state without examining dyadic fit results.",
+      "For composite images, record immutable target bounding box after object identity localization.",
+      "Require enough single/localized eyes to satisfy the original minimum valid-object gate before any period trend is admitted."
+    ]
+  },
+  "highest_admissible_claim": "The frozen twelve-object list remains a candidate object corpus, not yet a twelve-image measurement corpus. At least one frozen Met object, 546821, is presented in its primary linked image as a multi-object plate, so direct whole-frame geometry would be invalid. The protocol therefore requires a separate image-eligibility gate and immutable post-seal target localization before primary eye measurements.",
+  "claim_firewall": [
+    "OBJECT_IDENTITY_IS_NOT_IMAGE_ELIGIBILITY",
+    "COMPOSITE_IMAGE_IS_NOT_SINGLE_EYE_SAMPLE",
+    "NO_CROP_TUNING_TO_DYADIC_OR_CHRONOLOGY_OUTCOMES",
+    "NO_PRIMARY_MUSEUM_GEOMETRY_CLAIM_BEFORE_EXACT_BYTE_RECEIPTS",
+    "NO_ANCIENT_BINARY_ASCII_OR_PYTHON_INTENT"
+  ]
+}

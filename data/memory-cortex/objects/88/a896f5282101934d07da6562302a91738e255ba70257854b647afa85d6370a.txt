@@ -1,0 +1,119 @@
+{
+  "schema": "janus.connection.six_state_benchmark.v1_1",
+  "benchmark_id": "JANUS-CONNECTION-SIX-STATE-BENCHMARK-2026-08-14-V1.1",
+  "execution_mode": "EXACT_ENUMERATION_FORMAL_RELATION_CORES_WITH_EXPLICIT_STATE_TRANSFORMS",
+  "target_profile": {
+    "REAL": 1.0,
+    "BLIND": 1.0,
+    "TEMPORAL_REWIRED": 0.0,
+    "MATCHED_NULL": 0.0,
+    "FRESHNESS_ONLY_SHUFFLE": 1.0,
+    "ALTERNATIVE_PREDECESSOR": 0.0
+  },
+  "benchmark_count": 3,
+  "negative_comparator_count": 1,
+  "benchmarks": [
+    {
+      "edge_id": "B1-ADAPTIVE-HISTORY-COPY",
+      "relation": "complete prior history -> adaptive candidate -> later witness hit",
+      "source_refs": [
+        {"path": "data/proofs/JANUS-SEQUENTIAL-ADAPTIVE-WITNESS-HARDENING-v0.6.json", "sha": "7e5d8d53ca6332e0689544f3989612d7fc4348ae"},
+        {"path": "data/proofs/JANUS-ANYTIME-VALID-WITNESS-HARDENING-v0.7.json", "sha": "b72891ff06178130c25e231ec699ce900c4642c4"}
+      ],
+      "frozen_model": "T1~Bernoulli(1/2); B1=0. REAL: T2=T1 and B2=T1. REWIRED/NULL: T2 independent fair while B2=T1. ALT: T2=T1 while B2=U independent fair. FRESHNESS: shuffle orthogonal bit only.",
+      "result": {
+        "raw_metric_name": "P(any_hit_by_trial_2)",
+        "raw": {"REAL": "1/1", "BLIND": "1/1", "TEMPORAL_REWIRED": "3/4", "MATCHED_NULL": "3/4", "FRESHNESS_ONLY_SHUFFLE": "1/1", "ALTERNATIVE_PREDECESSOR": "3/4"},
+        "raw_decimal": {"REAL": 1.0, "BLIND": 1.0, "TEMPORAL_REWIRED": 0.75, "MATCHED_NULL": 0.75, "FRESHNESS_ONLY_SHUFFLE": 1.0, "ALTERNATIVE_PREDECESSOR": 0.75},
+        "matched_null_baseline": 0.75,
+        "effect_real_minus_null": 0.25,
+        "normalized_relation_score": {"REAL": 1.0, "BLIND": 1.0, "TEMPORAL_REWIRED": 0.0, "MATCHED_NULL": 0.0, "FRESHNESS_ONLY_SHUFFLE": 1.0, "ALTERNATIVE_PREDECESSOR": 0.0},
+        "exact_state_count": {"REAL": 2, "BLIND": 2, "REWIRED_OR_NULL": 4, "FRESHNESS": 4, "ALT_PREDECESSOR": 4}
+      },
+      "classification": "PASS_RELATION_SPECIFIC_SIX_STATE_PROFILE"
+    },
+    {
+      "edge_id": "B2-PRETURN-ANCHOR-TARGET",
+      "relation": "PRE_RETURN freeze -> external anchor -> later target generation",
+      "source_refs": [{"path": "data/proofs/JANUS-CAUSAL-CONSISTENCY-WITNESS-PRIORITY-CAPSULE-v1.0.json", "sha": "c40191d2ec0dd3ce522e31f3f714da50df9c9206"}],
+      "frozen_model": "Exact three-phase minimal core. All six states are constructed explicitly; matched null is the complete 3! phase permutation set.",
+      "result": {
+        "raw_metric_name": "protocol_order_admissibility",
+        "state_construction": {
+          "REAL": ["PRE_RETURN_FREEZE", "EXTERNAL_APPEND_ONLY_ANCHOR", "TARGET_GENERATION"],
+          "BLIND": ["X0", "X1", "X2"],
+          "TEMPORAL_REWIRED": ["EXTERNAL_APPEND_ONLY_ANCHOR", "PRE_RETURN_FREEZE", "TARGET_GENERATION"],
+          "FRESHNESS_ONLY_SHUFFLE": {"phase_order": ["PRE_RETURN_FREEZE", "EXTERNAL_APPEND_ONLY_ANCHOR", "TARGET_GENERATION"], "freshness_tags_before": [0,1,2], "freshness_tags_after": [2,1,0], "freshness_is_orthogonal": true},
+          "ALTERNATIVE_PREDECESSOR": ["PRE_RETURN_FREEZE", "ALT_MATCHED_PREDECESSOR", "TARGET_GENERATION"],
+          "MATCHED_NULL": "all permutations of the same phase multiset"
+        },
+        "raw": {"REAL": "1/1", "BLIND": "1/1", "TEMPORAL_REWIRED": "0/1", "MATCHED_NULL": "1/6", "FRESHNESS_ONLY_SHUFFLE": "1/1", "ALTERNATIVE_PREDECESSOR": "0/1"},
+        "raw_decimal": {"REAL": 1.0, "BLIND": 1.0, "TEMPORAL_REWIRED": 0.0, "MATCHED_NULL": 0.16666666666666666, "FRESHNESS_ONLY_SHUFFLE": 1.0, "ALTERNATIVE_PREDECESSOR": 0.0},
+        "matched_null_permutations": 6,
+        "matched_null_valid": 1,
+        "matched_null_rate": 0.16666666666666666,
+        "effect_real_minus_null": 0.8333333333333334,
+        "normalized_relation_score": {"REAL": 1.0, "BLIND": 1.0, "TEMPORAL_REWIRED": 0.0, "MATCHED_NULL": 0.0, "FRESHNESS_ONLY_SHUFFLE": 1.0, "ALTERNATIVE_PREDECESSOR": 0.0}
+      },
+      "classification": "PASS_RELATION_SPECIFIC_SIX_STATE_PROFILE"
+    },
+    {
+      "edge_id": "B3-SIM3-COMMIT-BEFORE-REVEAL",
+      "relation": "router freeze -> external commitment -> public case reveal",
+      "source_refs": [{"path": "data/JANUS-SIM-3-EXTERNAL-WITNESS-GUEST-INVITATION-v1.0.json", "sha": "a51974457bc61884f2bc83ea7ba18fdfac7d3731"}],
+      "frozen_model": "Exact three-phase ceremony core. All six states are constructed explicitly; matched null is the complete 3! phase permutation set.",
+      "result": {
+        "raw_metric_name": "protocol_order_admissibility",
+        "state_construction": {
+          "REAL": ["ROUTER_FREEZE", "EXTERNAL_COMMITMENT", "PUBLIC_CASE_REVEAL"],
+          "BLIND": ["X0", "X1", "X2"],
+          "TEMPORAL_REWIRED": ["EXTERNAL_COMMITMENT", "ROUTER_FREEZE", "PUBLIC_CASE_REVEAL"],
+          "FRESHNESS_ONLY_SHUFFLE": {"phase_order": ["ROUTER_FREEZE", "EXTERNAL_COMMITMENT", "PUBLIC_CASE_REVEAL"], "freshness_tags_before": [0,1,2], "freshness_tags_after": [2,1,0], "freshness_is_orthogonal": true},
+          "ALTERNATIVE_PREDECESSOR": ["ROUTER_FREEZE", "ALT_MATCHED_PREDECESSOR", "PUBLIC_CASE_REVEAL"],
+          "MATCHED_NULL": "all permutations of the same phase multiset"
+        },
+        "raw": {"REAL": "1/1", "BLIND": "1/1", "TEMPORAL_REWIRED": "0/1", "MATCHED_NULL": "1/6", "FRESHNESS_ONLY_SHUFFLE": "1/1", "ALTERNATIVE_PREDECESSOR": "0/1"},
+        "raw_decimal": {"REAL": 1.0, "BLIND": 1.0, "TEMPORAL_REWIRED": 0.0, "MATCHED_NULL": 0.16666666666666666, "FRESHNESS_ONLY_SHUFFLE": 1.0, "ALTERNATIVE_PREDECESSOR": 0.0},
+        "matched_null_permutations": 6,
+        "matched_null_valid": 1,
+        "matched_null_rate": 0.16666666666666666,
+        "effect_real_minus_null": 0.8333333333333334,
+        "normalized_relation_score": {"REAL": 1.0, "BLIND": 1.0, "TEMPORAL_REWIRED": 0.0, "MATCHED_NULL": 0.0, "FRESHNESS_ONLY_SHUFFLE": 1.0, "ALTERNATIVE_PREDECESSOR": 0.0}
+      },
+      "classification": "PASS_RELATION_SPECIFIC_SIX_STATE_PROFILE"
+    },
+    {
+      "edge_id": "NC1-AUTHENTICITY-FRESHNESS-CURRENTNESS",
+      "relation": "authentic checkpoint + external freshness root -> current admissibility",
+      "role": "NEGATIVE_COMPARATOR_FOR_PREDECESSOR_SPECIFIC_GATE",
+      "source_refs": [{"path": "data/proofs/JANUS-TEMPORAL-CONTINUITY-ROLLBACK-REPLAY-HARDENING-v0.9.json", "sha": "6aeb342b9ceb91c05ab141d82dd15cfe0cbf96a2"}],
+      "frozen_model": "Same explicit three-phase machinery, but FRESHNESS_ONLY_SHUFFLE is relation-breaking because freshness is the mechanism. Expected outcome is reclassification, not predecessor-specific PASS.",
+      "result": {
+        "raw_metric_name": "protocol_order_admissibility",
+        "state_construction": {
+          "REAL": ["AUTHENTIC_CHECKPOINT", "EXTERNAL_FRESHNESS_ROOT", "CURRENT_ADMISSIBILITY"],
+          "BLIND": ["X0", "X1", "X2"],
+          "TEMPORAL_REWIRED": ["EXTERNAL_FRESHNESS_ROOT", "AUTHENTIC_CHECKPOINT", "CURRENT_ADMISSIBILITY"],
+          "FRESHNESS_ONLY_SHUFFLE": {"phase_order": ["AUTHENTIC_CHECKPOINT", "EXTERNAL_FRESHNESS_ROOT", "CURRENT_ADMISSIBILITY"], "freshness_tags_before": [0,1,2], "freshness_tags_after": [2,1,0], "freshness_is_orthogonal": false},
+          "ALTERNATIVE_PREDECESSOR": ["AUTHENTIC_CHECKPOINT", "ALT_MATCHED_PREDECESSOR", "CURRENT_ADMISSIBILITY"],
+          "MATCHED_NULL": "all permutations of the same phase multiset"
+        },
+        "raw": {"REAL": "1/1", "BLIND": "1/1", "TEMPORAL_REWIRED": "0/1", "MATCHED_NULL": "1/6", "FRESHNESS_ONLY_SHUFFLE": "0/1", "ALTERNATIVE_PREDECESSOR": "0/1"},
+        "raw_decimal": {"REAL": 1.0, "BLIND": 1.0, "TEMPORAL_REWIRED": 0.0, "MATCHED_NULL": 0.16666666666666666, "FRESHNESS_ONLY_SHUFFLE": 0.0, "ALTERNATIVE_PREDECESSOR": 0.0},
+        "matched_null_permutations": 6,
+        "matched_null_valid": 1,
+        "matched_null_rate": 0.16666666666666666,
+        "effect_real_minus_null": 0.8333333333333334,
+        "normalized_relation_score": {"REAL": 1.0, "BLIND": 1.0, "TEMPORAL_REWIRED": 0.0, "MATCHED_NULL": 0.0, "FRESHNESS_ONLY_SHUFFLE": 0.0, "ALTERNATIVE_PREDECESSOR": 0.0}
+      },
+      "classification": "RECLASSIFY_FRESHNESS_MEDIATED_NOT_PREDECESSOR_SPECIFIC"
+    }
+  ],
+  "summary": {
+    "candidate_pass_count": 3,
+    "candidate_total": 3,
+    "negative_comparator_expected_reclassification": "RECLASSIFY_FRESHNESS_MEDIATED_NOT_PREDECESSOR_SPECIFIC",
+    "claim_ceiling": "Executed exact benchmark of frozen formal relation cores with explicit six-state transformations. This is not yet a full raw-JSON field-permutation benchmark, corpus-scale semantic null, external replication, causal proof, or scientific novelty claim."
+  },
+  "integrity": {"canonical_sha256_pre_integrity": "084a38a67a5bd8b7bed2e977fd29f54caecc60ca997c8a5b64b2fecc3099054e", "executor_source_sha256": "cb13a24d5634b7fe243c0ea7e52d107861c3891007c8e926428f7b6f809ee8c8", "pre_persistence_local_result_sha256": "8a2dfcc022d2e95d3f5c5554ce7adfc4456969e93d51b10f30c0f3298ff95861"}
+}

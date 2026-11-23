@@ -1,0 +1,69 @@
+{
+  "artifact": "JANUS-NOHAND-GATE-TERMINAL-v1.4.2",
+  "version": "1.4.2",
+  "status": "CANDIDATE_VERIFIED_LIVE_NAS_NOT_YET_PROVEN",
+  "date": "2026-08-17",
+  "purpose": "Prevent Docker restart loops by making Terminal bootstrap fail-closed but process-resident while preserving Gate-Terminal NOHAND semantics.",
+  "live_observation_basis": {
+    "gate_v1_4_live_observed": true,
+    "terminal_bootloop_observed": true,
+    "observed_errors": [
+      "PRESERVATION_TOPLEVEL_MISSING:janus.db-wal",
+      "PRESERVATION_TOPLEVEL_REBOUND:janus.db-wal"
+    ],
+    "interpretation": "old/incorrect Terminal bootstrap exits before steady-state loop; SQLite WAL is ephemeral and must not be a persistent preservation anchor."
+  },
+  "terminal_candidate": {
+    "filename": "janus_habitat_terminal.py",
+    "version": "1.4.2-NOHAND-GUARDIAN-BEACON-DEMIHEAD-GATE-BOOTSAFE",
+    "sha256": "c7ee6233c698ccb5541b7ab1d914f982a6abc33e7dbcb21796cbbfc657864e49",
+    "safety_contract_sha256": "2b489782ff90f967c406fa3bb918a3bac5c208ca0d047367821a56e9b9c64a4d",
+    "size_bytes": 96999,
+    "lines": 2241,
+    "demihead_namespace": "habitat/nohand/v1_4_2",
+    "changes": [
+      "SQLite WAL/SHM/journal top-level sidecars excluded from persistent baseline and tolerated in legacy baselines",
+      "bootstrap initialization wrapped in retrying FAIL_CLOSED_HOLD loop",
+      "bootstrap faults no longer terminate process or trigger Docker restart loop",
+      "request processing remains disabled until full guardian/predictor/Git/DemiHead/Gate stack initializes",
+      "retry DemiHead request IDs remain forecast-receipt-bound and create-only"
+    ]
+  },
+  "gate_pin": {
+    "version": "1.4-READONLY-GUARDIAN-HANDOFF",
+    "sha256": "344eba1409e6bcab807426c0fe2034ad7926094d4d947d154d8699b945017982",
+    "safety_contract_sha256": "109188160c50fdab5c0cdfd07ea24cd85d671476af40de3f5983145145327e33"
+  },
+  "demihead": {
+    "branch": "feature/nohand-habitat-peer-v1",
+    "wrapper": "tools/nohand_habitat_peer_v1_4_2.py",
+    "wrapper_commit": "bd9076f11dbc3322c561aabc8d76f3059e9904f4",
+    "workflow": ".github/workflows/nohand-habitat-peer-v1-4-2.yml",
+    "workflow_commit": "abf8f6ab05be3c8846b46650d0f8633dfbcd7dc9",
+    "workflow_run": 32022988709,
+    "workflow_conclusion": "success",
+    "pr": 28,
+    "merge_permission": false
+  },
+  "verification": {
+    "py_compile": "PASS",
+    "static_destructive_surface_scan": "PASS",
+    "legacy_baseline_missing_wal": "PASS",
+    "legacy_baseline_rebound_wal": "PASS",
+    "ordinary_persistent_path_protection_preserved": "PASS",
+    "demihead_v1_4_2_ci": "PASS"
+  },
+  "claim_boundaries": [
+    "CANDIDATE_VERIFIED != LIVE_NAS_DEPLOYED",
+    "FAIL_CLOSED_HOLD != HEALTHY_RUNTIME",
+    "CI_SUCCESS != LIVE_NAS_GATE_TERMINAL_EXCHANGE",
+    "SHA256_RECEIPT != DIGITAL_SIGNATURE"
+  ],
+  "next_gate": [
+    "stop janus_habitat_terminal restart loop",
+    "replace the actual bind-mounted /janus/services/janus_habitat_terminal.py source with exact v1.4.2 candidate",
+    "start terminal once",
+    "verify BOOTSTRAP_PASS or stable BOOT_HOLD without container restart",
+    "then verify live Gate-Terminal GATE_FIND handoff"
+  ]
+}

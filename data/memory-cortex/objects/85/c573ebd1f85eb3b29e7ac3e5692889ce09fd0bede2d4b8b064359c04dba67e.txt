@@ -1,0 +1,46 @@
+{
+  "artifact_id": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v3.3",
+  "supersedes": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v3.2",
+  "lineage_alias": "JANUS-113",
+  "title": "PERCEPTION DETERMINES REALITY",
+  "subtitle": "Portable Provenance Transport and Automatic Authority Downgrade Extension",
+  "version": "3.3",
+  "status": "technical_specification_candidate_not_runtime_implementation",
+  "created_at_local": "2026-08-10T03:07:00+03:00",
+  "new_primitives": {
+    "PROVENANCE_ENVELOPE_VERSION": "Versioned portable provenance format identifier.",
+    "CLAIM_ID": "Stable identity for the signed/attested semantic claim.",
+    "CLAIM_DIGEST": "Digest of canonical claim representation.",
+    "CLAIM_CANONICALIZATION_PROFILE": "Exact profile used before calculating CLAIM_DIGEST.",
+    "PORTABLE_PROVENANCE_ENVELOPE": "Machine-readable binding of claim, host lineage, output class, authority context and attestation.",
+    "PORTABILITY_STATUS": "VERIFIED_EXACT|VERIFIED_CLAIM|VERIFIED_DERIVATIVE|UNVERIFIED|STALE_OR_REVOKED",
+    "RECEIPT_LOCATOR": "Portable identifier used to retrieve a receipt; never sufficient without revalidation.",
+    "DETACHED_CONTENT_STATUS": "Mandatory downgrade applied when verified content is separated from its provenance binding."
+  },
+  "transport_rule": "Authority and provenance are not inherited from visual appearance. Every receiving context revalidates the portable envelope under its accepted verifier profile and current trust roots.",
+  "portable_pipeline": "SOURCE_COMMIT -> CANONICAL_CLAIM -> CLAIM_DIGEST -> PROVENANCE_ENVELOPE -> TRANSPORT -> RECEIVER_REVALIDATION -> TRUSTED_PRESENTATION",
+  "carrier_policy": {
+    "inline_machine_readable_bundle": "REVERIFY",
+    "sidecar_provenance_file": "REVERIFY_AND_BIND_TO_CONTENT",
+    "embedded_metadata": "REVERIFY_DO_NOT_TRUST_CONTAINER_LABEL",
+    "plain_text_copy": "UNVERIFIED",
+    "screenshot_without_receipt": "UNVERIFIED_DISPLAY_EVIDENCE",
+    "screenshot_with_locator": "REVERIFY_UNDERLYING_CLAIM_SCREENSHOT_NOT_WHOLE_IMAGE_AUTHENTICATION"
+  },
+  "authority_rule": "A portable provenance envelope may prove origin and original authority context, but current executable authority must also pass current epoch, revocation, scope and effect-gate checks.",
+  "anti_spoof_rule": "A receiving UI may display VERIFIED only after successful local verification; imported text cannot carry a trusted badge by styling or wording.",
+  "verification_requirements": [
+    "copy authoritative text without receipt and confirm downgrade to UNVERIFIED",
+    "transport exact claim plus envelope and reverify digest",
+    "transport file plus sidecar and reject mismatched content digest",
+    "show screenshot without receipt remains display evidence only",
+    "resolve locator from screenshot and verify only the underlying canonical claim",
+    "reject stale or revoked authority even when origin receipt was valid"
+  ],
+  "canonical_lines": [
+    "Portable provenance is a reverifiable relation, not a visual decoration.",
+    "Detached content loses verified authority until the relation is reconstructed and checked.",
+    "A receipt may travel; trust is recomputed at the destination."
+  ],
+  "next_gate": "JANUS_113_V3_3_TRANSFORMATION_CANONICALIZATION_EXTENSION"
+}

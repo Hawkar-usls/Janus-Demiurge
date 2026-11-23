@@ -1,0 +1,97 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-R3C-1A-JS-LITERAL-SUBSET-PARSER-CORRECTION-SPEC-2026-08-14-v0.2",
+  "timestamp": "2026-08-14T15:48:00+03:00",
+  "version": "v0.2",
+  "title": "Frozen non-evaluating JS literal subset parser: trailing commas plus Unicode code-point escapes",
+  "observer": "Oleksandr Ahapov / Hawkar + JANUS",
+  "node_type": "parser_correction_spec",
+  "status": "FROZEN_BEFORE_V0_2_EXECUTION",
+  "parent_v0_1": {
+    "spec": "data/JANUS-LINEAR-A-R3C-1A-JS-TRAILING-COMMA-PARSER-CORRECTION-SPEC-2026-08-14-v0.1.json",
+    "validation": "data/JANUS-LINEAR-A-R3C-1A-JS-TRAILING-COMMA-PARSER-CORRECTION-VALIDATION-RESULT-2026-08-14-v0.1.json",
+    "status": "PARSER_CORRECTION_NOT_ADMITTED",
+    "reason": "After 296 historical trailing-comma removals, strict JSON localized a second source-valid JavaScript syntax feature: Unicode code-point escape syntax."
+  },
+  "second_break_evidence": {
+    "diagnostic": "data/JANUS-LINEAR-A-R3C-1A-POST-TRAILING-COMMA-DIAGNOSTIC-RESULT-2026-08-14-v0.1.json",
+    "historical_error": "Invalid \\uXXXX escape",
+    "exact_error_literal": "\\u{1076b}",
+    "document": "KNZg57b",
+    "codepoint": "U+1076B"
+  },
+  "corpus_wide_inventory": {
+    "path": "data/JANUS-LINEAR-A-R3C-1A-JS-CODEPOINT-ESCAPE-INVENTORY-RESULT-2026-08-14-v0.1.json",
+    "historical": {
+      "active_escape_count": 1,
+      "valid_scalar_count": 1,
+      "invalid_count": 0,
+      "literal_multiset": {"\\u{1076b}": 1},
+      "document_multiset": {"KNZg57b": 1}
+    },
+    "current": {
+      "active_escape_count": 1,
+      "valid_scalar_count": 1,
+      "invalid_count": 0,
+      "literal_multiset": {"\\u{1076b}": 1},
+      "document_multiset": {"KNZg57b": 1}
+    },
+    "same_literal_multiset": true,
+    "same_document_multiset": true
+  },
+  "frozen_transform": {
+    "id": "JANUS-JS-LITERAL-SUBSET-v0.2",
+    "allowed_rule_1": {
+      "name": "TRAILING_COMMA_OUTSIDE_DOUBLE_QUOTED_STRINGS",
+      "semantics": "Omit a comma only when outside a double-quoted string and the next non-whitespace source character is ] or }.",
+      "inherited_from_v0_1": true
+    },
+    "allowed_rule_2": {
+      "name": "ACTIVE_JS_UNICODE_CODEPOINT_ESCAPE_INSIDE_DOUBLE_QUOTED_STRING",
+      "grammar": "\\u{HEX} where HEX has 1..6 hexadecimal digits",
+      "admission": "Code point must be <= U+10FFFF and must not be in U+D800..U+DFFF.",
+      "parse_view_semantics": "Replace the active JavaScript code-point escape with the corresponding literal Unicode scalar in the parse view. The original source string and bytes remain untouched and are represented by the transformation receipt.",
+      "escaped_backslash_rule": "A source sequence with an escaped/doubled backslash is not an active code-point escape and must not be transformed."
+    },
+    "everything_else": "STRICT_JSON_OR_FAIL_CLOSED",
+    "javascript_execution": false,
+    "eval": false,
+    "source_bytes_mutated": false
+  },
+  "required_transform_receipt": {
+    "original_file_sha256": true,
+    "original_file_bytes": true,
+    "trailing_comma_removal_count": true,
+    "trailing_comma_original_positions": true,
+    "codepoint_escape_replacement_count": true,
+    "codepoint_escape_original_positions": true,
+    "codepoint_escape_source_literal": true,
+    "codepoint_escape_result_codepoint": true,
+    "normalized_payload_sha256": true,
+    "strict_json_parse_success": true
+  },
+  "validation_canaries": [
+    "Trailing commas in arrays and objects parse after omission.",
+    "Comma-before-bracket text inside a quoted string is unchanged.",
+    "Active \\u{1076b} becomes exactly Unicode scalar U+1076B in the parse view.",
+    "A doubled-backslash literal representing text \\u{1076b} remains textual rather than becoming U+1076B.",
+    "Invalid/out-of-range/surrogate code-point escapes remain unnormalized and fail closed.",
+    "An unsupported JavaScript identifier such as undefined remains unsupported and fails strict JSON.",
+    "Historical and current frozen lineara sources use the same implementation."
+  ],
+  "anti_overfit": {
+    "document_specific_KNZg57b_patch_forbidden": true,
+    "literal_specific_1076b_only_patch_forbidden": true,
+    "general_JavaScript_execution_forbidden": true,
+    "additional_JS_syntax_features_without_new_diagnostic_and_freeze": false,
+    "Briakos_target_metrics_used_to_define_parser_rules": false
+  },
+  "claim_ceiling": {
+    "v0_2_rule_frozen": true,
+    "v0_2_parser_validated": false,
+    "Briakos_metrics_reproduced": false,
+    "R3B_effect": "NONE",
+    "independent_transcription_replication": false,
+    "new_anchor": false,
+    "decipherment": false
+  }
+}

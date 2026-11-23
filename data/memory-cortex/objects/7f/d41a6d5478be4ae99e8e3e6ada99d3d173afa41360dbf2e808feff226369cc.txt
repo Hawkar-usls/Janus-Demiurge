@@ -1,0 +1,115 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-R3D-PETROLITO-TEI-EPIDOC-RECOVERY-PROTOCOL-2026-08-14-v0.1",
+  "timestamp": "2026-08-14T18:58:00+03:00",
+  "version": "v0.1",
+  "node_type": "historical_digital_corpus_recovery_protocol",
+  "status": "FROZEN_BEFORE_BYTE_RECOVERY",
+  "candidate": "data/JANUS-LINEAR-A-R3D-PETROLITO-TEI-EPIDOC-SOURCE-RECOVERY-CANDIDATE-2026-08-14-v0.1.json",
+  "lane_id": "R3D_HISTORICAL_TEI_EPIDOC_DIGITIZATION_ROBUSTNESS",
+  "recovery_sources_in_priority_order": [
+    {
+      "route": "AUTHOR_OR_INSTITUTION_ORIGINAL_ARCHIVE",
+      "priority": 1,
+      "examples": ["original XML corpus directory", "original corpus archive", "project backup", "institutional data deposit"]
+    },
+    {
+      "route": "WEB_ARCHIVE_BYTE_REPLAY",
+      "priority": 2,
+      "examples": ["Internet Archive CDX/WARC replay", "institutional web archive", "Memento-compatible archive"]
+    },
+    {
+      "route": "VERIFIED_MIRROR_WITH_LINEAGE_PROOF",
+      "priority": 3,
+      "examples": ["author/coauthor mirror", "repository fork containing original files with verifiable unchanged file identities"]
+    }
+  ],
+  "receipt_before_content_rule": {
+    "required": true,
+    "forbid_content_guided_file_selection": true,
+    "forbid_search_for_known_JANUS_candidates_before_receipt": true,
+    "forbid_semantic_or_role_scoring_before_receipt": true
+  },
+  "minimum_source_receipt": {
+    "required_fields": [
+      "acquisition_route",
+      "acquisition_timestamp",
+      "source_or_snapshot_url",
+      "historical_snapshot_timestamp_if_applicable",
+      "container_or_file_name",
+      "sha256",
+      "bytes",
+      "mime_type",
+      "encoding_or_binary_container",
+      "license_or_access_basis",
+      "lineage_evidence_to_Petrolito_et_al_2015"
+    ],
+    "archive_container_rule": "Hash original archive/container before extraction; then hash every extracted original file separately.",
+    "web_archive_rule": "Preserve replay URL and original URL separately and record archive timestamp; do not treat HTML wrapper bytes as original XML bytes.",
+    "duplicate_rule": "Preserve duplicate filenames/content identities in an explicit ledger; never silently overwrite."
+  },
+  "pre_adapter_gates": [
+    {
+      "id": "R3D_1_SOURCE_IDENTITY",
+      "pass": "Recovered bytes are mechanically tied to the 2015 Digital Corpus lineage.",
+      "fail": "Source identity ambiguous or only bibliographic metadata exists."
+    },
+    {
+      "id": "R3D_2_XML_INVENTORY",
+      "pass": "Complete recovered file inventory is sealed before inscription-content analysis.",
+      "outputs": ["file count", "XML/non-XML count", "SHA-256 ledger", "byte lengths", "duplicate/collision ledger"]
+    },
+    {
+      "id": "R3D_3_XML_WELL_FORMEDNESS",
+      "pass": "Each admitted XML file is parsed as XML without source mutation or execution of external code.",
+      "report": ["parse pass/fail", "root element", "namespace URIs", "DOCTYPE/external entity presence", "encoding declaration"]
+    },
+    {
+      "id": "R3D_4_EPIDOC_CAPABILITY_INVENTORY",
+      "purpose": "Inventory actual source-native structure before freezing selectors.",
+      "inventory_only": true,
+      "examples": ["TEI root", "teiHeader", "div type=edition", "ab", "w", "g", "lb", "cb", "glyph/charDecl", "surface/facsimile if present"],
+      "selector_freeze_after_inventory": true
+    },
+    {
+      "id": "R3D_5_SOURCE_SPECIFIC_ADAPTER_FREEZE",
+      "rule": "Freeze selectors and source-to-IR mappings from mechanically observed schema before scoring or comparing candidate words."
+    },
+    {
+      "id": "R3D_6_ADAPTER_VALIDATION_POOL",
+      "rule": "Select validation documents by deterministic identity-only hashing before adapter output inspection; remaining overlap remains holdout where possible."
+    }
+  ],
+  "XML_security_policy": {
+    "DTD_network_fetch": false,
+    "external_entity_resolution": false,
+    "XInclude_network_fetch": false,
+    "JavaScript_execution": false,
+    "XSLT_execution_before_source_receipt_and_schema_inventory": false,
+    "source_bytes_mutated": false
+  },
+  "provenance_ceiling": {
+    "fixed_classification": "L1_INDEPENDENT_DIGITIZATION_SHARED_TRANSCRIPTION_WITH_GORILA_EDITORIAL_CHECK",
+    "may_auto_promote_to_L2_from_format_difference": false,
+    "may_auto_promote_to_L3_from_manual_GORILA_check": false,
+    "R3B_replication_credit": false
+  },
+  "allowed_future_results": [
+    "BLOCKED_BYTES_NOT_RECOVERED",
+    "BLOCKED_SOURCE_IDENTITY_AMBIGUOUS",
+    "RECOVERED_SOURCE_IDENTITY_ADMITTED_XML_INVENTORY_PENDING",
+    "RECOVERED_XML_SCHEMA_INVENTORIED_ADAPTER_FREEZE_PENDING",
+    "R3D_ADAPTER_TECHNICALLY_ADMITTED_L1_ONLY",
+    "R3D_TECHNICAL_ROBUSTNESS_NEGATIVE",
+    "R3D_TECHNICAL_ROBUSTNESS_COMPATIBLE"
+  ],
+  "claim_ceiling": {
+    "protocol_frozen": true,
+    "bytes_recovered": false,
+    "adapter_executed": false,
+    "independent_transcription_replication": false,
+    "language_claim": false,
+    "R3B_effect": "NONE",
+    "new_anchor": false,
+    "decipherment": false
+  }
+}

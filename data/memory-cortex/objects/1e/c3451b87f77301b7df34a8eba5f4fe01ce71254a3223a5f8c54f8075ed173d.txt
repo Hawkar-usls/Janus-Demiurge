@@ -1,0 +1,359 @@
+{
+  "schema_id": "janus.special_event_ledger.v1",
+  "record_id": "JANUS-SPECIAL-EVENT-LEDGER-2026-08-20-v1.0",
+  "created_at": "2026-08-20T23:38:00+03:00",
+  "registry_repository": "Hawkar-usls/janus-meta-registry",
+  "registry_base_main": "6ad1f184afd834ece64f66c64d5ffeffc8ea394b",
+  "scope": {
+    "domain": "JANUS Habitat / Nexus / launch-gate transitions",
+    "backfill_window": "2026-08-17..2026-08-20",
+    "backfilled_previous_events": true,
+    "purpose": "Preserve semantically important state transitions with exact Git evidence so later reasoning does not reconstruct history from narrative memory."
+  },
+  "recording_policy": {
+    "record_when_any": [
+      "A hard launch gate changes state.",
+      "A current-main compatibility witness is merged or superseded.",
+      "A launch-blocking issue is administratively closed/reopened in a way that could be confused with semantic PASS.",
+      "A canonical runtime/evidence tool is introduced, replaced, or materially hardened.",
+      "A falsification or first-break changes the next admissible gate.",
+      "A privacy, authority, or claim ceiling changes materially."
+    ],
+    "do_not_record_as_special_by_default": [
+      "Routine CI queue movement with no semantic outcome.",
+      "Bot/site refresh commits with no project-state meaning.",
+      "Narrative claims not bound to an exact repository/PR/issue state."
+    ],
+    "truth_rules": [
+      "ADMINISTRATIVE_CLOSED != EMPIRICAL_PASS",
+      "CI_GREEN != LIVE_ENVIRONMENT_PROOF",
+      "OLD_PASS != NEW_SHA_PASS",
+      "REFERENCE_PASS != LIVE_PASS",
+      "TOOLING_READY != LIVE_WITNESS_OBTAINED",
+      "NO_PASS_INHERITANCE_ACROSS_CHANGED_SHA"
+    ],
+    "future_append_rule": "Create a new versioned ledger/addendum or append on a dedicated branch from exact current registry main; preserve old event IDs and never silently rewrite prior event meaning."
+  },
+  "events": [
+    {
+      "event_id": "JSE-2026-08-17-001",
+      "event_time": "2026-08-17",
+      "backfilled": true,
+      "event_type": "SCOPED_GATE_PASS",
+      "subject": "Genesis #167 controlled process-death handoff integration",
+      "state_before": "G8/G9/G11 component evidence existed separately",
+      "state_after": "G8_SESSION_DROP_RECOVERY=PASS; G9_HANDOFF_WITHOUT_HIDDEN_SESSION_CONTEXT=PASS; G11_EXACTLY_ONCE_COMPLETION=PASS in CONTROLLED_CROSS_PROCESS_SINGLE_HOST_SQLITE scope",
+      "evidence": {
+        "repository": "Hawkar-usls/Janus_Genesis",
+        "pull_request": 167,
+        "exact_head": "6b44868bc8d1779583b636438bb7f0c2901b9ccf",
+        "swarm_fencing_source": "Hawkar-usls/janus-distributed-ai-swarm#6@2b72afe83dfb7318858a103657648bbc668ee6c3",
+        "acceptance_issue": 162
+      },
+      "meaning": "Established one bounded cross-process witness; did not close #162 or prove cross-host/global exactly-once.",
+      "claim_ceiling": [
+        "FULL_ISSUE_162_ACCEPTANCE=FALSE",
+        "REAL_OWNER_44_SOURCE_REPLAY=FALSE",
+        "RESIDENT_REAL_MODEL_CALL_INCLUDED=FALSE",
+        "FEDERATION_FINAL_VIEW_INCLUDED=FALSE"
+      ],
+      "status": "ESTABLISHED_SCOPED_PASS"
+    },
+    {
+      "event_id": "JSE-2026-08-20-002",
+      "event_time": "2026-08-20T17:21:28Z",
+      "backfilled": true,
+      "event_type": "CURRENT_MAIN_RECONCILIATION_MERGED",
+      "subject": "Genesis #181 reconciled G8/G9/G11 replay",
+      "state_before": "Historical #167 PASS was not safely reusable on current Genesis main",
+      "state_after": "Current-main compatible rehydration of the exact #167 executable dependency closure merged",
+      "evidence": {
+        "repository": "Hawkar-usls/Janus_Genesis",
+        "pull_request": 181,
+        "exact_head": "acddea9db1e28d63716e07f1a4aebb354fcd8258",
+        "main_after_merge": "5f1a8acb1327d0cda881ec76cf604695c38864cf"
+      },
+      "meaning": "Restored a current-main witness for the scoped G8/G9/G11 result without rewriting historical producer heads.",
+      "claim_ceiling": [
+        "FULL_ISSUE_162_ACCEPTANCE=FALSE",
+        "REAL_44_OWNER_REPLAY_REQUIRED",
+        "RESIDENT_CONTINUITY_REQUIRED",
+        "HANDOFF_RELIABILITY_164_REQUIRED"
+      ],
+      "status": "MERGED_COMPATIBILITY_WITNESS"
+    },
+    {
+      "event_id": "JSE-2026-08-20-003",
+      "event_time": "2026-08-20T17:25:19Z",
+      "backfilled": true,
+      "event_type": "CURRENT_MAIN_FENCING_WITNESS_MERGED",
+      "subject": "Swarm #8 lease/recovery/fencing replay",
+      "state_before": "Exact lease-fencing producer #6 remained a historical stacked head",
+      "state_after": "Exact #6 fencing head became a parent of current Swarm main through #8",
+      "evidence": {
+        "repository": "Hawkar-usls/janus-distributed-ai-swarm",
+        "pull_request": 8,
+        "historical_fencing_head": "2b72afe83dfb7318858a103657648bbc668ee6c3",
+        "main_after_merge": "4b19712d7b86d5d7f04ab4c67721784fbc89267b"
+      },
+      "meaning": "A current-main lease/recovery/fencing compatibility witness now exists; historical #6 remains preserved.",
+      "claim_ceiling": [
+        "LEASE_PRIMITIVE_OR_COMPATIBILITY_PASS != FULL_162_PASS",
+        "DISTRIBUTED_EXACTLY_ONCE_NOT_GLOBALLY_ESTABLISHED"
+      ],
+      "status": "MERGED_CURRENT_MAIN_WITNESS"
+    },
+    {
+      "event_id": "JSE-2026-08-20-004",
+      "event_time": "2026-08-20T17:34:41Z",
+      "backfilled": true,
+      "event_type": "FAIL_CLOSED_PREREGISTRATION_MERGED",
+      "subject": "Genesis #182 handoff reliability preregistration",
+      "state_before": "#164 live reliability requirements existed as roadmap/issue text",
+      "state_after": "HR1-HR10 and required failure vectors were machine-preregistered with live admission forced to HOLD in GitHub CI",
+      "evidence": {
+        "repository": "Hawkar-usls/Janus_Genesis",
+        "pull_request": 182,
+        "exact_head": "521dfd5e70daaf1254a3ed789c1a91987e9313e1",
+        "main_after_merge": "4f69f56d206fc000b1eb60241a678272efa1694d",
+        "implementation_issue": 164
+      },
+      "meaning": "Made the live receiver gate deterministic and fail-closed before implementation.",
+      "claim_ceiling": [
+        "LIVE_RECEIVER_BOUND=FALSE",
+        "HR1_HR10_LIVE_PASS=FALSE",
+        "GITHUB_CI != LIVE_NAS"
+      ],
+      "status": "MERGED_PREREGISTRATION"
+    },
+    {
+      "event_id": "JSE-2026-08-20-005",
+      "event_time": "2026-08-20T19:00:23Z",
+      "backfilled": true,
+      "event_type": "REFERENCE_RELIABILITY_CORE_MERGED",
+      "subject": "Genesis #183 durable handoff reliability sidecar",
+      "state_before": "Failure vectors were preregistered but reference implementation/falsification core was not merged",
+      "state_after": "Fresh-process nine-vector reference reliability gauntlet and durable sidecar merged",
+      "evidence": {
+        "repository": "Hawkar-usls/Janus_Genesis",
+        "pull_request": 183,
+        "exact_head": "219be39c995ebe3ec2abb8a7fe587aa53beb392f",
+        "main_after_merge": "364a98e64f3bb207e671b9b6bbd2f175040dee37",
+        "evidence_kind": "REFERENCE_FRESH_PROCESS_FAILURE_INJECTION_NOT_LIVE"
+      },
+      "meaning": "Reference semantics for receipts, dedupe/conflict retention, durable queue, SQLite/JSONL recovery, process death, and exactly-once were established.",
+      "claim_ceiling": [
+        "REFERENCE_PASS != LIVE_PASS",
+        "LIVE_RECEIVER_SOURCE_BINDING_REQUIRED",
+        "PORT_8008_OWNER_ROUTE_REQUIRED",
+        "ISSUE_164_PASS=FALSE"
+      ],
+      "status": "MERGED_REFERENCE_PASS"
+    },
+    {
+      "event_id": "JSE-2026-08-20-006",
+      "event_time": null,
+      "event_order_hint": "after #183 merge and before/while #185 live-identity work",
+      "backfilled": true,
+      "event_type": "ADMINISTRATIVE_STATE_CORRECTION",
+      "subject": "Genesis issue #164 closed/completed anomaly -> reopened",
+      "state_before": "Issue had been administratively closed/completed despite explicit no-live-PASS boundary",
+      "state_after": "Issue is OPEN with state_reason=reopened",
+      "evidence": {
+        "repository": "Hawkar-usls/Janus_Genesis",
+        "issue": 164,
+        "current_state": "open",
+        "current_state_reason": "reopened",
+        "reopen_comment_id": 5360411684
+      },
+      "meaning": "Administrative closure is explicitly not treated as launch evidence; live HR1-HR10 remain required.",
+      "provenance_note": "Current connector evidence confirms the reopened state and reopen rationale; exact prior close timestamp is not frozen in this ledger.",
+      "claim_ceiling": [
+        "ADMINISTRATIVE_CLOSED != EMPIRICAL_PASS",
+        "ISSUE_164_PASS=FALSE_UNTIL_LIVE_GATES"
+      ],
+      "status": "CORRECTED_TO_FAIL_CLOSED_OPEN"
+    },
+    {
+      "event_id": "JSE-2026-08-20-007",
+      "event_time": "2026-08-20T19:11:08Z",
+      "backfilled": true,
+      "event_type": "GOVERNANCE_RULE_MERGED",
+      "subject": "Genesis #184 AURA advisory escalation",
+      "state_before": "No explicit machine rule required AURA consultation after deterministic evidence exhaustion",
+      "state_after": "AURA advisory escalation rule merged, explicitly unable to turn HOLD into PASS or grant authority",
+      "evidence": {
+        "repository": "Hawkar-usls/Janus_Genesis",
+        "pull_request": 184,
+        "exact_head": "dc79d128b92b3286159f6ab7cc110a75088c1d93",
+        "main_after_merge": "b42397428883b3414d14923ecfc33d2ae2267417"
+      },
+      "meaning": "Added reflective escalation without changing evidence precedence or authority.",
+      "claim_ceiling": [
+        "AURA_ADVISORY != TRUTH",
+        "AURA_ADVISORY != PASS",
+        "AUTHORITY_DELTA=0"
+      ],
+      "status": "MERGED_ADVISORY_ONLY"
+    },
+    {
+      "event_id": "JSE-2026-08-20-008",
+      "event_time": "2026-08-20T19:21:54Z",
+      "backfilled": true,
+      "event_type": "LIVE_PROBE_TOOLING_MERGED",
+      "subject": "Genesis #187 read-only QNAP live handoff probe",
+      "state_before": "No current-main canonical QNAP auto-discovery path for live receiver/source/:8008 evidence",
+      "state_after": "Canonical read-only QNAP probe merged into Genesis main",
+      "evidence": {
+        "repository": "Hawkar-usls/Janus_Genesis",
+        "pull_request": 187,
+        "exact_head": "482a1e32a5537d8ba657cce742be1aa245dc37fb",
+        "main_after_merge": "05cf2facb3aa59d3c6a520eea3c3a0ea8439b6e5",
+        "canonical_tool": "tools/janus_receiver_identity_probe.py"
+      },
+      "meaning": "The tooling prerequisite for a real NAS identity/network witness is now in current main.",
+      "claim_ceiling": [
+        "LOCAL_PROBE_UNATTESTED_IN_GITHUB_CI",
+        "TOOLING_READY != LIVE_WITNESS_OBTAINED",
+        "HR1_HR10_NOT_INFERRED"
+      ],
+      "status": "MERGED_TOOLING_READY"
+    },
+    {
+      "event_id": "JSE-2026-08-20-009",
+      "event_time": "2026-08-20T19:13:08Z..19:34:39Z",
+      "backfilled": true,
+      "event_type": "CONCURRENT_IMPLEMENTATION_RECONCILIATION",
+      "subject": "Genesis #185 duplicate-probe lane transformed into hardening successor",
+      "state_before": "#185 began as a separate live receiver identity probe while #187 was concurrently being developed",
+      "state_after": "#187 became canonical in main; #185 was forward-reconciled and redirected toward stronger socket-owner/PID-namespace/privacy hardening instead of creating a second canonical runtime",
+      "evidence": {
+        "repository": "Hawkar-usls/Janus_Genesis",
+        "pull_request": 185,
+        "current_state": "open",
+        "current_head_at_capture": "8898b5762b59c246fcebebff151fd291dcbb7bb6",
+        "base_main_at_capture": "05cf2facb3aa59d3c6a520eea3c3a0ea8439b6e5",
+        "canonical_predecessor": "#187"
+      },
+      "meaning": "Avoided duplicate canonical tools and preserved the stronger hardening ideas as a successor candidate.",
+      "hardening_targets": [
+        "LISTEN socket inode -> actual owner PID -> PID namespace -> Docker identity",
+        "host PID namespace requires exact init-PID ownership",
+        "source discovery may descend inside receiver container PID namespace",
+        "network namespace equality alone is not owner proof",
+        "public stdout should not expose exact local receipt details"
+      ],
+      "claim_ceiling": [
+        "OPEN_PR != MERGED_CANON",
+        "IDENTITY_BINDING != HR1_HR10",
+        "NO_LIVE_PASS"
+      ],
+      "status": "ACTIVE_HARDENING_CANDIDATE"
+    },
+    {
+      "event_id": "JSE-2026-08-20-010",
+      "event_time": "2026-08-20T19:13:47Z",
+      "backfilled": true,
+      "event_type": "CURRENT_MAIN_SUCCESSOR_OPENED",
+      "subject": "Genesis #186 resident real MODEL.CALL closure",
+      "state_before": "Historical #99 resident lane remained old-head and had a blocking real MODEL.CALL failure",
+      "state_after": "A current-main successor was opened from the new Genesis main to close the resident MODEL.CALL and live-home continuity path",
+      "evidence": {
+        "repository": "Hawkar-usls/Janus_Genesis",
+        "pull_request": 186,
+        "current_state": "open",
+        "current_head_at_capture": "0f61916082a3c9b7d5c27f633c168d2ce465d97e",
+        "base_main_at_capture": "05cf2facb3aa59d3c6a520eea3c3a0ea8439b6e5",
+        "historical_predecessor": "#99"
+      },
+      "meaning": "Resident identity/real-model closure now has a current-main implementation path rather than relying on historical #99.",
+      "claim_ceiling": [
+        "REAL_REMOTE_HOME_MODEL_CHOICE_PENDING",
+        "RESIDENT_IDENTITY_CONTINUITY_ACROSS_PROCESS_DEATH_PENDING",
+        "MODEL_OUTPUT != AUTHORITY"
+      ],
+      "status": "ACTIVE_CURRENT_MAIN_CANDIDATE"
+    },
+    {
+      "event_id": "JSE-2026-08-20-011",
+      "event_time": "2026-08-20T23:38:00+03:00",
+      "backfilled": false,
+      "event_type": "LAUNCH_GATE_SNAPSHOT",
+      "subject": "Current Habitat launch boundary",
+      "state_after": {
+        "Janus_Genesis_main": "05cf2facb3aa59d3c6a520eea3c3a0ea8439b6e5",
+        "janus_distributed_ai_swarm_main": "4b19712d7b86d5d7f04ab4c67721784fbc89267b",
+        "issue_162": "OPEN_FINAL_ACCEPTANCE",
+        "issue_164": "OPEN_REOPENED_LIVE_HR1_HR10_PENDING",
+        "live_receiver_identity_tooling": "MERGED_READY",
+        "actual_qnap_live_identity_receipt": "PENDING",
+        "full_real_owner_44_source_replay": "NOT_ESTABLISHED",
+        "resident_current_main_successor": "#186_OPEN",
+        "receiver_hardening_successor": "#185_OPEN",
+        "final_launch_pass": false
+      },
+      "meaning": "The project has materially improved current-main evidence, but the full frozen compatible #162 acceptance view is not yet runnable to final PASS.",
+      "next_admissible_gates": [
+        "Run the canonical read-only receiver identity probe on the actual QNAP and retain unredacted receipt locally.",
+        "Resolve exact receiver source identity and actual :8008 owner/route without inferring from heartbeat.",
+        "Replay HR1-HR10 on the exact frozen live receiver implementation.",
+        "Close resident real MODEL.CALL/live-home/process-death continuity on a current-main successor.",
+        "Establish authenticated real 44-owner replay and final typed federation/accounting view.",
+        "Only then assemble one frozen compatible #162 acceptance run."
+      ],
+      "status": "HOLD_NOT_FINAL_PASS"
+    },
+    {
+      "event_id": "JSE-2026-08-20-012",
+      "event_time": "2026-08-20T23:38:00+03:00",
+      "backfilled": false,
+      "event_type": "REGISTRY_POLICY_ADOPTION",
+      "subject": "Special-event persistence becomes an explicit meta-registry practice",
+      "state_before": "Important transitions were mainly recoverable from PR/issue history and conversation summaries",
+      "state_after": "Special transitions are to be preserved as versioned JSON with backfilled exact evidence and claim ceilings",
+      "meaning": "Future JANUS work can distinguish event history from present-state snapshots and avoid losing why a gate changed.",
+      "status": "POLICY_ADOPTED"
+    }
+  ],
+  "current_frozen_view": {
+    "captured_at": "2026-08-20T23:38:00+03:00",
+    "genesis_main": "05cf2facb3aa59d3c6a520eea3c3a0ea8439b6e5",
+    "swarm_main": "4b19712d7b86d5d7f04ab4c67721784fbc89267b",
+    "genesis_issue_162": {
+      "state": "open",
+      "semantic_status": "FINAL_ACCEPTANCE_HOLD"
+    },
+    "genesis_issue_164": {
+      "state": "open",
+      "state_reason": "reopened",
+      "semantic_status": "LIVE_HR1_HR10_HOLD"
+    },
+    "genesis_pr_185": {
+      "state": "open",
+      "head": "8898b5762b59c246fcebebff151fd291dcbb7bb6",
+      "role": "CANONICAL_PROBE_HARDENING_CANDIDATE"
+    },
+    "genesis_pr_186": {
+      "state": "open",
+      "head": "0f61916082a3c9b7d5c27f633c168d2ce465d97e",
+      "role": "RESIDENT_REAL_MODEL_CALL_CURRENT_MAIN_SUCCESSOR"
+    },
+    "swarm_pr_8": {
+      "state": "merged",
+      "role": "CURRENT_MAIN_LEASE_FENCING_COMPATIBILITY_WITNESS"
+    },
+    "full_launch": "HOLD"
+  },
+  "privacy": {
+    "private_repository_names_or_exact_pins_added_by_this_ledger": false,
+    "unredacted_live_nas_receipts_should_be_public": false,
+    "public_status_may_record_boolean_or_bounded_gate_state": true
+  },
+  "safety": {
+    "SOURCE_WRITEBACK_DEFAULT": "DENY",
+    "DESTRUCTIVE_ACTION": "FORBIDDEN",
+    "AUTHORITY_DELTA": 0,
+    "MASS_EFFECT_BUDGET_DELTA": 0,
+    "REGISTRY_RECORD_IS_NOT_EXECUTION_PERMISSION": true
+  }
+}

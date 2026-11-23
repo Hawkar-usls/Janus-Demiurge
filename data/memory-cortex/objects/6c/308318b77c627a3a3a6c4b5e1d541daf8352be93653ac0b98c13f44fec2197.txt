@@ -1,0 +1,110 @@
+{
+  "artifact_uuid": "JANUS-RECORD-DRIFT-OBSERVATORY-v0.2",
+  "version": "0.2",
+  "date": "2026-08-15",
+  "status": "PREREGISTERED_FULL_SURFACE_INSTRUMENTATION",
+  "parent": "data/JANUS-RECORD-DRIFT-OBSERVATORY-v0.1.json",
+  "purpose": "Extend prospective record-drift testing from object fixity into the complete observation path: experiment, identity, raw bytes, format, canonical form, structure, semantics, provenance, time, clock quality, HTTP, DNS, network endpoint, TLS, replicas, local storage, database/runtime context, timezone/locale, client/presentation, observer, notary, journal integrity, availability and aggregate statistics.",
+  "core_question": "For a preregistered stable record identity R captured at T0 and retrieved at Tn, what changed, at which layer, and can the difference be reproduced independently after excluding ordinary versioning, caching, routing, clock, parser, storage and observer effects?",
+  "measurement_state_enum": [
+    "SUPPORTED_AND_CAPTURED",
+    "SUPPORTED_BUT_MISSING",
+    "NOT_SUPPORTED_BY_SOURCE",
+    "NOT_APPLICABLE",
+    "CAPTURE_FAILED"
+  ],
+  "control_surface": {
+    "C00_EXPERIMENT": ["capture_id", "protocol_path", "protocol_git_blob", "runner_path", "runner_git_blob", "workflow_path", "workflow_git_blob", "scheduled_trigger", "actual_start_utc", "actual_end_utc", "duration_monotonic_ns", "github_run_id", "github_run_attempt", "github_sha", "actor"],
+    "C01_IDENTITY": ["record_id", "source_uri", "canonical_uri", "redirect_chain", "stable_object_id", "version_id", "git_commit", "git_tree", "git_blob", "git_ref", "path", "file_mode"],
+    "C02_RAW_FIXITY": ["sha256", "sha512", "byte_length", "chunk_size", "chunk_sha256", "merkle_root_optional"],
+    "C03_FORMAT": ["content_type", "charset", "content_encoding", "magic_bytes", "bom", "line_ending_profile", "compression", "format_version"],
+    "C04_CANONICAL": ["canonicalization_rule", "canonical_sha256", "unicode_normalization", "json_key_order_normalized", "whitespace_normalized"],
+    "C05_STRUCTURE": ["schema_version", "schema_hash", "field_names", "field_count", "array_lengths", "object_count", "missing_fields", "added_fields"],
+    "C06_SEMANTIC": ["typed_values", "semantic_anchors", "cross_field_invariants", "recorded_timestamp_utc", "recorded_timestamp_offset"],
+    "C07_PROVENANCE": ["author_or_agent", "revision_id", "revision_time", "change_reason", "predecessor", "generation_event", "invalidation_event", "declared_update_metadata"],
+    "C08_LOCAL_TIME": ["system_utc", "system_local", "utc_offset", "timezone_name", "monotonic_ns", "wall_minus_monotonic_context"],
+    "C09_CLOCK_QUALITY": ["ntp_source", "offset", "delay", "jitter", "dispersion", "stratum", "precision", "refid", "leap_indicator", "clock_sync_state"],
+    "C10_HTTP_REQUEST": ["method", "url", "query", "accept", "accept_encoding", "accept_language", "user_agent", "range", "conditional_headers"],
+    "C11_HTTP_RESPONSE": ["status", "final_url", "redirect_chain", "date", "age", "etag", "last_modified", "cache_control", "expires", "vary", "via", "server", "content_type", "content_length", "content_encoding"],
+    "C12_HTTP_INTEGRITY": ["content_digest_header", "repr_digest_header", "transport_body_sha256", "decoded_body_sha256"],
+    "C13_DNS": ["hostname", "resolver_context", "A_or_AAAA_observed", "CNAME_if_available", "TTL_if_available", "NS_if_available", "SOA_serial_if_available", "DNSSEC_state_if_available"],
+    "C14_NETWORK": ["destination_ips", "ip_family", "connect_latency_ms", "http_latency_ms", "cdn_or_region_hint_if_exposed"],
+    "C15_TLS": ["tls_version", "cipher", "alpn", "certificate_sha256", "certificate_serial", "issuer", "subject", "san", "not_before", "not_after"],
+    "C16_REPLICAS": ["local_git_sha256", "raw_github_sha256", "contents_api_sha256", "replica_agreement", "replica_statuses"],
+    "C17_LOCAL_STORAGE": ["path", "device", "inode", "size", "mtime_ns", "ctime_ns", "mode", "filesystem_type_if_available", "mount_if_available"],
+    "C18_STORAGE_HEALTH": ["filesystem_scrub_if_available", "smart_or_nvme_errors_if_available", "ecc_or_corrected_errors_if_available"],
+    "C19_DATABASE": ["primary_key_if_applicable", "row_version", "schema_migration", "transaction_id", "wal_or_lsn", "replica_id", "replica_lag"],
+    "C20_RUNTIME": ["os", "kernel", "architecture", "python_version", "implementation", "dependency_snapshot", "locale", "environment_identity", "runner_image"],
+    "C21_TIMEZONE_LOCALE": ["timezone_name", "utc_offset", "tzdata_version_if_available", "locale", "encoding", "icu_or_cldr_version_if_available"],
+    "C22_CLIENT_PRESENTATION": ["client_name", "client_version", "display_text", "dom_or_render_hash", "screenshot_hash", "viewport", "device_pixel_ratio"],
+    "C23_OBSERVER": ["machine_value", "manual_transcription", "second_observer", "observer_confidence", "memory_only_flag"],
+    "C24_NOTARY": ["rfc3161_message_imprint", "tsa_serial", "gen_time", "accuracy", "nonce", "tsa_certificate_fingerprint"],
+    "C25_JOURNAL": ["previous_entry_path", "previous_entry_sha256", "creation_commit", "creation_blob", "current_blob", "sequence", "append_only_check", "runner_self_hash", "protocol_self_hash"],
+    "C26_AVAILABILITY": ["success", "error_type", "error_message", "timeout", "retry_count", "rate_limit", "latency_ms"],
+    "C27_STATISTICS": ["classification", "persistent_across_retries", "time_since_T0", "source_class", "replica_spread", "drift_duration", "rollback_observed"]
+  },
+  "mandatory_instrument_self_tests": {
+    "HASH_KNOWN_ANSWER": "SHA-256('abc') must equal ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad.",
+    "ONE_BYTE_DRIFT": "Synthetic one-byte mutation must change SHA-256 and be detected.",
+    "CANONICAL_EQUIVALENCE": "Two JSON serializations with identical typed content but different whitespace/key order must have different raw hashes and identical canonical hashes.",
+    "TIMEZONE_EQUIVALENCE": "One UTC instant represented in multiple zones must round-trip to the same UTC instant.",
+    "PARSER_PROFILE": "Known JSON fixture must preserve preregistered typed values.",
+    "IDENTITY_SWITCH": "Synthetic moving-ref fixture must distinguish changed identity from changed bytes.",
+    "REPLICA_DIVERGENCE": "Synthetic replica fixture must classify disagreement as replica divergence rather than unexplained drift.",
+    "JOURNAL_TAMPER": "An in-memory altered previous-entry byte sequence must fail the journal equality test without modifying the real journal."
+  },
+  "instrument_gate": "A real-world R1-R10 classification is admissible only if all mandatory instrument self-tests pass in the same run. Otherwise the run is MEASUREMENT_SYSTEM_FAILURE and real subjects are diagnostic-only.",
+  "replica_policy": {
+    "github_pinned_objects": ["local checkout at pinned commit", "raw.githubusercontent.com at same pinned commit", "GitHub Contents API at same pinned commit"],
+    "strong_remote_drift_candidate": "At least two independent retrieval paths must reproduce the same changed bytes for the same stable identity before escalation beyond a single-path transport/cache anomaly.",
+    "self_reference_warning": "Multiple endpoints of one provider are useful transport/replica controls but do not constitute independent institutional replication."
+  },
+  "time_policy": {
+    "always_store": ["UTC", "numeric offset", "timezone name", "monotonic counter", "clock quality state"],
+    "naked_local_time_forbidden_as_sole_evidence": true,
+    "clock_unsynchronized_rule": "Temporal ordering claims are downgraded when clock quality cannot be established."
+  },
+  "drift_taxonomy": {
+    "R0_STABLE": "No material difference within the registered comparison contract.",
+    "R1_PRESENTATION_DRIFT": "Raw/canonical/semantic record stable, presentation differs.",
+    "R2_INTERPRETATION_DRIFT": "Raw record stable, parser/schema/derived interpretation differs.",
+    "R3_DECLARED_SOURCE_REVISION": "Raw source changed with explicit revision/version/provenance trail.",
+    "R4_UNDECLARED_REMOTE_CONTENT_DRIFT": "Same stable remote identity returns different raw content without discovered declared revision.",
+    "R5_LOCAL_COPY_DRIFT": "Local copy changes while independent/pinned remote evidence remains stable.",
+    "R6_DISTRIBUTED_DIVERGENCE": "Replicas, caches, APIs or independent retrieval paths disagree for the same claimed record/version.",
+    "R7_IDENTITY_DRIFT": "A label/ref/path now resolves to a different underlying object.",
+    "R8_CLOCK_OR_TIMEZONE_DRIFT": "Underlying instant is compatible but clock/timezone/locale representation differs.",
+    "R9_JOURNAL_CHAIN_BREAK": "Previous committed journal generation cannot be validated.",
+    "R10_UNEXPLAINED_CONFIRMED_DRIFT": "Same-identity difference survives revision, fixity, parser, cache, replica, DNS, TLS, clock/timezone, local storage and measurement-system checks and is reproduced by independent evidence paths."
+  },
+  "R10_admission_gate": [
+    "instrument_self_tests_all_pass",
+    "prospective_T0_predates_difference_discovery",
+    "stable_identity_confirmed",
+    "T0_and_Tn_raw_evidence_available",
+    "repeat_retrieval_confirms_difference",
+    "declared_revision_history_checked",
+    "HTTP_validator_cache_vary_context_checked",
+    "DNS_endpoint_context_checked",
+    "TLS_endpoint_identity_checked",
+    "clock_timezone_locale_context_checked",
+    "runtime_parser_schema_context_checked",
+    "replica_or_alternate_path_check_completed",
+    "local_storage_corruption_excluded",
+    "journal_chain_intact",
+    "observer_memory_or_screenshot_not_used_as_byte_level proof"
+  ],
+  "claim_ceiling": {
+    "ordinary_information_system_drift": "allowed_when_measured_and_classified",
+    "unexplained_record_drift": "R10 label only after admission gate",
+    "retrocausality": false,
+    "timeline_change": false,
+    "reality_rewrite": false,
+    "mandela_effect_as_physics": false
+  },
+  "migration": {
+    "v0_1_history": "immutable and retained",
+    "new_fields_without_prior_T0": "first successful v0.2 capture establishes an extension baseline and cannot itself count as positive drift for that new field",
+    "next_runner": "tools/record_drift/full_surface_runner.py"
+  }
+}

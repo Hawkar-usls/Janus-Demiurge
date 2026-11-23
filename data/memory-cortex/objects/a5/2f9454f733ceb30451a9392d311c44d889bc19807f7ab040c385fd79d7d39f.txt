@@ -1,0 +1,84 @@
+{
+  "admission": {
+    "HISTORYWISE_CONDITIONAL_BOUND_REQUIRED": true,
+    "MARGINAL_ENTROPY_SUFFICIENT_FOR_OPTIONAL_STOPPING": false,
+    "MULTIPLICITY_PENALTY_REQUIRED": true,
+    "PHYSICAL_FTL": false,
+    "PHYSICAL_RETROCAUSALITY": false,
+    "SCIENTIFIC_NOVELTY": "NOT_YET_ESTABLISHED",
+    "SEQUENTIAL_ADAPTIVE_BOUND": "PROVED_IN_CLASSICAL_MODEL"
+  },
+  "artifact_uuid": "JANUS-SEQUENTIAL-ADAPTIVE-WITNESS-HARDENING-V0.6",
+  "genesis_evidence": {
+    "lab_commit": "9514a3aada3dfed218a6bc7aa0bcc200ce8b47b6",
+    "lab_path": "experiments/semantic_return/janus_sequential_adaptive_witness_lab_v0_1.py",
+    "lab_sha256": "415a2f3ca9514e61229ea029b86c7a18b8e0842325d9bd449dbc2aa155629f80",
+    "report_commit": "63ba548c92c332ec5acbe41bda92f55aa6552401",
+    "report_path": "experiments/semantic_return/JANUS-GENESIS-SEQUENTIAL-ADAPTIVE-WITNESS-LAB-REPORT-v0.1.json",
+    "report_sha256": "01ed58a159917aeb9225ed1b5eb59367e7a61127a6fbb4bc0286c3b767acd466"
+  },
+  "machine_checks": {
+    "biased_binary_adaptive_policies": {
+      "N": 4,
+      "bound": 0.99609375,
+      "max_any_probability": 0.99609375,
+      "policies_checked": 32768,
+      "q_one": 0.75,
+      "violations": 0
+    },
+    "candidate_set_uniform": {
+      "K": 2,
+      "N": 3,
+      "alphabet": 8,
+      "bound": 0.578125,
+      "exact_any": 0.578125
+    },
+    "fair_binary_adaptive_policies": {
+      "N": 4,
+      "bound": 0.9375,
+      "exact_any_probability": 0.9375,
+      "policies_checked": 32768,
+      "violations": 0
+    },
+    "random_historywise_trees": {
+      "N": 6,
+      "bound": 0.999755859375,
+      "max_observed": 0.9991861268939288,
+      "pmax": 0.75,
+      "samples": 5000,
+      "violations": 0
+    },
+    "tests": "PASS_11_OF_11"
+  },
+  "next_gate": "Design an anytime-valid external bench statistic (e-process/supermartingale) and freeze the external entropy/transcript interface before physical trials.",
+  "quantitative_consequence": {
+    "128bit_historywise_bound": 2.9387358770557188e-33,
+    "16bit_historywise_bound": 0.9999997638752285,
+    "256bit_historywise_bound": 8.636168555094445e-72,
+    "32bit_historywise_bound": 0.00023280354073016286,
+    "N": 1000000,
+    "interpretation": "A low-bit surrogate can produce at least one apparent hit with high probability under many trials. The full hard witness must include multiplicity and stopping-rule accounting."
+  },
+  "result_1": {
+    "name": "JANUS Sequential Adaptive Witness Bound",
+    "novelty_boundary": "Elementary sequential conditioning; not claimed as new mathematics. JANUS contribution under review is its explicit use in the independent-future witness protocol.",
+    "proof_status": "PROVED_BY_CONDITIONAL_RECURSION",
+    "scope": "Classical sequential probability/null-model theorem; arbitrary cross-trial dependence, adaptive candidate choice and bounded stopping are allowed under the history-wise condition.",
+    "statement": "Let F_{i-1} be the complete pre-target history. Let C_i be F_{i-1}-measurable with |C_i|<=K_i, and assume almost surely max_t P(T_i=t|F_{i-1})<=p_i. Then P(exists i<=N: T_i in C_i)<=1-product_i(1-min(1,K_i p_i))."
+  },
+  "result_2": {
+    "counterexample_1": "T1 fair; T2=T1; each target marginal is fair. After observing T1, an adaptive B2 can copy it. P(any hit by 2)=1, exceeding the naive independent-marginal value 3/4.",
+    "counterexample_2": "Trial 2 has average conditional p_guess=0.75 but p_guess=1 on the history selected by first-trial failure. Actual P(any hit)=1, while naive product using 0.5 and 0.75 gives 0.875.",
+    "finding": "Marginal or average per-trial entropy does not justify the product/optional-stopping bound when entropy can collapse on selected histories.",
+    "name": "Average-Entropy Optional-Stopping Counterexample",
+    "protocol_correction": "Use a history-wise conditional point-probability cap relative to the complete pre-target transcript, or a separately justified entropy-accumulation/anytime-valid argument."
+  },
+  "result_3": {
+    "name": "Multiplicity / Candidate-Set Penalty",
+    "policy": "Prefer exactly one preregistered frozen PRE_RETURN candidate slot per trial.",
+    "statement": "If K_i candidates are frozen before T_i, then per-trial success is bounded by min(1,K_i p_i); K_i must enter the familywise bound."
+  },
+  "schema": "JANUS/proof/sequential-adaptive-witness-hardening/v0.6.0",
+  "status": "PASS_SEQUENTIAL_BOUND_AND_COUNTEREXAMPLE_HARDENING",
+  "timestamp_local": "2026-08-07T08:49:00+03:00"
+}

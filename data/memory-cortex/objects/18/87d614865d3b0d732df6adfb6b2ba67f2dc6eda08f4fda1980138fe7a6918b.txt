@@ -1,0 +1,63 @@
+{
+  "artifact_id": "JANUS-PALOMAR-JPFM-3B-EVENT-MANIFEST-ACQUISITION-GATE-v1.0",
+  "experiment_id": "JPFM-3B",
+  "version": "1.0",
+  "date": "2026-08-15",
+  "status": "ACQUISITION_GATE_FROZEN__NO_3B_ASSOCIATION_TEST_AUTHORIZED_YET",
+  "purpose": "Acquire row-complete or explicitly coverage-bounded external event manifests before any new STARLIKE/POSS-I temporal association is inspected.",
+  "parent": "registry/cosmology/JANUS-JPFM-3A-CROSS-EVENT-ATLAS-INTERPRETATION-v1.0.json",
+  "priority_sources": [
+    {
+      "id": "S1_NOAA_NCEI_HALPHA_REPORTS",
+      "role": "PRIMARY_NEXT_PHYSICAL_EVENT_SOURCE",
+      "authority": "NOAA/NCEI historical Solar-Terrestrial Physics archive",
+      "base": "https://www.ngdc.noaa.gov/stp/space-weather/solar-data/solar-features/solar-flares/h-alpha/reports/merged/",
+      "years_to_freeze": [1949,1950,1951,1952,1953,1954,1955,1956,1957],
+      "expected_filename_pattern": "halpha-flare-reports_merged_YYYY.txt",
+      "study_window": ["1949-11-19","1957-04-28"],
+      "coverage_rule": "File presence and row density do not prove continuous solar observing coverage. A later parser must model/report observatory coverage or restrict inference to independently documented observable/reporting opportunity.",
+      "zero_rule": "No report row on a calendar day MUST NOT be treated as physical zero flare activity until coverage semantics are established."
+    },
+    {
+      "id": "S2_HUMAN_MADE_ROCKET_MISSILE",
+      "role": "CONTAMINATION_EVENT_SOURCE",
+      "authority_targets": ["NASA historical launch records","USAF/DoD archival launch histories"],
+      "admission_requirement": "Row-complete dated manifest over a declared site/program interval. Famous launch dates alone are context-only."
+    },
+    {
+      "id": "S3_HIGH_ALTITUDE_BALLOON",
+      "role": "CONTAMINATION_EVENT_SOURCE",
+      "authority_targets": ["USAF/DoD archival balloon programs","CIA declassified test records","NASA/NACA historical records where applicable"],
+      "admission_requirement": "Explicit program date coverage and launch/test rows. Missing archival records may not be interpreted as no balloon activity."
+    },
+    {
+      "id": "S4_PALOMAR_LOCAL_WEATHER",
+      "role": "OBSERVATION_OPPORTUNITY_AND_ARTIFACT_CONTROL",
+      "authority": "NOAA/NCEI HOMR + GHCN/COOP/ISD as available",
+      "admission_requirement": "Bind station identifier, coordinates, station lineage, variable coverage and missingness before joining to Palomar nights."
+    },
+    {
+      "id": "S5_IAU_METEOR_SOLAR_LONGITUDE",
+      "role": "REPLACEMENT_FOR_GREGORIAN_PROXY_ONLY_IN_A_FUTURE_PREREGISTERED_TEST",
+      "authority": "IAU Meteor Data Center established showers",
+      "admission_requirement": "Freeze shower identity and solar-longitude peak/range; compute historical solar longitude deterministically before outcome inspection."
+    }
+  ],
+  "acquisition_order": [
+    "Freeze NOAA/NCEI H-alpha source bytes and SHA-256 manifests.",
+    "Inspect only source schema/coverage metadata, not STARLIKE/POSS outcome overlap.",
+    "Define a versioned flare event-consolidation rule that prevents multiple station reports of one solar flare becoming multiple independent events.",
+    "Freeze flare severity/timing endpoints before association testing.",
+    "Acquire human-made launch/balloon and Palomar weather manifests with explicit completeness gates.",
+    "Only then create a separate JPFM-3C association preregistration."
+  ],
+  "forbidden_before_next_preregistration": [
+    "Selecting flare intensity thresholds because they maximize STARLIKE/POSS coincidence.",
+    "Treating missing H-alpha reports as zero flare activity.",
+    "Using a hand-curated list of famous rockets or balloons as a negative-control denominator.",
+    "Adding or dropping event classes after inspecting correlation outcomes.",
+    "Promoting temporal coincidence to common physical-object identity or causal origin."
+  ],
+  "current_authority_changed": false,
+  "claim_ceiling": "EVENT_MANIFEST_ACQUISITION_ONLY__NO_NEW_ASSOCIATION_OR_CAUSAL_CLAIM"
+}

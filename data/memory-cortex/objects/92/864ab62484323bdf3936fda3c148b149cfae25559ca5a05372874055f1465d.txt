@@ -1,0 +1,59 @@
+{
+  "schema": "janus.music.audio_similarity_prospective_prereg.v1",
+  "artifact_id": "JANUS-ROBERT-MILES-AUDIO-SIMILARITY-PROSPECTIVE-PREREG-2026-09-01-v1.0",
+  "created_date": "2026-09-01",
+  "status": "FROZEN_BEFORE_AUDIO_FEATURE_EXTRACTION",
+  "purpose": "Run an independent perceptual/structural witness after the SHA-256 test. The audio test asks whether related versions are measurably more similar than unrelated same-catalog controls, using decoded audio rather than cryptographic digest shape.",
+  "known_before_prereg": {
+    "sha256_run_already_complete": true,
+    "sha256_result": "97254 LCS>=5 did not replicate in five new related pairs; a nonconfirmatory fixed-position hint appeared.",
+    "audio_feature_values_known": false,
+    "rule": "The SHA result may motivate the audio witness but may not alter the frozen audio metrics after extraction."
+  },
+  "source_rule": "Use the same Robert Miles official Bandcamp public mp3-128 streams. Decode deterministically with ffmpeg to mono 11025 Hz signed-16 PCM. Do not use track names or SHA values as feature inputs.",
+  "disjoint_related_pairs": [
+    {"id":"AR1","page":"https://robertmiles.bandcamp.com/album/dreamland","a":"Fable (Messagge Version)","b":"Fable (Dream Version)"},
+    {"id":"AR2","page":"https://robertmiles.bandcamp.com/album/fable","a":"Fable (Dream Radio)","b":"Fable (Messagge Radio)"},
+    {"id":"AR3","page":"https://robertmiles.bandcamp.com/album/one-and-one","a":"One And One (Robert Miles Radio Version)","b":"One And One (Radio Without The Beat)"}
+  ],
+  "disjoint_unrelated_controls": [
+    {"id":"AC1","page":"https://robertmiles.bandcamp.com/album/dreamland","a":"Fantasya","b":"Landscape"},
+    {"id":"AC2","page":"https://robertmiles.bandcamp.com/album/dreamland","a":"In My Dream","b":"Princess Of Light"},
+    {"id":"AC3","page":"https://robertmiles.bandcamp.com/album/dreamland","a":"In The Down","b":"Red Zone"}
+  ],
+  "disjointness_rule": "No exact track file appears in more than one inferential pair.",
+  "frozen_audio_metrics": {
+    "A1_chroma_profile_cosine": "Cosine similarity between whole-track time-averaged 12-bin pitch-class energy profiles computed from STFT magnitude, frequencies 40-5000 Hz.",
+    "A2_spectral_profile_cosine": "Cosine similarity between whole-track normalized 64-bin log-frequency spectral energy profiles, 40-5000 Hz.",
+    "A3_rms_shape_correlation": "Pearson correlation between RMS-envelope trajectories after each whole-track envelope is linearly resampled to exactly 1024 normalized-time points.",
+    "A4_onset_shape_correlation": "Pearson correlation between positive first differences of the normalized RMS envelopes, also at 1024 normalized-time points.",
+    "A5_tempo_difference_bpm": "Absolute difference between approximate dominant tempos estimated from RMS-onset autocorrelation in the 80-180 BPM range."
+  },
+  "directional_hypotheses": {
+    "A1": "related > control",
+    "A2": "related > control",
+    "A3": "related > control",
+    "A4": "related > control",
+    "A5": "related < control"
+  },
+  "analysis_plan": {
+    "report_all_pair_values": true,
+    "group_summary": "Arithmetic mean by related/control for all five metrics.",
+    "exact_label_permutation": "Enumerate all choose(6,3)=20 allocations of the six frozen pair records into groups of three; one-sided p-values in preregistered directions.",
+    "multiplicity": "No single metric is called confirmatory at raw p<0.05. Family-wise sensitivity is reported with Bonferroni over five metrics; with only 20 allocations, the minimum raw one-sided p is 0.05, so this run is primarily effect-size/consistency evidence.",
+    "claim_ceiling": "Audio similarity can establish shared musical/production structure, not causal messaging, hidden code, or SHA meaning."
+  },
+  "app_bridge_question": "Does the Robert Miles version-control experiment instantiate the same general operator independently seen in the Alan Parsons analysis: stable reference + controlled difference -> interpretable change?",
+  "ibm_boundary": {
+    "ibm_quantum_hardware_used": false,
+    "note": "IBM/quantum computation is not needed for this classical audio similarity gate. No claim of SHA reversal or quantum secret extraction is permitted."
+  },
+  "epistemic_firewall": [
+    "SHA_SIMILARITY_TEST != AUDIO_SIMILARITY_TEST",
+    "AUDIO_SIMILARITY != HIDDEN_MESSAGE",
+    "RELATED_VERSIONS_EXPECTED_TO_SHARE_AUDIO_STRUCTURE",
+    "EFFECT_SIZE > BINARY_P_VALUE_IN_THIS_SMALL_N_GATE",
+    "ALL_FAILS_NULLS_AND_OPEN_VALUES_MUST_BE_PRESERVED"
+  ],
+  "canonical_seal": "THE SECOND WITNESS LISTENS TO THE AUDIO, NOT THE HASH. IF RELATED VERSIONS ARE CLOSER, THAT IS MUSICAL STRUCTURE; IF THE SHA DIGESTS ARE NOT, THAT IS EXACTLY WHAT A GOOD CRYPTOGRAPHIC HASH SHOULD DO."
+}

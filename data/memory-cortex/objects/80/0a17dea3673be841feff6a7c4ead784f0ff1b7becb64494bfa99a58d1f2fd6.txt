@@ -1,0 +1,180 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1A-SUBDIVIDED-WALL-OBSTRUCTION-AND-SOURCE-EMBEDDING-PROPOSAL-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "ABSTRACT_OBSTRUCTION_ESTABLISHED__SOURCE_EMBEDDING_GATE_PROPOSED__NO_SOURCE_PROMOTION",
+  "title": "Subdivided-wall obstruction to generic common-layout bounded-mim route",
+  "authority_bind": {
+    "common_layer_union_mim_seal_fund_commit": "cf720572cc78eb9faa58d14f72327fecbf7da61f",
+    "common_layer_union_mim_seal_blob": "ef7d0672d17bd7839b0a5a20b0d0e1c3f938f396",
+    "B1B1A_internal_reuse_result_fund_commit": "963993014298a13491f0bfed4fdb2ed1f2c3c73b",
+    "B1B1A_internal_reuse_result_blob": "d330bbbe0025fcdacc36ee442da3fb25e5b8258f",
+    "full_component_quotient_seal_blob": "bd8a42511a1d64ac4295f0f3815adcf95f4ddbc9",
+    "B1A_seal_blob": "3729fb85fe388d99df42e185cd23aaa9e188bf28"
+  },
+  "verified_current_repo_state": {
+    "COMMON_LAYER_MIM_UNION_EQUIVALENCE_V1": "SEALED",
+    "cut_inequality": "max_i mim(I_sigma,i,A) <= mim(I_sigma,A) <= 3*max_i mim(I_sigma,i,A)",
+    "conditional_D1_bound": "n^{O(12w)} per fixed coarse class when one common layout has per-layer cut mim-width <= w",
+    "B1B1A_internal_reuse_status": "OPEN_COMMON_LAYOUT_OBSTRUCTION",
+    "interpretation": "Repository authority agrees that state counting/backend reuse is not the current main unknown; common-layout/source structure is."
+  },
+  "external_math_inputs": [
+    {
+      "name": "Elementary wall mim-width lower bound",
+      "source": "Bounding the Mim-Width of Hereditary Graph Classes, IPEC 2020",
+      "url": "https://drops.dagstuhl.de/storage/00lipics/lipics-vol180-ipec2020/LIPIcs.IPEC.2020.6/LIPIcs.IPEC.2020.6.pdf",
+      "imported_claim": "For an elementary wall W_n of the cited size parameterization, mimw(W_n) >= sqrt(n)/50.",
+      "note": "Use the exact parameter convention of the cited theorem when instantiating future formal artifacts."
+    },
+    {
+      "name": "Subdivision monotonicity control",
+      "source": "same IPEC 2020 source",
+      "url": "https://drops.dagstuhl.de/storage/00lipics/lipics-vol180-ipec2020/LIPIcs.IPEC.2020.6/LIPIcs.IPEC.2020.6.pdf",
+      "imported_claim": "One-edge subdivision does not decrease mim-width; iterating edge subdivisions yields a subdivided-wall family with unbounded mim-width.",
+      "ceiling": "The present artifact records this as an external imported theorem claim to be source-rechecked in the execution gate before numerical promotion."
+    },
+    {
+      "name": "Probe-graph warning / related modern context",
+      "source": "Colouring Probe H-Free Graphs, STACS 2026",
+      "url": "https://drops.dagstuhl.de/storage/00lipics/lipics-vol364-stacs2026/html/LIPIcs.STACS.2026.73/LIPIcs.STACS.2026.73.html",
+      "role": "Related warning only: simple P_t-free completion geometry does not automatically imply width/coloring tractability."
+    }
+  ],
+  "abstract_obstruction_family": {
+    "base": "Let W_n be an elementary wall with bipartition A_n disjoint_union B_n.",
+    "subdivision": "Subdivide every wall edge once; denote the new subdivision vertices by Z_n and the resulting graph by J_n.",
+    "intended_incidence_roles": {
+      "survivors": "A_n disjoint_union B_n",
+      "component_nodes": "Z_n",
+      "layer_1": "I1 = J_n[A_n union Z_n]",
+      "layer_2": "I2 = J_n[B_n union Z_n]",
+      "layer_3": "I3 = empty"
+    },
+    "per_layer_structure": [
+      "Each z_e has exactly one neighbor in A_n and exactly one neighbor in B_n.",
+      "I1 is a disjoint union of stars.",
+      "I2 is a disjoint union of stars.",
+      "Hence I1 and I2 are P4-free, therefore P7-free."
+    ],
+    "union": "I1 union I2 = J_n",
+    "width_conclusion": "The family J_n has unbounded mim-width by the imported wall/subdivision lower-bound facts.",
+    "abstract_consequence": "Two individually trivial P7-free layers can have a union-incidence graph of unbounded mim-width."
+  },
+  "p7_free_survivor_completion_control": {
+    "construction": "Define Qhat_n = J_n plus all edges between A_n and B_n.",
+    "survivor_graph": "Qhat_n[A_n union B_n] = complete bipartite K_{|A_n|,|B_n|}, hence 2-colorable.",
+    "component_side": "Z_n is stable.",
+    "claimed_symbolic_fact": "Qhat_n is P7-free.",
+    "proof_sketch": [
+      "Any nonconsecutive survivor vertices on opposite sides A_n and B_n form a chord because A_n is complete to B_n.",
+      "Thus an induced path containing survivors from both A_n and B_n can contain only a tightly consecutive mixed survivor block.",
+      "Because Z_n is stable, a 7-vertex induced path needs survivor/component alternation sufficiently often; a mixed survivor block cannot realize the required chordless pattern.",
+      "Therefore all survivor vertices of a hypothetical induced P7 must lie entirely in A_n or entirely in B_n.",
+      "Then the whole path lies inside I1 or I2 together with Z_n, but each such layer is a star forest and hence P4-free, contradiction."
+    ],
+    "status": "ABSTRACT_SYMBOLIC_CONTROL__NOT_YET_A_CSZ_SOURCE_EMBEDDING"
+  },
+  "abstract_falsified_route": {
+    "statement": "B1A per-layer P7-freeness + existence of a P7-free 2/3-colorable survivor completion + three P7-free layers does NOT imply bounded mim-width of the union-incidence graph.",
+    "status": "ABSTRACTLY_FALSIFIED_BY_SUBDIVIDED_WALL_SKELETON",
+    "importance": "Any positive bounded-layout theorem must use additional genuine CSZ/B0/PATH_CELL source restrictions."
+  },
+  "required_deeper_source_features": [
+    "old source type structure",
+    "selected-Z provenance",
+    "111 / stored-Q support relations",
+    "PATH_CELL implications",
+    "seed structure",
+    "post-Lemma10 ancestry",
+    "or another exact CSZ source law"
+  ],
+  "proposed_next_gate": {
+    "name": "R5_B1B1A_SUBDIVIDED_WALL_SOURCE_EMBEDDING_GATE_V1",
+    "purpose": "Attempt to embed the known abstract unbounded-mim skeleton into one exact B0 coarse class under the complete CSZ/Paper-II source lineage.",
+    "arbitrary_n_target": {
+      "union_incidence": "I_sigma equals the 1-subdivision J_n of wall W_n.",
+      "survivors": "A_n disjoint_union B_n",
+      "residual_Y0_components": "one singleton component z_e for each wall edge e",
+      "incidence": "z_e is adjacent exactly to the two survivor endpoints of e",
+      "survivor_relation": [
+        "A_n complete to B_n",
+        "A_n stable",
+        "B_n stable"
+      ]
+    },
+    "fixed_coarse_class_requirement": [
+      "all A_n union B_n have the same competing 3-list L_prime",
+      "same old source type T",
+      "same selected witness mask J",
+      "same stored-Q support adjacency profile"
+    ],
+    "suggested_calibration_only": {
+      "L0": "{1,3,4}",
+      "selected": [
+        "y1=a1 with c1=1",
+        "y2=a2 with c2=3"
+      ],
+      "L_prime": "{2,3,4}",
+      "desired_witness_mask": "J(v)={2} for all wall survivors",
+      "candidate_extension": [
+        "A_n -> color 2",
+        "B_n -> color 3",
+        "z_e -> color 4"
+      ],
+      "warning": "This is only a calibration sketch. It is not source authority and must not be reused as if the 111/Q/Lemma10/P7 provenance had been proved."
+    },
+    "exact_source_obligations_to_check": [
+      "source-valid seeded-precoloring ancestry",
+      "post-M / post-Lemma10 membership in the exact Lemma-11 lineage",
+      "exact L0, y1,y2,c1,c2 seed-two branch provenance",
+      "every survivor is a source-Z(L_prime) survivor",
+      "all survivors lie in one exact B0 coarse class sigma",
+      "same old source type T is legal for all wall survivors",
+      "same selected witness mask J is legal",
+      "same stored-Q support profile is legal",
+      "exact 111 -> Q support constraints are satisfied",
+      "B0 complete/anticomplete-to-residual-Y0-component property holds",
+      "the entire original CSZ graph, including the constant support/seed gadget, is P7-free",
+      "the intended extension is legal and survives normalization",
+      "no existing PATH_CELL or C11 source theorem forbids the wall incidence"
+    ],
+    "terminals": {
+      "PASS_SOURCE_EMBEDDING": {
+        "meaning": "An arbitrary-N exact source-valid family is obtained with mim(I_sigma) unbounded.",
+        "consequence": "Falsifies the global seed-bounded COMMON_LAYOUT_EXISTENCE route for arbitrary B0 coarse classes.",
+        "ceiling": "Does not rule out narrower source subclasses or other non-mim algorithms."
+      },
+      "BLOCKED_SYMBOLIC_SOURCE_OBSTRUCTION": {
+        "meaning": "The first exact CSZ/B0/PATH_CELL obligation violated by the subdivided-wall geometry is identified.",
+        "consequence": "Promote that violated source law as the next structural theorem target."
+      },
+      "OPEN_SOURCE_EMBEDDING": {
+        "meaning": "Neither a complete embedding nor a source obstruction is proved.",
+        "consequence": "COMMON_LAYOUT_EXISTENCE remains open."
+      }
+    }
+  },
+  "anti_duplication_bindings": [
+    "Do not retry a theorem claiming generic B1A/full-quotient geometry implies bounded union mim-width; the abstract wall skeleton already falsifies that route.",
+    "Do not reopen FULL_COMPONENT_QUOTIENT_INDUCED_PATH_LIFT_V1; it is sealed.",
+    "Do not repeat mim-to-D1 state counting; it is sealed conditionally.",
+    "Do not write a new DP before a source-valid layout/subclass certificate exists.",
+    "Do not treat the abstract Qhat_n completion as a source-valid CSZ graph.",
+    "Do not infer same coarse signature or same stored support profile without proving exact source provenance.",
+    "Do not use general probe-graph tractability as a substitute for source structure."
+  ],
+  "scientific_ceiling": {
+    "COMMON_LAYER_UNION_MIM_EQUIVALENCE": "SEALED",
+    "CONDITIONAL_D1_BOUND": "SEALED_CONDITIONAL",
+    "ABSTRACT_GENERIC_B1A_GEOMETRY_IMPLIES_BOUNDED_UNION_MIM": "FALSIFIED_ABSTRACTLY",
+    "SOURCE_VALID_WALL_EMBEDDING": "NOT_PROVED",
+    "COMMON_LAYOUT_EXISTENCE": "OPEN",
+    "FULL_L2_REPAIR": "OPEN",
+    "LEMMA11_P7_LIFT": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "next_recommended_action": "Freeze and execute R5_B1B1A_SUBDIVIDED_WALL_SOURCE_EMBEDDING_GATE_V1 before attempting any positive common-layout theorem.",
+  "return_to_HQ": true
+}

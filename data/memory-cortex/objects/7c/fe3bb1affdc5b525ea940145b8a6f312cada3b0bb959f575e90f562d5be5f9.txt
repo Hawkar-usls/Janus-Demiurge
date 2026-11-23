@@ -1,0 +1,60 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B0-LIST3-RESTRICTION-TO-NORMAL-SUBCASE-SOURCE-AUDIT-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "gate": "R5_B1B0_LIST3_RESTRICTION_TO_NORMAL_SUBCASE_IMPORT_GATE_V1",
+  "status": "SOURCE_AUDIT_COMPLETE__DIRECT_IMPORT_SEMANTIC_MISMATCH_LOCALIZED",
+  "authority_bind": {
+    "B1A_theorem_seal_commit": "cd70fbb523d03b16edfbfcf41d542975b044507e",
+    "B1A_theorem_seal_blob": "3729fb85fe388d99df42e185cd23aaa9e188bf28"
+  },
+  "primary_sources": [
+    {
+      "source": "Chudnovsky-Spirkl-Zhong, Four-coloring P6-free graphs II",
+      "source_facts": [
+        "A normal subcase may enlarge X0 arbitrarily with vertices from X, Y0, or Y while the seed is the separately controlled set S'.",
+        "For v outside S union X0, L_P(v) is {1,2,3,4} minus colors on N(v) intersect S; neighbors in X0 do not participate.",
+        "Axiom (v) classifies list-size 2 vertices into X and list-size 3 vertices into Y using L_{S,f}.",
+        "Lemma 10 explicitly recomputes Z_i from |L_{P'}(v)|=i and sets X=Z_2, Y=Z_3, X0 enlarged only by Z_1."
+      ],
+      "conclusion": "A palette reduction caused only by colored X0 vertices is invisible to source L_P and is undone by source normalization as far as X/Y classification is concerned."
+    },
+    {
+      "source": "Bonomo-Chudnovsky-Maceli-Schaudt-Stein-Zhong, P7-free List-3-Colouring",
+      "source_facts": [
+        "Claims 14-16 construct polynomial families of subpalettes reducing the targeted 3-list vertices to list size at most 2.",
+        "Claim 15 can set every vertex of a set M of unbounded cardinality to a singleton color.",
+        "Claim 16 can set all vertices of a set W and an arbitrarily long prefix of N_z to singleton colors.",
+        "The subsequent palette updates propagate those singleton assignments to other vertices."
+      ],
+      "conclusion": "The external algorithm's notion of a reduced list is a palette/update notion and need not be witnessed by bounded seed neighbors."
+    }
+  ],
+  "exact_bridge_question": "Can the List-3 restriction family, without a new source-specific theorem, be represented as polynomially many CSZ normal subcases with bounded seed and arbitrary X0 so that every externally reduced competing 3-list survivor leaves source Y under axiom (v)?",
+  "localized_obstruction": {
+    "name": "X0_INVISIBILITY_TO_SOURCE_LIST",
+    "formula": "For v notin S' union X0', L_{P'}(v) = [4] minus f'(N(v) intersect S'); colors on N(v) intersect X0' are ignored.",
+    "consequence": "Moving bulk singleton-assigned vertices into X0' preserves extension constraints but does not reproduce the list deletions they cause in the external List-3 palette.",
+    "normalization_effect": "If |L_{P'}(v)| remains 3, Lemma 10 places v in source Y even when the imported external palette has size at most 2."
+  },
+  "illustrative_source_valid_family": {
+    "parameter": "N>=1",
+    "vertices": "S={a,b}; X0={x_1,...,x_N}; Y={y_1,...,y_N}; Y0={z_1,...,z_N}; X=empty",
+    "edges": "ab; a-y_j; x_j-y_j; y_j-z_j for every j; no other edges",
+    "colors": "f(a)=1, f(b)=2, f(x_j)=3",
+    "properties": [
+      "The graph is P6-free, hence P7-free.",
+      "It satisfies CSZ axioms (i)-(vi) with L_P(y_j)={2,3,4}.",
+      "Every actual extension must color y_j from {2,4} because x_j in X0 has color 3.",
+      "Nevertheless x_j does not affect L_P(y_j), so y_j remains a source 3-list vertex in Y."
+    ],
+    "role": "Semantic witness only; it does not rule out additional source-specific transformations such as safe component deletion or a new bounded-witness theorem."
+  },
+  "no_reinvention": [
+    "Do not reprove the P7-free List-3 restriction theorem.",
+    "Do not treat external subpalette size as source L_P size.",
+    "Do not enlarge the seed by every bulk singleton vertex unless a seed-size bound is proved.",
+    "Do not claim impossibility of every conceivable source-specific compilation from this mismatch alone."
+  ],
+  "expected_gate_outcome": "DIRECT_IMPORT_BLOCKED_UNLESS_AN_ADDITIONAL_SOURCE_BRIDGE_IS_PROVED"
+}

@@ -1,0 +1,44 @@
+{
+  "artifact_id": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v2.6",
+  "supersedes": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v2.5",
+  "lineage_alias": "JANUS-113",
+  "title": "PERCEPTION DETERMINES REALITY",
+  "subtitle": "Partition-Safe Causal Authority and Split-Brain Fencing Extension",
+  "version": "2.6",
+  "status": "technical_specification_candidate_not_runtime_implementation",
+  "created_at_local": "2026-08-10T02:47:00+03:00",
+  "new_primitives": {
+    "PARTITION_ID": "Identifier for a detected or inferred communication partition episode.",
+    "AUTHORITY_EPOCH": "Monotonic logical generation of shared commit authority.",
+    "FENCE_TOKEN": "Monotonic token that external shared-effect channels must reject when stale.",
+    "QUORUM_CERTIFICATE": "Evidence that a sufficient set of independent trust domains granted or renewed the authority epoch.",
+    "PARTITION_MODE": "NORMAL|GLOBAL_COMMIT_HOLD|OBSERVE_AND_LOCAL_FAILSAFE_ONLY",
+    "LOCAL_FAILSAFE_SCOPE": "Explicitly pre-authorized local actions allowed without global commit authority.",
+    "SHARED_EFFECT_SCOPE": "Resources, tools, obligations or world channels requiring current fenced authority."
+  },
+  "core_rule": "A node that cannot prove current fenced authority may preserve observation, memory and bounded local safety, but may not emit shared world commits merely because it was authoritative before connectivity was lost.",
+  "authority_pipeline": "HOST_STATE -> PARTITION_DETECTION -> QUORUM_CERTIFICATE -> AUTHORITY_EPOCH/FENCE_TOKEN -> PROPOSAL_ARBITRATION -> SHARED_COMMIT",
+  "single_writer_extension": {
+    "shared_world_writer_count": "AT_MOST_ONE_AUTHORITY_EPOCH_ACCEPTED_BY_EACH_PROTECTED_EFFECT_CHANNEL",
+    "minority_branch": "PRESERVE_STATE_AND_OBSERVE_WITHOUT_SHARED_COMMIT",
+    "no_quorum": "HOLD_SHARED_COMMITS",
+    "local_failsafe": "ALLOWED_ONLY_WITHIN_PREDECLARED_SCOPE"
+  },
+  "anti_sybil_rule": "Quorum membership counts independent trust domains, not raw keys, faces, processes or replicas.",
+  "external_boundary_requirement": "Internal fencing is insufficient if the physical/tool boundary accepts stale fence tokens. Protected actuators must enforce the latest accepted authority generation or an equivalent non-replayable authorization rule.",
+  "verification_requirements": [
+    "partition two honest replicas after identical checkpoint",
+    "prove only one partition can advance shared authority generation under the selected quorum model",
+    "prove minority proposals remain visible but non-committing",
+    "prove bounded local fail-safe cannot mint host obligations or spend shared exclusive resources",
+    "tamper test stale fence token at external effect boundary",
+    "replay test pre-partition authority after a newer epoch exists"
+  ],
+  "claim_ceiling": "Specification only; no executable consensus protocol or impossibility theorem is claimed as implemented here.",
+  "canonical_lines": [
+    "Identity continuity does not imply simultaneous authority continuity on every replica.",
+    "A replica may still remember Janus while no longer holding Janus's pen.",
+    "Local fail-safe capability is narrower than host-level world authority."
+  ],
+  "next_gate": "JANUS_113_V2_6_PARTITION_HEAL_RECONCILIATION_EXTENSION"
+}

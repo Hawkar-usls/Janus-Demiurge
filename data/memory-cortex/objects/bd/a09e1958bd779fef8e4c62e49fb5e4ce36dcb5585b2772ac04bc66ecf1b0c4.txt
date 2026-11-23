@@ -1,0 +1,82 @@
+{
+  "artifact_uuid": "JANUS-AUTONOMOUS-CODE-STEWARD-V1.6-BKG-ROLLBACK-2026-08-17",
+  "schema": "janus.meta_registry.code_steward.v1",
+  "version": "1.6",
+  "status": "DESIGN_IMPLEMENTED_LOCAL_SELFTEST_PASS_GITHUB_CI_NOT_EXECUTED",
+  "purpose": "Allow JANUS to autonomously evolve runtime code while retaining an immutable bootstrap/root-of-trust and automatically rolling back to the historically best proven compatible release when a candidate regresses.",
+  "repository": "Hawkar-usls/janus-io",
+  "branch": "feature/autonomous-code-steward-v1",
+  "implementation_commits": {
+    "policy": "3a9710c88c8003487a9cdf6213f6a942907ae6a1",
+    "selector": "58a043b0dc7895d4c68bccb03dbb2b6a846604e2",
+    "architecture_docs": "51c2c0207c5b4bb445989cf1c85134ecfe2f9a92",
+    "workflow": "f5099eeaf6148e1432deddec75e43696ba2295f8"
+  },
+  "rollback_policy": {
+    "strategy": "BEST_KNOWN_GOOD_SAME_COMPATIBILITY_EPOCH",
+    "not_merely_previous_release": true,
+    "minimum_health_samples": 3,
+    "minimum_best_known_good_score": 0.70,
+    "candidate_hard_floor": 0.65,
+    "regression_margin": 0.08,
+    "failed_candidate_quarantined": true,
+    "failed_candidate_preserved": true,
+    "rollback_is_append_only_activation": true
+  },
+  "health_score_weights": {
+    "availability": 0.30,
+    "startup_success": 0.20,
+    "request_success": 0.20,
+    "latency": 0.10,
+    "guardian_pass": 0.10,
+    "recency": 0.05,
+    "rollback_penalty": -0.05
+  },
+  "preservation_laws": {
+    "delete": false,
+    "move": false,
+    "rename": false,
+    "rewrite_active_release_in_place": false,
+    "release_storage": "CREATE_ONLY",
+    "activation_history": "APPEND_ONLY"
+  },
+  "compatibility": {
+    "automatic_rollback_cross_epoch": false,
+    "reason": "A historically healthy release may be structurally incompatible with the current data/runtime epoch.",
+    "cross_epoch_fallback_requires_explicit_migration_record": true
+  },
+  "local_verification": {
+    "python_compile": "PASS",
+    "deterministic_self_test": "PASS",
+    "self_test_observation": {
+      "best_known_good": "R1",
+      "degraded_candidate": "R2",
+      "rollback_triggered": true,
+      "activation_append_only": true,
+      "no_delete_move_rename": true
+    }
+  },
+  "github_actions": {
+    "workflow_run_id": 32029181194,
+    "execution_status": "NOT_EXECUTED",
+    "github_conclusion": "failure",
+    "reason": "GitHub did not start the job because recent account payments failed or the Actions spending limit needs to be increased.",
+    "interpretation": "INFRASTRUCTURE_BILLING_BLOCK_NOT_CODE_TEST_FAILURE"
+  },
+  "next_runtime_steps": [
+    "Implement immutable NAS Code Steward bootstrap/launcher.",
+    "Store runtime releases in create-only version directories.",
+    "Store health observations and activation decisions as append-only receipts.",
+    "Wire Gate/Terminal release manifests into Steward eligibility gates.",
+    "Implement canary, probation, cooldown and quarantine.",
+    "After one final manual bootstrap, allow normal payload upgrades and BKG rollbacks without human file replacement."
+  ],
+  "claim_boundaries": [
+    "LOCAL_SELFTEST_PASS != LIVE_NAS_DEPLOYMENT",
+    "GITHUB_ACTIONS_BILLING_BLOCK != CODE_TEST_FAILURE",
+    "BEST_KNOWN_GOOD != MOST_RECENT",
+    "HEALTH_SCORE != TRUTH",
+    "ROLLBACK != HISTORY_DELETION",
+    "ROOT_OF_TRUST_UPGRADE != ORDINARY_SELF_UPDATE"
+  ]
+}

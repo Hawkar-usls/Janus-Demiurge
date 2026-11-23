@@ -1,0 +1,45 @@
+{
+  "experiment_id": "SCOBY-D1-STAGE1-SCREENING-01",
+  "protocol_version": "v1.1",
+  "parent_registry": "SCOBY-D0-RESEARCH-LINE-v2.8",
+  "status": "READY_FOR_EXECUTION",
+  "date": "2026-08-11",
+  "sample_count": 12,
+  "branch_count": 4,
+  "replicates_per_branch": 3,
+  "control": "GEN0_BASELINE_CONTROL",
+  "identity_policy": "IDENTITY_IS_A_SET_OF_EVIDENCE_NOT_A_BINARY_LABEL",
+  "material_status_before_identity": "UNKNOWN_MATERIAL_PENDING_BLIND_IDENTITY",
+  "sample_groups": {
+    "GEN0": {"branch": "B_AIR_DRY_NO_TENSION", "n": 3, "role": "BASELINE_CONTROL"},
+    "GEN1": {"branch": "C_AIR_DRY_UNDER_TENSION", "n": 3, "role": "ARCHITECTURE_VARIANT"},
+    "GEN2": {"branch": "C_AIR_DRY_UNDER_TENSION_LAMINATION", "n": 3, "role": "LAMINATED_ARCHITECTURE"},
+    "GEN3": {"branch": "C_AIR_DRY_UNDER_TENSION_TEXTILE", "n": 3, "role": "TEXTILE_COMPOSITE_ARCHITECTURE"}
+  },
+  "identity_evidence": {
+    "Raman": {"excitation_nm": 532, "power_mW_max": 5, "range_cm_minus_1": [800,1800], "replicates_per_sample": 3},
+    "FTIR_ATR": {"range_cm_minus_1": [4000,400], "role": "functional_group_evidence"},
+    "XRD": {"radiation": "Cu Kalpha", "two_theta_deg": [5,40], "role": "crystallinity_and_orientation_evidence"},
+    "moisture": {"method": "Karl Fischer or gravimetric 105C to constant mass"},
+    "ash": {"temperature_C": 600, "duration_h": 4},
+    "CHN": {"status": "OPTIONAL", "role": "foreign_organic_additive_screen"}
+  },
+  "mass_balance": {
+    "stage_1": "raw_SCOBY_to_conditioned_dry_precursor",
+    "stage_2": "dry_precursor_to_final_architecture",
+    "required_for_GEN2_GEN3": true,
+    "GEN2": {"adhesive_type": "5% gelatin type A", "solids_content_percent": 5.0, "wet_adhesive_applied_g": "PLACEHOLDER", "dry_adhesive_mass_g": "PLACEHOLDER", "layer1_dry_mass_g": "PLACEHOLDER", "layer2_dry_mass_g": "PLACEHOLDER", "final_laminate_mass_g": "PLACEHOLDER", "adhesive_fraction_total_dry_mass": "PLACEHOLDER"},
+    "GEN3": {"textile_type": "linen plain weave 130 g/m2", "textile_dry_mass_g": "PLACEHOLDER", "scoby_dry_mass_estimated_g": "PLACEHOLDER", "final_composite_mass_g": "PLACEHOLDER", "textile_fraction_total_dry_mass": "PLACEHOLDER", "scoby_fraction_total_dry_mass": "PLACEHOLDER"}
+  },
+  "common_conditioning": {"temperature_C": 23, "relative_humidity_percent": 50, "duration_h": 24},
+  "gate_0_identity": "Raman + FTIR-ATR + XRD + moisture + ash + optional CHN; interpret collectively",
+  "gate_2_structure": {"SEM": {"fracture_method": "liquid_nitrogen_cold_fracture", "coating": "Au/Pd 5 nm", "accelerating_voltage_kV": 5, "magnifications": [500,2000,10000]}},
+  "gate_3_mechanics": {"tensile": {"specimen_mm": [10,100], "gauge_length_mm": 50, "speed_mm_per_min": 10, "dry_replicates_per_sample": 5, "wet_replicates_per_sample": 5, "wet_condition_h": 2}, "tear": {"method": "Elmendorf", "specimen_mm": [63,75], "notch_mm": 20, "pendulum_gf_cm": 1600, "replicates": 5}, "puncture": {"ball_diameter_mm": 5, "speed_mm_per_min": 100, "replicates": 5}},
+  "gate_4_moisture": {"wet_retention": "dry_strength_vs_2h_DI_water_strength", "cycling": {"cycles": 3, "immersion_h": 4, "drying_h": 20, "drying_temperature_C": 35, "outputs": ["mass_loss", "thickness_loss", "tensile_retention"]}},
+  "gate_8_manufacturability": {"record": ["person_minutes_per_sample", "material_cost_per_m2"]},
+  "screening_criteria": {"wet_tensile_retention_percent_min": 50, "cycling_tensile_retention_percent_min": 70, "tear_resistance_N_per_mm_min": 3, "promotion_status": "CANDIDATE_FOR_STAGE2", "note": "screening filter only; not an application classification"},
+  "statistics": {"baseline": "GEN0", "alpha": 0.05, "planned_multiple_comparison_correction": "Bonferroni", "note": "report effect sizes and uncertainty; do not treat n=3 group-level screening as definitive validation"},
+  "sample_ids": ["GEN0-01","GEN0-02","GEN0-03","GEN1-01","GEN1-02","GEN1-03","GEN2-01","GEN2-02","GEN2-03","GEN3-01","GEN3-02","GEN3-03"],
+  "data_integrity": {"sample_uuid_required": true, "characterization_record_hash_required": true, "protocol_sha256": "PENDING_COMPUTATION", "timestamp": "2026-08-11"},
+  "execution_policy": "Replace PLACEHOLDER/null only with observed measurements. Do not backfill measurements from expectations. Preserve raw observations and provenance."
+}

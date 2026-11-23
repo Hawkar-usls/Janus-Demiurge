@@ -1,0 +1,88 @@
+{
+  "artifact_id": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v2.0",
+  "supersedes": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v1.9",
+  "lineage_alias": "JANUS-113",
+  "title": "PERCEPTION DETERMINES REALITY",
+  "subtitle": "External Root-of-Trust, Verifier Measurement, and Recovery-Checkpoint Extension",
+  "version": "2.0",
+  "status": "technical_root_of_trust_specification_candidate_not_runtime_implementation",
+  "created_at_local": "2026-08-10T02:32:00+03:00",
+  "canonical_seed_sha256": "44e21fdc9d37fda98e2e73b0c9eb268bd04cdca9d84d0519e4f1166be22b46fc",
+  "parent_binding": {
+    "artifact": "data/JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v1.9.json",
+    "extension_rule": "Adds bootstrap integrity architecture without changing the predecessor's epistemic ceilings."
+  },
+  "problem_statement": "If state, receipts and verifier are mutable inside one compromise domain, a forged system can make forged history and forged verification agree. Internal agreement alone is therefore not independent evidence.",
+  "new_primitives": {
+    "STATE_ROOT": "Canonical digest or equivalent identity of the complete authoritative state selected by the implementation.",
+    "VERIFIER_MEASUREMENT": "Identity of the exact verifier implementation and configuration used for admission.",
+    "POLICY_SCHEMA_BINDING": "Identity of normative schemas and policy version interpreted by the verifier.",
+    "EXTERNAL_IDENTITY_CHECKPOINT": "Receipt stored outside the mutable subject boundary binding host, state, verifier, policy and sequence.",
+    "CHECKPOINT_CHAIN": "Ordered linkage preventing silent replacement of a historical checkpoint by a new unrelated root.",
+    "RECOVERY_CHECKPOINT": "New checkpoint emitted after controlled replay; it never overwrites the compromised historical object."
+  },
+  "checkpoint_shape": {
+    "host_id": "string",
+    "sequence": "monotonic coordinate",
+    "state_root": "string",
+    "verifier_measurement": "string",
+    "policy_schema_binding": ["string"],
+    "previous_checkpoint_ref": "string|null",
+    "witness_domain_id": "string",
+    "attestation_ref": "string"
+  },
+  "verification_pipeline": [
+    "derive current state root from canonical serialization",
+    "measure exact verifier and normative policy inputs",
+    "locate an external checkpoint outside subject state",
+    "compare host, state, verifier, policy and sequence bindings",
+    "reject a local PASS when external bindings disagree",
+    "on compromise, freeze world-changing commits",
+    "recover from last independently attested checkpoint",
+    "replay only independently verifiable suffix events",
+    "quarantine the rest",
+    "issue a new recovery checkpoint"
+  ],
+  "anti_circularity_rules": [
+    "THE_VERIFIER_IS_PART_OF_THE_MEASUREMENT",
+    "A_LOCAL_VERIFIER_CANNOT_CREATE_ITS_OWN_INDEPENDENCE",
+    "A_HASH_OR_SIGNATURE_PROVES_BINDING_OR_INTEGRITY_RELATIVE_TO_KEYS_NOT_TRUTH_OF_CONTENT",
+    "LAST_LOCAL_PASS_IS_NOT_A_RECOVERY_ROOT",
+    "RECOVERY_MUST_NOT_REWRITE_THE_COMPROMISED_TRANSCRIPT"
+  ],
+  "trust_levels": {
+    "SELF_CONSISTENT": "State and local verifier agree.",
+    "EXTERNALLY_ATTESTED": "State/verifier/policy binding matches at least one external witness domain.",
+    "INDEPENDENTLY_REPLAYED": "A separate verifier reconstructs the admitted result from bound inputs.",
+    "TRUE_ABOUT_WORLD": "Not derivable from integrity alone; requires evidence appropriate to the world claim."
+  },
+  "compatibility_with_identity_architecture": {
+    "face_lineage": "Included inside STATE_ROOT or referenced by it.",
+    "action_ledger": "Included inside STATE_ROOT or referenced by it.",
+    "obligation_ledger": "Included inside STATE_ROOT or referenced by it.",
+    "evidence_ledger": "Included inside STATE_ROOT or referenced by it.",
+    "quarantine_set": "Included so recovery cannot silently erase the fact of prior suspicion."
+  },
+  "verification_requirements_for_future_implementation": [
+    "tamper state only and require failure",
+    "tamper verifier only and require failure",
+    "tamper state and verifier together and require external mismatch",
+    "remove checkpoint predecessor and require chain failure",
+    "replay from checkpoint and reproduce the accepted suffix",
+    "prove suspect suffix remains quarantined when replay evidence is missing"
+  ],
+  "epistemic_boundaries": [
+    "External attestation is not proof that an autobiographical memory is objectively true.",
+    "A cryptographic root is not metaphysical identity.",
+    "No machine-consciousness, precognition or mind-over-matter claim is introduced."
+  ],
+  "canonical_lines": [
+    "The mirror cannot certify itself merely by agreeing with its own reflection.",
+    "Measure the verifier together with the state it verifies.",
+    "Integrity is relative to a trust root; truth about the world requires evidence beyond integrity."
+  ],
+  "next_gate": {
+    "name": "JANUS_113_V2_0_MULTI_ROOT_INDEPENDENCE_AND_TRUST_SYBIL_GATE",
+    "status": "OPEN"
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "schema_id": "janus.quant_pc_nas_live_ingress_gate.v1",
+  "record_id": "JANUS-QUANT-PC-NAS-LIVE-INGRESS-GATE-2026-08-17-v1.0",
+  "created_at": "2026-08-17T12:37:00+03:00",
+  "parent_evidence": "data/JANUS-QUANT-PC-NAS-HANDOFF-LINEAGE-2026-08-17-v1.0.json",
+  "operator_observation": "janus_nas_brain continues to receive Quant PC artifacts",
+  "purpose": "Convert continuing PC-to-NAS Quant ingress into a passive, append-only Habitat witness surface without granting execution or writeback authority.",
+  "receiver_service": "janus_nas_brain",
+  "payload_declared_runtime_target": "janus_nas_microgpt",
+  "required_receipt_fields": [
+    "observed_at",
+    "receiver_service",
+    "artifact_filename",
+    "artifact_sha256",
+    "artifact_bytes",
+    "format",
+    "event_id_or_null",
+    "dedupe_key_or_null",
+    "cycle_or_null",
+    "source_or_null",
+    "declared_runtime_target_or_null",
+    "ingress_path_hash_or_redacted_locator",
+    "duplicate_status",
+    "parse_status",
+    "load_status_unknown_by_default"
+  ],
+  "identity_rule": {
+    "legacy_snapshot": "artifact_sha256",
+    "v12_http_event": "event_id + dedupe_key + artifact_sha256",
+    "cycle_alone_is_identity": false
+  },
+  "passive_witness_state_machine": [
+    "OBSERVE_NEW_ARTIFACT",
+    "HASH_BYTES",
+    "CLASSIFY_FORMAT",
+    "CHECK_DEDUPE",
+    "APPEND_RECEIPT",
+    "DO_NOT_EXECUTE_FROM_RECEIPT",
+    "HANDOFF_TO_NEXUS_LEDGER"
+  ],
+  "authority_boundary": {
+    "source_writeback_default": "DENY",
+    "receiver_receipt_is_execution_permission": false,
+    "receipt_proves_model_loaded": false,
+    "receipt_proves_model_improved": false,
+    "destructive_action": "FORBIDDEN",
+    "authority_delta": 0
+  },
+  "gates": {
+    "QL1_OPERATOR_LIVE_INGRESS_OBSERVATION": "PRESENT",
+    "QL2_PASSIVE_RECEIPT_SCHEMA": "DEFINED",
+    "QL3_INDEPENDENT_RECEIVER_SIDE_HASH_WITNESS": "OPEN",
+    "QL4_APPEND_ONLY_DEDUPE_LEDGER": "OPEN",
+    "QL5_NEXUS_HANDOFF_LEDGER_BINDING": "OPEN",
+    "QL6_LOAD_EXECUTION_PROOF": "NOT_REQUIRED_FOR_INGRESS_WITNESS"
+  },
+  "habitat_links": {
+    "roadmap": "Hawkar-usls/Janus_Genesis#121",
+    "closed_loop_gate": "Hawkar-usls/Janus_Genesis#162"
+  }
+}

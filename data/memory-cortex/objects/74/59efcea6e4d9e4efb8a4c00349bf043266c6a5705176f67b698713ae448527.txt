@@ -1,0 +1,53 @@
+{
+  "schema_id": "janus.adv_elite.decision_checkpoint.v1",
+  "project": "ADV_Elite / Beacon AI reconstruction",
+  "timestamp": "2026-08-27T08:23:00+03:00",
+  "decision": {
+    "decision_id": "Q07",
+    "status": "FROZEN",
+    "canonical_class": "TIERED_MEMORY_WITH_SWARM_OFFLOAD_AND_SAFE_FORGETTING",
+    "user_intent": "A+B memory: continuous Witness plus compact significant memory. Nodes commonly use local flash/SD; nodes without storage forward state to a storage-capable swarm peer. Old ordinary data may be removed only after useful information is extracted, while anomalies, unusual cases and forensic-significant episodes are preserved.",
+    "memory_tiers": {
+      "L0_live_ring": "bounded RAM ring for recent high-resolution context and anomaly pre/post windows",
+      "L1_local_witness": "continuous append-oriented sensor/swarm/prediction/model history while capacity allows",
+      "L2_semantic_episode_memory": "compact durable memory of anomalies, rare events, major prediction errors, regime changes, failures/recoveries, model breakthroughs/regressions and pinned episodes",
+      "L3_swarm_archive": "trusted storage-capable peer/NAS/Habitat archive with source/session/schema/time-range/integrity metadata"
+    },
+    "storage_capability_rule": {
+      "node_with_storage": "store locally first, then compact/archive according to budget",
+      "node_without_storage": "buffer short-term and forward state/episodes to a storage-capable peer",
+      "network_absent": "continue within local bounded capacity and mark archival debt",
+      "reconnect": "repay archival debt and require durable receipt acknowledgement"
+    },
+    "forgetting_policy": {
+      "allowed": true,
+      "principle": "DELETE_ONLY_AFTER_VALUE_EXTRACTION_AND_RETENTION_GATES_PASS",
+      "conditions": [
+        "required features/statistics have been extracted",
+        "no unresolved anomaly depends on the window",
+        "no model regression/debug investigation requires it",
+        "no provenance/integrity debt remains",
+        "required remote archive has acknowledged durable receipt where applicable",
+        "retention window has expired"
+      ],
+      "preserve": [
+        "anomalies",
+        "rare/unusual episodes",
+        "failed model promotions",
+        "major prediction misses",
+        "security/integrity failures",
+        "explicitly pinned forensic windows"
+      ],
+      "summarize_before_delete": true,
+      "record_compaction_or_tombstone": true
+    },
+    "learning_guard": {
+      "raw_history_is_not_forever_by_default": true,
+      "semantic_memory_keeps_provenance": true,
+      "deletion_must_not_make_model_claims_unreproducible": true,
+      "critical_training_examples_are_pinned_or_archived": true
+    },
+    "test_gate": "Power-cycle persistence + ring rollover + SD-full behavior + no-storage offload + receipt ACK + reconnect debt repayment + anomaly pinning + auditable compaction/deletion"
+  },
+  "next_question": "Q08_WITNESS_INTEGRITY"
+}

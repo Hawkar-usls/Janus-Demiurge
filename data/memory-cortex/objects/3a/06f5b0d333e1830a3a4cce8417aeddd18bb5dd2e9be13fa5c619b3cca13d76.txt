@@ -1,0 +1,60 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1A-MONOCHROMATIC-INCIDENCE-INDUCED-PATH-LIFT-INDEPENDENT-REPLAY-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "PASS_INDEPENDENT_SYMBOLIC_REPLAY_ZERO_MISMATCHES",
+  "gate": "R5_B1A_THREE_LAYER_COMPONENT_INCIDENCE_IMPORT_GATE_V1",
+  "theorem": "MONOCHROMATIC_INCIDENCE_INDUCED_PATH_LIFT_V1",
+  "method": "RESTART FROM FROZEN B0 COMPONENT UNIFORMITY, THE DEFINITION OF I_{sigma,i}, AND THE FACT THAT R_i IS STABLE; DO NOT USE THE PRIMARY PROOF'S CASE TEXT.",
+  "inputs": {
+    "B0_result_blob": "727ff69fdcb7532e4bcfbc82c9128a4f806adf94",
+    "source_audit_blob": "be676c101deab882314d5f02f629f82f8e795a9d",
+    "prereg_blob": "b4f3466714938c21d7fe8997818a56272a394510"
+  },
+  "symbolic_replay": {
+    "path_model": "Let q_1,...,q_k be an arbitrary induced path in I_{sigma,i}. Because I_{sigma,i} is bipartite, path positions alternate between survivor nodes and component nodes.",
+    "representative_map": "Map every survivor node v to itself and every component node C to an arbitrary c(C) in C.",
+    "arbitrary_pair_test": [
+      {
+        "condition": "|a-b|=1",
+        "result": "q_a,q_b are opposite-side adjacent nodes of I; incidence definition gives survivor complete to the component, hence their images are adjacent in G."
+      },
+      {
+        "condition": "|a-b|>1 and positions a,b are on the same survivor side",
+        "result": "their images are distinct vertices in the same stable set R_i, hence nonadjacent in G."
+      },
+      {
+        "condition": "|a-b|>1 and positions a,b are on the same component side",
+        "result": "their images lie in distinct connected components of G[Y0], hence nonadjacent in G."
+      },
+      {
+        "condition": "|a-b|>1 and positions a,b are on opposite sides",
+        "result": "inducedness of the path in I gives a nonedge vC. B0 says v is complete or anticomplete to C; nonedge excludes complete, so v is anticomplete to C, hence the representative pair is nonadjacent in G."
+      }
+    ],
+    "pair_partition_exhaustive": true,
+    "dependence_on_k": "NONE beyond the existence of path positions; the argument holds for every k>=1.",
+    "endpoint_orientation_dependence": "NONE",
+    "lifted_graph": "Exactly the consecutive image pairs are edges; every nonconsecutive image pair is a nonedge. Therefore the image is an induced P_k."
+  },
+  "recomputed_corollaries": {
+    "I_sigma_i_P7_free": "PASS",
+    "reason": "An induced P7 in I_{sigma,i} would lift to an induced P7 in G.",
+    "Lozin_Zamaraev_importability_per_layer": "PASS",
+    "reason_import": "Each I_{sigma,i} is bipartite by definition and P7-free by the replayed corollary."
+  },
+  "comparison": {
+    "primary_proof_commit": "93e29239a489ac6586b5ffedeabba5deaf296a24",
+    "primary_proof_blob": "1f5de6ae38754ac5938c2a008a1945e58cd68bdf",
+    "mismatch_count": 0
+  },
+  "limitations": [
+    "No claim that the union I_sigma of the three layers has bounded mim-width.",
+    "No joint DP or shared-component boundary-state theorem is proved.",
+    "No global extension coloring is fixed by the auxiliary coloring.",
+    "No B1B synchronization gate is opened.",
+    "No full L2 repair or Lemma 11 P7 lift is proved."
+  ],
+  "stop": true,
+  "return_to_HQ_after_seal": true
+}

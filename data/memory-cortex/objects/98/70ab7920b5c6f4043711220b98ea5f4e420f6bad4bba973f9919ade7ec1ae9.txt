@@ -1,0 +1,120 @@
+{
+  "artifact_uuid": "JANUS-POSS1-OPEN-PUBLIC-RECONSTRUCTION-COHORT-v1.0",
+  "title": "JANUS POSS-I — Public-Only Independent Reconstruction Cohort",
+  "version": "v1.0",
+  "timestamp": "2026-08-15T08:54:00+03:00",
+  "status": "OPEN_PUBLIC_PIPELINE_READY_FOR_EXECUTION__NOT_CURRENT_AUTHORITY",
+  "purpose": "Replace dependence on request-only VASCO bytes with a fully public, independently constructed POSS-I cohort whose candidate catalog, plate/tile exposure, astrometric corrections, hashes, and source lineage can be reproduced by any third party.",
+  "lineage": {
+    "corrective_hypothesis": "registry/cosmology/JANUS-UAP-POSS1-NONNUCLEAR-BASELINE-TRIGGER-AUDIT-v1.0.json",
+    "closed_input_gate_preserved_as_historical_target": "registry/cosmology/JANUS-POSS1-PLATE-DAY-EXPOSURE-PHASE0-ACQUISITION-GATE-v1.0.json",
+    "calendar_discrepancy_audit": "registry/cosmology/JANUS-POSS1-NUCLEAR-CALENDAR-124-125-126-DISCREPANCY-AUDIT-v1.0.json",
+    "uap_domain_index": "data/JANUS-UAP-DOMAIN-INDEX-2026-08-14-v1.0.json",
+    "current_authority_changed": false
+  },
+  "execution_route_change": {
+    "old_primary_dependency": "Unpublished/request-only 107,875-source VASCO catalog and associated daily SPSS data.",
+    "new_primary_route": "Independent public reconstruction using the pinned poss1-plate-slice public release plus public plate headers and independent open nuclear calendars.",
+    "closed_dataset_status": "NOT_REQUIRED_FOR_NEW_PRIMARY_EXECUTION",
+    "important_boundary": "The 122,820-row open cohort is not claimed to be the same sample as the closed 107,875-row cohort. Raw count agreement is neither required nor expected; the target is transport of the statistical association under an independently generated, auditable selection function."
+  },
+  "pinned_open_cohort": {
+    "repository": "jannefi/poss1-plate-slice",
+    "commit": "4005e200541b321ead3d6608f0162a14430ef1c2",
+    "release_path": "results/s0-642-20260814",
+    "release_date": "2026-08-14",
+    "public_inputs_only": true,
+    "candidate_rows": 122820,
+    "plate_count": 642,
+    "processed_tiles": 31458,
+    "dedup_radius_arcsec": 0.25,
+    "published_content_hashes": {
+      "stage_S0_csv_uncompressed_sha256": "2ff92f2210acb387ef9ef4b88d561595d3883e9aab27065042627272b96590f0",
+      "tile_manifest_csv_uncompressed_sha256": "5dcb90dc5d98550e5a60246aced2b097922a267c69e81f27d45d16a288142a99",
+      "verification_s0_gaia_invariant_uncompressed_sha256": "18f1ba101b1b6752f36ce20fdc94e31ab8c3639523ee62fb901fc0ea0b0427e2"
+    },
+    "row_semantics": "A row is a POSS-I red-plate source surviving the release's catalog/morphology/veto/dedup chain and absent from the modern catalogs checked. It is not by itself a verified physical transient, UAP, spacecraft, or non-human object."
+  },
+  "why_this_route_is_methodologically_stronger": [
+    "The exact candidate and tile-manifest bytes are publicly downloadable and hash-pinned.",
+    "Plate identity is controlled by a plate-addressed full-scan workflow rather than delegated to a position-dependent archive cutout choice.",
+    "The pipeline publishes its candidate-selection code and an independence audit showing that unpublished catalogs are not inputs.",
+    "The current release documents and repairs concrete astrometric and veto failures instead of silently absorbing them into the catalog.",
+    "Exposure can be reconstructed from the actual processed-tile manifest and per-plate FITS metadata rather than treating non-observed calendar days as zero-candidate observing opportunities."
+  ],
+  "mandatory_artifact_controls": {
+    "wcs_two_solution_issue": {
+      "status": "KNOWN_MATERIAL_SYSTEMATIC",
+      "context": "The public reconstruction reports disagreement between DSS astrometric solutions on a substantial plate subset and repaired a severe near-pole/RA-wrap refit failure.",
+      "release_repair": "Eight defective tiles containing 12,273 rows in the superseded build yielded only 30 rows after astrometric repair.",
+      "janus_rule": "Only the pinned repaired 2026-08-14 release is admitted for the primary open cohort. Superseded 2026-08-13 counts are negative-control provenance, not input."
+    },
+    "veto_coverage_issue": {
+      "status": "KNOWN_REPAIRED_SYSTEMATIC",
+      "context": "A prior HEALPix cone-query implementation left portions of the reference-catalog veto incomplete and inflated candidates. The current release includes an explicit Gaia-contamination invariant.",
+      "janus_rule": "An open cohort release is admissible only with its invariant/verification receipts and content hashes."
+    },
+    "gaia_refit_circularity": {
+      "status": "MEASURED_SENSITIVITY",
+      "context": "The released coordinates include a Gaia-based smooth per-tile refit before Gaia is also used as a veto. The upstream project reports direct comparison against Gaia, PS1 and USNO-B and no Gaia-specific excess at the veto threshold.",
+      "janus_rule": "Retain this as an explicit provenance covariate/sensitivity rather than treating corrected coordinates as raw photographic astrometry."
+    }
+  },
+  "open_data_acquisition": {
+    "candidate_catalog": "Pinned upstream stage_S0.csv.gz; expected decompressed SHA-256 is frozen above.",
+    "tile_to_plate_binding": "Pinned upstream tile_manifest.csv.gz; 31,458 processed tiles bind tile_id to plate_id.",
+    "plate_observation_metadata": "Read DATE-OBS, EXPOSURE, REGION and related identity keywords from the public IRSA DSS1 plate-addressed FITS headers. Full 374-MB image payloads are not required for the temporal association test.",
+    "plate_header_efficiency": "Stream only the initial FITS header blocks for 642 plates; do not download hundreds of gigabytes merely to recover dates/exposure metadata.",
+    "dss_context": "POSS-I E is survey code XE; STScI documents 936 survey plates in the full survey, while the pinned independent cohort processes 642 plates. These populations must not be conflated."
+  },
+  "exposure_contract": {
+    "primary_open_proxy": "exposure_tile_min = processed_tile_count_for_plate * FITS_EXPOSURE_minutes",
+    "why_proxy_not_deg2": "A nominal 60x60 arcmin tile must not be silently assumed to contribute exactly one square degree of valid, unique effective footprint after clipping, overlap and plate geometry.",
+    "primary_interpretation": "candidate rate per processed tile-minute",
+    "future_geometry_sensitivity": "Compute exact non-overlapping valid sky area per processed tile from WCS footprints and rerun with geometric deg2-minute exposure.",
+    "forbidden_relabel": "exposure_tile_min may not be called deg2_min."
+  },
+  "nuclear_calendar_strategy": {
+    "literal_124_calendar": "Still valuable for historical replication but no longer a blocker for the public-only primary route.",
+    "open_control_source": "Public structured SIPRI/IAEA-derived nuclear-explosion table, frozen by byte hash at execution time.",
+    "frozen_open_variants": {
+      "strict": "USA/USSR/UK tests in the study window with types AIRDROP, TOWER, SURFACE, ATMOSPH, BARGE, BALLOON, ROCKET or SHIP; exclude UW/SHAFT/TUNNEL/CRATER.",
+      "broad": "Same as strict but include CRATER as a preregistered sensitivity definition."
+    },
+    "anti_p_hacking_rule": "Both open calendar definitions are specified before inspecting beta_nuclear; neither may be promoted post hoc merely because it gives a smaller p-value.",
+    "historical_comparison": "The 124/125/126 discrepancy remains tracked separately. Open-control results are labelled by their own row/date definitions and are never called an exact reproduction of the original 124-date SPSS calendar."
+  },
+  "primary_open_test": {
+    "grain": "one row per processed POSS-I plate within 1949-11-19 through 1957-04-28",
+    "response": "candidate_count on that plate",
+    "exposure": "exposure_tile_min",
+    "primary_predictor": "nuclear_window_m1_p1",
+    "pre_effect_covariates": ["year_centered", "season_sin", "season_cos"],
+    "model": "Negative Binomial NB2 with estimated dispersion; observation-date clustered covariance when sufficient repeated dates exist; Poisson sensitivity retained.",
+    "secondary_windows": ["nuclear_window_m2_p2", "nuclear_window_m4_p4"],
+    "primary_question": "Does a residual nuclear-window incidence-rate effect remain in a completely public, independently constructed POSS-I candidate cohort after conditioning on actual processed exposure and smooth temporal structure?"
+  },
+  "hypothesis_interpretation": {
+    "H0_schedule_artifact": "After exposure and preregistered temporal/artifact controls, beta_nuclear is compatible with zero.",
+    "H1_baseline_plus_trigger": "A non-zero baseline candidate population exists and beta_nuclear remains non-zero after the frozen controls.",
+    "H1_claim_ceiling": "Even a surviving association would not show that candidates are physical sky transients, UAP, non-human objects, or caused by nuclear detonations. It would establish transport of a temporal association into an independent public selection pipeline."
+  },
+  "software": {
+    "public_intake": "research/uap_poss1/janus_poss1_open_release_intake_v0_1.py",
+    "model_runner": "research/uap_poss1/janus_poss1_h0_h1_v0_1.py",
+    "model_runner_version_after_generalization": "JANUS-POSS1-H0-H1-v0.2",
+    "workflow_target": ".github/workflows/janus_poss1_open_reconstruction.yml"
+  },
+  "admission_gates": [
+    {"id": "OPEN_G0_UPSTREAM_HASH", "pass": "122,820-row stage and 31,458-row tile manifest match pinned decompressed SHA-256 values"},
+    {"id": "OPEN_G1_PLATE_BINDING", "pass": "all stage tile_ids map unambiguously to the 642 public plate IDs"},
+    {"id": "OPEN_G2_HEADER_PROVENANCE", "pass": "all 642 plate IDs yield parseable public FITS DATE-OBS and positive EXPOSURE with matching REGION identity"},
+    {"id": "OPEN_G3_CALENDAR_FREEZE", "pass": "open strict and broad calendar bytes/definitions frozen before beta inspection"},
+    {"id": "OPEN_G4_MATRIX", "pass": "plate-day matrices have positive exposure_tile_min, zero/positive candidate counts and deterministic nuclear-window flags"},
+    {"id": "OPEN_G5_H0_H1", "pass": "NB2 primary plus preregistered calendar/window sensitivities complete from frozen matrices"},
+    {"id": "OPEN_G6_CROSS_PIPELINE_TRANSPORT", "pass": "results compared with Hayes and with the historical closed-sample reports without treating non-equivalent catalogs as pooled observations"},
+    {"id": "OPEN_G7_AUTHORITY", "pass": "only an explicitly admitted result artifact may change current-authority; this design artifact does not"}
+  ],
+  "current_claim": "THE_REQUEST_ONLY_107875_CATALOG_IS_NO_LONGER_A_BLOCKER_FOR_A_NEW_INDEPENDENT_OPEN_TEST",
+  "claim_ceiling": "OPEN_RECONSTRUCTION_DESIGN_AND_PIPELINE_READY__BETA_NUCLEAR_NOT_YET_ADMITTED"
+}

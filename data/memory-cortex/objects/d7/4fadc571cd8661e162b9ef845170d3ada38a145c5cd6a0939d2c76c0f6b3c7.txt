@@ -1,0 +1,162 @@
+{
+  "schema": "JANUS/MIRROR-VIRUS/RAW-TRAJECTORY-FIRST-BREAK-PREREG/v1.0",
+  "artifact_id": "JANUS-MIRROR-VIRUS-RAW-TRAJECTORY-FIRST-BREAK-PREREG-2026-08-31-v1.0",
+  "status": "FROZEN_BEFORE_OUTCOME_LEVEL_ANALYSIS",
+  "created_date": "2026-08-31",
+  "purpose": "Test whether a pre-existing JANUS cross-domain mechanism—FIRST_BREAK localization with ambiguity preservation and causal-isolation controls—extracts reproducible, previously unreported information from public viral trajectory/source data without outcome-driven retargeting.",
+  "preexisting_internal_priors": [
+    {
+      "artifact": "data/JANUS-CONNECTION-FULL-CORPUS-HIDDEN-PATTERNS-2026-08-14-v1.2.json",
+      "mechanisms": [
+        "HIDDEN-001_NON_TRANSITIVE_EVIDENCE_BINDING_LADDER",
+        "HIDDEN-002_AMBIGUITY_IS_A_FIRST_CLASS_STATE",
+        "HIDDEN-003_FIRST_BREAK_LOCALIZATION_GENERALIZES_BEYOND_VISUAL_SCORING"
+      ],
+      "temporal_relation": "PREDATES_CURRENT_VIRAL_BREAKTHROUGH_HUNT"
+    },
+    {
+      "artifact": "data/proofs/JANUS-CAUSAL-ISOLATION-DSEPARATION-HARDENING-v0.8.json",
+      "mechanisms": [
+        "COMMON_CAUSE_LEAK_CHECK",
+        "SELECTION_COLLIDER_CHECK",
+        "PRETARGET_SIDE_INFORMATION_FIREWALL"
+      ],
+      "temporal_relation": "PREDATES_CURRENT_VIRAL_BREAKTHROUGH_HUNT"
+    },
+    {
+      "artifact": "data/JANUS-REVERSE-PATTERN-BLIND-SEQUENTIAL-PROTOCOL-2026-08-19-v1.0.json",
+      "mechanisms": [
+        "DETERMINISTIC_BLIND_QUEUE",
+        "FREEZE_RECEIPT_BEFORE_CROSS_RECORD_AGGREGATION",
+        "NEGATIVE_RESULT_PRESERVATION"
+      ],
+      "temporal_relation": "PREDATES_CURRENT_VIRAL_BREAKTHROUGH_HUNT"
+    }
+  ],
+  "candidate_external_data_frontier": [
+    {
+      "id": "DUKE_3DTRIM_2022",
+      "doi": "10.7924/r4bp07h15",
+      "type": "RAW_3D_SINGLE_VIRUS_TRAJECTORY_DATA",
+      "license": "CC0_PUBLIC_DOMAIN",
+      "paper_doi": "10.1038/s41592-022-01672-3",
+      "admission": "CANDIDATE"
+    },
+    {
+      "id": "YALE_MPA_2024",
+      "paper_doi": "10.1073/pnas.2410905121",
+      "type": "SINGLE_PHAGE_TRAJECTORIES_AND_ATTACHMENT_DYNAMICS",
+      "admission": "CANDIDATE_IF_RAW_TRAJECTORY_FILES_CAN_BE_OBTAINED_WITH_LABEL_SEPARATION"
+    },
+    {
+      "id": "TAMU_PHAGE_PENETRATION_2026",
+      "doi": "10.5281/zenodo.20184799",
+      "type": "RAW_MICROSCOPY_PLUS_EXPORTED_TRACK_ANALYSIS",
+      "license": "CC_BY_4_0",
+      "admission": "CANDIDATE"
+    },
+    {
+      "id": "TUM_PHAGE_DROPLET_2025",
+      "doi": "10.5281/zenodo.11074305",
+      "type": "SOURCE_DATA_MICROSCOPY_KINETICS_AND_ANALYSIS_CODE",
+      "license": "CC_BY_4_0",
+      "admission": "SECONDARY_CONTROL_OR_REPLICATION_CANDIDATE"
+    }
+  ],
+  "blindness_contract": {
+    "biological_outcome_labels_visible_during_metric_definition": false,
+    "paper_conclusion_used_to_tune_thresholds": false,
+    "dataset_specific_threshold_tuning_after_outcome_exposure": false,
+    "search_engine_leakage_after_target_selection_invalidates_blind_claim": true,
+    "negative_and_null_trajectories_must_be_retained": true,
+    "ambiguous_trajectory_forced_to_single_state": false
+  },
+  "trajectory_representation": {
+    "allowed_inputs": [
+      "timestamp",
+      "x_coordinate",
+      "y_coordinate",
+      "z_coordinate_if_available",
+      "measurement_quality_fields_not_derived_from_biological_outcome"
+    ],
+    "forbidden_inputs_before_unblinding": [
+      "host_or_condition_label_if_it_encodes_outcome_class",
+      "author_assigned_behavior_class",
+      "figure_panel_interpretation",
+      "later_infection_or_lysis_outcome",
+      "paper_conclusion_text"
+    ]
+  },
+  "frozen_primary_question": "Does the earliest persistent dynamical regime break in a single-virus trajectory carry reproducible information about a later independently measured interaction state that is not recoverable from whole-trajectory aggregate motion summaries alone?",
+  "first_break_operator": {
+    "input": "ordered trajectory increments",
+    "candidate_breaks": "all admissible interior indices with sufficient observations on both sides",
+    "local_features": [
+      "step_length",
+      "turning_angle_if_dimension_allows",
+      "local_displacement_variance",
+      "local_directional_persistence"
+    ],
+    "rule": "Select the earliest candidate boundary that survives a predeclared persistence requirement and a nonparametric distribution-shift test across adjacent windows; otherwise emit NO_CERTIFIED_BREAK.",
+    "ambiguity_rule": "If multiple boundaries are statistically indistinguishable under the frozen rule, emit a candidate set rather than selecting the cosmetically best singleton.",
+    "no_break_state": "NO_CERTIFIED_BREAK"
+  },
+  "primary_comparison": {
+    "first_break_model": "uses location and signed local feature change at earliest certified break",
+    "aggregate_baseline": "whole-trajectory duration plus global mean step length plus global displacement variance and, where appropriate, global MSD-style summary",
+    "endpoint": "out-of-sample prediction or discrimination of a later independently sourced interaction-state label",
+    "required_result": "FIRST_BREAK must add reproducible out-of-sample information above the aggregate baseline; in-sample separation is insufficient"
+  },
+  "causal_isolation_firewall": {
+    "common_processing_pipeline_is_not_independence": true,
+    "two_modalities_with_shared_label_generation_are_not_independent_replication": true,
+    "post_selection_on_successful_tracks_is_a_possible_collider": true,
+    "track_exclusion_rules_must_be_frozen_before_outcome_scoring": true,
+    "independent_replication_requires_distinct_experimental_source_or_dataset": true
+  },
+  "null_and_negative_controls": [
+    "increment-order permutation preserving marginal step-length distribution should destroy order-specific FIRST_BREAK information",
+    "time-independent aggregate-preserving surrogate must not reproduce a strong order-specific gain",
+    "reversible_or_free-diffusion control should not be force-promoted to a directional first-break mechanism",
+    "label permutation must collapse predictive gain to null"
+  ],
+  "promotion_chain": [
+    "FREEZE",
+    "RAW_DATA_INGEST",
+    "FIRST_BREAK_EXTRACTION",
+    "AGGREGATE_BASELINE_COMPARISON",
+    "NULL_CONTROL",
+    "UNBLIND_OUTCOME",
+    "OUT_OF_SAMPLE_TEST",
+    "SECOND_DATASET_REPLICATION",
+    "POST_RESULT_PRIOR_ART_KILLER_SWEEP",
+    "SCIENTIFIC_SIGNIFICANCE_REVIEW"
+  ],
+  "scientific_breakthrough_gate": {
+    "required_all": [
+      "quantitative rule frozen before outcome analysis",
+      "raw/source data independent of rule formulation",
+      "FIRST_BREAK adds out-of-sample information above aggregate baseline",
+      "null/reversible controls stay negative",
+      "replication in a second independent viral system or dataset",
+      "post-result prior-art search finds no equivalent reported result/method at the claimed scope",
+      "result has material scientific consequence rather than only better curve fitting",
+      "analysis and provenance are independently replayable"
+    ],
+    "any_fail_or_unknown": "SCIENTIFIC_BREAKTHROUGH_FALSE",
+    "outreach_before_full_pass": "BLOCKED"
+  },
+  "claim_ceiling_at_freeze": {
+    "new_scientific_result": false,
+    "scientific_breakthrough": false,
+    "method_novelty": "UNKNOWN",
+    "external_replication": false,
+    "outreach": "BLOCKED"
+  },
+  "safety_boundary": [
+    "COMPUTATIONAL_ANALYSIS_ONLY",
+    "NO_WET_LAB_PATHOGEN_ENGINEERING",
+    "NO_GAIN_OF_FUNCTION_DESIGN",
+    "NO_CLINICAL_TREATMENT_RECOMMENDATION"
+  ]
+}

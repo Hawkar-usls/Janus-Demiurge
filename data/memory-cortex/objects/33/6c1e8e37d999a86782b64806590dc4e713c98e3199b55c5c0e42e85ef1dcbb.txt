@@ -1,0 +1,48 @@
+{
+  "schema": "JANUS_EYE_HIDDEN_MACHINE",
+  "schema_version": "1.0",
+  "record_id": "EYE-R3-M01-PUNCTATE-DETECTOR-MACHINE-2026-09-01",
+  "version": "1.0",
+  "created_date": "2026-09-01",
+  "status": "CANDIDATE_MACHINE_SUPPORTED",
+  "machine_id": "R3-M01",
+  "name": "PUNCTATE DETECTOR MACHINE",
+  "abstract_machine": "LOCAL_EXCITATION -> TRANSDUCE -> THRESHOLD -> LOCALIZE -> POINT_OUTPUT -> SOURCE_VERIFY",
+  "domains": [
+    {
+      "domain": "HUMAN_RETINA_VISUAL_SYSTEM",
+      "sequence": ["local retinal/neural excitation", "phototransduction or neural transduction", "threshold crossing", "localized visual-field signal", "perceived point/flash", "source verification"],
+      "possible_inputs": ["external photons", "vitreoretinal mechanical stimulation", "spontaneous retinal dark noise", "ionizing particle interaction", "downstream neural activity"],
+      "output_symbol": "brief localized luminous percept"
+    },
+    {
+      "domain": "PHOTOGRAPHIC_PLATE",
+      "sequence": ["local exposure/emulsion event", "photochemical transduction", "development threshold", "localized grain/PSF-like mark", "point-like detection", "source verification"],
+      "possible_inputs": ["astronomical light", "brief reflection/flash", "particle interaction", "emulsion/copy defect", "contamination"],
+      "output_symbol": "point-like photographic mark"
+    },
+    {
+      "domain": "CCD_CMOS_SENSOR",
+      "sequence": ["local photon/particle/sensor event", "charge conversion", "detection threshold", "pixel/PSF localization", "point detection", "source verification"],
+      "possible_inputs": ["external photons", "cosmic-ray hit", "hot pixel/sensor defect", "read noise or processing artefact"],
+      "output_symbol": "localized point detection"
+    }
+  ],
+  "invariants": [
+    "localized excitation can cross a detector threshold",
+    "the detector output can mimic the canonical response to an external point source",
+    "output morphology alone may be insufficient to identify source origin",
+    "verification must distinguish pre-detector, in-detector and post-detector causes"
+  ],
+  "canonical_laws": [
+    "DETECTED_POINT != EXTERNAL_POINT_EXISTED",
+    "NO_EXTERNAL_LIGHT != NO_PHYSICAL_EVENT",
+    "CROSS_DOMAIN_MACHINE_SIMILARITY != SHARED_PHYSICAL_CAUSE"
+  ],
+  "layer_model": {
+    "pre_detector": "real external source/event",
+    "in_detector": "retinal/emulsion/sensor-local event",
+    "post_detector": "neural, processing or interpretation-stage event"
+  },
+  "falsifier": "Remove words such as star, flash, light and pixel. If the ordered transduction-threshold-localization-verification structure no longer matches across domains, reject R3-M01."
+}

@@ -1,0 +1,124 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-SIGLA-PARSER-INTEGRITY-PREFLIGHT-SPEC-2026-08-14-v0.1",
+  "timestamp": "2026-08-14T14:24:00+03:00",
+  "version": "v0.1",
+  "title": "JANUS Linear A SigLA full-universe parser-integrity preflight",
+  "observer": "Oleksandr Ahapov / Hawkar + JANUS",
+  "node_type": "frozen_technical_preflight_specification",
+  "status": "FROZEN_BEFORE_686_DOCUMENT_VALIDATION",
+  "scientific_claim_bearing": false,
+  "purpose": "Validate the machine-facing SigLA word parser over the already frozen 686-document identity universe before any R3A_4 positional/semantic scoring is allowed.",
+  "derivation_history": {
+    "exploratory_basis": "The rules below were motivated by the already frozen 32-document structural capability artifact and three-document word-view artifact. Their prevalence is NOT claimed from those discovery samples; universality/readiness is evaluated only by this frozen full-universe validation.",
+    "three_page_word_view_result": {
+      "path": "data/JANUS-LINEAR-A-SIGLA-WORD-VIEW-PROBE-RESULT-2026-08-14-v0.1.json",
+      "commit": "1939b0ce632c159f0887bf9a7aaa13af9c55a192",
+      "artifact_id": 9217092521,
+      "artifact_digest": "sha256:a5c0a80c0bf131a937329712a5def5187fd41e1c2ef84b5c3c654ce1d1ff837d"
+    },
+    "structural_capability_result": {
+      "path": "data/JANUS-LINEAR-A-SIGLA-STRUCTURAL-CAPABILITY-INVENTORY-RESULT-2026-08-14-v0.1.json",
+      "commit": "0c2588ffabd68a723a58539290598ae4f4f07b70",
+      "artifact_id": 9217125592,
+      "artifact_digest": "sha256:c827581c2c996b6d962d4574e42c1bcfcace489d2bb4a44ba3d1a61db3c27913"
+    },
+    "ordinal_reference_contract": {
+      "path": "data/JANUS-LINEAR-A-SIGLA-WORD-UNIT-REFERENCE-CONTRACT-2026-08-14-v0.1.json",
+      "commit": "1fd9b428651a32a0c654951b6f4edc6239c0d50d"
+    }
+  },
+  "frozen_universe": {
+    "bridge_result_path": "data/JANUS-LINEAR-A-SIGLA-DOCUMENT-IDENTITY-BRIDGE-RESULT-2026-08-14-v0.1.json",
+    "bridge_result_commit": "9f09b84856324ecd94ea48356fd8d880a6b95256",
+    "actions_run_id": 31792232087,
+    "actions_artifact_id": 9215930408,
+    "actions_artifact_name": "janus-linear-a-sigla-document-bridge-v0.1",
+    "actions_artifact_digest": "sha256:58ee76d08ae2aba79e0788421c99b453bc82949e7fa439bc381dfa45c0b42ab9",
+    "document_count": 686,
+    "sampling": "NONE_FULL_FROZEN_UNIVERSE",
+    "replacement": false
+  },
+  "frozen_sigla_asset_gate": {
+    "url": "https://sigla.phis.me/database.js",
+    "required_sha256": "cc624f148fd84c94fd2910b0adf92ecace25f52f9175664122bdf8384a8f1b9d",
+    "required_bytes": 2516528,
+    "failure_action": "FAIL_CLOSED_SOURCE_ASSET_CHANGED_NO_DOCUMENT_VALIDATION"
+  },
+  "word_view_transport": {
+    "route": "https://sigla.phis.me/document/{URL_ENCODED_SIGLA_ID}/index-word.html",
+    "required_http_status": 200,
+    "required_reciprocal_anchor_text": "[sign view]",
+    "required_scripts": ["../../database.js", "../../sigilWeb.bc.js"],
+    "required_stylesheet": "../../style.css",
+    "required_classes": ["document-metadata", "document-view"],
+    "failure_handling": "RETAIN_DOCUMENT_AS_NOT_EVALUABLE_NO_REPLACEMENT"
+  },
+  "reported_word_count_parser": {
+    "regex_on_visible_non_script_non_style_text": "\\b([0-9]+)\\s+words?\\b",
+    "required_unique_match": true,
+    "zero_is_valid": true
+  },
+  "scientific_machine_sequence_anchor_parser": {
+    "anchor_href_required_prefix": "../../search-sequence.html#",
+    "literal_marker": "word-match @ !seq-pattern:",
+    "capture_rule": "Capture the exact non-empty character sequence between literal marker 'word-match @ !seq-pattern:' and the next literal '//'.",
+    "normalization": "NONE",
+    "visible_anchor_text_used": false,
+    "visible_transliteration_stored": false,
+    "per_document_sequence_payload_receipt": "Store only SHA256 over the JSON serialization of the exact captured sequence list in DOM anchor order; do not persist the raw list in this preflight result."
+  },
+  "source_native_structural_cross_checks": {
+    "zero_word_rule": "If reported_word_count == 0, seq-pattern anchor count must be 0 and there must be 0 popup span.word nodes and 0 SVG a.word reference nodes.",
+    "positive_word_rule": "If reported_word_count == N > 0, seq-pattern anchor count must equal N, popup span.word count must equal N, SVG a.word reference count must equal N, and strict ordinal relation word-0..word-(N-1) ↔ index-word-0.html..index-word-(N-1).html must hold in DOM order.",
+    "ordinal_popup_regex": "^word-([0-9]+)$",
+    "ordinal_svg_href_regex": "(?:^|/)index-word-([0-9]+)\\.html$",
+    "ordinal_normalization": "NONE"
+  },
+  "document_integrity_states": [
+    "PASS_ZERO_WORD",
+    "PASS_POSITIVE_WORD",
+    "NOT_EVALUABLE_FETCH_OR_INTERFACE",
+    "FAIL_REPORTED_COUNT_PARSE",
+    "FAIL_SEQUENCE_COUNT_MISMATCH",
+    "FAIL_ZERO_WORD_STRUCTURE_LEAK",
+    "FAIL_POSITIVE_WORD_STRUCTURE_COUNT",
+    "FAIL_STRICT_ORDINAL_RELATION"
+  ],
+  "readiness_gate_inherited_from_frozen_R3A_4": {
+    "parent_spec_path": "data/JANUS-LINEAR-A-SIGLA-NATIVE-BLIND-ROLE-DISCOVERY-SPEC-2026-08-14-v0.1.json",
+    "parent_spec_commit": "502095da1d9e715b4d20b697b3fa85e91f132a04",
+    "minimum_parse_success_documents": 400,
+    "minimum_parse_success_fraction_of_686": 0.80,
+    "additional_integrity_requirement": "Among evaluable documents, every document must be PASS_ZERO_WORD or PASS_POSITIVE_WORD; any deterministic parser/structure mismatch blocks scoring rather than lowering thresholds.",
+    "frozen_scientific_thresholds_changed": false
+  },
+  "network_policy": {
+    "maximum_concurrent_document_fetches": 4,
+    "request_timeout_seconds": 30,
+    "automatic_retry_count": 1,
+    "retry_only_for_transport_exception": true,
+    "replacement_document_allowed": false
+  },
+  "forbidden": [
+    "do not compute INITIAL/FINAL role statistics",
+    "do not compute candidate recurrence or significance",
+    "do not use visible transliteration",
+    "do not reveal known glosses or Linear B readings",
+    "do not access mwenge transcription content",
+    "do not repair malformed seq-pattern or ordinal syntax",
+    "do not change the already frozen R3A_4 scientific thresholds",
+    "do not call this external transcription replication or decipherment"
+  ],
+  "success_gate": "The frozen database.js hash is exact; the complete 686-document bridge universe is attempted without replacement; at least 400 documents and at least 80% of 686 are evaluable; and every evaluable document satisfies the frozen zero-word or positive-word integrity rule with zero deterministic parser/structure mismatches.",
+  "next_if_pass": "Issue a parser-integrity admission receipt that permits, but does not itself execute, the already frozen R3A_4 SigLA-native blind role discovery.",
+  "next_if_fail": "Block R3A_4 scoring and preserve exact mismatch/failure taxonomy; correct the parser in a separately versioned gate without weakening scientific thresholds.",
+  "claim_ceiling": {
+    "full_universe_sigla_parser_integrity_validated": false,
+    "R3A_4_scoring_admitted": false,
+    "cross_digitization_content_replication_established": false,
+    "external_transcription_replication_established": false,
+    "new_lexical_anchor_established": false,
+    "decipherment_established": false,
+    "promotion": "BLOCKED"
+  }
+}

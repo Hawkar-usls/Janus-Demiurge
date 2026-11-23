@@ -1,0 +1,88 @@
+{
+  "schema": "janus.site.autonomous_curator_policy.v1_0",
+  "artifact_id": "JANUS-SITE-CURATOR-POLICY-v1.0",
+  "status": "ACTIVE_DETERMINISTIC_PRESENTATION_POLICY",
+  "purpose": "Automatically project recent and actionable public registry activity onto the JANUS GitHub Pages site without turning presentation rank into scientific authority.",
+  "implementation": {
+    "generator": "research/site/janus_site_curator.py",
+    "renderer": "assets/site-curator.js",
+    "presentation_css": "assets/site-curator.css",
+    "generated_feed": "assets/site-feed.json",
+    "automation": ".github/workflows/janus-site-autonomous-curator.yml",
+    "language_bootstrap_main": "assets/i18n.js",
+    "language_bootstrap_secondary": "assets/page-i18n.js"
+  },
+  "inputs": {
+    "git_history": true,
+    "public_paths": ["."],
+    "extensions": [".json", ".md", ".py"],
+    "lookback_commits": 320,
+    "maximum_candidate_files": 260,
+    "maximum_file_bytes_for_content_signals": 524288
+  },
+  "outputs": {
+    "generated_feed": "assets/site-feed.json",
+    "latest_updates_count": 18,
+    "spotlight_count": 8,
+    "per_surface_count": 6,
+    "spotlight_family_cap": 2
+  },
+  "surface_rules": [
+    {"surface": "antifuck", "site_path": "antifuck/", "match_any": ["ANTIFUCK", "MINDFUCK", "ARMOR-OF-GOD", "OPIR_ANTIFUCK", "research/antifuck"]},
+    {"surface": "linear-a", "site_path": "linear-a/", "match_any": ["LINEAR-A", "LINEAR_A", "research/linear_a"]},
+    {"surface": "wedjat", "site_path": "wedjat/", "match_any": ["WEDJAT", "EYE-OF-HORUS", "research/wedjat"]},
+    {"surface": "scoby-skingpt", "site_path": "scoby-skingpt/", "match_any": ["SCOBY", "SKINGPT", "SKYBU", "SkinGPT"]},
+    {"surface": "aifc", "site_path": "aifc/", "match_any": ["AIFC", "AUDITABLE-INDEPENDENT-FUTURE-CHALLENGE"]},
+    {"surface": "fundamentum", "site_path": "fundamentum/", "match_any": ["FUNDAMENTUM", "P-N-JUNCTION", "Janus-Fundamentum", "research/fundamentum"]},
+    {"surface": "gamarjoba-gen-ancvale", "site_path": "gamarjoba-gen-ancvale/", "match_any": ["GAMARJOBA", "GEN_ANCVALE", "EXTERNAL-REVIEW", "EXTERNAL_REVIEW"]}
+  ],
+  "ranking": {
+    "meaning": "activity_and_actionability_only",
+    "recency_points": [
+      {"max_age_days": 2, "points": 50},
+      {"max_age_days": 7, "points": 42},
+      {"max_age_days": 30, "points": 28},
+      {"max_age_days": 90, "points": 14},
+      {"max_age_days": 36500, "points": 4}
+    ],
+    "signals": {
+      "current_authority_or_state": {"points": 16, "tokens": ["CURRENT-AUTHORITY", "CURRENT_AUTHORITY", "CANONICAL-STATE", "CANONICAL_STATE", "RESEARCH-STATE", "RESEARCH_STATE", "CURRENT_STATE"]},
+      "open_or_next_gate": {"points": 14, "tokens": ["NEXT_GATE", "NEXT_REQUIRED_GATE", "CURRENT_GATE", "AWAITING", "BLOCKED_UNTIL", "OPEN_GATE", "NOT_EXECUTED"]},
+      "external_review_or_replication": {"points": 12, "tokens": ["EXTERNAL_REVIEW", "EXTERNAL REVIEW", "INDEPENDENT_REPLICATION", "INDEPENDENT REPLICATION", "REVIEWER", "REPLICATOR"]},
+      "result_or_certificate": {"points": 8, "tokens": ["RESULT", "CERTIFICATE", "RECEIPT", "AUDIT"]},
+      "invitation_or_contribution": {"points": 6, "tokens": ["INVITATION", "CONTRIBUTE", "CONTRIBUTOR", "GAMARJOBA"]}
+    },
+    "status_valence_used": false,
+    "positive_result_bonus": 0,
+    "negative_result_penalty": 0,
+    "null_result_penalty": 0,
+    "manual_pin_required": false,
+    "tie_breakers": ["modified_at_desc", "path_asc"]
+  },
+  "exclusions": {
+    "path_contains": [".github/", "assets/", "guestbook", "JANUS-SITE-CURATOR-POLICY", "JANUS-SEARCH-SURFACE", "research/site/janus_site_curator.py", "node_modules/", ".venv/", "__pycache__/"],
+    "generated_objects_are_scientific_authority": false
+  },
+  "autonomy_boundary": {
+    "may_discover_new_registry_objects": true,
+    "may_refresh_latest_updates": true,
+    "may_reorder_generated_spotlight": true,
+    "may_group_objects_by_surface": true,
+    "may_link_unclassified_new_work": true,
+    "may_rewrite_scientific_source_objects": false,
+    "may_raise_claim_ceiling": false,
+    "may_hide_failed_or_null_results": false,
+    "may_delete_history": false,
+    "may_convert_rank_into_truth_claim": false,
+    "may_replace_current_authority_json": false
+  },
+  "claim_ceiling": [
+    "FEATURED != SCIENTIFICALLY_TRUE",
+    "RECENT != IMPORTANT",
+    "CURATION_SCORE != EVIDENCE_STRENGTH",
+    "AUTO_PROMOTION != ENDORSEMENT",
+    "SITE_ACTIVITY_FEED != CURRENT_SCIENTIFIC_AUTHORITY",
+    "POSITIVE_RESULT == NO_RANKING_BONUS",
+    "NEGATIVE_OR_NULL_RESULT == NO_RANKING_PENALTY"
+  ]
+}

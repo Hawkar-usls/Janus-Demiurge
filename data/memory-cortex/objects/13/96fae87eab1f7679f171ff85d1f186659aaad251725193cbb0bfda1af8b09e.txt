@@ -1,0 +1,23 @@
+{
+  "id": "EYE-R4.3-SYNTHETIC-NOISY-ADAPTIVE-v1",
+  "cause_classes": [
+    {"id": "A", "prior": 0.5, "target_class": "A"},
+    {"id": "B", "prior": 0.5, "target_class": "B"}
+  ],
+  "requirements": {"confidence_threshold": 0.9, "stress_success_threshold": 0.9},
+  "tests": [
+    {"id":"t_root","cost":1,"calibrated":true,"failure_domains":["root_sensor"],"likelihood_by_cause":{"A":{"L":0.8,"R":0.2},"B":{"L":0.2,"R":0.8}}},
+    {"id":"t_left","cost":1,"calibrated":true,"depends_on":["t_root"],"failure_domains":["left_sensor"],"likelihood_by_cause":{"A":{"A_SIGNAL":0.95,"OTHER":0.05},"B":{"A_SIGNAL":0.1,"OTHER":0.9}}},
+    {"id":"t_right","cost":1,"calibrated":true,"depends_on":["t_root"],"failure_domains":["right_sensor"],"likelihood_by_cause":{"A":{"B_SIGNAL":0.1,"OTHER":0.9},"B":{"B_SIGNAL":0.95,"OTHER":0.05}}},
+    {"id":"t_gold","cost":5,"calibrated":true,"failure_domains":["gold"],"likelihood_by_cause":{"A":{"A":1.0,"B":0.0},"B":{"A":0.0,"B":1.0}}}
+  ],
+  "stress_scenarios": [
+    {
+      "id": "SPECIALISTS_WEAKER_THAN_NOMINAL",
+      "likelihood_overrides": {
+        "t_left": {"A":{"A_SIGNAL":0.8,"OTHER":0.2},"B":{"A_SIGNAL":0.25,"OTHER":0.75}},
+        "t_right": {"A":{"B_SIGNAL":0.25,"OTHER":0.75},"B":{"B_SIGNAL":0.8,"OTHER":0.2}}
+      }
+    }
+  ]
+}

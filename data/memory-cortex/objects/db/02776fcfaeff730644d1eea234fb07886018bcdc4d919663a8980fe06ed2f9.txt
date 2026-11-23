@@ -1,0 +1,186 @@
+{
+  "artifact_id":"JANUS-TRUMP-R5-B1B1C5B2B2-E3-HUANG-ALLTRIPLES-SOURCE-AND-CARRIER-AUDIT-2026-09-21-v1.0",
+  "version":"v1.0",
+  "date_local":"2026-09-21",
+  "status":"PASS_SOURCE_VALID_STRESS__UNCOVERED_BY_FROZEN_E2_C1_C9",
+  "gate":"R5_B1B1C5B2B2_E3_FOUR_COLOR_ACTIVE_NONCARRIER_CONNECTED_CORE_STRESS_V1",
+  "binds":{
+    "E3_prereg_path":"research/R5_B1B1C5B2B2_E3_FOUR_COLOR_ACTIVE_NONCARRIER_CONNECTED_CORE_STRESS_PREREG_2026-09-21_v1.0.json",
+    "E2_theorem_seal_blob":"78630fa8fb925a3f8324f3423d63a7cd43a6ebbc",
+    "checker_blob":"ef4e6409750d9636a915891f4c4403dd3b3c71c7"
+  },
+  "candidate":{
+    "name":"HUANG_ALLTRIPLES_SOURCE_STRESS_Hk_V1",
+    "parameter":"integer k>=3",
+    "underlying_graph":"Exactly Huang's G_{H,I} construction with H=C7 and an all-positive 3-CNF I_k. No graph edge is added by Janus.",
+    "variables":{
+      "anchors":["x1","x2","x3"],
+      "optional":"v_i=x_{i+3}, i=1,...,k"
+    },
+    "clauses":[
+      "one distinguished ordered clause (x2,x1,x3)",
+      "one clause for every 3-subset of optional variables",
+      "for optional v_i, exactly k^2+i copies of marker clause (x1,x3,v_i)"
+    ],
+    "size":"Theta(k^3) graph vertices because the number of clause C7 gadgets is Theta(k^3)."
+  },
+  "published_source":{
+    "paper":"Shenwei Huang, Improved Complexity Results on k-Coloring P_t-Free Graphs, European Journal of Combinatorics 51 (2016) 336-346",
+    "doi":"10.1016/j.ejc.2015.06.005",
+    "arxiv":"1304.5808",
+    "claims_used":[
+      "The construction G_{H,I} uses variable K2 gadgets, D vertices, clause copies H_j, U complete to all X/D, and C vertices adjacent to d_i and the corresponding literal vertex.",
+      "If H is P_t-free for t>=6 then G_{H,I} is P_t-free.",
+      "For 4-coloring the paper uses H=C7, hence every graph in this candidate family is P7-free."
+    ],
+    "hardness_firewall":"The NP-completeness theorem is not used to infer hardness or absence of a polynomial carrier. Only the construction and P7-freeness theorem are imported."
+  },
+  "source_seed":{
+    "distinguished_clause_roles":"c*=h1_0 corresponds to x2; u*=h1_1 and h1_6 are its two C7 neighbors.",
+    "S":["h1_0","x2","h1_1","h1_6"],
+    "colors":{
+      "h1_0":2,
+      "x2":1,
+      "h1_1":3,
+      "h1_6":3
+    },
+    "X0":"empty",
+    "proof":[
+      "The seed is proper and connected: h1_0 is adjacent to x2,h1_1,h1_6; x2 is adjacent to both U-type seed vertices; h1_1 and h1_6 are nonadjacent and may share color 3.",
+      "Any outside vertex complete to h1_0 and x2 would have to be one of the two C7 neighbors h1_1,h1_6, both already in S. Hence no outside vertex is complete to S.",
+      "No graph modification occurs, so Huang P7-freeness applies verbatim."
+    ]
+  },
+  "root_source_classes":{
+    "generic_X_D":"source list {1,2,4}; they see seed color 3 from the two U-type seed vertices.",
+    "generic_U_outside_distinguished_clause":"source list {2,3,4}; every U-type sees seed literal x2 of color 1.",
+    "special_2_lists":[
+      "~x2 has {2,4}",
+      "d2 has {1,4}",
+      "the distinguished u5 has {2,4}"
+    ],
+    "Y0":[
+      "all C-type vertices of every all-optional core clause",
+      "all C-type vertices of every marker clause (x1,x3,v_i)",
+      "the distinguished C-type h1_4 corresponding to x3"
+    ],
+    "Y0_structure":"stable: Huang's specified three C-type vertices in each C7 are independent and there are no inter-clause C-C edges.",
+    "Z0_Z1":"empty"
+  },
+  "source_axioms":{
+    "i":"PASS: the underlying Huang graph is connected for the declared nonempty clause family.",
+    "ii":"PASS: seed connected and no outside vertex complete to it.",
+    "iii":"PASS: the source-list-4 vertices are exactly the declared C-type vertices anticomplete to S.",
+    "iv":"PASS vacuously because Y0 is stable.",
+    "v":"PASS: every nonfixed vertex has source-list size exactly 2,3,or4 according to X,Y,Y0.",
+    "vi":"FAIL as required for stress: every residual C corresponding to x1,x3,or v_i has Y-neighbors from both exact 3-list classes {1,2,4} (literal/D side) and {2,3,4} (U side)."
+  },
+  "authorized_forcing_family":{
+    "choice":"For arbitrary F subseteq {v_1,...,v_k}, force the positive literal vertex x(v_i)=1 iff v_i in F.",
+    "properness":[
+      "positive literal vertices from different variables are pairwise nonadjacent",
+      "each optional literal has color 1 in its exact palette",
+      "all U vertices already see seed color 1 from x2, so adding more color-1 seed literals creates no new U seed-color effect"
+    ],
+    "canonical_delta":[
+      "the complement literal ~v_i changes from 3-list {1,2,4} to 2-list {2,4}",
+      "every C-type occurrence of v_i moves from residual Y0=[4] to dynamic Y={2,3,4}",
+      "d_i remains in Y={1,2,4}",
+      "no Z0/Z1 appears",
+      "X0 remains empty and connectivity repair is never needed"
+    ],
+    "VI_persistence":"Unforced anchor occurrences of x1/x3 remain residual and continue to see both Y 3-list classes.",
+    "explicit_extension":"For every F, color every d_i and positive literal x_i by 1; every negative literal ~x_i by 2; every C-type clause vertex by 2; U positions 1,3,6 by 3 and U position 5 by 4. This extends the frozen seed and every optional force."
+  },
+  "QALL_and_profiles":{
+    "connected":"PASS for every F. Live U vertices are complete to all live X/D vertices; every residual singleton C carrier attaches to its literal/D and its two clause-U neighbors; forced literals still leave d_i and ~v_i live.",
+    "optional_occurrence_count":"q_i = binom(k-1,2) + k^2 + i, pairwise distinct.",
+    "profile_signature":"For optional d_i, the ordered pair (# adjacent residual C-carriers, # adjacent dynamic C-type vertices) is (q_i,0) if v_i is unforced and (0,q_i) if v_i is forced.",
+    "identity_erasure":"The signature is structural and does not read the newly forced seed-neighborhood identity bitset or the external forced-assignment ledger.",
+    "count":"Exactly 2^k pairwise distinct reduced canonical profiles.",
+    "growth":"|G_k|=Theta(k^3), hence 2^k=2^{Theta(|G_k|^(1/3))}, superpolynomial in input size."
+  },
+  "four_color_activity":{
+    "C1_witness_lists":[
+      "d1 has exact/source list {1,2,4}",
+      "an ordinary non-distinguished U vertex has {2,3,4}"
+    ],
+    "no_common_palette_le_3":"PASS: the union of these two persistent exact lists is [4].",
+    "R2_color_1":"d1=d3=1 in the explicit extension; d1,d3 are nonadjacent and never forced.",
+    "R2_color_2":"~x1=~x3=2 in the explicit extension; the two negative literals are nonadjacent and never forced.",
+    "R2_color_3":"choose U-position-1 vertices from two distinct non-distinguished clauses; both are 3 in the explicit extension and nonadjacent across clauses.",
+    "R2_color_4":"choose U-position-5 vertices from two distinct non-distinguished clauses; both are 4 in the explicit extension and nonadjacent across clauses.",
+    "verdict":"ALL_FOUR_COLORS_FUTURE_QUERY_ACTIVE"
+  },
+  "compiled_clause_core":{
+    "singleton_component_message":"Every residual C-type singleton has base list [4], so C0 gives MIN_BAD={[4]}; C3 replaces it by one [4]-selector with the same dynamic neighborhood D_C.",
+    "C7_persistence":"Therefore every non-distinguished Huang clause remains an induced 7-cycle in the compiled dynamic+selector graph, whether each C-position is dynamic or represented by its selector.",
+    "effect":"Component compilation is exact but does not close the live clause/variable core."
+  },
+  "dependency_core":{
+    "optional_support_hypergraph":"Contains one exact clause factor for every 3-subset of optional variables.",
+    "primal_graph":"K_k.",
+    "separator_consequence":"Every nontrivial partition of optional variables is crossed by a clause support; the primal treewidth is k-1, so no bounded singleton/pair/bounded-running-intersection separator is available on this declared support system.",
+    "scope":"This rules out only the frozen bounded-interface/factorization preconditions; it is not a lower bound against arbitrary representations."
+  },
+  "E2_receipt":{
+    "C1":{
+      "status":"FAIL_TO_APPLY",
+      "reason":"Persistent exact lists {1,2,4} and {2,3,4} have union [4], so no common palette of size <=3 exists."
+    },
+    "C2":{
+      "status":"FAIL_TO_APPLY",
+      "reason":"Future-complete Q_ALL is one connected block for every declared profile."
+    },
+    "C3":{
+      "status":"APPLIES_BUT_DOES_NOT_CLOSE",
+      "reason":"All residual singleton components compile exactly to constant-size [4]-selectors, but the all-triples clause/variable connected core and the 2^k profile injection remain."
+    },
+    "C4":{
+      "status":"FAIL_TO_CLOSE_UNDER_FROZEN_PRECONDITIONS",
+      "reason":[
+        "factorized-feedback disconnectedness fails by connected Q_ALL",
+        "the optional-coordinate support primal graph is K_k, so singleton/pair separators and bounded running-intersection join-tree interfaces do not exist as k grows",
+        "the candidate is not an instance of the frozen bicameral bucket-specific single/pair-separator objects merely by graph resemblance",
+        "no guarded bounded-output certificate is established; the frozen guard cannot be invoked without its explicit row/output bound"
+      ]
+    },
+    "C5":{
+      "status":"FAIL_TO_APPLY",
+      "reason":"The compiled graph contains an induced C7. Interval graphs are chordal, and permutation graphs are perfect; an induced odd hole C7 excludes both classes."
+    },
+    "C6":{
+      "status":"FAIL_TO_APPLY_MISSING_REQUIRED_SOURCE_DECOMPOSITION",
+      "reason":"No source theorem or repository certificate supplies a constant bounded mim-width/sim-width value together with a polynomially constructible decomposition for this family. E2 forbids substituting a width-recognition/optimization oracle.",
+      "firewall":"No claim of unbounded mim-width or sim-width is made."
+    },
+    "C7":{
+      "status":"FAIL_TO_APPLY",
+      "reason":"The compiled unresolved core contains induced C7 and is not bipartite; therefore the P7-free bipartite Lozin-Zamaraev route is outside scope."
+    },
+    "C8":{
+      "status":"FAIL_TO_APPLY_NO_FROZEN_SECONDARY_SUPPORT_SEPARATION",
+      "reason":"On optional forcing coordinates the complete 3-uniform clause support has primal K_k; every nontrivial variable-block split is crossed by an exact clause gadget. No frozen secondary exact future-dependency decomposition with bounded interface is certified.",
+      "firewall":"This does not prove that no new algebraic carrier exists."
+    },
+    "C9":{
+      "status":"FAIL_TO_APPLY",
+      "reason":"Every non-distinguished compiled clause contains induced C7 and therefore an induced P5; the active lifecycle is not certified P5-free."
+    }
+  },
+  "public_source_crosscheck":{
+    "generic_P6_List4":"Published List 4-Coloring is NP-complete already for P6-free graphs; therefore no generic P6/P7 mixed-list polynomial shortcut is imported.",
+    "use":"warning only; no complexity lower-bound inference is made for H_k."
+  },
+  "audit_verdict":{
+    "classification":"UNCOVERED_BY_FROZEN_E2_CARRIER_LIST",
+    "meaning":"No frozen E2 C1-C9 mechanism currently closes this exact source-valid stress family under its required preconditions.",
+    "does_not_mean":[
+      "hard",
+      "NP-hard",
+      "no polynomial algorithm",
+      "superpolynomial exact representation lower bound"
+    ],
+    "maximum_scientific_interpretation":"OPEN_NO_KNOWN_POLYNOMIAL_CARRIER"
+  }
+}

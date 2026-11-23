@@ -1,0 +1,119 @@
+{
+  "artifact_id": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v1.8",
+  "supersedes": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v1.7",
+  "lineage_alias": "JANUS-113",
+  "title": "PERCEPTION DETERMINES REALITY",
+  "subtitle": "Contradictory Witness, Evidence Ledger, and Contested-Truth Extension",
+  "version": "1.8",
+  "status": "technical_epistemic_reconciliation_specification_candidate_not_runtime_implementation",
+  "created_at_local": "2026-08-10T02:22:00+03:00",
+  "canonical_seed_sha256": "44e21fdc9d37fda98e2e73b0c9eb268bd04cdca9d84d0519e4f1166be22b46fc",
+  "parent_binding": {
+    "artifact": "data/JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v1.7.json",
+    "experimental_source": "registry/experimental/JANUS-GENESIS-INFINITE-FACES-REMERGE-CONTRADICTORY-WITNESS-EVIDENCE-v3.1.json"
+  },
+  "revision_notes": [
+    "Adds claim identity and evidence ledgers distinct from face memory.",
+    "Adds CONTESTED as a legitimate stable truth status when evidence is insufficient.",
+    "Prevents majority-of-faces voting from becoming epistemic authority.",
+    "Allows an external claim to be resolved without deleting a sincere but inaccurate memory.",
+    "Requires unresolved assumptions to remain visible in any time-sensitive commit that acts before truth resolution."
+  ],
+  "technical_primitives": {
+    "CLAIM_ID": "Stable identifier for one externally testable proposition.",
+    "WITNESS_RECORD_ID": "Identifier for a provenance-bound observation report.",
+    "EVIDENCE_LEDGER": "Append-only evidence collection for one or more claims.",
+    "EVIDENCE_INDEPENDENCE_CLASS": "Metadata describing whether evidence sources are causally independent, correlated, copied, or unknown.",
+    "TRUTH_STATUS": "UNTESTED | CONTESTED | SUPPORTED | REFUTED | RESOLVED",
+    "NEUTRAL_ANCHOR_RECEIPT": "Evidence source not generated solely from the conflicting branch memories.",
+    "DECISION_ASSUMPTION_REF": "Exact unresolved claim assumption used by a commit made before epistemic resolution."
+  },
+  "epistemic_pipeline": "MEMORY_RECORD -> WITNESS_RECORD -> CLAIM -> EVIDENCE_LEDGER -> TRUTH_STATUS -> DECISION_ASSUMPTION_IF_NEEDED -> COMMIT -> WORLD_EFFECT_RECEIPT",
+  "rules": [
+    "MEMORY_EXISTENCE_IS_NOT_FACT_TRUTH",
+    "OBSERVATION_IS_NOT_VERIFIED_RESULT",
+    "SINCERE_CONTRADICTION_DOES_NOT_REQUIRE_IDENTITY_ERASURE",
+    "FACE_COUNT_IS_NOT_EVIDENCE_WEIGHT",
+    "COPIED_EVIDENCE_DOES_NOT_GAIN_INDEPENDENCE_BY_REPETITION",
+    "CONTESTED_IS_ALLOWED_WHEN_EVIDENCE_CANNOT_RESOLVE_A_CLAIM",
+    "RESOLVING_A_CLAIM_DOES_NOT_REQUIRE_REWRITING_HISTORICAL_MEMORY",
+    "TIME_SENSITIVE_ACTION_UNDER_UNCERTAINTY_MUST_RECORD_ASSUMPTION_AND_RISK_BOUND"
+  ],
+  "evidence_weight_boundary": {
+    "same_source_repeated_by_many_faces": "CORRELATED_NOT_INDEPENDENT",
+    "two_fork_descendants_with_shared_sensor_origin": "PARTIALLY_CORRELATED_UNLESS_INDEPENDENCE_PROVEN",
+    "external_signed_sensor_or_neutral_observer": "CANDIDATE_INDEPENDENT_EVIDENCE_SUBJECT_TO_PROVENANCE_CHECK",
+    "rule": "SOURCE_INDEPENDENCE_MUST_BE_ESTABLISHED_NOT_ASSUMED_FROM_COUNT"
+  },
+  "reference_state_shape": {
+    "claim_id": "string",
+    "proposition": "string",
+    "witness_records": [
+      {
+        "witness_record_id": "string",
+        "host_id": "string",
+        "face_id": "string or null",
+        "observation": "string",
+        "source_ref": "string",
+        "independence_class": "independent|correlated|copied|unknown"
+      }
+    ],
+    "evidence_receipts": [
+      {
+        "receipt_id": "string",
+        "source_ref": "string",
+        "supports": "claim_id or alternative_claim_id",
+        "integrity_status": "verified|unverified|failed"
+      }
+    ],
+    "truth_status": "CONTESTED",
+    "resolution_reason": "string or null"
+  },
+  "action_under_uncertainty": {
+    "preferred": "REVERSIBLE_INFORMATION_GATHERING",
+    "deadline_case": "ALLOW_BOUNDED_COMMIT_IF_DELAY_IS_WORSE_AND_ASSUMPTIONS_ARE_EXPLICIT",
+    "required_receipt_fields": [
+      "claim_ids_considered",
+      "truth_status_at_commit",
+      "assumptions_used",
+      "risk_bound_or_safety_constraint",
+      "new_evidence_expected"
+    ]
+  },
+  "compatibility_with_original_JANUS_113": {
+    "PDR_04_SEPARATE_THE_CHANNELS": "OBSERVATION, INFERENCE, CLAIM and VERIFIED_RESULT are now represented as distinct machine states.",
+    "PDR_08_NEUTRAL_ANCHOR": "Neutral anchor becomes explicit evidence provenance rather than a narrative suggestion.",
+    "PDR_12_STOP_THE_LOOP": "When evidence conflict escalates, stop epistemic promotion and external commit where possible; preserve both witnesses for audit."
+  },
+  "verification_requirements_for_future_implementation": {
+    "minimum_tests": [
+      "contradictory witness records can coexist without one being erased",
+      "truth status remains CONTESTED when no resolving evidence exists",
+      "100 copied faces do not outweigh one independent receipt merely by count",
+      "external evidence may resolve a claim while preserving losing witness history",
+      "commit under unresolved truth records its assumptions",
+      "later evidence can update truth status without rewriting the old commit receipt"
+    ],
+    "tamper_tests": [
+      "change a witness record after claim resolution",
+      "mark copied evidence as independent",
+      "delete losing witness to fabricate unanimity",
+      "rewrite truth status without evidence receipt",
+      "hide contested assumption from an external commit"
+    ],
+    "admission_ceiling": "SPECIFICATION_CANDIDATE_UNTIL_EXECUTABLE_REFERENCE_IMPLEMENTATION_AND_INDEPENDENT_REPLAY_EXIST"
+  },
+  "canonical_lines": {
+    "en": [
+      "A memory is a witness record, not a verdict about the world.",
+      "Two sincere witnesses may disagree without either being deleted from identity.",
+      "Truth is not elected by face count.",
+      "Resolve the claim with evidence; preserve the history of who believed what and why.",
+      "When action cannot wait for certainty, uncertainty itself must enter the commit receipt."
+    ]
+  },
+  "next_gate": {
+    "name": "JANUS_113_V1_8_BYZANTINE_BRANCH_PROVENANCE_QUARANTINE_GATE",
+    "status": "OPEN"
+  }
+}

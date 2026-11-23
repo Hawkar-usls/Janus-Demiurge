@@ -1,0 +1,93 @@
+{
+  "artifact_id": "JANUS-PALOMAR-JPFM-2F-C1A2-RAW-POLARITY-EDGE-AWARE-DIRECT-MORPHOLOGY-ADMISSION-v1.0",
+  "experiment_id": "JPFM-2F-C1A2",
+  "schema_version": "1.0",
+  "date": "2026-08-15",
+  "status": "PREREGISTERED_AFTER_C1A_CORRECTIVE_AUDIT_BEFORE_C1A2_OUTCOME",
+  "purpose": "Repeat the same frozen 64-source exact named-plate 81x81 stamp pilot with two narrowly scoped repairs established by the C1A corrective audit: pre-pixel geometric edge eligibility and raw-positive intensity/moment convention matching the upstream Source Extractor input convention. Preserve the full 64-row denominator and all unrelated measurement formulas and thresholds.",
+  "parents": [
+    "data/JANUS-PALOMAR-JPFM-2F-C1A-NAMED-PLATE-SPARSE-STAMP-DIRECT-MORPHOLOGY-ADMISSION-v1.0.json",
+    "data/JANUS-PALOMAR-JPFM-2F-C1A-NAMED-PLATE-SPARSE-STAMP-DIRECT-MORPHOLOGY-RUN-001.json",
+    "data/JANUS-PALOMAR-JPFM-2F-C1A-CORRECTIVE-AUDIT-v1.0.json"
+  ],
+  "frozen_sample": {
+    "same_64_as_C1A": true,
+    "rows_full_denominator": 64,
+    "selection_rule_unchanged": "For each frozen structural cluster 0..15: two closest to cluster-median anomaly score plus two highest anomaly score, src_id tie-break."
+  },
+  "unchanged_from_C1A": [
+    "exact frozen named plate_id",
+    "frozen C0M fullplate_x0/fullplate_y0 source center",
+    "81x81 stamp size and half-width 40",
+    "nearest-source search forbidden",
+    "peak recentering forbidden",
+    "plate substitution forbidden",
+    "outer background annulus 18<=r<=38 pixels",
+    "robust sigma = 1.4826*MAD",
+    "central peak radius r<=5",
+    "concentration radii r2/r5 and r3/r7",
+    "moment aperture r<=10",
+    "diagnostic moment centroid is never fed back into any aperture",
+    "OpenCV contour cutout size 21 pixels",
+    "OpenCV thresholds 21,45",
+    "convexityDefects reshape(-1,4) compatibility adapter",
+    "convexity defect depth /256.0",
+    "shape_defect denominator max(width,height)",
+    "outer Laplacian MAD and 5-MAD outlier-fraction formulas",
+    "central SNR gate remains >=5.0",
+    "all external labels remain sealed"
+  ],
+  "repair_1_geometric_eligibility": {
+    "computed_before_pixel_access": true,
+    "rule": "For frozen floating full-plate center (x,y), define ix=round(x), iy=round(y), x0=ix-40, x1=ix+41, y0=iy-40, y1=iy+41. A source is GEOMETRICALLY_ELIGIBLE_81PX iff x0>=0, y0>=0, x1<=NAXIS1 and y1<=NAXIS2 for its exact named plate header.",
+    "ineligible_handling": "Retain the row in the full 64-row sidecar with GEOMETRIC_EDGE_INELIGIBLE_81PX; do not read pixels, move the window, change plate, search for a source or impute morphology.",
+    "transport_denominator": "All rows classified GEOMETRICALLY_ELIGIBLE_81PX before pixel access.",
+    "unexplained_failure_policy": "Any eligible row that does not return an exact 81x81 hdu.section is a transport failure."
+  },
+  "repair_2_raw_positive_intensity": {
+    "old_C1A_signal": "max((65535-raw)-outer_median_of_inverted,0)",
+    "new_signal": "max(raw-outer_raw_median,0)",
+    "background_sigma": "1.4826*MAD of raw pixels in frozen outer annulus 18<=r<=38",
+    "raw_peak_snr": "(max(raw within r<=5)-outer_raw_median)/outer_raw_robust_sigma",
+    "moment_weights": "new raw-positive signal within r<=10",
+    "reason": "Upstream run_pass1 presents the raw reconstructed FITS directly to Source Extractor, and sex_pass1.sex uses DETECT_TYPE CCD / DETECT_THRESH 5.0. The new direct estimator must therefore use the same raw-positive input convention rather than borrowing the inversion used only by the experimental profile_diff preconditioner.",
+    "contour_channel_changed": false,
+    "outer_texture_absolute-deviation_metrics_changed": false
+  },
+  "predeclared_gates": {
+    "full_denominator_integrity": "64/64 frozen src_id rows retained exactly once in the output sidecar.",
+    "eligibility_determinism": "Every row receives exactly one pre-pixel eligibility state derived only from frozen coordinates, 81px geometry and named-plate NAXIS1/NAXIS2.",
+    "eligible_transport": "100% of GEOMETRICALLY_ELIGIBLE_81PX rows return exact 81x81 stamps from their frozen named plate; zero unexplained eligible-source failures.",
+    "central_raw_signal": "At least 95% of geometrically eligible rows have finite stamp_raw_peak_snr >= 5.0.",
+    "diagnostic_raw_centroid": "At least 95% of geometrically eligible rows have finite raw-positive diagnostic centroid offset <=4.0 px and 100% are <=8.0 px.",
+    "raw_moment_feature_coverage": "At least 95% of geometrically eligible rows have finite stamp_raw_moment_fwhm_proxy_px and stamp_raw_moment_ellipticity.",
+    "contour_feature_coverage": "At least 90% of geometrically eligible rows have finite stamp_circularity and stamp_circle_deviation. shape_defect finite coverage is report-only.",
+    "outer_texture_coverage": "100% of geometrically eligible rows have finite raw background sigma, stamp_outer_laplacian_mad and stamp_outer_5mad_outlier_fraction.",
+    "no_retrofit": "No gate threshold, radius, polarity, stamp size, contour formula, eligibility formula or denominator may change after C1A2 outcome."
+  },
+  "report_only_crosschecks": [
+    "Spearman stamp_raw_moment_fwhm_proxy_px vs pass2 FWHM_IMAGE",
+    "Spearman stamp_raw_moment_ellipticity vs pass2 ELONGATION",
+    "sparse-stamp contour differences vs B3S contour metrics",
+    "raw-positive vs failed C1A inverted intensity summaries where both are available"
+  ],
+  "allowed_outcomes": [
+    "PASS_RAW_POLARITY_EDGE_AWARE_DIRECT_MORPHOLOGY_PILOT",
+    "FAIL_CLOSED_DENOMINATOR_OR_ELIGIBILITY",
+    "FAIL_CLOSED_ELIGIBLE_SPARSE_TRANSPORT",
+    "FAIL_CLOSED_RAW_CENTRAL_SIGNAL_OR_LOCALIZATION",
+    "FAIL_CLOSED_RAW_DIRECT_MORPHOLOGY_COVERAGE"
+  ],
+  "external_label_firewall": {
+    "external_label_reveal_authorized": false,
+    "forbidden_inputs": [
+      "nuclear calendar",
+      "Blue Book or other human-report labels",
+      "NUFORC labels",
+      "Kp/ap or geomagnetic labels",
+      "Moon/Sun temporal covariates"
+    ]
+  },
+  "post_pass_gate": "JPFM-2F-C1B-LARGE-BLIND-SPARSE-STAMP-MORPHOLOGY-RELEASE",
+  "claim_ceiling": "CORRECTIVE_SPARSE_STAMP_MEASUREMENT_VALIDATION_ONLY__GEOMETRIC_EDGE_ROWS_RETAINED__DIRECT_FEATURES_NOT_PHYSICAL_CLASSES__EXTERNAL_LABELS_SEALED__NO_ORIGIN_CLAIM"
+}

@@ -1,0 +1,135 @@
+{
+  "schema": "janus.meta_registry.fallout3_fos_body_change_state_format_evidence_gate.v3_2b",
+  "artifact_id": "FALLOUT-3-FOS-BODY-CHANGE-STATE-FORMAT-EVIDENCE-GATE-v3.2b",
+  "title": "Fallout 3 — FOS Body / Change-State Format Evidence Gate v3.2b",
+  "created_at_local": "2026-08-14T15:35:00+03:00",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "artifact_class": "FORMAT_APPLICABILITY_AND_BODY_REGION_ADMISSION_GATE",
+  "status": "OPEN_PRIMARY_HEADER_SOURCES_FOUND_BODY_REGION_SEMANTICS_NOT_YET_ADMITTED",
+  "parents": [
+    "registry/myth_busted/FALLOUT-3-FOS-HEADER-PLUGIN-AUTHENTICATION-GATE-v3.2a.json",
+    "registry/myth_busted/FALLOUT-3-JAMES-RUNTIME-T0-T3-SAVEGAME-DIFFERENTIAL-PROTOCOL-v3.1.json"
+  ],
+  "question": "Can a Fallout 3 .fos body region be located and decoded into structured quest/reference runtime state using FO3-applicable primary implementation evidence, without importing unsupported body layouts from Fallout New Vegas, Skyrim or Fallout 4?",
+  "evidence_sources": {
+    "vortex": {
+      "repository": "Nexus-Mods/Vortex",
+      "snapshot": "87eb92131c2e85dd52d4fdb9a69d41b4eb9148e6",
+      "files": [
+        "extensions/gamebryo-savegame-management/src/savegame/GamebryoSaveGame.ts",
+        "extensions/gamebryo-savegame-management/src/savegame/BinaryReader.ts"
+      ],
+      "establishes": [
+        "FO3SAVEGAME recognition",
+        "FO3-vs-New-Vegas early discriminator",
+        "0x7c field-marker behavior",
+        "header metadata, screenshot and ordered plugin-list parsing"
+      ],
+      "does_not_establish_in_reviewed_code": "Fallout 3 body/change-state semantics"
+    },
+    "wrye_bash": {
+      "repository": "wrye-bash/wrye-bash",
+      "snapshot": "f4850a8f48a1185587e597bd36db566257fb7628",
+      "file": "Mopy/bash/bosh/save_headers.py",
+      "module_scope_statement": "The source module explicitly describes itself as headers code only and leaves per-game save classes/body handling as TODO.",
+      "fo3_specific_findings": [
+        "Fallout3SaveHeader inherits FalloutNVSaveHeader.",
+        "Fallout3SaveHeader uses save_magic FO3SAVEGAME.",
+        "Fallout3SaveHeader sets the inherited master/version marker to 0x15.",
+        "The inherited master-list-size routine reads a byte plus uint32 and validates the byte against the game-specific marker."
+      ],
+      "location_table_clue": "The same source module contains header-rewrite infrastructure describing a file-location table with named offsets including formIdArrayCount, global-data tables and changeFormsOffset.",
+      "applicability_status": "FO3_SPECIFIC_USE_OF_THE_NAMED_CHANGEFORMS_OFFSET_PATH_MUST_BE_VERIFIED_BEFORE_PROMOTION"
+    }
+  },
+  "why_not_promote_yet": [
+    "A symbol or comment named changeFormsOffset is format knowledge, not by itself proof that a particular FO3 save uses that exact table layout at the expected post-master position.",
+    "Fallout3SaveHeader inheritance from FalloutNVSaveHeader creates a strong implementation lead but neighboring-game inheritance is exactly where silent layout transfer can occur.",
+    "Neither reviewed implementation currently supplies semantic decoding of an MQDadRef, MQ04, MQ04Doc or pod/shell runtime record from a Fallout 3 body.",
+    "No real T0/T1/T2/T3 .fos inputs are presently available in the user file library to execute structural boundary checks."
+  ],
+  "admission_ladder": [
+    {
+      "level": "B0",
+      "name": "HEADER_AUTHENTICATED",
+      "requirement": "v3.2a parses FO3 header/plugin environment and freezes file SHA-256.",
+      "authority": "INPUT_AUTHENTICATION_ONLY"
+    },
+    {
+      "level": "B1",
+      "name": "FO3_LOCATION_TABLE_APPLICABILITY",
+      "requirement": "Trace Wrye Bash method resolution or another primary implementation/spec to prove that the named location-table path applies to Fallout3SaveHeader, not merely another supported game.",
+      "authority": "FORMAT_LAYOUT_CANDIDATE"
+    },
+    {
+      "level": "B2",
+      "name": "REAL_SAVE_OFFSET_SANITY",
+      "requirement": "On at least one authenticated FO3 .fos, parse the candidate location table and verify offsets are in-file, ordered/region-compatible where expected, and stable under a no-op save control.",
+      "authority": "BODY_REGION_ADDRESSABILITY"
+    },
+    {
+      "level": "B3",
+      "name": "CHANGE_REGION_STRUCTURAL_RECORDS",
+      "requirement": "Identify record boundaries, IDs/types/lengths or an equivalent structured grammar inside the candidate change region from primary implementation/spec evidence or controlled differential reconstruction.",
+      "authority": "STRUCTURED_CHANGE_RECORD_CANDIDATE"
+    },
+    {
+      "level": "B4",
+      "name": "JAMES_ANCHOR_BINDING",
+      "requirement": "Bind at least one structured body record to MQDadRef, MQ04, MQ04DocRef, MQ04DadPod or MQ04DadPodShellRef without using raw four-byte FormID coincidence alone.",
+      "authority": "JAMES_SPECIFIC_RUNTIME_STATE_CANDIDATE"
+    },
+    {
+      "level": "B5",
+      "name": "T0_T3_LIFECYCLE",
+      "requirement": "Replay the bound structured record across T0/T1/T2/T3 and classify creation, mutation, persistence or disappearance through the TL exit boundary.",
+      "authority": "ENGINE_RUNTIME_PERSISTENCE_EVIDENCE"
+    },
+    {
+      "level": "B6",
+      "name": "PAYLOAD_SEMANTICS",
+      "requirement": "Independently demonstrate that a surviving James-specific record carries memory/autobiographical payload semantics rather than quest/reference metadata.",
+      "authority": "PERSISTED_JAMES_PAYLOAD_CANDIDATE"
+    }
+  ],
+  "planned_controls": {
+    "same_lineage_no_op_pair": "Two saves taken with minimal/no gameplay state change to estimate incidental body churn and offset relocation.",
+    "unrelated_quest_control": "Track an unrelated quest/reference with known runtime changes to validate that the decoder can detect ordinary engine persistence.",
+    "player_container_control": "MQ04PlayerContainerRef remains a positive runtime-state/negative James-memory control.",
+    "raw_formid_collision_control": "Search randomized and unrelated FormIDs in the same body to estimate how often four-byte patterns occur without structured reference meaning.",
+    "plugin_environment_control": "v3.2a must pass identical ordered plugin manifests before T0-T3 semantic comparison."
+  },
+  "first_break_model": {
+    "chain": "AUTHENTIC_FO3_SAVE -> FO3_LOCATION_TABLE -> CHANGE_REGION -> STRUCTURED_RECORD -> JAMES_BINDING -> CROSS_EXIT_PERSISTENCE -> PAYLOAD_SEMANTICS -> IN_WORLD_SERIALIZATION",
+    "current_first_break": "FO3_LOCATION_TABLE_APPLICABILITY_OR_LATER",
+    "current_known_pass": "AUTHENTICATOR_IMPLEMENTED_BUT_NOT_REAL_SAVE_EXECUTED",
+    "meaning": "The research has moved beyond raw archive/ESM topology and now has a bounded path to runtime state, but no body-level James claim has passed."
+  },
+  "hard_rules": [
+    "INHERITANCE != IDENTICAL_WIRE_FORMAT_WITHOUT_APPLICABILITY_CHECK",
+    "NAMED_OFFSET != VERIFIED_FO3_REGION",
+    "VALID_OFFSET != VALID_RECORD_GRAMMAR",
+    "RAW_FORMID_BYTES != STRUCTURED_REFERENCE",
+    "STRUCTURED_REFERENCE != AUTOBIOGRAPHICAL_MEMORY",
+    "ENGINE_RUNTIME_PERSISTENCE != IN_WORLD_MEMORY_BACKUP",
+    "FO3_FORMAT_GAP_MUST_NOT_BE_FILLED_FROM_SKYRIM_OR_FO4_BY_ANALOGY"
+  ],
+  "current_matrix": {
+    "VORTEX_FO3_HEADER_PRIMARY_IMPLEMENTATION": "PASS",
+    "WRYE_BASH_FO3_HEADER_PRIMARY_IMPLEMENTATION": "PASS",
+    "FO3_MASTER_MARKER_0x15": "PASS_FROM_WRYE_BASH_IMPLEMENTATION",
+    "LOCATION_TABLE_CHANGEFORMS_OFFSET_CLUE": "PASS_AS_IMPLEMENTATION_CLUE",
+    "FO3_SPECIFIC_LOCATION_TABLE_APPLICABILITY": "OPEN",
+    "REAL_FO3_LOCATION_TABLE_EXECUTION": "BLOCKED_NO_FOS_INPUT",
+    "CHANGE_REGION_RECORD_GRAMMAR": "NOT_ESTABLISHED",
+    "STRUCTURED_JAMES_RUNTIME_RECORD": "NOT_ESTABLISHED",
+    "PERSISTED_JAMES_RUNTIME_STATE": "NOT_ESTABLISHED",
+    "JAMES_AUTOBIOGRAPHICAL_PAYLOAD": "NOT_ESTABLISHED"
+  },
+  "next_actions": [
+    "Trace the exact Wrye Bash method-resolution/write-header path for Fallout3SaveHeader and determine whether six named location-table offsets are inherited unchanged.",
+    "Search additional primary open-source FO3 save implementations for independent agreement on the location table and change-record grammar.",
+    "When real T0-T3 .fos inputs are supplied, run v3.2a first and freeze their plugin environment before any body parsing.",
+    "Implement only the smallest proven next parser: location-table extraction before record semantics."
+  ]
+}

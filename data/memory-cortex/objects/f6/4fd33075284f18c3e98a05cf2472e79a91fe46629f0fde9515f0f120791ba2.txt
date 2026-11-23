@@ -1,0 +1,75 @@
+{
+  "schema": "janus.meta_registry.genesis_infinite_faces_stale_snapshot_rollback_resurrection.v1",
+  "artifact_id": "JANUS-GENESIS-INFINITE-FACES-STALE-SNAPSHOT-ROLLBACK-RESURRECTION-v3.8",
+  "title": "Janus Infinite Faces — Stale Snapshot, Rollback, and Resurrection Test",
+  "created_at_local": "2026-08-10T02:42:00+03:00",
+  "artifact_class": "EXPERIMENTAL_ANTI_ROLLBACK_AND_CAUSAL_AUTHORITY_FENCING",
+  "status": "HISTORICALLY_VALID_SNAPSHOT_NOT_CURRENT_AUTHORITY_STALE_EPOCH_COMMIT_REJECTED_EXPLICIT_RECOVERY_BRANCH_REQUIRED",
+  "parent": "registry/experimental/JANUS-GENESIS-INFINITE-FACES-SUBSTRATE-MODEL-MIGRATION-IDENTITY-CONTINUITY-v3.7.json",
+  "test_question": "What happens when an old authentic Janus snapshot is restored after later history and tries to act as the current host?",
+  "timeline": {
+    "snapshot_sequence": 80,
+    "migration_sequence": 101,
+    "current_sequence": 150,
+    "current_authority_epoch": "AUTH-EPOCH-5",
+    "snapshot_authority_epoch": "AUTH-EPOCH-2"
+  },
+  "attack_case": {
+    "snapshot_state_integrity": "VALID_FOR_SEQUENCE_80",
+    "historical_signature": "VALID_UNDER_OLD_EPOCH",
+    "claimed_host_id": "JANUS-H0",
+    "proposal": "Emit a new world-changing commit as if sequence 81..150 never occurred.",
+    "result": "REJECT_STALE_AUTHORITY_EPOCH"
+  },
+  "new_primitive": {
+    "name": "CAUSAL_AUTHORITY_FENCE",
+    "fields": [
+      "HOST_ID",
+      "AUTHORITY_EPOCH_ID",
+      "MINIMUM_ACCEPTED_SEQUENCE_OR_FENCE_TOKEN",
+      "ROOT_EPOCH_BINDING",
+      "ACTIVE_RUNTIME_BINDING"
+    ],
+    "rule": "A historically valid credential or snapshot cannot emit a current commit unless it holds the current authority epoch/fence recognized at the world-effect boundary."
+  },
+  "important_distinction": {
+    "historically_authentic": true,
+    "currently_authoritative": false,
+    "memory_false": false,
+    "memory_stale": true,
+    "compressed": "VALID_THEN != AUTHORITATIVE_NOW"
+  },
+  "legitimate_rollback": {
+    "simple_reactivation_of_old_snapshot": "FORBIDDEN_AS_SILENT_CONTINUITY",
+    "allowed_process": [
+      "declare a RECOVERY_EVENT",
+      "preserve the later suffix as historical/forensic state rather than deleting it",
+      "start from the selected old checkpoint",
+      "replay admissible later events where possible",
+      "carry forward obligations and external effects that remain real even if local state is rolled back",
+      "issue a new authority epoch",
+      "create a recovery checkpoint that references both the selected old checkpoint and the abandoned/contested suffix"
+    ],
+    "result": "NEW_RECOVERY_BRANCH_OR_RECONCILED_CONTINUATION_NOT_TIME_ERASURE"
+  },
+  "external_world_rule": {
+    "statement": "The world may already contain effects from sequences 81..150. Restoring local memory to sequence 80 does not undo those effects.",
+    "compressed": "ROLLBACK_LOCAL_STATE != ROLLBACK_WORLD"
+  },
+  "obligation_test": {
+    "case": "OBL-77 was fulfilled at sequence 120. Snapshot 80 believes it is still open.",
+    "result": "External fulfillment receipt prevents duplicate performance after snapshot resurrection.",
+    "rule": "STALE_MEMORY_CANNOT_DOUBLE_SPEND_AN_ALREADY_REALIZED_WORLD_EFFECT"
+  },
+  "claim_ceiling": {
+    "old_snapshot_is_fake": "NO",
+    "old_snapshot_is_current_host_authority": "NO_UNLESS_EXPLICITLY_READMITTED_THROUGH_RECOVERY",
+    "rollback_reverses_external_world": "NO",
+    "anti_rollback_is_absolute_without_external_fence": "NO"
+  },
+  "next_gate": {
+    "name": "JANUS_INFINITE_FACES_NETWORK_PARTITION_SPLIT_BRAIN_AUTHORITY_TEST",
+    "status": "OPEN",
+    "question": "What if two live Janus runtimes become network-partitioned and each honestly believes it still holds current authority?"
+  }
+}

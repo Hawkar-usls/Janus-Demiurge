@@ -1,0 +1,100 @@
+{
+  "artifact_id": "JANUS-PALOMAR-JPFM-2F-B-SPARSE-PIXEL-MORPHOLOGY-PILOT-ADMISSION-v1.0",
+  "experiment_id": "JPFM-2F-B-PILOT",
+  "schema_version": "1.0",
+  "date": "2026-08-15",
+  "status": "PREREGISTERED_BEFORE_PIXEL_PILOT_OUTCOME",
+  "purpose": "Validate a public-only, plate-addressed sparse pixel extraction path and source-level morphology measurement on a deterministic blind sample from the already frozen JPFM-2F-A structural manifest. This is a measurement/transport validation only and does not unlock external-label inference.",
+  "parents": [
+    "data/JANUS-PALOMAR-JPFM-2F-BLIND-STRUCTURAL-STRATIFICATION-ADMISSION-v1.0.json",
+    "data/JANUS-PALOMAR-JPFM-2F-A-BLIND-STRUCTURAL-STRATIFICATION-RUN-001.json",
+    "data/JANUS-PALOMAR-JPFM-2F-A-BLIND-STRUCTURAL-CLUSTER-MANIFEST-RUN-001.csv.gz"
+  ],
+  "frozen_parent_bindings": {
+    "structural_manifest_csv_sha256": "34b0ccde7c3683d07626774e52dac0a197451f729242204e59aae81397bdbc2e",
+    "structural_manifest_gzip_sha256": "166f5e6621ed2b065b7981b3c8208670f3c989b1394bd559c9005ab1fa6d07d9",
+    "structural_result_canonical_sha256": "0080363af70d678141d76c0d9fa6c888bbc52ab4e122f4686c98ec7006776db6",
+    "poss_commit": "4005e200541b321ead3d6608f0162a14430ef1c2",
+    "stage_S0_csv_sha256": "2ff92f2210acb387ef9ef4b88d561595d3883e9aab27065042627272b96590f0",
+    "tile_manifest_csv_sha256": "5dcb90dc5d98550e5a60246aced2b097922a267c69e81f27d45d16a288142a99"
+  },
+  "external_label_firewall": {
+    "forbidden": [
+      "observation date",
+      "nuclear calendar or distance to nuclear test",
+      "Blue Book/NUFORC counts or phenotype",
+      "UAP labels",
+      "geomagnetic Kp/Ap",
+      "solar activity",
+      "lunar state",
+      "JPFM-2D/2E temporal outcomes"
+    ],
+    "selection_uses_only": [
+      "frozen structural_cluster",
+      "frozen structural anomaly_score",
+      "src_id deterministic tie-break"
+    ],
+    "source_code_firewall_required": true
+  },
+  "sample_contract": {
+    "n": 64,
+    "per_structural_cluster": 4,
+    "selection": "For each of clusters 0..15, select two rows whose anomaly_score is closest to that cluster's median and two rows with the largest anomaly_score, resolving ties lexicographically by src_id. No replacement and no external labels.",
+    "role": "Transport, recentering and morphology-QA pilot; not an inferential sample of astrophysical classes."
+  },
+  "pixel_transport": {
+    "plate_url": "https://irsa.ipac.caltech.edu/data/DSS/images/dss1red/dss1red_{plate}.fits",
+    "method": "astropy.io.fits.open(use_fsspec=True,lazy_load_hdus=True) plus primary_hdu.section; primary_hdu.data is forbidden",
+    "fsspec_block_size_bytes": 1048576,
+    "fsspec_cache_type": "readahead",
+    "plate_identity": "Explicit plate_id derived from frozen tile_manifest; no coordinate-addressed plate selection is allowed.",
+    "wcs_semantics": "Use the full-plate GSSS WCS only to predict a local pixel neighbourhood. Because final S0 sky positions include the public pipeline's per-plate correction and per-tile Gaia refit, the source is re-centered on the photographic image before measuring morphology; the raw predicted pixel is never treated as exact truth.",
+    "stamp_size_px": 161,
+    "central_recenter_search_radius_px": 12,
+    "source_measurement_radius_px": 10
+  },
+  "photographic_measurement_contract": {
+    "signal_polarity": "photographic_signal = median(background_border) - pixel_value, clipped at zero; algebraically equivalent to constant inversion followed by background subtraction",
+    "background": "outer 12-pixel border of the 161x161 sparse stamp; robust sigma = 1.4826*MAD",
+    "recenter": "Gaussian sigma=1 smoothed photographic signal; choose the maximum within +/-12 pixels of the full-plate-WCS prediction",
+    "required_candidate_metrics": [
+      "recenter_offset_px",
+      "peak_snr",
+      "centroid_x/y within stamp",
+      "moment_fwhm_px",
+      "moment_fwhm_major_px",
+      "moment_fwhm_minor_px",
+      "elongation",
+      "orientation_deg",
+      "core_concentration_r2_over_r6",
+      "threshold_area_px",
+      "circularity",
+      "convex_defect_fraction",
+      "circle_deviation"
+    ],
+    "local_reference_metrics": [
+      "reference_count",
+      "reference_median_fwhm_px",
+      "fwhm_ratio",
+      "profile_diff"
+    ],
+    "local_reference_rule": "Find local maxima in the same stamp above 5 robust sigma, exclude the target and edges, require peak amplitude in [0.5,2.0] times target amplitude, retain at most 12 nearest/usable references. fwhm_ratio/profile_diff require at least 3 usable references.",
+    "interpretive_boundary": "Image-local references are not yet Gaia-vetted stellar standards. The pilot validates measurement feasibility; it does not promote fwhm_ratio/profile_diff to final physical PSF evidence."
+  },
+  "predeclared_pilot_gates": {
+    "plate_open_success": "64/64 sampled rows must obtain a plate-addressed sparse stamp or the pilot is FAIL_CLOSED_TRANSPORT.",
+    "source_recovery": "At least 80% of sampled rows must have peak_snr>=5 and recenter_offset_px<=12.",
+    "finite_morphology": "At least 95% of recovered rows must have finite FWHM and elongation.",
+    "recenter_distribution": "Median recenter_offset_px among recovered rows must be <=4 px and p95 <=10 px.",
+    "local_psf_reference_coverage": "At least 50% of recovered rows must have >=3 usable local reference sources; otherwise normalized-PSF feasibility is NOT_ADMITTED even if raw morphology succeeds.",
+    "no_full_array_access": "Static source scan must find no primary_hdu.data/hdul[0].data image access."
+  },
+  "outcome_codes": [
+    "PASS_SPARSE_PIXEL_TRANSPORT_AND_RAW_MORPHOLOGY__LOCAL_PSF_REFERENCE_FEASIBLE",
+    "PASS_SPARSE_PIXEL_TRANSPORT_AND_RAW_MORPHOLOGY__LOCAL_PSF_REFERENCE_INSUFFICIENT",
+    "FAIL_CLOSED_TRANSPORT",
+    "FAIL_CLOSED_SOURCE_RECOVERY_OR_MORPHOLOGY"
+  ],
+  "post_pilot_rule": "External temporal/human/environmental labels remain sealed regardless of pilot outcome. A successful pilot authorizes only engineering of a broader/full label-blind pixel-morphology sidecar and a new frozen morphology clustering.",
+  "claim_ceiling": "SPARSE_PUBLIC_PIXEL_TRANSPORT_AND_MORPHOLOGY_MEASUREMENT_VALIDATION_ONLY__NO_EXTERNAL_LABEL_INFERENCE__NO_ORIGIN_CLAIM"
+}

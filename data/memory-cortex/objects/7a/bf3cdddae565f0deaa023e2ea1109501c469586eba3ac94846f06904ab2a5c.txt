@@ -1,0 +1,96 @@
+{
+  "artifact_uuid": "JANUS-ENGINE-R0A-GEOMETRY-FREEZE-FLOW-BUDGET-v1.0",
+  "timestamp": "2026-08-30T00:11:00+03:00",
+  "version": "v1.0",
+  "title": "JANUS Engine R0A — Axle-scale geometry freeze and first-principles flow budget",
+  "observer": "Hawkar / JANUS",
+  "node_type": "geometry_and_flow_gate",
+  "branch_name": "Janus Engine",
+  "branch_id": "JANUS_ENGINE",
+  "parent": "data/JANUS-ENGINE-R0-ROTATING-GILL-RING-v1.0.json",
+  "status": "GEOMETRY_FROZEN_MODEL_ONLY_PENDING_MEASUREMENT",
+  "source_geometry": {
+    "file": "JANUS_AXLE_COIN_TWO_SIDED_LAUREL_A1_v2.6_ADHESION_ROTATION_REPAIR.3mf",
+    "model_unit": "mm",
+    "mesh_face_count": 3752336,
+    "bounding_box_mm": [62.3, 6.0, 62.3],
+    "operating_interpretation": "Use the 62.3 mm circular envelope as the first Axle-derived ring scale. The artistic coin relief is not itself treated as membrane area, pressure hardware or cryogenic hardware.",
+    "rotation_axis_assumption": "Normal to the two circular faces, through the 6 mm thickness."
+  },
+  "derived_geometry": {
+    "outer_diameter_mm": 62.3,
+    "radius_mm": 31.15,
+    "axial_thickness_mm": 6.0,
+    "bounding_frontal_disk_area_cm2": 30.4836,
+    "two_face_envelope_area_cm2": 60.9672,
+    "rim_envelope_area_cm2": 11.7433,
+    "bounding_cylinder_volume_cm3": 18.2901,
+    "important_boundary": "Frontal disk area and face/rim envelope areas are geometric bounds only. Real active membrane area must be designed and measured separately, probably using lamellae, porous media or another high-area structure."
+  },
+  "rotation_kinematics": [
+    {"rpm": 60, "tip_speed_m_s": 0.1957, "rotational_Re_screening": 6090, "rim_acceleration_g": 0.1254},
+    {"rpm": 120, "tip_speed_m_s": 0.3914, "rotational_Re_screening": 12180, "rim_acceleration_g": 0.5016},
+    {"rpm": 300, "tip_speed_m_s": 0.9786, "rotational_Re_screening": 30450, "rim_acceleration_g": 3.1350},
+    {"rpm": 600, "tip_speed_m_s": 1.9572, "rotational_Re_screening": 60900, "rim_acceleration_g": 12.5400}
+  ],
+  "water_side_oxygen_ceiling": {
+    "screening_assumptions": {
+      "dissolved_O2_mg_L": 8.0,
+      "capture_fraction": 0.50,
+      "fresh_water_throughput_bound": "Q_bound = A_frontal * v_water. This is a screening ceiling, not proof that a rotating disk actually processes a non-overlapping volume A*v each second."
+    },
+    "flow_points": [
+      {"water_velocity_m_s": 0.5, "Q_bound_L_s": 1.5242, "O2_capture_g_s_at_50pct": 0.00610, "O2_capture_kg_h_at_50pct": 0.02195},
+      {"water_velocity_m_s": 1.0, "Q_bound_L_s": 3.0484, "O2_capture_g_s_at_50pct": 0.01219, "O2_capture_kg_h_at_50pct": 0.04390},
+      {"water_velocity_m_s": 1.5, "Q_bound_L_s": 4.5725, "O2_capture_g_s_at_50pct": 0.01829, "O2_capture_kg_h_at_50pct": 0.06584},
+      {"water_velocity_m_s": 2.0, "Q_bound_L_s": 6.0967, "O2_capture_g_s_at_50pct": 0.02439, "O2_capture_kg_h_at_50pct": 0.08779},
+      {"water_velocity_m_s": 3.0, "Q_bound_L_s": 9.1451, "O2_capture_g_s_at_50pct": 0.03658, "O2_capture_kg_h_at_50pct": 0.13169}
+    ]
+  },
+  "run001_consistency_audit": {
+    "previous_run001_water_flow_L_s": 100.0,
+    "single_62p3mm_ring_velocity_required_m_s": 32.8045,
+    "dynamic_pressure_at_that_velocity_kPa": 536.993,
+    "previous_run001_assumed_DeltaP_kPa": 2.0,
+    "verdict": "RUN001_FLOW_POINT_CANNOT_REPRESENT_ONE_62P3MM_FRONTAL_RING",
+    "reinterpretation": "RUN-001 is retained as an aggregate-system screening point. At 2 m/s and 50% O2 capture, 100 L/s corresponds to about 16.4 independent 62.3 mm frontal-area equivalents, or one equivalent circular flow aperture about 252.3 mm in diameter.",
+    "equivalent_ring_areas_at_2m_s": 16.4023,
+    "equivalent_single_aperture_diameter_mm_at_2m_s": 252.313
+  },
+  "hydrodynamic_screening_model": {
+    "relation": "DeltaP_screen ~= K * 0.5 * rho_water * v^2 with K=1 used only as a geometry-level screening coefficient",
+    "rho_water_kg_m3": 998.0,
+    "pump_efficiency": 0.70,
+    "warning": "K is not measured for the Janus ring. Real DeltaP(Q,RPM) is a dominant unknown and must replace this screening relation.",
+    "at_2m_s": {
+      "DeltaP_screen_kPa": 1.996,
+      "Q_L_s": 6.0967,
+      "hydraulic_power_W": 17.3844
+    }
+  },
+  "design_consequence": {
+    "primary": "The Axle-scale 62.3 mm module is useful as an R0A test article but is too small to inherit the 100 L/s RUN-001 flow assumption as a single ring.",
+    "scale_paths": [
+      "increase total independently exposed water-flow area",
+      "use multiple axial modules with separate fresh-water lanes",
+      "scale outer diameter toward the required aggregate aperture",
+      "use high-area lamellae / porous / hollow-fiber-like membrane geometry to raise active membrane area while separately proving fresh-water renewal",
+      "use external current or vehicle motion only if the corresponding hydrodynamic drag is charged to the energy budget"
+    ],
+    "nested_ring_warning": "Concentric rings sharing the same water parcel do not multiply fresh-water oxygen supply simply by ring count. Only independent water turnover or demonstrably renewed boundary layers may be counted."
+  },
+  "next_measurements": [
+    "DeltaP_water(Q,RPM) for the 62.3 mm Axle-scale test article",
+    "captured_O2_mg_s(Q,RPM) with independent inlet/outlet dissolved-O2 mass balance",
+    "real active membrane area and membrane pressure drop",
+    "rotation drive torque/power in water",
+    "collector-side pO2 and leak rate"
+  ],
+  "next_gate": "JANUS_ENGINE_SIM_HOWL_CASTLE_RUN_002: rerun self-drive using the 62.3 mm geometry as one module and explicitly scale the number or total area of independently supplied modules instead of assigning 100 L/s to one ring.",
+  "linked_records": [
+    "data/JANUS-ENGINE-R0-ROTATING-GILL-RING-v1.0.json",
+    "data/JANUS-ENGINE-SIM-HOWL-CASTLE-RUN-001-v1.0.json",
+    "data/JANUS-ENGINE-R2A-SELF-DRIVE-NET-GENERATION-v1.0.json",
+    "data/JANUS-ENGINE-BRANCH-CHECKPOINT-v1.1.json"
+  ]
+}

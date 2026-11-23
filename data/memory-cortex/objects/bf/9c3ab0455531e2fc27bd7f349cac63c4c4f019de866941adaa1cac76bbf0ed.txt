@@ -1,0 +1,251 @@
+{
+  "artifact_uuid": "JANUS-CONNECTION-EVIDENCE-PROTOCOL-v2.0",
+  "version": "v2.0",
+  "date_utc": "2026-08-14",
+  "status": "CANONICAL_STRENGTHENING_OVERLAY_PROTOCOL",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "target_directory": "data/",
+  "purpose": "Strengthen legacy JANUS JSON artifacts without rewriting historical originals by replacing narrative confidence with explicit evidence states, independence units, falsification controls, survival receipts, and bounded claim ceilings.",
+  "historical_integrity_policy": {
+    "legacy_files_are_immutable_provenance": true,
+    "silent_rewrite_forbidden": true,
+    "strengthening_method": "append-only overlay artifacts in data/",
+    "legacy_numeric_strength": "PRESERVE_AS_HISTORICAL_METADATA_BUT_DO_NOT_INTERPRET_PROBABILISTICALLY",
+    "supersession_rule": "A v2 overlay may supersede interpretation, never erase the historical source bytes."
+  },
+  "canonical_graphs": {
+    "EVIDENCE_PRODUCTION_GRAPH": {
+      "operator": "RAW_SOURCE -> SELECTION -> REPRESENTATION -> CLASSIFICATION -> DETECTOR -> INTERPRETATION",
+      "risk": "shared upstream pipeline can create correlated visibility and correlated error",
+      "required_controls": [
+        "selection_blind",
+        "representation_swap",
+        "prior_scan_removed",
+        "detector_crosscheck"
+      ]
+    },
+    "INDEPENDENCE_GRAPH": {
+      "operator": "UNDERLYING_EVENT -> INFORMATION_UNIT -> WITNESS/FAILURE_DOMAIN -> EFFECTIVE_INDEPENDENCE",
+      "risk": "file/version/receipt multiplicity can inflate evidence count",
+      "required_controls": [
+        "event_lineage_collapse",
+        "field_novelty_map",
+        "failure_domain_map",
+        "history_carrier_map"
+      ]
+    },
+    "RELATION_SURVIVAL_GRAPH": {
+      "operator": "REAL_EDGE -> BLIND -> TARGETED_REWIRE -> MATCHED_NULL -> HELD_OUT/REPLAY",
+      "risk": "generic schema recurrence can masquerade as relation-specific structure",
+      "required_controls": [
+        "relation_specific_rewire",
+        "schema_matched_null",
+        "freshness_only",
+        "alternative_predecessor",
+        "partition_holdout"
+      ]
+    },
+    "CLAIM_ADMISSION_GRAPH": {
+      "operator": "OBSERVATION -> INTERPRETATION -> CLAIM_CEILING -> AUTHORITY/ACTION",
+      "risk": "signal, integrity, prediction, or model output may be promoted beyond what it licenses",
+      "required_controls": [
+        "claim_ceiling",
+        "forbidden_inference_edges",
+        "current_vs_historical_state"
+      ]
+    },
+    "EXTERNAL_ANCHOR_GRAPH": {
+      "operator": "SELF_STATE -> EXTERNAL_OR_INDEPENDENT_ANCHOR -> ADMISSIBILITY",
+      "risk": "self-certification and shared-history dependence",
+      "required_controls": [
+        "external_witness",
+        "independent_replay",
+        "failure_domain_separation",
+        "pretarget_history_conditioning"
+      ]
+    },
+    "DECIPHERMENT_GRAPH": {
+      "operator": "STRUCTURE -> BLIND_CANDIDATE -> NULL_SEPARATION -> PARTITION/HOLDOUT -> BEHAVIORAL_ANCHOR -> MORPHOLOGY/LEXICON -> SEMANTIC_REVEAL",
+      "scope": "Linear A and other undeciphered external corpora",
+      "required_controls": [
+        "gloss_blind",
+        "unicode_name_blind",
+        "Linear_B_prior_ablation",
+        "matched_null",
+        "independent_replay"
+      ]
+    }
+  },
+  "evidence_state_enum": [
+    "RAW_OBSERVATION",
+    "EXTERNAL_SOURCE_ASSERTION",
+    "WITNESS_REPORT",
+    "DERIVED_MEASUREMENT",
+    "MODEL_OUTPUT",
+    "STRUCTURAL_HYPOTHESIS",
+    "SEMANTIC_HYPOTHESIS",
+    "CAUSAL_HYPOTHESIS",
+    "ASSUMPTION_CONDITIONAL_MODEL",
+    "VALIDATION_RECEIPT",
+    "NEGATIVE_RESULT",
+    "REJECTED",
+    "UNRESOLVED"
+  ],
+  "independence_unit_enum": [
+    "FIELD",
+    "CLAIM",
+    "EVENT",
+    "EXPERIMENT",
+    "DOCUMENT",
+    "WITNESS",
+    "FAILURE_DOMAIN",
+    "EXTERNAL_SOURCE",
+    "CORPUS_PARTITION"
+  ],
+  "required_connection_record_v2": {
+    "connection_id": "stable ID",
+    "legacy_sources": "exact paths and SHAs where available",
+    "machine_observation": "bounded observation before interpretation",
+    "evidence_state": "enum",
+    "independence_unit": "enum plus ancestry/dependency map",
+    "common_mode_dependencies": [
+      "authorship",
+      "selection",
+      "representation",
+      "detector",
+      "history",
+      "lineage",
+      "infrastructure"
+    ],
+    "survival_vector": {
+      "REAL": "PRESENT|ABSENT|NOT_EXECUTED",
+      "BLIND": "PRESENT|ABSENT|NOT_EXECUTED",
+      "PRIOR_SCAN_REMOVED": "PRESENT|ABSENT|NOT_EXECUTED",
+      "REPRESENTATION_SWAP": "PRESENT|ABSENT|NOT_EXECUTED",
+      "REWIRED": "PRESENT|ABSENT|NOT_EXECUTED|NOT_APPLICABLE",
+      "MATCHED_NULL": "PRESENT|ABSENT|NOT_EXECUTED",
+      "FRESHNESS_ONLY": "PRESENT|ABSENT|NOT_EXECUTED|NOT_APPLICABLE",
+      "ALTERNATIVE_PREDECESSOR": "PRESENT|ABSENT|NOT_EXECUTED|NOT_APPLICABLE",
+      "PARTITION_HOLDOUT": "PRESENT|ABSENT|NOT_EXECUTED|NOT_APPLICABLE",
+      "EXTERNAL_OR_INDEPENDENT_REPLAY": "PASS|FAIL|NOT_EXECUTED|NOT_APPLICABLE"
+    },
+    "claim_ceiling": "maximum admissible statement from current evidence",
+    "alternative_explanations": "explicit competing explanations",
+    "falsification_route": "concrete destructive or discriminating test",
+    "result_receipt": "required before promotion",
+    "failure_receipt": "required when a gate fails; failures remain first-class data",
+    "calibration_status": "CALIBRATED|UNCALIBRATED|NOT_APPLICABLE"
+  },
+  "numeric_score_policy": {
+    "bare_0_to_1_strength_forbidden_in_new_v2_claims": true,
+    "legacy_score_handling": "retain verbatim as historical detector ranking only",
+    "probability_language_requires": [
+      "defined reference class",
+      "validated likelihood or scoring model",
+      "calibration dataset",
+      "held-out performance",
+      "uncertainty interval with documented derivation"
+    ],
+    "bayesian_rule": "If priors or likelihoods are expert-selected rather than empirically validated, posterior values are ASSUMPTION_CONDITIONAL_MODEL outputs and must not be presented as empirical probabilities that the hypothesis is true.",
+    "monte_carlo_rule": "Monte Carlo over subjective inputs quantifies sensitivity to those assumptions; it does not create empirical evidence."
+  },
+  "promotion_ladder": [
+    {
+      "level": "L0_LEGACY_OR_CANDIDATE",
+      "requires": [
+        "bounded observation",
+        "exact provenance"
+      ]
+    },
+    {
+      "level": "L1_STRUCTURAL",
+      "requires": [
+        "independence unit defined",
+        "common-mode audit",
+        "blind survival"
+      ]
+    },
+    {
+      "level": "L2_DISCRIMINATIVE",
+      "requires": [
+        "matched-null separation",
+        "continuous effect/report"
+      ]
+    },
+    {
+      "level": "L3_RELATION_SPECIFIC",
+      "requires": [
+        "relation-specific destructive control where meaningful",
+        "preserved-property report"
+      ]
+    },
+    {
+      "level": "L4_TRANSPORTABLE",
+      "requires": [
+        "partition/held-out success",
+        "source-family separation"
+      ]
+    },
+    {
+      "level": "L5_INDEPENDENTLY_REPLAYED",
+      "requires": [
+        "independent implementation or external replay"
+      ]
+    },
+    {
+      "level": "L6_DOMAIN_CLAIM",
+      "requires": [
+        "domain-specific external evidence and claim-specific validation; no automatic promotion from structure alone"
+      ]
+    }
+  ],
+  "receipt_requirements": {
+    "before_execution": [
+      "source_snapshot_commit_or_hash",
+      "candidate_set_hash",
+      "extraction_rule_version_or_hash",
+      "null_generator_version_or_hash",
+      "partition_definition",
+      "scoring_rule",
+      "random_seed_or_deterministic_recipe",
+      "promotion_threshold"
+    ],
+    "after_execution": [
+      "raw_candidate_rankings",
+      "effect_sizes",
+      "null_distribution",
+      "partition_results",
+      "failed_controls",
+      "software/environment identity",
+      "exact input hashes",
+      "claim_ceiling",
+      "negative_result_receipts"
+    ]
+  },
+  "anti_circularity": {
+    "prior_connection_scans_are_hypothesis_memory_not_source_evidence": true,
+    "legacy_overlay_must_not_cite_itself_as_independent_support": true,
+    "same_author_or_same_model_outputs_default_to_shared_common_mode_until_shown_otherwise": true,
+    "hash_or_signature_does_not_create_freshness_or_truth": true,
+    "version_or_derivative_count_does_not_create_replication": true
+  },
+  "linear_a_gate": {
+    "new_anchor_promotion": [
+      "BLIND_CANDIDATE",
+      "NULL_SEPARATION",
+      "AT_LEAST_2_PARTITIONS",
+      "HELD_OUT_SUCCESS",
+      "BEHAVIORAL_CONSTRAINT",
+      "MORPHOLOGICAL_OR_LEXICAL_CONSISTENCY",
+      "INDEPENDENT_IMPLEMENTATION_REPLAY"
+    ],
+    "known_anchors_are_controls_not_discoveries": [
+      "KU-RO",
+      "KI-RO",
+      "A-KA-RU",
+      "KA-RU"
+    ],
+    "decipherment_status": "NOT_ACHIEVED"
+  },
+  "canonical_rule": "JANUS strengthens a connection by showing what survives when the machinery that made the connection visible is removed, and by recording exactly what intervention destroys the edge."
+}

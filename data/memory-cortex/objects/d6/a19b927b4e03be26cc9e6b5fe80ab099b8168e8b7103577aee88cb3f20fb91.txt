@@ -1,0 +1,326 @@
+{
+  "schema": "janus.osiris.local_member_operator_bias_prereg.v1_0",
+  "artifact_id": "JANUS-OSIRIS-LOCAL-MEMBER-OPERATOR-BIAS-PREREG-2026-09-19-v1.0",
+  "version": "v1.0",
+  "created_at_local": "2026-09-19T00:33:00+03:00",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "branch": "main",
+  "status": "PREREGISTERED_ANALYSIS_PROTOCOL__TEXTUAL_42_NOME_FREEZE_PENDING__NO_CONFIRMATORY_ARCHAEOLOGICAL_SCORING_YET",
+  "parent_matrix": "data/JANUS-OSIRIS-MATERIAL-BODY-OPERATOR-MATRIX-2026-09-19-v1.0.json",
+  "research_question": "Do source-frozen local Osirian body-member predictions predict a higher-than-chance rate of member-specific material operations in independently coded archaeological assemblages from the same localities?",
+  "epistemic_problem": {
+    "discovery_contamination": "The current eleven-site operator matrix was built after archaeological outcomes at those sites had already been inspected. Those sites therefore cannot serve as clean confirmatory evidence for the primary prospective test.",
+    "consequence": "All currently studied sites are DISCOVERY/CALIBRATION only. Confirmatory inference must use held-out localities whose archaeological outcome corpus has not been inspected for this hypothesis after the textual prediction freeze.",
+    "key_rule": "PREDICTION_FREEZE_BEFORE_OUTCOME_LOOKUP"
+  },
+  "discovery_calibration_exclusions": [
+    "Mendes / Tell Ibn es-Salam",
+    "Tell el-Rub'a",
+    "Abydos",
+    "Elephantine / QH207",
+    "Biggeh / Abaton",
+    "Ehnasya / Heracleopolis",
+    "Dendera",
+    "Coptos",
+    "Thonis-Heracleion",
+    "Giza",
+    "Oxyrhynchus"
+  ],
+  "textual_prediction_model": {
+    "primary_recension": "Dendera 42-nome Osirian relic procession / geographical theology",
+    "replication_recensions": [
+      "Edfu geographical list",
+      "Papyrus Jumilhac local 12/14-member traditions, analyzed separately and never merged into the Dendera primary map"
+    ],
+    "reason_for_source_separation": "Late sources multiply and duplicate relics and may assign more than one member to a locality. A single harmonized modern map would create researcher degrees of freedom.",
+    "prediction_type": "SET_VALUED",
+    "formal_definition": "For locality i, P_i is the frozen set of member classes explicitly assigned by the chosen textual recension. Do not force one member when a source assigns several, and do not import assignments from a different recension.",
+    "secondary_sources_policy": "Beinlich 1984, Coulon 2005, Mohamed 2017 and later scholarship may locate primary passages but may not define the confirmatory P_i unless the primary text/facsimile/edition is frozen."
+  },
+  "canonical_member_vocabulary": [
+    "HEAD",
+    "EYE",
+    "EAR",
+    "NOSE",
+    "MOUTH_JAW_TONGUE",
+    "NECK_NAPE",
+    "ARM",
+    "HAND_FIST",
+    "FINGER",
+    "CHEST_BREAST",
+    "HEART",
+    "VISCERA",
+    "PHALLUS",
+    "SPINE_BACK",
+    "BUTTOCKS",
+    "THIGH",
+    "LEG",
+    "FOOT",
+    "GENERIC_FLESH_FLUID",
+    "WHOLE_BODY",
+    "UNSPECIFIED_MEMBER"
+  ],
+  "anatomical_matching_rules": {
+    "primary": "EXACT_CANONICAL_CLASS_ONLY",
+    "side_rule": "LEFT/RIGHT is retained as metadata but collapsed for the primary test unless the textual source and archaeological outcome both preserve side with confidence >= HIGH; side-specific analysis is secondary.",
+    "plural_rule": "Plural and singular map to the same canonical class for primary scoring.",
+    "forbidden_primary_collapses": [
+      "LEG != FOOT",
+      "THIGH != LEG",
+      "SPINE_BACK != DJED automatically unless the archaeological object itself is explicitly body-axis/djed class",
+      "PHALLUS != generic fertility symbol",
+      "HEAD != whole mummy/whole Osiris"
+    ],
+    "secondary_family_match": "A predeclared broad anatomical-family score may be reported only as secondary sensitivity analysis."
+  },
+  "material_operator_vocabulary": [
+    "MANUFACTURE_SUBSTITUTE",
+    "REPAIR_RE_MEMBER_IMAGE",
+    "CONTAIN_ENCASE",
+    "PROTECT_CARDINAL",
+    "DEPOSIT_BURY",
+    "RENEW_REPLACE",
+    "SYMBOLIZE_BODY_AXIS",
+    "CONSECRATE_TRANSFORM",
+    "RECEIVE_REINTERPRET_HUMAN_REMAINS"
+  ],
+  "outcome_coding": {
+    "blinding": "Archaeological coders must receive site/object records with the textual predicted-member field masked. Prediction table is joined only after archaeological coding is frozen.",
+    "eligible_event_definition": "A source-bound Osirian archaeological event/object with (a) locality attribution, (b) at least one material operator from the frozen vocabulary, and (c) member-specific morphology, inscription, container role or securely published interpretation sufficient to assign a canonical member class.",
+    "exclude": [
+      "generic Osiris statuettes with no member-specific operation",
+      "objects known only from modern iconographic resemblance",
+      "unproven dealer provenance",
+      "textual predictions re-entering as archaeological outcomes",
+      "duplicate publications of the same object/event"
+    ],
+    "passport_grade": {
+      "G0": "claim/snippet only; ineligible",
+      "G1": "published object without stable individual context/passport; secondary only",
+      "G2": "stable museum/excavation identifier or source-bound archival context; primary eligible",
+      "G3": "G2 plus secure find context and/or analytical/imaging/primary register support"
+    },
+    "primary_eligibility": "G2 or G3 only"
+  },
+  "primary_endpoint": {
+    "unit": "LOCALITY",
+    "site_hit_definition": "H_i = 1 if locality i contains at least one G2/G3 eligible archaeological event whose member class belongs to frozen P_i and whose record contains at least one admissible material operator; otherwise H_i = 0 when archaeological coverage is adequate; H_i = NA when coverage is inadequate.",
+    "statistic": "T = SUM(H_i) across confirmatory localities with adequate coverage.",
+    "equal_site_weighting": true,
+    "reason": "Prevents a large cache at one site from dominating many sparsely documented localities."
+  },
+  "archaeological_coverage_gate": {
+    "C0": "No usable archaeological corpus; site is NA.",
+    "C1": "Very sparse or unsystematic corpus; site is NA for primary endpoint.",
+    "C2": "At least one bounded excavation/museum corpus sufficient to detect multiple Osirian object classes; primary eligible.",
+    "C3": "Systematic excavation/publication or well-bounded museum corpus with context/passport coverage; primary eligible.",
+    "rule": "Coverage grade is frozen before unmasking P_i."
+  },
+  "null_model": {
+    "method": "STRATIFIED_LABEL_PERMUTATION",
+    "permutation_unit": "Frozen P_i sets are permuted among eligible localities.",
+    "strata": [
+      "Upper vs Lower Egypt",
+      "broad chronological availability band where needed"
+    ],
+    "preserve": [
+      "number of predictions per locality",
+      "global frequency of each member label",
+      "archaeological outcome coding"
+    ],
+    "repetitions": "100000 minimum, or exact enumeration when feasible",
+    "p_value": "p = (1 + permutations with T_perm >= T_obs) / (1 + number_of_permutations)"
+  },
+  "effect_size": {
+    "primary": "Delta_hit = observed locality hit-rate minus median permutation-null hit-rate.",
+    "survival_gate": "Primary confirmatory signal requires p <= 0.05 AND Delta_hit >= 0.20. If either condition fails, the broad causal member-bias hypothesis is not promoted.",
+    "small_n_caution": "If fewer than 10 eligible held-out localities survive coverage gating, the run is classified UNDERPOWERED and no strong causal promotion is allowed even if nominal p <= 0.05."
+  },
+  "secondary_endpoints": [
+    {
+      "id": "EQUAL_SITE_MEMBER_SPECIFIC_RATE",
+      "definition": "For each locality, x_i/N_i = member-matching eligible operator events / all member-specific eligible operator events; average equally across localities.",
+      "inference": "Permutation confidence/sensitivity only; not a second promotion gate."
+    },
+    {
+      "id": "OPERATOR_SPECIFIC_CONCORDANCE",
+      "definition": "Repeat descriptive match rates separately for MANUFACTURE, REPAIR, CONTAIN, PROTECT, DEPOSIT/RENEW.",
+      "multiplicity": "Exploratory; no uncorrected winner claims."
+    },
+    {
+      "id": "SIDE_SPECIFIC_MATCH",
+      "definition": "Left/right match where both text and archaeology independently preserve side.",
+      "multiplicity": "Exploratory."
+    }
+  ],
+  "falsification_conditions": [
+    "Observed T is not above the stratified permutation null.",
+    "Effect disappears when G1 records are excluded and only G2/G3 remain.",
+    "Effect is carried entirely by one locality or one repeated object publication.",
+    "Broad family matches appear but exact canonical member matches do not.",
+    "Result vanishes after deduplicating textual recensions or archaeological objects.",
+    "Match rate is equally high after randomly shifting predictions to neighboring nomes."
+  ],
+  "negative_controls": [
+    {
+      "id": "NEIGHBOR_NOME_SHIFT",
+      "test": "Shift each P_i to an adjacent nome where geography permits; true local specificity should weaken."
+    },
+    {
+      "id": "WHOLE_OSIRIS_GENERIC_OBJECTS",
+      "test": "Generic whole-body Osiris objects should not count as member-specific success."
+    },
+    {
+      "id": "NON_OSIRIAN_MATCHED_CULT_OBJECTS",
+      "test": "Where feasible, matched cult assemblages of other gods are coded for similar repair/container/body-part biases."
+    },
+    {
+      "id": "ABYDOS_REAL_HUMAN_MEMBER_CONTROL",
+      "role": "Demonstrates that real human tissue in an Osirian-received monument is insufficient for Osiris identity."
+    }
+  ],
+  "provisional_textual_predictions_already_known_but_not_confirmatory_due_to_prior_outcome_exposure": [
+    {
+      "locality": "Mendes",
+      "P": [
+        "PHALLUS",
+        "SPINE_BACK"
+      ],
+      "status": "DISCOVERY_ONLY",
+      "source_note": "Late Osirian relic lists/Dendera-Brooklyn tradition already used in project."
+    },
+    {
+      "locality": "Bubastis",
+      "P": [
+        "FOOT"
+      ],
+      "status": "DISCOVERY_ONLY_OR_SOURCE_CALIBRATION",
+      "source_note": "Published temple-study tradition already recovered in project."
+    },
+    {
+      "locality": "Biggeh/Elephantine region",
+      "P": [
+        "LEG"
+      ],
+      "side": "LEFT",
+      "status": "DISCOVERY_ONLY",
+      "source_note": "Abaton left-leg tradition already used in project."
+    },
+    {
+      "locality": "Heracleopolis",
+      "P": [
+        "BUTTOCKS",
+        "PHALLUS",
+        "LEG",
+        "GENERIC_FLESH_FLUID"
+      ],
+      "status": "DISCOVERY_ONLY",
+      "source_note": "Chester Beatty VIII/local tradition already used in project; must remain recension-specific."
+    },
+    {
+      "locality": "Abydos",
+      "P": [
+        "HEAD"
+      ],
+      "status": "DISCOVERY_ONLY",
+      "source_note": "Head reliquary tradition already inspected."
+    }
+  ],
+  "holdout_textual_candidates_to_freeze_before_any_archaeological_search": [
+    {
+      "locality": "Athribis",
+      "provisional_P": [
+        "HEART"
+      ],
+      "source_status": "SECONDARY_LOCATOR_ONLY__PRIMARY_TEXT_FREEZE_REQUIRED"
+    },
+    {
+      "locality": "Letopolis",
+      "provisional_P": [
+        "NECK_NAPE"
+      ],
+      "source_status": "SECONDARY_LOCATOR_ONLY__PRIMARY_TEXT_FREEZE_REQUIRED"
+    },
+    {
+      "locality": "Memphis",
+      "provisional_P": [
+        "HEAD"
+      ],
+      "source_status": "SECONDARY_LOCATOR_ONLY__PRIMARY_TEXT_FREEZE_REQUIRED"
+    },
+    {
+      "locality": "Sebennytos",
+      "provisional_P": [
+        "THIGH"
+      ],
+      "source_status": "SECONDARY_LOCATOR_ONLY__PRIMARY_TEXT_FREEZE_REQUIRED"
+    },
+    {
+      "locality": "Heliopolis",
+      "provisional_P": [
+        "LEG"
+      ],
+      "source_status": "SECONDARY_LOCATOR_ONLY__PRIMARY_TEXT_FREEZE_REQUIRED"
+    },
+    {
+      "locality": "Lycopolis (Upper Egypt)",
+      "provisional_P": [
+        "VISCERA"
+      ],
+      "source_status": "SECONDARY_LOCATOR_ONLY__PRIMARY_TEXT_FREEZE_REQUIRED"
+    },
+    {
+      "locality": "Xois",
+      "provisional_P": [
+        "GENERIC_FLESH_FLUID"
+      ],
+      "source_status": "SECONDARY_LOCATOR_ONLY__PRIMARY_TEXT_FREEZE_REQUIRED"
+    },
+    {
+      "locality": "Eileithyiapolis",
+      "provisional_P": [
+        "MOUTH_JAW_TONGUE",
+        "LEG"
+      ],
+      "source_status": "SECONDARY_LOCATOR_ONLY__PRIMARY_TEXT_FREEZE_REQUIRED"
+    }
+  ],
+  "full_42_nome_freeze_gate": {
+    "status": "OPEN",
+    "pass_condition": "Extract every nome/member assignment from one frozen Dendera recension/edition into a 42-row source table with page/line/scene references before any confirmatory archaeological lookup.",
+    "no_merge_rule": "Conflicting Edfu/Jumilhac/other assignments are stored in separate prediction maps and used only for replication/sensitivity.",
+    "missing_member_rule": "If a nome's member cannot be read/verified from the frozen source, mark UNKNOWN; never infer from neighboring nomes or later secondary summaries."
+  },
+  "source_ledger": [
+    {
+      "source": "Verly, Auenmüller, Delvaux & Rademakers, BIFAO 122, 'Re-Membering Osiris'",
+      "role": "Confirms Late Period 42-nome relic concept, multiplication/duplication of members, and identifies Edfu/Dendera as principal pharaonic geographical sources.",
+      "url": "https://www.ifao.egnet.net/bifao/122/17/"
+    },
+    {
+      "source": "Horst Beinlich, Die 'Osirisreliquien' (1984)",
+      "role": "Major critical study; must be treated as interpretive scholarship and source locator, not silently as a primary recension.",
+      "url": "https://www.harrassowitz-verlag.de/title_857.ahtml"
+    },
+    {
+      "source": "Laurent Coulon, Les reliques d'Osiris en Egypte ancienne",
+      "role": "Modern synthesis emphasizing 42-nome geopolitical remembrement, duplicated relics, and non-uniqueness.",
+      "url": "https://www.hisoma.mom.fr/sites/hisoma.mom.fr/files/annuaire-du-personnel/coulon-laurent/2005_Coulon_Reliques.pdf"
+    },
+    {
+      "source": "Ayman Mohamed 2017, The body parts of Osiris: A study regarding its whereabouts",
+      "role": "Modern location survey; locator/replication aid, not primary prediction authority.",
+      "doi": "10.21608/cguaa.2017.29483"
+    }
+  ],
+  "next_actions_in_order": [
+    "Acquire/freeze a direct Dendera 42-nome transcription/facsimile or authoritative edition.",
+    "Create 42-row textual prediction table only; do not inspect held-out archaeology.",
+    "Hash/commit textual table and prediction vocabulary.",
+    "Select held-out localities not present in discovery matrix and verify no prior project archaeology outcome leakage.",
+    "Build archaeological corpus with prediction column masked.",
+    "Freeze coverage grades and object/member/operator coding.",
+    "Unmask predictions once, run permutation test, and publish all PASS/FAIL/UNDERPOWERED outcomes without retargeting."
+  ],
+  "current_verdict": "TEST_DESIGN_FROZEN__CONFIRMATORY_RUN_NOT_STARTED"
+}

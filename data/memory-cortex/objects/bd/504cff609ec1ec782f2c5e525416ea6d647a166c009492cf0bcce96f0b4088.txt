@@ -1,0 +1,70 @@
+{
+  "artifact_id": "JANUS-PALOMAR-JPFM-2F-C0-CORRECTED-TILE-WCS-LOCATOR-ADMISSION-v1.0",
+  "experiment_id": "JPFM-2F-C0",
+  "schema_version": "1.0",
+  "date": "2026-08-15",
+  "status": "PREREGISTERED_BEFORE_B3S_OUTCOME__EXECUTION_CONDITIONAL_ON_B3S_PASS",
+  "purpose": "Determine whether the final frozen S0 sky coordinate can locate the same source directly in the corrected reconstructed tile WCS with enough pixel accuracy to scale pixel-morphology measurements without rerunning Source Extractor and PSFEx for every S0 source. This is an engineering/provenance gate, not an astrophysical hypothesis test.",
+  "parents": [
+    "data/JANUS-PALOMAR-JPFM-2F-B3S-SHARDED-EXECUTION-PLAN-v1.0.json",
+    "data/JANUS-PALOMAR-JPFM-2F-B3-SHAPE-COMPATIBILITY-REPLAY-ADMISSION-v1.0.json",
+    "data/JANUS-PALOMAR-JPFM-2F-B2-TILE-LINEAGE-REPLAY-RUN-001.json"
+  ],
+  "execution_precondition": {
+    "required_parent_outcome": "PASS_SHAPE_COMPATIBILITY_REPLAY__PIXEL_MORPHOLOGY_PILOT_ADMITTED",
+    "required_parent_artifact": "data/JANUS-PALOMAR-JPFM-2F-B3S-SHARD-AGGREGATE-RUN-001.json",
+    "required_parent_sidecar": "data/JANUS-PALOMAR-JPFM-2F-B3S-SHARD-AGGREGATE-SIDECAR-RUN-001.csv.gz",
+    "if_parent_does_not_pass": "BLOCKED__DO_NOT_EXECUTE_C0"
+  },
+  "frozen_validation_sample": {
+    "same_64_as_B1_B2_B3_B3S": true,
+    "rows": 64,
+    "expected_distinct_tiles": 52,
+    "truth_centroid": "Exact replayed pass2 XWIN_IMAGE/YWIN_IMAGE for NUMBER == frozen object_id from the admitted B3S sidecar.",
+    "query_coordinate": "Frozen final S0 ra/dec from release results/s0-642-20260814; no source recentering before the comparison."
+  },
+  "locator_under_test": {
+    "step_1": "Reconstruct the exact frozen 60-arcmin tile from its named POSS-I plate using the same 7x7 pixel-space grid and same frozen per-plate CRPIX correction used by B2/B3/B3S.",
+    "step_2": "Read only the reconstructed corrected tile WCS; do not run pass1, PSFEx or pass2 for the locator prediction.",
+    "step_3": "Transform frozen S0 ra/dec to zero-indexed tile pixel coordinates using the corrected tile WCS.",
+    "step_4": "Compare the predicted pixel to the independently replayed exact pass2 centroid after converting XWIN_IMAGE/YWIN_IMAGE from SExtractor one-indexed coordinates to zero-indexed coordinates.",
+    "nearest_source_search_allowed": false,
+    "pixel_peak_recentering_allowed": false,
+    "threshold_tuning_after_offsets_seen": false
+  },
+  "predeclared_gates": {
+    "tile_reconstruction": "All 52 frozen distinct tiles must reconstruct with the exact B2/B3 tile identity machinery.",
+    "truth_lineage": "64/64 B3S rows must have exact NUMBER recovery and finite pass2 XWIN_IMAGE/YWIN_IMAGE.",
+    "locator_coverage": "64/64 S0 sky coordinates must transform to finite corrected-tile pixel coordinates.",
+    "primary_accuracy": "At least 95% of the 64 sources must have Euclidean predicted-vs-pass2 centroid offset <= 3.0 pixels.",
+    "catastrophic_tail": "100% of the 64 sources must have offset <= 8.0 pixels.",
+    "report_only": [
+      "offset pixel min/p05/median/p95/max",
+      "offset converted to approximate arcsec using local WCS pixel scale",
+      "per-structural-cluster offset distribution",
+      "per-tile and per-plate failures if any"
+    ]
+  },
+  "allowed_outcomes": [
+    "PASS_CORRECTED_TILE_WCS_DIRECT_PIXEL_LOCATOR",
+    "FAIL_CLOSED_PARENT_NOT_ADMITTED",
+    "FAIL_CLOSED_TILE_RECONSTRUCTION",
+    "FAIL_CLOSED_TRUTH_LINEAGE",
+    "FAIL_CLOSED_PIXEL_LOCATOR_ACCURACY"
+  ],
+  "external_label_firewall": {
+    "external_label_reveal_authorized": false,
+    "forbidden_inputs": [
+      "nuclear calendar",
+      "Blue Book or other human-report labels",
+      "NUFORC labels",
+      "Kp/ap or geomagnetic labels",
+      "Moon/Sun temporal covariates"
+    ]
+  },
+  "post_pass_scaleout": {
+    "name": "JPFM-2F-C1-LABEL-BLIND-PIXEL-MORPHOLOGY-SIDECAR-SCALEOUT",
+    "principle": "Use direct corrected-tile WCS localization plus local pixel measurements for a much larger or full S0 morphology release, while retaining exact tile/plate lineage and keeping all external labels sealed until the morphology manifest and clusters are frozen."
+  },
+  "claim_ceiling": "PIXEL_LOCATOR_ENGINEERING_VALIDATION_ONLY__NO_EXTERNAL_LABEL_INFERENCE__NO_ORIGIN_OR_CAUSAL_CLAIM"
+}

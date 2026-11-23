@@ -1,0 +1,285 @@
+{
+  "artifact_id": "JANUS-TRUMP-EXACT-CHANNEL-DECOMPOSITION-APPLICATION-CONTRACT-2026-09-20-v1.3",
+  "version": "v1.3",
+  "date": "2026-09-20",
+  "status": "FROZEN_REUSABLE_APPLICATION_CONTRACT__REPRESENTATION_INVARIANT_CAPACITY",
+  "name": "EXACT_CHANNEL_DECOMPOSITION_APPLICATION_CONTRACT",
+  "parents": {
+    "abstract_theorem": {
+      "path": "research/TRUMP_ABSTRACT_TWO_BLOCK_CHANNEL_THEOREM_2026-09-20_v1.0.json",
+      "commit": "8d7d95a73fd5458a7ae4105f2698e40fc6f1184c",
+      "blob": "2348c9000f22f2d31413652a0d8e58409ac1f352",
+      "status": "PASS_ABSTRACT_TWO_BLOCK_CHANNEL_THEOREM"
+    },
+    "frozen_frame_binding": {
+      "path": "research/TRUMP_C11_FROZEN_FRAME_TWO_BLOCK_CHANNEL_COROLLARY_BINDING_2026-09-20_v1.0.json",
+      "commit": "fe06a816202a7296c71d03e0ce009e2bf99e21d9",
+      "blob": "94f5c49fe8aff08d660c7827056d6345728b349d",
+      "status": "PASS_C11_FROZEN_FRAME_AS_COROLLARY_OF_ABSTRACT_TWO_BLOCK_CHANNEL_THEOREM"
+    },
+    "frozen_frame_transfer": {
+      "path": "research/TRUMP_C11_FROZEN_FRAME_LOCAL_TO_GLOBAL_CONNECTIVITY_TRANSFER_RESULT_2026-09-20_v1.0.json",
+      "commit": "05272f19d95aa4d2c5024effded408827bf598bb",
+      "blob": "19301d0e64b54dd4e720229a5d4ed595c1b6ce8e",
+      "status": "PASS_C11_FROZEN_FRAME_LOCAL_TO_GLOBAL_CONNECTIVITY_TRANSFER"
+    }
+  },
+  "epistemic_firewall": {
+    "formula": "STRUCTURAL_THEOREM_VALIDITY != ALGORITHMIC_APPLICABILITY",
+    "structural_statement": "The abstract two-block theorem is mathematically valid whenever its hypotheses hold.",
+    "application_statement": "Using it algorithmically on a new graph additionally requires a graph-only decomposition certificate and polynomially checkable application receipts.",
+    "forbidden_inference": "A valid theorem does not imply that discovering a suitable decomposition in an arbitrary input graph is polynomial."
+  },
+  "object_certificate": {
+    "required_fields": [
+      "finite undirected graph G",
+      "partition V(G)=L disjoint_union R disjoint_union {z}",
+      "anchors c in L and f in R",
+      "port sets P_L subseteq L\\{c}, P_R subseteq R\\{f}",
+      "exact channel graph X=E(L,R) subseteq P_L x P_R"
+    ],
+    "exact_interface_checks": [
+      "Partition is total and pairwise disjoint.",
+      "cz and zf are edges.",
+      "c is complete to P_L.",
+      "f is complete to P_R.",
+      "Every L-R edge belongs to X.",
+      "Every X-edge has one endpoint in P_L and one in P_R.",
+      "No L-R edge exists outside X."
+    ],
+    "verification_complexity": "Polynomial in |V|+|E| for a supplied decomposition certificate."
+  },
+  "three_status_contract": {
+    "DECOMPOSITION_DISCOVERABLE": {
+      "allowed_values": [
+        "YES_GRAPH_ONLY_POLYNOMIAL",
+        "YES_GRAPH_ONLY_UNPROVEN_COMPLEXITY",
+        "CERTIFICATE_SUPPLIED_EXTERNALLY",
+        "NO_CERTIFICATE",
+        "OPEN"
+      ],
+      "current_value_for_pure_exact_channel_interface": "YES_GRAPH_ONLY_POLYNOMIAL",
+      "sharp_primitive": "DIRECTED_REACHABILITY",
+      "fixed_triple_criterion": "Reach_D(R0) intersect L0 is empty.",
+      "canonical_positive_output": {
+        "R_min": "Reach_D(R0)",
+        "R_max": "V\\({z} union Pred_D(L0))",
+        "solution_family": "All implication-successor-closed R with R_min subseteq R subseteq R_max."
+      },
+      "compact_negative_output": "A directed implication path r0 -> ... -> ell0 with r0 in R0 and ell0 in L0.",
+      "complexity": {
+        "fixed_triple": "O(n+m)",
+        "global": "O(m*Delta*(n+m))",
+        "coarse": "O(n*m*(n+m))"
+      },
+      "semantic_firewall": "The polynomial reachability result applies to the pure abstract exact-channel interface only. Extra future C11/source-role/semantic restrictions require separate analysis.",
+      "canonical_default_output": "For each feasible fixed triple, use R_min=Reach_D(R0) as the default decomposition; no lattice optimization is needed for channel matching capacity."
+    },
+    "LOCAL_FORMULA_CERTIFIED": {
+      "allowed_values": [
+        "YES",
+        "NO"
+      ],
+      "procedure": [
+        "Verify the exact-channel decomposition certificate.",
+        "Construct the bipartite channel graph X.",
+        "Compute k=nu(X) by exact bipartite maximum matching.",
+        "Preserve one maximum matching M of size k.",
+        "Preserve one minimum vertex cover U of X and verify |U|=k.",
+        "Use the abstract local theorem to conclude lambda_G(c,f)=k+1."
+      ],
+      "polynomiality": "Bipartite matching and verification of M/U are polynomial.",
+      "exact_upper_cut": "{z} union U is an explicit c-f separator of size k+1.",
+      "capacity_invariance": {
+        "symbol": "rho_G(c,f)",
+        "definition": "lambda_G(c,f)-1",
+        "theorem": "For any exact-channel representation of the same anchors (c,f), nu(X)=rho_G(c,f).",
+        "consequence": "The first feasible representation for fixed anchors suffices to compute exact channel capacity."
+      }
+    },
+    "LOCAL_TO_GLOBAL_TRANSFER_CERTIFIED": {
+      "allowed_values": [
+        "YES_STRUCTURAL",
+        "YES_ALGORITHMIC",
+        "YES_BOTH",
+        "NO",
+        "OPEN"
+      ],
+      "meaning": "Whether the equality kappa(G)=lambda_G(c,f)=1+nu(X) has been certified.",
+      "structural_route": {
+        "label": "STRUCTURAL_AUTHORITY",
+        "mechanism": [
+          "Set k=nu(X).",
+          "For every S with |S|<=k consider the component-refined quotient hat_B_S whose vertices are connected components of G[L-S], connected components of G[R-S], and surviving {z}.",
+          "If hat_B_S is connected for every such S, the abstract component-refined theorem gives kappa(G)>=k+1.",
+          "Together with the explicit cut {z} union U, conclude kappa(G)=lambda_G(c,f)=k+1."
+        ],
+        "role": "Explanation/proof mechanism.",
+        "complexity_warning": "Literal enumeration of all S with |S|<=k is not polynomial when k is unbounded; this route is not automatically an efficient recognition algorithm."
+      },
+      "algorithmic_route": {
+        "label": "ALGORITHMIC_CERTIFICATION",
+        "procedure": [
+          "Verify the supplied exact-channel decomposition graph-only.",
+          "Compute k=nu(X) by bipartite matching.",
+          "Layer 1 immediately certifies lambda_G(c,f)=k+1 and gives kappa(G)<=k+1 via {z} union a minimum vertex cover.",
+          "Independently compute/certify the exact global vertex connectivity kappa(G) with a polynomial vertex-connectivity / minimum-vertex-cut algorithm.",
+          "If the certified value satisfies kappa(G)>=k+1, the previous upper bound forces kappa(G)=k+1=lambda_G(c,f)."
+        ],
+        "equivalent_test": "Because the abstract local theorem always gives kappa(G)<=k+1, transfer equality holds iff kappa(G)>=k+1, equivalently iff kappa(G)=k+1.",
+        "role": "Polynomial recognition/certification of transfer once a decomposition certificate is available.",
+        "explanation_limit": "This route certifies equality but does not by itself explain which structural mechanism makes every refined interface quotient robust."
+      }
+    }
+  },
+  "exact_characterization": {
+    "k_definition": "k=nu(X)",
+    "local_formula": "lambda_G(c,f)=k+1",
+    "upper_bound": "kappa(G)<=k+1",
+    "equivalent_transfer_conditions": [
+      "kappa(G)=k+1",
+      "kappa(G)>=k+1",
+      "G-S is connected for every S subseteq V(G) with |S|<=k",
+      "hat_B_S is connected for every S with |S|<=k"
+    ],
+    "qualification": "Use the standard non-small finite-graph convention in which vertex connectivity is the minimum size of a vertex set whose deletion disconnects the graph or leaves the applicable trivial case."
+  },
+  "recognition_vs_certification": {
+    "decomposition_discovery": "Polynomial for the pure exact-channel interface by canonical implication reachability. Generic 2-SAT is not needed: fixed-triple feasibility is a closure/reachability test.",
+    "supplied_certificate_verification": "Polynomial.",
+    "local_formula_certification": "Polynomial after graph-only discovery or a supplied valid decomposition.",
+    "local_to_global_equality_certification": "Polynomial after discovery/supply of the decomposition, by bipartite matching plus exact vertex-connectivity computation.",
+    "structural_mechanism_classification": "Separate explanatory task; examples include block robustness, component-refined external reconnection, hub redundancy, matching/cover geometry, or another proved mechanism.",
+    "canonical_solution_structure": "For each feasible fixed triple, R_min and R_max are canonical extremal decompositions, and all feasible R-sides form a distributive lattice of implication-upsets between them.",
+    "negative_certificate": "A forced-R to forced-L implication path is a compact proof-carrying NO-DECOMPOSITION certificate for a fixed triple.",
+    "capacity_selection": "No optimization over the decomposition lattice or over hubs is required for fixed-anchor matching capacity. Canonical R_min of the first feasible triple is sufficient.",
+    "anchor_pair_firewall": "Different anchor pairs of the same graph may have different rho_G(c,f). Any task optimizing capacity over anchors must still compare anchor pairs."
+  },
+  "C11_application_template": {
+    "phase_A_exact_channel_decomposition_discovery": {
+      "question": "Which authoritative C11 residuals satisfy the pure exact-channel interface, and which additional C11 role restrictions are required?",
+      "pure_interface_status": "POLYNOMIAL_BY_DIRECTED_REACHABILITY",
+      "fixed_triple_receipt": [
+        "ordered triple (z,c,f)",
+        "forced sets R0,L0",
+        "implication graph D_{z,c,f}",
+        "either R_min=Reach(R0) disjoint from L0, or a path R0 -> L0"
+      ],
+      "canonical_output": [
+        "R_min",
+        "R_max",
+        "L/R partition",
+        "canonical ports",
+        "X"
+      ],
+      "additional_semantic_restrictions_status": "MUST_BE_ANALYZED_SEPARATELY",
+      "scientific_status": "OPEN_APPLICATION_DIRECTION__NO_GATE_OPENED",
+      "canonical_policy": "For a fixed admissible anchor pair, accept the first graph-only feasible hub/triple and use canonical R_min. Do not search the lattice for a larger/smaller/better channel matching number; the matching number is representation-invariant."
+    },
+    "phase_B_transfer_mechanism_classification": {
+      "question": "For discovered decompositions with certified equality kappa=lambda=1+nu(X), what structural mechanism explains the transfer?",
+      "candidate_mechanisms": [
+        "simple block robustness",
+        "component-refined external reconnection",
+        "hub redundancy",
+        "matching/cover geometry",
+        "other formally defined mechanism"
+      ],
+      "scientific_status": "OPEN_RESEARCH_DIRECTION__NO_GATE_OPENED"
+    }
+  },
+  "proof_carrying_receipt_schema": {
+    "decomposition": {
+      "partition": [
+        "L",
+        "R",
+        "z"
+      ],
+      "anchors": [
+        "c",
+        "f"
+      ],
+      "ports": [
+        "P_L",
+        "P_R"
+      ],
+      "cross_edges": "X",
+      "exact_interface_pass": "boolean"
+    },
+    "local": {
+      "nu_X": "integer",
+      "maximum_matching": "edge list",
+      "minimum_vertex_cover": "vertex list",
+      "lambda_formula": "1+nu_X",
+      "LOCAL_FORMULA_CERTIFIED": "YES/NO"
+    },
+    "global": {
+      "certified_kappa": "integer or null",
+      "connectivity_algorithm_receipt": "implementation/source/hash or mathematical certificate",
+      "lower_bound_pass": "certified_kappa >= 1+nu_X",
+      "LOCAL_TO_GLOBAL_TRANSFER_CERTIFIED": "YES_STRUCTURAL/YES_ALGORITHMIC/YES_BOTH/NO/OPEN"
+    },
+    "explanation": {
+      "structural_mechanism": "named proof mechanism or OPEN",
+      "refined_interface_proof": "optional",
+      "enumeration_used": "boolean",
+      "enumeration_complexity_ceiling": "must be stated if used"
+    },
+    "discovery": {
+      "triple": "(z,c,f)",
+      "forced_R": "R0",
+      "forced_L": "L0",
+      "implication_arcs": "D",
+      "positive": "R_min=Reach_D(R0), plus canonical ports/X",
+      "negative": "directed path r0 -> ... -> ell0, r0 in R0, ell0 in L0",
+      "optional_extremal": "R_max=V\\({z} union Pred_D(L0))"
+    },
+    "capacity_invariant": {
+      "anchors": "(c,f)",
+      "canonical_representation": "first feasible (z,c,f) with R_min",
+      "channel_graph": "X_min",
+      "maximum_matching": "M",
+      "minimum_vertex_cover": "U",
+      "certified_capacity": "k=|M|=|U|=rho_G(c,f)",
+      "representation_invariance": "All other valid exact-channel representations with the same anchors have matching number k."
+    }
+  },
+  "easy_application_corollary": {
+    "name": "CANONICAL_REACHABILITY_DISCOVERY_WITH_REPRESENTATION_INVARIANT_CAPACITY",
+    "statement": "For fixed anchors (c,f), the first feasible reachability decomposition and its canonical R_min suffice to compute exact channel matching capacity rho_G(c,f). No enumeration of the solution lattice and no hub optimization are required. Local-to-global equality remains polynomially certifiable by exact vertex connectivity.",
+    "caveat": "This removes optimization only within one anchor pair. It does not remove comparison across different anchor pairs or automatically cover stronger C11 semantic restrictions."
+  },
+  "scientific_ceiling": {
+    "ABSTRACT_THEOREM": "UNCHANGED",
+    "APPLICATION_CONTRACT": "FROZEN_V1_3",
+    "PURE_EXACT_CHANNEL_DECOMPOSITION_DISCOVERY": "YES_GRAPH_ONLY_POLYNOMIAL_BY_REACHABILITY",
+    "FIXED_TRIPLE_CANONICAL_NORMAL_FORM": "VERIFIED",
+    "SOLUTION_LATTICE": "VERIFIED",
+    "POLYNOMIAL_CERTIFICATION_GIVEN_OR_DISCOVERED_PURE_DECOMPOSITION": "VERIFIED_AT_CONTRACT_LEVEL",
+    "GENERAL_C11_DISCOVERY_WITH_EXTRA_SEMANTICS": "NOT_AUTOMATICALLY_CLAIMED",
+    "UNIVERSAL_C11_APPLICABILITY": "NOT_CLAIMED",
+    "NEW_C11_GATE": "NOT_OPENED",
+    "TW4": "NOT_OPENED",
+    "REPAIR": "NOT_STARTED",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN",
+    "FIXED_ANCHOR_MATCHING_CAPACITY": "REPRESENTATION_INVARIANT",
+    "DECOMPOSITION_LATTICE_OPTIMIZATION_FOR_CAPACITY": "UNNECESSARY",
+    "HUB_OPTIMIZATION_FOR_FIXED_ANCHOR_CAPACITY": "UNNECESSARY",
+    "OPTIMIZATION_OVER_DISTINCT_ANCHOR_PAIRS": "NOT_ELIMINATED"
+  },
+  "next_action": "No new gate. Future applications should use canonical reachability discovery, compute rho_G(c,f) from the first feasible representation of each relevant anchor pair, and separately audit any extra semantics or local-to-global transfer mechanism.",
+  "stop": true,
+  "supersedes": {
+    "path": "research/TRUMP_EXACT_CHANNEL_DECOMPOSITION_APPLICATION_CONTRACT_2026-09-20_v1.2.json",
+    "commit": "23c3a7674b43342324bcd04dec4714af01b9109b",
+    "blob": "b9bb16e94a6d1c28c19798f5acac9cc91a0a526d"
+  },
+  "new_authority": {
+    "matching_capacity_invariance": {
+      "path": "research/TRUMP_EXACT_CHANNEL_MATCHING_NUMBER_DECOMPOSITION_INVARIANCE_2026-09-20_v1.0.json",
+      "commit": "c90aeee8b104c5416a0def3179e4ec1c2c8b16f0",
+      "status": "PASS_EXACT_CHANNEL_MATCHING_NUMBER_DECOMPOSITION_INVARIANCE"
+    }
+  }
+}

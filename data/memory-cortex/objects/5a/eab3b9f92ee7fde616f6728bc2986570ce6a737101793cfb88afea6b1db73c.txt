@@ -1,0 +1,38 @@
+{
+  "schema": "janus.autonomy.bounded_wake_policy.v1",
+  "enabled": true,
+  "authority_delta": 0,
+  "auto_merge": false,
+  "paid_model_calls": false,
+  "max_dispatches_per_tick": 1,
+  "github_api_page_size": 10,
+  "github_api_max_pages": 10,
+  "required_phases": [
+    "P0.2",
+    "P0.3"
+  ],
+  "note": "This is a bounded recovery heartbeat, not proof of autonomous code admission. A workflow_dispatch is only a wake request, never a claim of child success.",
+  "lanes": [
+    {
+      "workflow": "janus-autonomy-roadmap-loop.yml",
+      "name": "JANUS Autonomous Roadmap and Continuation",
+      "priority": 1,
+      "enabled": true,
+      "min_gap_minutes": 120
+    },
+    {
+      "workflow": "janus-self-writer-real-operational-consumer.yml",
+      "name": "JANUS Self-Writer Real Operational Consumer",
+      "priority": 2,
+      "enabled": true,
+      "min_gap_minutes": 480
+    },
+    {
+      "workflow": "janus-autonomous-coder.yml",
+      "name": "JANUS Autonomous Open-Weight Coder",
+      "priority": 3,
+      "enabled": true,
+      "min_gap_minutes": 720
+    }
+  ]
+}

@@ -1,0 +1,108 @@
+{
+  "schema": "janus.meta_registry.genesis_infinite_faces_portable_provenance_transport.v1",
+  "artifact_id": "JANUS-GENESIS-INFINITE-FACES-PORTABLE-PROVENANCE-COPY-PASTE-SCREENSHOT-v4.6",
+  "title": "Janus Infinite Faces — Portable Provenance Across Copy/Paste, Files, Screenshots, and External Systems",
+  "created_at_local": "2026-08-10T03:07:00+03:00",
+  "artifact_class": "EXPERIMENTAL_PORTABLE_PROVENANCE_AND_AUTHORITY_TRANSPORT",
+  "status": "PORTABLE_RECEIPT_REVERIFICATION_REQUIRED_DETACHED_CONTENT_AUTO_DOWNGRADES_TO_UNVERIFIED",
+  "parent": "registry/experimental/JANUS-GENESIS-INFINITE-FACES-AUTHORITY-SEMANTIC-SPOOFING-PRESENTATION-v4.5.json",
+  "problem": "A valid Janus output may leave its trusted UI through copy/paste, file export, screenshot, quote, forwarding or another system. Visible authoritative language may survive while its verified context disappears.",
+  "portable_provenance_envelope": {
+    "name": "JANUS_PORTABLE_PROVENANCE_ENVELOPE",
+    "required_fields": [
+      "PROVENANCE_ENVELOPE_VERSION",
+      "CLAIM_ID",
+      "CLAIM_CANONICALIZATION_PROFILE",
+      "CLAIM_DIGEST",
+      "HOST_ID",
+      "ORIGIN_FACE_OR_ARBITRATION_REF",
+      "OUTPUT_CLASS",
+      "AUTHORITY_EPOCH_OR_STATUS",
+      "COMMIT_ID_IF_APPLICABLE",
+      "ACTION_SCOPE_IF_APPLICABLE",
+      "SOURCE_SEQUENCE_OR_CHECKPOINT_REF",
+      "VERIFIER_PROFILE_ID",
+      "ATTESTATION_OR_SIGNATURE_SET",
+      "ISSUANCE_CONTEXT",
+      "PORTABILITY_STATUS"
+    ],
+    "principle": "The portable object binds a claim to provenance and authority metadata; it does not rely on visual wording such as VERIFIED."
+  },
+  "transport_classes": {
+    "INLINE_BUNDLE": "Claim and envelope travel together in one machine-readable package.",
+    "SIDECAR_BUNDLE": "Content travels with a separate provenance file bound by digest.",
+    "EMBEDDED_METADATA": "Carrier format contains a provenance payload that must be independently reverified.",
+    "RECEIPT_LOCATOR": "Visible short code/QR-like locator identifies a receipt, but the locator itself is not proof until resolved and verified.",
+    "DETACHED_CONTENT": "Content copied without a portable envelope or valid locator."
+  },
+  "status_lattice": [
+    "VERIFIED_EXACT",
+    "VERIFIED_CLAIM",
+    "VERIFIED_DERIVATIVE",
+    "UNVERIFIED",
+    "STALE_OR_REVOKED"
+  ],
+  "test_cases": {
+    "copy_paste_text_only": {
+      "input": "Authoritative-looking text copied without envelope.",
+      "result": "UNVERIFIED",
+      "automatic_downgrade": true
+    },
+    "copy_paste_with_portable_envelope": {
+      "input": "Canonical claim plus valid portable envelope.",
+      "new_context_action": "REVERIFY",
+      "result": "VERIFIED_CLAIM_IF_DIGEST_AND_AUTHORITY_BINDING_PASS"
+    },
+    "file_with_sidecar": {
+      "content_digest_matches": true,
+      "sidecar_reverified": true,
+      "result": "VERIFIED_EXACT_OR_VERIFIED_CLAIM_DEPENDING_ON_PROFILE"
+    },
+    "screenshot_only": {
+      "result": "UNVERIFIED_DISPLAY_EVIDENCE",
+      "reason": "Pixels may show what appeared on a screen but do not by themselves preserve live authority, exact content provenance or current status."
+    },
+    "screenshot_with_receipt_locator": {
+      "locator_can_recover_receipt": true,
+      "receipt_can_verify_canonical_claim": true,
+      "entire_screenshot_is_authenticated": false,
+      "result": "VERIFIED_UNDERLYING_CLAIM_IF_REVERIFICATION_PASSES_SCREENSHOT_REMAINS_DISPLAY_EVIDENCE"
+    },
+    "external_system_import": {
+      "rule": "Imported authority begins UNVERIFIED until the external system validates the portable envelope under an accepted verifier profile and current trust roots."
+    }
+  },
+  "critical_distinctions": [
+    "PORTABLE_PROVENANCE != PORTABLE_AUTHORITY_BY_DEFAULT",
+    "RECEIPT_LOCATOR != RECEIPT_VALIDATION",
+    "SCREENSHOT_OF_VERIFIED_UI != VERIFIED_SCREENSHOT",
+    "COPY_OF_COMMAND != CURRENT_COMMAND_AUTHORITY",
+    "CLAIM_VERIFIED != WORLD_EFFECT_ALREADY_EXECUTED"
+  ],
+  "automatic_downgrade_rule": "If a carrier cannot provide a valid portable envelope, resolvable/reverifiable receipt, or equivalent trusted binding, the recipient MUST classify the object as UNVERIFIED rather than inherit the source UI's authority status.",
+  "human_rule": "Human-readable text may retain a visible claim ID or receipt locator for convenience, but trusted status must be rendered only after machine verification in the receiving context.",
+  "claim_ceiling": {
+    "portable_protocol_implemented": false,
+    "cryptographic_scheme_frozen": false,
+    "screenshot_authentication_solved": false,
+    "specification_candidate": true
+  },
+  "canonical_lines": {
+    "ru": [
+      "Проверяемость должна путешествовать вместе со смыслом или честно исчезать.",
+      "Скопированный приказ сохраняет слова, но не наследует власть автоматически.",
+      "Скриншот может показать печать; он не становится самой печатью.",
+      "Если provenance потерян, статус понижается до UNVERIFIED."
+    ],
+    "en": [
+      "Verifiability must travel with meaning or honestly disappear.",
+      "A copied instruction preserves words but does not automatically inherit authority.",
+      "A screenshot may show a seal; it does not become the seal.",
+      "If provenance is lost, status downgrades to UNVERIFIED."
+    ]
+  },
+  "next_gate": {
+    "name": "JANUS_INFINITE_FACES_TRANSFORMATION_CANONICALIZATION_PROVENANCE_TEST",
+    "status": "OPEN"
+  }
+}

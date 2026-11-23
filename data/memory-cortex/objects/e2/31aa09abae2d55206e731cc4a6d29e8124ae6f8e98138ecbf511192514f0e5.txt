@@ -1,0 +1,75 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1C5B2B1-P7-SOURCE-TRANSFER-AUDIT-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "PASS_RESTRICTED_P7_FORCED_NORMALIZATION_ROUTE__NO_GENERIC_LEMMA10_IMPORT",
+  "gate": "R5_B1B1C5B2B1_FORCED_COLOR_CLASS_RETURN_GATE_V1",
+  "binds": {
+    "prereg_blob": "0a2d91385b8df9e63d46ae8bfc9ab708edf3b022",
+    "B2B0_theorem_seal_blob": "1e27139bc05ec8b44ddab0bfe0c31a004d941b68",
+    "B0_result_blob": "727ff69fdcb7532e4bcfbc82c9128a4f806adf94",
+    "C0_theorem_seal_blob": "0dbebe81f52a5b8411199fc44614bf8c17b6dd95",
+    "C2_theorem_seal_blob": "33d6b365728c703c43371b966d9ed26020f12b98",
+    "C3_theorem_seal_blob": "33fd966cd397ddecb173fd10797097b31921b0a5",
+    "finite_checker_commit": "c5f5969b2f246f35ca46be4bcc1f399212f85558",
+    "finite_checker_blob": "11f027db4d6d999bfdd17947649c6dd2f481d112"
+  },
+  "primary_source": {
+    "title": "Four-Coloring P6-Free Graphs. II. Finding an Excellent Precoloring",
+    "url": "https://web.math.princeton.edu/~mchudnov/4colpaper2.pdf",
+    "source_observation": "Published Lemma 10 restores axioms (i)-(v) for a normal subcase and preserves (vi), but its theorem is stated for P6-free graphs and is NOT imported as a black box here.",
+    "relevant_source_mechanism": "The source proof partitions by source-list size, moves source-singletons to X0, then repairs connectivity of G minus X0 by independently solving residual components that lose one color."
+  },
+  "restricted_P7_route": {
+    "scope": "Only B2B0-sealed one-step states produced by forcing one dynamic vertex u=c or one nonadjacent equal-color pair u=v=c.",
+    "step_1_source_list_repartition": {
+      "definition": "With the enlarged forced seed fixed, let Zi be the nonfixed vertices with source-list size i.",
+      "terminal_Z0": "If Z0 is nonempty, no extension exists: a vertex sees all four colors in the seed.",
+      "singleton_fix": "Every z in Z1 has a unique source color. Attempt to extend the fixed coloring by that unique color on all Z1. If this is not proper against old X0 or within Z1, the state is terminal UNSAT.",
+      "canonical_partition": "If proper, set X0_plus=X0 union Z1, X=Z2, Y=Z3, Y0=Z4.",
+      "axiom_iii": "The B2B0 residual Y0 is already exactly the vertices outside S union X0 anticomplete to the enlarged seed. Since every Z1 has seed neighbors, moving Z1 to X0 leaves Y0=Z4 unchanged.",
+      "axiom_iv": "Y0 is unchanged while X0 only grows, so the set of vertices to which axiom (iv) applies only shrinks. Thus (iv) is preserved."
+    },
+    "step_2_vi_preservation": {
+      "old_Y": "If an old Y vertex still has source-list size 3 after forcing, its old one-color seed mask is contained in the new one-color mask, hence the mask is unchanged. If it still sees residual Y0, old axiom (vi) supplies the same controlling color.",
+      "old_X": "An old X vertex starts with two distinct seed colors. Seed enlargement cannot reduce that number, so old X cannot become a new 3-list Y.",
+      "old_Y0": "An old Y0 vertex sees no old seed color. Under one force or an equal-color pair it gains at most one distinct seed color, so a hit old-Y0 vertex may become 3-list Y. B2B0 whole-component removal implies every such hit vertex lies in a removed old Y0 component and is anticomplete to every retained residual component; therefore it cannot enter Y intersect N(Y0).",
+      "conclusion": "Every new Y vertex adjacent to retained residual Y0 is an old Y vertex with the same one-color seed mask. Axiom (vi) is preserved."
+    },
+    "step_3_only_axiom_i_can_fail_after_Z1": {
+      "reason": "The seed is unchanged during Z1 promotion, (ii)-(iv) remain true, source-list partition gives (v), and (vi) is preserved. Enlarging X0 can disconnect G minus X0, so source axiom (i) is the sole remaining repair obligation."
+    },
+    "step_4_P7_connectivity_repair": {
+      "component_location": "Let C be a connected component of G minus X0_plus not containing the seed. By axiom (iii), every non-X0 vertex outside Y0 has a seed neighbor and belongs to the seed component. Hence C is contained in residual Y0.",
+      "new_fixed_neighbor_exists": "Before Z1 was moved to X0, B2B0 preserved axiom (i), so G minus old X0 was connected. Therefore every newly separated C has a neighbor x in Z1.",
+      "Z1_origin": "For one force or an equal-color pair, a source-list singleton cannot originate in old Y or old Y0: old Y can lose at most one source color from a 3-list and old Y0 gains at most one distinct forced seed color. Thus Z1 is contained in old X.",
+      "complete_neighbor": "The component C is contained in retained old Y0. Since x is an old dynamic X vertex, old axiom (iv) plus connectedness of C makes x complete or anticomplete to C; x has a neighbor in C, so x is complete to C.",
+      "three_color_reduction": "Let d=f(x). Every vertex of C must avoid d. For each z in C use the exact list ([4] minus {d}) minus colors on fixed X0_plus neighbors. These are subsets of one common three-color palette.",
+      "backend": "G[C] is induced P7-free, so the already authorized constructive P7-free List-3 backend decides and reconstructs the component in polynomial time.",
+      "terminal_or_delete": "If the List-3 instance is UNSAT, the forced state is terminal UNSAT. If SAT, store its coloring witness and delete C; C has no nonfixed neighbors outside itself because it is a component of G minus X0_plus.",
+      "iteration": "Repeat for every non-seed component. At most O(n) components are processed. The final graph satisfies axiom (i); deletion only removes residual Y0 components and preserves (ii)-(vi)."
+    }
+  },
+  "explicit_nonimports": [
+    "NO_FULL_CSZ_LEMMA10_TRANSFER",
+    "NO_P6_PATH_EXCLUSION_ARGUMENT",
+    "NO_GENERIC_P7_4_PRECOLORING_SOLVER",
+    "NO_GENERIC_LIST4_SOLVER"
+  ],
+  "finite_sanity_receipt": {
+    "vi_single_mask_check": "PASS",
+    "vi_equal_pair_mask_check": "PASS",
+    "old_X_cannot_become_Y": "PASS",
+    "old_Y0_hit_by_equal_color_has_at_most_one_new_seed_color": "PASS",
+    "immediate_R1_R2_successor_bound": "O(n^2)",
+    "global_recursion_tree_bound": "NOT_PROVED"
+  },
+  "audit_conclusion": "For the restricted B2B0 forced states, source axioms (v) and (vi) can be restored/preserved and any connectivity loss caused by deterministic source-singleton promotion can be repaired exactly with P7 List-3 component solving. This is a new restricted P7/source-specific theorem route, not an import of generic CSZ Lemma 10.",
+  "next_execution_obligations": [
+    "Prove B0 survivor/provenance localization survives by restriction.",
+    "Reapply C2 coupling after connectivity repair.",
+    "Recompile C0 messages under the enlarged X0.",
+    "Rebuild C3 selectors and reconstruction pointers.",
+    "Certify a strict one-step progress measure without claiming a polynomial global recursion tree."
+  ]
+}

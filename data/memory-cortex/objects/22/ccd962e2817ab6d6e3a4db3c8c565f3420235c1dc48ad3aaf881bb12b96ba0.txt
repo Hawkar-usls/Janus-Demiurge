@@ -1,0 +1,60 @@
+{
+  "id": "EYE-R4.7-RT.1-R4.2-COMPATIBLE-MINIMAX-MODEL-v1",
+  "authority": "STRUCTURAL_DETERMINISTIC_PARTITION_MODEL_ONLY__NO_PRIORS_NO_LIKELIHOODS",
+  "cause_classes": [
+    {"id":"ORDINARY_CAUSAL_OR_LEAKAGE_NULL","target_class":"ORDINARY_CAUSAL_OR_LEAKAGE_NULL"},
+    {"id":"DAT_INFORMATION_SELECTION","target_class":"DAT_INFORMATION_SELECTION"},
+    {"id":"ADVANCED_TIME_PHYSICAL_CHANNEL","target_class":"ADVANCED_TIME_PHYSICAL_CHANNEL"},
+    {"id":"TACHYON_SPECIFIC_CARRIER","target_class":"TACHYON_SPECIFIC_CARRIER"}
+  ],
+  "tests": [
+    {
+      "id":"TOPA-RT-H2","cost":1,"available":true,"decision_usable":true,"depends_on":[],
+      "failure_domains":["TOPA_RT_H2_TEMPORAL_MODEL_SELECTION"],
+      "outcome_by_cause":{
+        "ORDINARY_CAUSAL_OR_LEAKAGE_NULL":"KERNEL_PREREGISTRATION_VALID",
+        "DAT_INFORMATION_SELECTION":"KERNEL_PREREGISTRATION_VALID",
+        "ADVANCED_TIME_PHYSICAL_CHANNEL":"KERNEL_PREREGISTRATION_VALID",
+        "TACHYON_SPECIFIC_CARRIER":"KERNEL_PREREGISTRATION_VALID"
+      }
+    },
+    {
+      "id":"TOPA-RT-H1","cost":1,"available":true,"decision_usable":true,"depends_on":["TOPA-RT-H2"],
+      "failure_domains":["TOPA_RT_H1_PROSPECTIVE_LEAKAGE_CONTROL"],
+      "outcome_by_cause":{
+        "ORDINARY_CAUSAL_OR_LEAKAGE_NULL":"HOLDOUT_NULL_OR_LEAKAGE_COMPATIBLE",
+        "DAT_INFORMATION_SELECTION":"PROSPECTIVE_EFFECT_SURVIVES_PREREGISTERED_HOLDOUT",
+        "ADVANCED_TIME_PHYSICAL_CHANNEL":"PROSPECTIVE_EFFECT_SURVIVES_PREREGISTERED_HOLDOUT",
+        "TACHYON_SPECIFIC_CARRIER":"PROSPECTIVE_EFFECT_SURVIVES_PREREGISTERED_HOLDOUT"
+      }
+    },
+    {
+      "id":"TOPA-RT-H3","cost":1,"available":true,"decision_usable":true,"depends_on":["TOPA-RT-H1"],
+      "failure_domains":["TOPA_RT_H3_DECISION_VS_PHYSICAL_DISCRIMINATION"],
+      "outcome_by_cause":{
+        "ORDINARY_CAUSAL_OR_LEAKAGE_NULL":"NO_PROSPECTIVE_SEPARATION",
+        "DAT_INFORMATION_SELECTION":"DECISION_STRUCTURE_DOMINANT",
+        "ADVANCED_TIME_PHYSICAL_CHANNEL":"PHYSICAL_SYSTEM_DOMINANT",
+        "TACHYON_SPECIFIC_CARRIER":"PHYSICAL_SYSTEM_DOMINANT"
+      }
+    },
+    {
+      "id":"TOPA-RT-H4","cost":1,"available":true,"decision_usable":true,"depends_on":["TOPA-RT-H1"],
+      "failure_domains":["TOPA_RT_H4_CARRIER_SPECIFIC_PHYSICAL_OBSERVABLE"],
+      "outcome_by_cause":{
+        "ORDINARY_CAUSAL_OR_LEAKAGE_NULL":"NO_TACHYON_SPECIFIC_SIGNATURE",
+        "DAT_INFORMATION_SELECTION":"NO_TACHYON_SPECIFIC_SIGNATURE",
+        "ADVANCED_TIME_PHYSICAL_CHANNEL":"NO_TACHYON_SPECIFIC_SIGNATURE",
+        "TACHYON_SPECIFIC_CARRIER":"TACHYON_SPECIFIC_SIGNATURE_INDEPENDENTLY_CONFIRMED"
+      }
+    },
+    {
+      "id":"TOPA-RT-H5","cost":1,"available":false,"decision_usable":false,"depends_on":[],
+      "failure_domains":["TOPA_RT_H5_UAP_SOURCE_LINK_AND_CONTROL_CORPUS"],
+      "outcome_by_cause":{}
+    }
+  ],
+  "requirements":{"objective":"minimax_worst_case_cost_then_test_id","max_states":10000},
+  "probability_semantics":"NONE",
+  "warning":"This is R4.2-compatible only at the deterministic partition level. Do not feed it into expected-information or expected-cost semantics as an empirical probabilistic model."
+}

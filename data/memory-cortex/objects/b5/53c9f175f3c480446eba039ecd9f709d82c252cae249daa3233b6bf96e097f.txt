@@ -1,0 +1,99 @@
+{
+  "schema_version": "1.0",
+  "artifact_uuid": "JANUS-LINEAR-A-R7-E0-KU-RO-MECHANISM-EXECUTION-SPEC-2026-08-15-v0.1",
+  "stage": "R7-E0",
+  "status": "EXECUTION_OPERATORS_FROZEN_BEFORE_E0_CORPUS_SCORING",
+  "created_date": "2026-08-15",
+  "parent_preregistration": "data/JANUS-LINEAR-A-R7-E0-KU-RO-MECHANISM-SPEC-2026-08-15-v0.1.json",
+  "source": {
+    "repository": "Hawkar-usls/lineara.xyz",
+    "frozen_commit": "43fe7cf1abc8e6bb1ea3228c3a1bd5938709620a"
+  },
+  "frozen_target_binding": {
+    "source_word": "KU-RO",
+    "opaque_word_token": "6a2ea59b95fe1b610d20",
+    "region": "HT",
+    "required_parent_role": "ROW_FIRST_LEXICAL",
+    "probable_parent_function": "ROW-OPENING-LIKE",
+    "binding_source": "data/JANUS-LINEAR-A-R7-C3-REGION-SCOPED-PROBABLE-FUNCTION-ADMISSION-RESULT-2026-08-15-v0.1.json",
+    "target_binding_may_be_checked_for_integrity_but_source_label_must_not_enter_any_score": true
+  },
+  "shared_event_contract": {
+    "source_event_population": "HT lexical occurrences satisfying the already-frozen C0 ROW_FIRST_LEXICAL predicate with match=true",
+    "word_identity_used_only_to_mark_the_frozen_target": true,
+    "control_word_identities_are_not_features": true,
+    "editorial_status_is_preserved_as_a_null-matching_stratum_not_as_a_predictive_feature": true,
+    "physical_object_normalization": "strip terminal a/b only when preceded by a digit or >, identical to R7-D0 object_id()",
+    "target_events_that_cannot_be_scored_under_a_mechanism_are_ineligible_for_that_mechanism_not_failures": true
+  },
+  "mechanisms": {
+    "ARITHMETIC_SUMMARY": {
+      "operator_id": "LOCAL_CONTIGUOUS_NUMERIC_PREFIX_EXACT_SUM_v1",
+      "eligibility": [
+        "event is in the shared row-first population",
+        "the immediate sequence item after the lexical event is an exactly parseable positive numeric N on the same unambiguous source row",
+        "construct the immediately preceding accounting block by first taking exactly parseable numeric N items before the event on its own row, then walking backward through immediately preceding source rows while each row contains at least one numeric-like N/X item",
+        "stop at the first preceding row with zero numeric-like items or at document start",
+        "the constructed block contains at least two numeric terms",
+        "the constructed block contains no X (numeric-like but not exactly parseable) item"
+      ],
+      "score": "1 iff the immediate following exact numeric value equals the exact rational sum of every N value in the frozen preceding accounting block; otherwise 0",
+      "arithmetic": "fractions.Fraction exact rational arithmetic; no tolerance and no floating comparison",
+      "null_matching_strata": [
+        "document id",
+        "editorial-status stratum",
+        "preceding exact-numeric term-count bin: 2-3 / 4-7 / 8+"
+      ],
+      "permutation": "within each frozen stratum, uniformly reassign the fixed number of target labels among eligible row-first events; singleton strata remain fixed",
+      "permutations": 10000,
+      "seed": 71001
+    },
+    "SECTION_BOUNDARY": {
+      "operator_id": "NEIGHBOR_ROW_KIND_EDIT_DISCONTINUITY_v1",
+      "eligibility": [
+        "event is in the shared row-first population",
+        "the target/control source row has both an immediately preceding and immediately following source row in the same document"
+      ],
+      "row_signature": "ordered sequence of item kinds only, with lexical identities erased: W=lexical, N=exact numeric, X=numeric-like not exactly parseable",
+      "score": "normalized Levenshtein edit distance between the preceding-row W/N/X signature and following-row W/N/X signature, divided by max(signature lengths); score is in [0,1]",
+      "target_row_exclusion": "the target/control row itself is not part of the boundary score, preventing KU-RO identity or its own row shape from mechanically creating the discontinuity",
+      "null_matching_strata": [
+        "document id",
+        "editorial-status stratum",
+        "target-row numeric-exposure bin using N+X count: 0 / 1 / 2+",
+        "relative row-position bin: early / middle / late thirds"
+      ],
+      "permutation": "within each frozen stratum, uniformly reassign the fixed number of target labels among eligible row-first events; singleton strata remain fixed",
+      "permutations": 10000,
+      "seed": 71002
+    }
+  },
+  "effect_and_robustness": {
+    "observed_score": "mean mechanism score across frozen target events eligible for that mechanism",
+    "matched_null_mean": "mean target-label score over the 10000 frozen matched permutations",
+    "permutation_p": "(1 + permutations with score >= observed) / (1 + permutations)",
+    "leave_one_physical_object_out": "recompute observed-minus-null-mean after excluding each target-bearing physical object; positive-fraction is passed to the preregistered E0 gate",
+    "single_object_concentration": "target-event fraction belonging to the largest physical object",
+    "editorial_robustness": "for each editorial-status stratum with preregistered minimum n, require observed-minus-matched-null effect >= 0"
+  },
+  "anti_flexibility": {
+    "no_alternative_arithmetic_operator_may_replace_the_frozen_operator_after_result_visibility": true,
+    "no_alternative_boundary_distance_may_replace_normalized_levenshtein_after_result_visibility": true,
+    "no_stratum_may_be_added_removed_or_merged_after_result_visibility": true,
+    "no_target_event_may_be_dropped_because_its_score_is_unfavorable": true,
+    "negative_or_underpowered_mechanism_result_is_retained_as_negative_or_underpowered": true,
+    "no_vocabulary_search_or_candidate_ranking": true,
+    "no_translation_semantics_phonetics_language_family_or_external_meaning_input": true
+  },
+  "claim_ceiling": {
+    "mechanism_refinement_may_be_established_only_through_parent_E0_gate": true,
+    "exact_word_meaning_established": false,
+    "translation_established": false,
+    "phonetic_value_established": false,
+    "language_family_established": false,
+    "new_anchor_established": false,
+    "decipherment_established": false,
+    "universal_cross_region_function_established": false,
+    "external_replication_established": false
+  }
+}

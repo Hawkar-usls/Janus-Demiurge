@@ -1,0 +1,94 @@
+{
+  "admission": {
+    "CAUSAL_DSEPARATION_GATE": true,
+    "COMMON_CAUSE_LEAK_RISK_ESTABLISHED_IN_MODEL": true,
+    "DIRECTED_PATH_ONLY_SUFFICIENT": false,
+    "PHYSICAL_CTC": false,
+    "PHYSICAL_DAG_COMPLETENESS_PROVED": false,
+    "PHYSICAL_FTL": false,
+    "PHYSICAL_RETROCAUSALITY": false,
+    "SCIENTIFIC_NOVELTY": "NOT_YET_ESTABLISHED",
+    "SELECTION_COLLIDER_RISK_ESTABLISHED_IN_MODEL": true
+  },
+  "artifact_uuid": "JANUS-CAUSAL-ISOLATION-DSEPARATION-HARDENING-V0.8",
+  "attack_class_separation": {
+    "information_dependence": [
+      "rng_prefetch",
+      "shared_seed",
+      "shared_memory",
+      "filesystem_cache",
+      "network_sidechannel",
+      "colluding_anchor_entropy",
+      "replay_seed_reuse",
+      "precommitted_target_sideinfo",
+      "bootstrap_derivation"
+    ],
+    "ordering_or_provenance_only": [
+      "clock_only",
+      "anchor_backdating_only"
+    ],
+    "selection_bias": [
+      "selection_collider"
+    ]
+  },
+  "machine_checks": {
+    "genesis_lab_commit": "ef7f1095902dd0e39d38eb4ab4dee1ef95afdf7e",
+    "genesis_lab_path": "experiments/semantic_return/janus_causal_isolation_dsep_lab_v0_1.py",
+    "genesis_lab_sha256": "04f9d5bb922b634d1273ebd5627c75deed70310ed5c48ba9680cb7a87745ddbb",
+    "genesis_report_commit": "decc3e727cecbab66fe83ff5e181ac0e5f2ec668",
+    "genesis_report_path": "experiments/semantic_return/JANUS-GENESIS-CAUSAL-ISOLATION-DSEP-LAB-REPORT-v0.1.json",
+    "genesis_report_sha256": "362b448a9ab216d56fde98e9c21196dc6eee379f0d8cd5f4503713035e6ad5e9",
+    "parallel_subsets": "PASS_128_OF_128",
+    "status": "PASS_19_OF_19"
+  },
+  "next_gate": "Frozen external-bench causal DAG + hardware/process isolation evidence + crash/replay/reboot tests, then feed externally rooted entropy/anchor evidence to the anytime-valid verifier.",
+  "protocol_upgrade": {
+    "hard_secret": "payload128+nonce128; public run metadata excluded from hard entropy layer",
+    "required": [
+      "freeze a causal DAG before bench runs",
+      "include all shared/latent pre-target states and side channels",
+      "require d-separation of T_hard and PRE_RETURN_hard_view conditional only on declared public metadata",
+      "pre-register inclusion/reporting to avoid collider selection",
+      "audit conditional min-entropy empirically because software cannot prove physical DAG completeness",
+      "keep ordering/provenance audits separate from hard-secret information isolation"
+    ]
+  },
+  "result_1": {
+    "boundary": "This is established causal-inference mathematics applied as a protocol gate; not claimed as new mathematics.",
+    "converse_boundary": "D-connection means structural independence is not certified, not that actual leakage is guaranteed.",
+    "name": "JANUS Causal Isolation / D-Separation Gate",
+    "statement": "In a correctly specified Markovian causal DAG, if hard target secret T is d-separated from hard PRE_RETURN view R conditional on allowed public metadata M, then T is conditionally independent of R given M. Therefore observing R does not improve optimal classical guessing probability beyond M: p_guess(T|R,M)=p_guess(T|M), equivalently H_min(T|R,M)=H_min(T|M)."
+  },
+  "result_2": {
+    "counterexample": "shared_seed_state -> T and shared_seed_state -> seed_exposure -> R",
+    "d_separated": false,
+    "directed_R_to_T_path": false,
+    "directed_T_to_R_path": false,
+    "interpretation": "A common latent cause can destroy independence without any directed future-to-past information path.",
+    "name": "Directed-path-only criterion falsified"
+  },
+  "result_3": {
+    "conditioning_on_selected_d_separated": false,
+    "construction": "T and R independent; selected_for_analysis is a child of both.",
+    "interpretation": "Post-selection/reporting can manufacture perfect apparent dependence from independent variables.",
+    "name": "Selection collider warning",
+    "p_guess_T_given_R_and_selected": 1.0,
+    "p_guess_T_given_R_unselected": 0.5,
+    "unconditioned_d_separated": true
+  },
+  "result_4": {
+    "channel_subsets_checked": 128,
+    "dseparation_classification_violations": 0,
+    "max_parallel_leak_paths": 7,
+    "minimum_channel_cut_size_violations": 0,
+    "name": "Parallel leak cut exhaustive check"
+  },
+  "result_5": {
+    "name": "Target-derived precommit side-information warning",
+    "protocol_rule": "No target pre-generation, target-derived commitment, prefetch or side information may enter PRE_RETURN hard view before the freeze.",
+    "toy_demo": "For an 8-bit uniform target, revealing one target-derived bit before freeze raises p_guess from 1/256 to 1/128 and lowers min-entropy from 8 to 7 bits."
+  },
+  "schema": "JANUS/proof/causal-isolation-dseparation-hardening/v0.8.0",
+  "status": "PASS_CAUSAL_MODEL_ISOLATION_GATE_AND_COUNTEREXAMPLES",
+  "timestamp_local": "2026-08-07T09:11:00+03:00"
+}

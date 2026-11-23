@@ -1,0 +1,102 @@
+{
+  "artifact_id": "JANUS-HANNAH-BODC-BIDIRECTIONAL-CONVERGENCE-TO-CENTER-2026-08-25-v1.0",
+  "schema": "janus.hannah_bodc.bidirectional_time_space_convergence.v1",
+  "created_at_local": "2026-08-25T21:47:00+03:00",
+  "status": "PREREGISTERED_BEFORE_TARGET_RAW_BYTE_INTERPRETATION",
+  "identity_and_attribution": {
+    "internal_codename": "HANNAH_MONTANA__ДЕВОЧКА_СУПЕРЗВЕЗДА",
+    "internal_codename_scope": "PRIVATE_JANUS_HUMOR_ONLY",
+    "public_acknowledgement": "British Oceanographic Data Centre (BODC) Requests Team — primary-data access and provenance assistance",
+    "rule": "INTERNAL_CODENAME_MUST_NOT_REPLACE_OR_IMPLY_REAL_PERSON_IDENTITY_OR_PUBLIC_ATTRIBUTION"
+  },
+  "core_question": {
+    "primary": "Do independently reconstructed temporal and spatial changes converge on a stationary seafloor feature?",
+    "secondary": "Can known instrument failures be separated from real morphology and morphology-induced instrument failure?",
+    "final_geometry_question": "Does any stationary feature reproduce a preregistered pyramid-like synthetic fingerprint better than natural and non-pyramid controls?",
+    "claim_ceiling_before_raw_beams": "NO_TARGET_MORPHOLOGY_CLAIM"
+  },
+  "geography_firewall": {
+    "ECHO_PYRAMID_LOVE_EDEM": {"lat_deg": -3.8654180644718967, "lon_deg_east": 3.854924373538978, "role": "SYNTHETIC_ACOUSTIC_REFERENCE_BRANCH", "no_recenter": true},
+    "CD169_TOBI_LINE19": {"lat_deg": -3.8654180644718967, "lon_deg_east": -12.142441475, "utc_approx": "2005-02-28T01:07:25Z", "role": "INDEPENDENT_TOBI_SIDESCAN_AND_BATHYMETRY_TARGET", "no_recenter": true},
+    "ASCENSION_H10N1": {"lat_deg": -7.845673, "lon_deg_east": -14.480230, "role": "JR15001_ASCENSION_PRIMARY_TARGET"},
+    "ASCENSION_H10S2": {"lat_deg": -8.9591, "lon_deg_east": -14.64531, "role": "JR15001_ASCENSION_SECONDARY_TARGET"},
+    "hard_rule": "NEVER_TREAT_THESE_COORDINATES_AS_ONE_PHYSICAL_TARGET",
+    "allowed_cross_comparison": "METHOD_AND_FINGERPRINT_CLASS_ONLY"
+  },
+  "bodc_lanes": {
+    "BODCREQ_9408_JR15001": {
+      "primary_files": {
+        "em122.ACO": ["timestamp", "depth", "all_originator_status_or_acquisition_fields_if_present"],
+        "seatex-gga.ACO": ["timestamp", "latitude", "longitude"],
+        "gyro.ACO": ["timestamp", "heading"],
+        "ea600.ACO": ["timestamp", "independent_single_beam_depth", "bottom_lock_or_status_if_present"],
+        "furuno-vtg.ACO_if_present": ["course", "speed"]
+      },
+      "target_window": {"survey": "ASCENSION", "start": "2015-10-14", "end": "2015-10-18"},
+      "edge_calibration": {"em122_start": "2015-09-25T14:45:47Z", "em122_end": "2015-11-02T15:43:57Z", "priority_eof_date": "2015-11-02"},
+      "known_anomaly_watchlist": ["jr15001_b_0012", "jr15001_b_0017", "jr15001_b_0022"],
+      "known_bad_control": "jr15001_b_0037",
+      "controls": ["normal_passage", "known_wrong_parameters", "SVP_transition", "high_turn_rate", "station_approach", "EA600_bottom_loss"]
+    },
+    "BODCREQ_9406_CD169": {
+      "cruise": "CD169",
+      "device": "TOBI-02",
+      "julian_day": 59,
+      "utc_window": ["2005-02-28T01:00:00Z", "2005-02-28T01:29:00Z"],
+      "science_log_line": 19,
+      "target_crossing_utc_approx": "2005-02-28T01:07:25Z",
+      "requested_channels": ["30_kHz_sidescan", "towfish_navigation", "layback", "altitude", "interferometric_bathymetry", "chirp_sub_bottom", "three_component_magnetics", "MAPR_or_optical_backscatter", "legacy_mosaic_products"],
+      "rule": "TOBI_LINE19_IS_NOT_EM12_LINE19"
+    }
+  },
+  "bidirectional_time_engine": {
+    "name": "JANUS_TWO_ENDS_TO_CENTER",
+    "direction_A": {"name": "GENESIS_FORWARD", "origin": "FIRST_VALID_EM122_RECORD", "movement": "FORWARD_IN_TIME"},
+    "direction_B": {"name": "EOF_REVERSE", "origin": "LAST_VALID_EM122_RECORD", "movement": "BACKWARD_IN_TIME"},
+    "nested_edge_windows_seconds": [60, 300, 1800, 7200],
+    "full_feature_vector_per_timestamp": ["em122_depth", "ea600_depth", "em122_minus_ea600", "latitude", "longitude", "heading", "speed", "course", "turn_rate", "delta_depth_dt", "delta2_depth_dt2", "rolling_depth_median", "rolling_depth_MAD", "depth_local_range", "depth_local_slope", "timestamp_cadence", "cadence_jitter", "missing_fraction", "null_run_length", "identical_value_run_length", "outlier_score", "all_status_channels", "all_acquisition_channels"],
+    "analysis_scales_seconds": [1, 10, 60, 300, 1800, 7200],
+    "forward_baseline_rule": "AT_TIME_T_USE_ONLY_DATA_BEFORE_T",
+    "reverse_baseline_rule": "AT_TIME_T_USE_ONLY_DATA_AFTER_T",
+    "robust_normalization": {"location": "rolling_median", "scale": "MAD", "reason": "DO_NOT_ALLOW_SINGLE_EXTREME_BOTTOM_RETURN_TO_DEFINE_BASELINE"},
+    "change_classes": ["STEP", "RAMP", "IMPULSE", "OSCILLATORY", "VARIANCE_INCREASE", "VARIANCE_DECREASE", "MISSINGNESS_ONSET", "FREEZE", "CADENCE_CHANGE", "STATUS_CHANGE", "DEPTH_GRADIENT_CHANGE", "TRACK_DIRECTION_CHANGE"]
+  },
+  "ea600_failure_model": {
+    "do_not_use_as_absolute_truth": true,
+    "H0_INSTRUMENT_ONLY": {"prediction": ["EA600 anomaly is not repeated at same geodetic location", "EM122 remains spatially smooth", "failure follows time, instrument state or range rather than seafloor coordinates", "default or quantized values may appear"]},
+    "H1_REAL_MORPHOLOGY": {"prediction": ["EM122 independently shows a coherent ground-fixed depth change", "feature recurs in independent pass or survey", "location remains stable after navigation correction", "feature is not locked to one beam angle or ship heading"]},
+    "H2_REAL_TERRAIN_TRIGGERED_FAILURE": {"prediction": ["EA600 genuinely loses bottom or returns bad values", "failure repeatedly occurs at the same steep or rough morphology", "EM122 or sidescan independently resolves the underlying terrain change", "instrument failure is real but its causal trigger is also real seafloor morphology"], "importance": "THIS_IS_THE_CASE_THAT_CAN_BE_LOST_IF_ALL_FAILURES_ARE_DISCARDED"},
+    "classification_rule": "NEVER_PROMOTE_EA600_FAILURE_TO_SEAFLOOR_FEATURE_WITHOUT_INDEPENDENT_SPATIAL_SUPPORT"
+  },
+  "jr15001_smile_anomaly_test": {
+    "candidate_lines": ["jr15001_b_0012", "jr15001_b_0017", "jr15001_b_0022"],
+    "control_line": "jr15001_b_0037",
+    "tests": ["georeference_every_anomalous_return", "measure_along_track_and_cross_track_position", "measure_beam_angle_dependency", "measure_heading_dependency", "measure_distance_from_nadir", "compare_before_and_after_SVP_changes", "compare_repeat_passes", "compare_crossing_lines", "compare_raw_vs_cleaned_products", "compare_with_independent_cruises_if_available"],
+    "artifact_prediction": {"TRACK_FRAME_STABILITY": "anomaly follows ship track or beam geometry", "OUTER_BEAM_STRENGTHENING": "consistent with refraction or sound-speed error", "SVP_SENSITIVITY": "shape changes materially after sound-speed correction", "GROUND_LOCATION_INSTABILITY": "does not remain at one seafloor coordinate"},
+    "real_feature_prediction": {"GROUND_FRAME_STABILITY": "same geographic feature survives different passes", "MULTI_HEADING_PERSISTENCE": "position remains fixed while sonar-frame appearance changes", "CROSS_SURVEY_REPLICATION": "independent instrument or cruise sees compatible morphology", "SVP_ROBUSTNESS": "feature remains after reasonable sound-speed models"}
+  },
+  "time_to_space_convergence": {
+    "stage_1_TIME": {"goal": "identify exact survey line, timestamp and candidate change window", "requires": ["em122.ACO", "navigation_join", "heading_join", "EA600_context"]},
+    "stage_2_SPACE": {"goal": "identify actual ping and beam or footprint that insonified the ground location", "requires": ["raw_EM122_ping_data_or_equivalent", "beam_geometry", "sound_speed_profile", "navigation", "attitude_if_available"], "rule": "SECOND_LEVEL_DEPTH_CHANNEL_ALONE_CANNOT_PROVE_POINT_MORPHOLOGY"},
+    "stage_3_GROUND_FIXED_REPLICATION": {"goal": "test whether candidate remains fixed in Earth coordinates", "requires": ["different_heading_or_pass", "SVP_robustness", "independent_sensor_or_survey_when_available"]},
+    "stage_4_SYNTHETIC_COMPARISON": {"goal": "compare blind-extracted morphology or acoustic fingerprint to preregistered libraries", "rule": "TARGET_LABEL_REMAINS_HIDDEN_UNTIL_FEATURE_EXTRACTION_IS_COMPLETE"}
+  },
+  "echo_pyramid_reference": {
+    "repository": "Hawkar-usls/Echo-Pyramid",
+    "forward_recipe": "config/underwater_resonator_recipe.v1.json",
+    "reverse_recipe": "config/underwater_resonator_reverse_recipe.v1.json",
+    "existing_geometry_controls": ["HOLLOW_SQUARE_PYRAMID", "SOLID_PYRAMID", "SAME_VOLUME_RECTANGULAR_CAVITY", "CONE", "IRREGULAR_ROCK"],
+    "existing_state_controls": ["DRY_AIR", "SEALED_SUBMERGED", "FULLY_FLOODED", "25_PERCENT_FLOODED", "50_PERCENT_FLOODED", "75_PERCENT_FLOODED", "SEDIMENT_PARTIALLY_BURIED", "SEDIMENT_FULLY_BURIED"],
+    "orientation_extension_v1_1": {"status": "FREEZE_BEFORE_TARGET_RAW_INTERPRETATION", "tilt_deg": [0, 15, 30, 45, 60, 75, 90], "yaw_deg": [0, 45, 90, 135, 180, 225, 270, 315], "exposed_fraction": [1.0, 0.75, 0.5, 0.25, 0.1, 0.0], "reason": "TEST_UPRIGHT_TILTED_SIDE_LYING_AND_PARTIALLY_BURIED_CASES_WITHOUT_POSTHOC_SHAPE_TUNING"}
+  },
+  "claim_gates": {
+    "G0_CHANGE_EXISTS": "bidirectional temporal change survives controls",
+    "G1_GROUND_FEATURE_EXISTS": "change maps to stable ground coordinates and repeats",
+    "G2_GEOMETRY_CLASS": "candidate geometry beats natural and instrumental controls",
+    "G3_PYRAMID_LIKE": "pyramid family scores materially better than cone, box, ridge and rock controls",
+    "G4_ACOUSTIC_FINGERPRINT": "independent suitable acoustic data reproduces preregistered multimode fingerprint",
+    "G5_ARTIFICIAL_ORIGIN": "NOT_DECIDABLE_FROM_GEOMETRY_OR_RESONANCE_ALONE"
+  },
+  "hard_rules": ["RAW_BYTES_OUTRANK_INTERPRETATION", "NO_RECENTERING", "NO_COORDINATE_CONFLATION", "NO_POINT_TO_LINE_CLAIM_WITHOUT_SWATH_GEOMETRY", "EA600_FAILURE_IS_NOT_AUTOMATICALLY_NOISE", "EA600_FAILURE_IS_NOT_AUTOMATICALLY_REAL_TERRAIN", "REAL_TERRAIN_CAN_TRIGGER_REAL_INSTRUMENT_FAILURE", "EM122_DEPTH_CHANNEL_IS_NOT_BEAM_LEVEL_GEOMETRY", "BATHYMETRIC_SHAPE_IS_NOT_ACOUSTIC_RESONANCE", "BLIND_FEATURE_EXTRACTION_PRECEDES_PYRAMID_TEMPLATE_MATCHING", "KNOWN_BAD_LINE_0037_MUST_BE_DETECTED_AS_BAD_CONTROL", "NEGATIVE_RESULTS_ARE_FIRST_CLASS_RESULTS", "NO_UNDERWATER_PYRAMID_DETECTED_YET"],
+  "next_raw_actions": ["HASH_ALL_ORIGINAL_BODC_FILES_BEFORE_TRANSFORMATION", "PARSE_FIRST_AND_LAST_2H_30M_5M_60S", "BUILD_FORWARD_AND_REVERSE_CHANGE_STREAMS", "JOIN_EM122_SEATEX_GYRO_EA600", "MAP_0012_0017_0022_AND_0037_TO_NATIVE_SWATH_GEOMETRY", "TEST_ASCENSION_H10N1_H10S2_INTERSECTION", "EXTRACT_RAW_TO_CLEAN_DIFFERENCE", "RUN_EA600_H0_H1_H2_CLASSIFIER", "RUN_BLIND_GEOMETRY_FEATURE_EXTRACTION", "ONLY_THEN_COMPARE_WITH_ECHO_PYRAMID_LIBRARY"]
+}

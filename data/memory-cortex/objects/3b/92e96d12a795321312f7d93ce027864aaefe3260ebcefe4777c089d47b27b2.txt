@@ -1,0 +1,91 @@
+{
+  "artifact_id": "JANUS-LOGOS-001-R12-FIRST-PROSPECTIVE-NIST-INDEPENDENT-REPLAY-v1.0",
+  "experiment": "JANUS-LOGOS-001",
+  "round": "R1.2",
+  "date_utc": "2026-11-01",
+  "parent": "data/JANUS-GOD-CODE-v1.0.json",
+  "pre_registration": {
+    "path": "data/JANUS-LOGOS-001-R12-PREREG-v1.0.json",
+    "frozen_first_commit": "ff107627d3491774ce09c9559ed2a5d81fcb201d",
+    "frozen_before_first_holdout": true,
+    "threshold": "BOTH_NEW_REAL_DATA_TEST_SETS_GAIN_GE_5PCT"
+  },
+  "stage_status": "PARTIAL_GAIN_1_OF_2_NO_MODEL_PROMOTION",
+  "scientific_integrity": "PASS_CODE_AND_SOURCE_INTEGRITY",
+  "source_data": {
+    "ECKERLE4": {
+      "observations": 35,
+      "train": 21,
+      "validation": 7,
+      "test": 7,
+      "source_git_blob": "2d0d8bf3f139925ebf78e201b80079ea17d36848",
+      "source_nist": "https://www.itl.nist.gov/div898/strd/nls/data/LINKS/DATA/Eckerle4.dat"
+    },
+    "CHWIRUT2": {
+      "observations": 54,
+      "train": 29,
+      "validation": 9,
+      "test": 16,
+      "source_git_blob": "03703de739d642ff62364312f727ac4e8740c1bd",
+      "source_nist": "https://www.itl.nist.gov/div898/strd/nls/data/LINKS/DATA/Chwirut2.dat"
+    }
+  },
+  "results": [
+    {
+      "dataset": "ECKERLE4",
+      "selected_family": "gaussian",
+      "baseline": "POLY_DEGREE_2",
+      "candidate_test_rmse": 0.024318292502862333,
+      "baseline_test_rmse": 0.10851045982687321,
+      "test_gain_fraction": 0.7758898769606009,
+      "gain_at_least_five_percent": true
+    },
+    {
+      "dataset": "CHWIRUT2",
+      "selected_family": "poly",
+      "baseline": "POLY_DEGREE_3",
+      "candidate_test_rmse": 6.714265813214308,
+      "baseline_test_rmse": 6.901548583873273,
+      "test_gain_fraction": 0.02713634025508216,
+      "gain_at_least_five_percent": false
+    }
+  ],
+  "control_results": {
+    "shuffled_validation_data": {
+      "tested": 2,
+      "rejected": 2
+    },
+    "tampering": {
+      "hash": "REJECTED",
+      "coeff": "REJECTED",
+      "forbidden_family": "REJECTED",
+      "fake_negative": "REJECTED"
+    }
+  },
+  "scientific_verdict": {
+    "software_execution": "PASS",
+    "matched_simple_baseline_competitiveness": "FAIL_PREDEFINED_TWO_OF_TWO_SUCCESS_GATE",
+    "partial_success": "ONE_OF_TWO_NEW_NIST_DATASETS_PASSED",
+    "model_promotion_allowed": false,
+    "interpretation": "The new multi-family grouped-CV engine improves on a polynomial reference for Eckerle4 but fails to meet 5% gains on both studies. Cannot claim general scientific competitiveness."
+  },
+  "witness": {
+    "pull_request": "https://github.com/Hawkar-usls/janus-meta-registry/pull/428",
+    "run": "https://github.com/Hawkar-usls/janus-meta-registry/actions/runs/41295669712",
+    "run_id": 41295669712,
+    "witness_artifact_id": 13079136872,
+    "independent_code_and_runner": true,
+    "hidden_from_discoverer_input": true,
+    "source_formulas_public": true,
+    "external_lab": false,
+    "strict_blind": false
+  },
+  "constraints": [
+    "No retuning on exposed R1.2 TEST data.",
+    "Data and model families already known in open NIST literature; not novel physics.",
+    "Two studied NIST datasets do not establish universal law transfer.",
+    "No theological proof, computational-universe proof or P=NP conclusion.",
+    "No production Demiurge promotion; no Rowan paid tasks; no automatic new schedules."
+  ],
+  "next_gate": "R1.3: precommitted evaluation on genuinely unseen third-party scientific data with robust standard baselines, confidence intervals and independent provenance"
+}

@@ -1,0 +1,124 @@
+{
+  "artifact_id": "JANUS-YAKSA-APRIL18-NUMERIC-EVENT-HORIZON-POSTMORTEM-2026-08-18-v1.0",
+  "created_at": "2026-08-18",
+  "document_class": "HISTORICAL_NUMERIC_FAILURE_POSTMORTEM_AND_BH_Q2_LINEAGE_RECEIPT",
+  "status": "ROOT_CAUSE_IDENTIFIED__HISTORICAL_FAILURE_RECLASSIFIED__BH_Q2_GUARD_RELEVANCE_PASS",
+  "source_log": {
+    "date": "2026-04-18",
+    "cycles": [8619, 8620, 8621, 8622, 8623, 8624, 8625],
+    "mode": "EXPLOIT",
+    "sat_ratio": 1.0,
+    "send_state": "queued",
+    "bridge": "heartbeat queued",
+    "yaksa": "weights pull failed",
+    "scores": [
+      "-1.5045816812134645e91",
+      "-1.5709616687643666e92",
+      "-1.6402702462364920e93",
+      "-1.6897115242882035e94",
+      "-1.7490525810710632e95",
+      "-1.8104776391579857e96",
+      "-1.8860256315784887e97"
+    ],
+    "absolute_score_step_ratios": [10.441185668945309, 10.441185668945314, 10.301421538098078, 10.351190460205077, 10.351190460205077, 10.41728210714405],
+    "mean_absolute_step_ratio": 10.383909317257151,
+    "log10_abs_score_range": [91.1774157698344, 97.2755475906163]
+  },
+  "source_code_match": {
+    "family": "yaks9_final.py / close YaKSA+9 lineage",
+    "confidence": "HIGH_BY_LOG_FORMAT_AND_CONTROL_FLOW_NOT_BYTE_IDENTITY",
+    "matching_behavior": [
+      "CYCLE log format includes mode, sat, score and send without requiring a finite-score gate",
+      "heartbeat and cycle payloads are queued when Titan/NAS delivery fails",
+      "weights pull failure leaves the local model running without external hot-recovery",
+      "mode state is persistent: state.get('mode') is reused before choose_mode, so EXPLOIT can remain latched"
+    ]
+  },
+  "root_cause": {
+    "microbrain_vectorization": "raw numeric sensor values were used without feature normalization",
+    "prediction": "linear prediction was unbounded",
+    "training": "raw gradient update w += lr * error * feature had no weight/error/gradient clamp",
+    "score_function": "score = SAT reward + mode/wifi terms - 0.01*abs(prediction)",
+    "failure_chain": [
+      "SAT subsolver continued producing sat_ratio=1.0 on its finite generated tasks",
+      "MicroBrain prediction magnitude diverged geometrically",
+      "prediction penalty dominated the otherwise positive SAT score",
+      "score became approximately 10.38x more negative per observed cycle",
+      "EXPLOIT remained latched because score divergence was not a mode-switch criterion",
+      "Titan/bridge outage queued telemetry and prevented weights pull, removing an external rescue path"
+    ],
+    "classification": "NUMERICAL_DIVERGENCE_NOT_SAT_FAILURE_NOT_PNP_EVIDENCE"
+  },
+  "event_horizon_interpretation": {
+    "historical_meaning": "This is a concrete numerical example of crossing a computation event horizon: local task success remained superficially green while the learned state became unrecoverably scaled without an internal return guard.",
+    "physarum_role": "sat/path success is an inward/candidate signal only; it cannot certify global state health.",
+    "buzz_role": "Buzz must monitor the return path/finite invariants independently of candidate success.",
+    "law": "GREEN LOCAL OBJECTIVE DOES NOT OVERRIDE RETURN-PATH FAILURE",
+    "canonical_law": "NO FINITE RETURN STATE => HAWKING_ESCAPE"
+  },
+  "later_repairs_found_in_archive": {
+    "Y2_py": {
+      "sha256": "37801c98b9d1022fe3d837d9e7d7075be5415b04367c6bba14a260385e3ff836",
+      "finding": "TachyonicRegulator contains nan_count>2 -> SURVIVE concept, but in the inspected file nan_count is initialized/reset and no increment path was found; therefore the NaN guard is conceptually present but dormant in this snapshot.",
+      "claim": "DORMANT_GUARD_NOT_EXECUTION_PROOF"
+    },
+    "Yaksa11_FINAL_STABLE": {
+      "repairs": [
+        "feature normalization and per-feature clamp",
+        "prediction clamp to +/-1000",
+        "target clamp to +/-200",
+        "error clamp to +/-50",
+        "weight and bias clamp",
+        "BlackholeGuard with LR reduction and state contraction",
+        "bounded score penalty and score clamp"
+      ],
+      "interpretation": "The later BlackholeGuard is a direct engineering answer to the April failure class."
+    },
+    "mobile_core_20260818": {
+      "sha256": "723536be4d4e6ce9d02d428cf4705c549b104a5eb642d409a92641792eaf7c57",
+      "finding": "Current iPhone/YAKS-aligned mobile core uses a small bounded additive runtime score and persistent pending queue; it does not contain the April unbounded MicroBrain score path."
+    }
+  },
+  "uploaded_demiurge_checkpoints": {
+    "L1": {
+      "path_label": "demiurge_core_20260224_165031_L1.pt",
+      "sha256": "a4f2ee93c5e058d63eee84574cd76f0d84025f0d2fe93be5f15087e4f9a294e9",
+      "tensor_count": 149,
+      "parameter_numel": 38031360,
+      "nonfinite_values": 0,
+      "max_abs_tensor_value": 4.459965229034424,
+      "note": "Numerically finite historical checkpoint; not assumed to be architecture-compatible with YaKSA MicroBrain."
+    },
+    "L2": {
+      "path_label": "demiurge_core_20260224_165858_L2.pt",
+      "sha256": "e9bc9a9382b43119c92eefd24227c2ce2b5154bd3be04cf96cd126fa0c531fac",
+      "tensor_count": 149,
+      "parameter_numel": 21445632,
+      "nonfinite_values": 0,
+      "max_abs_tensor_value": 4.584998607635498,
+      "note": "Numerically finite historical checkpoint; suitable as provenance/control material, not automatic rollback payload for a different architecture."
+    }
+  },
+  "bh_q2_1_consequence": {
+    "new_guard_name": "BUZZ_NUMERIC_RETURN_HORIZON",
+    "necessary_checks_before_absorption_or_continued_exploit": [
+      "all tracked scores/predictions/weights/proof-costs are finite",
+      "magnitude growth is bounded by a frozen calibration envelope",
+      "local objective success cannot suppress divergence detection",
+      "external bridge outage cannot disable the local escape gate",
+      "last known finite/certified state remains independently restorable"
+    ],
+    "post_hoc_log_diagnostic": "The provided seven-cycle trace grows by about 10.38x in absolute score per cycle and would be classified as runaway divergence by any reasonable frozen finite-growth horizon. Threshold selection remains prospective work and must not be tuned on this same trace then claimed as validation.",
+    "next_step": "Use this April trace as a negative-control corpus when designing BH-Q2.1 cheap/incremental horizon filters; freeze thresholds on other calibration data before prospective evaluation."
+  },
+  "evidence_firewall": [
+    "SAT_RATIO_1 != HEALTHY_MODEL",
+    "SAT_RATIO_1 != P_EQUALS_NP",
+    "HUGE_NEGATIVE_SCORE != BLACK_HOLE_PHYSICS",
+    "EVENT_HORIZON = ENGINEERING_METAPHOR_FOR_FAIL_CLOSED_BOUNDARY",
+    "HISTORICAL_CHECKPOINT != AUTOMATICALLY_COMPATIBLE_ROLLBACK_STATE",
+    "POST_HOC_THRESHOLD != PROSPECTIVE_VALIDATION",
+    "P_VS_NP = OPEN"
+  ],
+  "canonical_seal": "APRIL SHOWED THE FAILURE MODE: THE LOCAL TASK STAYED GREEN WHILE THE BRAIN FELL NUMERICALLY. BUZZ MUST WATCH THE RETURN PATH, NOT THE COLOR OF THE DASHBOARD."
+}

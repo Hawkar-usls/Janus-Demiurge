@@ -1,0 +1,132 @@
+{
+  "schema_version": "1.0",
+  "spec_id": "JANUS-LINEAR-A-R7-E1-ANONYMOUS-LOCAL-ROLE-GRAPH-2026-08-15-v0.1",
+  "stage": "R7-E1",
+  "status": "PREREGISTERED_BEFORE_E1_DISCOVERY_SCORING",
+  "created_date": "2026-08-15",
+  "parent": {
+    "merge_commit_sha": "053ced377db1d2d50594f265da3309888ce35193",
+    "canonical_version": "v2.30",
+    "target": "KU-RO",
+    "opaque_target_token": "6a2ea59b95fe1b610d20",
+    "region": "HT",
+    "admitted_parent_role": "ROW-OPENING-LIKE",
+    "e0_status": "MECHANISM_UNRESOLVED_RETAIN_ROW-OPENING-LIKE",
+    "e0_negative_certificate": "data/JANUS-LINEAR-A-R7-E0-KU-RO-NEGATIVE-CERTIFICATE-2026-08-15-v0.1.json"
+  },
+  "source": {
+    "repository": "Hawkar-usls/lineara.xyz",
+    "frozen_commit": "43fe7cf1abc8e6bb1ea3228c3a1bd5938709620a"
+  },
+  "physical_object_split": {
+    "normalization": "R7-D0 object_id(): strip terminal a/b only when preceded by a digit or >",
+    "hash_input": "JANUS-R7-E1-v0.1|<physical_object_id>",
+    "hash": "SHA-256",
+    "bucket": "int(first_8_hex,16) mod 5",
+    "discovery_buckets": [0, 1, 2],
+    "holdout_buckets": [3, 4],
+    "split_is_computed_from_filename_object_identity_before_document_content_is_parsed": true,
+    "discovery_must_not_parse_holdout_document_content": true,
+    "holdout_must_not_influence_discovery_atom_selection": true
+  },
+  "event_population": {
+    "region": "HT",
+    "predicate": "existing C0 ROW_FIRST_LEXICAL with match=true",
+    "target": "frozen opaque KU-RO token only",
+    "controls": "all non-target ROW_FIRST_LEXICAL events in the same partition",
+    "row_first_enrichment_itself_is_not_a_test_statistic": true,
+    "translation_or_semantic_labels_are_not_features": true
+  },
+  "anonymous_atom_families": {
+    "SELF_NEXT_KIND": ["N", "W", "X", "END"],
+    "SELF_SUFFIX_NUMERIC_COUNT": ["0", "1", "2PLUS"],
+    "SELF_SUFFIX_LEXICAL_COUNT": ["0", "1", "2PLUS"],
+    "SELF_END_KIND": ["N", "W", "X", "EMPTY"],
+    "PREV_ROW_NUMERIC_COUNT": ["ABSENT", "0", "1", "2PLUS"],
+    "PREV_ROW_LEXICAL_COUNT": ["ABSENT", "0", "1", "2PLUS"],
+    "NEXT_ROW_NUMERIC_COUNT": ["ABSENT", "0", "1", "2PLUS"],
+    "NEXT_ROW_LEXICAL_COUNT": ["ABSENT", "0", "1", "2PLUS"],
+    "PREV_ROW_HAS_UNCERTAIN_NUMERIC": ["ABSENT", "NO", "YES"],
+    "NEXT_ROW_HAS_UNCERTAIN_NUMERIC": ["ABSENT", "NO", "YES"]
+  },
+  "feature_firewall": {
+    "lexical_identity_other_than_frozen_target_indicator_forbidden": true,
+    "numeric_magnitude_forbidden": true,
+    "exact_arithmetic_equality_forbidden": true,
+    "neighbor_row_edit_distance_forbidden": true,
+    "source_word_strings_forbidden_as_features": true,
+    "phonetic_values_forbidden": true,
+    "translation_forbidden": true,
+    "language_family_forbidden": true,
+    "external_proposed_meanings_forbidden": true,
+    "e0_event_specific_scores_forbidden_for_atom_selection": true
+  },
+  "matching": {
+    "stratum": ["document_id", "relative_row_position_third"],
+    "relative_row_position_third": "early/middle/late by ordered source-row rank",
+    "exchangeable_target_event": "a target event whose stratum contains at least one non-target control event",
+    "no_adaptive_fallback_matching": true
+  },
+  "discovery_selection": {
+    "inference_claim_from_discovery": false,
+    "minimum_exchangeable_target_events": 10,
+    "minimum_target_atom_support": 5,
+    "minimum_target_atom_prevalence": 0.40,
+    "minimum_matched_effect": 0.15,
+    "maximum_selected_atoms": 4,
+    "maximum_atoms_per_family": 1,
+    "minimum_selected_atoms_to_open_holdout": 2,
+    "ranking": [
+      "matched_effect_desc",
+      "target_prevalence_desc",
+      "target_support_desc",
+      "atom_id_asc"
+    ],
+    "manual_atom_addition_forbidden": true,
+    "manual_atom_removal_forbidden": true,
+    "post_discovery_threshold_retuning_forbidden": true
+  },
+  "holdout_primary_test": {
+    "profile_score": "mean of selected anonymous atom indicator values for each event",
+    "null": "within each frozen document_id + relative_row_position_third stratum, uniformly reassign the fixed number of target labels among target+control row-first events",
+    "permutations": 10000,
+    "seed": 71101,
+    "empirical_p": "(1 + permutations with target profile mean >= observed target profile mean)/(1 + permutations)",
+    "alpha": 0.01,
+    "minimum_exchangeable_target_events": 8,
+    "minimum_documents": 7,
+    "minimum_physical_objects": 7,
+    "minimum_exchangeable_fraction_of_holdout_target_events": 0.70,
+    "minimum_effect_over_matched_null": 0.15,
+    "minimum_leave_one_object_out_positive_fraction": 0.85,
+    "maximum_single_object_target_support_fraction": 0.25,
+    "selected_atom_directional_replication_required_when_holdout_target_support_at_least": 3,
+    "selected_atom_minimum_directional_effect": 0.0
+  },
+  "decision": {
+    "pass_status": "HELDOUT_ANONYMOUS_LOCAL_ROLE_PROFILE_REPLICATED",
+    "fail_status": "ANONYMOUS_LOCAL_ROLE_PROFILE_NOT_ESTABLISHED_RETAIN_ROW-OPENING-LIKE",
+    "discovery_underpowered_status": "E1_DISCOVERY_PROFILE_NOT_FROZEN_RETAIN_ROW-OPENING-LIKE",
+    "pass_claim": "Within held-out HT physical objects, the frozen KU-RO row-opening event is associated with a reproducible anonymous local structural-role profile relative to matched row-first controls.",
+    "pass_does_not_assign_semantic_function_label": true,
+    "failure_does_not_revoke_parent_C3_role": true
+  },
+  "claim_ceiling": {
+    "probable_region_scoped_structural_function_parent_retained": true,
+    "anonymous_local_role_profile_may_be_established": true,
+    "specific_semantic_function_established": false,
+    "exact_word_meaning_established": false,
+    "translation_established": false,
+    "phonetic_value_established": false,
+    "language_family_established": false,
+    "new_anchor_established": false,
+    "universal_cross_region_function_established": false,
+    "external_replication_established": false,
+    "decipherment_established": false
+  },
+  "promotion_policy": {
+    "e1_pass_does_not_auto_promote_canonical_state": true,
+    "separate_result_freeze_required": true,
+    "next_semantic_or_function_label_requires_new_preregistered_lane": true
+  }
+}

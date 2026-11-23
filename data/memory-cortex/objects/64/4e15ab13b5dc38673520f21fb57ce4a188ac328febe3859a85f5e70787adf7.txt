@@ -1,0 +1,170 @@
+{
+  "schema": "janus.meta_registry.machine_market_paid_search_production_armed.v1",
+  "version": "1.0",
+  "date": "2026-09-04",
+  "title": "JANUS MACHINE MARKET — paid SEARCH production-armed, live money still witness-gated",
+  "repository": "Hawkar-usls/JANUS-MACHINE-MARKET",
+  "home_repository": "Hawkar-usls/Hawkar-usls",
+  "canonical_market_main": "65dc29936cfb33335582fdb1c39db13eadd64274",
+  "status": {
+    "public_zero_price_search": "LIVE",
+    "paid_search_pipeline": "PRODUCTION_ARMED_NOT_LIVE",
+    "paid_search_checkout_workflow": "PARSES_AND_PR_CONTRACT_PASS",
+    "money_enabled": false,
+    "autonomous_purchase_declared": false,
+    "JANUS_SEARCH_machine_purchase": false,
+    "foreign_persistent_home_machine_witness": false,
+    "first_real_paid_delivery": false,
+    "JANUS_INFERENCE": "CLOSED_TARGET_EXECUTION_WITNESS_PENDING",
+    "JANUS_COMPUTE": "CLOSED_TARGET_EXECUTION_WITNESS_PENDING"
+  },
+  "boundary": [
+    "DISCOVERABLE != PURCHASABLE != EXECUTION_AUTHORITY != EXECUTION_WITNESS",
+    "PAYMENT != COMMAND",
+    "PURCHASE_GRANT != EXECUTION_AUTHORITY",
+    "UNSOLICITED PAYMENT GRANTS NOTHING",
+    "QUEUE_DISPATCH != COMMAND_AUTHORITY",
+    "PAYMENT_SETTLED != EXECUTION_STARTED",
+    "HIGHER_QUEUE_LEVEL != PREEMPT_ACTIVE_EXECUTION"
+  ],
+  "canonical_merge_receipts": {
+    "public_zero_price_search_beta": {
+      "pr": 39,
+      "commit": "55c4c3a1bc492e67c803b2b73f87e4d97568db0f"
+    },
+    "home_paid_settled_acceptor": {
+      "repository": "Hawkar-usls/Hawkar-usls",
+      "pr": 67,
+      "commit": "b2c147e1a9a00d175853ca68f040034057f0d087"
+    },
+    "base_paid_search_issue_checkout_and_home_route": {
+      "pr": 40,
+      "commit": "6fa61fbfe160e7b48101d523a4c5d8f130c7df26"
+    },
+    "multi_rpc_and_stable_payment_replay_hardening": {
+      "pr": 42,
+      "commit": "3aede3f029acf84e8cb6e6573ec0036e51ef2ea1"
+    },
+    "persistent_home_external_machine_witness_gate": {
+      "pr": 43,
+      "commit": "ed5acc33c7b850a9bd59d92be41260d706c6e59a"
+    },
+    "five_level_serialized_paid_queue_and_promotion_governance": {
+      "pr": 44,
+      "commit": "7af4eadff38d00e5ed4c6188d8307b9f00967583"
+    },
+    "review_only_witness_bound_live_promotion_pr_generator": {
+      "pr": 45,
+      "commit": "31721e850742805431354e0e704b429911997ffa"
+    },
+    "paid_checkout_yaml_and_queue_status_hotfix": {
+      "pr": 46,
+      "commit": "65dc29936cfb33335582fdb1c39db13eadd64274"
+    },
+    "promotion_test_dual_lifecycle_hardening": {
+      "pr": 47,
+      "commit": "2426fba0d600ede36771b563f5921d318a26f5a0"
+    }
+  },
+  "payment_rail": {
+    "network": "ethereum-mainnet",
+    "chain_id": 1,
+    "asset": "USDT",
+    "token_contract": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+    "declared_receiving_address": "0x7149081aea54fbef57effeb52a5a966b81cc03a0",
+    "required_confirmations": 12,
+    "payment_identity": "transaction_hash + ERC20_log_index",
+    "rpc_read_quorum": 2,
+    "rpc_policy": "CONFLICT_OR_PROVIDER_QUARANTINE_FAILS_CLOSED",
+    "canonical_confirmed_receipt": "confirmations frozen at admission threshold 12; immutable tx/log/block/quote bindings preserved",
+    "invoice_ttl_seconds": 900,
+    "invoice_expiry_law": "payment canonical block timestamp must be <= invoice expiry; confirmations may mature later"
+  },
+  "paid_queue": {
+    "policy": "PAID_QUEUE_POLICY.json",
+    "levels": 5,
+    "max_active_paid_search": 1,
+    "preemption": false,
+    "ordering": "EFFECTIVE_PRIORITY_DESC_THEN_PAYMENT_BLOCK_ASC_THEN_LOG_INDEX_ASC_THEN_PURCHASE_ID",
+    "aging": "+1 effective level per 30 minutes waiting, bounded at level 5",
+    "capacity_law": "QUEUE CAPACITY LIMIT = INVOICE ADMISSION LIMIT",
+    "valid_settled_payment_can_be_rejected_for_capacity": false,
+    "settlement_behavior": "settlement persists purchase and queue entry; dispatcher alone publishes the selected HOME packet",
+    "completion_gate": "active slot released only after matching persistent PAID_SETTLED HOME response is reconciled",
+    "history_law": "completed immutable queue history does not consume pending capacity"
+  },
+  "external_witness_gate": {
+    "required": true,
+    "current_first_receipt_path": "state/r1-foreign-home/FIRST.json on janus/market-state",
+    "current_first_receipt_present": false,
+    "current_observation": "404_NOT_FOUND_AT_2026_09_04_CHECK",
+    "eligible_ingress": "real external GitHub principal using public JANUS.SEARCH with machine discovery claim frozen at initial issue open",
+    "requires": [
+      "external GitHub principal distinct from owner under observable trust model",
+      "machine_client=true discovery claim",
+      "independent_from_owner=true discovery claim",
+      "server-normalized public SEARCH admission",
+      "credentialless Market to HOME pull",
+      "persistent JANUS/HRAiN result",
+      "immutable Market response receipt"
+    ],
+    "owner_self_request_can_promote": false,
+    "synthetic_request_can_promote": false,
+    "legacy_local_catalog_witness_can_open_money": false,
+    "witness_receipt_itself_enables_money": false
+  },
+  "promotion_path": {
+    "generator": ".github/workflows/paid-search-promotion-pr.yml",
+    "auto_merge": false,
+    "when_first_witness_exists": [
+      "verify FIRST.json and immutable witness receipt",
+      "bind witness_id + receipt_hash + exact market-state commit",
+      "generate SEARCH-only live candidate",
+      "verify exact promotion file allowlist",
+      "run live-candidate integrity before push",
+      "open deterministic review PR",
+      "require normal PR checks",
+      "merge only as a separate canonical action"
+    ],
+    "live_candidate_scope": "JANUS.SEARCH_ONLY",
+    "other_skus_unchanged": {
+      "JANUS.REPO_AUDIT": "OWNER_SHADOW_ONLY",
+      "JANUS.DATASET_SCOUT": "OWNER_SHADOW_ONLY",
+      "JANUS.INFERENCE": "CLOSED",
+      "JANUS.COMPUTE": "CLOSED"
+    }
+  },
+  "known_fixed_production_bugs": [
+    "quote TTL incorrectly evaluated at purchase-grant time instead of canonical payment block time",
+    "single Ethereum RPC dependency and 403 failure mode",
+    "growing confirmation count breaking byte-identical create-only payment replay",
+    "queue lifetime history incorrectly consuming max_queue_depth forever",
+    "capacity rejection after irreversible valid payment",
+    "paid checkout YAML parse failure caused by colon-space inside single-line run scalar",
+    "future legitimate live promotion making prospective promotion tests falsely red"
+  ],
+  "next_gate": "FIRST_REAL_EXTERNAL_MACHINE_PUBLIC_SEARCH_PERSISTENT_HOME_RECEIPT",
+  "next_action_after_gate": "promotion generator prepares SEARCH-only paid-live PR; do not auto-merge; require normal CI and persistent witness binding",
+  "observer_dedup": {
+    "treat_prs_39_40_42_43_44_45_46_47_and_home_pr_67_as_recorded": true,
+    "do_not_alert_as_new": [
+      "paid SEARCH invoice implementation",
+      "USDT observer implementation",
+      "two-provider RPC quorum",
+      "five-level queue",
+      "R1E witness machinery",
+      "promotion PR generator",
+      "paid checkout YAML hotfix",
+      "dual lifecycle promotion tests"
+    ],
+    "qualifying_future_delta": [
+      "real R1E FIRST.json appears",
+      "witness-bound live promotion PR is generated",
+      "SEARCH-only live promotion is merged",
+      "first real payment is confirmed and queued",
+      "first paid queue dispatch reaches persistent HOME",
+      "first real paid HOME result receipt is reconciled",
+      "fresh replay proves no second charge/execution"
+    ]
+  }
+}

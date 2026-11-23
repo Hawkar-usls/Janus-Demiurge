@@ -1,0 +1,77 @@
+{
+  "schema": "janus.meta_registry.cousteau.argo_year_gated_selector.v1",
+  "artifact_id": "JANUS-COUSTEAU-ARGO-90-TWO-STAGE-YEAR-SELECTOR-2026-11-09",
+  "recorded_date": "2026-11-09",
+  "status": "EXPLORATORY_SELECTOR_EVALUATED_NOT_PROMOTED",
+  "research_repository": "Hawkar-usls/Janus-Cosmos",
+  "research_branch": "experiment/cousteau-southern-ocean-20261109",
+  "source_file": "data/cousteau/southern_ocean/argo_year_selector/year-selector-2022-2023-2024-argo90.json",
+  "source_blob_sha": "9bd62b7f1cf6c90ee086a2814ff82c6aa7b0fc19",
+  "ci_run_url": "https://github.com/Hawkar-usls/Janus-Cosmos/actions/runs/42591756977",
+  "predeclared_protocol": "data/cousteau/southern_ocean/COUSTEAU-ARGO-90-YEAR-SELECTOR-PREREG-2026-11-09.json",
+  "result": {
+    "cohorts": {
+      "2022": 21,
+      "2023": 18,
+      "2024": 51
+    },
+    "fixed_candidate_models": [
+      "ridge_alpha10",
+      "nearest5_haversine_at_same_pressure"
+    ],
+    "frozen_source_run": "42585534673",
+    "frozen_source_sha256": "bb6d3f30f80dd57d6eb5159d5b1fccdf3fad0a1edcc9afca320b7ec02b726497",
+    "limitations": [
+      "Only 90 selected D-mode Argo floats south of 50S, not the complete Argo Southern Ocean.",
+      "Posthoc: year 2024 dataset already studied in earlier experiments, despite 2024 being excluded from this selector's choice.",
+      "Historical backtest does not prove future generalization, uncertainty calibration, density, ocean heat flux, under-ice navigation, or glacier melt.",
+      "Candidate choices and baseline are conditional on severe spatiotemporal observation gaps."
+    ],
+    "model_promotion_authorized": false,
+    "model_selector_rule": "Tune choice on 2023 only, train 2022, refit 2022+2023, evaluate year 2024",
+    "schema": "janus.cousteau.argo_year_selector_receipt.v1",
+    "separate_float_ids_by_year": true,
+    "status": "EXPLORATORY_YEAR_GATED_TWO_PHASE_SELECTOR_EVALUATED",
+    "variables": {
+      "psal_psu": {
+        "calibration_2023_rmse": {
+          "nearest5_geospatial": 0.176578,
+          "ridge": 0.18683
+        },
+        "n_calibration_pressure_levels": 88,
+        "n_holdout_pressure_levels": 250,
+        "selected_2024_rmse": 0.194651,
+        "selected_vs_best_candidate": true,
+        "selected_vs_depth_baseline": true,
+        "selected_without_using_2024": "nearest5_geospatial",
+        "status": "EVALUATED_POSTHOC_ONLY",
+        "test_2024_rmse": {
+          "depth_only_baseline": 0.214021,
+          "nearest5_geospatial": 0.194651,
+          "ridge": 0.199991
+        }
+      },
+      "temp_c": {
+        "calibration_2023_rmse": {
+          "nearest5_geospatial": 2.154484,
+          "ridge": 1.563546
+        },
+        "n_calibration_pressure_levels": 88,
+        "n_holdout_pressure_levels": 250,
+        "selected_2024_rmse": 1.757301,
+        "selected_vs_best_candidate": true,
+        "selected_vs_depth_baseline": true,
+        "selected_without_using_2024": "ridge",
+        "status": "EVALUATED_POSTHOC_ONLY",
+        "test_2024_rmse": {
+          "depth_only_baseline": 2.818014,
+          "nearest5_geospatial": 2.010561,
+          "ridge": 1.757301
+        }
+      }
+    }
+  },
+  "research_interpretation": "The choice for temperature was Ridge and for salinity five-nearest geospatial floats; 2023 calibration selected before 2024 holdout in algorithm, but 2024 already studied during earlier exploratory experiments. Therefore not an untouched future dataset.",
+  "approved_for_production": false,
+  "next_gate": "Prospective truly new GDAC source snapshot, independent sensor QC, geographic and year-group heldouts."
+}

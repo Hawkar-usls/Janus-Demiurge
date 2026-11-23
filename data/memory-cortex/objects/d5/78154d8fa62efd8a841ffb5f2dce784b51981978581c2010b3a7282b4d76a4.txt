@@ -1,0 +1,97 @@
+{
+  "artifact_uuid": "JANUS-UNIVERSAL-BEETLE-BACKGROUND-RESEARCH-ORGAN-ACTIVATION-2026-09-11-V1.0",
+  "schema": "janus.universal_beetle.background_research_organ.activation.v1_0",
+  "version": "v1.0",
+  "created_on": "2026-09-11",
+  "status": "BACKGROUND_RESEARCH_ORGAN_ACTIVE__FIRST_END_TO_END_RUN_PASS__DURABLE_STATE_BRANCH_CONFIRMED__DISCOVERY_ONLY_NO_PROOF_AUTHORITY",
+  "repository": "Hawkar-usls/janus-lapis",
+  "components": {
+    "engine": {
+      "path": "tools/universal_beetle.py",
+      "commit": "eede69234aed3d9824fa8f6c2e80b6c50360451d"
+    },
+    "directions": {
+      "path": "data/beetle/directions.json",
+      "commit": "b63fe4d644da0e899345d95225472d052f268fef"
+    },
+    "documentation": {
+      "path": "docs/UNIVERSAL_BEETLE.md",
+      "commit": "ee03bbe9fec477bd2d1827a74d7c9afc7c61a6dd"
+    },
+    "hourly_workflow": {
+      "path": ".github/workflows/universal-beetle-hourly.yml",
+      "commit": "f08ca7026fd38ed6144d47ced4b6516646344b56",
+      "cron": "27 * * * *"
+    },
+    "durable_memory": {
+      "branch": "beetle-state",
+      "first_state_commit": "4c379dd7a40433530f16d080c036faa446b288f0"
+    }
+  },
+  "architecture": {
+    "core_loop": "DIRECTION -> DISCOVER -> SCORE -> DEDUPE -> BITE -> RECEIPT -> CHECKPOINT -> NEXT",
+    "scout": "metadata-first discovery across configured public sources; current adapters: arXiv, Zenodo, GitHub repository search, RSS/Atom",
+    "grazer": "bounded resumable consumption of explicitly approved large objects; current adapters: UWA HDF5/MAT-v7.3 via Ocean Beetle and generic HTTP-range text",
+    "direction_contract": "human/JANUS direction lives on main; execution does not invent autonomous purpose",
+    "memory_contract": "runner is disposable; seen ids, cursors, candidate inbox, provenance receipts and large-object checkpoints live on beetle-state",
+    "persistence": "each successful run commits changed state back to beetle-state",
+    "dedupe": "candidate identity is hash-bound to source + canonical URL + title"
+  },
+  "first_end_to_end_run": {
+    "workflow_run_id": 34558047393,
+    "workflow_job_id": 103134843107,
+    "conclusion": "success",
+    "duration_window_utc": ["2026-09-11T03:20:20Z", "2026-09-11T03:20:52Z"],
+    "scout": {
+      "requests": 8,
+      "metadata_bytes": 384765,
+      "new_candidates": 38,
+      "errors": 0
+    },
+    "grazer": {
+      "task": "uwa_blue_1_raw_channel",
+      "dataset": "blue_1.mat /h_hat",
+      "disk_shape": [2553, 12, 320],
+      "logical_shape": [320, 12, 2553],
+      "bite": [0, 64],
+      "next": 64,
+      "status": "IN_PROGRESS"
+    },
+    "durable_state_commit": "4c379dd7a40433530f16d080c036faa446b288f0"
+  },
+  "initial_directions": [
+    "ocean_reader",
+    "kusto_ocean_data",
+    "large_data_methods"
+  ],
+  "initial_information_gain": {
+    "candidate_count": 38,
+    "notable_candidate": {
+      "source": "arxiv",
+      "title": "Open-Set Vessel Re-Identification from Underwater Ship-Radiated Noise with a Raw-Waveform Selective-Kernel Acoustic Neural Network (SKANN) and a Cross-Passage Evaluation Protocol",
+      "reason": "directly relevant to Ocean Reader source-identity/provenance recovery; explicitly distinguishes vessel identity from recording-channel confounds",
+      "status": "DISCOVERY_CANDIDATE__NOT_VERIFIED__NO_PROOF_AUTHORITY"
+    }
+  },
+  "epistemic_firewalls": [
+    "DISCOVERY_CANDIDATE != EVIDENCE",
+    "SEARCH_RANK != TRUTH",
+    "METADATA_MATCH != REPLICATION",
+    "AUTONOMOUS_EXECUTION != AUTONOMOUS_PURPOSE",
+    "ACCUMULATION != TRUTH",
+    "LARGE_FILE_BITE != COMPLETE_DATASET_REPLAY",
+    "BEETLE_OUTPUT_CANNOT_CHANGE_TRUMP_PROOF_LEDGER_WITHOUT_SEPARATE_FORMAL_VERIFICATION"
+  ],
+  "operational_boundary": {
+    "network": "HTTPS only",
+    "discovery": "metadata-first with per-run request/item/byte budgets",
+    "large_objects": "must be explicitly placed in grazer_tasks before body ingestion",
+    "full_download_default": false,
+    "state_write_scope": "beetle-state branch only",
+    "main_write_scope": "none during scheduled Beetle runs"
+  },
+  "proof_ledger": [],
+  "proof_authority_delta": 0,
+  "next_direction_interface": "To steer the Beetle, edit data/beetle/directions.json: add/disable a direction, change keywords/sources, or explicitly approve a new grazer task.",
+  "seal": "THE BEETLE MAY SEARCH WITHOUT RESTING; IT MAY NOT CHOOSE WHAT IS TRUE. DIRECTION GUIDES THE MOUTH, PROVENANCE REMEMBERS EVERY BITE."
+}

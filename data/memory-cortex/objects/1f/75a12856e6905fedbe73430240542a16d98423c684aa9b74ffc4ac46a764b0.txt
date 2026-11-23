@@ -1,0 +1,57 @@
+{
+  "artifact_uuid":"JANUS-LINEAR-A-ANCHOR-BENCH-v0.1",
+  "scan_type":"EXTERNAL_DECIPHERMENT_ANCHOR_BENCH",
+  "subject":"Linear A",
+  "status":"DESIGNED_FOR_EXECUTION",
+  "goal":"Use behaviorally anchored Linear A forms as fixed seeds for blind discovery of additional lexical or grammatical candidates, then test those candidates on held-out inscriptions.",
+  "core_anchors":[
+    {"form":"KU-RO","status":"HIGH_CONFIDENCE_SEMANTIC_ANCHOR","working_meaning":"total","anchor_basis":"accounting position and arithmetic sum"},
+    {"form":"KI-RO","status":"HIGH_BUT_DISTINCT_FROM_KURO","working_meaning":"deficit_or_outstanding_amount","anchor_basis":"accounting contrast"}
+  ],
+  "discovery_rule":"The detector must not receive the proposed meaning of a candidate during candidate generation.",
+  "pipeline":[
+    "freeze_source_corpus",
+    "normalize_sign_sequences_without_semantic_glosses",
+    "build_context_graphs_around_anchors",
+    "infer_morphological_and_distributional_contrasts",
+    "generate_blind_candidate_forms",
+    "score_candidates_on_held_out_inscriptions",
+    "compare_against_schema_matched_null",
+    "ablate_Linear_B_phonetic_prior",
+    "ablate_Unicode_names_and_transliteration_labels",
+    "publish_claim_ceiling"
+  ],
+  "blind_layers":["semantic_gloss","Unicode_character_name","Linear_B_reading","JANUS_canonical_labels","researcher_proposed_translation"],
+  "partitions":["full_corpus","region_A","region_B","region_C","region_D","region_E","document_type_holdout","held_out_inscriptions"],
+  "null_controls":[
+    "token_frequency_matched_shuffle",
+    "structure_preserving_word_order_rewire",
+    "accounting_total_permutation_with_marginals_preserved",
+    "random_morphology_baseline",
+    "script_name_blind_synthetic_corpus"
+  ],
+  "candidate_metrics":["held_out_log_likelihood_or_classification_gain","morphological_consistency","cross_partition_survival","anchor_distance_gain","null_effect_size","Linear_B_prior_dependency"],
+  "promotion_ladder":[
+    {"stage":"CANDIDATE","condition":"generated blind from structure"},
+    {"stage":"REPLICATED","condition":"survives at least three held-out partitions"},
+    {"stage":"BEHAVIORALLY_ANCHORED","condition":"supported by an external functional constraint"},
+    {"stage":"GRAMMATICALLY_SUPPORTED","condition":"predicts unseen positional or agreement behavior"},
+    {"stage":"LEXICALLY_SUPPORTED","condition":"explains multiple forms without ad hoc segmentation"},
+    {"stage":"DECIPHERMENT_CANDIDATE","condition":"independent implementation reproduces the result and competing language-family hypotheses lose under identical controls"}
+  ],
+  "claim_ceiling":"No candidate becomes a decipherment merely because an AI-generated gloss is coherent. A strong result must predict held-out Linear A data better than matched nulls and survive representation and partition blinding.",
+  "meta_registry_connections":[
+    "PARTITION_SURVIVAL_GATE",
+    "REPRESENTATION_CREATES_VISIBILITY",
+    "BEHAVIORAL_ANCHOR_CAN_BREAK_THE_TRANSLATION_CIRCLE",
+    "EVIDENCE_BEFORE_CLAIM_CEILING",
+    "PROVENANCE_BINDING"
+  ],
+  "external_research_links":[
+    "https://sigla.phis.me/about.html",
+    "https://aclanthology.org/2024.cl-2.7/",
+    "https://www.unicode.org/versions/Unicode16.0.0/core-spec/chapter-8/"
+  ],
+  "success_condition":"At least one new candidate relation or semantic anchor survives blind generation, held-out partitions, Linear-B prior ablation, representation blinding, and matched null comparison.",
+  "epistemic_status":{"decipherment_achieved":false,"causal_claim":false,"structural_operator":true,"next_gate":"execute_on_digitized_corpus_with_frozen_code_and_preregistered_scoring"}
+}

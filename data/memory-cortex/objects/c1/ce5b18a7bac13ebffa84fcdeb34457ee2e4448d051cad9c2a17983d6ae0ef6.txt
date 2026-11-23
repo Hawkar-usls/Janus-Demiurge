@@ -1,0 +1,45 @@
+{
+  "id": "EYE-R4.2-SEARCH-PROOF-ADAPTIVE-v1",
+  "cause_classes": [
+    {"id": "valid_independent_result", "target_class": "VALID", "prior": 0.5},
+    {"id": "stale_or_cached_result", "target_class": "INVALID_PROVENANCE", "prior": 0.2},
+    {"id": "derivative_duplicate_result", "target_class": "INVALID_PROVENANCE", "prior": 0.2},
+    {"id": "verifier_specific_false_positive", "target_class": "INVALID_VERIFIER", "prior": 0.1}
+  ],
+  "tests": [
+    {
+      "id": "provenance_hash_audit",
+      "cost": 1,
+      "failure_domains": ["provenance_parser"],
+      "outcome_by_cause": {
+        "valid_independent_result": "CLEAN",
+        "stale_or_cached_result": "PROVENANCE_BAD",
+        "derivative_duplicate_result": "PROVENANCE_BAD",
+        "verifier_specific_false_positive": "CLEAN"
+      }
+    },
+    {
+      "id": "independent_verifier",
+      "cost": 3,
+      "failure_domains": ["verifier_B"],
+      "outcome_by_cause": {
+        "valid_independent_result": "MATCH",
+        "stale_or_cached_result": "MATCH",
+        "derivative_duplicate_result": "MATCH",
+        "verifier_specific_false_positive": "FALSE_POSITIVE"
+      }
+    },
+    {
+      "id": "end_to_end_rebuild",
+      "cost": 5,
+      "failure_domains": ["rebuild"],
+      "outcome_by_cause": {
+        "valid_independent_result": "VALID",
+        "stale_or_cached_result": "STALE",
+        "derivative_duplicate_result": "DUPLICATE",
+        "verifier_specific_false_positive": "FALSE_POSITIVE"
+      }
+    }
+  ],
+  "expected": {"root_next_test": "provenance_hash_audit", "adaptive_expected_cost": 2.8, "adaptive_worst_case_cost": 4, "nonadaptive_cost": 4}
+}

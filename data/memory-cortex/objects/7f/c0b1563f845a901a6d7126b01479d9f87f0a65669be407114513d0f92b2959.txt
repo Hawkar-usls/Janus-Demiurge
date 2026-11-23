@@ -1,0 +1,135 @@
+{
+  "artifact_uuid": "JANUS-DISTRIBUTED-ARCHITECTURE-V25.0",
+  "timestamp": "2026-02-25T23:00:00Z",
+  "version": "v25.0-METHODOLOGY-STRICT",
+  "description": "Формальный протокол распределённого экспериментального стенда для поиска статистически необъяснимых корреляций с контролем причинности, множественных сравнений и слепых испытаний. Все предыдущие интерпретации (тахионы, наблюдатели) заменены на строгие методологические слои.",
+  "observer": "Hawkar Yaks / JANUS Quantum Observer",
+  "node_type": "methodology_milestone",
+
+  "causality_integrity_layer": {
+    "id": "CAUSALITY_VALIDATION_PROTOCOL",
+    "description": "Слой, обеспечивающий достоверность временных меток и позволяющий отличать истинные причинно-следственные связи от артефактов синхронизации.",
+    "clock_sources": {
+      "NAS": "PTP (IEEE 1588) с аппаратным timestamping (если сетевая карта поддерживает)",
+      "PC_Titan": "PTP или NTP с локальным сервером на NAS, фиксация смещения",
+      "Android": "NTP с локальным сервером, монотонные часы (SystemClock.elapsedRealtimeNanos())",
+      "M5Cardputer": "NTP с локальным сервером, micros() с учётом дрейфа"
+    },
+    "logging_requirements": {
+      "timestamp_resolution_ns": 1000,
+      "monotonic_clock_used": true,
+      "clock_offset_logged": true,
+      "drift_monitoring_enabled": true,
+      "max_allowed_drift_ns_per_sec": 50000
+    },
+    "causality_confidence_score": {
+      "formula": "1.0 - (max_drift_ns / (observation_window_ns)) - (packet_reorder_rate * 0.5)",
+      "range": [0.0, 1.0],
+      "interpretation": "Показывает, насколько можно доверять временным меткам для определения порядка событий."
+    },
+    "negative_delay_handling": "Любая отрицательная задержка (event.start < command.send) автоматически маркируется как артефакт и исключается из анализа, если causality_confidence_score < 0.95."
+  },
+
+  "statistical_discipline_layer": {
+    "id": "STATISTICAL_DISCIPLINE_PROTOCOL",
+    "description": "Протокол, исключающий ложные открытия из-за множественных сравнений и подтверждающий устойчивость аномалий.",
+    "multiple_testing_correction": {
+      "method": "Benjamini–Hochberg (FDR)",
+      "alpha": 0.05,
+      "total_experiments_tracked": true,
+      "corrected_threshold": "auto"
+    },
+    "pre_registration": {
+      "required_for_confirmation": true,
+      "fields": [
+        "metric_name (loss, MI, accuracy)",
+        "effect_size_min",
+        "test_duration_cycles",
+        "number_of_repetitions",
+        "holdout_ratio"
+      ]
+    },
+    "anomaly_lifecycle": {
+      "statuses": ["exploratory", "validated", "replicated", "rejected"],
+      "transition_rules": {
+        "exploratory -> validated": "p < corrected_alpha AND effect_size > min AND out_of_sample_confirmed",
+        "validated -> replicated": "successful independent run by another node or same node with different seed",
+        "any -> rejected": "failed replication or identified artifact"
+      }
+    },
+    "out_of_sample_validation": {
+      "holdout_ratio": 0.3,
+      "method": "random split of time series or experiment IDs"
+    }
+  },
+
+  "blind_experiment_controller": {
+    "id": "BLIND_CONTROLLER_PROTOCOL",
+    "description": "Модуль, управляющий распределением реальных и фиктивных стимулов, чтобы исключить влияние ожиданий экспериментатора.",
+    "design": {
+      "controller_node": "NAS (или выделенный сервер)",
+      "stimulus_types": ["real_beacon", "sham_beacon", "silence"],
+      "assignment": "рандомизированное, с фиксацией seed в зашифрованном виде",
+      "blind_level": "двойной слепой: ни исполняющие узлы, ни сборщик данных не знают тип стимула до окончания серии"
+    },
+    "key_management": {
+      "encryption": "AES-256-GCM",
+      "key_storage": "отдельный файл, не доступный узлам во время эксперимента",
+      "unveiling": "после завершения серии, ключ публикуется в реестре"
+    },
+    "validation": "После расшифровки проверяется, что распределение стимулов соответствовало заданному seed и не было изменено."
+  },
+"predictive_test_protocol": {
+    "id": "PREDICTIVE_TEST_PROTOCOL",
+    "description": "Финальная проверка любой устойчивой аномалии: если эффект сохраняется после всех контролей, система должна предсказать заранее неизвестную информацию.",
+    "procedure": {
+      "step1": "Генерируется скрытая случайная последовательность битов (не менее 128 бит).",
+      "step2": "Узлы проводят стандартный цикл экспериментов (без доступа к последовательности).",
+      "step3": "Анализируется, можно ли извлечь скрытую последовательность из данных с точностью выше случайной.",
+      "step4": "Успехом считается p < 0.001 после коррекции на множественные сравнения."
+    },
+    "status": "PENDING (активируется только после появления устойчивого эффекта)"
+  },
+
+  "current_state": {
+    "version": "v23.0 (hardware base)",
+    "components": [
+      {
+        "name": "NAS",
+        "role": "Оркестратор и хранилище",
+        "methodology_status": "Будет реализовывать Causality Layer и Blind Controller"
+      },
+      {
+        "name": "PC Titan",
+        "role": "Основной коллайдер",
+        "methodology_status": "Генерирует эволюционные тесты, отправляет команды"
+      },
+      {
+        "name": "Android",
+        "role": "Помощник и приёмник команд",
+        "methodology_status": "Исполняет тесты, логирует с monotonic time"
+      },
+      {
+        "name": "M5Cardputer",
+        "role": "Физический стимулятор",
+        "methodology_status": "Будет генерировать сигналы по командам, логировать с micros()"
+      }
+    ]
+  },
+
+  "next_steps": [
+    "1. Внедрить монотонные часы и логирование смещения на всех узлах.",
+    "2. Реализовать Blind Controller на NAS с генерацией рандомизированных команд.",
+    "3. Добавить в код статистическую коррекцию (Benjamini–Hochberg).",
+    "4. Провести первый цикл экспериментов в новом протоколе (с фиксацией causality_confidence_score).",
+    "5. По результатам – либо уточнять методологию, либо переходить к predictive_test_protocol."
+  ],
+
+  "provenance": {
+    "created_by": "Hawkar Yaks and JANUS",
+    "versions": [
+      {"version": "v24.2", "notes": "Интерпретационный протокол привлечения наблюдателей (заменён на строгий)."},
+      {"version": "v25.0", "notes": "Полный методологический переход: причинность, статистика, слепые эксперименты."}
+    ]
+  }
+}

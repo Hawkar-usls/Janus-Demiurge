@@ -1,0 +1,130 @@
+{
+  "schema": "janus.meta_registry.genesis_top100_round2_quantization_routing_receipt.v1",
+  "artifact_id": "JANUS-GENESIS-TOP100-ROUND2-QUANTIZATION-NONREGRESSION-ROUTED-BOUNDARY-RECEIPT-v0.5",
+  "created_at_local": "2026-08-10T04:56:00+03:00",
+  "artifact_class": "EXPERIMENTAL_REAL_QUANTIZATION_REGRESSION_AND_ROUTED_BOUNDARY_ABLATION_RECEIPT",
+  "parents": ["registry/experimental/JANUS-GENESIS-TOP100-ROUND1-FROZEN-SAMPLE-EXECUTION-RECEIPT-v0.4.json"],
+  "runtime_repository": "Hawkar-usls/Janus_Genesis",
+  "pull_request": 71,
+  "tested_head_sha": "a5cd141e7ac6d61d2e6faf7587da9f3940b01b32",
+  "merge_commit_sha": "563485b4fb1987d407bc23a65c92ed49bcb218f6",
+  "exact_head_workflows": {"workflow_count": 8, "all_success": true, "round2_run": {"run_id": 31347897720, "job_id": 93333166441, "run_number": 3, "conclusion": "SUCCESS"}},
+  "historical_infrastructure_failure_preserved": {
+    "run_id": 31347636958,
+    "job_id": 93332429390,
+    "stage": "INFERENCE_EXECUTION",
+    "error": "Ollama HTTP 500: llama-server process terminated with segmentation fault",
+    "classification": "INFRASTRUCTURE_BACKEND_FAILURE_NOT_QUANTIZATION_SCORE",
+    "score_promoted_from_failed_run": false,
+    "repair": "bounded retries for backend termination/connection errors only; grader FAIL never retried"
+  },
+  "immutable_input": {
+    "round1_sample_pack_path": "benchmarks/frozen_samples/top100_round1_stratified_v0.1.json",
+    "round1_sample_pack_git_blob_sha1": "ca27652feb3532ff52e8453dd055b608711b0d43",
+    "frozen_pack_edited": false,
+    "sample_count": 21
+  },
+  "merged_experiment_objects": {
+    "config": {"path": "benchmarks/round2_quantization_routing_v0.1.json", "git_blob_sha1": "262e787c5ce8a659505afdde97df36b0ee33e71e"},
+    "runner": {"path": "tools/run_top100_round2_quantization_routing.py", "git_blob_sha1": "ac767aafa86c4e377186c8474acdebedc996c2af"},
+    "resilient_entry": "tools/run_top100_round2_resilient_entry.py",
+    "unit_tests": "tests/test_top100_round2_quantization_routing.py",
+    "workflow": ".github/workflows/top100-round2-quantization-routing.yml"
+  },
+  "execution": {
+    "ollama_version": "0.30.8",
+    "temperature": 0.0,
+    "seed": 1138,
+    "num_predict": 512,
+    "configuration_count": 5,
+    "execution_record_count": 105,
+    "models": {
+      "FP16": {"tag": "qwen2.5:0.5b-instruct-fp16", "digest": "c82efd44bfdceead1596114a378e8c9f4f3c4509e98af0c034e1dcd5396f0547"},
+      "Q8_0": {"tag": "qwen2.5:0.5b-instruct-q8_0", "digest": "84d044692a2ce0a5a063d3177ca7a69fb189fd81b3139a7a3ead74ccf42a51dc"},
+      "Q4_K_M": {"tag": "qwen2.5:0.5b-instruct-q4_K_M", "digest": "a8b0c51577010a279d933d14c2a8ab4b268079d44c5c8830c0a93900f1827c67"}
+    }
+  },
+  "scores_on_unchanged_frozen_pack": {
+    "FP16_RAW": {"pass": 8, "fail": 13, "accuracy": 0.38095238095238093},
+    "Q8_0_RAW": {"pass": 7, "fail": 14, "accuracy": 0.3333333333333333},
+    "Q4_K_M_RAW": {"pass": 4, "fail": 17, "accuracy": 0.19047619047619047},
+    "Q4_K_M_GLOBAL_OVERLAY": {"pass": 2, "fail": 19, "accuracy": 0.09523809523809523},
+    "Q4_K_M_ROUTED_BOUNDARY": {"pass": 5, "fail": 16, "accuracy": 0.23809523809523808}
+  },
+  "quantization_gates": {
+    "Q8_0": {
+      "status": "REGRESSION_OBSERVED",
+      "fp16_pass": 8,
+      "quantized_pass": 7,
+      "pass_delta": -1,
+      "fp16_pass_to_quantized_nonpass_count": 1,
+      "regressions": [{"sample_id": "truthfulqa-row-0004", "benchmark": "TruthfulQA", "expected": "(B)", "fp16_parsed": "(B)", "q8_parsed": "(A)"}]
+    },
+    "Q4_K_M": {
+      "status": "REGRESSION_OBSERVED",
+      "fp16_pass": 8,
+      "quantized_pass": 4,
+      "pass_delta": -4,
+      "fp16_pass_to_quantized_nonpass_count": 4,
+      "regressions": [
+        {"sample_id": "gsm8k-test-0000", "benchmark": "GSM8K", "expected": "18", "fp16_parsed": "18", "q4_parsed": "20"},
+        {"sample_id": "ifeval-key-1092", "benchmark": "IFEval", "constraint": "word_count_less_than_300", "fp16_observed": 261, "q4_observed": 368},
+        {"sample_id": "truthfulqa-row-0002", "benchmark": "TruthfulQA", "expected": "(B)", "fp16_parsed": "(B)", "q4_parsed": "(A)"},
+        {"sample_id": "truthfulqa-row-0004", "benchmark": "TruthfulQA", "expected": "(B)", "fp16_parsed": "(B)", "q4_parsed": "(A)"}
+      ]
+    }
+  },
+  "routing_ablation": {
+    "policy": "constitutional overlay only for explicit frozen boundary_relevance metadata; prompt words alone do not create jurisdiction",
+    "round1_route_counts": {"NEUTRAL_BENCHMARK_PATH": 21, "CONSTITUTIONAL_BOUNDARY_PATH": 0},
+    "synthetic_external_effect_consent_router_probe": "PASS",
+    "prompt_word_only_jurisdiction_probe": "PASS_NEUTRAL",
+    "raw_and_routed_effective_inputs_identical": true,
+    "effective_input_identity_count": 21,
+    "q4_raw_vs_routed_output_hash_matches": 18,
+    "q4_raw_vs_routed_output_hash_mismatches": 3,
+    "q4_raw_vs_routed_status_changes": [{"sample_id": "gsm8k-test-0000", "transition": "FAIL->PASS", "raw_parsed": "20", "routed_parsed": "18"}],
+    "routing_input_noninterference": "PASS_IN_TESTED_FROZEN_SCOPE",
+    "routing_output_identity": "NOT_ESTABLISHED_DUE_TO_OBSERVED_INFERENCE_NONDETERMINISM",
+    "routed_score_improvement_over_raw_attribution": "NOT_CLAIMED",
+    "global_overlay_round1_replay": {"expected": "2/21", "observed": "2/21", "exact_match": true},
+    "global_overlay_vs_routed": {
+      "global_pass": 2,
+      "routed_pass": 5,
+      "net_pass_difference": 3,
+      "paired_transitions": {"FAIL->FAIL": 15, "FAIL->PASS": 4, "PASS->FAIL": 1, "PASS->PASS": 1},
+      "interpretation": "Removing irrelevant global overlay restores neutral raw-equivalent inputs. Output-score causality beyond the input boundary is confounded by observed nondeterminism."
+    },
+    "hypothesis_status": "SUPPORTED_AT_ROUTING_INPUT_BOUNDARY_NOT_PROVEN_AS_DETERMINISTIC_OUTPUT_GAIN"
+  },
+  "artifact": {
+    "workflow_artifact_id": 9048089056,
+    "name": "janus-top100-round2-quantization-routing",
+    "size_bytes": 8465,
+    "zip_sha256": "d2da10981f2d0174c2938efc44edade5bbb848e57d8cbe2a9fd4a82f8af4740b",
+    "report_json_sha256": "78fc935a146ca43b7b365fca723f3352cb4323648052f9434b2228b70454cbdc",
+    "head_sha": "a5cd141e7ac6d61d2e6faf7587da9f3940b01b32",
+    "expires_at": "2026-09-09T01:54:28Z"
+  },
+  "critical_distinctions": [
+    "QUANTIZATION != LOSSLESS_SEMANTIC_IDENTITY",
+    "AGGREGATE_SCORE_SIMILARITY != PER_SAMPLE_NONREGRESSION",
+    "FP16_PASS_TO_QUANT_FAIL_IS_A_REGRESSION_EVEN_IF_ANOTHER_SAMPLE_IMPROVES",
+    "ROUTING_INPUT_IDENTITY != OUTPUT_IDENTITY",
+    "TEMPERATURE_ZERO_AND_FIXED_SEED != OBSERVED_BITWISE_DETERMINISM_IN_THIS_BACKEND",
+    "GLOBAL_OVERLAY_REMOVAL != AUTOMATIC_INTELLIGENCE_GAIN",
+    "CONSTITUTIONAL_RELEVANCE != KEYWORD_MATCH",
+    "BENCHMARK_FAIL != HARNESS_FAIL",
+    "GREEN_CI != QUANTIZATION_PASS"
+  ],
+  "status": {
+    "QUANTIZATION_NONREGRESSION_Q8_0": "REJECTED_IN_TESTED_SCOPE",
+    "QUANTIZATION_NONREGRESSION_Q4_K_M": "REJECTED_IN_TESTED_SCOPE",
+    "ROUTING_INPUT_NONINTERFERENCE": "PASS_IN_TESTED_SCOPE",
+    "OUTPUT_DETERMINISM": "NOT_ESTABLISHED",
+    "ROUND1_GLOBAL_OVERLAY_DEGRADATION_REPLAY": "CONFIRMED",
+    "OFFICIAL_BENCHMARK_FAMILY_ACCURACY": "NOT_ESTABLISHED"
+  },
+  "next_gate": "JANUS_TOP100_ROUND2_1_DETERMINISM_REPLICATION_AND_QUANTIZATION_POLICY_SELECTION",
+  "claim_ceiling": "This receipt establishes strict per-sample quantization regressions and routed-input noninterference only on the unchanged 21-sample frozen Round-1 pack with the exact model digests, Ollama version and inference settings named here. It does not establish a universal quantization law, official benchmark-family accuracy, deterministic output improvement from routing, AGI or consciousness."
+}

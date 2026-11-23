@@ -1,0 +1,93 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1C5B2B2-D-CONNECTED-QALL-REALIZABLE-EFFECT-PROFILE-MULTIPLICITY-INDEPENDENT-REPLAY-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "PASS_INDEPENDENT_REPLAY_ZERO_MISMATCHES",
+  "gate": "R5_B1B1C5B2B2_D_CONNECTED_QALL_REALIZABLE_EFFECT_PROFILE_MULTIPLICITY_V1",
+  "binds": {
+    "prereg_blob": "cc1408c15c08b5de16a9652877386d7658d8fb0f",
+    "primary_result_blob": "5cc7c15892a5b226487f55239eaaee2cfbf2feb3",
+    "reachability_clarification_blob": "a536187e48f33a97d6238a89e9ed0d2b864772ea",
+    "B2B2_C_factorization_seal_blob": "8e4469c5e5e5f094b8013d29b8a22713f0ee1d8c",
+    "B2B2_A_confluence_seal_blob": "17d0d32714b345e08af797279ef61723779ee0ec",
+    "B2B2_B_identity_erasure_seal_blob": "3c43b3db1cb198582d9e7a2177d36d4dfbb28eb4",
+    "checker_blob": "543fbeba41e5fd71b1b267c332cc6e7d4d8b83e2"
+  },
+  "replay_method": "Re-derive the arbitrary-k family without using the primary result as an assumption. Check source validity, P7-freeness, nonterminal reachability, connected-Q_ALL persistence and injectivity of the canonical profile map.",
+  "checks": {
+    "root_source_state": [
+      "S={t,s4} is connected by edge t-s4.",
+      "Every dynamic vertex sees s4 but not t, so no outside vertex is complete to S and every dynamic source list is {1,2,3}.",
+      "z is the unique nonfixed vertex anticomplete to S, so Y0={z}.",
+      "Y0 has no edge, so axiom (iv) is vacuous.",
+      "Exactly R sees z and every such vertex has the same source 3-list, so axiom (vi) holds."
+    ],
+    "P7_free": [
+      "On bipartition (L union {z}, R), the neighborhoods are nested: N(l1) subset ... subset N(lk)=R=N(z). Hence this induced subgraph is a chain graph and has no induced P5 because an induced P5 contains an induced 2K2 on its first/last edges.",
+      "Every L/R vertex is adjacent to s4. In an induced path containing s4, any L/R vertex beyond an immediate path neighbor of s4 would create a chord to s4.",
+      "t has degree one and only attaches to s4. Therefore no induced P7 can use s4 or t either."
+    ],
+    "authorized_subset_forcing": [
+      "Only l1,...,l_{k-1} are optional; lk is retained.",
+      "L is stable, so previously forced left vertices create no new forbidden color on an unforced left vertex.",
+      "Every unforced left vertex therefore keeps color 1 available.",
+      "z is anticomplete to L, so Y0 is never removed by this forcing."
+    ],
+    "global_SAT_reachability": [
+      "For every subset F, color all L with 1, all R with 2, z with 3, s4 with 4 and t with 3.",
+      "All chain edges are 1-2, z-R edges are 3-2, seed edge is 3-4, and s4-dynamic edges are 4-(1 or 2).",
+      "Thus every prefix/subset state is globally extendable and nonterminal."
+    ],
+    "canonical_closure": [
+      "No source singleton arises: unforced left vertices remain 3-list, while a right vertex either remains {1,2,3} or shrinks to {2,3}.",
+      "X0 remains empty and no connectivity repair occurs.",
+      "z remains the sole residual component.",
+      "Every right vertex remains live; lk remains live and is adjacent to every right vertex."
+    ],
+    "connected_QALL": [
+      "The component carrier [z] is adjacent to every right vertex.",
+      "lk is adjacent to every right vertex.",
+      "Hence Q_ALL remains one connected block for every forced subset."
+    ],
+    "profile_injection": [
+      "The component carrier [z] canonically marks R as its dynamic neighborhood.",
+      "Therefore the dynamic vertices outside N([z]) are exactly the surviving left vertices.",
+      "For a surviving li, its number of neighbors in R is exactly i.",
+      "The set of these distinct degrees is exactly {i: li not in F}.",
+      "Hence the canonical profile uniquely recovers F and there are exactly 2^(k-1) profiles."
+    ],
+    "component_side_control": [
+      "C={z} has fixed base list [4] because X0 stays empty and D_C=R throughout.",
+      "Its message is good on every proper color mask and bad only on [4], so MIN_BAD={[4]}.",
+      "Thus the exponential profile multiplicity is not caused by changing component message identities."
+    ]
+  },
+  "negative_checks": {
+    "forcing_history_counted": false,
+    "new_seed_tau_identity_counted": false,
+    "cross_QALL_block_product_counted": false,
+    "different_local_reconstruction_witnesses_counted": false,
+    "future_distinguishability_claimed": false,
+    "strong_negative_claimed": false
+  },
+  "mismatch_count": 0,
+  "recomputed_terminal": "SUPERPOLYNOMIAL_REALIZABLE_CONNECTED_EFFECT_PROFILES__E_REQUIRED",
+  "promotions": {
+    "CONNECTED_CHAIN_QALL_PROFILE_FAMILY_Kk": "ARBITRARY_N_SOURCE_VALID",
+    "REALIZABLE_PROFILE_COUNT": "2^(k-1)",
+    "CONNECTED_QALL_PERSISTENCE": "PASS",
+    "FUTURE_DISTINGUISHABILITY": "OPEN_E_REQUIRED"
+  },
+  "scientific_ceiling": {
+    "B2B2_D": "REPLAY_CLEAN_EXPONENTIAL_PROFILE_WITNESS",
+    "B2B2_E": "UNLOCKED_NEXT",
+    "STRONG_CONNECTED_MULTIPLICITY_NEGATIVE": "NOT_PROVED",
+    "POLYNOMIAL_CONNECTED_CORE_CARRIER": "OPEN",
+    "R1_DECIDABILITY": "OPEN",
+    "R2_DECIDABILITY": "OPEN",
+    "C5C": "LOCKED",
+    "P_VS_NP": "OPEN"
+  },
+  "stop": true,
+  "return_to_HQ": true
+}

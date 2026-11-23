@@ -1,0 +1,156 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-R3C-1A-BRIAKOS-METHOD-MANIFEST-2026-08-14-v0.1",
+  "timestamp": "2026-08-14T15:24:00+03:00",
+  "version": "v0.1",
+  "title": "Frozen executable method manifest for Briakos 2026 same-lineage reproduction",
+  "observer": "Oleksandr Ahapov / Hawkar + JANUS",
+  "node_type": "pre_execution_method_manifest",
+  "status": "FROZEN_BEFORE_METRIC_EXECUTION",
+  "source_priority": [
+    "full authored thesis PDF",
+    "repository landing-page metadata only when the PDF is silent"
+  ],
+  "published_method_reconstruction": {
+    "input_field": "transliteratedWords",
+    "translatedWords_used": false,
+    "word_definition": "A retained source transliteration item after removal of non-word separators/numeric-only items under the frozen profile.",
+    "sign_tokenization": "Split each retained word on literal hyphen '-'.",
+    "distributional_scope": "Documents with at least one retained syllabic/transliteration word.",
+    "published_basic_targets": {
+      "records": 419,
+      "documents_with_syllabic_content": 336,
+      "numeric_or_logogram_only_excluded": 83,
+      "word_tokens": 1244,
+      "word_types": 573,
+      "sign_tokens": 2481,
+      "sign_types": 65,
+      "entropy_bits": 5.5826,
+      "hapax_word_types": 434,
+      "hapax_rate": 0.757,
+      "mean_word_length_signs": 1.99
+    }
+  },
+  "frozen_token_profiles": [
+    {
+      "id": "THESIS_LITERAL_ALPHA_v0.1",
+      "role": "PRIMARY_LITERAL_RECONSTRUCTION",
+      "retain_item_if": "string contains at least one ASCII A-Z or asterisk-series label and is not None/newline",
+      "exclude_if": ["empty", "None", "newline", "pure numeric literal", "pure Aegean/Unicode numeric glyph run", "pure separator/punctuation"],
+      "normalization": "Unicode NFC only; preserve source spelling, subscripts, plus compounds, asterisk labels and uncertainty marks",
+      "sign_split": "literal '-' only",
+      "plus_compounds": "preserve as one sign component because the thesis explicitly specifies hyphen splitting but does not specify '+' decomposition",
+      "post_execution_selection": false
+    },
+    {
+      "id": "PLUS_BASE_AMBIGUITY_v0.1",
+      "role": "METHOD_AMBIGUITY_PROBE",
+      "inherit": "THESIS_LITERAL_ALPHA_v0.1",
+      "plus_compounds": "for each hyphen component X+Y, retain X as the base label for sign-distribution calculations; preserve the original word for word-frequency reporting",
+      "reason": "The published 65-sign catalog may treat commodity/ligature compounds differently, while the thesis does not fully specify this normalization.",
+      "post_execution_selection": false
+    },
+    {
+      "id": "EXCLUDE_PLUS_AMBIGUITY_v0.1",
+      "role": "METHOD_AMBIGUITY_PROBE",
+      "inherit": "THESIS_LITERAL_ALPHA_v0.1",
+      "plus_compounds": "exclude words containing '+' from sign-distribution calculations while retaining a separate exclusion count",
+      "reason": "Tests the alternative interpretation that compound logograms are outside the syllabic 65-sign inventory.",
+      "post_execution_selection": false
+    }
+  ],
+  "deterministic_metrics": {
+    "entropy": "Shannon entropy base 2 over retained sign-token relative frequencies.",
+    "hapax_rate": "word types occurring exactly once divided by all retained word types.",
+    "mean_word_length": "arithmetic mean of number of retained hyphen-delimited sign components per retained word token.",
+    "cohens_d": "absolute difference of group means divided by pooled sample standard deviation using sample variances (ddof=1).",
+    "jsd_bits": "Jensen-Shannon divergence base 2 over sign distributions with union vocabulary and zero fill."
+  },
+  "register_test": {
+    "administrative_rule": "support equals Tablet, case-insensitive",
+    "ceremonial_rule": "support contains Stone or Vessel, case-insensitive",
+    "published_targets": {
+      "administrative_documents": 299,
+      "administrative_sign_tokens": 2139,
+      "ceremonial_documents": 37,
+      "ceremonial_sign_tokens": 342,
+      "jsd_bits": 0.0944,
+      "permutations": 5000,
+      "p_one_tailed": 0.018,
+      "null_mean": 0.060,
+      "null_95_percentile": 0.084
+    },
+    "permutation_unit": "document label",
+    "group_sizes_held_constant": true,
+    "JANUS_replay_seed": 20260814,
+    "seed_status": "JANUS_FROZEN_REPLAY_SEED_NOT_CLAIMED_AS_AUTHOR_ORIGINAL",
+    "p_value_family": [
+      "raw exceedances / B",
+      "Phipson-Smyth style (exceedances + 1)/(B + 1)"
+    ],
+    "post_execution_choice_between_p_conventions": false
+  },
+  "site_effect_test": {
+    "scope": "administrative Tablet records only",
+    "sites": ["Khania", "Phaistos"],
+    "published_targets": {
+      "Khania_word_tokens": 197,
+      "Khania_documents": 103,
+      "Khania_mean_word_length": 1.584,
+      "Phaistos_word_tokens": 43,
+      "Phaistos_mean_word_length": 2.326,
+      "Cohens_d": 0.623
+    }
+  },
+  "scribe_test": {
+    "qualifying_threshold_sign_tokens": 20,
+    "published_qualifying_scribes": 23,
+    "published_with_distinctive_bigram": 19,
+    "distinctive_threshold": 2.0,
+    "exact_expected_share_formula_status": "PARTIALLY_UNDERDETERMINED_FROM_PUBLIC_METHOD_DESCRIPTION",
+    "rule": "Always reproduce qualifying-scribe count. Bigram distinctiveness is METHOD_UNDERDETERMINED unless the implementation can be reconstructed without target-guided choices."
+  },
+  "formula_test": {
+    "ngram_n": [1, 2, 3, 4],
+    "score": "tablet_count * site_count * n",
+    "rank_top_k": 50,
+    "published_evaluation": {
+      "known_formula_elements": 9,
+      "hits_in_top50": 5,
+      "unique_formula_words": 4,
+      "precision_at_50": 0.10,
+      "recall_at_50": 0.444,
+      "f1": 0.163,
+      "enrichment": 3.1
+    },
+    "ground_truth_word_list_status": "NOT_FULLY_ENUMERATED_IN_THE_FROZEN_PUBLIC_METHOD_NOTES",
+    "rule": "Compute top-50 structural ranking, but do not invent a nine-item ground-truth list. Evaluation remains METHOD_UNDERDETERMINED until the exact list is recovered from the thesis text/source supplement."
+  },
+  "source_method_inconsistency_to_preserve": {
+    "formula_section_mentions_1448_tablets_with_syllabic_content": true,
+    "basic_corpus_section_reports_419_total_and_336_with_syllabic_content": true,
+    "policy": "Do not reconcile the 1448 statement by guessing. Record it as a source-method inconsistency and run formula ranking on the admitted 419-record historical source unless an explicit alternate corpus is identified."
+  },
+  "comparison_classes": [
+    "EXACT_MATCH",
+    "NUMERIC_COMPATIBLE",
+    "METHOD_AMBIGUITY_FAMILY",
+    "METHOD_UNDERDETERMINED",
+    "SOURCE_VERSION_DIVERGENCE",
+    "FAIL"
+  ],
+  "anti_overfit": {
+    "all_profiles_frozen_before_execution": true,
+    "published_values_may_not_select_profile": true,
+    "no_document_add_remove_after_result": true,
+    "no_posthoc_tokenization_change": true,
+    "report_all_profiles": true
+  },
+  "claim_ceiling": {
+    "method_manifest_frozen": true,
+    "metrics_executed": false,
+    "same_lineage_reproduction_established": false,
+    "independent_transcription_replication": false,
+    "new_anchor": false,
+    "decipherment": false
+  }
+}

@@ -1,0 +1,104 @@
+{
+  "schema_id": "janus.rowan.topa.exploratory_holdout_diagnostic.v1",
+  "date_utc": "2026-10-25",
+  "status": "EXPLORATORY_POSTHOC_DIAGNOSTIC_NO_SCIENTIFIC_VALIDATION",
+  "description": "Independent arithmetic reproduction and post-hoc zero-baseline falsifier for completed eight-case frozen BBC1 S2 pilot.",
+  "provenance": {
+    "assay": "BBC1_YEAST_Tsuboyama_2023_1TG0",
+    "original_public_data_sha256": "ca355a655381c95fe899d61a406251e0cd17d68bbabe287651d526fdeb821f87",
+    "source_run": "https://github.com/Hawkar-usls/Janus/actions/runs/40236409772",
+    "archive_run": "https://github.com/Hawkar-usls/janus-meta-registry/actions/runs/40236501093",
+    "source_receipt_path": "data/rowan/receipts/ROWAN-S2-40236409772-51508154de2623c0.json",
+    "source_receipt_file_sha256": "c7f0ffb81e490d6dd555d1b6b073838ec0ed9fffd9c6fe6551b781023aaeeb06",
+    "source_artifact_sha256": "36fcad17ce38f0781ca7adc0ae750dd99bc0c1fcd7be79ece56cafe52cc649e7",
+    "shadow_model_path": "data/rowan/feedback/FEEDBACK-RUN40236409772-38e04b8f73a81a21.json",
+    "shadow_model_sha256": "52e0d6e75d603f0596ac7938715e45fccaf38835fac0ed110176128e33d86cf3",
+    "topa_replay_path": "data/rowan/topa/TOPA-FEEDBACK-7a667618da092dd1.json",
+    "topa_replay_audit": "PASS_INDEPENDENT_SCALAR_COEFFICIENT_REPLAY"
+  },
+  "frozen_split": {
+    "training_mutations": [
+      "G53A",
+      "G48D",
+      "E27F",
+      "W38L",
+      "K13N",
+      "G64Q"
+    ],
+    "holdout_mutations": [
+      "Q44V",
+      "E42H"
+    ],
+    "training_size": 6,
+    "holdout_size": 2
+  },
+  "frozen_model": {
+    "intercept": -1.327737761434,
+    "weights": [
+      0.196413135791,
+      -0.045214428615
+    ],
+    "ridge": 1,
+    "scale": 10,
+    "wildtype_ptm": 0.927,
+    "wildtype_avg_lddt": 0.963,
+    "training_processed_label_mean": -1.3311312633054124,
+    "training_target": "THIRD_PARTY_PROCESSED_BBC1_ASSAY_LABEL"
+  },
+  "per_control": [
+    {
+      "mutation": "Q44V",
+      "processed_label": 0.4403790583360027,
+      "ptm": 0.927,
+      "avg_lddt": 0.97,
+      "features": {
+        "delta_ptm_times_10": 0,
+        "delta_avg_lddt_times_10": 0.07000000000000006
+      },
+      "shadow_prediction": -1.33090277143705,
+      "shadow_absolute_error": 1.7712818297730528,
+      "frozen_train_mean_baseline_prediction": -1.3311312633054124,
+      "frozen_train_mean_absolute_error": 1.7715103216414152,
+      "posthoc_zero_prediction": 0,
+      "posthoc_zero_absolute_error": 0.4403790583360027
+    },
+    {
+      "mutation": "E42H",
+      "processed_label": 1.3228887174599038,
+      "ptm": 0.93,
+      "avg_lddt": 0.972,
+      "features": {
+        "delta_ptm_times_10": 0.030000000000000027,
+        "delta_avg_lddt_times_10": 0.09000000000000008
+      },
+      "shadow_prediction": -1.32591466593562,
+      "shadow_absolute_error": 2.648803383395524,
+      "frozen_train_mean_baseline_prediction": -1.3311312633054124,
+      "frozen_train_mean_absolute_error": 2.654019980765316,
+      "posthoc_zero_prediction": 0,
+      "posthoc_zero_absolute_error": 1.3228887174599038
+    }
+  ],
+  "aggregates": {
+    "reported_shadow_holdout_mae": 2.210042607,
+    "recomputed_shadow_holdout_mae": 2.210042606584288,
+    "reported_train_mean_holdout_mae": 2.212765151,
+    "recomputed_train_mean_holdout_mae": 2.2127651512033655,
+    "train_mean_relative_improvement": 0.001230381189615484,
+    "posthoc_zero_holdout_mae": 0.8816338878979533,
+    "shadow_mae_over_posthoc_zero_mae": 2.5067577788481
+  },
+  "methodology": {
+    "predictor": "intercept + weight_ptm*10*(mutant_ptm-wt_ptm) + weight_lddt*10*(mutant_avg_lddt-wt_avg_lddt)",
+    "reference_comparison": "Zero-prediction reference selected AFTER viewing heldout data; sanity-check only, not preregistered benchmark.",
+    "independence": "Arithmetic recomputation from pinned immutable receipts, not independent wet-lab replication.",
+    "dataset_risk": "Eight mutations deliberately selected using processed label quantiles. Six/two split is fixed, but test cases are not an unbiased independent sample.",
+    "raw_assay_units_and_signed_direction": "UNVERIFIED",
+    "uncertainty": "N=2 holdout; no population inference or generalization claim.",
+    "production_promotion": "DENIED_SHADOW_ONLY",
+    "new_provider_jobs_authorized": false,
+    "new_provider_credits_spent": 0,
+    "boltz2_weights_modified": false
+  },
+  "next_gate": "Preregister a genuinely blind, independently sourced validation set, verify raw assay direction and transforms, and freeze all baselines/metrics before accessing outcomes. This exploratory result does not authorize paid experiments."
+}

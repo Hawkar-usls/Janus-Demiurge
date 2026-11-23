@@ -1,0 +1,78 @@
+{
+  "artifact_uuid": "JANUS-CONNECTION-SCAN-2026-08-13-023-DATA-BATCH-009",
+  "scan_type": "DATA_BATCH_CONNECTION_SCAN",
+  "status": "CANDIDATE_RELATIONS_WITH_PREDECESSOR_SPECIFICITY_CONTROL",
+  "method": "Extend the five-state edge-survival design with a same-successor/different-predecessor control to distinguish genuine predecessor-specific dependence from generic successor gating.",
+  "basis": "Continues SCAN-022, which separates freshness confounding from predecessor-specific temporal dependence.",
+  "connections": [
+    {
+      "id": "CONN-023-001",
+      "name": "SAME_SUCCESSOR_DIFFERENT_PREDECESSOR_CONTROL",
+      "relation": "A -> B versus C -> B",
+      "observation": "If the same successor B remains admissible after replacing predecessor A with structurally matched predecessor C, then the evidence for A-specific dependence is weakened.",
+      "claim_ceiling": "This is a discriminating control, not evidence that the predecessor is causally irrelevant."
+    },
+    {
+      "id": "CONN-023-002",
+      "name": "PREDECESSOR_SPECIFICITY_REQUIRES_ASYMMETRY",
+      "observation": "A strong predecessor-specific edge should show directional asymmetry: the real predecessor preserves the successor relation, while matched alternative predecessors do not, after freshness is held constant.",
+      "target_profile": {
+        "REAL": "present",
+        "BLIND": "present",
+        "TEMPORAL_REWIRED": "absent",
+        "MATCHED_NULL": "absent",
+        "FRESHNESS_ONLY_SHUFFLE": "present",
+        "ALTERNATIVE_PREDECESSOR": "absent"
+      }
+    },
+    {
+      "id": "CONN-023-003",
+      "name": "SUCCESSOR_GATE_VS_PREDECESSOR_EDGE",
+      "observation": "A generic gate may reject many altered predecessors equally. A predecessor-specific relation should reject the wrong predecessor more strongly than unrelated matched alternatives.",
+      "test": "Compare effect size for true-edge rewiring against a matched alternative-predecessor substitution."
+    },
+    {
+      "id": "CONN-023-004",
+      "name": "RELATION_SPECIFICITY_IS_DIRECTIONAL",
+      "observation": "Temporal recurrence alone is not enough: A->B and B->A must be treated as distinct candidate edges unless the JSON explicitly supports reversibility.",
+      "negative_control": "Do not symmetrize temporal edges during graph construction."
+    },
+    {
+      "id": "CONN-023-005",
+      "name": "PROVENANCE_LINEAGE_IS_NOT_PREDECESSOR_SPECIFICITY",
+      "observation": "Repeated version/parent lineage can create a trivial predecessor-successor relation. Such direct lineage must be scored separately from cross-domain operator recurrence.",
+      "rule": "Lineage-only matches are not eligible for the strongest Connection class without an additional relation-specific control."
+    }
+  ],
+  "edge_survival_matrix_v3": {
+    "states": [
+      "REAL",
+      "BLIND",
+      "TEMPORAL_REWIRED",
+      "MATCHED_NULL",
+      "FRESHNESS_ONLY_SHUFFLE",
+      "ALTERNATIVE_PREDECESSOR"
+    ],
+    "primary_profile": {
+      "REAL": "present",
+      "BLIND": "present",
+      "TEMPORAL_REWIRED": "absent",
+      "MATCHED_NULL": "absent",
+      "FRESHNESS_ONLY_SHUFFLE": "present",
+      "ALTERNATIVE_PREDECESSOR": "absent"
+    },
+    "strong_interpretation": "A candidate is substantially stronger when it survives semantic/provenance blinding and freshness-only manipulation, but collapses when the specific predecessor relation is rewired or replaced by a matched alternative predecessor.",
+    "status": "DESIGNED_NOT_EXECUTED_AS_A_FULL_PERMUTATION_EXPERIMENT"
+  },
+  "execution_requirements": [
+    "Freeze extraction rule before inspecting outcomes.",
+    "Match predecessor and alternative-predecessor on schema and relevant marginal structure.",
+    "Preserve external freshness-equivalent state across temporal rewiring and alternative-predecessor substitutions.",
+    "Do not use prior Connection labels as features during scoring.",
+    "Report continuous effect sizes and null distributions, not only binary present/absent outcomes.",
+    "Keep direct parent-child/version lineage separate from cross-domain relational candidates."
+  ],
+  "important_negative_control": "If REAL, REWIRED, and ALTERNATIVE_PREDECESSOR all remain positive, the apparent temporal connection is better interpreted as a generic successor gate rather than a specific predecessor edge.",
+  "epistemic_boundary": "No causal or physical claim is promoted by this scan. It defines a stronger falsification-oriented test for data-level temporal connections.",
+  "next_gate": "Run the six-state matched permutation benchmark on concrete JSON pairs and estimate predecessor-specific effect size versus freshness-only and schema-matched null controls."
+}

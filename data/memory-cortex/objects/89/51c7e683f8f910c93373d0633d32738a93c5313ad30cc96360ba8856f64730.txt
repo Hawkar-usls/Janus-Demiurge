@@ -1,0 +1,102 @@
+{
+  "artifact_uuid": "JANUS-ENGINE-R0C-THREE-STATE-SORBENT-CAROUSEL-v1.0",
+  "timestamp": "2026-08-30T00:11:00+03:00",
+  "version": "v1.0",
+  "title": "JANUS Engine R0C — Three-State Sorbent Carousel",
+  "observer": "Hawkar / JANUS",
+  "node_type": "research_gate",
+  "branch_name": "Janus Engine",
+  "parent": "data/JANUS-ENGINE-v1.0.json",
+  "status": "OPEN_MEASUREMENT_GATE",
+  "goal": "Test whether multiple annular sorbent sections can provide quasi-continuous service by operating in staggered CAPTURE, REGENERATION and COOLING states while nitrogen is cascaded through cooling, regeneration and inert-service duties.",
+  "architecture": {
+    "state_A": {
+      "name": "CAPTURE",
+      "role": "Active sorption / purification duty on the selected process stream until the declared breakthrough criterion is reached."
+    },
+    "state_B": {
+      "name": "REGENERATION",
+      "role": "Restore sorbent working capacity by controlled purge and/or thermal regeneration. Nitrogen is a candidate purge medium where chemically and materially appropriate."
+    },
+    "state_C": {
+      "name": "COOLING",
+      "role": "Return the regenerated sorbent to its required capture temperature before it is placed back on stream."
+    },
+    "rotation_logic": "R1: CAPTURE -> REGENERATION -> COOLING -> CAPTURE; R2 and R3 follow the same cycle with phase offsets so one section may remain available for capture while the others regenerate and cool.",
+    "switching": "Functional state switching should be accomplished by controlled flow routing and valves; physical ring rotation is a separate geometric option and is not required for the three-state thermodynamic cycle."
+  },
+  "nitrogen_cascade_hypothesis": {
+    "principle": "Do not treat separated N2 as a single-use waste stream if useful temperature, pressure or inerting capacity remains.",
+    "candidate_sequence": [
+      "cold N2 cools the regenerated sorbent section",
+      "warmer N2 may then serve as regeneration purge where conditions permit",
+      "remaining N2 may serve as an inert barrier or purge between oxygen-rich and hot/mechanical regions",
+      "only after useful duties are exhausted is the stream vented, recycled or otherwise dispositioned"
+    ],
+    "hard_boundary": "Nitrogen does not generate refrigeration merely by being nitrogen. Sub-ambient cooling requires a real refrigeration/expansion process or another colder source, and the energy cost must be included in the balance."
+  },
+  "minimum_measurements": [
+    "sorbent identity and mass per ring",
+    "capture inlet/outlet composition",
+    "breakthrough time",
+    "capture temperature and pressure",
+    "regeneration inlet/outlet temperature",
+    "regeneration gas flow and composition",
+    "regeneration energy",
+    "cooldown time",
+    "cold-N2 inlet/outlet temperature",
+    "cold-N2 mass flow",
+    "pressure drop in each state",
+    "residual loading after regeneration",
+    "working capacity after repeated cycles",
+    "switching dead time",
+    "total auxiliary electrical/mechanical power"
+  ],
+  "timing_model": {
+    "capture_duration": "tau_capture",
+    "regeneration_duration": "tau_regen",
+    "cooling_duration": "tau_cool",
+    "continuous_service_condition": "The number of phased sections and their cycle timing must provide at least one capture-ready section over the intended duty cycle, including switching margin.",
+    "first_three_section_test": "Evaluate whether tau_capture, tau_regen and tau_cool can be scheduled with three phase-offset sections without unacceptable gaps or oversizing."
+  },
+  "energy_accounting": {
+    "required_terms": [
+      "compression power",
+      "refrigeration or expansion power",
+      "regeneration heat",
+      "valve and pumping losses",
+      "pressure-drop penalty",
+      "rotational power if the physical ring is rotating"
+    ],
+    "optimization_objective": "Maximize useful sequential duties obtained from each separated stream before disposal while minimizing exergy destruction and auxiliary power."
+  },
+  "success_metrics": {
+    "primary": "Repeated CAPTURE -> REGENERATION -> COOLING operation with recoverable sorbent capacity and no process interruption beyond the declared switching tolerance.",
+    "secondary": [
+      "stable working capacity across cycles",
+      "measured N2 cooling duty",
+      "measured N2 regeneration usefulness",
+      "net energy cost per unit of useful purified gas",
+      "fraction of N2 exergy used before vent or recycle"
+    ]
+  },
+  "failure_modes_to_watch": [
+    "regeneration slower than capture causing unavoidable service gaps",
+    "cooling duty exceeds available cold-N2 capacity",
+    "sorbent degrades or loses working capacity",
+    "water or CO2 freezes in cold passages",
+    "pressure drop dominates useful process gain",
+    "cross-contamination between oxygen-rich and regeneration streams",
+    "nitrogen recycle accumulates contaminants",
+    "thermal cycling damages seals or annular structure"
+  ],
+  "hard_invariants": [
+    "CAPTURE_REGENERATION_AND_COOLING_ARE_DISTINCT_THERMODYNAMIC_STATES",
+    "N2_IS_A_SERVICE_STREAM_NOT_A_FREE_COLD_SOURCE",
+    "ALL_REFRIGERATION_AND_REGENERATION_ENERGY_MUST_BE_COUNTED",
+    "OXYGEN_RICH_PATHS_REQUIRE_OXYGEN_COMPATIBLE_MATERIALS_AND_CLEANLINESS",
+    "NO_CONTINUOUS_OPERATION_CLAIM_WITHOUT_MEASURED_CYCLE_TIMES",
+    "MULTI_USE_STREAM_CASCADING_IS_AN_OPTIMIZATION_GOAL_NOT_AN ENERGY_CREATION_MECHANISM"
+  ],
+  "next_gate": "R0C1_SORBENT_AND_DUTY_FREEZE: select one sorbent, one contaminant-removal duty, one annular geometry and one N2 service-flow envelope; then measure tau_capture, tau_regen, tau_cool and full energy balance before coupling to oxygen liquefaction or an engine core."
+}

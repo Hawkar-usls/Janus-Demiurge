@@ -1,0 +1,69 @@
+{
+  "artifact_id": "JANUS-RAMANUJAN-PRODUCT-SIDE-CERTIFIED-BOUNDS-2026-08-25-v1.0",
+  "status": "PRODUCT_SIDE_ANALYTIC_CERTIFICATES_REMOTE_CI_PASS",
+  "implementation": {
+    "repository": "Hawkar-usls/Janus-Demiurge",
+    "path": "restored/ramanujan_product_certified.py",
+    "commit": "1a658fd061707b00148d0417aed5d3d4fdc748a7",
+    "test_path": "tests/test_ramanujan_product_certified.py",
+    "test_commit": "957a674c1f7137df36dace623a685dfb21459947"
+  },
+  "certified_functions": {
+    "phi_product": {
+      "identity": "(-q;q^2)_inf^2 (q^2;q^2)_inf",
+      "domain": "exact rational 0<=q<1",
+      "tail_interval": "1-S_even <= T <= 1/(1-S_plus)^2",
+      "tail_sums": ["S_plus=q^(2N+1)/(1-q^2)", "S_even=q^(2N+2)/(1-q^2)"]
+    },
+    "psi_product": {
+      "identity": "(q^2;q^2)_inf/(q;q^2)_inf",
+      "domain": "exact rational 0<=q<1",
+      "tail_interval": "1-S_even <= T <= 1/(1-S_odd)",
+      "tail_sums": ["S_even=q^(2N+2)/(1-q^2)", "S_odd=q^(2N+1)/(1-q^2)"]
+    },
+    "ramanujan_f_product": {
+      "identity": "(-a;ab)_inf(-b;ab)_inf(ab;ab)_inf",
+      "domain": "exact rational a>=0,b>=0,0<ab<1",
+      "tail_interval": "1-S_ab <= T <= 1/[(1-S_a)(1-S_b)]",
+      "tail_sums": ["S_a=a(ab)^N/(1-ab)", "S_b=b(ab)^N/(1-ab)", "S_ab=(ab)^(N+1)/(1-ab)"]
+    }
+  },
+  "proof_primitive": {
+    "minus_product": "for x_k in [0,1), product(1-x_k)>=1-sum(x_k)",
+    "plus_product": "if S=sum(x_k)<1 then product(1+x_k)<=1/(1-S)",
+    "result": "exact rational finite product plus exact rational multiplicative tail interval"
+  },
+  "dispatcher_promotion": {
+    "path": "restored/ramanujan_proof_first_dispatcher.py",
+    "commit": "74c705dd71df02c8da5c7eed9cfa83d93101f8ce",
+    "schema": "janus.ramanujan_proof_first_dispatcher.v3",
+    "test_commit": "810b2043b909844699a9903b75448e0c721ffe06",
+    "remote_ci_run": 32863018089,
+    "remote_ci": "PASS_PY311_PY312_PY313"
+  },
+  "negative_gate": {
+    "case": "phi_product q=0.999 abs_error=1e-12 max_terms=64",
+    "expected": "NOT_CERTIFIED_WITHIN_BUDGET"
+  },
+  "authority": {
+    "network": false,
+    "filesystem_mutation": false,
+    "scheduler": false,
+    "runtime_admission": false,
+    "mining_or_submit": false,
+    "proof_acceptance": false,
+    "automatic_control": false
+  },
+  "laws_added": [
+    "FINITE_PRODUCT_NE_INFINITE_PRODUCT_WITHOUT_TAIL_BOUND",
+    "PRODUCT_TAIL_INTERVAL_MUST_REMAIN_VISIBLE",
+    "PROOF_DOMAIN_RESTRICTION_MUST_REMAIN_VISIBLE",
+    "CERTIFIED_ERROR_BOUND_NE_RUNTIME_AUTHORITY"
+  ],
+  "next_frontier": [
+    "validated rounding-aware interval or ball arithmetic",
+    "rigorous complex-q certification",
+    "sharper product-tail inequalities near |q|=1 to reduce term budget",
+    "independent external high-precision implementation cross-check without authority promotion"
+  ]
+}

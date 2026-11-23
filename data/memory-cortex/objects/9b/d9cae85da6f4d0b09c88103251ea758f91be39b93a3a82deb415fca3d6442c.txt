@@ -1,0 +1,90 @@
+{
+  "artifact_uuid": "JANUS-RECORD-DRIFT-v0.2-FULL-SURFACE-FIRST-CHECK",
+  "date": "2026-08-15",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "status": "FULL_SURFACE_BOOTSTRAP_PASS_WITH_DIAGNOSTIC_FALSE_R9_CORRECTED",
+  "protocol": "data/JANUS-RECORD-DRIFT-OBSERVATORY-v0.2.json",
+  "first_full_surface_run": {
+    "workflow_run_id": 31883874486,
+    "head_sha": "628643e395ffc405e9f131cb56e827faf151ed4a",
+    "journal": "registry/record_drift/JANUS-RECORD-DRIFT-JOURNAL-20260815T120926Z.json",
+    "instrument_self_tests": "8/8 PASS",
+    "summary_as_emitted": {
+      "countable_checks": 9,
+      "R0_STABLE": 8,
+      "R9_JOURNAL_CHAIN_BREAK": 1,
+      "R10_UNEXPLAINED_CONFIRMED_DRIFT": 0
+    },
+    "R9_audit": {
+      "classification": "FALSE_POSITIVE_MEASUREMENT_LOGIC",
+      "cause": "git log --follow rename-similarity traversal on append-only journal files with similar content returned the creation commit of an older journal path instead of the exact current journal path",
+      "misresolved_commit": "8f4fb9443ef0bb8aff176b9b6f32a08149528930",
+      "misresolved_commit_actual_role": "created JANUS-RECORD-DRIFT-JOURNAL-20260814T083123Z.json on 2026-08-14",
+      "rule": "Historical v0.2 journal is retained unchanged as a detector-failure witness; it is not counted as evidence of record mutation."
+    },
+    "clock_quality_observation": {
+      "source": "timedatectl",
+      "NTPSynchronized": false,
+      "interpretation": "GitHub hosted-runner wall-clock is not admitted as a strong independent temporal-order witness in this run; timestamps remain provenance metadata but high-stakes temporal claims require stronger external time evidence."
+    }
+  },
+  "hotfix": {
+    "version": "0.2.1-runner-hotfix",
+    "runner": "tools/record_drift/full_surface_runner_v0_2_1.py",
+    "fix": "exact-path creation commit lookup without --follow",
+    "workflow_run_id": 31883932126,
+    "workflow_head_sha": "ef187a59bd54a2b98d21a56c28fa4b408dec7703",
+    "journal": "registry/record_drift/JANUS-RECORD-DRIFT-JOURNAL-20260815T121043Z.json",
+    "result": {
+      "instrument_gate_pass": true,
+      "countable_checks": 9,
+      "R0_STABLE": 9,
+      "R9_JOURNAL_CHAIN_BREAK": 0,
+      "R10_UNEXPLAINED_CONFIRMED_DRIFT": 0,
+      "unexplained_confirmed_drift": false
+    }
+  },
+  "new_full_surface_controls_activated": [
+    "protocol/runner/workflow Git blob identities",
+    "SHA-256 and SHA-512 raw fixity",
+    "64 KiB chunk SHA-256 list",
+    "JSON canonical hash when applicable",
+    "three-path pinned Git retrieval: local checkout, raw.githubusercontent.com, GitHub Contents API",
+    "replica agreement classification",
+    "HTTP status/final URL/validators/cache headers/content metadata",
+    "DNS observed address set",
+    "TLS version/cipher/ALPN/certificate SHA-256 and certificate metadata",
+    "HTTP and TLS latency",
+    "runtime OS/kernel/Python/dependency snapshot hash/locale",
+    "filesystem metadata",
+    "clock synchronization state",
+    "measurement-state enum for missing/unsupported/not-applicable fields",
+    "eight mandatory synthetic instrument self-tests"
+  ],
+  "instrument_self_tests": [
+    "HASH_KNOWN_ANSWER",
+    "ONE_BYTE_DRIFT",
+    "CANONICAL_EQUIVALENCE",
+    "TIMEZONE_EQUIVALENCE",
+    "PARSER_PROFILE",
+    "IDENTITY_SWITCH",
+    "REPLICA_DIVERGENCE",
+    "JOURNAL_TAMPER"
+  ],
+  "claim_ceiling": {
+    "record_drift_detected": false,
+    "R9_detected_after_hotfix": false,
+    "R10_detected": false,
+    "retrocausality": false,
+    "timeline_change": false,
+    "reality_rewrite": false,
+    "false_positive_was_measurement_system_bug": true
+  },
+  "next_requirements": [
+    "accumulate repeated v0.2.1 daily full-surface journals",
+    "add a stronger independent clock/time-authority witness before temporal-order anomaly claims",
+    "add a non-GitHub independent vantage point for strong remote-drift replication",
+    "add presentation/browser/game-specific capture plugin for UI timestamp hypotheses such as the motivating Dota observation",
+    "preserve all failed/false-positive detector outputs as immutable audit evidence"
+  ]
+}

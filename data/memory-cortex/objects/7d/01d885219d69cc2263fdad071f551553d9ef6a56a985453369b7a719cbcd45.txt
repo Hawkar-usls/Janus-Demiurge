@@ -1,0 +1,138 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1C5B2-COMPLETE-COVER-CHORD-CLASSIFIER-PREREG-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "FROZEN_PREREG__AUTHORIZED",
+  "gate": "R5_B1B1C5B2_COMPLETE_COVER_CHORD_CLASSIFIER_V1",
+  "purpose": "Provide a symbolic per-cell/per-pair classifier over the sealed B1 complete local cover. Never materialize the global Cartesian product of grammar cells.",
+  "binds": {
+    "B1_cover_seal_fund_commit": "8c998bd8813af291440ca358f333c069a94aaa5e",
+    "B1_cover_seal_meta_commit": "6790616ae51c6dcb5d4a1ff4e6c89ca4e3a3c3fe",
+    "B1_cover_seal_blob": "046ae80d568da9349fc80e870d119da37bf5d419",
+    "B1_checker_blob": "3c5fc34ef8d2b858df2e3e51f51ff30a1f974509",
+    "exact_interface_result_blob": "b8e177c483821517add138a632bc3e94499f1889",
+    "C0_message_seal_blob": "0dbebe81f52a5b8411199fc44614bf8c17b6dd95"
+  },
+  "input_output_contract": {
+    "input": "One canonical B1 grammar cell plus one unordered pair of distinct positions (normally a nonconsecutive P7 chord obligation).",
+    "output": [
+      "SOURCE_STATUS",
+      "REPRESENTATION_DELTA",
+      "EXTENSION_DELTA",
+      "CERTIFICATE"
+    ],
+    "runtime": "classification(cell,pair) must run in time polynomial in the serialized extracted annotation size; no global grammar materialization is allowed."
+  },
+  "lifecycle_firewall": [
+    "B1 proved finite coverage for fixed s, not polynomial enumerability of the full product grammar.",
+    "B2 must be rule-driven/lazy. It may inspect only the supplied cell/pair plus constant-size C0 message data and declared local certificates.",
+    "No algorithm may enumerate 12138 role strings × 877 partitions × 2^21 graphs × remaining annotation products as part of classification."
+  ],
+  "statuses": {
+    "source_status": [
+      "FORCED_EDGE",
+      "FORCED_NONEDGE",
+      "OPTIONAL_LOCAL",
+      "INCONSISTENT_CELL",
+      "UNKNOWN_GLOBAL_REALIZABILITY"
+    ],
+    "source_status_semantics": "OPTIONAL_LOCAL means neither bit is forbidden by the source constraints represented in the local cell. It is not a theorem that both alternatives have global source-valid realizations.",
+    "representation_delta": [
+      "NONE",
+      "IDENTITY_ONLY",
+      "FIXED_COLOR_MASK_CHANGE",
+      "EXACT_DYNAMIC_LIST_CHANGE",
+      "COMPONENT_BASE_SYSTEM_CHANGE",
+      "D_C_CHANGE",
+      "MESSAGE_CHANGE",
+      "BOUNDARY_RELATION_CHANGE_OR_UNKNOWN",
+      "GRAPH_U_CHANGE",
+      "COMPONENT_CELL_CHANGE",
+      "SOURCE_ILLEGAL"
+    ],
+    "extension_delta": [
+      "PROVED_NEUTRAL",
+      "PROVED_NONNEUTRAL",
+      "UNKNOWN"
+    ]
+  },
+  "exact_objects": {
+    "dynamic_palette": "For dynamic u, chi_S(u), chi_X0(u), L_P(u)=[4]\\chi_S(u), A(u)=[4]\\(chi_S(u) union chi_X0(u)).",
+    "component_message": "mu_C and MIN_BAD(C) are equivalent representations of the same monotone component function.",
+    "boundary_relation": "For legal boundary coloring gamma, R_C(gamma)=mu_C(F_D(gamma)), where F_D(gamma)={gamma(v):v in D_C}.",
+    "exact_interface_firewall": "Two raw distinctions may be collapsed only when every frozen downstream observation and reconstruction obligation factors through the retained invariant, following the sealed EXACT_INTERFACE adequacy pattern."
+  },
+  "built_in_rules": {
+    "B_X0_palette_redundancy": {
+      "premise": "One endpoint is dynamic u, the other is fixed X0 identity of color c; compare presence/absence of that identity edge while all other fixed-color data are frozen.",
+      "neutral_iff": "c is already in chi_S(u) union chi_X0_without_this_identity(u).",
+      "representation_if_neutral": "IDENTITY_ONLY",
+      "extension": "PROVED_NEUTRAL for the final list-coloring relation because color c was already unavailable at u and no other graph relation changes.",
+      "representation_if_new_color": "FIXED_COLOR_MASK_CHANGE + EXACT_DYNAMIC_LIST_CHANGE",
+      "extension_if_new_color": "UNKNOWN unless an exact downstream proof or distinguishing legal coloring is supplied."
+    },
+    "C_X0_redundancy": {
+      "premise": "One endpoint is selected representative z in residual C, the other is fixed X0 identity of color c; compare that identity incidence only.",
+      "neutral_if": "c remains present in chi_X0^C(z) after deleting this identity, i.e. another same-color X0 neighbor of z exists.",
+      "representation_if_neutral": "IDENTITY_ONLY at the declared local base-list coordinate; B_C(z) unchanged.",
+      "extension_if_neutral": "PROVED_NEUTRAL only when the certificate states that no other internal base-list coordinate or component relation is changed by this identity distinction. Then the whole component list system is unchanged, hence mu_C/MIN_BAD/R_C unchanged.",
+      "representation_if_new_color": "COMPONENT_BASE_SYSTEM_CHANGE",
+      "message_delta": "UNKNOWN until recomputed/proved; never auto-promote to MESSAGE_CHANGE."
+    },
+    "B_B_disjoint_palette": {
+      "premise": "Both endpoints are dynamic u,v and the distinction is exactly adjacency uv with all lists/other relations frozen.",
+      "neutral_if": "A(u) cap A(v)=empty.",
+      "representation": "GRAPH_U_CHANGE",
+      "extension": "PROVED_NEUTRAL because every list-respecting coloring already has c(u)!=c(v), so the edge constraint is tautological. Exact reconstruction is unchanged."
+    },
+    "B_C_boundary_relation": {
+      "premise": "Compare source-consistent states in which dynamic b is anticomplete versus complete to residual component C, with the same component message mu_C and all other declared boundary structure frozen. Thus D'_C=D_C union {b}.",
+      "exact_criterion": "R_C and R'_C are equal on every legal boundary coloring gamma iff mu_C(F_D(gamma))=mu_C(F_D(gamma) union {gamma(b)}) for every legal gamma.",
+      "cheap_sufficient_neutrality": "For every F subseteq [4] and every alpha in A(b), mu_C(F)=mu_C(F union {alpha}). Because the ground set has only 16 masks and 4 colors, this certificate is constant-time after message-table decode.",
+      "extension_if_certificate": "PROVED_NEUTRAL for the component extension relation, provided the comparison is source-consistent and no other downstream relation changes.",
+      "nonneutrality": "An abstract mask inequality is NOT enough. PROVED_NONNEUTRAL requires an explicit source-valid/legal boundary coloring gamma (or an exact reachability certificate) witnessing different R_C values.",
+      "otherwise": "UNKNOWN."
+    }
+  },
+  "further_rules": [
+    "Same-component/different-component C-C distinctions are interpreted only after the B1 component partition is fixed; no single-edge repair semantics is allowed.",
+    "B-S, C-S, X0-S, S-S and other pair classes not covered by an exact neutrality theorem default to representation classification where possible and EXTENSION_DELTA=UNKNOWN.",
+    "An actual P7 chord is an already-present edge in the input. B2 classifies whether that structural distinction is downstream-redundant; it does not insert edges."
+  ],
+  "symbolic_classifier_requirements": [
+    "Validate the supplied B1 cell locally; inconsistent cells return INCONSISTENT_CELL.",
+    "Classify the pair using only O(poly(serialized cell)) operations.",
+    "Decode a component message from one of the sealed 168 monotone tables in O(1) finite work.",
+    "Never enumerate boundary assignments for B-C neutrality when the universal 16×4 sufficient certificate applies.",
+    "Use UNKNOWN rather than infer NONNEUTRAL from representation change.",
+    "Every PROVED_NEUTRAL result must emit a compact replayable certificate identifying the exact rule and frozen coordinates.",
+    "Every PROVED_NONNEUTRAL result must emit a concrete legal/source-valid distinguishing witness or a separately sealed exact reachability certificate."
+  ],
+  "nonredundant_transition_id": {
+    "name": "kappa(cell,pair)",
+    "status": "CANDIDATE_OUTPUT_NOT_GLOBAL_THEOREM",
+    "definition": "A canonical ID may merge raw pair distinctions only when a sealed adequacy proof shows identical frozen downstream relation/reconstruction contract. Otherwise distinct or UNKNOWN transitions remain separate.",
+    "C5C_use": "C5C may count only such proof-distinct nonredundant transition IDs, not raw graph edges."
+  },
+  "terminals": {
+    "PASS_SYMBOLIC_COMPLETE_CHORD_CLASSIFIER": "For every B1 cell/pair input, the rule engine terminates in polynomial time with a sound source/representation/extension status; unsupported semantics returns UNKNOWN.",
+    "PASS_GLOBAL_NEUTRALITY_RULES": "The universal B-X0 redundant-color, B-B disjoint-palette, and scoped C-X0 same-color-redundancy rules are theorem-sealed with replay certificates.",
+    "PASS_SOURCE_VALID_EXTENSION_NEUTRAL_WITNESS": "A more complex class such as B-C has a real source-valid witness and exact boundary-relation equality.",
+    "PASS_SOURCE_VALID_EXTENSION_NONNEUTRAL_WITNESS": "A real source-valid/legal boundary witness proves a distinction that the quotient must retain.",
+    "OPEN_EXTENSION_CLASS": "Representation is classified but downstream extension effect is unresolved."
+  },
+  "falsifiers": [
+    "Classifier runtime depends on global grammar enumeration.",
+    "A PROVED_NEUTRAL output changes any frozen downstream observation or reconstruction obligation.",
+    "A B-C PROVED_NONNEUTRAL output is based only on an unreachable abstract mask/color pair.",
+    "C-X0 identity redundancy changes another internal base-list coordinate or component relation not included in its certificate.",
+    "A source-valid extracted cell/pair cannot be assigned a sound terminal status."
+  ],
+  "locks": {
+    "C5C": "LOCKED_UNTIL a proof-distinct nonredundant transition quotient exists for the complete local cover.",
+    "FULL_L2_REPAIR": "OPEN",
+    "LEMMA11_P7_LIFT": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  }
+}

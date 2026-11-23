@@ -1,0 +1,505 @@
+{
+  "artifact_id": "JANUS-PRINCIPLE-JDTC-40-RIVER-RESULT-2026-11-06-v1.0",
+  "title": "The Janus Principle: 40-river dual-phase temporal calibrator experimental outcome",
+  "date": "2026-11-06",
+  "language": "ru",
+  "schema_version": "1.0",
+  "registry": {
+    "repository": "Hawkar-usls/janus-meta-registry",
+    "path": "registry/uap/JANUS-PRINCIPLE-JDTC-40-RIVER-RESULT-2026-11-06-v1.0.json",
+    "mode": "APPEND_ONLY"
+  },
+  "parent_artifact": "registry/uap/JANUS-PRINCIPLE-v1.0.json",
+  "source_model": "Hawkar-usls/Janus-Demiurge/janus_model/model.py",
+  "training_script": "Hawkar-usls/Janus-Demiurge/experiments/ocean_transformer/janus_principle_jdtc.py",
+  "workflow_script": "Hawkar-usls/Janus-Demiurge/.github/workflows/janus-principle-jdtc-40-river.yml",
+  "run": {
+    "repository": "Hawkar-usls/Janus-Demiurge",
+    "run_id": 42137543171,
+    "url": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/42137543171",
+    "git_commit": "c75830b729c531cdd283388e921fe0f106342cf5",
+    "started_at": "2026-11-06T00:32:19Z",
+    "finished_at": "2026-11-06T00:35:47Z",
+    "wall_seconds": 208,
+    "conclusion": "success",
+    "jobs_total": 43,
+    "workers_requested": 40,
+    "workers_success": 40,
+    "worker_parallelism_requested_max": 40,
+    "observed_available_concurrency_context": "Earlier JANUS 40-worker run showed up to 20 executing simultaneously; current run matrix counts are not verified peak GPU/CPU machines.",
+    "runner_type": "ubuntu-latest, standard CPU hosted",
+    "machine_account_plan_limit": "Account entitlements unverified; do not claim 40 concurrent runners.",
+    "nas_or_local_pc_used": false,
+    "existing_production_code_or_checkpoint_changed": false
+  },
+  "dataset": {
+    "source": "real JSON-addition first-parent commit chronology of Hawkar-usls/janus-meta-registry",
+    "original_git_head": "63e21da910339283d5070cc9ed80f4a74c2a42bf",
+    "source_snapshot_sha256": "b2ba4f2e810107f6cbf9c2d75c0a0df5d62136c31ac8c3901b5d93e329813766",
+    "n_addition_events": 1412,
+    "categories": 31,
+    "train_events": 972,
+    "calibration_events": 196,
+    "holdout_events": 196,
+    "limitation": "First path per added-JSON commit; most test events collapse into the broad OTHER category. Workers re-use the same chronology with independent bootstrap and noise; not independent source datasets."
+  },
+  "architecture": {
+    "model": "JanusTinyTransformer",
+    "parameter_count": 41088,
+    "phase_one": "masked causal reconstruction of historical JSON categories with 10%,25%,40%,60% corruption across workers",
+    "phase_two": "predict the next JSON addition category from 16 past categories; calibrate a mixture using validation only",
+    "federated_aggregation": "FedAvg 40 river weights from same initial seed, different corruption/bootstraps",
+    "model_candidate_sha256": "e74599f2343539d21ee8e22c877177d5e8d5f04ff647318db31276283d8b31e5"
+  },
+  "metrics": {
+    "phase_one_denoising": {
+      "initial_untrained": {
+        "accuracy": 0.43908,
+        "cross_entropy": 3.239105
+      },
+      "majority_baseline_accuracy": 0.850575,
+      "masked_targets": 1305,
+      "retrospective_only": true,
+      "trained": {
+        "accuracy": 0.246743,
+        "cross_entropy": 1.71159
+      }
+    },
+    "phase_two_next_event": {
+      "beats_baseline_accuracy": false,
+      "beats_baseline_logloss": true,
+      "initial_untrained": {
+        "accuracy": 0.857143,
+        "log_loss": 3.046931,
+        "multiclass_brier": 0.936611,
+        "n": 196,
+        "top3_accuracy": 0.857143
+      },
+      "train_only_frequency_baseline": {
+        "accuracy": 0.857143,
+        "log_loss": 1.819798,
+        "multiclass_brier": 0.749578,
+        "n": 196,
+        "top3_accuracy": 0.892857
+      },
+      "trained_raw": {
+        "accuracy": 0.137755,
+        "log_loss": 2.014813,
+        "multiclass_brier": 0.870174,
+        "n": 196,
+        "top3_accuracy": 0.663265
+      },
+      "validation_calibrated": {
+        "accuracy": 0.729592,
+        "log_loss": 1.79251,
+        "multiclass_brier": 0.751256,
+        "n": 196,
+        "top3_accuracy": 0.892857
+      },
+      "validation_model_blend": 0.25,
+      "validation_temperature": 0.75
+    },
+    "main_conclusions": [
+      "Phase I CE improved versus an untrained network (3.239105 to 1.71159) but trained top-1 accuracy 0.246743 is below naive majority 0.850575, so the denoiser is not useful by its classification metric.",
+      "Phase II validated mixture log-loss 1.79251 slightly below train-only frequency 1.819798 (improvement 0.027288), but classification accuracy 0.729592 below 0.857143 and Brier 0.751256 is worse than 0.749578.",
+      "Raw federated model is worse than calibrated mixture: 0.137755 top-1 accuracy and 2.014813 log-loss.",
+      "Validation calibration selected temperature 0.75 and model blend 0.25, which does not justify production promotion.",
+      "The 40 workers are correlated because they share the same historical source; apparent effects require new unseen real events."
+    ]
+  },
+  "actual_retro_history": {
+    "prior_completed_early_late_trials": 3,
+    "required_trials_before_first_epoch": 12,
+    "calibration_status": "HOLD_INSUFFICIENT_PRIOR_TRIALS",
+    "calibration_activated": false,
+    "code_regression_suite_passed": true,
+    "blind_trials": [
+      {
+        "run": 42132072173,
+        "correct_bits": 124,
+        "attempted_bits": 256,
+        "one_sided_p": 0.7130693117027234,
+        "brier": 0.31850064
+      },
+      {
+        "run": 42133055930,
+        "correct_bits": 117,
+        "attempted_bits": 256,
+        "one_sided_p": 0.9247827331993563,
+        "brier": 0.3108794
+      },
+      {
+        "run": 42134079592,
+        "correct_bits": 129,
+        "attempted_bits": 256,
+        "one_sided_p": 0.47509044503192993,
+        "brier": 0.28889913
+      }
+    ],
+    "combined_bit_correct": 370,
+    "combined_bit_total": 768,
+    "combined_accuracy": 0.4817708333333333,
+    "combined_one_sided_binomial_p": 0.8523251800134568,
+    "physical_backward_channel_observed": false,
+    "gate_not_activated_reason": "Only 3 prior complete A/B trials; the calibration gate requires 12 prior complete trials and significant independent improvements."
+  },
+  "candidate_future_meta_prediction": {
+    "issued_at_utc": "2026-11-06T00:35:38.742790+00:00",
+    "model_checkpoint_sha256": "e74599f2343539d21ee8e22c877177d5e8d5f04ff647318db31276283d8b31e5",
+    "predicted_top1": "OTHER",
+    "prediction_target": "class of first new eligible JSON-addition commit AFTER the issued_at time",
+    "schema": "janus.principle.jdtc.next_registry_precommit.v1",
+    "source_meta_head": "63e21da910339283d5070cc9ed80f4a74c2a42bf",
+    "source_meta_latest_addition": "2026-11-06T00:31:33Z",
+    "source_snapshot_sha256": "b2ba4f2e810107f6cbf9c2d75c0a0df5d62136c31ac8c3901b5d93e329813766",
+    "status": "CANDIDATE_FUTURE_UNOBSERVED",
+    "top3": [
+      {
+        "class": "OTHER",
+        "probability": 0.1978497
+      },
+      {
+        "class": "EYE/generated/native_model_reflections/reflection",
+        "probability": 0.1555386
+      },
+      {
+        "class": "registry/p_vs_np/vs",
+        "probability": 0.1481257
+      }
+    ],
+    "warnings": [
+      "If an eligible JSON addition happened after source HEAD but before prediction issuance, do not score it as prospective.",
+      "Other-category lumping can create artificially high top1 accuracy.",
+      "No actual backwards-time channel."
+    ],
+    "repo_url": "https://github.com/Hawkar-usls/Janus-Demiurge/blob/janus/jdtc-research-ledger/experiments/ocean_transformer/ledger/jdtc/run-42137543171/next_meta_precommit.json",
+    "caution": "Provisional: forecast must not be scored if eligible target commit was created between source HEAD and issuance. Not a future-entropy/physics claim."
+  },
+  "audit": {
+    "source_report_url": "https://github.com/Hawkar-usls/Janus-Demiurge/blob/janus/jdtc-research-ledger/experiments/ocean_transformer/ledger/jdtc/run-42137543171/report.json",
+    "source_report_blob_sha": "852cbcbc345c07e13b998c88556e73ab0ce14052",
+    "prior_calibrator_gate_url": "https://github.com/Hawkar-usls/Janus-Demiurge/blob/janus/jdtc-research-ledger/experiments/ocean_transformer/ledger/jdtc/run-42137543171/retro_calibration_gate.json",
+    "prior_calibrator_gate_blob_sha": "24286138e8470e1c9cc5f4264830d0789b89abb4",
+    "github_artifacts": [
+      {
+        "id": 13466533463,
+        "name": "janus-jdtc-ocean-result-42137543171",
+        "digest": "sha256:ff99762911a7488db1fd98f366139ec463f15b57ca7c14db8ec067cecc99e2b7",
+        "size_bytes": 162384,
+        "expires_at": "2027-02-04T00:32:19Z"
+      },
+      {
+        "id": 13466523221,
+        "name": "janus-jdtc-river-30",
+        "digest": "sha256:5be059c21114f7fa5275dfaf5f19665ce999b6637d7f733d7cd5ebccb0be7037",
+        "size_bytes": 156543,
+        "expires_at": "2026-12-06T00:33:47Z"
+      },
+      {
+        "id": 13466497960,
+        "name": "janus-jdtc-retro-history-gate",
+        "digest": "sha256:d5fbb5081745426c2c53d1cfc18c690bcb38612bcb24504291868d00fece0b06",
+        "size_bytes": 746,
+        "expires_at": "2026-12-21T00:33:02Z"
+      },
+      {
+        "id": 13466428182,
+        "name": "janus-jdtc-river-11",
+        "digest": "sha256:ea216a03709c52f2f169270199d2cc7feb3f1c1744c804050a58eef400612ca3",
+        "size_bytes": 156514,
+        "expires_at": "2026-12-06T00:33:22Z"
+      },
+      {
+        "id": 13466318691,
+        "name": "janus-jdtc-river-24",
+        "digest": "sha256:e43add4dd11050f5fed9443b5393d01a6791d5ac0fd0b1d40ae00d2b566351ba",
+        "size_bytes": 156563,
+        "expires_at": "2026-12-06T00:34:12Z"
+      },
+      {
+        "id": 13466318667,
+        "name": "janus-jdtc-river-2",
+        "digest": "sha256:7a0794754be05320ef57677b8ac2b35ba9faa9914ee62f2a56bf03155b9e18e2",
+        "size_bytes": 156548,
+        "expires_at": "2026-12-06T00:34:05Z"
+      },
+      {
+        "id": 13466298762,
+        "name": "janus-jdtc-river-12",
+        "digest": "sha256:3698de245d2ac543f5eb2bd3629c5c478a35c426352d9168efce5f2309c1c105",
+        "size_bytes": 156529,
+        "expires_at": "2026-12-06T00:34:15Z"
+      },
+      {
+        "id": 13466263698,
+        "name": "janus-jdtc-river-19",
+        "digest": "sha256:a448f3f440719df603fb94aab5619e23ad467b2deb13b36c59d451a500825a08",
+        "size_bytes": 156528,
+        "expires_at": "2026-12-06T00:33:23Z"
+      },
+      {
+        "id": 13466233119,
+        "name": "janus-jdtc-river-21",
+        "digest": "sha256:28362fe0c0cac97f874a773c36c122d71653514413126371b4f1e04ec6b59015",
+        "size_bytes": 156537,
+        "expires_at": "2026-12-06T00:33:54Z"
+      },
+      {
+        "id": 13466153202,
+        "name": "janus-jdtc-river-17",
+        "digest": "sha256:30c8dcda7b284fbf8adc4c7f4c19109ba6f3ecbe856714e4a0878b978422316d",
+        "size_bytes": 156544,
+        "expires_at": "2026-12-06T00:33:18Z"
+      },
+      {
+        "id": 13466143383,
+        "name": "janus-jdtc-river-34",
+        "digest": "sha256:d5d44434b5d60efedb35496a2126024bd95458b022faedd50c8e1aa3e94c1df2",
+        "size_bytes": 156505,
+        "expires_at": "2026-12-06T00:34:43Z"
+      },
+      {
+        "id": 13466099342,
+        "name": "janus-jdtc-river-5",
+        "digest": "sha256:cdabf76fc909f39f17de3e72621e6977436f30fe97c2d33ce82752252a4a77cd",
+        "size_bytes": 156570,
+        "expires_at": "2026-12-06T00:34:49Z"
+      },
+      {
+        "id": 13466073536,
+        "name": "janus-jdtc-river-10",
+        "digest": "sha256:3de33e1ba923b0b5c7d0a2370de50a1ecd36dff319b08d402ae03067fd36c714",
+        "size_bytes": 156509,
+        "expires_at": "2026-12-06T00:34:33Z"
+      },
+      {
+        "id": 13465993153,
+        "name": "janus-jdtc-river-20",
+        "digest": "sha256:173a6dcc2c1bc96df0c88e428e519b7c7d43621c30ec92d8b4f4a2b75cce4ed0",
+        "size_bytes": 156576,
+        "expires_at": "2026-12-06T00:33:20Z"
+      },
+      {
+        "id": 13465982751,
+        "name": "janus-jdtc-river-6",
+        "digest": "sha256:e7a0ae7e10b5979027bcec37292d29a2abd72d7eaf787a6360e73c6b010bac2d",
+        "size_bytes": 156464,
+        "expires_at": "2026-12-06T00:33:57Z"
+      },
+      {
+        "id": 13465938658,
+        "name": "janus-jdtc-river-31",
+        "digest": "sha256:937b0753a5d3c8699e397611e7e04e4af246d6c212cdfae043a4d663d5c557b5",
+        "size_bytes": 156512,
+        "expires_at": "2026-12-06T00:34:30Z"
+      },
+      {
+        "id": 13465838453,
+        "name": "janus-jdtc-historical-snapshot",
+        "digest": "sha256:48bb655f7f6c5b6aad400b3ecfbc749e7f854fdd248b31c374b933412032fb0e",
+        "size_bytes": 80540,
+        "expires_at": "2026-12-21T00:32:47Z"
+      },
+      {
+        "id": 13465833645,
+        "name": "janus-jdtc-river-39",
+        "digest": "sha256:82d9e965ae00f8d7553733d49c6f4567ea9de59f34bf4ffa858ca66d58048834",
+        "size_bytes": 156533,
+        "expires_at": "2026-12-06T00:34:02Z"
+      },
+      {
+        "id": 13465823649,
+        "name": "janus-jdtc-river-13",
+        "digest": "sha256:89277c715e8d0556faa06a1c59daea335c93cfdfe99c29e9d77455304dd4215f",
+        "size_bytes": 156472,
+        "expires_at": "2026-12-06T00:34:14Z"
+      },
+      {
+        "id": 13465728812,
+        "name": "janus-jdtc-river-4",
+        "digest": "sha256:cb80d4101913a98edf597f6ebfdd15eb14c5f797f7d8f2dba873cb77e4c70102",
+        "size_bytes": 156511,
+        "expires_at": "2026-12-06T00:34:15Z"
+      },
+      {
+        "id": 13465713756,
+        "name": "janus-jdtc-river-23",
+        "digest": "sha256:aedeed215a04dc3bdd8d8820a64f72b6bcac4d8f1149d9d1dd2941a2ade61ad2",
+        "size_bytes": 156564,
+        "expires_at": "2026-12-06T00:33:18Z"
+      },
+      {
+        "id": 13465703945,
+        "name": "janus-jdtc-river-32",
+        "digest": "sha256:7167d6b9908c865a0d84da71e4343bb1d6b73ac9b666a750683560955960dac5",
+        "size_bytes": 156469,
+        "expires_at": "2026-12-06T00:34:28Z"
+      },
+      {
+        "id": 13465703763,
+        "name": "janus-jdtc-river-8",
+        "digest": "sha256:5829737ae101824c48f8dbdf780fa9569a37ba4b6593c569485a56eeb1ddd18d",
+        "size_bytes": 156513,
+        "expires_at": "2026-12-06T00:33:25Z"
+      },
+      {
+        "id": 13465693797,
+        "name": "janus-jdtc-river-1",
+        "digest": "sha256:2e2ffdf6a9d9a53143671538e6863a0d5605438cb9176b27b3f041d257140370",
+        "size_bytes": 156539,
+        "expires_at": "2026-12-06T00:33:26Z"
+      },
+      {
+        "id": 13465693786,
+        "name": "janus-jdtc-river-18",
+        "digest": "sha256:7db7e6d51f6b56809a2571aff4a55b4ca9aadcc89409de1162247d3069a15441",
+        "size_bytes": 156477,
+        "expires_at": "2026-12-06T00:33:20Z"
+      },
+      {
+        "id": 13465673598,
+        "name": "janus-jdtc-river-0",
+        "digest": "sha256:33f4103144e52fedd214f856f68a147963b39856f8335a15edd68fbdc2818f04",
+        "size_bytes": 156491,
+        "expires_at": "2026-12-06T00:34:04Z"
+      },
+      {
+        "id": 13465668667,
+        "name": "janus-jdtc-river-14",
+        "digest": "sha256:3b9e35d667d6f95ff465d61a0e66197319d3f7ca78cf6bab688dbdbec107320a",
+        "size_bytes": 156535,
+        "expires_at": "2026-12-06T00:33:20Z"
+      },
+      {
+        "id": 13465663905,
+        "name": "janus-jdtc-river-9",
+        "digest": "sha256:0c87ccf309cfab3997afdc65148989f40ea8a7d6b140796aefa5099987529c07",
+        "size_bytes": 156493,
+        "expires_at": "2026-12-06T00:34:50Z"
+      },
+      {
+        "id": 13465633776,
+        "name": "janus-jdtc-river-36",
+        "digest": "sha256:6969c94d79dc00898bd0aadaa3ed1b75fdb4c708940dae1c6a2ac723981f17cb",
+        "size_bytes": 156535,
+        "expires_at": "2026-12-06T00:34:03Z"
+      },
+      {
+        "id": 13465629141,
+        "name": "janus-jdtc-river-25",
+        "digest": "sha256:34b753c2614332f4bd944b2a50d01c13ef5cd36d34698069974a4104dbb3b4a9",
+        "size_bytes": 156454,
+        "expires_at": "2026-12-06T00:34:34Z"
+      },
+      {
+        "id": 13465538104,
+        "name": "janus-jdtc-river-33",
+        "digest": "sha256:b5dcd34414e825459b66b45c6c6bbb5854c4e3d1f360625d433b7d7f00a3b0b5",
+        "size_bytes": 156454,
+        "expires_at": "2026-12-06T00:33:22Z"
+      },
+      {
+        "id": 13465534129,
+        "name": "janus-jdtc-river-3",
+        "digest": "sha256:8960e3a43ebf99e308b48853496ac6191cdfecc099d65854bfea86fbae8fd81c",
+        "size_bytes": 156504,
+        "expires_at": "2026-12-06T00:33:23Z"
+      },
+      {
+        "id": 13465448577,
+        "name": "janus-jdtc-river-35",
+        "digest": "sha256:403f951641ad9b011ef73dd25c0748a44a04e053acbb8811e2a274ea0016aa98",
+        "size_bytes": 156546,
+        "expires_at": "2026-12-06T00:34:40Z"
+      },
+      {
+        "id": 13465438472,
+        "name": "janus-jdtc-river-7",
+        "digest": "sha256:6b2871fa666408661c250a8f372096d69b8f79854a3e8df888ca76f85837a219",
+        "size_bytes": 156518,
+        "expires_at": "2026-12-06T00:33:27Z"
+      },
+      {
+        "id": 13465343600,
+        "name": "janus-jdtc-river-28",
+        "digest": "sha256:faead0cd88955b260a0938bf996855f9f587ea501f35d65fca0a4e460acabace",
+        "size_bytes": 156577,
+        "expires_at": "2026-12-06T00:34:09Z"
+      },
+      {
+        "id": 13465338731,
+        "name": "janus-jdtc-river-26",
+        "digest": "sha256:642df2143bd2808af6db32014fee7c15d0307e76b60ad28ea513281ed9255f9f",
+        "size_bytes": 156489,
+        "expires_at": "2026-12-06T00:34:33Z"
+      },
+      {
+        "id": 13465293748,
+        "name": "janus-jdtc-river-37",
+        "digest": "sha256:01f60f42307f5f56d9fb01c54a98cf2f1d255df9a760487b1ee79d53f7f4e9b6",
+        "size_bytes": 156503,
+        "expires_at": "2026-12-06T00:34:01Z"
+      },
+      {
+        "id": 13465293675,
+        "name": "janus-jdtc-river-15",
+        "digest": "sha256:b0cfb04b50e9caeea7fe734cdc7dbb83225542463b6f90bd240c379c42d617b7",
+        "size_bytes": 156512,
+        "expires_at": "2026-12-06T00:33:19Z"
+      },
+      {
+        "id": 13465243887,
+        "name": "janus-jdtc-river-27",
+        "digest": "sha256:df09173d48bdfda5849657796461b8a9d4aceb56659cdad462eb30d4de141d67",
+        "size_bytes": 156505,
+        "expires_at": "2026-12-06T00:33:55Z"
+      },
+      {
+        "id": 13465214065,
+        "name": "janus-jdtc-river-22",
+        "digest": "sha256:4765c8be2bb013f6eca9b394d31211100846a1c2e17b586be7221fee2c85d2ef",
+        "size_bytes": 156536,
+        "expires_at": "2026-12-06T00:34:38Z"
+      },
+      {
+        "id": 13465079297,
+        "name": "janus-jdtc-river-29",
+        "digest": "sha256:4e4ab5683097f454fe188faa1af326435947de9d0c62eb49e10dab19e0a4953a",
+        "size_bytes": 156484,
+        "expires_at": "2026-12-06T00:34:24Z"
+      },
+      {
+        "id": 13465009483,
+        "name": "janus-jdtc-river-16",
+        "digest": "sha256:656b55b20735ee87e004937bb54685e680860cf2e7c060206fe6944f46f76bc3",
+        "size_bytes": 156604,
+        "expires_at": "2026-12-06T00:33:26Z"
+      },
+      {
+        "id": 13464959929,
+        "name": "janus-jdtc-river-38",
+        "digest": "sha256:159dd01123482a9b7733b17b3c51a333c1b9439567468b08be1a25b78d434434",
+        "size_bytes": 156566,
+        "expires_at": "2026-12-06T00:34:15Z"
+      }
+    ],
+    "artifact_count": 43,
+    "note": "GitHub Artifact sha256 digests refer to archive ZIP bytes and differ from the model and snapshot SHA256."
+  },
+  "outcome": {
+    "git_actions_orchestration": "PASS",
+    "real_json_history_training": "PASS",
+    "two_phase_evaluation": "COMPLETED__NOT_SUPERIOR_TO_STRONG_SIMPLE_BASELINES",
+    "history_only_retro_gate": "HOLD_INSUFFICIENT_PRIOR_TRIALS",
+    "production_promotion": false,
+    "physical_retrocausal_communication_proven": false,
+    "operational_information_from_future_proven": false,
+    "status": "ENGINEERING_COMPLETE__PREDICTIVE_GAIN_NOT_ESTABLISHED__RETROCAUSALITY_UNPROVEN",
+    "next_gates": [
+      "Replace broad OTHER category with balanced hierarchical labels and demonstrate rare-topic skill on a fresh pre-registered dataset.",
+      "Use held-out new JSON additions after a genuine precommit and score against majority/Markov/frequency baselines.",
+      "Accumulate complete A/B trials without changing primary scoring; history-only calibration must beat both raw model and chance on untouched complete trials.",
+      "Do not claim retrocausality until a physical future-to-past interface passes unselected independent early readout and external replication."
+    ]
+  }
+}

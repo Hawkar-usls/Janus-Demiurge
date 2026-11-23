@@ -1,0 +1,149 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-NUMERIC-LITERAL-TYPE-LEAK-AUDIT-2026-08-14-v1.0",
+  "timestamp": "2026-08-14T12:31:00+03:00",
+  "version": "v1.0",
+  "title": "Linear A numeric-literal type leak audit: ¹⁄₅ structural candidate and typed-token corrective replay",
+  "observer": "Oleksandr Ahapov / Hawkar + JANUS",
+  "node_type": "research_failure_audit_and_corrective_action",
+  "status": "TYPED_TOKEN_CORRECTIVE_REPLAY_IN_PROGRESS_AT_RECORD_CREATION",
+  "frozen_source": {
+    "repository": "mwenge/lineara.xyz",
+    "commit": "43fe7cf1abc8e6bb1ea3228c3a1bd5938709620a",
+    "numeric_inventory": "items_analysis/numbers.txt",
+    "numeric_inventory_blob_sha": "a17b8922297795a90ea6761f32f6ea020b733a6d"
+  },
+  "triggering_corrected_execution": {
+    "stage": "v0.6.1 punctuation-filtered record-role search",
+    "workflow_run_id": 31787419817,
+    "workflow_head_sha": "3c669fac6052c9aed4cef6cf8538e943cbb5f5e5",
+    "artifact_id": 9214092035,
+    "artifact_name": "janus-linear-a-punctuation-corrective-replay-v0.6.1",
+    "artifact_digest": "sha256:64b619d1323361ac9b65255adfab08ca5bb2b4883496185e585e6b02ffdf523c",
+    "execution_status": "SUCCESS"
+  },
+  "observation": {
+    "record_role_cross_region_survivor_count": 0,
+    "new_anchor_established": false,
+    "decipherment_established": false,
+    "train_selected_numeric_literal": {
+      "revealed_label": "¹⁄₅",
+      "classification_after_reveal": "NUMERIC_LITERAL_NOT_SEMANTIC_TOKEN",
+      "word_representation": {
+        "candidate_id": "3e6d401a51899333",
+        "role": "DOC_FINAL",
+        "train_n": 10,
+        "train_docs": 7,
+        "train_delta_rate": 0.4285714285714286,
+        "train_fwer_p": 0.0003999200159968006,
+        "test_n": 12,
+        "test_docs": 9,
+        "test_regions": ["AR", "KE", "KH", "TY"],
+        "test_delta_rate": 0.04381089924568185,
+        "test_bonferroni_p": 0.47195280471952805,
+        "replication_pass": false
+      },
+      "suffix_representation": {
+        "candidate_id": "5b142f24526d4476",
+        "role": "DOC_FINAL",
+        "train_n": 16,
+        "train_docs": 10,
+        "train_delta_rate": 0.3001316391941392,
+        "train_fwer_p": 0.004799040191961607,
+        "test_n": 15,
+        "test_docs": 11,
+        "test_regions": ["AR", "KE", "KH", "TY", "ZA"],
+        "test_delta_rate": 0.01232144666927279,
+        "test_bonferroni_p": 1.0,
+        "replication_pass": false
+      }
+    },
+    "other_v0_6_1_selected_structural_candidate": {
+      "revealed_label": "RA₂",
+      "family": "suffix",
+      "role": "PRE_NUMERIC",
+      "train_fwer_p": 0.027394521095780843,
+      "test_bonferroni_p": 1.0,
+      "replication_pass": false
+    }
+  },
+  "numeric_inventory_evidence": {
+    "source_statement": "The frozen corpus numeric inventory explicitly lists ¹⁄₅ as the value associated with a fractional/numeric sign and also lists additional fractional forms not covered by the legacy parser.",
+    "examples_from_numbers_txt": [
+      "¹⁄₃",
+      "¹⁄₅",
+      "≈¹⁄₆",
+      "¹⁄₄",
+      "³⁄₈",
+      "¹⁄₈",
+      "¹⁄₂",
+      "³⁄₄",
+      "⅝",
+      "¹⁄₁₆",
+      "13/20"
+    ],
+    "legacy_parser_problem": "The historical FRACTION_MAP covered only a subset of these representations, allowing some numeric literals to enter the T/semantic candidate universe."
+  },
+  "root_cause": {
+    "failure_mode": "NUMERIC_LITERAL_TYPE_BOUNDARY_LEAKED_INTO_SEMANTIC_CANDIDATE_UNIVERSE",
+    "why_it_matters": [
+      "A valid blind structural learner can rank an untyped numeric literal as a candidate word or suffix.",
+      "Even if the candidate later fails replication, its presence changes candidate counts, max-T familywise nulls, and structural geometry.",
+      "The correct repair must therefore happen before hashing and null generation, not only during post-score reveal."
+    ]
+  },
+  "corrective_action": {
+    "policy_id": "JANUS-LINA-TOKEN-TYPING-POLICY-v0.6.2",
+    "research_code": [
+      "research/linear_a/janus_linear_a_token_typing_policy_v0_6_2.py",
+      "research/linear_a/janus_linear_a_corrective_replay_v0_6_2.py"
+    ],
+    "policy_commit_chain": {
+      "typing_policy_commit": "8936e0e19be707eb3bfa597827a5d774f9c1c476",
+      "replay_orchestrator_commit": "d13848b60ad22b69267858adacf6efba601348eb",
+      "workflow_commit": "1ab3dfb922f376bf7890390de0b66553b75f3985"
+    },
+    "typing_rules": {
+      "PUNCTUATION": "Excluded before semantic identity construction.",
+      "NUMERIC_EXACT": "Generic exact fractions/decimals are parsed as numeric slots/values.",
+      "NUMERIC_APPROX_OR_UNCERTAIN": "Excluded from semantic identity but not assigned false exact magnitude.",
+      "SEMANTIC_CANDIDATE": "Only this class may receive word/suffix identity hashes."
+    },
+    "required_replay": "FULL_v0.1_THROUGH_v0.6",
+    "workflow": ".github/workflows/janus-linear-a-typed-token-corrective-replay.yml",
+    "workflow_run_id": 31788159539,
+    "status_at_record_creation": "IN_PROGRESS"
+  },
+  "connection_candidate": {
+    "name": "TYPE_BOUNDARY_FAILURE_CAN_CREATE_HIGH_CONFIDENCE_NON_SEMANTIC_CANDIDATES",
+    "status": "CANDIDATE_NOT_GENERALIZED",
+    "statement": "If numerals, punctuation, or other schema-level tokens share the same candidate identity space as semantic symbols, statistical discovery can produce highly ranked but ontologically invalid candidates even under strong null correction.",
+    "falsification_requirement": "Generalize only after analogous type-boundary failures are independently observed in another corpus or domain."
+  },
+  "claim_ceiling": {
+    "new_anchor_established": false,
+    "decipherment_established": false,
+    "promotion": "BLOCKED_PENDING_TYPED_TOKEN_CORRECTIVE_REPLAY"
+  },
+  "roadmap": [
+    {
+      "order": 1,
+      "step": "Complete v0.6.2 typed-token full replay",
+      "gate": "CI receipt and artifact digest"
+    },
+    {
+      "order": 2,
+      "step": "Measure legacy-missed numeric token inventory directly on frozen corpus",
+      "gate": "machine-readable numeric_typing_scan"
+    },
+    {
+      "order": 3,
+      "step": "Create canonical v2 research-state JSON using only the newest authoritative typed-token evidence chain",
+      "gate": "v0.6.2 replay complete"
+    },
+    {
+      "order": 4,
+      "step": "Only then start v0.7 formula-transition/neighborhood-role discovery",
+      "gate": "typed semantic candidate universe frozen"
+    }
+  ]
+}

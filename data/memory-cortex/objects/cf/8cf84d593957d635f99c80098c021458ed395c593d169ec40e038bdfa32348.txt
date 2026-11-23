@@ -1,0 +1,105 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-R7-B0-ARITHMETIC-SUMMARY-ROLE-SPEC-2026-08-15-v0.1.1",
+  "version": "v0.1.1",
+  "node_type": "frozen_cross_fitted_arithmetic_summary_role_spec",
+  "parent_canonical_target": "v2.26",
+  "objective": "Blindly discover concrete lexical source words whose immediately following numeric value behaves like a recurrent arithmetic summary of preceding numeric entries on heldout documents.",
+  "source": {
+    "repository": "Hawkar-usls/lineara.xyz",
+    "frozen_commit": "43fe7cf1abc8e6bb1ea3228c3a1bd5938709620a",
+    "source_labels_hidden_until_all_scoring_complete": true,
+    "translations_used": false,
+    "external_dictionaries_used": false,
+    "Linear_B_supervision_used": false,
+    "Notti_readings_used": false
+  },
+  "status_policy": {
+    "all_mechanically_parsed_source_readings_may_be_observed": true,
+    "certain_none_doubtful_statuses_are_preserved_as_descriptors": true,
+    "none_or_doubtful_is_never_reinterpreted_as_certain": true,
+    "admission_claim_is_about_source-transcription arithmetic structure, not editorial certainty": true
+  },
+  "operators": {
+    "DOC_PREFIX_SUM": {
+      "definition": "For lexical X immediately followed by numeric V, compare V with the exact sum of every numeric-only source word earlier than X in the same document.",
+      "minimum_prior_numeric_terms": 2
+    },
+    "ROW_PREFIX_SUM": {
+      "definition": "For lexical X immediately followed by numeric V on the same unambiguous source row, compare V with the exact sum of numeric-only source words earlier than X on that same row.",
+      "minimum_prior_numeric_terms": 2
+    }
+  },
+  "numeric_arithmetic": {
+    "representation": "exact rational arithmetic for supported integer/decimal/fraction literals",
+    "match": "exact rational equality",
+    "non-exact-or-unparseable-numeric-like-pieces": "excluded from arithmetic observations, never coerced"
+  },
+  "cross_fitting": {
+    "folds": 5,
+    "unit": "document_id",
+    "operator": "reuse JANUS-LINA-R5-0-CV-v0.1 document folds",
+    "candidate_selection_train_only": true,
+    "heldout_documents_never_used_for_candidate_selection": true
+  },
+  "train_candidate_gate": {
+    "minimum_eligible_occurrences": 4,
+    "minimum_documents": 3,
+    "minimum_arithmetic_match_rate": 0.75,
+    "minimum_absolute_rate_lift_over_operator_background": 0.25,
+    "manual_candidate_addition_forbidden": true,
+    "manual_candidate_removal_forbidden": true,
+    "top_k_truncation": false
+  },
+  "heldout_candidate_gate": {
+    "minimum_selected_folds": 2,
+    "minimum_heldout_occurrences": 4,
+    "minimum_heldout_documents": 3,
+    "minimum_heldout_match_rate": 0.75,
+    "multiple_testing": "Benjamini-Hochberg",
+    "FDR_q_max": 0.05,
+    "null": "cross-fitted Poisson-binomial upper tail; each heldout candidate occurrence uses the corresponding train fold's generic arithmetic-match rate for the same operator as its Bernoulli null probability"
+  },
+  "postscore_descriptors": {
+    "include": [
+      "source word label after scoring",
+      "operator",
+      "heldout document IDs and regions",
+      "source-status distribution",
+      "prior-term counts",
+      "exact rational prefix sum",
+      "exact rational following value",
+      "per-occurrence arithmetic match"
+    ],
+    "descriptors_are_semantics": false
+  },
+  "positive_ladder": {
+    "R7_B0": "arithmetic-summary behavior candidate",
+    "R7_B1": "unchanged candidate survives full region holdout / cross-region transfer where support permits",
+    "R7_B2": "candidate loses its advantage under structure-destroying numeric/order nulls",
+    "R7_B3": "probable SUMMARY/TOTAL-LIKE functional-role candidate may be admitted; exact lexical meaning and translation remain forbidden",
+    "EXTERNAL": "independent editorial source required before external replication credit"
+  },
+  "claim_ceiling": {
+    "allowed": [
+      "cross-fitted arithmetic-summary behavior candidate",
+      "concrete opaque/source word whose following numeric value recurrently equals a frozen prefix-sum operator on heldout documents",
+      "source-transcription functional-structure candidate"
+    ],
+    "forbidden": [
+      "probable total/summary function",
+      "exact word meaning",
+      "translation",
+      "phonetic assignment",
+      "language-family identification",
+      "new anchor",
+      "Linear A decipherment",
+      "R3B external replication"
+    ]
+  },
+  "recovery_lineage": {
+    "parent_invalid_spec": "data/JANUS-LINEAR-A-R7-B0-ARITHMETIC-SUMMARY-ROLE-SPEC-2026-08-15-v0.1.json",
+    "preexecution_failure": "data/JANUS-LINEAR-A-R7-B0-PREEXECUTION-FAILURE-2026-08-15-v0.1.json",
+    "scientific_parameters_changed": false,
+    "repair": "JSON syntax only"
+  }
+}

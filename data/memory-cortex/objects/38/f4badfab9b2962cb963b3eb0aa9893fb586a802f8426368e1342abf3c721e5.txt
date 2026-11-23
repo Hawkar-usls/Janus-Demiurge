@@ -1,0 +1,104 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1C5B2B2-E-CONNECTED-FUTURE-DISTINGUISHABILITY-RESULT-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "PASS_POLYNOMIAL_BEHAVIORAL_CARRIER_FOR_KK_NEGATIVE_CONTROL",
+  "gate": "R5_B1B1C5B2B2_E_CONNECTED_FUTURE_DISTINGUISHABILITY_V1",
+  "binds": {
+    "prereg_blob": "0cfe92b69bc78e540f879c969d6bb1c8d1c023ea",
+    "B2B2_D_theorem_seal_blob": "c3e18ca190ec5b21eefec305d702b58aa867e51b",
+    "B2B2_D_result_blob": "5cc7c15892a5b226487f55239eaaee2cfbf2feb3",
+    "B2B2_C_factorization_seal_blob": "8e4469c5e5e5f094b8013d29b8a22713f0ee1d8c",
+    "exact_interface_quotient_result_blob": "b8e177c483821517add138a632bc3e94499f1889",
+    "checker_blob": "9c8345307bcfa3d9947386f4919f8158818a147d"
+  },
+  "primary_family": "CONNECTED_CHAIN_QALL_PROFILE_FAMILY_Kk",
+  "current_D_profile_closed_forms": {
+    "parameter": "For a D-profile indexed by F subseteq {1,...,k-1}, let m=max(F), with m=0 for F=empty.",
+    "palettes": {
+      "live_l_i": "{1,2,3}",
+      "r_j_if_j_le_m": "{2,3}",
+      "r_j_if_j_gt_m": "{1,2,3}"
+    },
+    "R1": "For every currently live dynamic vertex u and color c, R1(u,c)=1 iff c belongs to the exact palette A(u).",
+    "R2": "For every currently live nonedge uv and color c, R2(u,v,c)=1 iff c belongs to A(u) intersect A(v).",
+    "proof_strategy": "Explicit proper colorings exist for every palette-admissible query. Same-side queries use two uniform side colors. For a nonedge l_i-r_j with j>i, split live L at threshold j: vertices below j may share the forced query color with r_j while vertices at/above j use a third color; all other R use the remaining color."
+  },
+  "D_profile_behavior_collapse": {
+    "different_max": "If m(F)<m(F'), choose j with m(F)<j<=m(F'). Then R1(r_j,1)=1 in F and 0 in F', so different thresholds are genuinely R1-distinguishable.",
+    "same_max_common_domain": "If m(F)=m(F'), every R1/R2 truth value on coordinates live in both states is the same; it is determined only by the exact palettes and nonedge relation.",
+    "domain_difference": "Different F with the same maximum may still have different live left-vertex query domains. This can preserve exponentially many domain-aware behavioral classes, but the live-domain bitvector has only O(k) bits.",
+    "U1_interpretation": "Even 2^(k-1) domain-aware exact classes do not imply exponential representation size; an explicit O(k)-bit carrier may encode them."
+  },
+  "polynomial_behavioral_carrier": {
+    "name": "KK_CHAIN_PRECOLORING_CARRIER_V1",
+    "static_data": "k and the fixed indexed chain graph K_k; static graph description is O(k) under the defining order, or O(k^2) if stored explicitly.",
+    "dynamic_data": [
+      "for each vertex in L union R union {z}: ACTIVE/FIXED/DELETED status",
+      "fixed color when FIXED",
+      "independent reconstruction receipt pointer when DELETED",
+      "original seed colors t=3,s4=4"
+    ],
+    "size": "O(k) words / O(k log k) bits with indexed vertices and constant-size statuses/colors; polynomial even under explicit adjacency storage.",
+    "why_color4_disappears_from_chain_core": "Every L/R vertex is adjacent to fixed s4=4, so no legal extension ever colors an L/R vertex with 4.",
+    "z_rule": "If z is active and not fixed, assign z=4 without loss: every R vertex already cannot use 4 because it sees s4=4. If z is fixed to c in {1,2,3}, simply remove c from the lists of its active R neighbors; if z is fixed to 4, no additional restriction arises.",
+    "query_algorithm": [
+      "Add the proposed R1 or R2 fixed assignment(s) to a copy of the carrier; reject immediate fixed-color conflicts or a same-color fixed edge.",
+      "For every active unfixed L/R vertex build a list contained in common palette {1,2,3} by deleting colors used by its fixed neighbors.",
+      "Discard any independently DELETED block from solving and retain its reconstruction receipt.",
+      "Run the sealed constructive polynomial P7-free List-3 backend on the induced active L/R graph, which is an induced subgraph of a chain graph and hence P7-free.",
+      "The query is true iff this List-3 instance is colorable and all stored independent receipts remain valid."
+    ],
+    "update_algorithm": "After a successful force, record the new fixed assignment and, when source metadata is required, run the sealed B2B1 deterministic canonical-return procedure. This updates ACTIVE/FIXED/DELETED statuses and receipts in polynomial time; no enumeration of prior or future profiles is required.",
+    "reconstruction": "Combine the fixed assignment vector, the constructive List-3 witness on active L/R, z=4 when z is not otherwise fixed, the original seed, and independent deleted-component receipts.",
+    "lifecycle": "Polynomial in k for storage, R1/R2 query, canonical update and reconstruction."
+  },
+  "why_generic_hardness_firewall_not_violated": {
+    "generic_P7_precoloring_solver": "NOT_USED",
+    "generic_List4_solver": "NOT_USED",
+    "reason": "K_k has the extra family-specific invariant that fixed s4=4 is adjacent to every L/R vertex, reducing the entire live chain core to a common three-color palette. Only the already authorized P7-free List-3 backend is invoked."
+  },
+  "finite_sanity_receipt": {
+    "checked_k": "2 through 5",
+    "R1_equals_palette_membership": "PASS",
+    "R2_equals_nonedge_plus_palette_intersection": "PASS",
+    "common_missing_color_on_LR": 4,
+    "polynomial_List3_carrier_structure": "PASS",
+    "checker_blob": "9c8345307bcfa3d9947386f4919f8158818a147d"
+  },
+  "verdict": {
+    "Kk_explicit_profiles": "2^(k-1)",
+    "Kk_behavioral_classes": "may remain exponential under domain-aware equivalence",
+    "Kk_exact_carrier_size": "POLYNOMIAL",
+    "Kk_exact_query_update_reconstruction_lifecycle": "POLYNOMIAL",
+    "classification": "NEGATIVE_CONTROL_FOR_STRONG_B2B2_FAILURE"
+  },
+  "critical_firewalls": [
+    "Exponential realizable profile count was real but does not imply exponential exact representation complexity.",
+    "Exponential behavioral-class count caused by independently addressable/live-domain bits is also insufficient when an O(k)-bit carrier supports polynomial queries and updates.",
+    "This result is scoped to K_k and does not prove a polynomial carrier for arbitrary connected Q_ALL cores.",
+    "No recursive R1/R2 algorithm for the general source-valid class is authorized.",
+    "C5C remains locked."
+  ],
+  "next_frontier": {
+    "name": "R5_B1B1C5B2B2_E1_FOUR_COLOR_ACTIVE_CONNECTED_CORE_STRESS_V1",
+    "status": "PROPOSED_NOT_EXECUTED",
+    "target": "Search for or classify source-valid connected-QALL families with superpolynomial realizable profiles where no single color is globally absent from the live dynamic core after fixed effects, so the K_k common-palette List-3 carrier cannot apply. Any candidate must still survive A/B/C and must be tested for exact carrier reuse before strong-negative interpretation."
+  },
+  "scientific_ceiling": {
+    "B2B2_D": "SEALED_EXPONENTIAL_PROFILE_MULTIPLICITY",
+    "B2B2_E_KK": "POLYNOMIAL_BEHAVIORAL_CARRIER_PROVED",
+    "KK_STRONG_NEGATIVE": "FALSIFIED",
+    "GENERAL_CONNECTED_QALL_POLYNOMIAL_CARRIER": "OPEN",
+    "STRONG_CONNECTED_MULTIPLICITY_NEGATIVE": "OPEN",
+    "R1_DECIDABILITY_GENERAL": "OPEN",
+    "R2_DECIDABILITY_GENERAL": "OPEN",
+    "RECURSIVE_R1_R2_GENERAL": "FORBIDDEN",
+    "C5C": "LOCKED",
+    "FULL_L2_REPAIR": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "stop": true,
+  "return_to_HQ": true
+}

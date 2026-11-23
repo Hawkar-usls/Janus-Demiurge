@@ -1,0 +1,146 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-R3C-3-CORRECTIVE-LANGUAGE-MATCH-AUDIT-SPEC-2026-08-14-v0.1",
+  "timestamp": "2026-08-14T18:36:00+03:00",
+  "version": "v0.1",
+  "node_type": "corrective_language_match_audit_spec",
+  "status": "FROZEN_BEFORE_EXECUTION",
+  "parent_method_reconstruction": "data/JANUS-LINEAR-A-R3C-3-PRIMARY-METHOD-RECONSTRUCTION-2026-08-14-v0.1.json",
+  "research_question": "Does any one of the five language dictionaries used by Nepal and Perono (2024) show excess raw exact consonant-cluster overlap with the frozen Linear A master list beyond matched chance expectations, before any manual semantic filtering?",
+  "scope": {
+    "fixed_languages": ["Ancient Egyptian", "Luwian", "Hittite", "Proto-Celtic", "Uralic"],
+    "language_set_may_be_changed_after_input_inspection": false,
+    "primary_unit": "raw exact consonant-cluster matches before manual plausibility/meaning filtering",
+    "published_selected_matches_used_for_parameter_tuning": false,
+    "manual_semantic_filtering_in_primary_statistic": false,
+    "manual_tablet_context_in_primary_statistic": false
+  },
+  "execution_admission_gate": {
+    "required_receipts": [
+      {
+        "id": "PAPER_EXACT_LINEAR_A_MASTER_LIST",
+        "must_include": ["original filename", "SHA-256", "byte length", "format", "column schema", "acquisition route", "provenance to 2024 paper"]
+      },
+      {
+        "id": "PAPER_EXACT_FIVE_DICTIONARY_INPUTS",
+        "must_include": ["one immutable file identity per fixed language", "SHA-256", "byte length", "format", "dictionary source identity", "acquisition route"]
+      },
+      {
+        "id": "PAPER_PHONETIC_GRID_OR_EQUIVALENT_MASTER_LIST_PROVENANCE",
+        "must_include": ["evidence that New Format values correspond to the 2024 paper input rather than an alternate public-program configuration"]
+      }
+    ],
+    "admit_public_README_as_input_receipt": false,
+    "admit_packaged_application_blob_identity_as_study_data_receipt": false,
+    "allow_reconstructed_or_guessed_dictionary_entries": false,
+    "allow_table_3_to_7_reverse_engineering_as_input": false,
+    "current_expected_state": "BLOCKED_MISSING_PAPER_EXACT_INPUT_RECEIPTS"
+  },
+  "upstream_reproduction_layer": {
+    "purpose": "First reproduce the deterministic raw exact-match layer without using JANUS corrective nulls.",
+    "vowel_set": ["a", "e", "i", "o", "u", "A", "E", "I", "O", "U"],
+    "dictionary_operation": "remove listed vowels from each dictionary word",
+    "Linear_A_cluster_operation": "use the paper-exact normalized consonantal field from the admitted master list; do not silently regenerate it from a different phonetic grid",
+    "match_operation": "exact string equality of consonant clusters",
+    "preserve_dictionary_row_duplicates": true,
+    "preserve_Linear_A_source_rows": true,
+    "required_raw_outputs": [
+      "every exact pairwise match with language, dictionary row, dictionary raw word, normalized dictionary cluster, Linear A row, Linear A source, Linear A raw/provisional form, normalized Linear A cluster",
+      "unique Linear A cluster universe",
+      "unique dictionary cluster universe per language",
+      "duplicate multiplicities"
+    ],
+    "published_manually_filtered_tables_are_not_reproduction_target_for_primary_inference": true
+  },
+  "frozen_primary_metrics": [
+    {
+      "metric_id": "UNIQUE_LINEAR_A_CLUSTER_HIT_COUNT",
+      "definition": "number of distinct eligible Linear A consonant clusters having at least one exact match in a language dictionary",
+      "primary": true
+    },
+    {
+      "metric_id": "TOTAL_PAIRWISE_EXACT_MATCH_COUNT",
+      "definition": "number of raw Linear A row x dictionary row exact consonant-cluster matches, preserving row multiplicity",
+      "primary": false
+    },
+    {
+      "metric_id": "UNIQUE_DICTIONARY_CLUSTER_HIT_COUNT",
+      "definition": "number of distinct dictionary consonant clusters having at least one eligible Linear A exact match",
+      "primary": false
+    }
+  ],
+  "corrective_nulls": {
+    "N1_WITHIN_LANGUAGE_COMPOSITION_PRESERVING": {
+      "purpose": "Estimate accidental exact matches while preserving each language dictionary's row count, normalized cluster-length sequence, and global consonant multiset.",
+      "algorithm": [
+        "For each language independently, collect normalized non-empty dictionary consonants across rows.",
+        "Randomly permute that exact consonant multiset.",
+        "Redistribute consonants into the original ordered row-length sequence.",
+        "Keep the Linear A master list fixed.",
+        "Recompute all frozen metrics."
+      ],
+      "dictionary_meanings_used": false,
+      "published_matches_protected_from_shuffle": false
+    },
+    "N2_POOLED_LENGTH_STRATIFIED_LANGUAGE_LABEL": {
+      "purpose": "Test whether a named language has more overlap than expected from an equally sized length-matched allocation of the pooled five-language dictionary clusters.",
+      "algorithm": [
+        "Pool admitted normalized dictionary rows from all five fixed languages.",
+        "Within exact consonant-cluster-length strata, permute language labels while preserving each language's observed row count per stratum whenever combinatorially possible.",
+        "Keep cluster strings and Linear A fixed.",
+        "Recompute all frozen metrics for all five languages in the same permutation."
+      ],
+      "language_identity_used_to_construct_null_entries": false
+    }
+  },
+  "permutation_protocol": {
+    "iterations_per_null": 10000,
+    "minimum_iterations_if_exact_enumeration_smaller": "enumerate all distinct permutations instead of sampling",
+    "deterministic_seed_rule": "SHA256(artifact_uuid || null_id || zero_based_iteration) interpreted as an unsigned integer",
+    "empirical_one_sided_p": "(1 + count(null_stat >= observed_stat)) / (B + 1)",
+    "primary_family": "five fixed languages for UNIQUE_LINEAR_A_CLUSTER_HIT_COUNT",
+    "familywise_control": {
+      "method": "permutation max-statistic across all five languages within each null family",
+      "alpha": 0.05,
+      "unadjusted_p_reported": true,
+      "FWER_adjusted_p_reported": true
+    },
+    "effect_summary": ["observed statistic", "null mean", "null standard deviation", "standardized excess when SD>0", "empirical percentile"]
+  },
+  "decision_rule": {
+    "NO_EXCESS": "No language attains FWER-adjusted p <= 0.05 under both N1 and N2 for the primary metric.",
+    "TECHNICAL_OVERLAP_EXCESS_SIGNAL": "A language attains FWER-adjusted p <= 0.05 under both N1 and N2 for UNIQUE_LINEAR_A_CLUSTER_HIT_COUNT and observed-minus-null-mean is positive under both nulls.",
+    "DISCORDANT_NULLS": "A language clears only one null family; report the discordance without promotion.",
+    "signal_does_not_mean": ["language-family relationship", "cognacy", "translation", "phonetic-grid correctness", "decipherment"]
+  },
+  "secondary_semantic_layer": {
+    "allowed_only_after_primary_statistics_are_frozen_and_computed": true,
+    "published_manual_matches_may_be_replayed_descriptively": true,
+    "new_manual_meaning_selection_may_change_primary_p_values": false,
+    "tablet_context_may_change_primary_p_values": false,
+    "output_class": "DESCRIPTIVE_CONTEXT_ONLY"
+  },
+  "contamination_firewall": {
+    "published_tables_already_seen": true,
+    "JANUS_blind_discovery_credit": false,
+    "do_not_select_normalization_by_best_language": true,
+    "do_not_drop_languages_after_results": true,
+    "do_not_tune_null_model_to_make_published_matches_fail_or_pass": true,
+    "do_not_promote manually_filtered_subset_to_primary_test": true
+  },
+  "output_statuses": [
+    "BLOCKED_MISSING_PAPER_EXACT_INPUT_RECEIPTS",
+    "UPSTREAM_RAW_MATCH_REPRODUCTION_MISMATCH",
+    "EXECUTED_NO_EXCESS",
+    "EXECUTED_DISCORDANT_NULLS",
+    "EXECUTED_TECHNICAL_OVERLAP_EXCESS_SIGNAL"
+  ],
+  "claim_ceiling": {
+    "corrective_method_frozen": true,
+    "execution_performed": false,
+    "paper_raw_matches_reproduced": false,
+    "language_family_relationship_established": false,
+    "R3B_effect": "NONE",
+    "new_anchor": false,
+    "decipherment": false
+  }
+}

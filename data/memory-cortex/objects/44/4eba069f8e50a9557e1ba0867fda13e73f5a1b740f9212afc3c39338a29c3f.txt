@@ -1,0 +1,86 @@
+{
+  "artifact_id": "JANUS-TOPA-KEYHOE-REVERSE-SPIRAL-HIDDEN-DEPENDENCIES-AUDIT-2026-08-23-v1.1",
+  "title": "TOPA — KEYHOE REVERSE + SPIRAL HIDDEN-DEPENDENCIES AUDIT",
+  "version": "1.1",
+  "status": "frozen_second_spiral_with_correction_of_correction",
+  "canonical_current": true,
+  "supersedes": "JANUS-TOPA-KEYHOE-REVERSE-SPIRAL-HIDDEN-DEPENDENCIES-AUDIT-2026-08-23-v1.0",
+  "created_at_utc": "2026-08-23T13:48:00+00:00",
+  "registry_layer": "TOPA",
+  "motto": "NOTHING SUPERNATURAL — ONLY NATURE NOT YET UNDERSTOOD.",
+  "carry_forward": "All findings and gates from v1.0 remain active except where explicitly corrected below.",
+  "correction_of_correction": {
+    "id": "CORR-RAS-TIMEBASIS-002",
+    "v1_0_assumption": "The reported 01:30 sighting time was treated as Egypt local time, leading to an approximate conversion to 23:30 UTC on November 30.",
+    "new_source_finding": "Luis Schoenherr's 1994 IUR letter explicitly describes the event time as 01:30 Central European Time and cites a December 11, 1957 Tiroler Tageszeitung report crediting Tribune de Geneve.",
+    "corrected_handling": "Do not freeze the 01:30 value as Egypt-local. If CET is correct, 01:30 CET corresponds to approximately 00:30 UTC on December 1 and approximately 02:30 Egypt standard time. The original 1957 newspaper item must be obtained before choosing the authoritative time basis.",
+    "status": "TIME_BASIS_UNRESOLVED_SOURCE_GENEALOGY_OPEN",
+    "lesson": "A timestamp without its time standard is not a timestamp.",
+    "new_rule": "CLOCK_VALUE_WITHOUT_TIME_STANDARD != UTC_EVENT_TIME"
+  },
+  "new_hidden_findings": [
+    {
+      "id": "HIDDEN-13-RB47-RAW-RECORDING-CONTRADICTION",
+      "case": "RB-47",
+      "finding": "Ten years later, the pilot recalled Intelligence personnel removing filmed/wire-recorded ECM and radar material after landing, while the copilot and principal monitoring officer recalled that no recording media had been carried because the flight was an equipment checkout. The Condon investigators concluded the sought recordings apparently never existed.",
+      "effect": "RAW_SENSOR_EVIDENCE_STATUS_DOWNGRADED_TO_CONFLICTING_WITNESS_MEMORY",
+      "new_rule": "REMEMBERED_RECORDING != SURVIVING_RECORDING",
+      "next_gate": "Use the located 1957 TWX/intelligence paperwork to determine what data products were actually created, rather than choosing one later recollection."
+    },
+    {
+      "id": "HIDDEN-14-KINROSS-INTERCEPT-AS-TRAINING-OPPORTUNITY",
+      "case": "Kinross",
+      "finding": "The detailed reconstruction notes that Calumet's unit history recorded a shortage of intercept opportunities and controllers being sent elsewhere to meet operational requirements; the missing F-89 had also been scrambled earlier the same day. This makes an opportunistic training intercept of a known/likely Canadian aircraft a plausible operational context for the scramble.",
+      "effect": "INCREASE_KNOWN_AIRCRAFT_TRAINING_CONTEXT_PRIOR",
+      "guard": "This is a context hypothesis, not proof that VC-912 was the exact radar target at the final intercept point.",
+      "new_rule": "SCRAMBLE_AGAINST_UNKNOWN != BELIEF_TARGET_WAS_NONHUMAN",
+      "next_gate": "Reconcile intercept-training metrics, VC-912/Fosberg route, GCI vectors and final geometry."
+    },
+    {
+      "id": "HIDDEN-15-KINROSS-C47-PILOT-CLAIM-HELPS-AND-COMPLICATES",
+      "case": "Kinross",
+      "finding": "Gerald Fosberg later stated that his logbook confirmed a night C-47 flight and remembered being asked after the disappearance whether he had seen another aircraft. This supports the existence of a relevant Canadian flight, but he reportedly maintained his route was not off course, which conflicts with the U.S. controller narrative that the target was about 30 miles off course.",
+      "effect": "TARGET_IDENTITY_BECOMES_GEOMETRY_PROBLEM_NOT_BINARY_YES_NO",
+      "new_rule": "WITNESS_IDENTITY_MATCH_WITH_ROUTE_CONFLICT_REQUIRES_TRAJECTORY_TEST",
+      "next_gate": "Obtain logbook route/airfields/times and compare with controller coordinates rather than relying on later prose recollection."
+    },
+    {
+      "id": "HIDDEN-16-RAS-EARLIEST-LOCATED-CHAIN",
+      "case": "Ras el-Kanayis",
+      "finding": "The earliest source located in this pass is not Borner's own flight report but a 1994 IUR letter that points backward to a December 11, 1957 Tiroler Tageszeitung item crediting Tribune de Geneve. The modern timeline is therefore at least one or more steps removed from the 1957 report.",
+      "effect": "SIGHTING_OCCURRENCE_REMAINS_PLAUSIBLE_BUT_EXACT_WORDING_TIME_AND_DIRECTION_REQUIRE_PRIMARY_NEWSPAPER_RECOVERY",
+      "new_rule": "LATE_SUMMARY_WITH_CITATION != PRIMARY_EVENT_RECORD",
+      "next_gate": "Recover Tribune de Geneve and Tiroler Tageszeitung December 1957 clippings, then search Swissair flight/crew logs for Athens-Cairo DC-6B service."
+    }
+  ],
+  "spiral_state": {
+    "A0": "Ras reentry candidate looked strong from date and morphology.",
+    "B0": "Reverse source walk found a time-standard ambiguity and a late citation chain.",
+    "C0": "Reentry remains plausible, but exact temporal/geometric match is not yet demonstrated.",
+    "ASCEND_0": "Correct the correction; preserve both time interpretations until the 1957 source is recovered.",
+    "A1": "Kinross target identity looked binary: C-47 or unknown.",
+    "B1": "Reverse walk found both a later C-47 pilot recollection and route disagreement plus training-intercept context.",
+    "C1": "The real problem is trajectory reconciliation, not choosing the most dramatic narrative.",
+    "ASCEND_1": "Promote geometry and provenance above labels.",
+    "A2": "RB-47 looked strongest because of multiple sensors.",
+    "B2": "Reverse walk found causal channel dependence and contradictory memories about whether raw recordings existed.",
+    "C2": "The event remains high-value, but raw-sensor authority must not be implied where surviving raw data is absent.",
+    "ASCEND_2": "TOPA now scores source independence, sensor independence and recording survival separately."
+  },
+  "updated_priority_gates": [
+    "RAS-PRIMARY-1957-NEWSPAPER-RECOVERY",
+    "RAS-SWISSAIR-FLIGHT-LOG-RECOVERY",
+    "SL1-EXACT-DECAY-EPOCH-AND-TERMINAL-STATE",
+    "KINROSS-C47-TRAJECTORY-RECONCILIATION",
+    "RB47-1957-DOCUMENT-AND-DATA-PRODUCT-INVENTORY",
+    "RB47-CAUSAL-SENSOR-INDEPENDENCE-GRAPH"
+  ],
+  "sources": [
+    {"url":"https://cufos.org/PDFs/IUR%20issues/IUR%20Vol.%2019%20No.%206%20Nov.-Dec.%201994.pdf","role":"1994 IUR letter preserving CET wording and citing 1957 newspapers"},
+    {"url":"https://files.ncas.org/condon/text/case05.htm","role":"RB-47 Condon investigation; conflicting recollections about recordings and lack of surviving data"},
+    {"url":"https://www.openskiesproject.org/news/kinross-incident","role":"Kinross accident-report-based reconstruction, C-47 pilot recollection, training context and radar-resolution analysis"},
+    {"url":"https://www.timeanddate.com/time/change/egypt/cairo?year=1957","role":"Egypt standard/DST context for converting a time only after its source time standard is established"},
+    {"url":"https://huggingface.co/datasets/juliensimon/space-track-satcat/viewer","role":"SL-1 R/B catalog identity and date-only decay entry"}
+  ],
+  "compact_result": "The second spiral found that even the first reverse correction contained an assumption. TOPA therefore treats provenance of the clock itself as evidence. Hidden structure is increasingly not a secret object but a network of dependencies: sensor causality, later memory, training context, route geometry, publication ancestry and time-standard ambiguity."
+}

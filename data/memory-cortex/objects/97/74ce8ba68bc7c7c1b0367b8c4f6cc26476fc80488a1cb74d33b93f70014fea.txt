@@ -1,0 +1,85 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-SIGLA-MINIMAL-PAIR-MORPHOLOGY-SPEC-2026-08-14-v0.1",
+  "timestamp": "2026-08-14T14:23:00+03:00",
+  "version": "v0.1",
+  "title": "JANUS Linear A SigLA-native one-sign prefix/suffix minimal-pair morphology discovery",
+  "node_type": "frozen_execution_specification",
+  "status": "FROZEN_BEFORE_CLAIM_BEARING_EXECUTION",
+  "parent_result": {
+    "path": "data/JANUS-LINEAR-A-SIGLA-NATIVE-BLIND-ROLE-DISCOVERY-RESULT-2026-08-14-v0.1.json",
+    "commit": "8199028abf6478ac26fda8d143aa2481d972485e"
+  },
+  "research_question": "Does any single SigLA sign repeatedly participate in prefix-like or suffix-like one-sign extension pairs across multiple distinct base word forms, and does that extension behavior reproduce in disjoint document partitions beyond boundary-sign permutation nulls?",
+  "source_and_blinding": {
+    "source": "SigLA word-view seq-pattern sign IDs",
+    "source_class": "L1_INDEPENDENT_DIGITIZATION_SHARED_TRANSCRIPTION",
+    "frozen_database_js_sha256": "cc624f148fd84c94fd2910b0adf92ecace25f52f9175664122bdf8384a8f1b9d",
+    "candidate_identity": "Boundary sign ID + side; visible transliteration is inaccessible until all statistical gates are frozen.",
+    "eligible_word_forms": "Only fully resolved hyphen-separated sequences whose components match ^(?:AB|A)[0-9]+[A-Za-z]?$; ambiguous [?], bracketed, composite-hyphen sign IDs and nonstandard components are excluded from claim-bearing morphology scoring.",
+    "known_morphological_labels_used_for_discovery": false,
+    "Linear_B_values_used_for_discovery": false
+  },
+  "event_definition": {
+    "PREFIX_EXTENSION": "Both STEM and SIGN+STEM occur as exact eligible word forms within the same partition.",
+    "SUFFIX_EXTENSION": "Both STEM and STEM+SIGN occur as exact eligible word forms within the same partition.",
+    "candidate_statistic": "Number of distinct stem forms extended by the same boundary sign on the same side.",
+    "support_documents": "Distinct documents containing the extended variants for the candidate's observed stem-pair edges."
+  },
+  "partition": {
+    "operator": "bucket=int(SHA256('SIGLA-MORPH-PARTITION-v0.1|' + bridge_key),16) mod 10",
+    "SCREEN": [0,1,2,3,4,5],
+    "CONFIRM": [6,7],
+    "TEST": [8,9],
+    "fixed_before_content_scoring": true
+  },
+  "destructive_null": {
+    "name": "BOUNDARY_SIGN_PERMUTATION_BY_WORD_LENGTH",
+    "PREFIX": "For every unique eligible word type in a partition, keep its tail/stem and word length fixed; permute first-sign labels among word types of the same length. Recompute which shuffled types still have their base stem attested.",
+    "SUFFIX": "Keep head/stem and word length fixed; permute final-sign labels among word types of the same length. Recompute extension edges.",
+    "preserves": ["word-type count", "word lengths", "boundary-sign marginal counts within each word length", "base-stem inventory", "document-derived support weights attached to word types"],
+    "destroys": "Specific sign↔stem extension coupling"
+  },
+  "SCREEN": {
+    "minimum_distinct_stems": 3,
+    "minimum_extended_variant_documents": 4,
+    "permutations": 3000,
+    "alpha": 0.05,
+    "multiplicity": "Bonferroni across all eligible sign×side hypotheses",
+    "direction": "MORE_DISTINCT_STEMS_THAN_NULL"
+  },
+  "CONFIRM": {
+    "locked_sign_and_side": true,
+    "minimum_distinct_stems": 2,
+    "minimum_extended_variant_documents": 3,
+    "permutations": 5000,
+    "alpha": 0.05,
+    "multiplicity": "Bonferroni over SCREEN-selected hypotheses",
+    "non_evaluability_is_not_failure": true
+  },
+  "TEST": {
+    "locked_sign_and_side": true,
+    "minimum_distinct_stems": 2,
+    "minimum_extended_variant_documents": 3,
+    "minimum_distinct_locations": 2,
+    "permutations": 5000,
+    "alpha": 0.05,
+    "multiplicity": "Bonferroni over CONFIRM survivors",
+    "non_evaluability_is_not_failure": true
+  },
+  "post_score_reveal": {
+    "allowed_only_after": "SCREEN/CONFIRM/TEST states frozen",
+    "reveal": ["sign ID", "visible sign transliteration if recoverable from SigLA word examples", "stem/extended transliteration pairs", "representative documents"],
+    "novelty_classes": ["KNOWN_MORPHOLOGICAL_PATTERN_REDISCOVERY", "NOVEL_CROSS_DIGITIZATION_MORPHOLOGICAL_OPERATOR_CANDIDATE", "NO_SURVIVOR", "NOT_EVALUABLE"]
+  },
+  "claim_ceiling": {
+    "maximum_if_full_survivor": "NOVEL_CROSS_DIGITIZATION_MORPHOLOGICAL_OPERATOR_CANDIDATE",
+    "new_lexical_anchor_established": false,
+    "external_transcription_replication_established": false,
+    "decipherment_established": false,
+    "forbidden": "Assigning grammatical or lexical meaning to a sign solely from extension topology."
+  },
+  "roadmap_after_execution": {
+    "if_full_survivor": "Post-score scholarly novelty audit + independently implemented replay + alternative segmentation control + cross-encoding comparison.",
+    "if_no_full_survivor": "Preserve negative result; move to formula-neighborhood / co-occurrence graph community channel without lowering frozen thresholds."
+  }
+}

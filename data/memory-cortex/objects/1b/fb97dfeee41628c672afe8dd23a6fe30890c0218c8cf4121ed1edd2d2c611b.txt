@@ -1,0 +1,142 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1C5B2A-COMPONENT-BOUNDARY-REACHABILITY-AND-TRANSITION-QUOTIENT-RESULT-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "PASS_COMPONENT_BOUNDARY_REACHABILITY__COMPONENT_TRANSITION_QUOTIENT_SEALED_LOCAL_ONLY",
+  "gate": "R5_B1B1C5B2A_COMPONENT_BOUNDARY_REACHABILITY_AND_TRANSITION_QUOTIENT_V1",
+  "binds": {
+    "prereg_fund_commit": "02a4a4cc4967a2ac59fdb95f9c3fc8bcceaf49a4",
+    "prereg_meta_commit": "0de98e936a3d4be11b053e4236e1228f66766420",
+    "prereg_blob": "c0eef56e52ca2d1b64585352c3f6b3275d4dd06e",
+    "B2_classifier_seal_blob": "1fc517db23bdc51ed9e18ca5d204677cb3290fea",
+    "C0_message_seal_blob": "0dbebe81f52a5b8411199fc44614bf8c17b6dd95",
+    "C2_full_dynamic_quotient_seal_blob": "33d6b365728c703c43371b966d9ed26020f12b98",
+    "exact_interface_result_blob": "b8e177c483821517add138a632bc3e94499f1889",
+    "finite_checker_commit": "65b305d74d10634a5313df41685ada50f8ff97f0",
+    "finite_checker_blob": "2981e3c5c49de09aeb375d63c40215de29edb7bb"
+  },
+  "theorem_bundle": [
+    {
+      "name": "PROPER_MASK_BOUNDARY_REACHABILITY_V1",
+      "statement": "Let D be any induced subgraph of the final dynamic graph and F a proper subset of [4]. The predicate rho_D(F)=1 iff G[D] has a proper coloring phi with phi(v) in A(v) cap F and colors(phi(D))=F exactly is decidable constructively in polynomial time using only the known P7-free List-3 backend.",
+      "proof": [
+        "G[D] is an induced subgraph of the original P7-free graph, hence P7-free.",
+        "If D is empty then only F=empty is exactly reachable; if D is nonempty then F=empty is unreachable.",
+        "For nonempty proper F, |F|<=3. Enumerate one distinct witness w_c for each c in F, force w_c=c, and restrict every vertex list to A(v) cap F.",
+        "Each resulting instance uses one common palette F of size at most 3, so after relabeling it is a P7-free List-3 instance.",
+        "If one instance succeeds, every color of F appears and no outside color appears, yielding exact mask F. Conversely any exact-F coloring supplies one witness vertex per color and therefore appears in one enumerated branch."
+      ],
+      "complexity": "For one F, at most |D|^|F| <= |D|^3 List-3 calls; over all proper masks only a constant factor is added.",
+      "reconstruction": "Store the successful exact-F coloring witness."
+    },
+    {
+      "name": "NONEMPTY_COMPONENT_FULL_MASK_BAD_V1",
+      "statement": "For every nonempty residual component C under any component base-list system over [4], mu_C([4])=0.",
+      "proof": "For F=[4], every residual list is B_C(v)\\F=empty; a nonempty graph cannot be list-colored from empty lists.",
+      "consequence": "Among the 168 abstract monotone tables, only 167 satisfy this necessary actual-nonempty-component condition. This strengthens only the actual-component control space; C0's <=168 bound remains valid."
+    },
+    {
+      "name": "B_C_REACHABILITY_AWARE_NEUTRALITY_IFF_V1",
+      "setup": "Fix a residual component C, dynamic b, its internal message mu_C, exact palette A(b), and common baseline D^-=D_C\\{b} for the state in which b is complete, or D_C for the anticomplete state. Compare only source-consistent alternatives with all other local boundary structure frozen.",
+      "source_guard": "If D^-=empty, the anticomplete alternative would make C uncoupled. Sealed C2 proves every residual component in the final state has D_C nonempty, so such a two-sided source-consistent transition does not exist and mu_C(empty) is never queried.",
+      "delta": "Delta_BC(C,b)={(F,alpha): F proper subset [4], rho_{D^-}(F)=1, alpha in A(b), and mu_C(F)!=mu_C(F union {alpha})}.",
+      "monotonicity_fact": "Whenever mu_C(F)!=mu_C(F union {alpha}), necessarily alpha notin F and the only possible direction is mu_C(F)=1, mu_C(F union {alpha})=0.",
+      "iff": "Delta_BC is empty iff the anticomplete and complete states induce the same local component-boundary feasibility relation on every proper list-respecting coloring of G[D^- union {b}].",
+      "proof_forward": [
+        "Take any legal local boundary coloring gamma. Let F=colors(gamma(D^-)) and alpha=gamma(b).",
+        "If F=[4], then F union {alpha}=F and the two mu values coincide trivially.",
+        "If F is proper, rho_{D^-}(F)=1 by restriction of gamma. Delta empty therefore gives equal mu values."
+      ],
+      "proof_reverse": [
+        "Take (F,alpha) in Delta_BC and an exact-F rho witness on D^-.",
+        "Because the two mu values differ, alpha notin F. Set b=alpha.",
+        "Then b has a color different from every vertex of D^-; hence this is a proper list-respecting coloring of G[D^- union {b}] regardless of b-D^- edges.",
+        "The component feasibility values differ exactly by the two mu entries, giving a genuine local-boundary distinguishing coloring."
+      ],
+      "nonneutral_certificate": "F, alpha, exact-F coloring witness on D^-, C0 coloring witness for the good mu=1 side, and the sealed bad table entry for the mu=0 side.",
+      "ceiling": "PROVED_NONNEUTRAL applies to the local component-boundary relation only; no whole-U coloring is inferred."
+    },
+    {
+      "name": "C_X0_RECOMPILED_MESSAGE_REACHABILITY_IFF_V1",
+      "setup": "Compare two component base-list systems for the same nonempty C differing only by one selected C-X0 fixed-color identity incidence. D_C and the dynamic boundary graph remain unchanged.",
+      "compilation": "Compile mu_C^0 and mu_C^1 separately with the sealed C0 method. Each needs at most 15 nonempty-mask P7-free List-3 calls and stores witnesses for good reachable masks.",
+      "delta": "Delta_CX0={F proper subset [4]: rho_{D_C}(F)=1 and mu_C^0(F)!=mu_C^1(F)}.",
+      "iff": "Delta_CX0 is empty iff the two base-system states induce the same local component-boundary feasibility relation on every legal coloring of D_C.",
+      "proof": [
+        "D_C is nonempty by C2, so every actual boundary coloring uses a nonempty mask.",
+        "If a boundary coloring uses F=[4], both messages are 0 by NONEMPTY_COMPONENT_FULL_MASK_BAD_V1.",
+        "Every other actual boundary mask is proper and is captured exactly by rho_{D_C}. Thus equality on all reachable proper masks is necessary and sufficient.",
+        "If Delta_CX0 is nonempty, its rho witness is an explicit legal local boundary coloring on which the two component states differ."
+      ],
+      "reconstruction": "For a neutral quotient, solving may forget which of the two component states was used, but reconstruction retains a pointer to the actual source state and fetches that state's C0 witness table."
+    },
+    {
+      "name": "COMPONENT_TRANSITION_SIGNATURE_V1",
+      "statement": "The local feasibility semantics of the declared component-mediated transitions factor through constant-size signatures after polynomial compilation.",
+      "B_C_signature": [
+        "15 proper-mask rho bits for D^-; under two-sided source-consistency the empty bit is 0",
+        "one component message_type_id",
+        "4-bit A(b)",
+        "canonical 64-slot Delta_BC bitset indexed by (F,alpha), with full-mask/trivial union slots fixed 0"
+      ],
+      "C_X0_signature": [
+        "15 proper-mask rho bits for D_C",
+        "message_type_id before and after recompilation",
+        "15-bit Delta_CX0 signature"
+      ],
+      "adequacy": "Equal signatures imply identical classification of the declared local component-boundary feasibility transition. Reconstruction is state-aware through an external pointer to the actual component/message witness table.",
+      "nonclaim": "This constant-size local signature does not bound how many transition occurrences interact globally through shared dynamic vertices."
+    }
+  ],
+  "lifecycle": {
+    "no_list4_calls": true,
+    "proper_mask_calls": "At most O(|D|^3*T_L3(|D|)) per rho signature up to constant mask factors.",
+    "all_BC_pairs": "At most O(n^2) component/dynamic candidates, giving a crude polynomial O(n^5*T_L3(n)) total bound before caching.",
+    "C_X0": "Each affected base-system state uses <=15 C0 List-3 calls plus a rho signature; even O(n^2) candidate identity transitions remain polynomial.",
+    "list3_backend_contract": "Uses only the published constructive polynomial List-3 algorithm for P7-free graphs on common palettes of size at most three."
+  },
+  "finite_checker_receipt": {
+    "monotone_tables": 168,
+    "actual_nonempty_component_table_upper_space": 167,
+    "proper_masks": 15,
+    "nonempty_proper_masks": 14,
+    "mu_union_color_differences_checked": 1688,
+    "all_differences_are_proper_and_1_to_0": true,
+    "witness_tuple_degree_max": 3,
+    "full_mask_list4_calls": 0
+  },
+  "resolved_unknown_scope": {
+    "B_C_component_boundary_reachability": "EXACTLY_CLASSIFIED for two-sided source-consistent transitions",
+    "C_X0_new_base_color_component_boundary_reachability": "EXACTLY_CLASSIFIED after recompiling both messages",
+    "B_X0_new_forbidden_color": "STILL_OPEN_DYNAMIC_CORE_REACHABILITY",
+    "B_B_overlapping_palettes": "STILL_OPEN_DYNAMIC_CORE_REACHABILITY",
+    "unsupported_S_and_other_pairs": "STILL_OPEN"
+  },
+  "gate_verdict": {
+    "PASS_PROPER_MASK_BOUNDARY_REACHABILITY": true,
+    "PASS_BC_REACHABILITY_AWARE_IFF": true,
+    "PASS_CX0_RECOMPILED_MESSAGE_IFF": true,
+    "PASS_COMPONENT_TRANSITION_SIGNATURE": true,
+    "OPEN_DYNAMIC_CORE_REACHABILITY": true
+  },
+  "next_frontier": {
+    "name": "R5_B1B1C5B2B_DYNAMIC_CORE_REACHABILITY_FIREWALL_V1",
+    "target": "Do not attack with a generic solver. Inventory which remaining B2 UNKNOWN classes actually require dynamic-core reachability (e.g. B-X0 new color, B-B overlapping palettes), and search existing source laws/auxiliary stable-layer structure for exact reachability certificates or source-forbidden alternatives.",
+    "C5C": "A component-mediated subproblem may now use the sealed component transition signatures, but GLOBAL C5C remains locked until the remaining dynamic-core transition quotient is resolved or explicitly excluded from a narrower theorem."
+  },
+  "scientific_ceiling": {
+    "COMPONENT_INTERNAL_STRUCTURE": "COMPILED",
+    "COMPONENT_MESSAGE_COMPUTATION": "POLYNOMIAL_SEALED",
+    "COMPONENT_TRANSITION_REACHABILITY": "POLYNOMIAL_SEALED_LOCAL",
+    "COMPONENT_MEDIATED_TRANSITION_SIGNATURE": "SEALED_CONSTANT_SIZE",
+    "GLOBAL_NONREDUNDANT_TRANSITION_QUOTIENT": "OPEN",
+    "DYNAMIC_CORE_REACHABILITY": "OPEN",
+    "C5C_GLOBAL": "LOCKED",
+    "FULL_L2_REPAIR": "OPEN",
+    "LEMMA11_P7_LIFT": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "stop": true,
+  "return_to_HQ": true
+}

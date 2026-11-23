@@ -1,0 +1,206 @@
+{
+  "schema": "hawkar.topa.protei_independent_fingerprint_audit.v1_0",
+  "artifact_id": "PROTEI-INDEPENDENT-FINGERPRINT-AUDIT-2026-08-31-v1.0",
+  "generated_date_utc": "2026-08-31",
+  "status": "PROTEI_VENDOR_FAMILY_FINGERPRINT_ESTABLISHED_DPI_SPECIFIC_REMOTE_FINGERPRINT_OPEN",
+  "scope": "Recover a real PROTEI technical fingerprint without using Cuba as an anchor, validate it against confirmed non-Cuban deployments, and only then search for the same fingerprint elsewhere using passive/public evidence.",
+  "related_artifact": "data/WATCHERS-OF-WHAT-IS-HAPPENING-2026-08-26-28-v1.4.json",
+  "epistemic_firewall": [
+    "A PROTEI vendor-family fingerprint is not automatically a PROTEI DPI-specific fingerprint.",
+    "A vendor deployment announcement is not by itself a remotely observable device fingerprint.",
+    "A country-level infrastructure-search hit is not sufficient to identify an operator or live host.",
+    "No live host/IP enumeration, credentials, exploit paths, or active scanning results are retained in this artifact.",
+    "Cuba is explicitly excluded as the evidentiary anchor for this pass."
+  ],
+  "confirmed_non_cuba_deployment_anchors": [
+    {
+      "operator": "MegaCom / Alfa Telecom",
+      "country": "Kyrgyzstan",
+      "product_role": "PROTEI DPI platform",
+      "deployment_state": "CONFIRMED_IN_COMMERCIAL_TRAFFIC",
+      "date": "2014-06-25",
+      "evidence": "PROTEI states that deployment work was completed and its DPI platform was serving MegaCom commercial traffic.",
+      "source": "https://protei.ru/news/dpi-platforma-protey-upravlyaet-trafikom-v-seti-megacom",
+      "confidence": "HIGH_VENDOR_PRIMARY_SOURCE"
+    },
+    {
+      "operator": "MegaCom / Alfa Telecom",
+      "country": "Kyrgyzstan",
+      "product_role": "PROTEI VAS and roaming systems",
+      "deployment_state": "CONFIRMED_BY_THIRD_PARTY_TELECOM_PRESS",
+      "date": "2014-02-28",
+      "evidence": "The Fast Mode reported multiple PROTEI VAS and roaming solutions deployed at MegaCom and stated the relationship had continued since 2005.",
+      "source": "https://www.thefastmode.com/technology-solutions/1140-megacom-kyrgyzstan-deploys-protei-vas-and-roaming-solutions",
+      "confidence": "MEDIUM_HIGH_THIRD_PARTY_REPORTING"
+    },
+    {
+      "operator": "TT-Mobile / MegaFon-Tajikistan",
+      "country": "Tajikistan",
+      "product_role": "PROTEI DPI platform plus Policy Controller",
+      "deployment_state": "CONFIRMED_IN_REAL_TRAFFIC",
+      "date": "2015-06-04",
+      "evidence": "PROTEI states that the DPI platform was operating stably in the TT-Mobile network and serving real traffic.",
+      "source": "https://protei.ru/news/dpi-platforma-protey-upravlyaet-trafikom-v-tadzhikistane",
+      "confidence": "HIGH_VENDOR_PRIMARY_SOURCE"
+    }
+  ],
+  "independent_infrastructure_validation": {
+    "source": "https://citizenlab.ca/research/uncovering-irans-mobile-legal-intercept-system/",
+    "publisher": "Citizen Lab, University of Toronto",
+    "published": "2023-01-16",
+    "finding": "Citizen Lab reports that Censys and Shodan showed fingerprints of PROTEI equipment in Kazakhstan, Uzbekistan, and Russia when searched on 2022-11-30. The same report says RAEX IR.21 reporting data showed PROTEI as an equipment vendor in Jordan, Kyrgyzstan, Uzbekistan, and Tajikistan.",
+    "importance": "This independently establishes that a PROTEI equipment fingerprint was observable in infrastructure-search data and that Kyrgyzstan had an independent telecom-equipment-vendor association with PROTEI.",
+    "limitation": "Citizen Lab does not publish the exact Censys/Shodan query or raw host list in the report; this pass therefore does not claim to have reproduced those historical search-engine results."
+  },
+  "recovered_fingerprint_family": [
+    {
+      "fingerprint_id": "PROTEI_ENTERPRISE_OID",
+      "class": "SNMP_ENTERPRISE_SYSOBJECTID",
+      "value": "1.3.6.1.4.1.20873",
+      "confidence": "HIGH",
+      "scope": "PROTEI_VENDOR_FAMILY",
+      "evidence": [
+        "A public Telegraf issue shows an operational PROTEI application returning this enterprise OID together with PROTEI-specific MIB names.",
+        "PROTEI documentation for multiple product families independently uses the same OwnEnterprise/sysObjectID value."
+      ],
+      "sources": [
+        "https://github.com/influxdata/telegraf/issues/9917",
+        "https://protei.ru/sites/default/files/2020-12/Messaging.%20SMS%20Firewall.pdf",
+        "https://protei.ru/sites/default/files/2023-12/RU_SD_DRA_2023.pdf",
+        "https://protei.ru/sites/default/files/2023-09/SSW4.Admin_guide.2023.pdf"
+      ]
+    },
+    {
+      "fingerprint_id": "PROTEI_MIB_NAMES",
+      "class": "SNMP_MIB_NAMESPACE",
+      "values": [
+        "PROTEI-SG-DIAM-MIB",
+        "PROTEI-AD-OMI-MIB"
+      ],
+      "confidence": "HIGH",
+      "scope": "PROTEI_VENDOR_FAMILY_MANAGEMENT_PLANE",
+      "source": "https://github.com/influxdata/telegraf/issues/9917"
+    },
+    {
+      "fingerprint_id": "PROTEI_COMPONENT_NAMES",
+      "class": "APPLICATION_COMPONENT_NAMESPACE",
+      "values": [
+        "Protei_RG_LTE",
+        "Protei_SS7FW",
+        "Sg.DIAM.PCSM.*",
+        "Ad.OMI.ACCL.*"
+      ],
+      "confidence": "HIGH",
+      "scope": "PROTEI_PRODUCT_FAMILY",
+      "sources": [
+        "https://github.com/influxdata/telegraf/issues/9917",
+        "https://github.com/vectordotdev/vector/discussions/15776",
+        "https://protei.ru/sites/default/files/2023-10/RU_PROTEI_IP_2023.pdf"
+      ]
+    },
+    {
+      "fingerprint_id": "PROTEI_WEB_TO_UI",
+      "class": "REMOTE_WEB_UI_TEXT_CANDIDATE",
+      "values": [
+        "МКД: Интерфейс администратора АТС",
+        "МКД: Интерфейс оператора УАТС",
+        "Документация на сайте protei.ru"
+      ],
+      "confidence": "MEDIUM_HIGH_AS_VENDOR_SIGNATURE",
+      "scope": "PROTEI_SSW5_MKD_WEB_UI",
+      "source": "https://tl.protei.ru/knowledge-base/sistemy-telefonnoy-svyazi/ssw5/opisanie-sistemy/vkhod-v-web",
+      "cross_deployment_result_this_pass": "NO_PUBLICLY_INDEXED_OPERATOR_LEVEL_MATCH_RECOVERED",
+      "safety_note": "Authentication secrets from vendor documentation are deliberately excluded."
+    }
+  ],
+  "fingerprint_validation_across_protei_products": {
+    "result": "PASS_FOR_VENDOR_FAMILY",
+    "evidence": [
+      {
+        "product": "PROTEI SMS Firewall",
+        "marker": "OwnEnterprise/sysObjectID = 1.3.6.1.4.1.20873",
+        "source": "https://protei.ru/sites/default/files/2020-12/Messaging.%20SMS%20Firewall.pdf"
+      },
+      {
+        "product": "PROTEI DRA",
+        "marker": "OwnEnterprise/sysObjectID = 1.3.6.1.4.1.20873 and sysDescr Protei",
+        "source": "https://protei.ru/sites/default/files/2023-12/RU_SD_DRA_2023.pdf"
+      },
+      {
+        "product": "PROTEI SSW4",
+        "marker": "OwnEnterprise/sysObjectID = 1.3.6.1.4.1.20873",
+        "source": "https://protei.ru/sites/default/files/2023-09/SSW4.Admin_guide.2023.pdf"
+      },
+      {
+        "product": "PROTEI mCore/MKD",
+        "marker": "PROTEI SNMP root = 1.3.6.1.4.1.20873",
+        "source": "https://tl.protei.ru/sites/default/files/media/2019-09mCore.MKD.AlarmProcessor.VariablesAndTraps.UserGuide.pdf"
+      }
+    ],
+    "interpretation": "The enterprise OID is a strong company/product-family fingerprint because it recurs across independent PROTEI product documentation and a real operational telemetry example. It is not unique to the DPI product line."
+  },
+  "where_the_fingerprint_appears_else": {
+    "historical_independent_country_hits": {
+      "source": "Citizen Lab citing Censys/Shodan search on 2022-11-30",
+      "countries": [
+        "Kazakhstan",
+        "Uzbekistan",
+        "Russia"
+      ],
+      "granularity": "COUNTRY_LEVEL_ONLY",
+      "operator_attribution": "NOT_DISCLOSED_IN_SOURCE"
+    },
+    "independent_equipment_vendor_associations": {
+      "source": "Citizen Lab citing RAEX IR.21 reporting data",
+      "countries": [
+        "Jordan",
+        "Kyrgyzstan",
+        "Uzbekistan",
+        "Tajikistan"
+      ],
+      "granularity": "COUNTRY_VENDOR_ASSOCIATION",
+      "operator_attribution": "NOT_DISCLOSED_IN_SOURCE"
+    },
+    "exact_public_string_search_this_pass": {
+      "markers": [
+        "1.3.6.1.4.1.20873",
+        "PROTEI-SG-DIAM-MIB",
+        "PROTEI-AD-OMI-MIB",
+        "Protei_RG_LTE",
+        "Protei_SS7FW",
+        "МКД: Интерфейс администратора АТС"
+      ],
+      "result": "NO_NEW_CONFIRMED_OPERATOR_LEVEL_DEPLOYMENT_FROM_EXACT_STRING_INDEXING",
+      "positive_matches": "Vendor documentation and public software/telemetry discussions confirm the fingerprint itself, but do not safely bridge it to additional named operators in this pass."
+    }
+  },
+  "verdict": {
+    "cuba_used_as_anchor": false,
+    "megacom_protei_relationship": "CONFIRMED",
+    "megacom_protei_dpi_deployment": "CONFIRMED",
+    "protei_vendor_family_fingerprint": "ESTABLISHED",
+    "independent_external_observation_of_protei_fingerprints": "CONFIRMED_HISTORICALLY_BY_CITIZEN_LAB",
+    "protei_dpi_specific_remote_fingerprint": "NOT_YET_ESTABLISHED",
+    "additional_named_operator_match_from_exact_fingerprint": "OPEN"
+  },
+  "next_collection_gates": [
+    "Passively search public procurement, operator engineering documents, job postings, archived configuration excerpts, and support cases for the exact vendor-family markers.",
+    "Cross-match any recovered marker only against independently confirmed PROTEI customer/deployment records before promoting operator attribution.",
+    "For MegaCom and TT-Mobile, look specifically for a DPI-bound management/configuration marker rather than assuming that a generic PROTEI enterprise OID identifies the DPI node.",
+    "Search academic and measurement publications for packet-level behavior tied specifically to PROTEI DPI, keeping vendor-family and DPI-specific signatures separate.",
+    "Do not perform or retain live host enumeration, credential testing, or active exploitation."
+  ],
+  "sources": [
+    "https://protei.ru/news/dpi-platforma-protey-upravlyaet-trafikom-v-seti-megacom",
+    "https://www.thefastmode.com/technology-solutions/1140-megacom-kyrgyzstan-deploys-protei-vas-and-roaming-solutions",
+    "https://protei.ru/news/dpi-platforma-protey-upravlyaet-trafikom-v-tadzhikistane",
+    "https://citizenlab.ca/research/uncovering-irans-mobile-legal-intercept-system/",
+    "https://github.com/influxdata/telegraf/issues/9917",
+    "https://github.com/vectordotdev/vector/discussions/15776",
+    "https://protei.ru/sites/default/files/2023-10/RU_PROTEI_IP_2023.pdf",
+    "https://protei.ru/sites/default/files/2020-12/Messaging.%20SMS%20Firewall.pdf",
+    "https://protei.ru/sites/default/files/2023-12/RU_SD_DRA_2023.pdf",
+    "https://protei.ru/sites/default/files/2023-09/SSW4.Admin_guide.2023.pdf",
+    "https://tl.protei.ru/knowledge-base/sistemy-telefonnoy-svyazi/ssw5/opisanie-sistemy/vkhod-v-web"
+  ]
+}

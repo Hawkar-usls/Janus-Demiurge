@@ -1,0 +1,79 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1C0-COUPLED-COMPONENT-MESSAGE-COMPILATION-RESULT-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "PASS_COUPLED_COMPONENT_MESSAGE_COMPILATION",
+  "gate": "R5_B1B1C0_COUPLED_COMPONENT_MESSAGE_COMPILATION_GATE_V1",
+  "binds": {
+    "prereg_fund_commit": "c347059fb25abca21abd0b15960247b80324d871",
+    "prereg_meta_commit": "e089a9c6ea8397cb40d9f14f6270e4a9dc17d1f1",
+    "prereg_blob": "32954157e3776b2362314d611421c78f031975df",
+    "finite_message_checker_commit": "ef2a714eda7be69bbb0416b78caaeda58034a188",
+    "finite_message_checker_blob": "0181601ae1e1c01e0660a85c0564c4af54f7c0d5",
+    "wall_semantic_collapse_seal_blob": "b3c8693fcd27b8284eadb5d30f502bd2e32fb37c"
+  },
+  "theorem": {
+    "name": "COUPLED_COMPONENT_MESSAGE_COMPILATION_V1",
+    "scope": "Any connected final residual Y0 component C with nonempty dynamic complete-neighbor set D_C in a P7-free source-valid state satisfying the frozen component-uniformity axioms.",
+    "exact_semantics": [
+      "Residual Y0 is anticomplete to the current seed, so dynamic seed colors do not remove colors from C.",
+      "Precolored X0 vertices may be mixed on C; absorb them exactly into vertex-specific fixed base lists B_C(u)=[4]\\f(N(u)∩X0).",
+      "Axiom (iv) implies every dynamic outside vertex outside Y0∪X0 is complete or anticomplete to connected C.",
+      "Therefore, for an outside coloring c, all dynamic influence on C is exactly the set F_C(c) of colors used by dynamic vertices complete to C.",
+      "Thus mu_C(F)=1 iff G[C] has a proper list-coloring from L_F(u)=B_C(u)\\F."
+    ],
+    "list3_reduction": [
+      "If D_C is nonempty, every reachable F_C(c) is nonempty.",
+      "For every nonempty F, every L_F(u) is contained in [4]\\F, whose global size is at most 3.",
+      "G[C] is induced in the ambient P7-free graph, hence is P7-free.",
+      "Relabel [4]\\F to at most three canonical colors and call the constructive P7-free List-3-Coloring algorithm.",
+      "At most 15 calls evaluate mu_C(F) for all nonempty masks F."
+    ],
+    "branch_logic": [
+      "If every nonempty F has mu_C(F)=0, then no reachable outside coloring can extend through C because every reachable F is nonempty; return exact branch UNSAT.",
+      "If some nonempty F has mu_C(F)=1, monotonicity gives mu_C(empty)=1, so the full 16-entry table is then known."
+    ],
+    "monotonicity": "If F subseteq F' and mu_C(F')=1, the same coloring witnesses mu_C(F)=1.",
+    "witness_storage": "Store one explicit component coloring for each allowed nonempty mask. There are at most 15 masks; since residual components are disjoint, total witness storage over all components is polynomial.",
+    "lifecycle": "15 calls per coupled component to a polynomial constructive backend plus O(1)-mask bookkeeping; hence total compilation over all residual components is polynomial."
+  },
+  "finite_semantic_language": {
+    "good_masks": "The good masks {F:mu_C(F)=1} form a down-set of the Boolean lattice 2^[4].",
+    "message_type_upper_bound": 168,
+    "justification": "There are exactly 168 down-sets / monotone Boolean functions on four variables (Dedekind number M(4)); the repository finite checker independently enumerates this count.",
+    "bad_masks": "The bad masks form an upset.",
+    "MIN_BAD": "The inclusion-minimal bad masks form an antichain.",
+    "max_MIN_BAD_size": 6,
+    "justification_min_bad": "By Sperner's theorem for 2^[4], every antichain has size at most binomial(4,2)=6; independently confirmed by the finite checker.",
+    "exact_constraint": "For every M in MIN_BAD(C), a legal outside coloring must satisfy M not subseteq F_C(c), equivalently at least one color in M is absent from colors used on D_C."
+  },
+  "constructive_backend": {
+    "source": "Bonomo-Chudnovsky-Maceli-Schaudt-Stein-Zhong, Three-coloring and list three-coloring of graphs without induced paths on seven vertices",
+    "imported_fact": "P7-free List-3-Coloring is polynomial-time solvable and returns an explicit coloring if one exists.",
+    "role": "Used only on nonempty F, where the global remaining palette has size at most three."
+  },
+  "exact_limits": [
+    "This theorem does not solve uncoupled components D_C=empty; only F=empty is reachable there, which would be a four-color/list-four subproblem.",
+    "This theorem does not imply tractable joint composition of many component messages.",
+    "The 168-type bound is an alphabet bound, not a bound on the number of components or global assignments.",
+    "No claim that every one of the 168 types is source-realizable.",
+    "No full L2 repair or Lemma11 P7 lift."
+  ],
+  "frontier_update": {
+    "INDIVIDUAL_COUPLED_MESSAGE_COMPUTATION": "POLYNOMIAL",
+    "COUPLED_MESSAGE_TYPE_COUNT": "<=168",
+    "MIN_BAD_PER_COMPONENT": "<=6",
+    "PRIMARY_UNKNOWN": "JOINT_MESSAGE_COMPOSITION"
+  },
+  "scientific_ceiling": {
+    "WALL_SEMANTIC_COLLAPSE": "SEALED_PASS",
+    "COUPLED_COMPONENT_MESSAGE_COMPILATION": "PROVED",
+    "JOINT_MESSAGE_COMPOSITION": "OPEN",
+    "FULL_L2_REPAIR": "OPEN",
+    "LEMMA11_P7_LIFT": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "stop": true,
+  "return_to_HQ": true
+}

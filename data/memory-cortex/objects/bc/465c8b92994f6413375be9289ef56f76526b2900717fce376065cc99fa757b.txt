@@ -1,0 +1,115 @@
+{
+  "schema": "janus.meta_registry.fallout3_fos_header_plugin_authentication_gate.v3_2a",
+  "artifact_id": "FALLOUT-3-FOS-HEADER-PLUGIN-AUTHENTICATION-GATE-v3.2a",
+  "title": "Fallout 3 — FOS Header / Plugin-Environment Authentication Gate v3.2a",
+  "created_at_local": "2026-08-14T15:31:00+03:00",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "artifact_class": "PRIMARY_OPEN_SOURCE_FORMAT_BOUND_SAVEGAME_AUTHENTICATION_GATE",
+  "status": "IMPLEMENTED_NOT_EXECUTED_ON_REAL_T0_T3_SAVES_BODY_CHANGE_STATE_DECODER_REMAINS_OPEN",
+  "parents": [
+    "registry/myth_busted/FALLOUT-3-JAMES-RUNTIME-T0-T3-SAVEGAME-DIFFERENTIAL-PROTOCOL-v3.1.json",
+    "data/FALLOUT-3-F3DAD-PRIMARY-ARCHIVE-MANIFEST-RECEIPT-v1.0.json"
+  ],
+  "purpose": "Authenticate each future T0/T1/T2/T3 input as a structurally valid Fallout 3 save header and freeze its plugin/load-order manifest before any runtime-state comparison. This gate deliberately stops at the body boundary and does not claim to decode ChangeForms, quest-state records or autobiographical-memory payloads.",
+  "primary_format_source": {
+    "repository": "Nexus-Mods/Vortex",
+    "source_snapshot_commit": "87eb92131c2e85dd52d4fdb9a69d41b4eb9148e6",
+    "source_snapshot_date_utc": "2026-08-13T15:05:27Z",
+    "parser_file": "extensions/gamebryo-savegame-management/src/savegame/GamebryoSaveGame.ts",
+    "parser_blob_sha": "308e77658abb22e70cb6e8b52cc86a7781c68e03",
+    "binary_reader_file": "extensions/gamebryo-savegame-management/src/savegame/BinaryReader.ts",
+    "binary_reader_blob_sha": "826686cfd2f2e810abb24ccb36e4900305b8652f",
+    "origin_pr": 22688,
+    "origin_pr_head": "c385aa80b8c3c162c909ea5d97bfaa6c7500ef37",
+    "origin_pr_merge_commit": "cdf527d5dc8cf09b179503647960c83da84c9fe9",
+    "origin_pr_status": "MERGED",
+    "source_authority": "PRIMARY_IMPLEMENTATION_SOURCE_FOR_VORTEX_SAVE_METADATA_PARSING",
+    "not_authority_for": "FALLOUT3_SAVE_BODY_CHANGEFORM_OR_QUEST_STATE_FORMAT"
+  },
+  "source_bound_fo3_header_model": {
+    "magic": "FO3SAVEGAME",
+    "post_magic_fields": [
+      "uint32 save_header_size",
+      "uint32 file_version; Vortex implementation comments that this is always 0x30",
+      "one delimiter byte",
+      "FO3-vs-New-Vegas discriminator: bytes before the next 0x7c marker are 4 for FO3 and 5 for NV",
+      "field-marker mode enabled after discrimination",
+      "uint32 screenshot_width",
+      "uint32 screenshot_height",
+      "uint32 save_number",
+      "length-prefixed character_name",
+      "length-prefixed unknown_string",
+      "int32 character_level",
+      "length-prefixed location",
+      "length-prefixed play_time",
+      "RGB screenshot bytes width*height*3",
+      "five bytes skipped by Vortex as unknown byte plus plugin-data-size area",
+      "uint8 plugin_count followed by field-marker-delimited length-prefixed plugin names"
+    ],
+    "field_marker": "0x7c / ASCII |",
+    "plugin_name_max_length_from_vortex": 256,
+    "screenshot_dimension_guard_from_vortex": "width<2000 AND height<2000"
+  },
+  "tool": {
+    "path": "tools/fo3_fos_header_plugin_manifest_v0_1.py",
+    "authority": "HEADER_AND_PLUGIN_MANIFEST_AUTHENTICATION_ONLY",
+    "outputs": [
+      "cryptographic SHA-256 and byte size for each save",
+      "FO3 magic and structural discriminator result",
+      "header version and save metadata",
+      "plugin list and ordered plugin-manifest SHA-256",
+      "post-plugin body offset and remaining body byte count",
+      "cross-timepoint exact plugin-manifest equality result"
+    ]
+  },
+  "t0_t3_authentication_rules": {
+    "A0_FILE_HASH": "Every input receives SHA-256 before parsing.",
+    "A1_MAGIC": "Must begin with FO3SAVEGAME.",
+    "A2_FO3_DISCRIMINATOR": "Early pre-marker field size must be exactly 4; New Vegas-like size 5 is rejected.",
+    "A3_FIELD_MARKERS": "Every parsed marked scalar/string boundary must contain 0x7c exactly.",
+    "A4_SCREENSHOT_BOUNDS": "Screenshot dimensions must be within the Vortex guard and screenshot bytes must fit in the file.",
+    "A5_PLUGIN_PARSE": "Ordered plugin list must parse completely under the source-bound field-marker/string rules.",
+    "A6_PLUGIN_ENVIRONMENT": "T0/T1/T2/T3 must have identical ordered plugin manifests for strict differential admission unless a later artifact explicitly models a load-order intervention.",
+    "A7_BODY_BOUNDARY": "Bytes after plugin parsing are opaque body bytes in v3.2a and are never interpreted as ChangeForms or quest state here."
+  },
+  "lineage_effect": {
+    "what_v3_2a_can_prove": "The compared saves are structurally Fallout 3-format inputs with frozen file identities and a directly comparable plugin environment.",
+    "what_v3_2a_cannot_prove": [
+      "that the saves belong to the same player-character lineage solely from matching metadata",
+      "that any FormID raw-byte occurrence is a structured runtime reference",
+      "that MQDadRef or MQ04Doc has a ChangeForm",
+      "that any persisted engine state is an in-world memory backup",
+      "that any body bytes encode James autobiographical memory"
+    ]
+  },
+  "critical_new_boundary": {
+    "finding": "The current Vortex Fallout 3 parser terminates its semantic parsing after save metadata, screenshot and plugin list; it does not expose a Fallout 3 ChangeForm/body decoder in the reviewed implementation files.",
+    "effect": "Do not inherit Skyrim/FO4 or community-described ChangeForm assumptions into Fallout 3. Open a separate v3.2b body-format gate and require primary implementation/spec evidence or controlled real-save reverse engineering before structured runtime claims."
+  },
+  "admission_matrix": {
+    "PRIMARY_FO3_HEADER_IMPLEMENTATION_SOURCE": "PASS_VORTEX",
+    "FO3_MAGIC_AND_HEADER_LAYOUT": "PASS_FOR_V3_2A_SCOPE",
+    "FIELD_MARKER_BEHAVIOR": "PASS_FROM_VORTEX_BINARYREADER",
+    "PLUGIN_LIST_LAYOUT": "PASS_FROM_VORTEX_BINARYREADER",
+    "REAL_T0_T3_SAVE_INPUTS": "NOT_PRESENT",
+    "T0_T3_PLUGIN_ENVIRONMENT_EQUALITY": "NOT_EXECUTED",
+    "FALLOUT3_BODY_CHANGEFORM_FORMAT": "NOT_ESTABLISHED",
+    "STRUCTURED_MQDADREF_RUNTIME_STATE": "NOT_ESTABLISHED",
+    "PERSISTED_JAMES_RUNTIME_STATE": "NOT_ESTABLISHED",
+    "PERSISTED_JAMES_AUTOBIOGRAPHICAL_MEMORY": "NOT_ESTABLISHED"
+  },
+  "hard_rules": [
+    "VALID_FO3_HEADER != VALID_WHOLE_SAVE_SEMANTICS",
+    "MATCHING_PLUGIN_LIST != SAME_GAMEPLAY_TIMELINE",
+    "BODY_OFFSET != CHANGEFORM_TABLE_OFFSET",
+    "TRAILING_BODY_BYTES != STRUCTURED_RUNTIME_STATE",
+    "VORTEX_METADATA_PARSER != CHANGEFORM_SPECIFICATION",
+    "ENGINE_SAVE_STATE != IN_WORLD_BRAUN_MEMORY_STORAGE"
+  ],
+  "next_gate": {
+    "name": "FALLOUT-3-FOS-BODY-CHANGE-STATE-FORMAT-EVIDENCE-GATE-v3.2b",
+    "status": "OPEN",
+    "activation": "Search for primary Fallout 3 body/change-record parsing implementation or derive a bounded structure from controlled real T0-T3 saves without borrowing unsupported formats from other Bethesda titles.",
+    "promotion_condition": "At least one independently verifiable parser/spec path must map a body byte range to a structured Fallout 3 quest/reference runtime record before v3.1 R1 can pass."
+  }
+}

@@ -1,0 +1,736 @@
+{
+  "schema": "hawkar.topa.spider.watchers_of_what_is_happening.v1",
+  "artifact_id": "WATCHERS-OF-WHAT-IS-HAPPENING-2026-08-26-28-v1.0",
+  "title": "WATCHERS OF WHAT IS HAPPENING",
+  "generated_date_utc": "2026-08-28",
+  "status": "OPEN_INCIDENT_CORRELATION_DOSSIER",
+  "purpose": "Document public GitHub witnesses and repositories around the 2026-08-26/28 Actions scheduler/control-plane anomaly, compare their fingerprints with the JANUS Record Drift Observatory, audit JANUS as a possible contributor, and preserve a separate Russian-services comparison lane without conflating correlation with causation.",
+  "epistemic_firewall": [
+    "Public handle is not a real-world identity; do not infer name, employer, country, or motive unless explicitly published and relevant.",
+    "A similar symptom is not proof of a shared root cause.",
+    "A coincident outage on another provider is not proof of a coordinated attack.",
+    "Repository names marked PRIVATE_OR_UNDISCLOSED or UNKNOWN must not be guessed.",
+    "Second-hand repository references are kept separate from first-hand witness testimony.",
+    "JANUS is not exempt from suspicion; its own event generation is audited using the same standards.",
+    "Runs and jobs are different accounting units; platform-scale comparisons are order-of-magnitude context only."
+  ],
+  "official_controls": {
+    "github_actions_2026_08_26": {
+      "classification": "OFFICIAL_ROOT_CAUSE_CONTROL",
+      "observed_impact_start_utc": "2026-08-26T15:02:00Z",
+      "core_finding": "GitHub reported saturation of writes to the database primary used by the service processing Actions workflow triggers. A primary failover did not fully recover the system. GitHub attributed the saturation to growing daily peak load combined with an upstream issue in its event-processing infrastructure that amplified bursts.",
+      "throttling_interpretation": "Backpressure/load shedding: reduce admitted inbound event/work rate below the distressed system's sustainable processing rate, restart services, drain backlog, then gradually raise the admission limit. GitHub said the downstream throttles had been set about 10% too high to protect the system, so the guardrail admitted more load than the degraded path could safely absorb.",
+      "source_url": "https://www.githubstatus.com/"
+    },
+    "github_schedule_documentation": {
+      "classification": "OFFICIAL_BEHAVIOR_CONTROL",
+      "finding": "GitHub documents that scheduled events can be delayed under high load and, if load is sufficiently high, some queued jobs may be dropped; start-of-hour is a known high-load period.",
+      "relevance": "Several witness cases use off-hour minutes (:17, :23, :30), so ordinary top-of-hour delay does not fully explain multi-hour materialization delays or dozens of consecutive missing run objects.",
+      "source_url": "https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule"
+    }
+  },
+  "janus_reference_case": {
+    "repository": "Hawkar-usls/janus-meta-registry",
+    "workflow": ".github/workflows/record-drift-daily.yml",
+    "configured_cron_utc": "17 5 * * *",
+    "2026_08_26": {
+      "expected_utc": "2026-08-26T05:17:00Z",
+      "run_created_utc": "2026-08-26T05:51:33Z",
+      "materialization_delay_seconds": 2073,
+      "materialization_delay_human": "00:34:33",
+      "runner_queue_after_creation_seconds": 0.0,
+      "classification": "S2_SCHEDULE_DELAY_30_TO_120_MIN"
+    },
+    "2026_08_27": {
+      "expected_utc": "2026-08-27T05:17:00Z",
+      "run_created_utc": "2026-08-27T16:32:23Z",
+      "materialization_delay_seconds": 40523,
+      "materialization_delay_human": "11:15:23",
+      "runner_queue_after_creation_seconds": 0.0,
+      "classification": "S3_SCHEDULE_DELAY_OVER_120_MIN"
+    },
+    "fingerprint": [
+      "Failure/delay is before run-object materialization.",
+      "Once the run object exists, runner queue is 0 seconds.",
+      "Cron minute :17 is not at the top of the hour.",
+      "Record Drift instrument self-tests passed.",
+      "Stored record drift remained unconfirmed; this is an operational scheduler observation."
+    ],
+    "sources": [
+      "https://github.com/Hawkar-usls/janus-meta-registry/blob/main/registry/record_drift/JANUS-RECORD-DRIFT-JOURNAL-20260826T055143Z.json",
+      "https://github.com/Hawkar-usls/janus-meta-registry/blob/main/registry/record_drift/JANUS-RECORD-DRIFT-JOURNAL-20260827T163235Z.json"
+    ]
+  },
+  "watchers": [
+    {
+      "handle": "drakedog-kr",
+      "role": "FIRST_HAND_SCHEDULE_WITNESS",
+      "discussion": 206019,
+      "source_url": "https://github.com/orgs/community/discussions/206019",
+      "repositories": [
+        {
+          "repo": "drakedog-kr/hatzze",
+          "visibility": "public",
+          "association": "HIGH_CONFIDENCE_INFERRED_FROM_EXACT_WORKFLOW_MATCH",
+          "workflow": ".github/workflows/daily-update.yml"
+        }
+      ],
+      "observations": [
+        "Public repo; GitHub-hosted ubuntu-latest.",
+        "08:30 UTC slot on Aug 26 created 39 minutes late.",
+        "21:30 UTC slot on Aug 26 created 3h27m late.",
+        "08:30 UTC slot on Aug 27 created 10h41m late.",
+        "Later 21:30 and 22:30 slots created no run object at observation time.",
+        "Manual workflow_dispatch of the same workflow created and started within seconds.",
+        "From Aug 22-26 the same schedules were already routinely 15-41 minutes late."
+      ],
+      "common_with_janus": [
+        "Public repository.",
+        "GitHub-hosted Ubuntu runner path.",
+        "Off-hour cron minute.",
+        "Pre-run-object schedule materialization failure/delay.",
+        "Pre-existing tens-of-minutes latency followed by multi-hour escalation."
+      ],
+      "difference_from_janus": [
+        "Uses :30 rather than :17.",
+        "Observed complete missing run objects for later slots, while JANUS Aug27 eventually materialized."
+      ],
+      "evidence_strength": "VERY_HIGH"
+    },
+    {
+      "handle": "shinkunda",
+      "role": "FIRST_HAND_SCHEDULE_WITNESS",
+      "discussion": 206027,
+      "source_url": "https://github.com/orgs/community/discussions/206027",
+      "repositories": [
+        {
+          "repo": "shinkunda/my-virtual-company",
+          "previous_name": "shinkunda/HypeLog",
+          "visibility": "private",
+          "association": "EXPLICIT"
+        }
+      ],
+      "observations": [
+        "hourly-snapshot cron 23 * * * * and daily-vods cron 17 4 * * *.",
+        "Last scheduled run Aug26 17:37 UTC; first missed hourly slot Aug26 18:23 UTC.",
+        "About 33 consecutive hourly slots and one daily slot missed by Aug28 03:02 UTC.",
+        "No queued, startup_failure, failed, or other run objects were created.",
+        "Manual workflow_dispatch Aug28 01:19 succeeded in 58 seconds.",
+        "Disable/enable and repeated default-branch workflow edits did not restore scheduling.",
+        "Repository rename happened about 16 hours after scheduling had already failed."
+      ],
+      "common_with_janus": [
+        "Off-hour cron minute, including :17.",
+        "Failure isolated to schedule materialization rather than job code.",
+        "Manual/control path remains healthy.",
+        "Persistence beyond the public incident's resolved timestamp."
+      ],
+      "difference_from_janus": [
+        "Private GitHub Free repository.",
+        "Complete schedule-registration disappearance rather than eventual 11h15m materialization."
+      ],
+      "evidence_strength": "VERY_HIGH"
+    },
+    {
+      "handle": "tjj0rdan",
+      "role": "FIRST_HAND_SCHEDULE_WITNESS",
+      "discussion": 205984,
+      "source_url": "https://github.com/orgs/community/discussions/205984",
+      "repositories": [
+        {
+          "repo": "tjj0rdan/fara-monitor",
+          "visibility": "private",
+          "association": "EXPLICIT"
+        },
+        {
+          "repo": "tjj0rdan/scheduler-scratch-test",
+          "visibility": "UNSTATED_OR_PUBLICLY_UNVERIFIED",
+          "association": "EXPLICIT"
+        }
+      ],
+      "observations": [
+        "Brand-new account created Aug26.",
+        "Scheduled workflows never fired across two unrelated repositories.",
+        "Manual workflow_dispatch runs worked reliably.",
+        "First production workflow was pushed at 16:08 UTC Aug26, during the official incident window.",
+        "A fresh scratch repository created Aug27 13:42 UTC also failed to schedule after the official incident was resolved."
+      ],
+      "common_with_janus": [
+        "Schedule-specific trigger/materialization failure.",
+        "Independent repository reproduction.",
+        "Off-hour cron minute around :15."
+      ],
+      "difference_from_janus": [
+        "Brand-new account, unlike the established JANUS repository.",
+        "No prior healthy schedule history on the account."
+      ],
+      "evidence_strength": "HIGH"
+    },
+    {
+      "handle": "dealvia360",
+      "role": "FIRST_HAND_SCHEDULE_WITNESS",
+      "discussion": 205999,
+      "source_url": "https://github.com/orgs/community/discussions/205999",
+      "repositories": [
+        {
+          "repo": "PRIVATE_OR_UNDISCLOSED",
+          "visibility": "private",
+          "association": "EXPLICIT_PRIVATE"
+        }
+      ],
+      "observations": [
+        "Workflow staging-cron.yml active on main.",
+        "Schedules 2/5 * * * * and 5/10 * * * * stopped creating run objects.",
+        "Push and pull_request CI continued to work.",
+        "No queued/waiting/in_progress/skipped/cancelled/completed schedule object existed.",
+        "Issue persisted after public incidents were marked resolved."
+      ],
+      "common_with_janus": [
+        "Trigger-materialization boundary is implicated.",
+        "Other GitHub Actions trigger paths remained functional.",
+        "Not explained by runner code or environment."
+      ],
+      "difference_from_janus": [
+        "Private repository; much higher schedule frequency."
+      ],
+      "evidence_strength": "HIGH"
+    },
+    {
+      "handle": "echalegre",
+      "role": "FIRST_HAND_SCHEDULE_WITNESS",
+      "discussion": 205976,
+      "source_url": "https://github.com/orgs/community/discussions/205976",
+      "repositories": [
+        {
+          "repo": "UNKNOWN",
+          "visibility": "UNKNOWN",
+          "association": "NOT_DISCLOSED"
+        }
+      ],
+      "observations": [
+        "Several scheduled pipelines stopped starting on Aug27.",
+        "Created a side-effect-free test pipeline every 5 minutes on ubuntu-24.04.",
+        "The control pipeline also failed to run."
+      ],
+      "common_with_janus": [
+        "GitHub-hosted Ubuntu.",
+        "Clean control workflow also fails, supporting platform-side schedule trouble."
+      ],
+      "difference_from_janus": [
+        "Repository identity not publicly resolved."
+      ],
+      "evidence_strength": "HIGH"
+    },
+    {
+      "handle": "fmf1109",
+      "role": "FIRST_HAND_SCHEDULE_WITNESS_PARTIAL",
+      "discussion": 206028,
+      "source_url": "https://github.com/orgs/community/discussions/206028",
+      "repositories": [
+        {
+          "repo": "UNKNOWN",
+          "visibility": "UNKNOWN",
+          "association": "NOT_RETRIEVED"
+        }
+      ],
+      "observations": [
+        "GitHub Community listing title: 'Scheduled GitHub Actions workflow not triggering, but workflow_dispatch works'.",
+        "Direct discussion body was not retrievable during this collection pass."
+      ],
+      "common_with_janus": [
+        "Title-level fingerprint is schedule path broken while manual dispatch works."
+      ],
+      "difference_from_janus": [
+        "Evidence currently title-only; no repository/timing details preserved yet."
+      ],
+      "evidence_strength": "MEDIUM_TITLE_ONLY"
+    },
+    {
+      "handle": "ProposeALL",
+      "role": "FIRST_HAND_PRE_JOB_CONTROL_PLANE_WITNESS",
+      "discussion": 205874,
+      "source_url": "https://github.com/orgs/community/discussions/205874",
+      "repositories": [
+        {
+          "repo": "PRIVATE_OR_UNDISCLOSED",
+          "visibility": "private",
+          "association": "EXPLICIT_PRIVATE"
+        }
+      ],
+      "observations": [
+        "Runs reported queued but jobs endpoint returned zero jobs.",
+        "No runner or workflow steps ever existed.",
+        "Normal and force cancellation returned contradictory states.",
+        "Local validation passed 223 tests."
+      ],
+      "common_with_janus": [
+        "Failure is upstream of user job execution and runner code."
+      ],
+      "difference_from_janus": [
+        "Run object exists; JANUS schedule anomaly is primarily before run-object creation."
+      ],
+      "evidence_strength": "HIGH"
+    },
+    {
+      "handle": "Uricaryn",
+      "role": "FIRST_HAND_PRE_JOB_CONTROL_PLANE_WITNESS",
+      "discussion": 205894,
+      "source_url": "https://github.com/orgs/community/discussions/205894",
+      "repositories": [
+        {
+          "repo": "PRIVATE_OR_UNDISCLOSED",
+          "visibility": "UNKNOWN",
+          "association": "NOT_DISCLOSED"
+        }
+      ],
+      "observations": [
+        "Security CI and Docker Publish runs remained queued for hours with jobs: [].",
+        "Cancel and force-cancel produced contradictory 409 states.",
+        "Newer runs later started and completed normally.",
+        "Uses GitHub-hosted ubuntu-latest."
+      ],
+      "common_with_janus": [
+        "Control-plane/pre-runner failure on GitHub-hosted infrastructure."
+      ],
+      "difference_from_janus": [
+        "Object exists but is orphaned; not a missing schedule event."
+      ],
+      "evidence_strength": "HIGH"
+    },
+    {
+      "handle": "IronsTeo1",
+      "role": "FIRST_HAND_PRE_JOB_CONTROL_PLANE_WITNESS",
+      "discussion": 205893,
+      "source_url": "https://github.com/orgs/community/discussions/205893",
+      "repositories": [
+        {
+          "repo": "IronsTeo1/musimatch-prod",
+          "visibility": "PUBLICLY_NAMED_BUT_CURRENTLY_NOT_ACCESSIBLE_IN_CONNECTOR",
+          "association": "EXPLICIT"
+        }
+      ],
+      "observations": [
+        "workflow_dispatch run 32984162981 created 2026-08-26 15:08:08 UTC.",
+        "REST reported queued, zero jobs, never updated.",
+        "Web/API cancellation paths returned contradictory states."
+      ],
+      "common_with_janus": [
+        "Trigger/control-plane instability during the official incident onset."
+      ],
+      "difference_from_janus": [
+        "Manual trigger and run object existed."
+      ],
+      "evidence_strength": "VERY_HIGH_TIMING"
+    },
+    {
+      "handle": "azzam99999",
+      "role": "FIRST_HAND_PRE_RUNNER_WITNESS",
+      "discussion": 205888,
+      "source_url": "https://github.com/orgs/community/discussions/205888",
+      "repositories": [
+        {
+          "repo": "PRIVATE_OR_UNDISCLOSED",
+          "visibility": "private",
+          "association": "EXPLICIT_PRIVATE"
+        }
+      ],
+      "observations": [
+        "GitHub-hosted ubuntu-24.04 worked at ~14:56 UTC Aug26.",
+        "Shortly afterward runs began failing before runner assignment.",
+        "Affected job remained queued in Jobs API with zero steps; notifications said no jobs were run/startup failure.",
+        "Quota, billing, storage, Actions permissions, and self-hosted runner causes were ruled out."
+      ],
+      "common_with_janus": [
+        "Abrupt platform-side transition around the same official incident onset; failure before user steps."
+      ],
+      "difference_from_janus": [
+        "Runner-assignment/planning symptom rather than cron materialization."
+      ],
+      "evidence_strength": "HIGH"
+    },
+    {
+      "handle": "Lendfating",
+      "role": "FIRST_HAND_ORPHAN_RUN_WITNESS",
+      "discussion": 205924,
+      "source_url": "https://github.com/orgs/community/discussions/205924",
+      "repositories": [
+        {
+          "repo": "elfie-univ/ElfieNest",
+          "visibility": "public",
+          "association": "EXPLICIT"
+        }
+      ],
+      "observations": [
+        "workflow_dispatch run 32984097145 created Aug26 15:06:45 UTC.",
+        "Run stayed queued with no assigned job.",
+        "Cancel, force-cancel, and delete failed."
+      ],
+      "common_with_janus": [
+        "Public repository using GitHub Actions; failure during core incident window before job execution."
+      ],
+      "difference_from_janus": [
+        "Manual run object is orphaned rather than missing scheduled event."
+      ],
+      "evidence_strength": "VERY_HIGH_TIMING"
+    },
+    {
+      "handle": "nuevakora-8888",
+      "role": "FIRST_HAND_ORPHAN_RUN_WITNESS",
+      "discussion": 205985,
+      "source_url": "https://github.com/orgs/community/discussions/205985",
+      "repositories": [
+        {
+          "repo": "nuevakora-8888/nuevakora",
+          "visibility": "PUBLICLY_NAMED_BUT_CURRENTLY_NOT_ACCESSIBLE_IN_CONNECTOR",
+          "association": "EXPLICIT"
+        }
+      ],
+      "observations": [
+        "workflow_dispatch run 32985700332 created Aug26 15:38:01 UTC.",
+        "Queued with zero jobs, steps, and artifacts; updated_at never advanced.",
+        "Cancellation failed."
+      ],
+      "common_with_janus": [
+        "Same broad trigger/control-plane incident family."
+      ],
+      "difference_from_janus": [
+        "Manual trigger object exists."
+      ],
+      "evidence_strength": "HIGH"
+    },
+    {
+      "handle": "jgbmacedo",
+      "role": "FIRST_HAND_ORPHAN_RUN_WITNESS",
+      "discussion": 205897,
+      "source_url": "https://github.com/orgs/community/discussions/205897",
+      "repositories": [
+        {
+          "repo": "PRIVATE_OR_UNDISCLOSED",
+          "visibility": "private",
+          "association": "EXPLICIT_PRIVATE"
+        }
+      ],
+      "observations": [
+        "pull_request run 32984939053 created Aug26 15:23:26 UTC stayed queued with zero jobs and no runner.",
+        "Related PR check had startup_failure with no runner, steps, annotations, or logs.",
+        "Cancellation from web failed."
+      ],
+      "common_with_janus": [
+        "Pre-execution control-plane degradation in the same incident window."
+      ],
+      "difference_from_janus": [
+        "PR-trigger path, not cron."
+      ],
+      "evidence_strength": "HIGH"
+    },
+    {
+      "handle": "sterling-max",
+      "role": "FIRST_HAND_CORROBORATOR",
+      "discussion": 205897,
+      "source_url": "https://github.com/orgs/community/discussions/205897",
+      "repositories": [
+        {
+          "repo": "UNKNOWN",
+          "visibility": "UNKNOWN",
+          "association": "NOT_DISCLOSED"
+        }
+      ],
+      "observations": [
+        "Reported the same stuck-run problem; force-cancel did not work."
+      ],
+      "common_with_janus": [
+        "Independent account corroboration of control-plane inconsistency."
+      ],
+      "difference_from_janus": [
+        "Insufficient public timing/repository detail."
+      ],
+      "evidence_strength": "MEDIUM"
+    },
+    {
+      "handle": "capephotos",
+      "role": "FIRST_HAND_CORROBORATOR",
+      "discussion": 205897,
+      "source_url": "https://github.com/orgs/community/discussions/205897",
+      "repositories": [
+        {
+          "repo": "UNKNOWN",
+          "visibility": "UNKNOWN",
+          "association": "NOT_DISCLOSED"
+        }
+      ],
+      "observations": [
+        "Reported an Action stuck for about seven hours and impossible to cancel."
+      ],
+      "common_with_janus": [
+        "Independent long-duration control-plane symptom."
+      ],
+      "difference_from_janus": [
+        "No public trigger/repository details."
+      ],
+      "evidence_strength": "MEDIUM"
+    },
+    {
+      "handle": "takaya-saito-design",
+      "role": "FIRST_HAND_PRE_RUNNER_WITNESS",
+      "discussion": 205948,
+      "source_url": "https://github.com/orgs/community/discussions/205948",
+      "repositories": [
+        {
+          "repo": "TWO_UNDISCLOSED_REPOSITORIES",
+          "visibility": "UNKNOWN",
+          "association": "EXPLICIT_COUNT_ONLY"
+        }
+      ],
+      "observations": [
+        "Two independent repos reproduced fresh workflow_dispatch/push failures.",
+        "Minimal ubuntu-latest workflow on new branches failed before steps.",
+        "Jobs showed runner_id: 0 and empty runner_name after incidents were marked resolved."
+      ],
+      "common_with_janus": [
+        "Residual post-resolution pre-runner/control-plane symptoms across independent repos."
+      ],
+      "difference_from_janus": [
+        "Fresh manual/push triggers rather than cron."
+      ],
+      "evidence_strength": "HIGH"
+    },
+    {
+      "handle": "iSurveillanz",
+      "role": "FIRST_HAND_PAGES_WITNESS",
+      "discussion": 205851,
+      "source_url": "https://github.com/orgs/community/discussions/205851",
+      "repositories": [
+        {
+          "repo": "iSurveillanz/NU",
+          "visibility": "PUBLICLY_NAMED",
+          "association": "EXPLICIT"
+        }
+      ],
+      "observations": [
+        "GitHub Pages deployment became stuck.",
+        "Deployment lock blocked subsequent Pages work.",
+        "Cancel workflow failed."
+      ],
+      "common_with_janus": [
+        "JANUS also uses GitHub Pages and generated Pages deployment runs."
+      ],
+      "difference_from_janus": [
+        "Pages deployment lock family, not cron scheduler materialization."
+      ],
+      "evidence_strength": "MEDIUM_HIGH"
+    },
+    {
+      "handle": "ActivationSupport",
+      "role": "FIRST_HAND_PAGES_WITNESS",
+      "discussion": 206009,
+      "source_url": "https://github.com/orgs/community/discussions/206009",
+      "repositories": [
+        {
+          "repo": "ActivationSupport/ActivationSupport.github.io",
+          "visibility": "public",
+          "association": "EXPLICIT"
+        }
+      ],
+      "observations": [
+        "Branch-based Pages on main/root.",
+        "Successful deploy at 15:47:15 UTC Aug27 completed in 44s.",
+        "At ~17:47 deploy created successfully but remained updating_pages for ~606s and timed out.",
+        "18:03 rerun became stuck queued with no runner and could not be cancelled.",
+        "Byte-identical known-good content reproduced the same failure.",
+        "Other general Actions in a different org worked, isolating the symptom toward Pages."
+      ],
+      "common_with_janus": [
+        "Public GitHub Pages repository.",
+        "Both expose a GitHub-controlled deployment/control-plane surface distinct from user code."
+      ],
+      "difference_from_janus": [
+        "Their core symptom is Pages deployment serialization/orphaning, not scheduled trigger loss."
+      ],
+      "evidence_strength": "VERY_HIGH"
+    },
+    {
+      "handle": "initial-d",
+      "role": "CORROBORATING_ANALYST",
+      "discussion": 206009,
+      "source_url": "https://github.com/orgs/community/discussions/206009",
+      "repositories": [
+        {
+          "repo": "N/A_FOR_THIS_ROLE",
+          "visibility": "N/A",
+          "association": "ANALYST_NOT_OWNER"
+        }
+      ],
+      "observations": [
+        "Independently checked ActivationSupport run through the public Actions API.",
+        "Confirmed dynamic Pages run status queued with jobs: [] and no repository-side runner to debug.",
+        "Also analyzed schedule-materialization distinction in discussion 205999."
+      ],
+      "common_with_janus": [
+        "Uses the same evidence-first distinction between run creation, job creation, and runner assignment."
+      ],
+      "difference_from_janus": [
+        "Corroborating analyst rather than affected repository owner in the cited reports."
+      ],
+      "evidence_strength": "HIGH_CORROBORATION"
+    },
+    {
+      "handle": "SirHegel",
+      "role": "CORROBORATING_ANALYST",
+      "discussion": 206027,
+      "source_url": "https://github.com/orgs/community/discussions/206027",
+      "repositories": [
+        {
+          "repo": "N/A_FOR_THIS_ROLE",
+          "visibility": "N/A",
+          "association": "ANALYST_NOT_OWNER"
+        }
+      ],
+      "observations": [
+        "Cross-linked discussions 205984, 205999, 206019, and 206027.",
+        "Identified the public/private, old/new account, off-hour-cron common pattern.",
+        "Explicitly treated common timing as supporting but not proving residual scheduler-registration trouble."
+      ],
+      "common_with_janus": [
+        "Same epistemic separation between correlation and proof; same focus on pre-run-object materialization."
+      ],
+      "difference_from_janus": [
+        "Analyst/synthesizer rather than primary affected owner in the cited report."
+      ],
+      "evidence_strength": "HIGH_CORROBORATION"
+    },
+    {
+      "handle": "jeq",
+      "role": "FIRST_HAND_PREEXISTING_CONTROL",
+      "discussion": 205833,
+      "source_url": "https://github.com/orgs/community/discussions/205833",
+      "repositories": [
+        {
+          "repo": "AI-Shien/ai-shien-docs",
+          "visibility": "private",
+          "association": "EXPLICIT"
+        }
+      ],
+      "observations": [
+        "Orphaned issues-triggered run created Aug19, about seven days before Aug26 incident.",
+        "Run permanently queued with zero jobs and contradictory cancellation state.",
+        "Newer runs of the same workflow succeeded."
+      ],
+      "common_with_janus": [
+        "Demonstrates that orphaned control-plane state is a real GitHub failure family."
+      ],
+      "difference_from_janus": [
+        "Predates Aug26 incident and therefore cannot be used as evidence that the incident caused every orphaned run.",
+        "issues event, not schedule."
+      ],
+      "evidence_strength": "HIGH_AS_NEGATIVE_CONTROL"
+    }
+  ],
+  "second_hand_linked_repositories": [
+    {
+      "repo": "Pindikata/lange-trade-website",
+      "reported_by": "ActivationSupport",
+      "symptom": "Similar stuck Pages deployment signature since Aug26",
+      "source_url": "https://github.com/orgs/community/discussions/206009",
+      "classification": "SECOND_HAND_NOT_YET_REVERIFIED"
+    },
+    {
+      "repo": "rominicky/comentarios-cabeza-de-vaca",
+      "reported_by": "ActivationSupport",
+      "symptom": "Similar stuck Pages deployment signature since Aug26",
+      "source_url": "https://github.com/orgs/community/discussions/206009",
+      "classification": "SECOND_HAND_NOT_YET_REVERIFIED"
+    }
+  ],
+  "russian_services_scan": {
+    "scope_note": "Separate comparison lane; not merged into the GitHub/OpenAI causal hypothesis without a matching technical fingerprint.",
+    "mobile_connectivity": {
+      "status": "WIDESPREAD_USER_REPORTED_DISRUPTION",
+      "date": "2026-08-27",
+      "findings": [
+        "Russian users reported mobile-internet/voice/SMS problems across T2, MTS, MegaFon, and Beeline.",
+        "Reports covered multiple regions and Moscow/St Petersburg; the nationwide monitoring article referenced complaints across many regions.",
+        "Russian mobile-internet restrictions have also been repeatedly introduced for security reasons, making raw outage complaints an ambiguous mixture of deliberate restriction and technical failure."
+      ],
+      "source_url": "https://hi-tech.mail.ru/news/"
+    },
+    "payment_and_sms_status": {
+      "status": "DIRECT_STATUS_HISTORY_CONFIRMED",
+      "source_url": "https://status.1cupis.ru/incident/",
+      "incidents": [
+        {
+          "date": "2026-08-26",
+          "service": "T2",
+          "window_msk": "00:17-02:08",
+          "symptom": "Payment problems and delayed SMS for 3-D Secure/e-wallet authorization"
+        },
+        {
+          "date": "2026-08-26",
+          "service": "MTS Bank via SBP",
+          "window_msk": "23:27-23:41",
+          "symptom": "Payment failures through Faster Payments System"
+        },
+        {
+          "date": "2026-08-27",
+          "service": "T2",
+          "window_msk": "02:47-03:10",
+          "symptom": "Payment problems and delayed SMS"
+        },
+        {
+          "date": "2026-08-27",
+          "service": "T-Bank cards",
+          "window_msk": "01:52-02:04",
+          "symptom": "Elevated payment declines for some users"
+        },
+        {
+          "date": "2026-08-27",
+          "service": "T-Pay",
+          "window_msk": "01:37-02:07",
+          "symptom": "Top-up/payment technical problems"
+        }
+      ]
+    },
+    "major_application_platform_controls": {
+      "Yandex_Services": "No broad outage found in the checked Aug27 automated radar.",
+      "VK": "Automated radars showed normal availability, while one crowd-report site contained individual complaints; no defensible platform-wide outage established.",
+      "Mail_ru": "No broad platform outage established; monitoring showed no or isolated complaints."
+    },
+    "physical_infrastructure_lane": {
+      "status": "REAL_BUT_SEPARATE_FROM_CYBER_OUTAGE",
+      "findings": [
+        "Wildberries logistics infrastructure in Tambov region was hit by a drone strike on Aug26, causing a major fire.",
+        "Ozon logistics infrastructure had multiple drone-strike disruptions in the same week."
+      ],
+      "interpretation": "These are physical infrastructure attacks and must not be treated as evidence of a shared cyber cause with GitHub."
+    },
+    "current_correlation_assessment": "NO_SHARED_TECHNICAL_FINGERPRINT_ESTABLISHED"
+  },
+  "current_hypotheses": [
+    {
+      "hypothesis": "GitHub internal overload/event-processing cascade caused the main Aug26 Actions incident",
+      "state": "STRONGLY_SUPPORTED_OFFICIAL_RCA"
+    },
+    {
+      "hypothesis": "Residual schedule-registration/materialization damage persisted beyond the public resolved window",
+      "state": "STRONGLY_SUPPORTED_BY_MULTIPLE_INDEPENDENT_WITNESSES_NOT_YET_OFFICIALLY_CONFIRMED"
+    },
+    {
+      "hypothesis": "Russian connectivity/payment disruptions share one root cause with GitHub",
+      "state": "NOT_SUPPORTED_CURRENTLY"
+    },
+    {
+      "hypothesis": "A coordinated cross-provider cyberattack caused the GitHub/OpenAI/Russian anomalies",
+      "state": "OPEN_BUT_UNCONFIRMED_REQUIRES_SHARED_IOC_ASN_TRAFFIC_OR_PROVIDER_RCA"
+    }
+  ],
+  "next_collection_gates": [
+    "Resolve fmf1109 discussion body/repository if it becomes retrievable.",
+    "Reverify Pindikata/lange-trade-website and rominicky/comentarios-cabeza-de-vaca first-hand Pages evidence.",
+    "Continue scanning GitHub Community for new schedule-no-run-object reports and record handle/repo/cron/timing.",
+    "Correlate GitHub residual schedule incidents with OpenAI/Cloudflare/Microsoft only after this witness cohort is frozen.",
+    "Search provider postmortems/threat-intel for shared ASNs, bot fingerprints, BGP events, or explicit attack attribution."
+  ],
+  "publication_scope": {
+    "included": "External witness cohort, official controls, reference observatory measurements, cross-service comparison, and open external hypotheses.",
+    "excluded": "Internal implementation/maintenance diagnostics not needed to reproduce the external incident evidence."
+  }
+}

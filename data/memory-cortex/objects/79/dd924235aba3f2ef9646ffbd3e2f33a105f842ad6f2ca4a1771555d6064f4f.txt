@@ -1,0 +1,239 @@
+{
+  "artifact_uuid": "SCOBY-D0-RESEARCH-LINE-v2.7",
+  "timestamp": "2026-08-11T15:34:00+03:00",
+  "version": "v2.7",
+  "title": "Solvent-exchange branch for blind material identity and process-history gating",
+  "observer": "Oleksandr Ahapov / Hawkar",
+  "node_type": "research_opportunity_extension",
+  "status": "HYPOTHESIS_UNVERIFIED",
+  "supersedes": "data/SCOBY-D0-RESEARCH-LINE-v2.6.json",
+  "parent_gate": "data/SCOBY-D0-RESEARCH-LINE-v2.6.json",
+  "scope": "Additive hypothesis and metadata schema for comparing microwave-treated SCOBY residues with and without prior solvent exchange; not a validated synthesis protocol or experimental recipe.",
+  "working_material_class": "UNKNOWN_MATERIAL_PENDING_BLIND_IDENTITY",
+  "central_invariant": "APPLICATION_CLASSIFICATION_MUST_NOT_PRECEDE_MATERIAL_IDENTITY",
+  "new_process_branch": {
+    "branch_name": "SOLVENT_EXCHANGE_PRETREATMENT",
+    "comparison_requirement": "Any solvent-exchange condition must be compared against a matched non-solvent-exchange control before attributing differences to solvent exchange.",
+    "identity_status": "UNRESOLVED",
+    "application_status": "BLOCKED",
+    "hypothesis_boundary": "Solvent exchange may alter dielectric heating, evaporation, shrinkage, thermal history and final residue chemistry, but the direction and magnitude of these effects are not admitted as established without measurement."
+  },
+  "solvent_exchange_metadata": {
+    "required_fields": [
+      "solvent_identity",
+      "solvent_purity_or_grade",
+      "nominal_solvent_fraction",
+      "initial_water_content",
+      "post_exchange_water_content_if_measured",
+      "post_exchange_solvent_content_if_measured",
+      "exchange_duration_s",
+      "exchange_temperature_c",
+      "number_of_exchange_cycles",
+      "sample_mass_before_exchange_g",
+      "sample_mass_after_exchange_g",
+      "drain_or_blot_condition",
+      "time_between_exchange_and_subsequent_treatment_s",
+      "container_material",
+      "ventilation_or_atmosphere_metadata"
+    ],
+    "ethanol_branch": {
+      "status": "HYPOTHESIS_UNVERIFIED",
+      "important_distinction": "Ethanol substitution for water is a process-variable hypothesis, not evidence that the final residue is carbonized, porous or electrically conductive.",
+      "candidate_effects": [
+        "changed dielectric heating response",
+        "changed evaporation and vapor-generation behavior",
+        "changed capillary drying and shrinkage behavior",
+        "changed thermal decomposition pathway",
+        "changed oxygen availability locally if vapor accumulates",
+        "possible changes in residual surface chemistry"
+      ],
+      "not_admitted_claims": [
+        "ethanol automatically creates a reducing atmosphere",
+        "ethanol automatically increases carbon yield",
+        "ethanol automatically produces graphitic carbon",
+        "ethanol automatically preserves nanopores",
+        "ethanol-derived carbon deposition on cellulose is established under short uncontrolled microwave exposure"
+      ]
+    }
+  },
+  "process_history_extensions": {
+    "thermal_history": {
+      "additional_required_fields": [
+        "sample_temperature_before_treatment_c",
+        "sample_temperature_peak_measured_or_reconstructed_c",
+        "temperature_measurement_method",
+        "temperature_measurement_uncertainty_c",
+        "heating_rate_c_per_min",
+        "dwell_time_s",
+        "cooling_rate_c_per_min",
+        "spatial_temperature_variation_c"
+      ]
+    },
+    "microwave_metadata": {
+      "additional_required_fields": [
+        "nominal_power_w",
+        "exposure_time_s",
+        "duty_cycle",
+        "sample_mass_g",
+        "sample_geometry",
+        "initial_moisture_or_water_content",
+        "solvent_identity_and_fraction",
+        "container_material",
+        "container_geometry",
+        "atmosphere",
+        "oxygen_availability",
+        "visible_arcing",
+        "smoke_or_gas_release",
+        "ignition_or_flame",
+        "cooling_conditions"
+      ],
+      "safety_gate": "FLAMMABLE_SOLVENTS_MUST_NOT_BE_TREATED_AS_A_ROUTINE_MICROWAVE_INPUT; THIS RECORD DOES_NOT_AUTHORIZE MICROWAVE EXPOSURE OF ETHANOL OR OTHER FLAMMABLE SOLVENTS.",
+      "claim_rule": "Nominal microwave settings do not establish sample temperature, local oxygen concentration, vapor composition or reaction pathway."
+    }
+  },
+  "comparative_design_gate": {
+    "minimum_conditions": [
+      "matched untreated_or_water-containing_SCOBY_control",
+      "matched_solvent-exchange_condition",
+      "matched_non-microwave_thermal_reference_where_relevant"
+    ],
+    "matching_requirements": [
+      "precursor_batch",
+      "starting_mass",
+      "geometry",
+      "initial_water_content_or_total_liquid_content",
+      "treatment_energy_history",
+      "container_and_atmosphere_metadata"
+    ],
+    "interpretation_rule": "No effect may be attributed specifically to solvent exchange unless the comparison isolates solvent history from precursor, mass, geometry, energy and atmosphere differences."
+  },
+  "blind_identity_extensions": {
+    "required_outputs": [
+      "post_treatment_mass",
+      "mass_yield",
+      "elemental_C_H_N_O_if_available",
+      "ash_or_mineral_fraction",
+      "Raman",
+      "SEM",
+      "BET_surface_area_with_full_method_metadata",
+      "pore_volume_and_distribution",
+      "surface_chemistry_if_available",
+      "residual_solvent_or_solvent-derived_species_if_relevant"
+    ],
+    "candidate_hypotheses_to_preserve": [
+      "partially_dehydrated_bacterial_cellulose",
+      "partially_carbonized_biopolymer",
+      "carbonaceous_residue",
+      "porous_carbonaceous_residue",
+      "mineral_or_ash_containing_composite",
+      "fused_or_glassy_organic_residue",
+      "mixed_phase_material"
+    ],
+    "prohibited_inference": "Appearance, brittleness, low density or black coloration alone cannot select among these material classes."
+  },
+  "hypothesis_matrix": {
+    "dielectric_heating": {
+      "hypothesis": "Replacing some water with ethanol changes microwave coupling and therefore the temporal/spatial heating profile.",
+      "status": "PLAUSIBLE_BUT_REQUIRES_MEASUREMENT",
+      "required_evidence": [
+        "initial_and_post_exchange_liquid_composition",
+        "sample_temperature_history",
+        "treatment_energy_metadata",
+        "matched_control"
+      ]
+    },
+    "vapor_and_pressure_behavior": {
+      "hypothesis": "A lower-boiling solvent changes evaporation and vapor-generation behavior during heating.",
+      "status": "PHYSICALLY_PLAUSIBLE",
+      "claim_boundary": "The magnitude of pressure, mechanical disruption and pore preservation cannot be inferred from boiling point alone."
+    },
+    "oxygen_environment": {
+      "hypothesis": "Accumulated solvent vapor can alter local gas composition, but does not by itself establish an inert or reducing atmosphere.",
+      "status": "UNRESOLVED",
+      "required_evidence": [
+        "open_or_sealed_system_status",
+        "oxygen_availability",
+        "gas_composition_if relevant",
+        "ignition_or_arcing_record"
+      ]
+    },
+    "shrinkage_and_pore_retention": {
+      "hypothesis": "Solvent exchange can alter drying/shrinkage behavior because solvent properties differ from water.",
+      "status": "PLAUSIBLE_BUT_REQUIRES_MEASUREMENT",
+      "required_evidence": [
+        "dimensional_change",
+        "bulk_density",
+        "SEM_or_equivalent_morphology",
+        "BET_and_pore_distribution"
+      ]
+    },
+    "surface_chemistry": {
+      "hypothesis": "Different thermal and solvent histories may alter oxygen-containing surface groups and other residue chemistry.",
+      "status": "UNRESOLVED",
+      "required_evidence": [
+        "XPS_if_available",
+        "FTIR_if_available",
+        "Raman",
+        "elemental_analysis"
+      ]
+    },
+    "carbon_yield": {
+      "hypothesis": "Solvent exchange may change apparent and actual carbon mass yield relative to a water-rich control.",
+      "status": "UNRESOLVED",
+      "claim_boundary": "Higher carbon yield must not be assumed; retained solvent, mineral fraction, oxygen exposure and mass-loss pathways must be separated by mass balance."
+    },
+    "ethanol_derived_carbon": {
+      "hypothesis": "Ethanol could contribute carbonaceous residues under some thermal conditions.",
+      "status": "UNVERIFIED",
+      "claim_boundary": "No ethanol-derived carbon contribution may be claimed without appropriate isotopic, compositional or other discriminating evidence."
+    }
+  },
+  "application_gate": {
+    "status": "BLOCKED",
+    "rule": "No supercapacitor, biochar, artistic-carbon or other application class may be assigned from the solvent-exchange hypothesis alone.",
+    "electrochemical": "Requires identity and structure gates plus normalized electrochemical testing and controls from v2.6.",
+    "soil": "Requires identity, leachables, pH, conductivity and controlled biological testing from v2.6.",
+    "artistic": "Requires identity, composition, particle characteristics and safety-relevant characterization from v2.6."
+  },
+  "safety_boundary": {
+    "flammable_solvent_microwave": "Ethanol and other flammable solvents can generate flammable vapor and present ignition, fire and pressure hazards in microwave heating. This registry entry is an evidence-gating record, not authorization or instructions for microwave treatment of flammable solvents.",
+    "sealed_system": "Do not infer that solvent vapor makes a sealed system safe or inert; pressure and flammability hazards can increase.",
+    "unknown_vapors": "Thermal treatment of biological material and solvents can generate unknown vapors; characterization must be performed under appropriate laboratory controls.",
+    "powder_handling": "Unknown carbonaceous residues and fine powders require appropriate containment and inhalation controls.",
+    "application_boundary": "No human-consumption, food, cosmetic, medical or agricultural-use claim is admitted by this record."
+  },
+  "new_invariants": [
+    "SOLVENT_HISTORY_MUST_BE_RECORDED",
+    "SOLVENT_EXCHANGE_EFFECTS_MUST_BE_COMPARED_AGAINST_MATCHED_CONTROLS",
+    "FLAMMABLE_SOLVENT_MICROWAVE_TREATMENT_IS_NOT_AUTHORIZED_BY_THE_REGISTRY",
+    "SOLVENT_VAPOR_IS_NOT_EQUIVALENT_TO_INERT_OR_REDUCING_ATMOSPHERE",
+    "CARBON_YIELD_MUST_BE_ESTABLISHED_BY_MASS_BALANCE",
+    "ETHANOL_DERIVED_CARBON_MUST_NOT_BE_INFERRED_WITHOUT_DISCRIMINATING_EVIDENCE",
+    "POROSITY_MUST_BE_MEASURED_NOT_INFERRED_FROM_LOW_DENSITY_OR_APPEARANCE"
+  ],
+  "evidence_map": {
+    "solvent_exchange_can_change_drying_and_shrinkage_behavior": "SUPPORTED_AS_GENERAL_PHYSICAL_CHEMISTRY_PRINCIPLE",
+    "water_and_ethanol_have_different_dielectric_and_volatility_properties": "SUPPORTED_GENERAL_PROPERTY",
+    "ethanol_vapor_guarantees_reducing_atmosphere": "NOT_ESTABLISHED",
+    "ethanol_pretreatment_guarantees_higher_carbon_yield": "NOT_ESTABLISHED",
+    "ethanol_pretreatment_guarantees_nanoporosity": "NOT_ESTABLISHED",
+    "microwave_treated_ethanol_exchanged_SCOBY_material_identity": "UNRESOLVED",
+    "microwave_treated_ethanol_exchanged_SCOBY_application_performance": "UNVERIFIED"
+  },
+  "decision_logic": {
+    "gate_0": "RECORD_SOLVENT_HISTORY -> no application inference.",
+    "gate_1": "CONTROL_AND_RECORD_PROCESS_HISTORY -> thermal, microwave, atmosphere and solvent metadata.",
+    "gate_2": "BLIND_MATERIAL_IDENTITY -> determine composition and transformation state while preserving competing hypotheses.",
+    "gate_3": "STRUCTURE -> measure morphology, porosity, density and surface chemistry.",
+    "gate_4": "FUNCTION -> only after identity and structure gates pass.",
+    "gate_5": "REPRODUCIBILITY -> independently repeat matched conditions.",
+    "gate_6": "APPLICATION_SPECIFIC_VALIDATION -> benchmark with explicit normalization and controls.",
+    "gate_7": "CLAIM -> elevate claim level only when evidence crosses the relevant gate."
+  },
+  "next_gate": "REGISTER_A_MATCHED_SOLVENT-EXCHANGE_DATASET_WITHOUT_APPLICATION_EXPECTATION; COMPLETE PROCESS-HISTORY METADATA; PERFORM BLIND IDENTITY AND STRUCTURE CHARACTERIZATION; ONLY THEN EVALUATE WHETHER ANY FUNCTIONAL OR APPLICATION-SPECIFIC DIFFERENCE EXISTS.",
+  "authority_rule": "This extension does not establish a solvent-assisted carbonization pathway. It only records testable hypotheses and strengthens the process-history and anti-confirmation-bias gates inherited from v2.6.",
+  "registry_links": [
+    "data/SCOBY-D0-RESEARCH-LINE-v2.6.json",
+    "https://github.com/Hawkar-usls/SCOBY-D0"
+  ]
+}

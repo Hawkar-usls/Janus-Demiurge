@@ -1,0 +1,42 @@
+{
+  "schema": "janus.meta_registry.nexus.current_storage_authority.v1",
+  "artifact_id": "JANUS-NEXUS-CURRENT-STORAGE-AUTHORITY-v1",
+  "created_at_local": "2026-08-17T02:52:00+03:00",
+  "certified_storage_authority": {
+    "artifact": "registry/experimental/JANUS-NEXUS-STORAGE-EVIDENCE-FAIL-CLOSED-EXACT-HEAD-CI-CERTIFICATE-v1.12.json",
+    "repository": "Hawkar-usls/Demi_Head",
+    "exact_head": "7bbacfdc78766638572f00ea0ac1f71fc1a5672c",
+    "status": "EXACT_HEAD_CI_PASS_FAIL_CLOSED_STORAGE_EVIDENCE_REFERENCE"
+  },
+  "parent_durability_authority": {
+    "artifact": "registry/experimental/JANUS-NEXUS-CURRENT-DURABILITY-AUTHORITY-v1.json",
+    "exact_head": "3b7d9e2e1b65c9217e05e9281f2447164d18e659"
+  },
+  "scope": {
+    "read_only_storage_preflight": true,
+    "physical_main_db_envelope_before_wal_aware_open": true,
+    "quick_check_and_required_schema": true,
+    "missing_store_fail_closed": true,
+    "corrupt_or_truncated_main_store_fail_closed": true,
+    "wrong_schema_fail_closed": true,
+    "surviving_wal_cannot_override_explicit_main_file_damage": true,
+    "all_lifecycle_dispatch_replay_stores_required_for_guarded_recovery": true,
+    "storage_repair": false,
+    "write_failure_authority": false,
+    "automatic_recovery": false,
+    "automatic_restart": false,
+    "automatic_retry": false,
+    "cross_host_transport": false,
+    "persistent_daemon": false,
+    "external_effect_authority": false,
+    "authority_delta": 0,
+    "mass_effect_budget_delta": 0
+  },
+  "selection_rule": "This authority covers only the certified fail-closed read-only evidence-store preflight and guarded recovery precondition. It grants no storage repair, schema migration, write-failure recovery, retry, restart, daemon, cross-host, or external-effect authority.",
+  "laws": [
+    "STORAGE_AUTHORITY != STORAGE_REPAIR_AUTHORITY",
+    "LOGICALLY_READABLE_VIA_WAL != HEALTHY_MAIN_EVIDENCE_FILE",
+    "MISSING_OR_DAMAGED_EVIDENCE -> HOLD",
+    "STORAGE_PREFLIGHT_PASS != FUTURE_WRITE_GUARANTEE"
+  ]
+}

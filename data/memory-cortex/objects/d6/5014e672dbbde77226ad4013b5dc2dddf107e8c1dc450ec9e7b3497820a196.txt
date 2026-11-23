@@ -1,0 +1,121 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-FORMULA-TRANSITION-EXECUTION-SPEC-2026-08-14-v0.7",
+  "timestamp": "2026-08-14T12:41:35+03:00",
+  "version": "v0.7",
+  "title": "JANUS Linear A v0.7 directed formula-transition / semantic-neighborhood execution specification",
+  "observer": "Oleksandr Ahapov / Hawkar + JANUS",
+  "node_type": "frozen_execution_specification",
+  "status": "EXECUTION_IN_PROGRESS_AT_SPEC_REGISTRATION",
+  "canonical_parent": {
+    "path": "data/JANUS-LINEAR-A-RESEARCH-STATE-2026-08-14-v2.0.json",
+    "commit": "fac7c305e7210c574439a62179e78cb26f13e743"
+  },
+  "research_code": {
+    "path": "research/linear_a/janus_linear_a_formula_transition.py",
+    "code_commit": "ac6c13c13e33031c850b79f1382e559f943c6add",
+    "workflow": ".github/workflows/janus-linear-a-formula-transition-v0.7.yml",
+    "workflow_commit": "5d10e619b94ccfd083e57d6606e72d9a4dc3f976",
+    "workflow_run_id": 31789134447
+  },
+  "frozen_source": {
+    "repository": "mwenge/lineara.xyz",
+    "commit": "43fe7cf1abc8e6bb1ea3228c3a1bd5938709620a"
+  },
+  "representation_precondition": {
+    "token_typing_policy": "JANUS-LINA-TOKEN-TYPING-POLICY-v0.6.2",
+    "eligible_candidate_type": "SEMANTIC_CANDIDATE_ONLY",
+    "representation": "WORD_ONLY",
+    "reason_for_word_only": "Avoid double-counting one underlying object through parallel word/suffix representations; suffix evidence may be tested only in a later independently declared stage.",
+    "punctuation_and_numeric_literals": "INELIGIBLE_BEFORE_HASHING_AND_SCORING"
+  },
+  "frozen_known_exclusion_mask": {
+    "exact_normalized_words": ["KIRO", "KURO", "POTOKURO"],
+    "normalized_prefixes": ["VIR", "GRA"],
+    "operation": "REMOVAL_ONLY_BEFORE_NEW_CANDIDATE_HASHING",
+    "purpose": "Prevent already explained accounting/personnel/commodity controls from becoming nominally new v0.7 discoveries. The mask may remove known controls but may not select or score any new label."
+  },
+  "relation_family": [
+    "ADJACENT_TT",
+    "NUMERIC_BRIDGE_TNT",
+    "PRE_NUMERIC_BIGRAM_TTN",
+    "POST_NUMERIC_BIGRAM_NTT",
+    "ROW_PREFIX_TT",
+    "ROW_SUFFIX_TT"
+  ],
+  "partition_protocol": {
+    "discovery": "HT_ONLY",
+    "replication": "NON_HT",
+    "replication_classification": "CROSS_REGION_REPLICATION_AFTER_PRIOR_FULL_CORPUS_EXPOSURE",
+    "pristine_unseen_holdout": false,
+    "semantic_reveal": "FORBIDDEN_UNTIL_DISCOVERY_AND_REPLICATION_OUTCOMES_ARE_FROZEN"
+  },
+  "endpoint_eligibility": {
+    "min_HT_occurrences": 8,
+    "min_HT_documents": 5
+  },
+  "discovery_minimums": {
+    "pair_occurrences": 4,
+    "pair_documents": 3,
+    "effect_direction": "ENRICHED_ONLY",
+    "self_transitions": "EXCLUDED"
+  },
+  "destructive_nulls": [
+    {
+      "id": "N1_WITHIN_ROW_IDENTITY_SHUFFLE",
+      "operator": "WITHIN_ROW_IDENTITY_SHUFFLE_PRESERVING_TYPED_SLOTS_AND_ROW_TOKEN_MULTISET",
+      "preserves": ["row geometry", "typed slot kinds", "semantic token multiset within each row"],
+      "destroys": "candidate-specific directed semantic adjacency"
+    },
+    {
+      "id": "N2_WITHIN_DOCUMENT_IDENTITY_SHUFFLE",
+      "operator": "WITHIN_DOCUMENT_IDENTITY_SHUFFLE_PRESERVING_TYPED_SLOTS_AND_DOCUMENT_TOKEN_MULTISET",
+      "preserves": ["document membership", "typed slot geometry", "semantic token multiset within document"],
+      "destroys": "row-local and directed semantic adjacency while retaining document composition"
+    },
+    {
+      "id": "N3_ENDPOINT_REWIRE",
+      "operator": "PREDECESSOR_SUCCESSOR_REWIRE_PRESERVING_RELATION_ENDPOINT_MARGINALS",
+      "preserves": ["relation-template edge count", "left endpoint marginals", "right endpoint marginals"],
+      "destroys": "specific A→B endpoint coupling"
+    }
+  ],
+  "error_control": {
+    "discovery": "MAX_T_FWER_REQUIRED_UNDER_ALL_THREE_NULLS",
+    "train_permutations_per_null": 3000,
+    "alpha": 0.05,
+    "selection_rule": "A relation is locked only if it meets occurrence/document minimums, has positive enrichment, and FWER p <= 0.05 under every destructive null.",
+    "replication": "ONE_SIDED_LOCKED_DIRECTION_PLUS_BONFERRONI_OVER_SELECTED_RELATIONS_X_THREE_NULLS",
+    "test_permutations_per_null": 5000,
+    "replication_minimums": {
+      "pair_occurrences": 3,
+      "pair_documents": 2,
+      "distinct_non_HT_regions": 2
+    }
+  },
+  "statistic": {
+    "name": "DIRECTED_RELATION_LOG2_ENRICHMENT",
+    "definition": "log2((observed_pair_count + 0.5)/(independence_expected_count_from_relation_specific_left_and_right_marginals + 0.5))",
+    "familywise_scope": "all non-self directed nonzero pairs among predeclared eligible endpoints across all six relation templates"
+  },
+  "claim_ceiling": {
+    "new_anchor_established": false,
+    "decipherment_established": false,
+    "maximum_if_survivor": "STRUCTURAL_RELATION_CANDIDATE_ONLY",
+    "survivor_requires_next": [
+      "alternative segmentation replay",
+      "post-score identity/novelty audit",
+      "fresh independent transcription/parser replication",
+      "independent implementation replay"
+    ]
+  },
+  "predeclared_branching_roadmap": {
+    "if_cross_region_survivor_count_gt_0": {
+      "next_stage": "v0.7.1 alternative-segmentation + identity novelty audit",
+      "forbidden": "lexical translation claim"
+    },
+    "if_cross_region_survivor_count_eq_0": {
+      "next_stage": "higher-order formula graph/community or fresh-source replication",
+      "forbidden": "relaxing existing significance, multiplicity, occurrence, document, or region thresholds to manufacture a survivor"
+    }
+  }
+}

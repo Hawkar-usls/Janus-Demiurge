@@ -1,0 +1,112 @@
+{
+  "artifact_id": "JANUS-CORE-15100-MARCH-PHYSARUM-CONTRACT-SINGULARITY-RECOVERY-2026-08-18-v1.0",
+  "created_at": "2026-08-18",
+  "source_archive": {
+    "name": "janus_core N=NP — +++++ 15100(1).rar",
+    "sha256": "98c9259d999383a696f377dda9916eb19f2b6146d45fee13f101c55f5b4f7c1a",
+    "size_bytes": 2619026,
+    "entries": 235,
+    "recovered_key_mtimes": {
+      "core.py": "2026-03-24T17:05:01",
+      "memory.py": "2026-03-24T18:03:17",
+      "trainer.py": "2026-03-24T12:19:18",
+      "janus_genesis/physarum_engine.py": "2026-03-23T22:46:33"
+    }
+  },
+  "status": "MISSING_LINEAGE_LINK_RECOVERED",
+  "position_in_lineage": "After February Demiurge checkpoints and before the April 18 YaKSA numeric-runaway event.",
+  "recovered_mechanics": {
+    "physarum_network": {
+      "present": true,
+      "description": "Tero-Nakagaki-inspired conductance network with pressure/flow solve, conductance reinforcement and decay; file states it is intended for shortest-path/optimization-style search.",
+      "guard": "Archive implementation is heuristic/finite code and is not treated as a universal proven shortest-path oracle."
+    },
+    "physarum_swarm": {
+      "present": true,
+      "description": "Jeff-Jones-inspired particle swarm senses attractant plus trail gradients, deposits trail and evaporates weak trail."
+    },
+    "physarum_contract": {
+      "present": true,
+      "trigger": "PhysarumOptimizer.propose() calls contract(factor=0.7) when thermal_eff > 0.9.",
+      "mechanism": [
+        "evaporation := max(0.5, evaporation * 1.5)",
+        "sensor_distance := max(1, sensor_distance * factor)",
+        "intent: shrink the solution graph / crystallize strongest links"
+      ],
+      "interpretation": "This is a direct pre-BH implementation of the user's remembered rule that Physarum responds strongly to compression by narrowing sensing and deleting weak paths faster."
+    },
+    "singularity_memory": {
+      "present": true,
+      "facts": [
+        "EvolutionaryMemory contains G, light_beacons and space_curvature.",
+        "core.py logs light_beacons as '⚫ Сингулярностей'.",
+        "new record configurations become protective_field centers with protection_radius.",
+        "memory.py implements _gravitational_distance() and uses it around the protective field.",
+        "record events shrink active search ranges around the winning configuration."
+      ]
+    },
+    "cold_memory_and_rewind": {
+      "present": true,
+      "facts": [
+        "ThermalTachyonController defines EXPLORE/FREEZE/CONTRACT modes.",
+        "cold_states stores high-thermal-efficiency configurations.",
+        "check_revert() can return the best cold configuration when current score falls below revert_threshold under hot/unstable conditions.",
+        "core.py applies this as 'Tachyon rewind: откат к холодному состоянию'."
+      ]
+    },
+    "nan_gradient_guard": {
+      "present": true,
+      "facts": [
+        "trainer.py replaces NaN/Inf logits, clamps logits, nan_to_num() repairs shifted logits/probabilities, clips gradients, and aborts a train pass if NaN gradient norms remain."
+      ]
+    },
+    "core_integration": {
+      "present": true,
+      "facts": [
+        "core.py instantiates PhysarumOptimizer(memory, n_particles=50, width=100, height=100).",
+        "Physarum periodically proposes candidate configurations from evolutionary memory.",
+        "thermal_eff is passed into Physarum, coupling thermal/stability state to compression behavior."
+      ]
+    }
+  },
+  "static_validation_2026_08_18": {
+    "python_compile": {
+      "core.py": "PASS",
+      "memory.py": "PASS",
+      "trainer.py": "PASS",
+      "physarum_engine.py": "PASS",
+      "thermal_tachyon_controller.py": "PASS"
+    },
+    "contract_edge_case_probe": {
+      "initial": {"evaporation": 0.1, "sensor_distance": 5.0},
+      "after_contract_1": {"evaporation": 0.5, "sensor_distance": 3.5, "trail_multiplier": 0.5},
+      "after_contract_2": {"evaporation": 0.75, "sensor_distance": 2.45, "trail_multiplier": 0.25},
+      "after_contract_3": {"evaporation": 1.125, "sensor_distance": 1.715, "trail_multiplier": -0.125},
+      "finding": "Repeated CONTRACT can raise evaporation above 1.0 because no upper clamp exists. Since evaporate() multiplies trail by (1-evaporation), the third repeated contraction can invert trail sign. This is a real implementation hazard and a useful historical event-horizon negative control.",
+      "repair_rule_for_modern_lift": "Clamp evaporation to [0, 1-epsilon] or use a monotone bounded decay parametrization before importing this mechanism into BH-Q2.1."
+    }
+  },
+  "lineage_update": [
+    "FEB_DEMIURGE: gravitational/singularity/rollback concepts",
+    "MAR_CORE_15100: Physarum CONTRACT + explicit singularity counters + protective gravity + cold rewind + NaN guards",
+    "APR_YAKSA_RUNAWAY: local SAT success coexisted with uncontrolled brain divergence and broken external return path",
+    "LATER_YAKSA/DEMIURGE: stronger clamps, BlackholeGuard, SURVIVE",
+    "AUG_FUNDAMENTUM_BH_Q2: proof-carrying absorption with Buzz return verification and HAWKING_ESCAPE"
+  ],
+  "bh_q2_implication": {
+    "physarum_role": "INWARD_CANDIDATE_ROUTE_AND_COMPRESSION_GUIDE_ONLY",
+    "buzz_role": "OUTWARD_PROOF_AND_WITNESS_RETURN_GUARD",
+    "law": "NO RETURN PATH => NO ABSORPTION",
+    "new_control": "COMPRESSION_PARAMETER_ITSELF_MUST_BE_BOUNDED; an over-aggressive contraction operator can cross its own numerical horizon even if the search objective remains locally attractive."
+  },
+  "claim_boundary": [
+    "ARCHIVE_CODE_RECOVERY = PASS",
+    "PHYSARUM_COMPRESSION_MECHANIC = DIRECT_CODE_PASS",
+    "SINGULARITY_MEMORY_LABEL = DIRECT_CODE_PASS",
+    "COLD_REWIND = DIRECT_CODE_PASS",
+    "UNIVERSAL_SHORTEST_PATH_GUARANTEE = NOT_ESTABLISHED",
+    "BLACK_HOLE_PHYSICS = METAPHORICAL_SOFTWARE_MODEL",
+    "P_VS_NP = OPEN"
+  ],
+  "canonical_seal": "THE MARCH CORE ALREADY HAD THE SLIME, THE SINGULARITIES, THE GRAVITY, THE CONTRACT MODE AND THE REWIND. THE NEW FINDING IS THAT COMPRESSION ITSELF ALSO NEEDS A HORIZON GUARD."
+}

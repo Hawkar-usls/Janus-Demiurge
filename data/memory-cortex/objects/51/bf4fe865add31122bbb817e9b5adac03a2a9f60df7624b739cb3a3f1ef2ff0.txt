@@ -1,0 +1,194 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-PARSER-BOUNDARY-CANARY-AUDIT-2026-08-14-v1.0",
+  "timestamp": "2026-08-14T12:20:00+03:00",
+  "version": "v1.0",
+  "title": "Linear A parser-boundary canary audit: *900 survivor, punctuation identity reveal, and corrective replay trigger",
+  "observer": "Oleksandr Ahapov / Hawkar + JANUS",
+  "node_type": "research_failure_audit_and_corrective_action",
+  "status": "CORRECTIVE_REPLAY_IN_PROGRESS_AT_RECORD_CREATION",
+  "scope": "JANUS Linear A blind Anchor Bench execution",
+  "frozen_source": {
+    "repository": "mwenge/lineara.xyz",
+    "commit": "43fe7cf1abc8e6bb1ea3228c3a1bd5938709620a"
+  },
+  "triggering_execution": {
+    "stage": "v0.6 record-boundary / formula-slot cross-region search",
+    "workflow_run_id": 31786529238,
+    "workflow_head_sha": "4ee46124ac7a7349f7f1003751304373ab5f307c",
+    "artifact_id": 9213794866,
+    "artifact_name": "janus-linear-a-full-corpus-receipts-v0.6",
+    "artifact_digest": "sha256:b8dae4f380ca2a289fb861883027c244c6bd537a0a23d11f261c1f9a94ad977e",
+    "execution_status": "SUCCESS",
+    "claim_ceiling_validation": "SUCCESS"
+  },
+  "raw_v0_6_observation": {
+    "reported_cross_region_survivor_count": 2,
+    "independent_underlying_survivor_count_after_identity_deduplication": 1,
+    "deduplication_reason": "The word-hash and suffix-hash survivors both reveal to the same raw corpus label *900 and therefore are two representations of one underlying object, not two independent discoveries.",
+    "underlying_object": {
+      "revealed_label": "*900",
+      "role": "ROW_INITIAL",
+      "effect_direction": "DEPLETED_AT_ROW_INITIAL",
+      "word_representation": {
+        "candidate_hash": "dd59c99be6a02123",
+        "train_n": 236,
+        "train_docs": 113,
+        "train_observed_rate": 0.1016949,
+        "train_expected_rate": 0.2962577,
+        "train_delta": -0.1945628,
+        "train_z": -6.54597,
+        "train_fwer_p": 0.00019996,
+        "replication_n": 228,
+        "replication_docs": 118,
+        "replication_region_count": 27,
+        "replication_observed_rate": 0.1842105,
+        "replication_expected_rate": 0.2972559,
+        "replication_delta": -0.1130454,
+        "replication_z": -3.73471,
+        "replication_one_sided_p": 0.00009999,
+        "replication_bonferroni_p": 0.00059994,
+        "replication_pass": true
+      },
+      "suffix_representation": {
+        "candidate_hash": "22bb382cd1b47165",
+        "train_n": 236,
+        "train_docs": 113,
+        "train_observed_rate": 0.1016949,
+        "train_expected_rate": 0.2936314,
+        "train_delta": -0.1919365,
+        "train_z": -6.47436,
+        "train_fwer_p": 0.00019996,
+        "replication_n": 229,
+        "replication_docs": 119,
+        "replication_region_count": 27,
+        "replication_observed_rate": 0.1834061,
+        "replication_expected_rate": 0.2935745,
+        "replication_delta": -0.1101684,
+        "replication_z": -3.66085,
+        "replication_one_sided_p": 0.00009999,
+        "replication_bonferroni_p": 0.00079992,
+        "replication_pass": true
+      }
+    }
+  },
+  "post_score_identity_audit": {
+    "corpus_mapping": {
+      "*900": {
+        "glyph": "𐄁",
+        "unicode": "U+10101",
+        "unicode_name": "AEGEAN WORD SEPARATOR DOT"
+      },
+      "*901": {
+        "glyph": "𐄀",
+        "unicode": "U+10100",
+        "unicode_name": "AEGEAN WORD SEPARATOR LINE"
+      },
+      "*902": {
+        "glyph": "𐄀",
+        "unicode": "U+10100",
+        "unicode_name": "AEGEAN WORD SEPARATOR LINE",
+        "note": "distinct corpus ASCII alias for the same Unicode glyph"
+      },
+      "*903": {
+        "glyph": "𐄂",
+        "unicode": "U+10102",
+        "unicode_name": "AEGEAN CHECK MARK"
+      },
+      "*904": {
+        "classification": "NOT_FILTERED",
+        "reason": "Frozen corpus mapping returns to a Linear A sign rather than Aegean punctuation."
+      }
+    },
+    "authoritative_unicode_classification": "U+10100, U+10101, and U+10102 are encoded in the Aegean punctuation range; U+10100 and U+10101 are explicit word separators and U+10102 is an Aegean check mark.",
+    "scientific_interpretation": "The v0.6 effect is real as a structural regularity but does not identify a lexical, logographic, morphological, or grammatical Linear A element. A separator/check-mark family is expected to exhibit boundary-position behavior.",
+    "classification": "PARSER_BOUNDARY_CANARY_REDISCOVERY",
+    "new_anchor": false,
+    "decipherment_evidence": false
+  },
+  "root_cause": {
+    "failure_mode": "REPRESENTATION_BOUNDARY_LEAKED_INTO_CANDIDATE_UNIVERSE",
+    "details": [
+      "The base parser treated *900 as an ordinary non-numeric T token.",
+      "The record-role parser therefore allowed punctuation to receive word/suffix hashes and structural roles.",
+      "The same punctuation family could also participate in earlier candidate and null universes even when it was not the winning candidate.",
+      "A local v0.6-only exclusion would therefore be insufficient for a clean inferential repair."
+    ]
+  },
+  "corrective_action": {
+    "policy_id": "JANUS-LINA-PARSER-POLICY-v0.6.1",
+    "research_code": [
+      "research/linear_a/janus_linear_a_parser_policy_v0_6_1.py",
+      "research/linear_a/janus_linear_a_corrective_replay_v0_6_1.py"
+    ],
+    "policy": "Remove *900, *901, *902, *903 before hashing, candidate construction, numeric adjacency, null generation, and record-role geometry; retain *904.",
+    "history_policy": "Do not overwrite or delete pre-filter receipts. Preserve them as historical evidence and supersede them only for post-correction inference.",
+    "required_replay": "FULL_v0.1_THROUGH_v0.6",
+    "corrective_workflow": ".github/workflows/janus-linear-a-punctuation-corrective-replay.yml",
+    "corrective_workflow_head_sha": "3c669fac6052c9aed4cef6cf8538e943cbb5f5e5",
+    "corrective_workflow_run_id": 31787419817,
+    "status_at_record_creation": "IN_PROGRESS"
+  },
+  "epistemic_ledger": {
+    "infrastructure_success": [
+      "Blind structural scoring detected a strong and cross-region reproducible positional regularity.",
+      "Post-score identity reveal prevented the statistical regularity from being mislabeled as a new linguistic discovery.",
+      "Representation-level falsification correctly converted a would-be positive result into a parser-boundary canary.",
+      "The failure generated a stronger parser policy and a mandatory full replay instead of threshold relaxation."
+    ],
+    "scientific_success": [
+      "A robust non-linguistic explanation was found for the v0.6 survivor.",
+      "The protocol rejected promotion despite very small p-values because identity semantics invalidated the candidate class."
+    ],
+    "scientific_non_success": [
+      "No new Linear A anchor was established.",
+      "No decipherment claim was established.",
+      "The apparent two-survivor count does not represent two independent discoveries."
+    ]
+  },
+  "connection_candidate": {
+    "name": "REPRESENTATION_BOUNDARY_CAN_MASQUERADE_AS_STRUCTURAL_ROLE",
+    "status": "CANDIDATE_NOT_GENERALIZED",
+    "statement": "When formatting or punctuation markers are admitted into the same identity space as semantic tokens, a valid structural learner can produce highly replicable but non-semantic role discoveries.",
+    "applicability": [
+      "undeciphered-script corpora",
+      "OCR/tokenization pipelines",
+      "log parsing",
+      "document-layout ML",
+      "bioinformatics delimiter-rich sequence encodings",
+      "event-stream schemas"
+    ],
+    "falsification_requirement": "Generalize only after analogous boundary-marker leakage is reproduced or independently demonstrated in at least one additional domain."
+  },
+  "claim_ceiling": {
+    "new_anchor_established": false,
+    "decipherment_established": false,
+    "promotion": "BLOCKED_PENDING_PUNCTUATION_FILTERED_CORRECTIVE_REPLAY"
+  },
+  "roadmap": [
+    {
+      "order": 1,
+      "step": "Complete punctuation-filtered v0.1-v0.6 corrective replay",
+      "gate": "CI receipt + artifact digest + claim ceiling validation"
+    },
+    {
+      "order": 2,
+      "step": "Compare pre-filter and corrected candidate universes and survivor sets",
+      "gate": "No punctuation-derived candidate remains promotable"
+    },
+    {
+      "order": 3,
+      "step": "Write a new canonical Linear A research-state JSON in data/",
+      "gate": "Corrected replay is complete and exact run/artifact provenance is available"
+    },
+    {
+      "order": 4,
+      "step": "If corrected v0.6 has no survivor, move to formula-transition/neighborhood-role discovery without relaxing thresholds",
+      "gate": "v0.6.1 cross-region survivor count = 0"
+    },
+    {
+      "order": 5,
+      "step": "If a corrected structural survivor remains, run novelty, alternative-segmentation, representation, and fresh-corpus replication before semantic interpretation",
+      "gate": "survivor passes corrected null + cross-region replication"
+    }
+  ]
+}

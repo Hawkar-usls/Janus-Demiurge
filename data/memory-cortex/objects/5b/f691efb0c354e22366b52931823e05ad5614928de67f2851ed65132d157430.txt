@@ -1,0 +1,213 @@
+{
+  "schema": "JANUS.genesis_sovereign_face_microcontrol_mutation_surface_recovery_network.v6_6",
+  "artifact_id": "JANUS-GENESIS-SOVEREIGN-FACE-MICROCONTROL-MUTATION-SURFACE-RECOVERY-NETWORK-v6.6",
+  "title": "JANUS Genesis Sovereign v6.6 — Validate Before Bind, Typed Mutation Receipts, Recovery-Safe Save Import, and Fail-Closed Network Ambiguity",
+  "created_at_local": "2026-08-14T21:12:00+03:00",
+  "status": "EXPERIMENTAL_AUDIT_CHECKPOINT_WITH_WINDOWS_AND_UBUNTU_DESCENDANT_CI_RECEIPTS",
+  "parent": "registry/experimental/JANUS-GENESIS-SOVEREIGN-FACE-MICROCONTROL-PORTABLE-RECEIPT-DURABLE-SESSION-FRESH-KEYS-v6.5.json",
+  "audit_issue": "https://github.com/Hawkar-usls/Janus_Genesis/issues/79",
+  "final_verified_head": "c16d66e9adabb83f5b4a7c672230d8cf04359100",
+  "summary": "v6.6 audited mutation classes that v6.5 had intentionally left outside the normal process_action receipt path. The resulting descendants validate registration contracts before durable request binding, turn multi-file save import into a recoverable roll-forward saga, replace silent network-state reset/outbox truncation with fail-closed durability and backpressure, and give force-exit/display-name mutations their own typed receipts sharing the canonical local world lock. The default CLI now composes these descendants. The checkpoint remains a cooperating-control claim, not global Python capability security, distributed consensus, or proof of external provider truth.",
+  "audit_findings": {
+    "A24_global_authority_sealing": {
+      "severity": "HIGH",
+      "finding": "A caller retaining a raw PlayableGenesisV187 object can bypass cooperating receipt facades.",
+      "response": "v18.7.39 exposes ControlledGenesisMutationFacade and explicitly labels it a cooperating API construction path rather than a security sandbox.",
+      "status": "OPEN_NOT_GLOBALLY_SEALED"
+    },
+    "A25_force_exit_untyped": {
+      "severity": "MEDIUM_HIGH",
+      "finding": "Default EOF/KeyboardInterrupt force_exit was a direct mutation and could append duplicate exit_forced events if retried blindly.",
+      "response": "v18.7.39 binds FORCE_EXIT to client/request/actor/reason, stores a full receipt, replays SETTLED without raw re-entry, and blocks stale CALL_ENTERING as UNDETERMINED.",
+      "status": "CLOSED_FOR_CONTROLLED_DESCENDANT_AND_DEFAULT_CLI_PATH"
+    },
+    "A26_display_name_untyped": {
+      "severity": "MEDIUM_HIGH",
+      "finding": "Display-name mutation was outside the stable request boundary.",
+      "response": "v18.7.39 adds SET_DISPLAY_NAME typed request/receipt semantics; the default CLI applies the name once through that path.",
+      "status": "CLOSED_FOR_CONTROLLED_DESCENDANT_AND_DEFAULT_CLI_PATH"
+    },
+    "A27_multi_file_save_import": {
+      "severity": "HIGH",
+      "finding": "The historical importer verified the full bundle and made each individual replacement carefully, but the bundle-wide mutation could still stop after only some target replacements.",
+      "response": "v18.7.37 verifies before mutation, locks cooperating importers, durably stages selected files, records a complete transaction manifest, binds one logical import request to one bundle/policy, and deterministically rolls forward until every selected target has its expected hash.",
+      "status": "RECOVERY_SAFE_ROLL_FORWARD_SAGA_VERIFIED_NOT_MULTI_FILE_ATOMIC"
+    },
+    "A28_network_local_and_remote_boundary": {
+      "severity": "HIGH",
+      "finding": "Historical local network state lacked a process lock/durable replacement contract and resend after ambiguous remote acceptance was not proved safe.",
+      "response": "v18.7.38 uses a durable locked state, persists SEND_ENTERING before POST, requires explicit hash acknowledgements, and blocks automatic resend after ambiguous or partial acknowledgement because hub idempotency remains unverified.",
+      "status": "LOCAL_CONTROL_CLOSED_REMOTE_IDEMPOTENCY_STILL_UNVERIFIED"
+    },
+    "A29_descendant_not_globally_mandatory": {
+      "severity": "MEDIUM_HIGH",
+      "finding": "Historical raw gateways and world constructors remain instantiable.",
+      "response": "Canonical cooperating construction paths were strengthened without falsely claiming Python-level capability sealing.",
+      "status": "OPEN_BY_DESIGN_UNTIL_AUTHORITY_SEAL_EXISTS"
+    },
+    "A30_production_secret_custody": {
+      "severity": "HIGH_EXTERNAL",
+      "finding": "Reference key-policy metadata is not production secret custody, KMS/HSM integration, or proof of issuer/provider truth.",
+      "status": "NOT_CLAIMED"
+    },
+    "A31_registration_request_poisoning": {
+      "severity": "HIGH",
+      "finding": "Earlier descendants could bind a registration request before parent role/mode validation.",
+      "response": "v18.7.36 validates request ID, role, execution mode, actor requirement, and normalized registration contract before any durable registration-request binding.",
+      "status": "CLOSED_FOR_V18_7_36_DESCENDANT_PATH"
+    },
+    "A32_registration_retry_contract": {
+      "severity": "MEDIUM_HIGH",
+      "finding": "Recovery after world-before-session-activation currently relies on the tested register_player implementation tolerating the same actor/display replay.",
+      "status": "REAL_CURRENT_PATH_TESTED_GENERIC_ADAPTER_IDEMPOTENCE_NOT_PROVED"
+    },
+    "A33_windows_directory_entry_durability": {
+      "severity": "OPEN_BOUNDARY",
+      "status": "NOT_CLAIMED"
+    },
+    "A34_legacy_v25_v27_portability": {
+      "severity": "HIGH_OPEN",
+      "finding": "Historical v18.7.25/v18.7.27 still retain POSIX-only and older SQLite-lifetime assumptions.",
+      "status": "OPEN"
+    },
+    "A35_corrupt_network_state_reset": {
+      "severity": "HIGH",
+      "finding": "Historical _load could interpret malformed/schema-invalid existing state as first run and silently create a fresh node state.",
+      "response": "v18.7.38 distinguishes missing state from corrupt existing state and fails closed on corruption/schema mismatch.",
+      "status": "CLOSED_FOR_V18_7_38_DESCENDANT_PATH"
+    },
+    "A36_network_outbox_truncation": {
+      "severity": "HIGH",
+      "finding": "Historical queueing silently kept only the newest 1024 outbox entries.",
+      "response": "v18.7.38 turns capacity into explicit backpressure; event 1025 is rejected while the oldest unsent event is preserved.",
+      "status": "CLOSED_FOR_V18_7_38_DESCENDANT_PATH"
+    },
+    "A37_double_name_owner": {
+      "severity": "MEDIUM",
+      "finding": "The interactive CLI applied --name in main and again in play, proving the mutation lacked one clear owner.",
+      "response": "main owns the one typed name mutation; play no longer writes it.",
+      "status": "CLOSED_FOR_DEFAULT_CLI_PATH"
+    }
+  },
+  "runtime_descendants": [
+    {
+      "module": "genesis_v18_7_36_validated_registration_binding.py",
+      "commit": "18146857098852cb0b8ccd07ceee549d2069385b",
+      "purpose": "validate complete normalized registration contract before durable logical-request binding"
+    },
+    {
+      "module": "genesis_v18_7_37_recovery_safe_save_import.py",
+      "commit": "fb82e29e39f5017ebca7996724e4b7e9a2396017",
+      "purpose": "stable-request, staged, hash-idempotent, roll-forward multi-file save import saga"
+    },
+    {
+      "module": "genesis_v18_7_38_durable_network_outbox.py",
+      "purpose": "locked durable local network state, corruption fail-closed semantics, backpressure, SEND_ENTERING and ambiguous-send blocking"
+    },
+    {
+      "module": "genesis_v18_7_39_typed_mutation_authority.py",
+      "purpose": "typed FORCE_EXIT and SET_DISPLAY_NAME request/receipt contracts sharing the canonical local world lock"
+    },
+    {
+      "module": "play_genesis.py",
+      "purpose": "default CLI composition of v33 action receipts, v37 import saga, v38 network boundary and v39 typed auxiliary mutations"
+    }
+  ],
+  "verification_history": [
+    {
+      "run_id": 31829985852,
+      "head_sha": "482ed14162b12594e3d052847bee914709a1a526",
+      "conclusion": "SUCCESS",
+      "scope": "v18.7.36 + v18.7.37 focused descendants on Ubuntu and Windows"
+    },
+    {
+      "run_id": 31830236065,
+      "conclusion": "FAILURE",
+      "implementation_suites": "PASS_ON_WINDOWS_AND_UBUNTU",
+      "failure_class": "EXECUTABLE_CLAIM_WORDING_MISMATCH",
+      "treatment": "PRESERVED_NOT_RELABELED"
+    },
+    {
+      "run_id": 31830540211,
+      "head_sha": "2f2eaa15ded9a4a31373cf871274c8e5c9d3cfe6",
+      "conclusion": "SUCCESS",
+      "scope": "v18.7.36 through v18.7.39 implementation and canonical claim gates on Ubuntu and Windows"
+    },
+    {
+      "run_id": 31830866250,
+      "head_sha": "db8b46a62de9b6ecc6555e06311ee2fe04a9ba57",
+      "conclusion": "FAILURE",
+      "implementation_suites": "ALL_PASS_ON_WINDOWS_AND_UBUNTU",
+      "failure_class": "BRITTLE_CLI_DOCSTRING_SUBSTRING_POLICY",
+      "treatment": "PRESERVED_NOT_RELABELED"
+    },
+    {
+      "run_id": 31831024877,
+      "conclusion": "FAILURE",
+      "implementation_suites": "ALL_PASS_ON_WINDOWS_AND_UBUNTU",
+      "failure_class": "BRITTLE_CLI_CLAIM_SUBSTRING_POLICY",
+      "treatment": "PRESERVED_NOT_RELABELED"
+    },
+    {
+      "run_id": 31831122078,
+      "conclusion": "FAILURE",
+      "implementation_suites": "ALL_PASS_ON_WINDOWS_AND_UBUNTU",
+      "failure_class": "BRITTLE_CLI_CLAIM_SUBSTRING_POLICY",
+      "treatment": "PRESERVED_NOT_RELABELED"
+    },
+    {
+      "run_id": 31831338587,
+      "head_sha": "c16d66e9adabb83f5b4a7c672230d8cf04359100",
+      "conclusion": "SUCCESS",
+      "jobs": {
+        "windows_latest": 94867499665,
+        "ubuntu_latest": 94867499702
+      },
+      "verified": [
+        "validate-before-bind registration",
+        "recovery-safe roll-forward portable-save import",
+        "durable fail-closed network outbox and ambiguous-send policy",
+        "typed force-exit and display-name receipts sharing the canonical local world lock",
+        "default CLI integrated mutation-surface behavior",
+        "canonical stable-module claim ceilings"
+      ]
+    }
+  ],
+  "new_invariants": [
+    "VALIDATE_COMPLETE_REQUEST_BEFORE_DURABLE_BIND",
+    "MULTI_FILE_ATOMIC_REPLACEMENTS_DO_NOT_FORM_A_MULTI_FILE_TRANSACTION",
+    "RECOVERY_SAFE_IMPORT_REQUIRES_STAGING_PLUS_MANIFEST_PLUS_STABLE_REQUEST_ID",
+    "CORRUPT_EXISTING_NETWORK_STATE_IS_NOT_FIRST_RUN",
+    "OUTBOX_CAPACITY_REQUIRES_BACKPRESSURE_NOT_SILENT_CAUSAL_HISTORY_DELETION",
+    "SEND_ENTERING_WITHOUT_VERIFIED_COMPLETE_ACK_CREATES_DURABLE_REMOTE_UNCERTAINTY",
+    "UNVERIFIED_HUB_IDEMPOTENCY_CANNOT_AUTHORIZE_AUTOMATIC_RESEND",
+    "FORCE_EXIT_IS_A_TYPED_MUTATION_NOT_A_GENERIC_ACTION_ALIAS",
+    "DISPLAY_NAME_UPDATE_IS_A_TYPED_MUTATION_WITH_ONE_DEFAULT_CLI_OWNER",
+    "COOPERATING_MUTATION_CLASSES_SHARE_ONE_CANONICAL_LOCAL_WORLD_LOCK",
+    "COOPERATING_FACADE_IS_NOT_GLOBAL_AUTHORITY_SEAL",
+    "BEHAVIORAL_TESTS_SHOULD_CARRY_FACADE_BEHAVIOR_WHILE_STABLE_MODULES_CARRY_CANONICAL_NONBEHAVIORAL_CLAIM_CEILINGS",
+    "A_GREEN_DESCENDANT_DOES_NOT_ERASE_FAILED_VERIFIER_POLICY_RUNS"
+  ],
+  "constitutional_compression": "MANY_FACES -> CURRENT_VERIFIED_LINEAGES -> VALIDATE_BEFORE_BIND -> STABLE_TYPED_REQUEST -> ONE_COOPERATING_LOCAL_WORLD_LOCK -> FULL_RECEIPT_OR_DURABLE_UNCERTAINTY -> RECOVERY_SAFE_MULTI_FILE_SAGA -> DURABLE_NETWORK_SEND_INTENT -> COMPLETE_VERIFIED_ACK_OR_NO_AUTOMATIC_RESEND -> APPEND_ONLY_SUCCESS_AND_FAILURE_LINEAGE",
+  "claim_ceiling": {
+    "validated_registration_binding_windows_ubuntu": "FOCUSED_CI_VERIFIED",
+    "recovery_safe_save_import_windows_ubuntu": "FOCUSED_CI_VERIFIED_AS_ROLL_FORWARD_SAGA",
+    "multi_file_filesystem_atomic_transaction": "NOT_CLAIMED",
+    "durable_network_local_state_windows_ubuntu": "FOCUSED_CI_VERIFIED",
+    "ambiguous_network_send_automatic_resend": "BLOCKED_WITHOUT_VERIFIED_HUB_IDEMPOTENCY",
+    "hub_side_idempotency": "UNVERIFIED",
+    "typed_force_exit_and_display_name_windows_ubuntu": "FOCUSED_CI_VERIFIED",
+    "default_cli_mutation_surface_composition": "FOCUSED_CI_VERIFIED_WINDOWS_AND_UBUNTU",
+    "global_raw_world_authority_sealing": "NOT_ESTABLISHED",
+    "generic_registration_adapter_idempotence": "NOT_ESTABLISHED",
+    "production_secret_custody": "NOT_CLAIMED",
+    "real_provider_truth": "NOT_CLAIMED",
+    "real_genealogy_truth": "NOT_CLAIMED",
+    "windows_directory_entry_power_loss_durability": "NOT_CLAIMED",
+    "legacy_v18_7_25_v18_7_27_native_windows_portability": "OPEN",
+    "non_cooperating_save_writers": "OUTSIDE_GUARANTEE",
+    "multi_host_consensus": "NOT_CLAIMED",
+    "formal_full_system_exactly_once_proof": false
+  },
+  "next_gate": "JANUS_GENESIS_SOVEREIGN_FACE_MICROCONTROL_AUTHORITY_SEAL_REMOTE_IDEMPOTENCY_LEGACY_PORTABILITY_AND_REGISTRATION_RECONCILIATION_v6.7"
+}

@@ -1,0 +1,41 @@
+{
+  "id":"EYE-R4.4-SEARCH-PROOF-ROBUST-v1",
+  "cause_classes":[
+    {"id":"stale_or_derivative_result","target_class":"INVALID","prior":0.4},
+    {"id":"valid_independent_result","target_class":"VALID","prior":0.5},
+    {"id":"verifier_specific_false_positive","target_class":"INVALID","prior":0.1}
+  ],
+  "requirements":{"confidence_threshold":0.9,"robust_objective":"minimax_expected_cost","require_common_outcome_support":true},
+  "tests":[
+    {"id":"provenance_hash_audit","cost":1,"calibrated":true,"failure_domains":["provenance"],"likelihood_by_cause":{
+      "stale_or_derivative_result":{"PROVENANCE_BAD":0.9,"CLEAN":0.1},
+      "valid_independent_result":{"PROVENANCE_BAD":0.05,"CLEAN":0.95},
+      "verifier_specific_false_positive":{"PROVENANCE_BAD":0.1,"CLEAN":0.9}
+    }},
+    {"id":"independent_verifier","cost":3,"calibrated":true,"failure_domains":["verifier"],"likelihood_by_cause":{
+      "stale_or_derivative_result":{"MATCH":0.05,"REJECT":0.95},
+      "valid_independent_result":{"MATCH":0.99,"REJECT":0.01},
+      "verifier_specific_false_positive":{"MATCH":0.1,"REJECT":0.9}
+    }},
+    {"id":"end_to_end_rebuild","cost":6,"calibrated":true,"failure_domains":["rebuild"],"likelihood_by_cause":{
+      "stale_or_derivative_result":{"VALID":0.01,"INVALID":0.99},
+      "valid_independent_result":{"VALID":0.995,"INVALID":0.005},
+      "verifier_specific_false_positive":{"VALID":0.02,"INVALID":0.98}
+    }}
+  ],
+  "model_set":[
+    {"id":"nominal","weight":0.6,"provenance":"synthetic calibration derived from R4.3 search/proof benchmark"},
+    {"id":"degraded","weight":0.4,"provenance":"declared conservative degraded calibration","likelihood_overrides":{
+      "provenance_hash_audit":{
+        "stale_or_derivative_result":{"PROVENANCE_BAD":0.75,"CLEAN":0.25},
+        "valid_independent_result":{"PROVENANCE_BAD":0.1,"CLEAN":0.9},
+        "verifier_specific_false_positive":{"PROVENANCE_BAD":0.2,"CLEAN":0.8}
+      },
+      "independent_verifier":{
+        "stale_or_derivative_result":{"MATCH":0.1,"REJECT":0.9},
+        "valid_independent_result":{"MATCH":0.95,"REJECT":0.05},
+        "verifier_specific_false_positive":{"MATCH":0.2,"REJECT":0.8}
+      }
+    }}
+  ]
+}

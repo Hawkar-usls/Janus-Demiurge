@@ -1,0 +1,90 @@
+{
+  "artifact_uuid": "JANUS-BLUEBOOK-EXACT-DATE-MATCHED-CONTROL-PREREG-v1.0",
+  "title": "JANUS Blue Book — Exact-Date Matched Nuclear Specificity Control Preregistration",
+  "version": "v1.0",
+  "timestamp": "2026-08-15T09:41:00+03:00",
+  "status": "PREREGISTERED_BEFORE_FULL_5144_CASE_RESULT_INSPECTION__NOT_AUTHORITY",
+  "purpose": "Precommit the statistical comparison of Project Blue Book human reports near nuclear-test dates versus non-nuclear dates before inspecting the completed full public exact-date index.",
+  "lineage": {
+    "human_witness_design": "registry/cosmology/JANUS-POSS1-HUMAN-WITNESS-TEMPORAL-CONTROL-v1.0.json",
+    "human_witness_preliminary_result": "registry/cosmology/JANUS-POSS1-HUMAN-WITNESS-TEMPORAL-CONTROL-RESULT-v1.0.json",
+    "exact_date_runner": "research/uap_poss1/janus_bluebook_public_case_index_v0_2.py",
+    "active_full_workflow_run": 31869957662,
+    "current_authority_changed": false
+  },
+  "blindness_contract": {
+    "morphology_source": "Narrative Summary text only; fixed record-card checkbox vocabulary is excluded.",
+    "required_order": [
+      "discover/fetch public case pages",
+      "require NARA NAID",
+      "extract occurrence date",
+      "compute blind morphology screens",
+      "write and SHA-256 freeze bluebook_case_index_blind.csv",
+      "only then fetch/join frozen nuclear calendar"
+    ],
+    "forbidden": "No morphology keyword or threshold may be changed after nuclear labels are inspected without creating a new post-hoc sensitivity artifact."
+  },
+  "study_window": ["1949-11-19", "1957-04-28"],
+  "primary_source_population": "Publicly accessible Project Blue Book case pages carrying NARA NAIDs and linked to NARA T1206 provenance; exact-date rows only.",
+  "primary_nuclear_calendar": "JANUS strict open SIPRI/IAEA-derived calendar already frozen in the POSS-I public reconstruction; no post-hoc calendar selection.",
+  "phenotypes": {
+    "STARLIKE": "Narrative explicitly says star-like, like/resembling a star, point of light, pinpoint(s) of light, or star-sized.",
+    "COMPACT_LIGHT": "Broader narrative screen for colored/bright/luminous compact light/object language.",
+    "FORMATION": "Narrative formation/rows/cluster/group terminology.",
+    "RADAR": "Narrative radar involvement.",
+    "RESOLVED_CRAFTLIKE": "Narrative resolved body language such as disc/disk/cigar/cylinder/triangle/saucer/fuselage."
+  },
+  "primary_windows": {
+    "confirmatory": ["day_-1", "day_0", "day_+1", "plus_minus_1"],
+    "secondary_localization": ["day_-4", "day_-3", "day_-2", "day_+2", "day_+3", "day_+4", "plus_minus_2", "plus_minus_4"]
+  },
+  "endpoints": {
+    "E1_all_case_incidence": "Number of exact-date Blue Book case rows in nuclear windows.",
+    "E2_any_report_day": "Binary date endpoint: at least one exact-date Blue Book case on the date. Prevents a mass-report night from contributing arbitrary case multiplicity.",
+    "E3_starlike_case_incidence": "Number of STARLIKE-screened case rows in nuclear windows.",
+    "E4_any_starlike_day": "Binary date endpoint: at least one STARLIKE-screened case on the date.",
+    "E5_compact_light_case_incidence": "Broader compact-light sensitivity endpoint.",
+    "E6_morphology_composition": "Among Blue Book case rows, odds that a report is STARLIKE near nuclear dates versus outside +/-4 days. This conditions on entry into the Blue Book reporting system and does not treat zero-report calendar dates as observed person-days."
+  },
+  "null_models": {
+    "N1_year_blocked_pseudo_tests": {
+      "description": "For each calendar year, preserve the number of unique real nuclear-test dates but draw pseudo-test dates uniformly without replacement from eligible dates in that same year; recompute +/-1 endpoints.",
+      "purpose": "Preserve large secular changes in Blue Book reporting while allowing non-nuclear months such as July 1952 to enter the null.",
+      "iterations": 50000,
+      "seed": 19520719
+    },
+    "N2_year_month_blocked_pseudo_tests": {
+      "description": "Within each year-month containing real test dates, preserve the number of unique test dates and redraw them without replacement within that same month.",
+      "purpose": "Stricter season/month control, at the cost of conditioning on which months had nuclear activity.",
+      "iterations": 50000,
+      "seed": 19520605
+    },
+    "N3_exact_lag_shape": {
+      "description": "Report observed endpoint values separately at lags -4 through +4. Pre-event structure is a confounding diagnostic and may not be interpreted as backwards causation."
+    }
+  },
+  "model_sensitivities": {
+    "daily_count": "Negative-binomial or Poisson count sensitivity with year trend, annual sine/cosine, and explicit July-1952 high-media-wave indicator; interpret only as archival report incidence, not population sighting incidence.",
+    "case_composition": "Logistic sensitivity for STARLIKE among case rows with nuclear +/-1 predictor plus year/season terms.",
+    "mass_wave_control": "July 1952 is an explicit high-reporting non-nuclear positive-control epoch and may not be averaged away without a reported sensitivity run."
+  },
+  "duplicate_and_exposure_boundaries": {
+    "same_day_case_multiplicity": "E2/E4 binary event-day endpoints are mandatory alongside case counts.",
+    "witness_count": "Multiple witnesses inside one case file do not become multiple case rows.",
+    "archive_zero": "A calendar day with zero Blue Book case rows means zero entries in the reconstructed archive, NOT zero people looking at the sky.",
+    "geography": "Global nuclear-test proximity in time is not physical exposure; distance/site/line-of-sight are future physical-link covariates."
+  },
+  "admission_logic": {
+    "positive_nuclear_specificity": "Requires positive +/-1 direction for a preregistered endpoint and survival against both year-blocked and year-month-blocked nulls, with no contradictory pre-event lag pattern and with the STARLIKE result not explainable solely by one mass-report day.",
+    "non_nuclear_baseline": "Considered established as nonzero if STARLIKE or compact-light cases occur outside +/-4 days, independent of any nuclear-window effect.",
+    "failure_to_replicate": "If +/-1 endpoints are compatible with the blocked nulls, nuclear temporal specificity is NOT_ESTABLISHED in this human-report layer.",
+    "suppression": "A negative coefficient or deficit is never promoted to nuclear suppression unless it survives the same blocked nulls and does not appear at pre-event lags."
+  },
+  "mandatory_validation_before_admission": [
+    "Freeze a deterministic spot-check sample selected from the blind-index SHA-256.",
+    "Verify NARA NAID, occurrence date and phenotype wording against underlying NARA-linked record-card scans for the spot-check sample.",
+    "Blind manual adjudication of all STARLIKE positives if their count is tractable; otherwise a frozen random positive/negative sample.",
+    "Record parser error and ambiguous-date rates."
+  ],
+  "claim_ceiling": "PREREGISTERED_HUMAN_REPORT_TEMPORAL_SPECIFICITY_TEST__NO_RESULT_YET__NO_CAUSAL_ORIGIN_CLAIM"
+}

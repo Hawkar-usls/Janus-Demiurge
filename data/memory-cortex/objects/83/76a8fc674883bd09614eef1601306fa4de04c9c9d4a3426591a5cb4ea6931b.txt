@@ -1,0 +1,64 @@
+{
+  "artifact_id": "JANUS-PALOMAR-JPFM-5B-WEATHER-ADJUSTED-POSS-ADMISSION-v1.0",
+  "experiment_id": "JPFM-5B",
+  "date": "2026-08-15",
+  "status": "PREREGISTERED_BEFORE_WEATHER_TO_POSS_OUTCOME_JOIN",
+  "purpose": "Test whether local measured precipitation at the Palomar Mountain Observatory GHCN station is associated with Palomar observing opportunity or with POSS-I S0 candidate rate conditional on actual observation.",
+  "parents": [
+    "data/JANUS-PALOMAR-JPFM-2E-SCHEDULE-CONFOUND-DECOMPOSITION-RUN-001.json",
+    "data/JANUS-PALOMAR-JPFM-5A-LOCAL-WEATHER-ACQUISITION-GATE-v1.0.json",
+    "data/JANUS-PALOMAR-JPFM-5A-LOCAL-WEATHER-SOURCE-INTAKE-v1.0.json"
+  ],
+  "weather_source": {
+    "station_id": "USC00046657",
+    "station_name": "PALOMAR MTN OBSY",
+    "distance_to_palomar_schmidt_km": 3.169531627635933,
+    "primary_element": "PRCP",
+    "primary_exposure": "WET_DAY = QA-clean GHCN PRCP value > 0",
+    "dry_semantics": "QA-clean PRCP == 0 means no measured daily precipitation at this station; it does not mean clear sky.",
+    "missing_semantics": "Missing or quality-flagged PRCP is excluded, never coerced to zero."
+  },
+  "date_alignment": {
+    "primary": "weather_date = Palomar UTC observation/calendar date minus 1 civil day",
+    "rationale": "POSS plate DATE-OBS is interpreted in UT and much Palomar night observing begins on the preceding local civil date; GHCN is a local daily climate summary rather than exposure-hour weather.",
+    "sensitivity": "weather_date = same nominal Palomar UTC date",
+    "boundary": "Neither alignment is claimed to reconstruct exposure-hour cloud conditions."
+  },
+  "primary_endpoints": [
+    {
+      "id": "P1_OBSERVING_SCHEDULE_WET_DAY",
+      "unit": "calendar day in the frozen 1949-11-19..1957-04-28 UTC study grid with QA-clean aligned PRCP",
+      "outcome": "Palomar observed-night indicator",
+      "model": "logistic observed_night ~ wet_day + month fixed effects + year fixed effects",
+      "interpretation": "Acquisition/schedule association only."
+    },
+    {
+      "id": "P2_CANDIDATE_RATE_WET_DAY",
+      "unit": "actually observed Palomar night with QA-clean aligned PRCP",
+      "outcome": "globally deduplicated S0 candidate_count",
+      "opportunity": "processed tile_count offset",
+      "model": "NB2 candidate_count ~ wet_day + month/year + sky footprint + exposure/WCS + lunar illumination + GFZ Ap/Kp, offset log(tile_count)",
+      "interpretation": "Candidate-rate/acquisition-quality association only; not physical-origin inference."
+    }
+  ],
+  "frozen_sensitivity": {
+    "date_alignment": "same nominal UTC/GHCN calendar date",
+    "role": "sensitivity only; cannot rescue a failed primary minus-1-day alignment"
+  },
+  "descriptive_only": ["TMAX", "TMIN", "SNOW", "SNWD", "rare WTxx event codes"],
+  "admission_rule": {
+    "weather_association_candidate": "P2 primary wet-day coefficient p<0.05 and finite CI; retained only as an acquisition/quality association, not an origin mechanism.",
+    "schedule_only": "If P1 is associated but P2 is not, classify as weather-linked observing opportunity without residual candidate-rate effect.",
+    "null": "If P1 and P2 are non-significant, classify as no detected wet-day association under this daily-summary alignment."
+  },
+  "forbidden": [
+    "PRCP=0 may not be called clear sky.",
+    "Missing weather may not be called dry weather.",
+    "Unobserved Palomar days may not enter P2 as candidate_count=0.",
+    "A weather coefficient may not identify candidate physical origin.",
+    "The same-date sensitivity may not override a failed primary alignment.",
+    "No Blue Book witness-local weather inference is made from the Palomar station."
+  ],
+  "current_authority_changed": false,
+  "claim_ceiling": "PREREGISTERED_LOCAL_PRECIPITATION_ACQUISITION_AND_RATE_TEST_ONLY__NO_WEATHER_CAUSALITY_OR_ORIGIN_CLAIM"
+}

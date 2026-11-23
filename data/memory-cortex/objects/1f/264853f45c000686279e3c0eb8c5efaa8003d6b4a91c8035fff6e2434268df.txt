@@ -1,0 +1,157 @@
+{
+  "artifact_id": "JANUS-LOGOS-001-R13-FROZEN_REAL_NIST_STRONG_BASELINE_WITNESS-v1.0",
+  "date_utc": "2026-11-01",
+  "scope": "JANUS-LOGOS-001",
+  "phase": "R1.3",
+  "status": "COMPUTATION_INTEGRITY_PASS__GENERALIZATION_COMPARISON_FAIL",
+  "parent": "data/JANUS-GOD-CODE-v1.0.json",
+  "preregistration": {
+    "file": "data/JANUS-LOGOS-001-R13-PREREG-v1.0.json",
+    "commit": "27b8c20026fb82cabba71084ae1bede5919430de",
+    "frozen_before_first_holdout_cloud_test": true,
+    "heldout_exposure_note": "R1.3 public NIST TEST values are now revealed; never reuse as pristine development set."
+  },
+  "input_corpus": {
+    "kind": "ACTUAL_NIST_NONLINEAR_LEAST_SQUARES_OBSERVED_MEASUREMENTS",
+    "n_total": 427,
+    "source_repos": [
+      "ceres-solver/ceres-solver",
+      "NIST StRD"
+    ],
+    "dataset_git_blobs": {
+      "HAHN1": "f3069d70abb3449eae006d330aa3f4a2506d1af4",
+      "THURBER": "6d72fd93cfa072f53b155d456b2f50b16e686852",
+      "BENNETT5": "eba218a14a72c22ae35aa225f11054517bdd92dd"
+    },
+    "grouped_holdouts": {
+      "HAHN1": [
+        142,
+        47,
+        47
+      ],
+      "THURBER": [
+        21,
+        8,
+        8
+      ],
+      "BENNETT5": [
+        92,
+        31,
+        31
+      ]
+    }
+  },
+  "learner": {
+    "source": "research/logos_001/r13_discover.py",
+    "git_blob": "b16f367b477b12cae1b582cbcdcff9d29f537df4",
+    "provenance": "REUSE_UNCHANGED_R12_CASE_SEARCH_WITH_PRE_DECLARED_R13_DATASET_WRAPPER",
+    "input": "TRAIN_AND_VALIDATION_ONLY",
+    "source_code_public": true
+  },
+  "independent_witness": {
+    "source": "research/logos_001/r13_witness.py",
+    "git_blob": "6292ea0c3d0fbb9536b7a805b7188e54a566253e",
+    "runner": "SEPARATE_GITHUB_HOSTED",
+    "baseline_selector": "TRAIN_AND_VALIDATION_ONLY",
+    "packages": [
+      "numpy==1.26.4",
+      "scipy==1.14.1",
+      "scikit-learn==1.5.2"
+    ],
+    "baselines": [
+      "POLY_OLS_0_TO_5",
+      "RIDGE_POLY5",
+      "PCHIP",
+      "SMOOTH_SPLINE",
+      "RANDOM_FOREST",
+      "KERNEL_RIDGE_RBF"
+    ],
+    "bootstrap": {
+      "type": "PAIRED_GROUPED_X_CLUSTER",
+      "B": 2000,
+      "seed": 1301,
+      "ci": "PERCENTILE_95_DESCRIPTIVE_CONDITIONAL_ON_FIXED_MODELS"
+    }
+  },
+  "results": [
+    {
+      "dataset": "HAHN1",
+      "candidate_decision": "PROPOSE",
+      "candidate_family": "poly",
+      "candidate_test_rmse": 0.4753584131407015,
+      "strong_baseline": "SMOOTH_SPLINE_0.01",
+      "strong_baseline_test_rmse": 0.11146776049080036,
+      "relative_rmse_gain": -3.2645372172874483,
+      "bootstrap_95_percentile_relative_gain": [
+        -5.21366666082926,
+        -2.3368654053020714
+      ],
+      "independent_test_x_groups": 47,
+      "interpretation": "Inferior to smoother interpolation; 95% conditional bootstrap interval entirely below 0."
+    },
+    {
+      "dataset": "THURBER",
+      "candidate_decision": "PROPOSE",
+      "candidate_family": "poly",
+      "candidate_test_rmse": 60.27219991160412,
+      "strong_baseline": "RF300_LEAF1",
+      "strong_baseline_test_rmse": 25.616541346151305,
+      "relative_rmse_gain": -1.3528625155581189,
+      "bootstrap_95_percentile_relative_gain": [
+        -5.839061403530617,
+        -0.02329027913511661
+      ],
+      "independent_test_x_groups": 8,
+      "interpretation": "Inferior to random forest; uncertainty wide due to only eight independent holdout x groups."
+    },
+    {
+      "dataset": "BENNETT5",
+      "candidate_decision": "ABSTAIN",
+      "candidate_test_rmse": null,
+      "strong_baseline": "POLY4",
+      "strong_baseline_test_rmse": 0.0025321225558135978,
+      "relative_rmse_gain": null,
+      "bootstrap_95_percentile_relative_gain": null,
+      "independent_test_x_groups": 31,
+      "interpretation": "Constrained discoverer abstained instead of claiming scientific law; no candidate tested."
+    }
+  ],
+  "negatives": {
+    "shuffled_validation_controls": {
+      "tested": 3,
+      "rejected": 3
+    },
+    "tamper_cases": {
+      "digest": "REJECTED",
+      "model_coefficient": "REJECTED",
+      "model_injection": "REJECTED",
+      "negative_promotion": "REJECTED"
+    }
+  },
+  "verdicts": {
+    "source_and_algorithm_integrity": "PASS_SOURCE_AND_PROPOSAL_CHECKS",
+    "comparison_to_validation_selected_strong_baseline": "ZERO_OUT_OF_THREE",
+    "prereg_scientific_gate": "FAIL",
+    "production_model_promotion_allowed": false,
+    "reason": "No dataset meets +5% test RMSE gain with positive 95% lower bootstrap bound"
+  },
+  "ci_evidence": {
+    "initial_pr": "https://github.com/Hawkar-usls/janus-meta-registry/pull/429",
+    "initial_run": "https://github.com/Hawkar-usls/janus-meta-registry/actions/runs/41297111507",
+    "run_id": 41297111507,
+    "workflow_jobs": [
+      "Frozen equations from TRAIN and VALIDATION only: SUCCESS",
+      "Independent NIST holdout scorer with strong baselines and bootstrap CIs: SUCCESS",
+      "Independent adversarial scientific protocol and NIST source tests: SUCCESS"
+    ],
+    "witness_artifact_id": 13079896965
+  },
+  "limits": [
+    "The source models and public raw NIST observations are known. This is NOT an externally hidden/blinded benchmark.",
+    "No inference of new laws of physics, universal explanatory theory, divine authorship or P=NP.",
+    "The percentile cluster bootstrap describes conditional model comparison uncertainty, not an external population-level theorem.",
+    "No retraining, retroactive threshold adjustments or post-hoc source changes are permitted for this trial.",
+    "No production model promotion regardless of status; no Rowan paid tasks or NAS, no new schedule."
+  ],
+  "next_gate": "R1.4: experiment with an objectively new, independently controlled, actually sealed evaluation set and stronger scientific model comparison."
+}

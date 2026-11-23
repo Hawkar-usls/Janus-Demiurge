@@ -1,0 +1,20 @@
+{
+  "schema": "JANUS/adv-elite-decision-checkpoint/v1.0.0",
+  "decision_id": "Q10",
+  "status": "RESOLVED",
+  "canonical_class": "NONBLOCKING_OUTBOX_TO_GITHUB_BACKED_HRAIN_READ_PLANE",
+  "decision": "Preserve/refactor the old HRAIN/Titan uplink into one nonblocking Outbox. ADV sends canonical JSON publication requests to the Registry Gateway; the gateway writes to GitHub; HRain reads those GitHub-backed JSON sources as a visualization/context plane.",
+  "transport": {
+    "nonblocking": true,
+    "offline_queue": true,
+    "retry": "exponential backoff + jitter",
+    "durable_ack": true,
+    "idempotency": "record_id/chunk_hash",
+    "must_not_block": ["ESP-NOW","sensors","M2R","Witness","mining"]
+  },
+  "hrain_direct_post": false,
+  "reason": "Current HRain/GitHub Pages is a read-only/static consumer, not a secure ingest server.",
+  "bridge_contract": "registry/JANUS-HRAIN-TELEMETRY-BRIDGE-CONTRACT-v1.0.0.json",
+  "canonical_flow": "ADV -> Outbox -> Registry Gateway -> GitHub JSON -> HRain read-only graph",
+  "next_question": "Q11_ANOMALY_STATISTICS"
+}

@@ -1,0 +1,62 @@
+{
+  "id": "EYE-R4.1-SYNTHETIC-KNOWN-MINIMUM-v1",
+  "description": "Synthetic benchmark with a known unique minimum under the declared binary discrimination model.",
+  "cause_classes": [
+    {"id": "A"},
+    {"id": "B"},
+    {"id": "C"},
+    {"id": "D"}
+  ],
+  "already_acquired": [],
+  "requirements": {
+    "required_independent_separators_per_pair": 1,
+    "unknown_independence_conflicts": true,
+    "max_exact_tests": 20,
+    "objective": "incremental_cost_then_cardinality"
+  },
+  "tests": [
+    {
+      "id": "t_temporal",
+      "cost": 1,
+      "failure_domains": ["clock:alpha"],
+      "distinguishes": [["A","B"],["A","C"],["A","D"]]
+    },
+    {
+      "id": "t_geometry",
+      "cost": 2,
+      "failure_domains": ["geometry:beta"],
+      "distinguishes": [["B","C"],["B","D"],["C","D"]]
+    },
+    {
+      "id": "t_partial",
+      "cost": 1,
+      "failure_domains": ["partial:gamma"],
+      "distinguishes": [["A","B"],["B","C"],["C","D"]]
+    },
+    {
+      "id": "t_expensive_universal",
+      "cost": 10,
+      "failure_domains": ["universal:delta"],
+      "distinguishes": [["A","B"],["A","C"],["A","D"],["B","C"],["B","D"],["C","D"]]
+    },
+    {
+      "id": "t_dependency_probe",
+      "cost": 1,
+      "depends_on": ["t_dependency_calibration"],
+      "failure_domains": ["probe:epsilon"],
+      "distinguishes": [["A","C"],["B","D"]]
+    },
+    {
+      "id": "t_dependency_calibration",
+      "cost": 4,
+      "failure_domains": ["calibration:zeta"],
+      "distinguishes": []
+    }
+  ],
+  "expected": {
+    "status": "IDENTIFIABILITY_CANDIDATE",
+    "search_status": "EXACT_MINIMUM_FOUND",
+    "minimum_additional_tests": ["t_geometry", "t_temporal"],
+    "minimum_cost": 3
+  }
+}

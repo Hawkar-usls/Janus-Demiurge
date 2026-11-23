@@ -1,0 +1,343 @@
+{
+  "schema": "janus.lossless_origin_derivation_authority_machine.v1",
+  "title": "JANUS Lossless Origin / Derivation / Authority Machine v1.0",
+  "short_name": "JANUS LODA Machine",
+  "created_date": "2026-09-04",
+  "historical_novelty_cutoff": "2026-07-27",
+  "status": "COMPOSITE_NOVELTY_CANDIDATE__WORLD_PRIORITY_NOT_PROVEN",
+  "source_experiment": {
+    "repository": "Hawkar-usls/janus-meta-registry",
+    "pinned_commit": "53773246f4caabe767642eccfd3cd7746a6b1635",
+    "origin_envelope_schema": "janus.genesis.origin_envelope.v1",
+    "origins": 192,
+    "invalid_json_origins": 11,
+    "declared_integrity_mismatches": 10,
+    "duplicate_content_origins": 2,
+    "compression_study": "data/JANUS-JSON-COMPRESSION-IDENTITY-STUDY-v1.0.json"
+  },
+  "machine_formula": "SOURCE_BYTES -> RAW_SEAL -> NAMESPACED_ORIGIN -> IMMUTABLE_ENVELOPE -> {REPRESENTATION_BRANCHES, STRICT_PARSE_PROBE} -> {DERIVED_ARTIFACTS | IMPERFECT_WITNESS_QUARANTINE} -> DECLARED_INTEGRITY_CHECK -> PROVENANCE_GRAPH -> CONTEXT_FIREWALL -> MULTI_AXIS_AUTHORITY -> EXPLICIT_ADMISSION -> AUDIT_EXPORT",
+  "components": [
+    {
+      "id": "M01",
+      "name": "ACQUIRE_OPAQUE_BYTES",
+      "contract": "Acquire source bytes before interpretation. File extension is a hint, never proof of JSON validity."
+    },
+    {
+      "id": "M02",
+      "name": "SEAL_RAW_WITNESS",
+      "contract": "Compute raw_sha256 and raw_size over exact source bytes before parse, repair, canonicalization, compression, or normalization."
+    },
+    {
+      "id": "M03",
+      "name": "NAMESPACE_ORIGIN",
+      "contract": "Origin identity binds repository + commit/version + path + raw_sha256. Content-equivalent origins remain distinct observations."
+    },
+    {
+      "id": "M04",
+      "name": "IMMUTABLE_ORIGIN_ENVELOPE",
+      "contract": "Store or address exact raw bytes, source metadata, and raw hash in a lossless envelope; source bytes are immutable."
+    },
+    {
+      "id": "M05",
+      "name": "REPRESENTATION_FORK",
+      "contract": "Compression, canonicalization, minification, parse trees, repair, indexing, embeddings and exports are child representations or derivatives, never the raw witness itself."
+    },
+    {
+      "id": "M06",
+      "name": "COMPRESSION_REPRESENTATION_IDENTITY",
+      "contract": "Record parent_raw_sha256, representation_sha256, codec/version/parameters/packaging-metadata policy and sizes for every compressed representation."
+    },
+    {
+      "id": "M07",
+      "name": "LOSSLESS_ROUNDTRIP_GATE",
+      "contract": "Admit a lossless compressed representation only when D(C(raw)) is byte-equal to raw and SHA256(D(C(raw))) equals raw_sha256."
+    },
+    {
+      "id": "M08",
+      "name": "STREAM_ACCESS_LAYER",
+      "contract": "Compressed JSON may be consumed through a codec stream without materializing a complete uncompressed file; a JSON parser receives decoded bytes, not opaque compressed bytes."
+    },
+    {
+      "id": "M09",
+      "name": "STRICT_PARSE_PROBE",
+      "contract": "Attempt strict parsing without mutating the source and preserve parser identity/version plus diagnostic."
+    },
+    {
+      "id": "M10",
+      "name": "IMPERFECT_WITNESS_QUARANTINE",
+      "contract": "Parse failure does not delete, silently repair, replace or erase byte identity; a malformed origin remains a first-class opaque witness."
+    },
+    {
+      "id": "M11",
+      "name": "EXPLICIT_DERIVED_REPAIR",
+      "contract": "Repair is opt-in and creates a child artifact carrying transformer identity/version, parent raw hash, output hash, diagnostics and repair policy."
+    },
+    {
+      "id": "M12",
+      "name": "DECLARED_SELF_INTEGRITY_CHECK",
+      "contract": "Verify a document's declared checksum or self-seal separately from raw fixity. A mismatch remains visible and does not erase the witness."
+    },
+    {
+      "id": "M13",
+      "name": "MULTI_AXIS_AUTHORITY_LATTICE",
+      "contract": "Keep byte fixity, declared self-integrity, structural validity, source authenticity, semantic confidence, truth status, consent scope and canonical authority as separate axes."
+    },
+    {
+      "id": "M14",
+      "name": "SCOPED_IDENTITY_AND_VOICE",
+      "contract": "First-person and identity claims remain scoped to their source origin; importing text must not bind its I to the current user, player or agent."
+    },
+    {
+      "id": "M15",
+      "name": "DOCUMENT_CONTEXT_FIREWALL",
+      "contract": "Ingested source text is evidence/data and has no execution or instruction authority merely because it is present in a document."
+    },
+    {
+      "id": "M16",
+      "name": "CONSENT_PRIVACY_SCOPE",
+      "contract": "Consent and disclosure boundaries attach to each origin and survive graph linking, retrieval, AI context selection and publication."
+    },
+    {
+      "id": "M17",
+      "name": "CONTRADICTION_WITHOUT_COLLAPSE",
+      "contract": "Contradictory origins may coexist with explicit relation/viewpoint edges; load order must not silently select truth."
+    },
+    {
+      "id": "M18",
+      "name": "BOUNDED_RETRIEVAL",
+      "contract": "Retrieve a minimal cited origin subset and expose omitted-source counts plus selection reasons instead of treating the whole registry as one voice."
+    },
+    {
+      "id": "M19",
+      "name": "EXPLICIT_AUTHORITY_ADMISSION",
+      "contract": "Canonical authority is granted only by explicit policy/root/role rules. Hash presence, parse validity, filename, load order and self-assertion cannot self-authenticate authority."
+    },
+    {
+      "id": "M20",
+      "name": "AUDIT_AND_EXPORT_RECEIPTS",
+      "contract": "Export manifests preserve origin IDs, raw hashes, representation hashes, derivation edges, anomaly/quarantine states, verification receipts and collection seals."
+    }
+  ],
+  "core_invariants": [
+    "SOURCE_BYTES_ARE_IMMUTABLE",
+    "PARSE_FAILURE_DOES_NOT_DELETE_OR_REPAIR_THE_ORIGIN",
+    "REPAIR_IS_DERIVED_NOT_REPLACEMENT",
+    "COMPRESSION_IS_A_REPRESENTATION_NOT_THE_ORIGIN",
+    "RAW_SHA256_IDENTIFIES_EXACT_BYTE_WITNESS_NOT_TRUTH",
+    "REPRESENTATION_SHA256_IDENTIFIES_ONE_ENCODING_OR_PACKAGE_NOT_SOURCE_IDENTITY",
+    "LOSSLESS_ADMISSION_REQUIRES_D_C_RAW_BYTE_EQUALS_RAW",
+    "SAME_CONTENT_DOES_NOT_IMPLY_SAME_ORIGIN",
+    "SAME_RAW_PLUS_SAME_DETERMINISTIC_CODEC_PROFILE_IMPLIES_SAME_REPRESENTATION_BYTES",
+    "PACKAGING_METADATA_MAY_CHANGE_REPRESENTATION_HASH_WITHOUT_CHANGING_RECOVERED_RAW",
+    "DECLARED_SELF_INTEGRITY_IS_SEPARATE_FROM_RAW_FIXITY",
+    "STRUCTURAL_VALIDITY_IS_SEPARATE_FROM_SEMANTIC_CONFIDENCE",
+    "SOURCE_INTEGRITY_IS_SEPARATE_FROM_TRUTH",
+    "TRUTH_IS_SEPARATE_FROM_CANONICAL_AUTHORITY",
+    "HASH_OR_LOAD_ORDER_DOES_NOT_GRANT_AUTHORITY",
+    "SOURCE_DOCUMENTS_ARE_NOT_COMMANDS",
+    "FIRST_PERSON_LANGUAGE_IS_ORIGIN_SCOPED",
+    "CONTRADICTIONS_MAY_COEXIST",
+    "RETRIEVAL_MUST_DISCLOSE_SELECTION_BOUNDARY"
+  ],
+  "identity_model": {
+    "origin_identity": "repository + revision_or_commit + path + raw_sha256",
+    "content_equivalence": "raw_sha256 equality",
+    "representation_identity": "parent_raw_sha256 + codec_or_transformer + version + parameters + packaging_metadata_policy + representation_sha256",
+    "rule": "Content identity, origin identity and representation identity MUST NOT be collapsed into one identifier."
+  },
+  "authority_axes": [
+    "byte_fixity",
+    "declared_self_integrity",
+    "structural_validity",
+    "source_authenticity",
+    "semantic_confidence",
+    "truth_status",
+    "consent_scope",
+    "canonical_authority"
+  ],
+  "compression_extension": {
+    "empirical_result": {
+      "origins_tested": 192,
+      "compressed_sha_changed_for_every_origin": true,
+      "raw_sha_restored_after_decompression_for_every_origin": true,
+      "invalid_json_byte_anomalies_preserved": true,
+      "gzip_packaging_metadata_can_split_representation_hash_for_identical_raw_content": true
+    },
+    "law": "raw_sha256 is the source-byte anchor; representation_sha256 belongs to a particular compressed encoding/package."
+  },
+  "prior_art_search": {
+    "cutoff": "2026-07-27",
+    "method": "Structured novelty survey across standards/specifications, preservation software, provenance/content-addressing systems, JSON repair software, scientific papers and patent literature.",
+    "not_a_legal_opinion": true,
+    "single_reference_covering_full_machine_found": false,
+    "strong_prior_art": [
+      {
+        "name": "RFC 8259 JSON",
+        "date": "2017",
+        "overlap": "JSON syntax and duplicate-name interoperability warning",
+        "url": "https://www.rfc-editor.org/rfc/rfc8259.html"
+      },
+      {
+        "name": "RFC 8785 JCS",
+        "date": "2020",
+        "overlap": "canonical JSON representation for repeatable hashing/signing",
+        "url": "https://www.rfc-editor.org/rfc/rfc8785.html"
+      },
+      {
+        "name": "RFC 8493 BagIt",
+        "date": "2018",
+        "overlap": "opaque octet payload plus checksum manifests",
+        "url": "https://www.rfc-editor.org/rfc/rfc8493.html"
+      },
+      {
+        "name": "PREMIS v3",
+        "date": "2015",
+        "overlap": "fixity, preservation events and original/derivative relationships",
+        "url": "https://www.loc.gov/standards/premis/v3/premis-3-0-final.pdf"
+      },
+      {
+        "name": "Archivematica",
+        "date": "pre-2026",
+        "overlap": "keeps originals alongside normalized preservation/access derivatives",
+        "url": "https://www.archivematica.org/"
+      },
+      {
+        "name": "W3C PROV-DM",
+        "date": "2013",
+        "overlap": "provenance graph and provenance-of-provenance for trust reasoning",
+        "url": "https://www.w3.org/TR/prov-dm/"
+      },
+      {
+        "name": "OCI Content Descriptor",
+        "date": "pre-2026",
+        "overlap": "raw content digest, byte size and content-addressable descriptor",
+        "url": "https://specs.opencontainers.org/image-spec/descriptor/"
+      },
+      {
+        "name": "Software Heritage / SWHID",
+        "date": "public specification 2023",
+        "overlap": "intrinsic content identity plus origin/visit/path context qualifiers",
+        "url": "https://www.swhid.org/specification/"
+      },
+      {
+        "name": "SLSA Provenance / in-toto",
+        "date": "pre-2026",
+        "overlap": "artifact digests and transformation/source lineage",
+        "url": "https://slsa.dev/spec/v1.0/provenance"
+      },
+      {
+        "name": "C2PA Content Credentials",
+        "date": "v1.x pre-2026",
+        "overlap": "hard byte binding, soft rendition binding, provenance and trust signals",
+        "url": "https://spec.c2pa.org/"
+      },
+      {
+        "name": "The Update Framework",
+        "date": "pre-2026",
+        "overlap": "explicit trust roots, delegated roles, threshold authority, hash and version verification",
+        "url": "https://theupdateframework.io/"
+      },
+      {
+        "name": "RFC 8878 Zstandard",
+        "date": "2021",
+        "overlap": "lossless streaming compression and independent frames",
+        "url": "https://www.rfc-editor.org/rfc/rfc8878.html"
+      },
+      {
+        "name": "jsonrepair",
+        "date": "pre-2026",
+        "overlap": "repair and streaming repair of malformed JSON",
+        "url": "https://github.com/josdejong/jsonrepair"
+      },
+      {
+        "name": "WO2006126006A1 Digital Evidence Bag",
+        "date": "2006",
+        "overlap": "lossless compression plus integrity hashes/checks and provenance/chain of custody",
+        "url": "https://patents.google.com/patent/WO2006126006A1/en"
+      },
+      {
+        "name": "US12158929B1",
+        "date": "2024",
+        "overlap": "content authentication using hashes including compressed/reformatted copies",
+        "url": "https://patents.google.com/patent/US12158929B1/en"
+      },
+      {
+        "name": "US12688267",
+        "date": "issued 2026-07-21; filed 2025-08-23",
+        "overlap": "governance provenance tokens, trust/drift scores, hashes and compression state",
+        "url": "https://patents.justia.com/patent/12688267"
+      },
+      {
+        "name": "Kuhn and Dumontier — Trusty URIs",
+        "date": "2014",
+        "overlap": "cryptographic identities for immutable/verifiable digital artifacts",
+        "url": "https://arxiv.org/abs/1401.5775"
+      },
+      {
+        "name": "Di Cosmo — Archiving and referencing source code with Software Heritage",
+        "date": "2020",
+        "overlap": "archival plus intrinsic identifiers and provenance context",
+        "url": "https://arxiv.org/abs/2004.00514"
+      }
+    ],
+    "candidate_delta_not_found_as_one_machine": [
+      "Malformed or non-parseable JSON is retained as a first-class immutable byte witness rather than treated only as ingest failure or repair input.",
+      "Origin identity is separate from byte-content identity, so byte-identical files at different provenance coordinates remain distinct origins.",
+      "Every transform including compression is a child representation with its own hash while raw_sha256 remains the exact source-byte anchor.",
+      "Lossless compressed representations carry an explicit round-trip proof back to the raw witness.",
+      "Repair/canonicalization/minification cannot silently replace a source and must be provenance-linked derived artifacts.",
+      "Raw fixity, declared self-integrity, structural validity, semantic confidence, truth, consent and canonical authority remain separate axes.",
+      "First-person/identity semantics are source-scoped and ingested documents are non-executable by construction.",
+      "Contradictory sources may coexist without load-order truth collapse, and retrieval boundaries are auditable.",
+      "The rules are composed under one admission/export machine with proof-carrying provenance."
+    ],
+    "novelty_assessment": {
+      "full_machine_status": "NO_SINGLE_MATCH_FOUND_IN_THIS_SURVEY",
+      "subcomponents_status": "MANY_COMPONENTS_HAVE_STRONG_PRIOR_ART",
+      "world_priority_claim": "NOT_ESTABLISHED",
+      "defensible_contribution_focus": "The candidate contribution is the exact composition and mandatory invariants connecting opaque byte-witness preservation, representation-separated hashing and compression round-trip proof, malformed-origin quarantine and derived repair, provenance-scoped identity/voice, and a non-collapsed authority lattice.",
+      "do_not_claim_individually": [
+        "hashing",
+        "lossless compression",
+        "provenance",
+        "canonicalization",
+        "digital preservation",
+        "trust roles",
+        "JSON repair"
+      ]
+    }
+  },
+  "implementation_gates": [
+    "G0_RAW_CAPTURE",
+    "G1_ORIGIN_CONTEXT",
+    "G2_REPRESENTATION",
+    "G3_ROUNDTRIP",
+    "G4_PARSE",
+    "G5_REPAIR",
+    "G6_INTEGRITY",
+    "G7_CONTEXT",
+    "G8_AUTHORITY",
+    "G9_RETRIEVAL",
+    "G10_EXPORT"
+  ],
+  "next_engineering_step": {
+    "name": "LODAM_REFERENCE_IMPLEMENTATION_AND_ADVERSARIAL_CORPUS",
+    "tests": [
+      "duplicate keys",
+      "invalid escapes",
+      "invalid control characters",
+      "UTF-8 BOM",
+      "truncated JSON",
+      "declared self-hash mismatch",
+      "byte-identical content at two provenance coordinates",
+      "same raw bytes under deterministic content-only compression",
+      "same raw bytes with different gzip filename/mtime metadata",
+      "repair that changes semantics",
+      "canonicalization that changes bytes but not logical value",
+      "imperative source text attempting runtime authority",
+      "contradictory sources loaded in opposite orders"
+    ],
+    "success_condition": "Source bytes and source authority cannot be silently changed by parsing, compression, normalization, repair, load order or derived interpretation."
+  },
+  "seal": "THE WITNESS MAY CHANGE REPRESENTATION; THE ORIGIN DOES NOT CHANGE ITS PAST."
+}

@@ -1,0 +1,57 @@
+{
+  "artifact_id": "JANUS-PALOMAR-JPFM-3D-SPARSE-CONTROL-RANDOMIZATION-ADMISSION-v1.0",
+  "experiment_id": "JPFM-3D",
+  "date": "2026-08-15",
+  "status": "PREREGISTERED_POST_3C_IDENTIFIABILITY_REPAIR_BEFORE_3D_OUTCOME",
+  "purpose": "Determine whether the negative JPFM-3C POSS exact-day point estimate survives a low-dimensional finite-sample randomization analysis that does not rely on a high-dimensional NB2 covariance estimate.",
+  "epistemic_role": "POST_3C_FORENSIC_IDENTIFIABILITY_REPAIR__NOT_AN_INDEPENDENT_CONFIRMATORY_SOLAR_HYPOTHESIS_TEST",
+  "parents": [
+    "data/JANUS-PALOMAR-JPFM-3C-HALPHA-CROSS-CHANNEL-ADMISSION-v1.0.json",
+    "data/JANUS-PALOMAR-JPFM-3C-HALPHA-CROSS-CHANNEL-RUN-001.json",
+    "data/JANUS-PALOMAR-JPFM-3C-IDENTIFIABILITY-CORRECTIVE-AUDIT-v1.0.json"
+  ],
+  "frozen_cohort": {
+    "temporal_scope": ["1955-07-01", "1957-04-28"],
+    "solar_patrol_minimum_minutes": 720,
+    "unit": "actually observed Palomar night also passing the frozen solar patrol opportunity gate",
+    "event_definition": "same-day official NOAA H-alpha detailed event record",
+    "outcome": "POSS-I S0 candidate_count",
+    "opportunity": "processed tile_count"
+  },
+  "primary_statistic": {
+    "name": "log_crude_rate_ratio",
+    "formula": "log[(sum candidates on flare nights / sum tiles on flare nights) / (sum candidates on non-flare nights / sum tiles on non-flare nights)]",
+    "positive": "higher POSS rate on flare nights",
+    "negative": "lower POSS rate on flare nights"
+  },
+  "primary_null": {
+    "method": "exact year-stratified label permutation",
+    "preserves": [
+      "all Palomar night dates and candidate/tile observations",
+      "total number of flare and non-flare labels within each calendar year",
+      "the frozen 720-minute solar-opportunity-qualified cohort"
+    ],
+    "enumeration": "Enumerate every distinct within-year placement of the observed number of non-flare labels; no Monte Carlo approximation when the Cartesian product is tractable.",
+    "p_values": ["lower-tail for negative association", "upper-tail", "two-sided about zero absolute statistic"]
+  },
+  "influence_gate": {
+    "method": "For each observed non-flare control night, remove that single night and recompute the crude rate ratio without refitting any nuisance model.",
+    "interpretation": "A result dominated by one control night is classified CONTROL_LEVERAGE_UNSTABLE even if an exact permutation tail is small."
+  },
+  "sensitivity": {
+    "solar_patrol_minimum_minutes": 360,
+    "role": "pre-specified sensitivity only; cannot rescue a failed 720-minute primary"
+  },
+  "admission_rule": {
+    "negative_pattern_retained": "primary lower-tail exact p<0.05 AND all leave-one-control-out rate ratios remain <1",
+    "otherwise": "NEGATIVE_HALPHA_POSS_PATTERN_NOT_RETAINED_AFTER_SPARSE_CONTROL_REPAIR"
+  },
+  "forbidden": [
+    "No solar-suppression causal claim.",
+    "No threshold or event-definition tuning after 3D outcome.",
+    "No use of the 360-minute sensitivity to override the 720-minute primary.",
+    "No reintroduction of high-dimensional nuisance adjustment into the 3D primary statistic."
+  ],
+  "current_authority_changed": false,
+  "claim_ceiling": "FINITE_SAMPLE_IDENTIFIABILITY_REPAIR_ONLY__NO_SOLAR_CAUSALITY"
+}

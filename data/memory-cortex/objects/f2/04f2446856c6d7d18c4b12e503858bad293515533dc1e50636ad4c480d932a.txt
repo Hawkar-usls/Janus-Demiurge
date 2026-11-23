@@ -1,0 +1,78 @@
+{
+  "artifact_uuid": "JANUS-EYE-IN-THE-SKY-META-REGISTRY-v0.2.1",
+  "name": "JANUS Eye In The Sky",
+  "version": "0.2.1",
+  "status": "matched-window-gate-completed",
+  "created_at": "2026-08-12",
+  "purpose": "Preserve the experimental lineage, controls, quantitative results, limitations, and next gate for the Eye In The Sky simulation layer.",
+  "lineage": {
+    "v0.1.0": {"role": "initial smoke-test", "key_observation": "NULL could produce apparent event-vs-control enrichment despite no causal fission."},
+    "v0.1.1": {
+      "role": "longer recursive-branching run",
+      "key_result": {"causal_RR": 11.807537504573729, "causal_p": 0.000999000999000999, "null_RR": 1.811594202898551, "null_p": 0.21078921078921078, "observer_bias_RR": 0.6797101449275362, "observer_bias_p": 0.5914085914085914, "causal_fission_events": 3381},
+      "status": "historical; not pooled into final inference",
+      "reason": "recursive branching saturation and heavily overlapping event windows"
+    },
+    "v0.1.2": {"role": "structural calibration", "controls": ["branching cap", "event density diagnostics", "unique event steps", "merged event windows", "event-window coverage", "placebo statistics"]},
+    "v0.1.3": {
+      "role": "reproducibility gate",
+      "controls": ["explicit steps=1000", "configuration hash", "window-preserving cyclic-shift permutation", "unified CSV schema", "3-seed integration test"],
+      "integration_test": {"rows": 18, "expected_rows": 18, "steps_all_1000": true, "permutation_method": "window_preserving_cyclic_shift"}
+    },
+    "v0.2": {"role": "first 200-seed statistical gate", "finding": "Unequal event-window coverage remained a confounder; observer-bias controls could create apparent enrichment."},
+    "v0.2.1": {"role": "matched-window null gate", "current_status": "completed"}
+  },
+  "v0_2_1_design": {
+    "n_seeds_per_config": 200,
+    "configs": ["high_signal", "marginal_signal"],
+    "scenarios": ["causal", "null", "observer_bias"],
+    "total_rows": 1200,
+    "steps": 1000,
+    "placebo_repeats_per_run": 200,
+    "matched_mask_source": "same-seed causal reference",
+    "coverage_equality_required": true,
+    "permutation_method": "window_preserving_cyclic_shift"
+  },
+  "v0_2_1_validation": {
+    "rows": 1200,
+    "expected_rows": 1200,
+    "steps_all_1000": true,
+    "matched_coverage_all_seeds": true,
+    "placebo_non_nan": true,
+    "csv_schema": ["config","scenario","seed","configured_steps","effective_steps","matched_mask","matched_reference_seed","fission_events","unique_event_steps","max_generation","event_window_coverage","events_per_step","observations","detections","RR","permutation_p","placebo_mean","placebo_p95","placebo_p975"]
+  },
+  "results": {
+    "high_signal": {
+      "causal": {"n": 200, "power_p_lt_0_05": 0.055, "median_p": 0.2017982017982018, "median_RR": 1.800616730998939, "mean_RR": 1.8400684590400174, "median_coverage": 0.1825, "coverage_min": 0.117, "coverage_max": 0.225, "placebo_mean_gt_1_2": 0.0, "placebo_mean_median": 0.814784550024994, "placebo_p95_median": 1.3568873546092437, "placebo_p975_median": 1.4705947302980038},
+      "null": {"n": 200, "fpr_p_lt_0_05": 0.025, "median_p": 0.5039960039960041, "median_RR": 0.992534416886631, "mean_RR": 1.0068260569915837, "median_coverage": 0.1825, "coverage_min": 0.117, "coverage_max": 0.225, "placebo_mean_gt_1_2": 0.05, "placebo_mean_median": 1.0259577463732574, "placebo_p95_median": 1.904295924734575, "placebo_p975_median": 2.09308770132089},
+      "observer_bias": {"n": 200, "fpr_like_p_lt_0_05": 0.28, "median_p": 0.09390609390609392, "median_RR": 2.214524280377939, "mean_RR": 2.194367708653485, "median_coverage": 0.1825, "coverage_min": 0.117, "coverage_max": 0.225, "placebo_mean_gt_1_2": 0.0, "placebo_mean_median": 0.7218881154685705, "placebo_p95_median": 1.153805735476903, "placebo_p975_median": 1.2373629974744516},
+      "causal_vs_null_mann_whitney": {"U": 36813.0, "p": 6.575562735127972e-48}
+    },
+    "marginal_signal": {
+      "causal": {"n": 200, "power_p_lt_0_05": 0.15, "median_p": 0.2162837162837163, "median_RR": 1.7756872322600024, "mean_RR": 2.0087885422022262, "median_coverage": 0.1825, "coverage_min": 0.117, "coverage_max": 0.225, "placebo_mean_gt_1_2": 0.065, "placebo_mean_median": 0.8371761759077352, "placebo_p95_median": 2.2431276160994282, "placebo_p975_median": 2.5802884615384625},
+      "null": {"n": 200, "fpr_p_lt_0_05": 0.025, "median_p": 0.5744255744255744, "median_RR": 0.7791061616954474, "mean_RR": 1.0498879001071943, "median_coverage": 0.1825, "coverage_min": 0.117, "coverage_max": 0.225, "placebo_mean_gt_1_2": 0.495, "placebo_mean_median": 1.1977972563767723, "placebo_p95_median": 3.1847237798013626, "placebo_p975_median": 3.8440585842240287},
+      "observer_bias": {"n": 200, "fpr_like_p_lt_0_05": 0.54, "median_p": 0.044455544455544456, "median_RR": 3.360732657165097, "mean_RR": 3.506084237508728, "median_coverage": 0.1825, "coverage_min": 0.117, "coverage_max": 0.225, "placebo_mean_gt_1_2": 0.0, "placebo_mean_median": 0.5405947017086756, "placebo_p95_median": 1.1296975164266745, "placebo_p975_median": 1.2799749798166227},
+      "causal_vs_null_mann_whitney": {"U": 30916.0, "p": 3.605243992606632e-21}
+    }
+  },
+  "interpretation": {
+    "primary": "Matched temporal geometry removed the earlier exposure-coverage confound, but observer-selection bias still generated strong non-causal enrichment.",
+    "high_signal": "CAUSAL power remained low at 5.5%, while matched NULL FPR was 2.5%; observer-bias produced p<0.05 in 28% of runs.",
+    "marginal_signal": "CAUSAL power was 15%, matched NULL FPR was 2.5%, and observer-bias produced p<0.05 in 54% of runs. The marginal NULL placebo tail was also heavy.",
+    "methodological_conclusion": "A large RR or a low permutation p-value is not sufficient for causal attribution. Selection/observation effects can survive matched temporal-window controls.",
+    "not_claimed": ["real nuclear causation", "quantum branching", "many-worlds evidence", "UAP causation"]
+  },
+  "critical_caution": {
+    "not_yet_completed": ["A dedicated PLACEBO scenario was proposed for v0.2.2 but is not included in the v0.2.1 1200-row result.", "The provided v0.2.1 dataset contains placebo summary metrics but no dedicated placebo_p column.", "Therefore PLACEBO_FPR cannot yet be reported from v0.2.1."],
+    "do_not_infer": ["Do not call observer_bias p<0.05 rate a formal FPR unless explicitly labelled as observer-bias false-positive rate.", "Do not interpret Mann-Whitney separation as proof of causal validity.", "Do not mix v0.1.1 100000-step drift runs with 1000-step baseline results."]
+  },
+  "next_gate": {
+    "version": "0.2.2",
+    "name": "Observer / Placebo Calibration",
+    "required_scenarios": ["CAUSAL", "NULL_MATCHED", "OBSERVER_BIAS_MATCHED", "PLACEBO"],
+    "required_p_values": ["permutation_p", "placebo_p", "random_shift_p"],
+    "primary_rates": {"POWER": "P(CAUSAL permutation_p < 0.05)", "FPR_NULL": "P(NULL permutation_p < 0.05)", "FPR_BIAS": "P(OBSERVER_BIAS permutation_p < 0.05)", "FPR_PLACEBO": "P(PLACEBO placebo_p < 0.05)"},
+    "atomgpt_blocked_until": "v0.2.2 passes"
+  },
+  "claim_ceiling": {"simulation_not_physical_nuclear_model": true, "simulation_branching_not_decoherence": true, "no_many_worlds_claim": true, "no_uap_causation_claim": true, "methodological_use_only": true}
+}

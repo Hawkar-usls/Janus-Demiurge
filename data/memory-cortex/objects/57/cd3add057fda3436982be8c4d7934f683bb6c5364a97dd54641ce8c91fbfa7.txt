@@ -1,0 +1,202 @@
+{
+  "artifact_id": "JANUS-TRUMP-P7-LEMMA11-DUAL-BARRIER-LIFT-GATE-2026-09-19-v1.1",
+  "version": "v1.1",
+  "date": "2026-09-19",
+  "status": "FROZEN_SCOPED_DIFFERENTIAL_PROOF_REPAIR_GATE__NO_P_VS_NP_AUTHORITY",
+  "authority": "PRIMARY_SOURCE_BOUND_DIFFERENTIAL_MECHANISM_ANALYSIS__NOT_A_COMPLEXITY_RESULT",
+  "title": "TRUMP P7 Lemma-11 Dual-Barrier Lift Gate",
+  "parent_frontier": {
+    "artifact_id": "JANUS-TRUMP-P6-P7-EXCELLENT-PRECOLORING-DIFFERENTIAL-FRONTIER-2026-09-19-v1.0",
+    "meta_registry_commit": "58cc96d4aea565dcf3a626bf08bcdb6f588ad715",
+    "fundamentum_commit": "d35da377db65c7bd15adbcee6098d5fb28adac71",
+    "shared_git_blob_sha1": "2c5b933ea7c08a0101df287e1bc14e5d66b3ccc4"
+  },
+  "purpose": "Freeze the first exact P6-to-P7 proof break inside Paper II Lemma 11 and separate its two independent P6-dependent obligations: representative coverage and acceptability. Test the smallest possible repair locally before touching downstream Paper I or making any complexity claim.",
+  "primary_sources": [
+    {
+      "paper": "Four-Coloring P6-Free Graphs. II. Finding an Excellent Precoloring",
+      "authors": [
+        "Maria Chudnovsky",
+        "Sophie Spirkl",
+        "Mingxian Zhong"
+      ],
+      "journal": "SIAM Journal on Computing 53(1), 146-187 (2024)",
+      "doi": "10.1137/18M1234849",
+      "arxiv": "1802.02283",
+      "primary_pdf": "https://web.math.princeton.edu/~mchudnov/4colpaper2.pdf",
+      "bound_locations": {
+        "lemma4": "Paper II, Lemma 4, printed page 6",
+        "lemma11": "Paper II, Lemma 11, printed pages 11-13",
+        "representative_use_of_lemma4": "Lemma 11 proof: the common Y0 neighbor is invoked by Lemma 4",
+        "acceptability_p6": "Lemma 11 proof: z-y-s-p-m-n is declared an induced P6 contradiction"
+      }
+    },
+    {
+      "paper": "Four-Coloring P6-Free Graphs. I. Extending an Excellent Precoloring",
+      "authors": [
+        "Maria Chudnovsky",
+        "Sophie Spirkl",
+        "Mingxian Zhong"
+      ],
+      "journal": "SIAM Journal on Computing 53(1), 111-145 (2024)",
+      "doi": "10.1137/18M1234837",
+      "arxiv": "1802.02282",
+      "primary_pdf": "https://web.math.princeton.edu/~mchudnov/4colpaper1.pdf",
+      "role": "DOWNSTREAM_BACKEND_ONLY__DO_NOT_REPAIR_IN_THIS_STAGE",
+      "observation": "The excellent-to-orthogonal machinery has its own P6-dependent technical lemmas, beginning immediately in Section 2. It is a separate future wall."
+    }
+  ],
+  "proved_scoped_lemma": {
+    "name": "P7_CORRIDOR_RIGIDITY",
+    "scope": "Paper-II Lemma-4 hypotheses, with G assumed P7-free instead of P6-free, and with the Lemma-4 cross-edge conclusion failing.",
+    "statement": "The obstruction produced by the Lemma-4 proof is an induced P6 whose shortest seed-path has exactly two internal seed vertices.",
+    "derivation": [
+      "Paper II chooses a shortest y-to-y' path Q with interior in connected seed S.",
+      "Different singleton-colored types imply T intersection T' is empty and the interior Q* has more than one vertex.",
+      "If both cross-edges are absent and z,z' are nonadjacent, the proof constructs induced path z-y-Q-y'-z' with at least six vertices.",
+      "In a P7-free graph the same induced path cannot have seven or more vertices.",
+      "Hence 4 + |Q*| <= 6 while |Q*| > 1, so |Q*| = 2."
+    ],
+    "canonical_underlying_shape": "z_L-y-s-s'-y'-z_R",
+    "vertex_count": 6,
+    "minimality": {
+      "status": "PROVED_FOR_UNDERLYING_VERTEX_COUNT",
+      "reason": "Any violation under the Lemma-4 proof creates an induced path on at least six vertices, and the six-vertex path realizes the bound.",
+      "decorated_witness_uniqueness": "NOT_CLAIMED"
+    }
+  },
+  "axiom_iv_guard": {
+    "statement": "In the Lemma-11 input scope satisfying axioms (i)-(v), if separate Y0 witnesses z_L,z_R have no common-neighbor collapse and z_L z_R were an edge, y would be mixed on the Y0 edge z_L z_R; axiom (iv) forbids this.",
+    "consequence": "The split-corridor obstruction may bind z_L z_R as a non-edge in the Lemma-11 lift gate rather than treating it as an unexamined assumption."
+  },
+  "lemma11_dual_barrier": {
+    "break_A": {
+      "id": "P7_SPLIT_REPRESENTATIVE_COVERAGE",
+      "original_p6_mechanism": "For a relevant pair of types, Lemma 4 supplies a common Y0 witness z, enabling a triple (P,M,N) with one middle representative complete to both endpoints.",
+      "p7_failure": "Separate attachments may survive as the exact P6 corridor z_L-y-s-s'-y'-z_R.",
+      "candidate_local_repair": {
+        "COMMON": "(P,M,N)",
+        "SPLIT": "(P,M_L,M_R,N) plus exact seed-edge/corridor certificate"
+      },
+      "cost_observation": {
+        "original_selected_vertices_per_type_pair_max": 3,
+        "proposed_selected_vertices_per_type_pair_max": 4,
+        "original_family_form": "n^{q(|S|)}",
+        "repaired_family_form_if_no_other_obligation_breaks": "still n^{q'(|S|)} for bounded seed",
+        "scientific_status": "COUNTING_OBSERVATION_ONLY__NOT_YET_A_CORRECTNESS_PROOF"
+      },
+      "pass_condition": [
+        "Every extension of the original seeded precoloring is captured by at least one generated COMMON or SPLIT subcase.",
+        "Every generated subcase extension reconstructs an original extension.",
+        "Seed enlargement remains bounded by a function of original |S|.",
+        "Family construction and discovery are polynomial for fixed/bounded seed.",
+        "Reconstruction is polynomial."
+      ]
+    },
+    "break_B": {
+      "id": "P7_ACCEPTABILITY_ESCAPE",
+      "location": "Paper II Lemma 11, after construction of the representative family M.",
+      "original_p6_mechanism": "To prove every member of M acceptable, the proof derives z-y-s-p-m-n as an induced P6 and contradicts P6-freeness.",
+      "p7_failure": "The induced P6 is legal in a P7-free graph, so the contradiction disappears independently of whether representative coverage was repaired.",
+      "importance": "Acceptability is an actual prerequisite for the later L1/L2 construction; this is not cosmetic.",
+      "pass_options": [
+        "Prove the canonical acceptability obstruction impossible under the enriched COMMON/SPLIT state using only valid P7-free consequences.",
+        "Add a bounded descriptor/state that captures every such obstruction, branch polynomially, and restore acceptability exactly."
+      ],
+      "fail_condition": "Produce the smallest explicit P7-free seeded witness satisfying all upstream axioms for which the bounded descriptor is insufficient to restore acceptability."
+    }
+  },
+  "stage": {
+    "name": "TRUMP_P7_LEMMA11_LIFT_GATE_V1",
+    "scientific_status": "SCOPED_DIFFERENTIAL_PROOF_REPAIR",
+    "no_p_vs_np_authority": true,
+    "input_contract": "Paper II Lemma 11 seeded precoloring assumptions (i)-(v), replacing P6-free by P7-free.",
+    "subgates": [
+      "A_P7_SPLIT_REPRESENTATIVE_COVERAGE",
+      "B_P7_ACCEPTABILITY_ESCAPE"
+    ],
+    "lemma11_lift_pass": [
+      "PASS_A",
+      "PASS_B",
+      "exact semantic equivalence",
+      "polynomial construction/discovery",
+      "bounded seed by a fixed function of original seed size",
+      "polynomial family bound",
+      "polynomial reconstruction"
+    ]
+  },
+  "machine_experiment_plan": {
+    "scope": "Only after the source-bound symbolic obligations are encoded; enumeration is diagnostic/falsifier discovery, not authority.",
+    "canonicalization": [
+      "S4 color relabeling",
+      "swap of ordered type pair (T,T') when semantically symmetric",
+      "seed automorphisms",
+      "P6 corridor reversal",
+      "graph isomorphism preserving seeded roles"
+    ],
+    "generated_instances": "Decorated P7-free seeded instances satisfying upstream axioms (i)-(v).",
+    "order": [
+      "Verify source axioms and P7-freeness.",
+      "Test Subgate A exact coverage/reconstruction.",
+      "Only if A passes, run acceptability checker.",
+      "If B fails, minimize the decorated witness while preserving all upstream assumptions and failure.",
+      "Record exactly which additional adjacency/color/list fact separates answer-distinct cases."
+    ],
+    "forbidden_use": "Finite exhaustive search cannot prove a universal polynomial bound unless accompanied by a valid general theorem."
+  },
+  "backend_boundary": {
+    "paper_I_status": "FROZEN_AS_SEPARATE_FUTURE_GATE",
+    "reason": "Paper I excellent-to-orthogonal machinery independently invokes P6 contradictions. Front-end Lemma-11 repair does not establish backend lift.",
+    "forbidden_current_action": "DO_NOT_PATCH_PAPER_I_IN_THIS_STAGE"
+  },
+  "anti_loop_equivalence_ledger": [
+    "4-COLOR",
+    "two cuts cover E",
+    "nowhere-zero F_2^2 tension",
+    "paired-graphic exactly-rank-2 nonvanishing functional",
+    "cut-code covering dimension <= 2",
+    "P_G(4) > 0"
+  ],
+  "symmetry_firewall": {
+    "fact": "AGL(2,2) is isomorphic to S4.",
+    "rule": "COLOR_COORDINATE_DEPENDENCE != STRUCTURAL_PROGRESS",
+    "requirement": "No promoted invariant may rely on arbitrary names of the four colors, a privileged first/second bit, a selected zero color, or an uncanonicalized equivalent F_2^2 coordinate system."
+  },
+  "forbidden_inferences": [
+    "P7_CORRIDOR_RIGIDITY => polynomial P7-free 4-coloring.",
+    "COMMON-or-SPLIT counting remains polynomial => Lemma 11 is repaired.",
+    "PASS_A => PASS_B.",
+    "A finite search found no counterexample => universal lemma.",
+    "Observed exponential state growth => an exponential lower bound.",
+    "Diagnostic or CI PASS => evidence that P=NP.",
+    "A polynomial-size certificate => a polynomial discovery algorithm.",
+    "A front-end lift => the Paper-I excellent-terminal solver lifts to P7-free."
+  ],
+  "promotion_rule": {
+    "required": [
+      "exact semantic equivalence",
+      "polynomial-time construction",
+      "polynomial-time quotient/state discovery",
+      "polynomial-time solve for the repaired scoped object",
+      "polynomial-time reconstruction",
+      "independent verification",
+      "no hidden NP-hard oracle or exponential enumeration"
+    ],
+    "total_cost_firewall": "T_construct + T_discover + T_solve + T_reconstruct + T_verify <= poly(|G|) with one fixed exponent for the stated scope."
+  },
+  "scientific_firewall": {
+    "P_VS_NP": "OPEN",
+    "P_EQ_NP": "NOT_PROVED",
+    "P_NOT_EQ_NP": "NOT_PROVED",
+    "GENERAL_SAT_IN_P": "NOT_PROVED",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "LEMMA11_P7_LIFT": "OPEN",
+    "SUBGATE_A": "OPEN",
+    "SUBGATE_B": "OPEN",
+    "P7_CORRIDOR_RIGIDITY": "PROVED_SCOPED_LEMMA_CANDIDATE__PRIMARY_SOURCE_DERIVATION_CHECKED",
+    "PAPER_I_BACKEND_LIFT": "NOT_STARTED",
+    "NEW_JANUS_CONTROLLER": "BLOCKED_UNLESS_SEPARATELY_AUTHORIZED"
+  },
+  "immediate_next_action": "Implement a proof-carrying no-repair checker for P7_CORRIDOR_RIGIDITY and the exact Lemma-11 input axioms, then test Subgate A COMMON-or-SPLIT coverage. Do not touch acceptability repair until A is independently established; if A passes, activate Subgate B and minimize the first P7-free acceptability escape.",
+  "provenance_note": "This artifact refines the v1.0 P6-to-P7 frontier using direct inspection of the full primary Paper-II proof. It preserves a local proof differential, not a world-novel theorem claim and not a resolution of P versus NP."
+}

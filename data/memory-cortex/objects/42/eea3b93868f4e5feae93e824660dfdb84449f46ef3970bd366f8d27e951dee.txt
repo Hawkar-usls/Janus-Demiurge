@@ -1,0 +1,142 @@
+{
+  "id": "PROTEI-DPI-INDEPENDENT-FINGERPRINT-TRIANGULATION-v1.0",
+  "date": "2026-08-31",
+  "program": "WATCHERS / TSPU external impact / GLOBAL SPIDER",
+  "status": "TRIANGULATION_READY_NO_VENDOR_UNIQUE_FINGERPRINT_YET",
+  "purpose": "Derive a behavioral fingerprint for PROTEI_DPI independently of Cuba, then search for that fingerprint in other networks without using policy similarity as vendor attribution.",
+  "supersedes_shortcuts": [
+    "RST_OR_TIMEOUT_AFTER_CLIENTHELLO_IS_PROTEI",
+    "CENSORSHIP_INSIDE_A_PROTEI_CUSTOMER_ASN_IS_CAUSED_BY_PROTEI",
+    "PROTEI_PRESENCE_IMPLIES_TSPU"
+  ],
+  "confirmed_anchor_deployments": [
+    {
+      "operator": "MegaCom / Alfa Telecom",
+      "country": "Kyrgyzstan",
+      "asn": "AS50223",
+      "deployment_confidence": "HIGH",
+      "evidence": [
+        "PROTEI announced commercial launch of its DPI platform on MegaCom in June 2014.",
+        "In 2015 PROTEI documented content-filter integration in which Entensys/UserGate classified requested sites and PROTEI_DPI applied policy."
+      ],
+      "observed_network_behavior": "OONI reported 2024 TikTok TLS interference across AS50223 and four other Kyrgyz networks, commonly timing out after ClientHello.",
+      "attribution_ceiling": "NOT_VENDOR_UNIQUE",
+      "confounds": [
+        "Same blocking family was seen on multiple Kyrgyz ISPs.",
+        "The interference point was not localized to the PROTEI appliance."
+      ]
+    },
+    {
+      "operator": "TT-Mobile / MegaFon Tajikistan",
+      "country": "Tajikistan",
+      "asn": "AS43197",
+      "deployment_confidence": "HIGH",
+      "evidence": [
+        "PROTEI announced its DPI platform was stably serving real TT-Mobile traffic in June 2015."
+      ],
+      "observed_network_behavior": "CenDTect/Censored Planet found temporary 2019 censorship-event clusters in AS43197 covering media, news and social domains.",
+      "attribution_ceiling": "NOT_VENDOR_UNIQUE",
+      "confounds": [
+        "MegaFon Tajikistan publicly said at least the April 2019 restriction occurred on the upstream internet-provider side.",
+        "The published event table identifies ASN and domain categories but does not expose a unique packet-level PROTEI signature."
+      ]
+    },
+    {
+      "operator": "Niger Telecoms",
+      "country": "Niger",
+      "asn": "AS37385",
+      "deployment_confidence": "HIGH",
+      "evidence": [
+        "PROTEI documented on-site installation/configuration/testing in Niamey in 2019 and successful project completion in 2020.",
+        "The deployment integrated PROTEI_DPI with heterogeneous access networks, BRAS and EPC."
+      ],
+      "observed_network_behavior": "No public ASN-specific packet-level PROTEI fingerprint was identified in this pass.",
+      "attribution_ceiling": "REFERENCE_DEPLOYMENT_ONLY"
+    },
+    {
+      "operator": "Comores Telecom",
+      "country": "Comoros",
+      "asn": "AS36939",
+      "deployment_confidence": "HIGH",
+      "evidence": [
+        "PROTEI publicly reports launch of DPI and PCRF across Comores Telecom network segments."
+      ],
+      "observed_network_behavior": "No public packet-level fingerprint identified in this pass.",
+      "attribution_ceiling": "REFERENCE_DEPLOYMENT_ONLY"
+    },
+    {
+      "operator": "Nuetel Communications",
+      "country": "Bahrain",
+      "asn": "AS35568",
+      "deployment_confidence": "MEDIUM_HIGH",
+      "evidence": [
+        "PROTEI currently lists a Nuetel PROTEI DPI launch in its reference/news catalog.",
+        "AS35568 is Nuetel Communications in Bahrain."
+      ],
+      "observed_network_behavior": "Historical public OONI coverage for AS35568 is sparse; no vendor-discriminating behavior identified in this pass.",
+      "attribution_ceiling": "REFERENCE_DEPLOYMENT_ONLY"
+    }
+  ],
+  "lower_confidence_deployment_catalog_leads": [
+    "TAKOM Tajikistan (2021)",
+    "Nexttel Cameroon (2020)",
+    "TCELL Tajikistan (2019)",
+    "Sky Mobile Kyrgyzstan (2019)",
+    "Exito Colombia (2017)",
+    "Africell deployments in multiple African countries (2016)",
+    "Aquafon Abkhazia (2016)"
+  ],
+  "methodological_anchor": {
+    "name": "dMAP / Fingerprinting Deep Packet Inspection Devices by Their Ambiguities, CCS 2025",
+    "key_rule": "Fingerprint implementation behavior, not site-specific blocklists or policy.",
+    "validated_principle": "A modest battery of roughly 20-40 discriminative ambiguity probes can separate DPI implementations even when their visible enforcement action is identical."
+  },
+  "required_protei_dna_probe_families": [
+    "IP fragmentation: ordering, overlap, duplicate fragments, reassembly preference, fragment limits",
+    "TCP parsing: checksum acceptance, sequence/ACK ambiguity, window semantics, malformed flags/options, retransmission handling",
+    "HTTP parsing: Host normalization, whitespace/case, duplicate headers, segmentation and request-line ambiguities",
+    "TLS parsing: ClientHello fragmentation, SNI placement/permutation, extension ordering, length ambiguities, TLS 1.2 vs 1.3",
+    "Statefulness: residual-state lifetime, tuple scope, timer reset/non-reset behavior",
+    "QUIC: v1/v2 parser behavior, Initial fragmentation, SNI coupling and state lifetime",
+    "Enforcement morphology: silent drop vs RST vs redirect, injected packet TTL/IPID/seq/ack/options/timing",
+    "Topology localization: determine whether observed behavior occurs inside the confirmed PROTEI customer ASN or at an upstream/transit censor"
+  ],
+  "cross_deployment_success_rule": {
+    "minimum_anchor_matches": 2,
+    "requirements": [
+      "The same multi-probe behavioral vector appears in at least two independently confirmed PROTEI_DPI deployments.",
+      "The vector is stable across different blocked/test domains or policy configurations.",
+      "Matched non-PROTEI networks in the same country/event do not reproduce the vector.",
+      "Topology tests localize the behavior inside or immediately adjacent to the PROTEI deployment rather than a shared upstream.",
+      "No stronger alternative vendor fingerprint explains the observations."
+    ],
+    "preferred_strength": "3 confirmed deployments plus same-country controls"
+  },
+  "current_findings": {
+    "true_protei_vendor_fingerprint": "NOT_ESTABLISHED",
+    "generic_tls_clienthello_timeout": "REJECTED_AS_VENDOR_FINGERPRINT",
+    "megaCom_protei_causality": "NOT_ESTABLISHED_FOR_2024_TIKTOK_BLOCK",
+    "tajikistan_as43197_protei_causality": "NOT_ESTABLISHED_FOR_2019_BLOCKS",
+    "reference_set": "STRONG_ENOUGH_TO_BEGIN_CROSS_DEPLOYMENT_FINGERPRINTING",
+    "cuba_role": "EXCLUDED_FROM_TRAINING_SET; use only after an independent PROTEI fingerprint is derived"
+  },
+  "next_priority": [
+    "Recover raw or active ambiguity-probe measurements from AS50223, AS43197, AS37385, AS36939 or AS35568 where ethically and legally available.",
+    "Prefer pairs of deployments in different countries to avoid common national filtering infrastructure.",
+    "Compare against same-country non-PROTEI ASNs before assigning vendor identity.",
+    "Only after a PROTEI behavioral vector is independently established, search Cuba and the wider global corpus for that vector."
+  ],
+  "claim_ceiling": "PUBLIC EVIDENCE NOW ESTABLISHES A MULTI-COUNTRY PROTEI_DPI REFERENCE SET, NOT A UNIQUE REMOTE PROTEI FINGERPRINT.",
+  "sources": [
+    "https://protei.ru/news/dpi-platforma-protey-upravlyaet-trafikom-v-seti-megacom",
+    "https://protei.ru/news/ntc-protey-i-entensys-porabotali-dlya-megacom",
+    "https://protei.ru/news/dpi-platforma-protey-upravlyaet-trafikom-v-tadzhikistane",
+    "https://protei.ru/news/dpi-niger",
+    "https://www.protei.me/protei-has-launched-dpi-platform-and-pcrf-for-comores-telecom/",
+    "https://www.protei.me/news-tab/",
+    "https://explorer.ooni.org/findings/2024-kyrgyzstan-blocked-tiktok",
+    "https://censorbib.nymity.ch/pdf/Tsai2024a.pdf",
+    "https://ramakrishnansr.com/assets/fingerprinting_dpis.pdf",
+    "https://catalog.arppsoft.ru/product/6039137"
+  ]
+}

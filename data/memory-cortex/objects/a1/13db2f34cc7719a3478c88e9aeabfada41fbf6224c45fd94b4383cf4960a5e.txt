@@ -1,0 +1,133 @@
+{
+  "artifact_id": "JANUS-TRUMP-EXACT-CHANNEL-UNIQUE-HUB-ANCHOR-NORMAL-FORM-2026-09-20-v1.0",
+  "version": "v1.0",
+  "date": "2026-09-20",
+  "status": "PASS_EXACT_CHANNEL_UNIQUE_HUB_ANCHOR_NORMAL_FORM",
+  "scope": "PURE_GRAPH_RECOGNITION_THEOREM__SHARPENS_ANCHOR_LEVEL_NORMAL_FORM",
+  "parents": {
+    "reachability_normal_form": {
+      "path": "research/TRUMP_EXACT_CHANNEL_DISCOVERY_IMPLICATION_REACHABILITY_NORMAL_FORM_2026-09-20_v1.0.json",
+      "commit": "c84d11a559d7b697a31434282193b339bf170bfb",
+      "blob": "eb7fd3d28b1a9658bb4714fa8aaa274fff83e57d",
+      "status": "PASS_EXACT_CHANNEL_DISCOVERY_IMPLICATION_REACHABILITY_NORMAL_FORM"
+    },
+    "capacity_invariance": {
+      "path": "research/TRUMP_EXACT_CHANNEL_MATCHING_NUMBER_DECOMPOSITION_INVARIANCE_2026-09-20_v1.0.json",
+      "commit": "c90aeee8b104c5416a0def3179e4ec1c2c8b16f0",
+      "blob": "17985954997039f414070dce87dcbaaeca87390d",
+      "status": "PASS_EXACT_CHANNEL_MATCHING_NUMBER_DECOMPOSITION_INVARIANCE"
+    }
+  },
+  "theorem": {
+    "statement": "If an anchor pair (c,f) is exact-channel representable, then c and f are nonadjacent and have exactly one common neighbor z. Conversely, if cf is a nonedge, N(c) intersect N(f)={z}, and the unique fixed-triple reachability instance (z,c,f) is feasible, then (c,f) is exact-channel representable.",
+    "unique_hub": {
+      "necessity": [
+        "Every valid exact-channel representation requires cz,zf in E, hence z belongs to N(c) intersect N(f).",
+        "The sealed fixed-triple necessary prefilter gives (N(c) intersect N(f))\\{z}=empty.",
+        "Therefore N(c) intersect N(f)={z}.",
+        "The sealed prefilter also gives cf notin E."
+      ],
+      "conclusion": "The hub of a representable anchor pair is unique and graph-canonical."
+    },
+    "converse": [
+      "If cf is a nonedge and N(c) intersect N(f)={z}, there is exactly one eligible hub candidate.",
+      "Run the unique fixed-triple implication-reachability test for (z,c,f).",
+      "If Reach_D(R0) intersect L0 is empty, the fixed-triple theorem returns an exact-channel decomposition.",
+      "If the reachability test fails, no exact-channel decomposition exists for the anchor pair because no alternative hub exists."
+    ]
+  },
+  "pair_level_characterization": {
+    "formula": "(c,f) representable iff [cf notin E] AND [N(c) intersect N(f)={z} for a unique z] AND [Reach_{D_{z,c,f}}(R0) intersect L0=empty].",
+    "canonical_objects": [
+      "anchor pair (c,f)",
+      "unique hub z=N(c) intersect N(f)",
+      "forced sets R0,L0",
+      "implication graph D_{z,c,f}",
+      "canonical extremal partition bounds R_min,R_max",
+      "distributive lattice of feasible partitions",
+      "canonical ports and channel graph for chosen canonical partition"
+    ]
+  },
+  "representation_freedom_cleanup": {
+    "HUB_CHOICE": "NONE",
+    "HUB_OPTIMIZATION_FOR_FIXED_ANCHORS": "IMPOSSIBLE__UNIQUE_HUB",
+    "PARTITION_FREEDOM": "Exactly the distributive lattice of successor-closed implication solutions.",
+    "PARTITION_OPTIMIZATION_FOR_CAPACITY": "UNNECESSARY because nu(X) is invariant across the lattice.",
+    "remaining_geometry": "Only partition/lattice geometry remains after anchors are fixed."
+  },
+  "anchor_pair_discovery_algorithm": {
+    "algorithm": [
+      "Enumerate anchor pairs (c,f), ordered or unordered according to the application convention.",
+      "Reject immediately if cf is an edge.",
+      "Compute N(c) intersect N(f).",
+      "Continue only if the intersection is a singleton {z}.",
+      "Build the single implication graph D_{z,c,f}.",
+      "Compute R_min=Reach_D(R0).",
+      "Accept iff R_min intersect L0 is empty.",
+      "On acceptance output the unique hub z, canonical R_min decomposition, R_max bound, canonical ports, and X."
+    ],
+    "no_hub_enumeration": true,
+    "no_hub_optimization": true,
+    "one_reachability_instance_per_candidate_anchor_pair": true,
+    "complexity": {
+      "simple_common_neighbor_scan": "O(n) per anchor pair with an adjacency-matrix/bitset-compatible representation.",
+      "reachability": "O(n+m) per singleton-common-neighbor candidate pair.",
+      "clean_worst_case": "O(n^2(n+m)).",
+      "note": "More output-sensitive wedge/common-neighbor counting implementations may improve constants or sparse-graph behavior, but are not needed for polynomiality."
+    }
+  },
+  "capacity_pipeline": {
+    "anchor_invariant": "rho_G(c,f)=lambda_G(c,f)-1",
+    "canonical_route": "(c,f) -> unique z -> one reachability lattice -> canonical R_min -> canonical X -> nu(X)=rho_G(c,f).",
+    "consequence": "There is neither hub optimization nor partition optimization for fixed-anchor capacity."
+  },
+  "proof_carrying_certificates": {
+    "positive": [
+      "anchors (c,f)",
+      "certificate cf notin E",
+      "singleton common-neighbor certificate N(c) intersect N(f)={z}",
+      "unique fixed-triple reachability receipt",
+      "canonical R_min/R_max",
+      "canonical ports and X"
+    ],
+    "negative_pair_level": [
+      "cf edge; OR",
+      "zero common neighbors; OR",
+      "at least two common neighbors; OR",
+      "unique common neighbor z plus forced-R to forced-L implication path certifying fixed-triple infeasibility"
+    ]
+  },
+  "validation": {
+    "exhaustive_small_graph_sanity_check": {
+      "graph_orders": [
+        4,
+        5
+      ],
+      "ordered_anchor_pair_instances_checked": {
+        "n4": 768,
+        "n5": 20480,
+        "total": 21248
+      },
+      "directly_representable_anchor_pairs": 4464,
+      "pair_characterization_mismatches": 0,
+      "representable_pairs_with_more_than_one_feasible_hub": 0,
+      "authority": "SANITY_CHECK_ONLY; theorem authority is the analytic implication from the sealed prefilter plus the fixed-triple reachability theorem."
+    }
+  },
+  "relation_to_prior_invariance_theorem": {
+    "statement": "The prior theorem that matching capacity is invariant across different hubs for the same anchor pair remains formally correct.",
+    "sharpening": "For the pure exact-channel interface, there cannot be two feasible hubs for one representable anchor pair; the cross-hub part is therefore vacuous. Nontrivial invariance remains across the partition lattice for the unique hub."
+  },
+  "scientific_ceiling": {
+    "PURE_EXACT_CHANNEL_HUB": "UNIQUE_AND_CANONICAL",
+    "ANCHOR_PAIR_DISCOVERY": "POLYNOMIAL_BY_SINGLETON_COMMON_NEIGHBOR_PLUS_REACHABILITY",
+    "HUB_OPTIMIZATION": "NO_CHOICE",
+    "PARTITION_LATTICE": "REMAINS",
+    "PARTITION_OPTIMIZATION_FOR_CAPACITY": "UNNECESSARY",
+    "FUTURE_C11_EXTRA_SEMANTICS": "NOT_AUTOMATICALLY_COVERED",
+    "UNIVERSAL_C11_APPLICABILITY": "NOT_CLAIMED",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "stop": true
+}

@@ -1,0 +1,125 @@
+{
+  "artifact_id": "JANUS-TRUMP-C11-PI-OCTAHEDRON-CORE-MODULATOR-QUANTIFIER-BINDING-2026-09-20-v1.0",
+  "version": "v1.0",
+  "date": "2026-09-20",
+  "status": "FROZEN_QUANTIFIER_BINDING_ADDENDUM__PREREG_UNMODIFIED",
+  "name": "C11_PI_OCTAHEDRON_CORE_MODULATOR_QUANTIFIER_BINDING_V1",
+  "binds_preregistration": {
+    "path": "research/TRUMP_C11_PI_OCTAHEDRON_CORE_MODULATOR_GATE_PREREG_2026-09-20_v1.0.json",
+    "commit": "0d0060c8c2924a1b58fe691b7b1535f4e0068a7c",
+    "blob": "09132719fe1da6a329d83a06d94ecdc37d3a2166",
+    "modification_allowed": false
+  },
+  "purpose": "Bind the logical quantifiers of O1/O2 before any execution so that O2 is a genuine falsifier of O1 rather than a merely local core escape.",
+  "definitions": {
+    "Oct_C": "The complete graph-only set of all literal induced subgraphs H of authoritative residual C that are isomorphic to K_{2,2,2}.",
+    "Col_L_H": "All proper list-respecting colorings phi:H->[4] generated directly from H and the exact current lists.",
+    "Terminal_C_H_phi": "After fixing phi on all six vertices of H and applying only the frozen deterministic propagation/normalization stack, every resulting branch/component is closed by CONTRADICTION, L3_READY, or TW3_LIST_READY.",
+    "Escape_C_H_phi": "After fixing phi and frozen propagation, the branch is noncontradictory and at least one surviving connected component D is NOT_L3_READY and has tw(D)>3 certified by an explicit frozen forbidden-minor model.",
+    "CoreUnsat_H": "Col_L(H) is empty."
+  },
+  "empty_core_semantics": {
+    "rule": "If Col_L(H)=empty, classify H as CORE_UNSAT_GOOD_MODULATOR.",
+    "rationale": [
+      "There is no proper list-respecting assignment to H, hence no full coloring of C can extend through H.",
+      "This avoids relying only on vacuous universal quantification while preserving the same logical truth value.",
+      "Such an H satisfies the O1 good-core condition and blocks O2 for that C."
+    ]
+  },
+  "bound_quantifiers": {
+    "per_residual_good_core": {
+      "formula": "GOOD(C) := exists H in Oct(C) such that [CoreUnsat(H) OR for all phi in Col_L(H): Terminal(C,H,phi)]."
+    },
+    "O1_universal": {
+      "label": "O1_OCTAHEDRON_CORE_TERMINAL_UNIVERSAL",
+      "formula": "for all authoritative C in scope: GOOD(C).",
+      "meaning": "Every authoritative literal-octahedron residual has at least one graph-discoverable literal octahedron that is a universal six-vertex modulator to the frozen terminal stack."
+    },
+    "local_escape_only": {
+      "label": "LOCAL_CORE_ESCAPE",
+      "formula": "exists authoritative C, exists H in Oct(C), exists phi in Col_L(H): Escape(C,H,phi).",
+      "interpretation": "This proves only that one specific literal core H is not universal. It MUST NOT falsify O1 because a different H* in the same C may still satisfy GOOD(C)."
+    },
+    "O2_strong_falsifier": {
+      "label": "O2_OCTAHEDRON_ATTACHMENT_ESCAPE",
+      "formula": "exists authoritative C such that for every H in Oct(C), [Col_L(H) is nonempty AND exists phi_H in Col_L(H): Escape(C,H,phi_H)].",
+      "equivalence_note": "Within the preregistered scope, where Oct(C) is nonempty by definition, this is the proof-carrying negation of GOOD(C) for one authoritative residual C.",
+      "consequence": "No literal octahedron in that C is a universal six-vertex modulator to the frozen {CONTRADICTION,L3_READY,TW3_LIST_READY} stack."
+    }
+  },
+  "execution_binding": {
+    "enumerate_all_literal_cores": true,
+    "core_enumeration_requirement": "For any candidate O2 residual C, exhaustively enumerate the complete set Oct(C) by the frozen graph-only literal-octahedron search.",
+    "for_each_H": [
+      "Enumerate every proper list-respecting phi in Col_L(H), bounded by 4^6=4096 raw assignments.",
+      "If Col_L(H)=empty, mark H CORE_UNSAT_GOOD_MODULATOR and O2 immediately fails for this C.",
+      "Otherwise O2 requires at least one explicitly preserved defeating phi_H with a complete Escape certificate."
+    ],
+    "O2_receipt_requires": [
+      "complete authoritative residual C and exact lists",
+      "complete enumeration receipt of every literal H in Oct(C)",
+      "for every H, a count/hash or explicit canonical enumeration receipt for Col_L(H)",
+      "for every H, one proper list-respecting defeating phi_H",
+      "for every H, exact frozen propagation transcript after fixing phi_H",
+      "for every H, exact surviving connected D_H",
+      "for every H, D_H noncontradictory and NOT_L3_READY with union lists [4]",
+      "for every H, explicit frozen forbidden-minor model certifying tw(D_H)>3",
+      "independent replay of Oct(C) completeness, each phi_H validity, and each minor model"
+    ],
+    "O1_theorem_requires": "A theorem/proof-carrying universal argument that for every authoritative C there exists at least one H in Oct(C) satisfying the good-core condition; finite testing alone is insufficient.",
+    "O3_rule": "If neither universal O1 authority nor a complete strong-O2 residual is obtained, return O3_GATE_UNRESOLVED. A LOCAL_CORE_ESCAPE may be preserved as supporting evidence under O3 but cannot be promoted to O2."
+  },
+  "canonical_selector_alternative": {
+    "adopted": false,
+    "note": "A canonical graph-only selector H(C) could make a single bad (H(C),phi) sufficient, but the frozen gate did not define such a selector. Therefore the execution is bound to the existential-good-core / forall-cores-falsifier semantics above."
+  },
+  "mandatory_quantifier_controls": [
+    {
+      "name": "TWO_CORE_MIXED_CONTROL",
+      "authority": "CONTROL_ONLY__NON_SCIENTIFIC",
+      "structure": "Synthetic residual with two literal octahedra H1,H2.",
+      "required_behavior": [
+        "H1 has at least one escaping proper coloring.",
+        "H2 closes for every proper coloring.",
+        "Classifier records LOCAL_CORE_ESCAPE for H1.",
+        "Classifier MUST NOT return O2 because H2 is a good core and therefore GOOD(C) remains true."
+      ]
+    },
+    {
+      "name": "EMPTY_CORE_COLORING_CONTROL",
+      "authority": "CONTROL_ONLY__NON_SCIENTIFIC",
+      "structure": "Synthetic literal octahedron whose exact lists admit no proper core coloring.",
+      "required_behavior": [
+        "Classify H as CORE_UNSAT_GOOD_MODULATOR.",
+        "Do not demand an escaping phi from an empty coloring set.",
+        "O2 MUST fail for any C containing such a good core."
+      ]
+    }
+  ],
+  "anti_cheat": [
+    "A single bad (H,phi) is LOCAL_CORE_ESCAPE only.",
+    "Do not stop O2 enumeration after finding the first bad H.",
+    "O2 requires defeating every literal H in the same authoritative C.",
+    "Do not omit literal octahedron candidates from Oct(C).",
+    "Do not choose H or phi with an extension oracle.",
+    "Do not treat an empty Col_L(H) as an O2 success.",
+    "Do not modify the bound preregistration."
+  ],
+  "scientific_ceiling": {
+    "ORIGINAL_PREREGISTRATION": "UNCHANGED",
+    "CURRENT_X2_WITNESS": "POLYNOMIALLY_RESOLVED_BY_FIXED_CORE",
+    "UNIVERSAL_LITERAL_OCTAHEDRON_CORE_MODULATOR": "OPEN",
+    "STRONG_O2_FORALL_CORES_ESCAPE": "NOT_YET_VERIFIED",
+    "LOCAL_CORE_ESCAPE": "NOT_SUFFICIENT_FOR_O2",
+    "OTHER_TW3_FORBIDDEN_MINOR_TYPES": "UNTOUCHED",
+    "PI_DISCOVERY": "PARTIAL",
+    "P3_EXACT_PAIR_QUOTIENT": "NOT_ESTABLISHED",
+    "TW4": "NOT_OPENED",
+    "BACKDOOR_SIZE_2": "NOT_OPENED",
+    "REPAIR": "NOT_STARTED",
+    "P_VS_NP": "OPEN"
+  },
+  "execution_authorization": "NOT_GRANTED_BY_THIS_ADDENDUM",
+  "next_action": "A later execution authorization must bind both the original preregistration and this quantifier addendum. Stop at O1, strong O2, or O3.",
+  "stop": true
+}

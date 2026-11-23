@@ -1,0 +1,430 @@
+{
+  "artifact_id": "JANUS-OCEAN-MAX-V3-40-RIVERS-REAL-TRAINING-2026-11-06-v1.0",
+  "title": "JANUS Ocean v3 — bounded all-available-personal-standard-runner parallel retraining on real ERA5 weather",
+  "recorded_local_date": "2026-11-06",
+  "schema_version": "1.0",
+  "language": "ru",
+  "registry": {
+    "repository": "Hawkar-usls/janus-meta-registry",
+    "path": "data/JANUS-OCEAN-MAX-V3-40-RIVERS-REAL-TRAINING-2026-11-06-v1.0.json",
+    "mode": "APPEND_ONLY"
+  },
+  "run": {
+    "repository": "Hawkar-usls/Janus-Demiurge",
+    "id": 42125238873,
+    "url": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/42125238873",
+    "commit_sha": "c314dc14f432c6155e56c864d2d0337ef1ed698c",
+    "created_at_utc": "2026-11-05T22:53:22Z",
+    "finished_at_utc": "2026-11-05T22:57:09Z",
+    "conclusion": "success",
+    "jobs_completed_successfully": 42,
+    "river_jobs_completed_successfully": 40,
+    "snapshot_jobs_completed_successfully": 1,
+    "aggregation_jobs_completed_successfully": 1,
+    "requested_max_parallel": 40,
+    "observed_peak_parallel_river_jobs": 20,
+    "observed_peak_is_lower_bound_not_account_plan_confirmation": true,
+    "github_recommended_plan_concurrency": {
+      "Free": 20,
+      "Pro": 40
+    },
+    "standard_runner_label": "ubuntu-latest",
+    "repo_visibility": "public",
+    "no_secret_requests": true,
+    "no_NAS_load": true,
+    "no_changes_to_existing_production_training_or_checkpoints": true
+  },
+  "study": {
+    "source": "Open-Meteo ERA5 hourly temperature_2m, publicly fetched and source-hashed",
+    "snapshot_hours_per_city": 21624,
+    "cities": {
+      "train_and_validation": "Kyiv_public_weather_benchmark",
+      "independent_geographic_transfer": "Lviv_external_validation_only"
+    },
+    "training_method": "JANUS Tiny Transformer + All Star solar level/delta feature lineage; FedAvg of 40 identical-initialized local trainings on disjoint historical anchors; 24-hour residual target",
+    "train_anchor_count": 15089,
+    "validation_anchor_count": 3172,
+    "kyiv_test_count": 3172,
+    "lviv_transfer_count": 3172,
+    "model_parameters": 46176,
+    "worker_training_time_sum_seconds": 879.39,
+    "selection_criterion": "temperature scaling and correction strength chosen using validation only",
+    "selected_temperature": 2,
+    "selected_correction_strength": 0.5,
+    "metrics": {
+      "kyiv_untrained": {
+        "n": 3172,
+        "mae_c": 2.331246,
+        "rmse_c": 3.118543,
+        "nll_delta": 4.091998,
+        "frost_brier": 0.05311,
+        "persistence_mae_c": 2.327238,
+        "mean24h_mae_c": 4.136395,
+        "clipped_targets": 0
+      },
+      "kyiv_trained_raw": {
+        "n": 3172,
+        "mae_c": 2.34701,
+        "rmse_c": 3.167042,
+        "nll_delta": 2.780754,
+        "frost_brier": 0.000058,
+        "persistence_mae_c": 2.327238,
+        "mean24h_mae_c": 4.136395,
+        "clipped_targets": 0
+      },
+      "kyiv_validation_gated": {
+        "n": 3172,
+        "mae_c": 2.327216,
+        "rmse_c": 3.128041,
+        "nll_delta": 2.780754,
+        "frost_brier": 0.000007,
+        "persistence_mae_c": 2.327238,
+        "mean24h_mae_c": 4.136395,
+        "clipped_targets": 0
+      },
+      "lviv_geographic_transfer": {
+        "n": 3172,
+        "mae_c": 2.357795,
+        "rmse_c": 3.189003,
+        "nll_delta": 2.801662,
+        "frost_brier": 0.000015,
+        "persistence_mae_c": 2.36425,
+        "mean24h_mae_c": 4.114763,
+        "clipped_targets": 0
+      }
+    },
+    "baseline_gain_kyiv_mae_c": 0.000022,
+    "baseline_gain_lviv_mae_c": 0.006455,
+    "no_statistically_or_practically_meaningful_gain_yet": true,
+    "test_comparison_to_v2": "Previous run used different history length and test period; numerical MAEs are not directly comparable.",
+    "limitations": [
+      "Historical hourly forecast errors are temporally autocorrelated, not 3172 independent trials.",
+      "The Kyiv historical test was not a fully untouched research problem after the earlier v2 run; the Lviv geographic test is separate.",
+      "Tiny metric gains vs persistence can be rounding or sampling noise, not robust evidence.",
+      "No actual future-weather result exists yet for this prospective forecast.",
+      "No physical retrocausal receiver or future SHA-256 prediction has been tested."
+    ]
+  },
+  "model_lineage": {
+    "source_model": "Hawkar-usls/Janus-Demiurge/janus_model/model.py",
+    "trainer": "Hawkar-usls/Janus-Demiurge/experiments/ocean_transformer/ocean_max_v3.py",
+    "all_star_provenance": "User file All_starsGPT(20261105-223030).py, level+first-derivative temporal representation",
+    "AURA_analogy": "forecast ledger, blinded outcome resolution and Brier/temperature calibration",
+    "checkpoint_SHA256": "2c38788e8468a98e9377fcdb9058c488ec3ec17dfacfbf553402a9b1a86cd4ca",
+    "model_production_promotion": false,
+    "decision": "HOLD_DEVELOPMENT_ONLY__NO_CLEAR_SUPERIORITY"
+  },
+  "evidence": {
+    "source_snapshot_SHA256": "1d7259bd6429fe5f29d2ad573c05822f8c8ed6686a254e643b32be8c9d56e1cd",
+    "actions_artifacts": [
+      {
+        "id": 13461405681,
+        "name": "janus-ocean-v3-river-7",
+        "digest": "sha256:aa5dc575f71ca32b4f14be4c61e9b1733ec7cbc63b462bb55278c8ad04826408",
+        "size": 175351,
+        "expires_at": "2026-12-05T22:55:01Z"
+      },
+      {
+        "id": 13461355963,
+        "name": "janus-ocean-v3-river-4",
+        "digest": "sha256:fc8ec4c9d6685825c39cda68f418ba587c970388e8ea6bb320cf53896578d3ac",
+        "size": 175440,
+        "expires_at": "2026-12-05T22:56:05Z"
+      },
+      {
+        "id": 13461335362,
+        "name": "janus-ocean-v3-river-3",
+        "digest": "sha256:e330a623866c505523a5ce9579eb6a207d0927099cfe9d57fc4d5f56b03e0e90",
+        "size": 175465,
+        "expires_at": "2026-12-05T22:55:46Z"
+      },
+      {
+        "id": 13461330753,
+        "name": "janus-ocean-v3-river-23",
+        "digest": "sha256:b1d88793b9b71dc497f9467d109dd15c78626f67bdeaa90c4f20f8e0b6f6f61c",
+        "size": 175384,
+        "expires_at": "2026-12-05T22:54:54Z"
+      },
+      {
+        "id": 13461300764,
+        "name": "janus-ocean-v3-river-25",
+        "digest": "sha256:3a613563f9a701442b6fbb79ea949cd262165f132a5ba3f4e297aa2991262f66",
+        "size": 175427,
+        "expires_at": "2026-12-05T22:54:47Z"
+      },
+      {
+        "id": 13461256004,
+        "name": "janus-ocean-v3-river-27",
+        "digest": "sha256:e2633e2f56dd570e256312ad92144cf70bc952776af5bbb43e10f3479be096f5",
+        "size": 175428,
+        "expires_at": "2026-12-05T22:55:46Z"
+      },
+      {
+        "id": 13461250440,
+        "name": "janus-ocean-v3-river-33",
+        "digest": "sha256:7eb98b97f19de118ffe9130d968c1204577b66aad6db5d9b6a6560a4b06b9246",
+        "size": 175400,
+        "expires_at": "2026-12-05T22:55:47Z"
+      },
+      {
+        "id": 13461200541,
+        "name": "janus-ocean-v3-river-28",
+        "digest": "sha256:adb60218fc2c78996e64758c0d2151c92761be44b3c47f6fa5483b8f82dbc046",
+        "size": 175383,
+        "expires_at": "2026-12-05T22:56:00Z"
+      },
+      {
+        "id": 13461120574,
+        "name": "janus-ocean-v3-river-8",
+        "digest": "sha256:6405f88180ec73dc9c6e5ed828269804707cac2b1a36f89a2197ad7673f553ef",
+        "size": 175377,
+        "expires_at": "2026-12-05T22:55:38Z"
+      },
+      {
+        "id": 13461041211,
+        "name": "janus-ocean-v3-river-35",
+        "digest": "sha256:aa590b9c80b37cb5671ce2808bb99bbbe56fc3bc9d54b14ac1a42e34fd377b5e",
+        "size": 175296,
+        "expires_at": "2026-12-05T22:55:53Z"
+      },
+      {
+        "id": 13461031048,
+        "name": "janus-ocean-v3-river-22",
+        "digest": "sha256:3cb81cf3482aadda2aa9c5011865cba842c7f215b8a22f4706d871269f84d3b9",
+        "size": 175387,
+        "expires_at": "2026-12-05T22:54:50Z"
+      },
+      {
+        "id": 13460941061,
+        "name": "janus-ocean-v3-river-5",
+        "digest": "sha256:6bc0ccfe75344e7bdf0ee7a891a3f82f99da4853026a0cee856dd87be7da3e04",
+        "size": 175405,
+        "expires_at": "2026-12-05T22:54:55Z"
+      },
+      {
+        "id": 13460885852,
+        "name": "janus-ocean-v3-river-21",
+        "digest": "sha256:7cbb4af138b314ffcb2bcf9bee971e3c0ce8c6f4181a52fc1a99bb568d375ce8",
+        "size": 175502,
+        "expires_at": "2026-12-05T22:56:00Z"
+      },
+      {
+        "id": 13460875755,
+        "name": "janus-ocean-v3-river-32",
+        "digest": "sha256:ec33167311594b75c3e86dcd0ff36d8f6abb488ffa07fd0ae717ea1afa3c25ae",
+        "size": 175389,
+        "expires_at": "2026-12-05T22:54:56Z"
+      },
+      {
+        "id": 13460561138,
+        "name": "janus-ocean-v3-river-6",
+        "digest": "sha256:6d9cfb00e9ab499db5281d99198d3a5d203bd5cba31aa2992be9fabd2836ed97",
+        "size": 175346,
+        "expires_at": "2026-12-05T22:55:35Z"
+      },
+      {
+        "id": 13460511732,
+        "name": "janus-ocean-v3-river-2",
+        "digest": "sha256:df163f04b1371656b66ddc41799c5da7b53115f7d00b9134f644358504e47ba2",
+        "size": 175446,
+        "expires_at": "2026-12-05T22:54:51Z"
+      },
+      {
+        "id": 13460506389,
+        "name": "janus-ocean-v3-river-26",
+        "digest": "sha256:45c5316f770cd71e90ba4d3b4b40935e0ed7351f55b9eb00815a36b020ad0763",
+        "size": 175474,
+        "expires_at": "2026-12-05T22:55:32Z"
+      },
+      {
+        "id": 13460486165,
+        "name": "janus-ocean-v3-river-14",
+        "digest": "sha256:d07045ebf89842a14ce952043e2713318b25ba35173493d5cae9c178b309ce68",
+        "size": 175388,
+        "expires_at": "2026-12-05T22:54:55Z"
+      },
+      {
+        "id": 13460466542,
+        "name": "janus-ocean-v3-river-19",
+        "digest": "sha256:92c91e69dec78fc8195e7c2285ff026fe7b661ab667b76b89d30fcd212cc73d4",
+        "size": 175372,
+        "expires_at": "2026-12-05T22:55:39Z"
+      },
+      {
+        "id": 13460342482,
+        "name": "janus-ocean-v3-river-30",
+        "digest": "sha256:e3b092ec354883d6840328c3a1781f4069b7d58888710ec671d2b47c4fdf41b6",
+        "size": 175346,
+        "expires_at": "2026-12-05T22:54:47Z"
+      },
+      {
+        "id": 13460307316,
+        "name": "janus-ocean-v3-river-34",
+        "digest": "sha256:46425f0dec8efd2a53514dde2d795b7e8d6cb8e6fbe02671708967f2c89b0fbe",
+        "size": 175316,
+        "expires_at": "2026-12-05T22:54:53Z"
+      },
+      {
+        "id": 13460302818,
+        "name": "janus-ocean-v3-river-31",
+        "digest": "sha256:8f57b6dc8c949907a55a1c9a5282b86781621bec1efc64302b595391afbfefbd",
+        "size": 175275,
+        "expires_at": "2026-12-05T22:54:56Z"
+      },
+      {
+        "id": 13460248128,
+        "name": "janus-ocean-v3-river-11",
+        "digest": "sha256:b55c508bcd60e006eb9773cba8d1017976fcc06dadc31d69482edd1a0400ea27",
+        "size": 175400,
+        "expires_at": "2026-12-05T22:56:20Z"
+      },
+      {
+        "id": 13460149221,
+        "name": "janus-ocean-v3-river-17",
+        "digest": "sha256:7399e63b7d044072093aba2fb9171140679f8a9b69bf6ff9a1e52a289ea0074d",
+        "size": 175375,
+        "expires_at": "2026-12-05T22:55:52Z"
+      },
+      {
+        "id": 13460089697,
+        "name": "janus-ocean-v3-river-18",
+        "digest": "sha256:58204a6957f2e3eb2f951372e0bd3da14ebf826cdea117f7b65da39aecc6f021",
+        "size": 175364,
+        "expires_at": "2026-12-05T22:54:53Z"
+      },
+      {
+        "id": 13459994244,
+        "name": "janus-ocean-v3-river-20",
+        "digest": "sha256:fe811c9ba0ff69e2ee18e2773d93563f0383ef8e8054b6102e917fd9041a3adf",
+        "size": 175386,
+        "expires_at": "2026-12-05T22:54:41Z"
+      },
+      {
+        "id": 13459928820,
+        "name": "janus-ocean-v3-river-12",
+        "digest": "sha256:c77a8a714afb443a5eb7aa5ccb7884b11ed2c5de26dc84a3275f8dcb178711f1",
+        "size": 175391,
+        "expires_at": "2026-12-05T22:54:51Z"
+      },
+      {
+        "id": 13459918792,
+        "name": "janus-ocean-v3-river-37",
+        "digest": "sha256:05a7edba77ec45641bfb37fd93b3865fa6d9a82d3e3fb03ddca023a0762be032",
+        "size": 175371,
+        "expires_at": "2026-12-05T22:55:05Z"
+      },
+      {
+        "id": 13459818990,
+        "name": "janus-ocean-v3-river-16",
+        "digest": "sha256:7457188da23ea04acb4c3d19875397c2f5695fdb41674d16a8ee57bfe32b1a4a",
+        "size": 175543,
+        "expires_at": "2026-12-05T22:55:47Z"
+      },
+      {
+        "id": 13459784624,
+        "name": "janus-ocean-v3-river-13",
+        "digest": "sha256:4a8495dc38348e08e40b7989b3a5d36fe0aee8bb9e31ef9624512840cbfeae02",
+        "size": 175325,
+        "expires_at": "2026-12-05T22:54:51Z"
+      },
+      {
+        "id": 13459779171,
+        "name": "janus-ocean-v3-river-38",
+        "digest": "sha256:8cd4bd77ebfe002ee84c3f9343dc5473e8ab92825d5e9f1e99a3ef408d5db6ec",
+        "size": 175462,
+        "expires_at": "2026-12-05T22:55:38Z"
+      },
+      {
+        "id": 13459764120,
+        "name": "janus-ocean-v3-river-36",
+        "digest": "sha256:4d3599af27e01e8de16f8476d60c808b774a36db7d739a57bbe0501970b678cc",
+        "size": 175362,
+        "expires_at": "2026-12-05T22:54:55Z"
+      },
+      {
+        "id": 13459649939,
+        "name": "janus-ocean-v3-river-15",
+        "digest": "sha256:f8c1aa975accae6a1ce4e1c544921f814bdaf9119b3a21f3ad200460e0f3d4eb",
+        "size": 175396,
+        "expires_at": "2026-12-05T22:55:40Z"
+      },
+      {
+        "id": 13459639753,
+        "name": "janus-ocean-v3-river-10",
+        "digest": "sha256:be4a2c510bb9cae2fd14b9eb84019be70d15e22533fb52cc76647c665f210297",
+        "size": 175357,
+        "expires_at": "2026-12-05T22:54:42Z"
+      },
+      {
+        "id": 13459634546,
+        "name": "janus-ocean-v3-retrain-result-42125238873",
+        "digest": "sha256:2a7d1a598797e1c18dabd2dd435bf3b086a288eef78fe263e1bbd0a947b11194",
+        "size": 180939,
+        "expires_at": "2027-02-03T22:53:23Z"
+      },
+      {
+        "id": 13459614918,
+        "name": "janus-ocean-v3-river-9",
+        "digest": "sha256:cb8ea42bf5c989a5aa6c6c3907fc4b60f769cb176719100100ba33c3c56df897",
+        "size": 175383,
+        "expires_at": "2026-12-05T22:55:40Z"
+      },
+      {
+        "id": 13459559398,
+        "name": "janus-ocean-v3-river-0",
+        "digest": "sha256:0efa1d820eea44d9985927e847fb91457659eaf0fc082e26a40a7452156cdfbf",
+        "size": 175367,
+        "expires_at": "2026-12-05T22:54:47Z"
+      },
+      {
+        "id": 13459539473,
+        "name": "janus-ocean-v3-river-29",
+        "digest": "sha256:8304d036b12720b13d5c5007dca766897381d04f960d92e1ba54e2e84b1dd4e7",
+        "size": 175354,
+        "expires_at": "2026-12-05T22:55:55Z"
+      },
+      {
+        "id": 13459344314,
+        "name": "janus-ocean-v3-snapshot",
+        "digest": "sha256:72f4547767019a31221c468be414b34c90608595b5bfe9d5550710f1b83f7b1f",
+        "size": 183866,
+        "expires_at": "2027-01-04T22:53:56Z"
+      },
+      {
+        "id": 13459299639,
+        "name": "janus-ocean-v3-river-1",
+        "digest": "sha256:62b381519a0a7525e9372888f779111cacd0b760d6bf2fbdf4667367a725295c",
+        "size": 175511,
+        "expires_at": "2026-12-05T22:55:46Z"
+      },
+      {
+        "id": 13459284766,
+        "name": "janus-ocean-v3-river-39",
+        "digest": "sha256:8a3322094d5b761446d9b4996142b9feb6c0a78f4fd7fd39b802f33e812aa093",
+        "size": 175398,
+        "expires_at": "2026-12-05T22:55:38Z"
+      },
+      {
+        "id": 13459014840,
+        "name": "janus-ocean-v3-river-24",
+        "digest": "sha256:035bc2734f1a836115846ede62c22216906eaeea97216fa6a8f15449f8ca22ba",
+        "size": 175462,
+        "expires_at": "2026-12-05T22:54:56Z"
+      }
+    ],
+    "total_actions_artifacts": 42,
+    "forecast_ledger": {
+      "branch": "janus/ocean-weather-ledger",
+      "file_url": "https://github.com/Hawkar-usls/Janus-Demiurge/blob/janus/ocean-weather-ledger/experiments/ocean_transformer/ledger/predictions/janus-ocean-v3-42125238873-20261106T2100Z.json",
+      "blob_sha": "b870a9017609f4cc89bc505d3ccf6dad78a3ff28",
+      "trial_id": "janus-ocean-v3-42125238873-20261106T2100Z",
+      "issued_at_utc": "2026-11-05T22:57:01.993096+00:00",
+      "valid_target_utc": "2026-11-06T21:00:00+00:00",
+      "predicted_temp_c": 5.68445,
+      "future_ground_truth_status": "NOT_YET_REVEALED",
+      "reveal_not_before_utc": "2026-11-13T21:00:00+00:00"
+    }
+  },
+  "scientific_status": "40_RIVERS_TRAINED__OCEAN_FEDAVG_PASS__HISTORIC_HOLDOUT_COMPLETE__FUTURE_FORECAST_SEALED__RETROCAUSALITY_NOT_ESTABLISHED",
+  "next_gate": "Repeat on multiple future dates with automatic delayed ERA5 resolution; require consistent outperformance vs persistence and official forecast before promotion."
+}

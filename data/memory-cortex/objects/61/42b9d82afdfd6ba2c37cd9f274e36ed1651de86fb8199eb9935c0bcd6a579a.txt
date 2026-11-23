@@ -1,0 +1,259 @@
+{
+  "schema": "janus.meta_registry.fallout3_f3dad_smoking_cigarette_npc_player_use_path_audit.v1",
+  "artifact_id": "FALLOUT-3-F3DAD-SMOKING-CIGARETTE-NPC-PLAYER-USE-PATH-AUDIT-v1.10S",
+  "version": "v1.10S",
+  "created_at_local": "2026-08-14T22:35:00+03:00",
+  "repository": "Hawkar-usls/janus-meta-registry",
+  "intended_layer": "data",
+  "status": "PASS_NPC_SMOKING_ITEM_BINDING_CONFIRMED_PLAYER_DIRECT_USE_PATH_NOT_FOUND_ANCHORAGE_CIGARETTE_AND_CIGAR_ANIMATION_PIPELINE_CONFIRMED",
+  "cross_reference": [
+    "data/FALLOUT-3-F3DAD-REMOVED-LOCATION-GHOST-ACTOR-QUEST-ANCHOR-CROSSOVER-AUDIT-v1.10AC.json"
+  ],
+  "source_lineage": {
+    "archive": {
+      "name": "F3DAD.rar",
+      "size_bytes": 251166524,
+      "sha256": "311f481de1de176a33a358d993563f551bc617651225059d40ce6de430c865ce"
+    },
+    "official_master_set": [
+      "Fallout3.esm",
+      "Anchorage.esm",
+      "ThePitt.esm",
+      "BrokenSteel.esm",
+      "PointLookout.esm",
+      "Zeta.esm"
+    ],
+    "authority": "USER_SUPPLIED_SHIPPED_MASTER_BYTES"
+  },
+  "analysis_receipts": [
+    {
+      "path": "f3_smoking_fast.py",
+      "sha256": "c8b8cc4bfc420d352a520af7b60679d2b4fa89fd32aacfeb8422cb8ec1971188"
+    },
+    {
+      "path": "f3_smoking_fast.json",
+      "sha256": "b5f263d9ad2fc06c3072f022df3f576215604daa22e70850fa39edcfc468ecf8"
+    },
+    {
+      "path": "f3_smoking_inbound.py",
+      "sha256": "77b51a14918265f0772a55fb4db5a04d2573c18d6d887e46609f382ff525d269"
+    },
+    {
+      "path": "f3_smoking_inbound_stdout.txt",
+      "sha256": "10a322336052bbf002f316406a7f4da09ee31a8c2e3cb1f168f903a5444041c5"
+    },
+    {
+      "path": "f3_smoking_scripts.py",
+      "sha256": "fb1e24ce54c90b4452fea73aa174b5c0bb9ed673e6070e124999ab0837f9e669"
+    },
+    {
+      "path": "f3_dump_targets_stdout.txt",
+      "sha256": "7efb7f5fdda52fd882374d86514bac6dd5baebcda815076c69347ae5ac0f52b2"
+    }
+  ],
+  "scan_metrics": {
+    "smoker_faction_actor_base_memberships_found": 299,
+    "default_smoking_idle_marker_inbound_records": 18,
+    "loose_smoking_standing_inbound_records": 24,
+    "anchorage_lazy_smoking_marker_placements": 10,
+    "anchorage_nervous_soldier_smoking_marker_placements": 1,
+    "active_sctx_blocks_with_cigarette_cigar_tobacco_nicotine_tokens": 0,
+    "jericho_smoking_packages_with_direct_cigarette_inventory_conditions": 3
+  },
+  "findings": [
+    {
+      "finding_id": "F3DM-057S-CIGARETTE-ITEM-CLASSIFICATION",
+      "priority": "VERY_HIGH",
+      "items": [
+        {
+          "edid": "Cigarette01",
+          "form_id": "0005B52C",
+          "record_type": "MISC",
+          "full": "Сигарета",
+          "model": "Clutter\\Junk\\Cigarette01.NIF",
+          "has_SCRI": false
+        },
+        {
+          "edid": "CigarettePack",
+          "form_id": "00034069",
+          "record_type": "MISC",
+          "full": "Пачка сигарет",
+          "model": "Clutter\\Junk\\CigarettePack01.NIF",
+          "has_SCRI": false
+        },
+        {
+          "edid": "CigaretteCarton",
+          "form_id": "00034068",
+          "record_type": "MISC",
+          "full": "Блок сигарет",
+          "model": "Clutter\\Junk\\CigaretteCarton01.NIF",
+          "has_SCRI": false
+        }
+      ],
+      "result": "The three cigarette inventory objects are MISC records, not ingestible ALCH records, and carry no attached SCRI. No direct equip/use/effect path is encoded on the items themselves."
+    },
+    {
+      "finding_id": "F3DM-058S-NPC-SMOKING-ANIMATION-SUBSYSTEM",
+      "priority": "HIGHEST",
+      "primary_graph": {
+        "faction": {
+          "edid": "SmokerFaction",
+          "form_id": "000711A4",
+          "full": "Faction for NPCs that smoke"
+        },
+        "actor_base_memberships_found": 299,
+        "idles": [
+          {
+            "edid": "NPCSmokingIdle",
+            "form_id": "00071EE3",
+            "kf": "Characters\\_Male\\IdleAnims\\SmokingStanding.kf",
+            "contains_GetInFaction_SmokerFaction_CTDA": true
+          },
+          {
+            "edid": "WallLeanSmoking",
+            "form_id": "000711A8",
+            "kf": "Characters\\_Male\\IdleAnims\\SmokingStanding.kf",
+            "contains_GetInFaction_SmokerFaction_CTDA": true
+          },
+          {
+            "edid": "LooseSmokingStanding",
+            "form_id": "00083518",
+            "kf": "Characters\\_Male\\IdleAnims\\SmokingStanding.kf",
+            "contains_GetInFaction_SmokerFaction_CTDA": false
+          }
+        ],
+        "animation_objects": [
+          {
+            "edid": "aoLooseSmokingStanding",
+            "form_id": "00071F91",
+            "model": "AnimObjects\\aoCigarette.NIF",
+            "binds_idle": "LooseSmokingStanding"
+          },
+          {
+            "edid": "aoSmokingWallLean",
+            "form_id": "0008351B",
+            "model": "AnimObjects\\aoCigarette.NIF",
+            "binds_idle": "WallLeanSmoking"
+          },
+          {
+            "edid": "aoSmokingStanding",
+            "form_id": "00083519",
+            "model": "AnimObjects\\aoCigarette.NIF",
+            "binds_idle": "NPCSmokingIdle"
+          }
+        ],
+        "idle_marker": {
+          "edid": "DefaultSmokingIdleMarker",
+          "form_id": "000AE8B3",
+          "idle": "LooseSmokingStanding"
+        }
+      },
+      "result": "Fallout3.esm contains a complete NPC smoking presentation subsystem: faction gating, smoking KF animation, cigarette animation object, and idle markers."
+    },
+    {
+      "finding_id": "F3DM-059S-JERICHO-CIGARETTE-INVENTORY-TO-SMOKING-BINDING",
+      "priority": "HIGHEST",
+      "packages": [
+        "FollowersJerichoFollowPlayerDEFAULTsmoke 00071EE2",
+        "FollowersJerichoFollowPlayerLONGsmoke 00071EE1",
+        "FollowersJerichoFollowPlayerWAITsmoke 00071EE0"
+      ],
+      "inventory_condition_items": [
+        "Cigarette01 0005B52C",
+        "CigaretteCarton 00034068",
+        "CigarettePack 00034069"
+      ],
+      "package_idle": "LooseSmokingStanding 00083518",
+      "result": "All three Jericho smoke packages contain GetItemCount conditions on the individual cigarette, carton, and pack and bind IDLA to LooseSmokingStanding. This is direct shipped-ESM evidence that possession of these cigarette objects can select a smoking behavior for Jericho."
+    },
+    {
+      "finding_id": "F3DM-060S-PLAYER-DIRECT-SMOKING-PATH-NEGATIVE",
+      "priority": "VERY_HIGH_NEGATIVE",
+      "evidence": [
+        "Player NPC_ 00000007 does not contain SmokerFaction 000711A4 in its faction SNAM entries.",
+        "Cigarette01/CigarettePack/CigaretteCarton are MISC with no SCRI.",
+        "No SCTX block across the six supplied masters contains cigarette/cigar/tobacco/nicotine tokens.",
+        "No shipped SCTX player.PlayIdle call targets NPCSmokingIdle, WallLeanSmoking, LooseSmokingStanding, or Anchorage cigar/smoking idles."
+      ],
+      "result": "No ordinary shipped player-use pathway for smoking a cigarette was found in the six ESM masters. This is a static master-file result, not an assertion about console commands, mods, engine-level forced animation, or omitted BSA/UI assets."
+    },
+    {
+      "finding_id": "F3DM-061S-ANCHORAGE-SMOKING-AND-CIGAR-EXPANSION",
+      "priority": "HIGH",
+      "records": [
+        {
+          "edid": "DLCAnchNervousSoldierSitSmokingMarker",
+          "type": "FURN",
+          "form_id": "xx00ABA6"
+        },
+        {
+          "edid": "DLCAnchNervousSoldierSitSmoking",
+          "type": "IDLE",
+          "form_id": "xx00ABA8",
+          "kf": "Characters\\_Male\\IdleAnims\\DLCAnchNervousSoldierSitSmoking.kf"
+        },
+        {
+          "edid": "DLCAnchNervousSoldierSitSmokingAnimObject",
+          "type": "ANIO",
+          "form_id": "xx00ABAB",
+          "model": "AnimObjects\\aoCigarette.NIF"
+        },
+        {
+          "edid": "LooseDLCAnchSmokingCigarStanding",
+          "type": "IDLE",
+          "form_id": "xx003483",
+          "kf": "Characters\\_Male\\IdleAnims\\DLCAnchSmokingCigarStanding.kf"
+        },
+        {
+          "edid": "DLCAnchCigarSmoking",
+          "type": "ANIO",
+          "form_id": "xx003484",
+          "model": "DLCAnch\\AnimObjects\\DLCAnchCigarAnimObject.NIF"
+        },
+        {
+          "edid": "DLC02LazySmokingMarker",
+          "type": "IDLM",
+          "form_id": "xx003EA4",
+          "normal_placements_found": 10
+        }
+      ],
+      "result": "Operation: Anchorage adds both seated cigarette smoking and standing cigar-smoking animation pipelines, including dedicated animation objects and placed idle markers."
+    },
+    {
+      "finding_id": "F3DM-062S-LOOSE-SMOKING-STANDING-GATING-ASYMMETRY",
+      "priority": "HIGH_METHOD",
+      "result": "NPCSmokingIdle and WallLeanSmoking directly reference SmokerFaction in CTDA; LooseSmokingStanding does not. This explains why the generic smoking-marker pathway is structurally less restricted than the other two idles.",
+      "public_control": "A long-standing Fallout 3 modding report independently describes this exact SmokerFaction omission in LooseSmokingStanding; used as public corroboration, not primary evidence."
+    }
+  ],
+  "claim_ceiling": [
+    "NPC_CAN_SMOKE != PLAYER_CAN_USE_CIGARETTE_FROM_PIP_BOY",
+    "ANIMATION_EXISTS != RELEASED_PLAYER_GAMEPLAY_MECHANIC",
+    "NO_PLAYER_PATH_IN_ESM != IMPOSSIBLE_ENGINE_OR_CONSOLE_FORCED_ANIMATION",
+    "NO_SCTX_TOKEN != NO_COMPILED_OR_ENGINE_LEVEL_BEHAVIOR",
+    "MISC_ITEM != CONSUMABLE_ALCH_ITEM",
+    "PUBLIC_WIKI_OR_MOD_REPORT != PRIMARY_ASSET_AUTHORITY"
+  ],
+  "public_footprint": [
+    {
+      "url": "https://fallout.fandom.com/wiki/Cigarette_(Fallout_3)",
+      "role": "control",
+      "note": "Publicly documents Cigarette01 as a miscellaneous item, NPC chain-smoking behavior, and lack of normal player use."
+    },
+    {
+      "url": "https://www.nexusmods.com/fallout3/mods/21109",
+      "role": "control",
+      "note": "Public modding report describes SmokerFaction gating and LooseSmokingStanding omission."
+    }
+  ],
+  "next_gate": {
+    "artifact_id": "FALLOUT-3-F3DAD-SMOKING-IDLE-NPC-INVENTORY-CONSUMPTION-AND-PLAYER-CONSOLE-REPLAY-AUDIT-v1.11S",
+    "objectives": [
+      "decode full CTDA operators on all smoking idles and Jericho packages",
+      "identify every actor/base that can select smoking idles through faction, package, or idle marker",
+      "check whether any smoking path consumes or removes cigarette inventory",
+      "if runtime console validation is available, test Player.PlayIdle separately from normal item-use semantics",
+      "keep console-forced animation separate from released gameplay obtainability"
+    ]
+  }
+}

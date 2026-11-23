@@ -1,0 +1,48 @@
+{
+  "schema": "JANUS/adv-elite-decision-checkpoint/v1.0.0",
+  "decision": {
+    "decision_id": "Q11",
+    "status": "FROZEN",
+    "canonical_class": "ALWAYS_ON_MULTIVIEW_ANOMALY_DETECTOR_WITH_PHYSICAL_LED_SIGNAL",
+    "always_on": true,
+    "independent_of_modes": ["1488/M2R", "Love/J", "House", "UI tab", "mining", "network"],
+    "detector_ensemble": {
+      "classical_z": true,
+      "robust_z_mad": true,
+      "prediction_error": true,
+      "swarm_peer_disagreement": true,
+      "rate_of_change_derivatives": true,
+      "multichannel_joint_context": true,
+      "theta": "SHADOW_ONLY_NOT_ANOMALY_EVIDENCE"
+    },
+    "legacy_bugfix": {
+      "found_in": "Beacon_A1 v4.5A",
+      "old_behavior": "anomaly evaluation gated by loveExperimentActive",
+      "new_behavior": "always evaluate; modes may change response but never anomaly visibility",
+      "classification": "RESTORATIVE_BUGFIX"
+    },
+    "led_contract": {
+      "hardware": "Cardputer ADV onboard LED",
+      "anomaly_signal": "light LED on confirmed/latching anomaly",
+      "legacy_anomaly_color": "WHITE",
+      "manual_led_toggle_key": "L",
+      "L_semantics": "toggle only physical LED output; detection/logging continue",
+      "brightness_down": "[",
+      "brightness_up": "]",
+      "brightness_semantics": "screen and LED brightness follow one user brightness scale",
+      "led_independent_override": true,
+      "screen_stays_independent_from_L": true
+    },
+    "state_persistence": {
+      "persist_brightness": true,
+      "persist_led_enabled": true,
+      "anomaly_history_in_witness": true
+    },
+    "truth_guard": [
+      "LED means detector state, not proof of extraordinary physical cause",
+      "LED-off never disables anomaly detection",
+      "prediction/simulation never becomes sensor truth"
+    ]
+  },
+  "next_question": "Q12_ANOMALY_RESPONSE_LEVELS"
+}

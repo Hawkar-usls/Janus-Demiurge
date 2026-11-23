@@ -1,0 +1,77 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-SIGLA-INTERFACE-PROBE-SPEC-2026-08-14-v0.1",
+  "timestamp": "2026-08-14T13:31:00+03:00",
+  "version": "v0.1",
+  "title": "JANUS Linear A SigLA technical interface probe specification",
+  "observer": "Oleksandr Ahapov / Hawkar + JANUS",
+  "node_type": "frozen_technical_interface_specification",
+  "status": "FROZEN_BEFORE_INTERFACE_PROBE_EXECUTION",
+  "parent_bridge": {
+    "path": "data/JANUS-LINEAR-A-SIGLA-DOCUMENT-IDENTITY-BRIDGE-RESULT-2026-08-14-v0.1.json",
+    "commit": "9f09b84856324ecd94ea48356fd8d880a6b95256",
+    "collision_free_match_count": 686,
+    "sigla_browse_snapshot_sha256": "c1d25f91dccf334c3cf24b52c1e4a279970cebd3f5c6f377569de076360170cd"
+  },
+  "purpose": "Discover and freeze the public SigLA document-page interface contract needed for a later content-level adapter without selecting documents by transcription content or scientific interest.",
+  "scientific_claim_bearing": false,
+  "sample_selection": {
+    "universe": "the 686 collision-free bridge keys reconstructible from the frozen SigLA browse snapshot and frozen mwenge inventory",
+    "hash_namespace": "R3A3-INTERFACE-PROBE-v0.1",
+    "score": "SHA256(namespace + '|' + bridge_key) interpreted lexicographically as lowercase hexadecimal",
+    "selection": "three bridge keys with the lexicographically smallest hash scores",
+    "sample_size": 3,
+    "selection_occurs_before_document_page_fetch": true,
+    "forbidden_selection_inputs": [
+      "document sign count",
+      "document word count",
+      "presence of SA·RA₂",
+      "presence of GRA/VIR/KU-RO/KI-RO",
+      "expected disagreement",
+      "known inscription fame",
+      "transcription content"
+    ]
+  },
+  "document_request_contract": {
+    "url_template": "https://sigla.phis.me/document/{URL_ENCODED_SIGLA_DOCUMENT_ID}/",
+    "request_method": "GET",
+    "required_http_status": 200,
+    "save_exact_response_bytes": true,
+    "record_sha256": true
+  },
+  "predeclared_interface_observables": [
+    "requested URL and final URL",
+    "HTTP status, Content-Type, byte length and SHA-256",
+    "document title text if present",
+    "all anchor hrefs and normalized anchor text",
+    "all script src attributes",
+    "all form action/method attributes",
+    "all link href/rel attributes",
+    "all element attributes whose names start with data-",
+    "all href/action/src values containing case-insensitive word, json, data, api, document, sign or index",
+    "presence/count of visible text markers 'word view', 'sign view', 'signs', 'words'",
+    "HTML snapshots for all three pages"
+  ],
+  "forbidden_interpretations": [
+    "do not compare sign values across sources",
+    "do not compare word segmentation across sources",
+    "do not infer a JSON endpoint from a filename pattern not observed in HTML",
+    "do not infer a word-view route from human expectation if no link/action is observed",
+    "do not treat interface agreement as transcription agreement",
+    "do not promote any document/sign/word candidate"
+  ],
+  "success_gate": {
+    "three_pages_fetched": true,
+    "three_page_hashes_recorded": true,
+    "interface_observables_extracted": true,
+    "claim_ceiling_preserved": true
+  },
+  "next_if_successful": "Freeze a SigLA source-adapter contract based only on interface elements observed consistently or explicitly documented by SigLA, then create a separate R3A-3 content sampling spec.",
+  "claim_ceiling": {
+    "technical_interface_probe_established": false,
+    "cross_digitization_content_replication_established": false,
+    "external_transcription_replication_established": false,
+    "new_anchor_established": false,
+    "decipherment_established": false,
+    "promotion": "BLOCKED"
+  }
+}

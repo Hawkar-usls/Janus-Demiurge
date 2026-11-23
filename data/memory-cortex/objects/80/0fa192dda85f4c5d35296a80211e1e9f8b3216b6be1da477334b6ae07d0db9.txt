@@ -1,0 +1,153 @@
+{
+  "schema_id": "janus.handoff_reliability_remediation_roadmap.v1",
+  "record_id": "JANUS-HANDOFF-RELIABILITY-REMEDIATION-ROADMAP-2026-08-17-v1.0",
+  "created_at": "2026-08-17T12:49:00+03:00",
+  "parent_roadmap": "Hawkar-usls/Janus_Genesis#121",
+  "final_acceptance": "Hawkar-usls/Janus_Genesis#162",
+  "implementation_issue": "Hawkar-usls/Janus_Genesis#164",
+  "roadmap_addendum": "Hawkar-usls/Janus_Genesis#166",
+  "evidence": [
+    "data/JANUS-QUANT-PC-NAS-HANDOFF-LINEAGE-2026-08-17-v1.0.json",
+    "data/JANUS-QUANT-PC-NAS-LIVE-INGRESS-GATE-2026-08-17-v1.0.json",
+    "data/JANUS-QUANT-PC-NAS-LIVE-INGRESS-HANDOFF-2026-08-17-v1.0.json",
+    "data/JANUS-NAS-LIVE-INGRESS-SCREENSHOT-WITNESS-2026-08-17-v1.0.json"
+  ],
+  "observed_state": {
+    "janus_nas_brain": "RUNNING_WITH_READY_HEARTBEAT",
+    "quant_import_dir": "/share/CACHEDEV1_DATA/Janus/quant_inbox_pc",
+    "live_ingress": "SCREENSHOT_SUPPORTED_RECEIVER_LIVENESS",
+    "new_file_exact_hash_receipt": "OPEN",
+    "janus_titan_core_hrain_proxy": "DEGRADED_TIMEOUT",
+    "sqlite_primary_path": "DEGRADED_BUSY_WITH_JSONL_FALLBACK"
+  },
+  "canonical_handoff_states": [
+    "SEEN",
+    "STABLE",
+    "HASHED",
+    "PARSED",
+    "ADMITTED_OR_HOLD",
+    "RECEIPT_COMMITTED",
+    "OPTIONAL_LOAD",
+    "OPTIONAL_EXECUTE",
+    "CONSUMED_EXACTLY_ONCE_OR_HOLD"
+  ],
+  "phases": [
+    {
+      "id": "R1",
+      "name": "RECEIVER_SIDE_EXACT_RECEIPT",
+      "goal": "Bind every stable Quant PC arrival to a durable exact receiver receipt without inferring execution.",
+      "required_fields": [
+        "receipt_id",
+        "receiver_service",
+        "arrival_path_or_opaque_id",
+        "arrival_sha256",
+        "arrival_bytes",
+        "first_seen_at",
+        "last_stable_at",
+        "event_id_or_null",
+        "dedupe_key_or_null",
+        "parse_status",
+        "admission_status",
+        "load_status",
+        "execute_status",
+        "error_class_or_null"
+      ],
+      "rules": [
+        "Hash only after bounded size/mtime stability check.",
+        "Same semantic event plus same digest is idempotent.",
+        "Same event/dedupe identity plus different digest yields HOLD_RECONCILE.",
+        "Partial/truncated input is retained as evidence and fails closed.",
+        "RECEIVED, PARSED, LOADED and EXECUTED remain distinct evidence states."
+      ]
+    },
+    {
+      "id": "R2",
+      "name": "HRAIN_8008_SERVICE_AND_ROUTE_REPAIR",
+      "goal": "Make the intended HRAIN endpoint explicit and reachable from the correct network namespace.",
+      "diagnostics": [
+        "Identify expected owner/listener of port 8008.",
+        "Probe listener existence independently of application handler health.",
+        "From janus_titan_core, test whether 127.0.0.1 refers to the intended peer or only the Titan container namespace.",
+        "If peer is another Docker service, test Docker service/DNS identity instead of assuming loopback.",
+        "If peer is 192.168.1.92:8008, separate route, TCP-connect and handler-response tests.",
+        "Classify connect timeout versus read timeout versus application stall."
+      ],
+      "repair_contract": {
+        "endpoint_identity": "EXPLICIT",
+        "network_namespace": "EXPLICIT",
+        "connect_timeout": "BOUNDED",
+        "read_timeout": "BOUNDED",
+        "retry": "JITTERED_BACKOFF",
+        "outage_behavior": "DURABLE_LOCAL_QUEUE_NO_DISCARD"
+      },
+      "isolation_rule": "HRAIN outage must not block, erase or downgrade Quant PC receiver receipts."
+    },
+    {
+      "id": "R3",
+      "name": "SQLITE_BUSY_AND_JSONL_DURABILITY",
+      "goal": "Turn observed JSONL fallback into a replayable no-loss/no-double-apply contract.",
+      "tasks": [
+        "Identify concurrent SQLite writers and transaction duration.",
+        "Adopt bounded single-writer queue or documented WAL plus busy-timeout policy.",
+        "Keep JSONL append-only fallback.",
+        "Assign stable idempotency key to every persistence event.",
+        "Replay fallback into SQLite through idempotent reconciliation only.",
+        "Retain replay/conflict receipts.",
+        "Prove process death between JSONL append and primary replay does not lose or double-apply a record."
+      ]
+    },
+    {
+      "id": "R4",
+      "name": "HANDOFF_LEDGER_BINDING",
+      "goal": "Project exact receiver receipts into FACE_HANDOFF_LEDGER without authority escalation.",
+      "mapping": "Quant arrival receipt -> handoff envelope -> ledger append -> downstream bounded consumer",
+      "conflict_rule": "Valid conflicting envelopes are retained and force HOLD_RECONCILE; no majority override."
+    },
+    {
+      "id": "R5",
+      "name": "FAILURE_INJECTION_ACCEPTANCE",
+      "tests": [
+        "duplicate arrival same event same digest",
+        "conflicting arrival same event different digest",
+        "partial/truncated arrival",
+        "receiver restart after hash before receipt commit",
+        "receiver restart after receipt commit before downstream consume",
+        "HRAIN unavailable during arrival",
+        "SQLite locked during arrival",
+        "JSONL fallback then process death then replay",
+        "stale or duplicate downstream consume attempt"
+      ]
+    }
+  ],
+  "pass_gates": {
+    "HR1_LIVE_QUANT_INGRESS_NOT_BLOCKED_BY_HRAIN": "OPEN",
+    "HR2_EXACT_RECEIVER_SHA_RECEIPT": "OPEN",
+    "HR3_EVENT_DEDUPE_REBINDING_FAIL_CLOSED": "OPEN",
+    "HR4_HRAIN_SERVICE_OWNER_AND_ROUTE_EXPLICIT": "OPEN",
+    "HR5_HRAIN_BOUNDED_RETRY_AND_DURABLE_QUEUE": "OPEN",
+    "HR6_SQLITE_BUSY_RECOVERY_NO_LOSS": "OPEN",
+    "HR7_FALLBACK_REPLAY_IDEMPOTENT": "OPEN",
+    "HR8_PROCESS_DROP_RECOVERY": "OPEN",
+    "HR9_DOWNSTREAM_EXACTLY_ONCE_CONSUME": "OPEN",
+    "HR10_RECEIVED_PARSED_LOADED_EXECUTED_SEPARATED": "OPEN",
+    "HR11_SOURCE_WRITEBACK_OBSERVED": false,
+    "HR12_DESTRUCTIVE_ACTION_REQUIRED": false,
+    "HR13_AUTHORITY_DELTA": 0
+  },
+  "integration_with_162": {
+    "role": "REAL_PC_TO_NAS_HANDOFF_WITNESS",
+    "can_replace_resident_continuity_gate": false,
+    "can_replace_real_44_source_replay": false,
+    "can_replace_federation_accounting": false,
+    "can_replace_variant_lineage_replay": false,
+    "can_replace_swarm_lease_fencing": false,
+    "contribution": "Receiver integrity, durable receipt, outage recovery, fallback replay and exactly-once downstream consumption evidence."
+  },
+  "safety": {
+    "SOURCE_WRITEBACK_DEFAULT": "DENY",
+    "DESTRUCTIVE_ACTION": "FORBIDDEN",
+    "AUTHORITY_DELTA": 0,
+    "RECEIPT_NE_EXECUTION_PERMISSION": true,
+    "HEARTBEAT_NE_EXECUTION_PROOF": true
+  }
+}

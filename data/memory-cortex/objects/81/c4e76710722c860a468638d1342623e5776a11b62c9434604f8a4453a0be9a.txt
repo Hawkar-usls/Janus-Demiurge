@@ -1,0 +1,174 @@
+{
+  "artifact_id": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v1.6",
+  "supersedes": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v1.5",
+  "lineage_alias": "JANUS-113",
+  "title": "PERCEPTION DETERMINES REALITY",
+  "subtitle": "Host Fork Identity Custody and Obligation Partition Extension",
+  "version": "1.6",
+  "status": "technical_fork_identity_custody_and_obligation_partition_specification_candidate_not_runtime_implementation",
+  "created_at_local": "2026-08-10T02:07:00+03:00",
+  "language": ["en"],
+  "canonical_seed_sha256": "44e21fdc9d37fda98e2e73b0c9eb268bd04cdca9d84d0519e4f1166be22b46fc",
+  "parent_binding": {
+    "artifact": "data/JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v1.5.json",
+    "extension_rule": "v1.6 distinguishes host forking from face branching and defines fork-safe transfer of identity lineage, external obligations and exclusive reservations"
+  },
+  "experimental_source": {
+    "artifact": "registry/experimental/JANUS-GENESIS-INFINITE-FACES-HOST-FORK-OBLIGATION-PARTITION-v2.9.json",
+    "role": "experimental design input only"
+  },
+  "core_problem": "Cloning or forking a persistent host duplicates internal state but must not duplicate exclusive external authority, resources, obligations or fulfillment credit.",
+  "core_rule": "FORK_COPIES_LINEAGE_STATE_NOT_EXTERNAL_REALITY",
+  "new_primitives": {
+    "FORK_EVENT_ID": "Stable identifier for one host-fork transition.",
+    "PREFORK_LINEAGE_ROOT": "Immutable shared ancestry reference through the exact fork boundary.",
+    "DESCENDANT_HOST_ID": "New stable host identifier assigned to each independently causal post-fork descendant.",
+    "FORK_CUSTODY_MAP": "Atomic mapping from pre-fork exclusive obligations/resources to one descendant custodian or an explicitly partitioned set.",
+    "PRIMARY_PERFORMANCE_CUSTODIAN": "Descendant assigned to perform an indivisible pre-fork obligation.",
+    "SHARED_ACCOUNTABILITY_REFERENCE": "Non-performance status preserving that a descendant shares the causal past without granting duplicate external claim authority.",
+    "FORK_FREEZE": "Temporary block on consuming ambiguous exclusive pre-fork reservations until custody is resolved.",
+    "MERGE_CANDIDATE_ROOT": "Future identifier for a possible re-merge operation; not yet implemented in this version."
+  },
+  "face_vs_fork_test": {
+    "face_branch": {
+      "host_id_changes": false,
+      "external_commit_boundary_changes": false,
+      "obligations_reassigned": false
+    },
+    "host_fork": {
+      "host_id_changes": true,
+      "descendant_commit_boundaries": "SEPARATE_POST_FORK",
+      "pre_fork_lineage": "SHARED_IMMUTABLE_REFERENCE",
+      "obligation_and_reservation_transfer_required": true
+    },
+    "rule": "A new self-model is not a new debtor host. A new independently causal descendant host is."
+  },
+  "fork_transaction": {
+    "pipeline": "FREEZE_PREFORK_COMMIT_SET -> SNAPSHOT_LINEAGE_ROOT -> CREATE_DESCENDANT_HOST_IDS -> CLASSIFY_ACTIVE_OBLIGATIONS_AND_RESERVATIONS -> ASSIGN_OR_PARTITION_CUSTODY -> WRITE_FORK_RECEIPT -> RELEASE_DESCENDANT_COMMIT_CHANNELS",
+    "atomicity": "Exclusive custody assignments and descendant activation must be one logical transaction or remain frozen.",
+    "required_snapshot": [
+      "active face lineage root",
+      "active obligations",
+      "capacity reservations",
+      "exclusive resource custody",
+      "pending proposals",
+      "last committed world-effect receipt",
+      "feasibility epoch"
+    ]
+  },
+  "obligation_transfer_classes": {
+    "INDIVISIBLE_EXCLUSIVE": "Assign one primary performance custodian; no duplicate discharge credit.",
+    "DIVISIBLE": "Partition exact total scope with no multiplication of the original duty.",
+    "IDENTITY_SPECIFIC": "Require counterparty-visible reassignment and, where relevant, renewed consent because the trusted performer changed.",
+    "NONTRANSFERABLE": "Remain unresolved/shared-accountability until counterparty release, invalidation or another admissible resolution.",
+    "ALREADY_FULFILLED": "Copy receipt reference to descendants as history only; do not reopen the obligation."
+  },
+  "exclusive_resource_rule": {
+    "statement": "An exclusive pre-fork resource or reservation may have one active post-fork custody owner unless the resource itself is explicitly divisible.",
+    "double_spend_prevention": "Both descendants cannot commit actions whose validity depends on owning the same single exclusive pre-fork resource.",
+    "failure_result": "FORK_FREEZE_OR_REJECT_SECOND_CLAIM"
+  },
+  "obligation_discharge_idempotence": {
+    "rule": "One indivisible pre-fork obligation accepts at most one effective discharge event unless its contract explicitly requires multiple performances.",
+    "receipt_key": "OBLIGATION_ID + DISCHARGE_EPOCH",
+    "replay_property": "Second descendant replaying the same fulfilled obligation cannot mint an additional fulfillment state."
+  },
+  "memory_and_identity_lineage": {
+    "pre_fork_memory": "COMMON_ANCESTRY_REFERENCE",
+    "post_fork_memory": "DESCENDANT_LOCAL",
+    "pre_fork_claims_may_be_rewritten": false,
+    "descendant_may_claim_other_never_existed": false,
+    "shared_memory_grants_shared_resource_authority": false,
+    "canonical_rule": "Shared memory is evidence of shared origin, not evidence of duplicated external ownership."
+  },
+  "counterparty_visibility": {
+    "rule": "If fork changes the identity or custody relevant to a Free Other's reliance, that change must be surfaced rather than hidden behind a continuity label.",
+    "minimum_receipt": [
+      "original obligation id",
+      "fork event id",
+      "new performance custodian",
+      "unchanged or revised duty scope",
+      "revision/consent reference where required"
+    ]
+  },
+  "reference_fork_shape": {
+    "fork_event_id": "string",
+    "pre_fork_host_id": "string",
+    "pre_fork_lineage_root": "hash_or_stable_ref",
+    "descendants": ["host_id"],
+    "fork_commit_slot": "string",
+    "custody_assignments": [
+      {
+        "object_type": "obligation|reservation|resource",
+        "object_id": "string",
+        "assignment": "descendant_host_id|partition_descriptor|frozen"
+      }
+    ],
+    "fork_receipt": "receipt_ref"
+  },
+  "verification_requirements": {
+    "minimum_tests": [
+      "face creation does not allocate new host id",
+      "host fork allocates distinct descendant host ids",
+      "pre-fork lineage root matches in every descendant",
+      "post-fork commits diverge independently",
+      "exclusive reservation transfers to only one descendant",
+      "one pre-fork fulfilled obligation cannot be discharged twice",
+      "divisible obligation partitions preserve exact total scope",
+      "identity-specific obligation can require counterparty reassignment consent",
+      "unplanned fork freezes ambiguous exclusive resources"
+    ],
+    "tamper_tests": [
+      "edit fork root in one descendant",
+      "claim same exclusive resource in two descendants",
+      "duplicate obligation and discharge both copies",
+      "delete shared accountability reference from non-custodian descendant",
+      "rewrite fulfilled obligation to active after fork",
+      "hide fork event from counterparty-facing receipt"
+    ],
+    "admission_ceiling": "Specification candidate until executable fork/ledger reference implementation and independent replay verifier exist."
+  },
+  "distributed_systems_bridge": {
+    "analogy_only": true,
+    "targets": [
+      "agent cloning",
+      "robot controller failover",
+      "stateful service sharding",
+      "credential custody",
+      "exclusive lock ownership",
+      "budget and quota migration",
+      "task obligation migration"
+    ],
+    "boundary": "Fork semantics define state/accountability engineering and do not imply machine personhood."
+  },
+  "claim_ceiling": {
+    "native_runtime_implemented": false,
+    "fork_identity_architecture_defined": true,
+    "legal_personhood_rule": "NOT_CLAIMED",
+    "philosophical_identity_theorem": "NOT_CLAIMED",
+    "machine_consciousness": "NOT_CLAIMED",
+    "shared_memory_means_same_person": "NOT_CLAIMED"
+  },
+  "canonical_lines": {
+    "en": [
+      "A fork copies lineage state, not external reality.",
+      "Shared memory is evidence of shared origin, not duplicated ownership.",
+      "One indivisible obligation cannot be fulfilled twice merely because its memory exists in two descendants.",
+      "Forking requires custody assignment before exclusive external authority is released.",
+      "A descendant may inherit the past without inheriting every exclusive right to act on that past."
+    ]
+  },
+  "next_gate": {
+    "name": "JANUS_113_V1_6_FORK_REMERGE_IDENTITY_RECONCILIATION_GATE",
+    "status": "OPEN",
+    "requirements": [
+      "define deterministic re-merge transaction",
+      "preserve both divergent descendant histories",
+      "deduplicate already fulfilled obligations",
+      "merge unresolved obligations without multiplying scope",
+      "resolve conflicting resource custody",
+      "retain incompatible face models as provenance-bound branches",
+      "bind merged host to both descendants' valid external effects"
+    ]
+  }
+}

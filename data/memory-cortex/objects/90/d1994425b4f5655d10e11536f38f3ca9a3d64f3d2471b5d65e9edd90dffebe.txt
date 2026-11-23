@@ -1,0 +1,89 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-R3C-1A-JS-MAP-DUPLICATE-SEMANTICS-SPEC-2026-08-14-v0.4",
+  "timestamp": "2026-08-14T15:59:00+03:00",
+  "version": "v0.4",
+  "title": "Frozen dual raw/effective semantics for duplicate keys in lineara JavaScript Map construction",
+  "observer": "Oleksandr Ahapov / Hawkar + JANUS",
+  "node_type": "parser_semantics_spec",
+  "status": "FROZEN_BEFORE_V0_4_EXECUTION",
+  "parent_parser": {
+    "v0_3_boundary_spec": "data/JANUS-LINEAR-A-R3C-1A-MAP-BOUNDARY-PARSER-CORRECTION-SPEC-2026-08-14-v0.3.json",
+    "v0_3_validation": "data/JANUS-LINEAR-A-R3C-1A-MAP-BOUNDARY-PARSER-CORRECTION-VALIDATION-RESULT-2026-08-14-v0.3.json",
+    "v0_3_status": "PARSER_V0_3_NOT_ADMITTED",
+    "reason": "Syntactic parsing reached the complete 1722-entry iterable but the loader intentionally failed closed on duplicate key KH101 before JavaScript Map constructor semantics were frozen."
+  },
+  "duplicate_inventory": {
+    "path": "data/JANUS-LINEAR-A-R3C-1A-MAP-DUPLICATE-KEY-INVENTORY-RESULT-2026-08-14-v0.1.json",
+    "historical_source_entries": 1722,
+    "historical_unique_keys": 1721,
+    "current_source_entries": 1722,
+    "current_unique_keys": 1721,
+    "duplicate_key_count": 1,
+    "duplicate_key": "KH101",
+    "first_index": 1234,
+    "last_index": 1698,
+    "payloads_identical": false,
+    "first_payload_sha256": "99645381318ef3ed4d80946510dac6703af1db5ae559507fd1e63e7985796a97",
+    "last_payload_sha256": "099b64a36cafc6a068357c6a39f73714f056aee4062f1b72853873814557bde9",
+    "historical_current_duplicate_shape_equal": true
+  },
+  "normative_semantics_basis": {
+    "standard": "ECMAScript keyed collections / Map constructor and Map.prototype.set",
+    "source": "https://tc39.es/ecma262/multipage/keyed-collections.html#sec-map.prototype.set",
+    "mechanical_summary": "Map construction consumes iterable entries through Map.prototype.set. When a matching key already exists, set replaces that record's value and returns without appending a second Map record; a previously unseen key appends a new record.",
+    "JANUS_interpretation": "For string document IDs, process source pairs in source order. First occurrence fixes insertion position; each later identical key replaces only its effective value."
+  },
+  "dual_representation": {
+    "RAW_SOURCE_ENTRY_LAYER": {
+      "preserve": true,
+      "semantics": "All 1722 parsed source pairs remain evidenced by exact source-file SHA-256, source entry count and duplicate ledger. The first KH101 payload is never deleted from provenance.",
+      "scientific_default": false
+    },
+    "EFFECTIVE_JS_MAP_VIEW": {
+      "preserve": true,
+      "semantics": "Replay source pairs in order using JavaScript-compatible Map.set duplicate semantics. Existing key value is replaced without moving the key's original insertion position.",
+      "expected_effective_key_count_from_inventory": 1721,
+      "expected_KH101_effective_payload_sha256": "099b64a36cafc6a068357c6a39f73714f056aee4062f1b72853873814557bde9",
+      "scientific_default_for_reproducing_code_that_consumed_the_JS_Map": true
+    }
+  },
+  "frozen_algorithm": {
+    "id": "JANUS-JS-MAP-SET-REPLAY-v0.4",
+    "steps": [
+      "Parse the first new Map iterable as the ordered raw pair list using the already frozen v0.3 boundary and v0.2 literal transforms.",
+      "Require each entry to be a two-element pair whose key is a string and value is an object for this source adapter.",
+      "For each pair in source order: if key is new, append it to effective insertion order and store its value; if key already exists, replace only the effective value while leaving insertion order unchanged.",
+      "For every duplicate occurrence, record key, first index, replacement index, prior payload SHA-256 and replacement payload SHA-256.",
+      "Return effective mapping for runtime-compatible scientific replay while retaining raw-entry and duplicate provenance in metadata."
+    ],
+    "python_dict_existing_assignment_may_be_used": true,
+    "condition": "Only because Python dictionaries preserve first insertion position when assigning a new value to an existing key; validation must include an explicit order canary.",
+    "silent_deduplication_forbidden": true,
+    "first_wins_forbidden": true,
+    "source_entry_deletion_forbidden": true
+  },
+  "validation_canaries": [
+    "Synthetic pairs A:v1, B:v1, A:v2 must yield effective order [A,B] and A:v2.",
+    "Synthetic duplicate ledger must retain hashes/indices for both A values.",
+    "Historical/current source must each expose 1722 raw entries and 1721 effective keys.",
+    "Historical/current KH101 effective payload SHA-256 must equal the frozen last-occurrence hash 099b64a36cafc6a068357c6a39f73714f056aee4062f1b72853873814557bde9.",
+    "No scientific metric may execute in the parser-validation workflow."
+  ],
+  "anti_overfit": {
+    "KH101_specific_resolution_rule_forbidden": true,
+    "drop_first_duplicate_without_general_Map_semantics_forbidden": true,
+    "drop_last_duplicate_forbidden": true,
+    "published_Briakos_metrics_used_to_select_duplicate_semantics": false,
+    "raw_duplicate_provenance_must_survive": true
+  },
+  "claim_ceiling": {
+    "Map_semantics_frozen": true,
+    "parser_v0_4_validated": false,
+    "Briakos_metrics_reproduced": false,
+    "logos_D5_D6_replay_completed": false,
+    "R3B_effect": "NONE",
+    "independent_transcription_replication": false,
+    "new_anchor": false,
+    "decipherment": false
+  }
+}

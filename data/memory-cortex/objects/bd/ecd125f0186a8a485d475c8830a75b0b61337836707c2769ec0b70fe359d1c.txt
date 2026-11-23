@@ -1,0 +1,120 @@
+{
+  "artifact_id": "JANUS-TRUMP-EXACT-CHANNEL-MATCHING-NUMBER-DECOMPOSITION-INVARIANCE-2026-09-20-v1.0",
+  "version": "v1.0",
+  "date": "2026-09-20",
+  "status": "PASS_EXACT_CHANNEL_MATCHING_NUMBER_DECOMPOSITION_INVARIANCE",
+  "scope": "PURE_GRAPH_THEOREM__NO_C11_NO_P7_NO_OCTAHEDRON_ASSUMPTIONS",
+  "parents": {
+    "abstract_channel_theorem": {
+      "path": "research/TRUMP_ABSTRACT_TWO_BLOCK_CHANNEL_THEOREM_2026-09-20_v1.0.json",
+      "commit": "8d7d95a73fd5458a7ae4105f2698e40fc6f1184c",
+      "blob": "2348c9000f22f2d31413652a0d8e58409ac1f352",
+      "local_authority": "lambda_G(c,f)=1+nu(X) for every valid exact-channel representation"
+    },
+    "reachability_normal_form": {
+      "path": "research/TRUMP_EXACT_CHANNEL_DISCOVERY_IMPLICATION_REACHABILITY_NORMAL_FORM_2026-09-20_v1.0.json",
+      "commit": "c84d11a559d7b697a31434282193b339bf170bfb",
+      "blob": "eb7fd3d28b1a9658bb4714fa8aaa274fff83e57d",
+      "authority": "Every feasible fixed triple has a distributive lattice of decompositions with canonical R_min and R_max."
+    }
+  },
+  "definitions": {
+    "representation": "Any valid exact-channel decomposition of the same finite graph G with anchors c,f, possibly with different hub z, partition L/R, canonical port sets, and channel graph X.",
+    "fixed_triple_family": "For fixed feasible (z,c,f), let R_lattice be the full family of feasible R-sides from the implication normal form.",
+    "anchor_pair_invariant": "For an exact-channel representable ordered anchor pair (c,f), define rho_G(c,f):=lambda_G(c,f)-1."
+  },
+  "fixed_triple_invariance": {
+    "statement": "For fixed feasible (z,c,f), every feasible decomposition R in the implication lattice has the same matching number nu(X_R).",
+    "proof": [
+      "For every feasible R, the abstract exact-local channel theorem applies to the resulting exact-channel graph X_R.",
+      "Hence lambda_G(c,f)=1+nu(X_R).",
+      "The graph G and anchors c,f are fixed, so lambda_G(c,f) is independent of R.",
+      "Therefore nu(X_R)=lambda_G(c,f)-1 for every feasible R."
+    ],
+    "formula": "For all R1,R2 in R_lattice: nu(X_R1)=nu(X_R2)=rho_G(c,f)."
+  },
+  "fixed_anchor_invariance": {
+    "statement": "For fixed graph G and fixed exact-channel representable anchors (c,f), every valid exact-channel representation has the same channel matching number, even if the hub z and partition change.",
+    "proof": [
+      "Take any two valid exact-channel representations with the same anchors c,f, possibly through distinct hubs z1,z2.",
+      "Apply the exact-local theorem to each representation.",
+      "Both give the same graph-theoretic local connectivity lambda_G(c,f).",
+      "Thus both matching numbers equal lambda_G(c,f)-1."
+    ],
+    "formula": "nu(X_1)=nu(X_2)=rho_G(c,f)=lambda_G(c,f)-1."
+  },
+  "representation_invariant": {
+    "name": "EXACT_CHANNEL_CAPACITY",
+    "symbol": "rho_G(c,f)",
+    "value": "lambda_G(c,f)-1",
+    "representation_formula": "rho_G(c,f)=nu(X) for every exact-channel representation of anchors (c,f).",
+    "dependence": "Depends only on G and the ordered/unordered anchor pair, not on the hub, partition, ports, or chosen lattice solution."
+  },
+  "canonical_capacity_algorithm": {
+    "fixed_anchor_pair": [
+      "Run graph-only exact-channel discovery over eligible hubs z for the fixed anchors c,f.",
+      "Stop at the first feasible triple (z,c,f).",
+      "Use the canonical minimal-R solution R_min=Reach_D(R0).",
+      "Reconstruct canonical ports and channel graph X_min.",
+      "Compute a maximum matching M and minimum vertex cover U in X_min.",
+      "Set k=|M|=|U|.",
+      "Then k=nu(X_min)=rho_G(c,f), and this is the matching capacity of every exact-channel representation of the same anchor pair."
+    ],
+    "no_partition_optimization": true,
+    "no_hub_optimization_for_capacity": true,
+    "proof_carrying_receipt": [
+      "feasible reachability triple and canonical R_min",
+      "canonical X_min",
+      "maximum matching M",
+      "minimum vertex cover U",
+      "|M|=|U|=k",
+      "exact-local theorem binding lambda_G(c,f)=k+1"
+    ]
+  },
+  "lattice_consequence": {
+    "statement": "The decomposition lattice controls representation geometry but not channel matching capacity.",
+    "capacity_constant_on_lattice": true,
+    "bottom_solution_suffices": "The canonical bottom R_min suffices to compute the exact capacity.",
+    "top_solution_same_capacity": "R_max has the same capacity.",
+    "every_intermediate_solution_same_capacity": true
+  },
+  "hub_consequence": {
+    "statement": "The hub is not part of the capacity invariant.",
+    "qualification": "Different hubs may yield different partitions and different channel edge sets, but for the same anchors all valid channel graphs have the same nu."
+  },
+  "algorithmic_firewall": {
+    "fixed_anchor_pair": "The first feasible hub/partition suffices for capacity of that anchor pair.",
+    "whole_graph": "If a future task asks to optimize or compare rho_G(c,f) over different anchor pairs, one must still examine/optimize over anchor pairs; capacities of distinct anchor pairs need not agree.",
+    "stronger_semantics": "Additional C11/source-role restrictions may restrict which representations are admissible and must be audited separately."
+  },
+  "validation": {
+    "exhaustive_small_graph_sanity_check": {
+      "graph_orders": [
+        4,
+        5
+      ],
+      "representable_anchor_pair_instances_checked": 4464,
+      "scope": "Grouped all valid exact-channel decompositions by graph and anchor pair, including different hubs and partitions.",
+      "matching_number_disagreements_within_anchor_pair": 0,
+      "authority": "SANITY_CHECK_ONLY; theorem authority is the exact-local formula."
+    }
+  },
+  "pipeline_sharpening": {
+    "fixed_anchor_pipeline": "G,(c,f) -> first feasible reachability decomposition -> canonical X_min -> nu(X_min)=rho_G(c,f) -> lambda_G(c,f)=rho+1 -> optional global kappa certification",
+    "removed_steps": [
+      "enumeration of the full decomposition lattice",
+      "optimization over feasible partitions for fixed anchors",
+      "optimization over hubs for fixed-anchor channel capacity"
+    ]
+  },
+  "scientific_ceiling": {
+    "MATCHING_CAPACITY_FIXED_ANCHORS": "REPRESENTATION_INVARIANT",
+    "LATTICE_OPTIMIZATION_FOR_CAPACITY": "UNNECESSARY",
+    "HUB_OPTIMIZATION_FOR_FIXED_ANCHOR_CAPACITY": "UNNECESSARY",
+    "OPTIMIZATION_OVER_DIFFERENT_ANCHOR_PAIRS": "NOT_ELIMINATED",
+    "FUTURE_C11_EXTRA_SEMANTICS": "NOT_AUTOMATICALLY_COVERED",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "stop": true
+}

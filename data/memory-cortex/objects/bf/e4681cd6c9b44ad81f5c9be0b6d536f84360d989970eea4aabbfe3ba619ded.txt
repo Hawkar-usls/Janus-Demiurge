@@ -1,0 +1,127 @@
+{
+  "artifact_id": "JANUS-PRINCIPLE-DEUTSCH-QUANTUM-CALIBRATOR-v2.0-2026-11-06",
+  "title": "The Janus Principle · Deutsch Quantum Foundations Two-Phase Calibrator v2",
+  "schema_version": "2.0",
+  "created_date": "2026-11-06",
+  "language": "ru",
+  "registry": {
+    "repository": "Hawkar-usls/janus-meta-registry",
+    "path": "registry/uap/JANUS-PRINCIPLE-DEUTSCH-QUANTUM-CALIBRATOR-v2.0-2026-11-06.json",
+    "mode": "APPEND_ONLY",
+    "parent_artifacts": [
+      "registry/uap/JANUS-PRINCIPLE-v1.0.json",
+      "registry/uap/JANUS-PRINCIPLE-JDTC-40-RIVER-RESULT-2026-11-06-v1.0.json"
+    ]
+  },
+  "scientific_status": "QUANTUM_INSPIRED_CLASSICAL_ML_TRAINED__SAME_SNAPSHOT_BEFORE_AFTER_HOLDOUT_PASS__RETROCAUSALITY_UNPROVEN",
+  "sources": {
+    "publisher_book": {
+      "author": "David Deutsch",
+      "title": "The Fabric of Reality",
+      "publication_year": 1997,
+      "url": "https://www.penguinrandomhouse.com/books/330123/the-fabric-of-reality-by-david-deutsch/",
+      "scope": "Publisher description identifies four strands: quantum physics, computation, epistemology (Popper), evolution; no full book text was accessed."
+    },
+    "primary_physics": {
+      "author": "David Deutsch",
+      "title": "Quantum mechanics near closed timelike lines",
+      "doi": "10.1103/PhysRevD.44.3197",
+      "published": "1991-11-15",
+      "scope": "Theoretical self-consistency for CTC models, not evidence of a physically accessible CTC in JANUS."
+    },
+    "prior_2026_quantum_capacity": {
+      "authors": "Kaiyuan Ji, Seth Lloyd, Mark Wilde",
+      "doi": "10.1103/znyd-npk5",
+      "interpretation": "Capacities are conditional on a hypothetical P-CTC channel; not a physical backwards message demonstrated."
+    }
+  },
+  "mapping_from_book_and_physics": [
+    {
+      "pillar": "Quantum theory / Born rule",
+      "implementation": "born_rule(logits) forms nonnegative real amplitudes via exp(half log softmax) and squares; same numerical predictive distribution as standard softmax",
+      "correctness_test": "Sum probabilities=1; no nonfinite entries; invariant under logit shifts",
+      "limitation": "Equivalent reparameterization; no quantum computing speedup or entanglement."
+    },
+    {
+      "pillar": "Reversibility",
+      "implementation": "Orthogonal 2x2 rotation and transpose test",
+      "measured_roundtrip_max_abs_error": 5.551115123125783e-17,
+      "limitation": "Invertible numerical operation is not reversal of elapsed time."
+    },
+    {
+      "pillar": "Epistemology / falsifiability",
+      "implementation": "Frozen exact source SHA, unchanged 196-event chronology holdout, independent V1 checkpoint, failure-recording even when metrics worsen",
+      "limitation": "No physical retrocausal claim derived from ML accuracy."
+    },
+    {
+      "pillar": "Evolution / hypothesis competition",
+      "implementation": "Balance rare class labels ONLY from training data, select temperature and model blend on validation, compare with V1 and training-only frequency baseline",
+      "limitation": "Model selection on a short serially correlated test cannot establish universal predictive improvement."
+    },
+    {
+      "pillar": "Measurement and no-signalling safety",
+      "implementation": "Past-only noise augmentations and KL consistency objective; independent future RNG prediction remains a separate precommitted experiment",
+      "limitation": "KL regularization is an ordinary consistency loss, not a real Deutsch CTC fixed point; no actual entangled quantum channel."
+    }
+  ],
+  "code": {
+    "repository": "Hawkar-usls/Janus-Demiurge",
+    "trainer": "experiments/ocean_transformer/janus_principle_deutsch_v2.py",
+    "tests": "experiments/ocean_transformer/test_jdtc_deutsch_v2.py",
+    "training_workflow": ".github/workflows/janus-principle-deutsch-v2-40river.yml",
+    "future_blind_trial_script": "experiments/ocean_transformer/janus_deutsch_new_ab_trial.py",
+    "future_blind_trial_workflow": ".github/workflows/janus-deutsch-v2-new-future-ab.yml",
+    "training_run_id": 42139830473,
+    "training_run_url": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/42139830473",
+    "training_conclusion": "success",
+    "worker_jobs_succeeded": 40,
+    "total_jobs_succeeded": 43,
+    "training_checkpoint_sha256": "10d66d68580f512365563dd30d3e788694601ef67ea865c65f30b8e2502fdb7b",
+    "preceding_checkpoint_sha256": "e74599f2343539d21ee8e22c877177d5e8d5f04ff647318db31276283d8b31e5",
+    "frozen_history_sha256": "b2ba4f2e810107f6cbf9c2d75c0a0df5d62136c31ac8c3901b5d93e329813766"
+  },
+  "historical_evaluation": {
+    "data": "1,412 JSON-addition events; train 972, validation 196, holdout 196; both variants same classes/splits/denoise masks",
+    "before_v1": {
+      "reconstruction_masked_accuracy": 0.246743,
+      "reconstruction_cross_entropy": 1.71159,
+      "next_json_accuracy": 0.729592,
+      "next_json_log_loss": 1.79251,
+      "next_json_brier": 0.751256
+    },
+    "after_deutsch_v2": {
+      "reconstruction_masked_accuracy": 0.584674,
+      "reconstruction_cross_entropy": 1.790059,
+      "next_json_accuracy": 0.841837,
+      "next_json_log_loss": 1.787684,
+      "next_json_brier": 0.739134
+    },
+    "train_only_frequency_baseline": {
+      "next_json_accuracy": 0.857143,
+      "next_json_log_loss": 1.819798,
+      "next_json_brier": 0.749578,
+      "reconstruction_accuracy": 0.850575
+    },
+    "legitimate_conclusions": [
+      "Masked-label accuracy improved by 33.7931 percentage points, but reconstructed-label cross-entropy worsened from 1.71159 to 1.790059.",
+      "Next JSON top-1 accuracy improved by 11.2245 percentage points but remains below the class-frequency baseline.",
+      "Next JSON log-loss improved by 0.004826 versus V1 and Brier by 0.012122; sample size 196 and heavily OTHER-skewed, significance or durability not established.",
+      "JDTC two-phase overall gate fails because phase-one cross-entropy worsened. Production promotion refused."
+    ]
+  },
+  "independent_future_trial": {
+    "run_id": 42140325535,
+    "run_url": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/42140325535",
+    "early_prediction_ledger": "https://github.com/Hawkar-usls/Janus-Demiurge/blob/janus/deutsch-v2-retro-ledger/experiments/ocean_transformer/ledger/deutsch-v2/retro-42140325535/early.json",
+    "early_issued_utc": "2026-11-06T00:56:21.053807+00:00",
+    "status_at_creation": "EARLY_RECEIVER_COMMIT_CONFIRMED__FUTURE_OS_BITS_PENDING",
+    "final_result_record_expected_separately": true
+  },
+  "adoption": {
+    "production_promotion": false,
+    "champion_checkpoint_unchanged": true,
+    "no_QPU_hardware": false,
+    "has_real_physical_backward_channel": false,
+    "status": "RESEARCH_ONLY__NO_PHYSICAL_RETROCAUSAL_PROOF"
+  }
+}

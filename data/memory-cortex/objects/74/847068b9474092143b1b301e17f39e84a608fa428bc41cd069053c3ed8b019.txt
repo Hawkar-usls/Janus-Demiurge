@@ -1,0 +1,47 @@
+{
+  "artifact_id": "JANUS-YAKSA-NUMERICAL-DIVERGENCE-GUARD-2026-08-25-v1.0",
+  "status": "SOURCE_BACKED_SAFE_RESTORATION",
+  "historical_source": {
+    "file": "Yaksa+11_FINAL_STABLE.py",
+    "sha256": "23f3bdf9ff72677fa320e3ce21d7061c7b66402fec14a558192f2d11d7dcb754",
+    "size_bytes": 34275,
+    "compile": "PASS",
+    "lineage": "later stable descendant of the Y2/Yaksa numerical-divergence line"
+  },
+  "historical_behavior": {
+    "blackhole_trigger": "bias NaN/Inf or max absolute finite weight above 25",
+    "blackhole_candidate": "clip weights and finite bias to [-3,3], replace non-finite bias with 0, set lr_scale=0.6",
+    "stable_lr_recovery": "min(1.2, 0.99*lr_scale + 0.01)",
+    "state_sanitization": "input_keys<=64; finite weights clipped [-10,10]; non-finite weights dropped; bias finite/clipped [-10,10]; history tail<=64",
+    "training_bounds": "prediction clipped [-1000,1000], target [-200,200], error [-50,50], active weights/bias [-10,10]"
+  },
+  "restored_safe_subfunction": {
+    "repository": "Hawkar-usls/Janus-Demiurge",
+    "path": "restored/numerical_divergence_guard.py",
+    "commit": "f328090e486b9c21a768597c99a5433170db1eef",
+    "test_path": "tests/test_numerical_divergence_guard.py",
+    "test_commit": "ab7d058346374d90d6c53586f43084e6b65bec96",
+    "local_test": "3/3 PASS",
+    "authority": "DIAGNOSE_SANITIZE_AND_PROPOSE_ONLY_NO_MODEL_MUTATION"
+  },
+  "modern_repairs": [
+    "non-finite weights are an explicit trigger rather than relying on max(abs(weight)) behavior around NaN",
+    "candidate weights/state are returned as receipts instead of being applied in-place",
+    "learning-rate change is proposal data only",
+    "no model load/save authority is inherited"
+  ],
+  "y2_boundary": {
+    "source": "Y2.py",
+    "sha256_anchor": "37801c98b9d1022fe3d837d9e7d7075be5415b04367c6bba14a260385e3ff836",
+    "exact_bytes_recovered": false,
+    "interpretation": "Yaksa+11 provides a source-backed repaired descendant; it is not proof of byte-level Y2 equivalence"
+  },
+  "laws": [
+    "FAILURE_CAN_BE_AN_ANCESTOR_OF_A_LATER_GUARD",
+    "GREEN_LOCAL_OBJECTIVE_DOES_NOT_OVERRIDE_RETURN_PATH_FAILURE",
+    "DIVERGENCE_DETECTION_NE_MODEL_MUTATION",
+    "BLACKHOLE_PROPOSAL_NE_AUTOMATIC_APPLY",
+    "NONFINITE_PARAMETER_MUST_NOT_ENTER_ACTIVE_STATE",
+    "DESCENDANT_REPAIR_NE_ANCESTOR_BYTE_EQUIVALENCE"
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "id": "EYE-R4.1-PALOMAR-XE325-REMAINING-ORIGIN-v1",
+  "description": "Real-world structured replay after the simple digitization-only branch has been weakened by physical-glass evidence. This is a planning model, not a causal verdict about XE325.",
+  "source_registry_record": "data/PALOMAR-XE325-OBSERVER-EVIDENCE-2026-09-01-v1.0.json",
+  "cause_classes": [
+    {"id": "short_duration_sky_flash", "target_class": "DISTANT_OR_SKY_OPTICAL"},
+    {"id": "near_field_reflection_or_glint", "target_class": "NEAR_FIELD_OPTICAL"},
+    {"id": "intrinsic_emulsion_or_copy_defect", "target_class": "PLATE_MATERIAL"},
+    {"id": "charged_particle_plate_interaction", "target_class": "PLATE_INTERACTION"}
+  ],
+  "already_acquired": ["physical_glass_trace_confirmation"],
+  "requirements": {
+    "required_independent_separators_per_pair": 1,
+    "unknown_independence_conflicts": true,
+    "max_exact_tests": 20,
+    "objective": "incremental_cost_then_cardinality"
+  },
+  "tests": [
+    {
+      "id": "physical_glass_trace_confirmation",
+      "cost": 0,
+      "available": true,
+      "failure_domains": ["historical_plate:XE325"],
+      "distinguishes": [],
+      "note": "Already-acquired evidence relevant mainly to the eliminated digitization-only branch; it does not resolve the remaining physical-origin classes."
+    },
+    {
+      "id": "population_level_plate_defect_statistics",
+      "cost": 4,
+      "available": true,
+      "failure_domains": ["archive_population_model"],
+      "distinguishes": [],
+      "soft_evidence_only": true,
+      "note": "Potentially changes relative plausibility but is not encoded as a deterministic pair separator in R4.1."
+    },
+    {
+      "id": "original_plate_psf_morphology",
+      "cost": 2,
+      "available": true,
+      "failure_domains": ["historical_plate:XE325", "microscopy_model"],
+      "distinguishes": [],
+      "soft_evidence_only": true,
+      "note": "Current registry evidence says morphology alone does not decisively distinguish a short flash from an emulsion defect."
+    },
+    {
+      "id": "simultaneous_second_site_plate_1950",
+      "cost": 10,
+      "available": false,
+      "failure_domains": ["second_observatory"],
+      "distinguishes": [
+        ["short_duration_sky_flash","intrinsic_emulsion_or_copy_defect"],
+        ["short_duration_sky_flash","charged_particle_plate_interaction"],
+        ["near_field_reflection_or_glint","intrinsic_emulsion_or_copy_defect"],
+        ["near_field_reflection_or_glint","charged_particle_plate_interaction"]
+      ],
+      "note": "Counterfactual historical discriminator; no comparable simultaneous second-site plate is known for the event."
+    },
+    {
+      "id": "simultaneous_multisite_parallax_1950",
+      "cost": 12,
+      "available": false,
+      "depends_on": ["simultaneous_second_site_plate_1950"],
+      "failure_domains": ["multisite_astrometry"],
+      "distinguishes": [["short_duration_sky_flash","near_field_reflection_or_glint"]],
+      "note": "Would separate near-field from distant/sky geometry if suitable synchronized data existed."
+    },
+    {
+      "id": "mechanism_specific_plate_particle_signature",
+      "cost": 6,
+      "available": false,
+      "failure_domains": ["plate_microphysics"],
+      "distinguishes": [
+        ["charged_particle_plate_interaction","intrinsic_emulsion_or_copy_defect"],
+        ["charged_particle_plate_interaction","short_duration_sky_flash"],
+        ["charged_particle_plate_interaction","near_field_reflection_or_glint"]
+      ],
+      "note": "Hypothetical mechanism-specific discriminator not established as available for the historical marks."
+    }
+  ],
+  "expected": {
+    "status": "NON_IDENTIFIABLE_UNDER_CURRENT_MEASUREMENT_MODEL",
+    "search_status": "NON_IDENTIFIABLE_UNDER_CURRENT_MEASUREMENT_MODEL"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "schema": "janus.connection.hidden006_heldout_rubric.v0.1",
+  "artifact_uuid": "JANUS-CONNECTION-HIDDEN006-HELDOUT-RUBRIC-2026-08-14-V0.1",
+  "status": "FROZEN_BEFORE_SELECTED_SOURCE_BODY_INSPECTION",
+  "selection_receipt": "data/JANUS-CONNECTION-HIDDEN006-HELDOUT-SELECTION-2026-08-14-v0.1.json",
+  "pattern": {
+    "id": "HIDDEN-006",
+    "name": "NEGATIVE_CLAIM_REQUIRES_CLOSED_SEARCH_UNIVERSE",
+    "core": "A non-detection inside search universe S may be promoted to an absence claim only within a scope for which coverage and detection sensitivity are adequate; otherwise preserve NOT_FOUND_WITHIN_S, UNKNOWN or UNRESOLVED."
+  },
+  "classification": {
+    "STRONG_SUPPORT": "The source explicitly distinguishes non-detection from absence because search/source coverage is incomplete, non-authoritative, not exhaustive or sensitivity-limited; OR it explicitly requires exhaustive/authoritative/complete coverage before an absence claim may be admitted.",
+    "WEAK_SUPPORT": "The source preserves a scoped negative, UNKNOWN or UNRESOLVED result and separately records search/source limitations, but the dependency between limitation and negative-claim scope is implicit.",
+    "CONTRADICTION": "The source explicitly promotes a global absence claim from a search it simultaneously declares incomplete, non-authoritative, non-exhaustive or insufficiently sensitive, without another premise that closes the missing universe.",
+    "NOT_APPLICABLE": "The source does not contain a non-detection/search-universe relation relevant to absence inference. Generic OPEN/BLOCKED/negative results are insufficient."
+  },
+  "coverage_toggle_control": {
+    "precondition": "Only STRONG_SUPPORT source families with an explicit coverage-sensitive rule may enter the destructive control.",
+    "fixed_variable": "OBSERVED_NONDETECTION",
+    "toggle": "COVERAGE_STATE: INCOMPLETE_OR_UNKNOWN <-> COMPLETE_OR_AUTHORITATIVE_FOR_DECLARED_SCOPE",
+    "expected_incomplete_verdict": "NOT_FOUND_WITHIN_S_OR_UNRESOLVED; GLOBAL_ABSENCE_BLOCKED",
+    "expected_complete_verdict": "ABSENCE_ADMISSIBLE_ONLY_WITHIN_DECLARED_SCOPE_IF_THE_SOURCE_RULE_SUPPLIES_SUFFICIENT_SENSITIVITY",
+    "failure_condition": "Verdict is invariant to coverage state even though the source explicitly defines coverage as the boundary controlling admissible absence.",
+    "projection_types": ["OBSERVED_SOURCE_STATE", "SOURCE_RULE_COUNTERFACTUAL"],
+    "rule": "Counterfactual branches must never be mislabeled as observed executions."
+  },
+  "promotion": {
+    "minimum_strong_broad_families": 4,
+    "contradiction_limit": 0,
+    "destructive_control_required": true,
+    "internal_refinement_only": true,
+    "external_transport_from_this_test": false,
+    "scientific_novelty_from_this_test": false
+  },
+  "immutability": {
+    "panel_replacement_after_inspection": false,
+    "rubric_change_after_inspection": false,
+    "all_not_applicable_and_contradiction_results_must_be_retained": true
+  }
+}

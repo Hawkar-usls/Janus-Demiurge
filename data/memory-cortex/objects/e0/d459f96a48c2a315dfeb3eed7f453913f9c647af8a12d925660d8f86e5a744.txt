@@ -1,0 +1,85 @@
+{
+  "artifact_id": "JANUS-PALOMAR-JPFM-2F-B3S-SHARDED-EXECUTION-PLAN-v1.0",
+  "experiment_id": "JPFM-2F-B3S",
+  "schema_version": "1.0",
+  "date": "2026-08-15",
+  "status": "PREREGISTERED_AFTER_B3_WALLCLOCK_TIMEOUT_WITHOUT_B3_OUTCOME__BEFORE_B3S_OUTCOME",
+  "purpose": "Execute the already-preregistered JPFM-2F-B3 same-64 OpenCV compatibility replay as deterministic non-overlapping tile shards so GitHub wall-clock limits cannot truncate the measurement chain. This changes execution topology only, not sample selection, source identity, image data, detection configuration, morphology formulas, thresholds, or external-label firewall.",
+  "parents": [
+    "data/JANUS-PALOMAR-JPFM-2F-B3-SHAPE-COMPATIBILITY-REPLAY-ADMISSION-v1.0.json",
+    "data/JANUS-PALOMAR-JPFM-2F-B2-SHAPE-COMPAT-CORRECTIVE-AUDIT-v1.0.json",
+    "data/JANUS-PALOMAR-JPFM-2F-B2-TILE-LINEAGE-REPLAY-RUN-001.json"
+  ],
+  "trigger_for_sharding": {
+    "serial_B3_workflow_run_id": 31874472794,
+    "serial_B3_job_id": 94988018712,
+    "serial_B3_outcome_reached": false,
+    "serial_B3_cancel_boundary": "during pass1 -> PSFEx -> pass2 after progress 40/52 distinct tiles",
+    "reason": "GitHub job timeout occurred before object-lineage audit, compatibility-patched shape execution, gate evaluation, result writing, validation, upload, or commit. Therefore no scientific B3 outcome existed to inspect before this sharding plan was frozen."
+  },
+  "frozen_sample": {
+    "same_64_as_B1_B2_B3": true,
+    "rows": 64,
+    "expected_distinct_tiles": 52,
+    "selection_rule_unchanged": "For each frozen structural cluster 0..15: two closest to cluster-median anomaly score plus two highest anomaly score, src_id tie-break.",
+    "structural_manifest_csv_sha256": "34b0ccde7c3683d07626774e52dac0a197451f729242204e59aae81397bdbc2e",
+    "structural_manifest_gzip_sha256": "166f5e6621ed2b065b7981b3c8208670f3c989b1394bd559c9005ab1fa6d07d9"
+  },
+  "sharding_contract": {
+    "shard_count": 4,
+    "unit": "tile_id",
+    "assignment": "Sort the 52 distinct frozen tile_id strings lexicographically. Assign tile ordinal i to shard i mod 4. All frozen sources from one tile remain in the same shard.",
+    "expected_tile_partition": "13 distinct tiles per shard because 52 is divisible by 4",
+    "overlap_allowed": false,
+    "missing_tile_allowed": false,
+    "aggregate_source_union": "Must equal exactly the original 64 frozen src_id values, with 64 unique rows, zero duplicates and zero omissions.",
+    "scientific_semantics_changed": false
+  },
+  "unchanged_measurement_contract": [
+    "jannefi/poss1-plate-slice commit 4005e200541b321ead3d6608f0162a14430ef1c2",
+    "7x7 60-arcmin exact tile reconstruction",
+    "per-plate CRPIX correction table",
+    "Source Extractor pass1 configuration",
+    "PSFEx configuration",
+    "Source Extractor pass2 configuration",
+    "exact pass2 NUMBER == frozen object_id",
+    "no nearest-neighbour replacement",
+    "OpenCV compatibility adapter only: convexityDefects ndarray reshaped to (-1,4)",
+    "convexity defect depth /256.0",
+    "shape_defect denominator max(width,height)",
+    "OpenCV contour thresholds 21,45",
+    "profile_diff threshold 0.05",
+    "elongation threshold 1.10",
+    "circularity threshold 0.80"
+  ],
+  "aggregate_gates_identical_to_B3": {
+    "tile_identity": "64/64 source rows must map to reconstructed exact frozen tile_id and all 52 distinct required tiles must be present across shards.",
+    "detection_chain": "At least 95% of 52 distinct required tiles complete pass1+PSFEx+pass2.",
+    "exact_object_id": "At least 90% of 64 rows recover exact pass2 NUMBER == frozen object_id.",
+    "sky_consistency": "At least 90% of exact rows have replay pass2 coordinate <=10 arcsec from frozen S0 coordinate.",
+    "pass2_raw_morphology": "At least 95% of exact rows have finite FWHM_IMAGE, ELONGATION and SPREAD_MODEL.",
+    "shape_execution": "At least 90% of exact rows finish compatibility-repaired stage_shape_post with shape_failed=0.",
+    "metric_coverage": "Report profile_diff, circularity, shape_defect, circle_deviation and stars_used coverage without threshold tuning."
+  },
+  "external_label_firewall": {
+    "external_label_reveal_after_B3S": false,
+    "forbidden_inputs": [
+      "nuclear calendar",
+      "Blue Book or other human-report labels",
+      "NUFORC labels",
+      "Kp/ap or geomagnetic labels",
+      "Moon or Sun temporal covariates"
+    ],
+    "reason": "B3S remains a measurement-validation pilot. A larger/full pixel-morphology sidecar must be built and frozen before any external-label reveal."
+  },
+  "allowed_outcomes": [
+    "PASS_SHAPE_COMPATIBILITY_REPLAY__PIXEL_MORPHOLOGY_PILOT_ADMITTED",
+    "FAIL_CLOSED_TILE_OR_DETECTION_REPLAY",
+    "FAIL_CLOSED_OBJECT_LINEAGE",
+    "FAIL_CLOSED_RAW_MORPHOLOGY",
+    "FAIL_CLOSED_SHAPE_COMPATIBILITY_REPAIR",
+    "FAIL_CLOSED_SHARD_INTEGRITY"
+  ],
+  "post_pass_gate": "JPFM_2F_C_LABEL_BLIND_PIXEL_MORPHOLOGY_SIDECAR_SCALEOUT",
+  "claim_ceiling": "SHARDED_EXECUTION_OF_FROZEN_PIXEL_MORPHOLOGY_MEASUREMENT_PILOT_ONLY__EXTERNAL_LABELS_SEALED__NO_CAUSAL_OR_ORIGIN_CLAIM"
+}

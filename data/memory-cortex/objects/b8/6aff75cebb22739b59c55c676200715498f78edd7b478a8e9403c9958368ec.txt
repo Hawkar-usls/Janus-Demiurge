@@ -1,0 +1,19 @@
+{
+  "artifact_uuid":"JANUS-LINEAR-A-R7-D0-REGION-SCOPED-OBJECT-STATUS-VALIDATION-SPEC-2026-08-15-v0.1",
+  "version":"v0.1",
+  "parent_canonical_target":"v2.29",
+  "candidate_source":"data/JANUS-LINEAR-A-R7-C0-POSITIONAL-TEMPLATE-ROLE-RESULT-2026-08-15-v0.1.json",
+  "C2_source":"data/JANUS-LINEAR-A-R7-C2-STRUCTURE-DESTROYING-NULL-RESULT-2026-08-15-v0.1.json",
+  "frozen_candidate_count":8,
+  "candidate_addition_forbidden":true,
+  "candidate_removal_forbidden":true,
+  "objective":"Test dominant-region robustness of the eight frozen structural-role candidates while eliminating paired-surface pseudo-replication and checking source-status sensitivity.",
+  "dominant_region_selection":{"rule":"region with largest candidate occurrence count; ties lexicographic","uses_match_outcomes":false},
+  "physical_object_normalization":{"rule":"remove one terminal lowercase surface suffix a or b only when immediately preceded by a digit or >; otherwise preserve document ID","regex":"(?<=[0-9>])[ab]$"},
+  "object_block_null":{"name":"WITHIN_PHYSICAL_OBJECT_ROLE_ELIGIBLE_WORD_IDENTITY_SHUFFLE","permutations":5000,"seed":2608150831,"description":"Within dominant region and candidate role, shuffle opaque word identities only among role-eligible positions belonging to the same normalized physical object. Structural position, role-match flag, numeric layout and per-object word multiset remain fixed."},
+  "D0_candidate_gate":{"minimum_occurrences":6,"minimum_physical_objects":5,"minimum_match_rate":0.60,"minimum_observed_minus_null_mean_rate":0.20,"multiple_testing":"Benjamini-Hochberg across all eight frozen candidates","FDR_q_max":0.05},
+  "status_robustness_gate":{"supported_stratum_minimum_occurrences":3,"minimum_supported_strata":2,"minimum_match_rate_in_each_supported_stratum":0.60,"status_values_are_descriptors_not_certainty_reinterpretations":true},
+  "C3_probable_region_scoped_support_floor":{"minimum_occurrences":20,"minimum_physical_objects":15,"must_pass_D0_object_block_null":true,"must_pass_status_robustness":true,"must_have_passed_C2":true,"C1_cross_region_survival_required":false,"scope_if_C1_not_established":"dominant-region-only; no cross-region generalization credit"},
+  "role_to_probable_structural_function_label":{"DOCUMENT_FIRST_LEXICAL":"DOCUMENT-OPENING-LIKE","DOCUMENT_LAST_LEXICAL":"DOCUMENT-CLOSING-LIKE","ROW_FIRST_LEXICAL":"ROW-OPENING-LIKE","ROW_LAST_LEXICAL":"ROW-CLOSING-LIKE","BEFORE_NUMERIC_BLOCK_GE2":"NUMERIC-BLOCK-INTRODUCER-LIKE","AFTER_NUMERIC_BLOCK_GE2":"NUMERIC-BLOCK-CLOSER-LIKE","BETWEEN_NUMERIC_NEIGHBORS":"NUMERIC-BLOCK-SEPARATOR-LIKE"},
+  "claim_ceiling":{"allowed":["dominant-region object-block robustness","status-stratified structural-role robustness","eligibility for later region-scoped probable structural-function admission"],"forbidden":["probable function before C3","exact word meaning","translation","phonetic assignment","new anchor","Linear A decipherment","R3B external replication"]}
+}

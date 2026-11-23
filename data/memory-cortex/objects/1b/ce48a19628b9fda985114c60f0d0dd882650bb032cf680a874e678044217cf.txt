@@ -1,0 +1,104 @@
+{
+  "artifact_id": "JANUS-TRUMP-TREEWIDTH3-LIST-COLORING-TERMINAL-RESULT-2026-09-20-v1.0",
+  "version": "v1.0",
+  "date": "2026-09-20",
+  "status": "PASS_TREEWIDTH3_LIST_COLORING_POLYNOMIAL_TERMINAL",
+  "authority": "STATIC_ALGORITHMIC_THEOREM_WITH_EXTERNAL_PRIMARY_AUTHORITY",
+  "preregistration": {
+    "path": "research/TRUMP_TREEWIDTH3_LIST_COLORING_TERMINAL_PREREG_2026-09-20_v1.0.json",
+    "commit": "77aa299035b9b6e4958c1b197511132446441f37"
+  },
+  "external_authority": [
+    {
+      "source": "Jansen and Scheffler, Generalized coloring for tree-like graphs",
+      "doi": "10.1016/S0166-218X(96)00085-6",
+      "statement": "List Coloring on partial k-trees is linear-time when the number of colors is bounded by a constant."
+    },
+    {
+      "source": "Bodlaender, A Linear-Time Algorithm for Finding Tree-Decompositions of Small Treewidth",
+      "doi": "10.1137/S0097539793251219",
+      "statement": "For fixed k, treewidth<=k can be recognized and a width-k tree decomposition constructed in linear time."
+    },
+    {
+      "source": "Arnborg, Proskurowski, Corneil, Forbidden minors characterization of partial 3-trees",
+      "doi": "10.1016/0012-365X(90)90292-P",
+      "statement": "Treewidth<=3 / partial 3-trees are characterized by four minimal forbidden minors: K5, octahedron, Wagner graph V8, pentagonal prism."
+    }
+  ],
+  "theorem": {
+    "recognition": {
+      "input": "Graph C.",
+      "algorithm": "Run fixed-k treewidth recognition for k=3.",
+      "positive_output": "Verified width-3 tree decomposition.",
+      "complexity": "Linear time for fixed k=3."
+    },
+    "list_coloring": {
+      "input": "Exact lists L(v) subseteq [4] and a width-3 decomposition.",
+      "bag_size_bound": 4,
+      "raw_state_bound_per_bag": 256,
+      "DP": [
+        "Keep exactly the proper, list-respecting bag assignments that extend to the processed subgraph.",
+        "Introduce transition: add a color for one introduced vertex and enforce list membership and bag-edge properness.",
+        "Forget transition: project surviving states.",
+        "Join transition: combine child tables agreeing on the common bag.",
+        "Accept iff a root state survives and reconstruct via stored witnesses."
+      ],
+      "complexity": "Linear in graph/decomposition size up to a constant depending only on treewidth 3 and palette size 4."
+    },
+    "forbidden_minor_characterization": {
+      "equivalence": "tw(C)<=3 iff C excludes all four minors K5, OCTAHEDRON, WAGNER_V8, PENTAGONAL_PRISM.",
+      "negative_certificate": "For one selected obstruction H, give one nonempty connected branch set B_v for each v in V(H), pairwise disjoint, and for every uv in E(H) an original graph edge between B_u and B_v."
+    },
+    "P7_free_required": false
+  },
+  "current_W2_control": {
+    "source": "Sealed authoritative W2 K4 residual.",
+    "graph": "K4 on {a0,a1,b2,b3}",
+    "treewidth": 3,
+    "width3_decomposition": {
+      "bags": {
+        "X0": [
+          "a0",
+          "a1",
+          "b2",
+          "b3"
+        ]
+      },
+      "tree_edges": []
+    },
+    "exact_lists": {
+      "a0": [
+        2,
+        4
+      ],
+      "a1": [
+        2,
+        4
+      ],
+      "b2": [
+        1,
+        3,
+        4
+      ],
+      "b3": [
+        1,
+        3,
+        4
+      ]
+    },
+    "reconstruction": {
+      "a0": 2,
+      "a1": 4,
+      "b2": 1,
+      "b3": 3
+    },
+    "conclusion": "TW3_LIST_READY"
+  },
+  "scientific_ceiling": {
+    "TREEWIDTH3_LIST_TERMINAL": "VERIFIED",
+    "TW_GT_3_RESIDUALS": "UNRESOLVED",
+    "TW3_FORBIDDEN_MINOR_RESIDUAL": "NOT_YET_VERIFIED",
+    "REPAIR": "NOT_STARTED"
+  },
+  "stop": true
+}

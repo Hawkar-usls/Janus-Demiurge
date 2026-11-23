@@ -1,0 +1,235 @@
+{
+  "artifact_id": "JANUS-TRUMP-EXACT-CHANNEL-DECOMPOSITION-APPLICATION-CONTRACT-2026-09-20-v1.1",
+  "version": "v1.1",
+  "date": "2026-09-20",
+  "status": "FROZEN_REUSABLE_APPLICATION_CONTRACT__POLYNOMIAL_PURE_INTERFACE_DISCOVERY",
+  "name": "EXACT_CHANNEL_DECOMPOSITION_APPLICATION_CONTRACT",
+  "parents": {
+    "abstract_theorem": {
+      "path": "research/TRUMP_ABSTRACT_TWO_BLOCK_CHANNEL_THEOREM_2026-09-20_v1.0.json",
+      "commit": "8d7d95a73fd5458a7ae4105f2698e40fc6f1184c",
+      "blob": "2348c9000f22f2d31413652a0d8e58409ac1f352",
+      "status": "PASS_ABSTRACT_TWO_BLOCK_CHANNEL_THEOREM"
+    },
+    "frozen_frame_binding": {
+      "path": "research/TRUMP_C11_FROZEN_FRAME_TWO_BLOCK_CHANNEL_COROLLARY_BINDING_2026-09-20_v1.0.json",
+      "commit": "fe06a816202a7296c71d03e0ce009e2bf99e21d9",
+      "blob": "94f5c49fe8aff08d660c7827056d6345728b349d",
+      "status": "PASS_C11_FROZEN_FRAME_AS_COROLLARY_OF_ABSTRACT_TWO_BLOCK_CHANNEL_THEOREM"
+    },
+    "frozen_frame_transfer": {
+      "path": "research/TRUMP_C11_FROZEN_FRAME_LOCAL_TO_GLOBAL_CONNECTIVITY_TRANSFER_RESULT_2026-09-20_v1.0.json",
+      "commit": "05272f19d95aa4d2c5024effded408827bf598bb",
+      "blob": "19301d0e64b54dd4e720229a5d4ed595c1b6ce8e",
+      "status": "PASS_C11_FROZEN_FRAME_LOCAL_TO_GLOBAL_CONNECTIVITY_TRANSFER"
+    }
+  },
+  "epistemic_firewall": {
+    "formula": "STRUCTURAL_THEOREM_VALIDITY != ALGORITHMIC_APPLICABILITY",
+    "structural_statement": "The abstract two-block theorem is mathematically valid whenever its hypotheses hold.",
+    "application_statement": "Using it algorithmically on a new graph additionally requires a graph-only decomposition certificate and polynomially checkable application receipts.",
+    "forbidden_inference": "A valid theorem does not imply that discovering a suitable decomposition in an arbitrary input graph is polynomial."
+  },
+  "object_certificate": {
+    "required_fields": [
+      "finite undirected graph G",
+      "partition V(G)=L disjoint_union R disjoint_union {z}",
+      "anchors c in L and f in R",
+      "port sets P_L subseteq L\\{c}, P_R subseteq R\\{f}",
+      "exact channel graph X=E(L,R) subseteq P_L x P_R"
+    ],
+    "exact_interface_checks": [
+      "Partition is total and pairwise disjoint.",
+      "cz and zf are edges.",
+      "c is complete to P_L.",
+      "f is complete to P_R.",
+      "Every L-R edge belongs to X.",
+      "Every X-edge has one endpoint in P_L and one in P_R.",
+      "No L-R edge exists outside X."
+    ],
+    "verification_complexity": "Polynomial in |V|+|E| for a supplied decomposition certificate."
+  },
+  "three_status_contract": {
+    "DECOMPOSITION_DISCOVERABLE": {
+      "allowed_values": [
+        "YES_GRAPH_ONLY_POLYNOMIAL",
+        "YES_GRAPH_ONLY_UNPROVEN_COMPLEXITY",
+        "CERTIFICATE_SUPPLIED_EXTERNALLY",
+        "NO_CERTIFICATE",
+        "OPEN"
+      ],
+      "current_value_for_pure_exact_channel_interface": "YES_GRAPH_ONLY_POLYNOMIAL",
+      "theorem": "PASS_EXACT_CHANNEL_DECOMPOSITION_POLYNOMIAL_DISCOVERY",
+      "method": "Enumerate eligible ordered triples (z,c,f), reduce fixed-triple partition discovery to 2-SAT, and reconstruct canonical ports from crossing-edge endpoints.",
+      "complexity": {
+        "coarse": "O(n^3(n+m))",
+        "refined": "O(nm(n+m)) after adjacency preprocessing"
+      },
+      "semantic_firewall": "This current value applies only to the pure abstract exact-channel interface. Additional future C11/source-role/semantic constraints must be separately analyzed before inheriting polynomial discoverability."
+    },
+    "LOCAL_FORMULA_CERTIFIED": {
+      "allowed_values": [
+        "YES",
+        "NO"
+      ],
+      "procedure": [
+        "Verify the exact-channel decomposition certificate.",
+        "Construct the bipartite channel graph X.",
+        "Compute k=nu(X) by exact bipartite maximum matching.",
+        "Preserve one maximum matching M of size k.",
+        "Preserve one minimum vertex cover U of X and verify |U|=k.",
+        "Use the abstract local theorem to conclude lambda_G(c,f)=k+1."
+      ],
+      "polynomiality": "Bipartite matching and verification of M/U are polynomial.",
+      "exact_upper_cut": "{z} union U is an explicit c-f separator of size k+1."
+    },
+    "LOCAL_TO_GLOBAL_TRANSFER_CERTIFIED": {
+      "allowed_values": [
+        "YES_STRUCTURAL",
+        "YES_ALGORITHMIC",
+        "YES_BOTH",
+        "NO",
+        "OPEN"
+      ],
+      "meaning": "Whether the equality kappa(G)=lambda_G(c,f)=1+nu(X) has been certified.",
+      "structural_route": {
+        "label": "STRUCTURAL_AUTHORITY",
+        "mechanism": [
+          "Set k=nu(X).",
+          "For every S with |S|<=k consider the component-refined quotient hat_B_S whose vertices are connected components of G[L-S], connected components of G[R-S], and surviving {z}.",
+          "If hat_B_S is connected for every such S, the abstract component-refined theorem gives kappa(G)>=k+1.",
+          "Together with the explicit cut {z} union U, conclude kappa(G)=lambda_G(c,f)=k+1."
+        ],
+        "role": "Explanation/proof mechanism.",
+        "complexity_warning": "Literal enumeration of all S with |S|<=k is not polynomial when k is unbounded; this route is not automatically an efficient recognition algorithm."
+      },
+      "algorithmic_route": {
+        "label": "ALGORITHMIC_CERTIFICATION",
+        "procedure": [
+          "Verify the supplied exact-channel decomposition graph-only.",
+          "Compute k=nu(X) by bipartite matching.",
+          "Layer 1 immediately certifies lambda_G(c,f)=k+1 and gives kappa(G)<=k+1 via {z} union a minimum vertex cover.",
+          "Independently compute/certify the exact global vertex connectivity kappa(G) with a polynomial vertex-connectivity / minimum-vertex-cut algorithm.",
+          "If the certified value satisfies kappa(G)>=k+1, the previous upper bound forces kappa(G)=k+1=lambda_G(c,f)."
+        ],
+        "equivalent_test": "Because the abstract local theorem always gives kappa(G)<=k+1, transfer equality holds iff kappa(G)>=k+1, equivalently iff kappa(G)=k+1.",
+        "role": "Polynomial recognition/certification of transfer once a decomposition certificate is available.",
+        "explanation_limit": "This route certifies equality but does not by itself explain which structural mechanism makes every refined interface quotient robust."
+      }
+    }
+  },
+  "exact_characterization": {
+    "k_definition": "k=nu(X)",
+    "local_formula": "lambda_G(c,f)=k+1",
+    "upper_bound": "kappa(G)<=k+1",
+    "equivalent_transfer_conditions": [
+      "kappa(G)=k+1",
+      "kappa(G)>=k+1",
+      "G-S is connected for every S subseteq V(G) with |S|<=k",
+      "hat_B_S is connected for every S with |S|<=k"
+    ],
+    "qualification": "Use the standard non-small finite-graph convention in which vertex connectivity is the minimum size of a vertex set whose deletion disconnects the graph or leaves the applicable trivial case."
+  },
+  "recognition_vs_certification": {
+    "decomposition_discovery": "Polynomial for the pure exact-channel interface by the fixed-triple 2-SAT theorem. Stronger future application constraints may change the discovery problem and are not automatically covered.",
+    "supplied_certificate_verification": "Polynomial.",
+    "local_formula_certification": "Polynomial after graph-only discovery or a supplied valid decomposition.",
+    "local_to_global_equality_certification": "Polynomial after discovery/supply of the decomposition, by bipartite matching plus exact vertex-connectivity computation.",
+    "structural_mechanism_classification": "Separate explanatory task; examples include block robustness, component-refined external reconnection, hub redundancy, matching/cover geometry, or another proved mechanism."
+  },
+  "C11_application_template": {
+    "phase_A_exact_channel_decomposition_discovery": {
+      "question": "Which authoritative C11 residuals satisfy the pure exact-channel interface under graph-only constraints, and what additional C11 role restrictions are desired?",
+      "pure_interface_status": "POLYNOMIAL_BY_2SAT",
+      "additional_semantic_restrictions_status": "MUST_BE_ANALYZED_SEPARATELY",
+      "required_receipts": [
+        "2-SAT discovery receipt or equivalent graph-only certificate",
+        "exact partition/anchor/port certificate",
+        "proof that no other inter-block edges exist",
+        "proof that any additional C11-specific predicates were enforced without extension knowledge"
+      ],
+      "scientific_status": "OPEN_APPLICATION_DIRECTION__NO_GATE_OPENED"
+    },
+    "phase_B_transfer_mechanism_classification": {
+      "question": "For discovered decompositions with certified equality kappa=lambda=1+nu(X), what structural mechanism explains the transfer?",
+      "candidate_mechanisms": [
+        "simple block robustness",
+        "component-refined external reconnection",
+        "hub redundancy",
+        "matching/cover geometry",
+        "other formally defined mechanism"
+      ],
+      "scientific_status": "OPEN_RESEARCH_DIRECTION__NO_GATE_OPENED"
+    }
+  },
+  "proof_carrying_receipt_schema": {
+    "decomposition": {
+      "partition": [
+        "L",
+        "R",
+        "z"
+      ],
+      "anchors": [
+        "c",
+        "f"
+      ],
+      "ports": [
+        "P_L",
+        "P_R"
+      ],
+      "cross_edges": "X",
+      "exact_interface_pass": "boolean"
+    },
+    "local": {
+      "nu_X": "integer",
+      "maximum_matching": "edge list",
+      "minimum_vertex_cover": "vertex list",
+      "lambda_formula": "1+nu_X",
+      "LOCAL_FORMULA_CERTIFIED": "YES/NO"
+    },
+    "global": {
+      "certified_kappa": "integer or null",
+      "connectivity_algorithm_receipt": "implementation/source/hash or mathematical certificate",
+      "lower_bound_pass": "certified_kappa >= 1+nu_X",
+      "LOCAL_TO_GLOBAL_TRANSFER_CERTIFIED": "YES_STRUCTURAL/YES_ALGORITHMIC/YES_BOTH/NO/OPEN"
+    },
+    "explanation": {
+      "structural_mechanism": "named proof mechanism or OPEN",
+      "refined_interface_proof": "optional",
+      "enumeration_used": "boolean",
+      "enumeration_complexity_ceiling": "must be stated if used"
+    }
+  },
+  "easy_application_corollary": {
+    "name": "POLYNOMIAL_PURE_INTERFACE_DISCOVERY_AND_TRANSFER_CERTIFICATION",
+    "statement": "For the pure exact-channel interface, one can graph-only discover a decomposition in polynomial time via ordered-triple enumeration plus 2-SAT. Once found, one can certify the local formula and decide local-to-global transfer equality in polynomial time using bipartite matching/cover and exact vertex-connectivity computation.",
+    "caveat": "This does not automatically cover stronger future C11 semantic restrictions on roles, ports, anchors, or usefulness conditions."
+  },
+  "scientific_ceiling": {
+    "ABSTRACT_THEOREM": "UNCHANGED",
+    "APPLICATION_CONTRACT": "FROZEN_V1_1",
+    "PURE_EXACT_CHANNEL_DECOMPOSITION_DISCOVERY": "YES_GRAPH_ONLY_POLYNOMIAL",
+    "POLYNOMIAL_CERTIFICATION_GIVEN_OR_DISCOVERED_PURE_DECOMPOSITION": "VERIFIED_AT_CONTRACT_LEVEL",
+    "GENERAL_C11_DISCOVERY_WITH_EXTRA_SEMANTICS": "NOT_AUTOMATICALLY_CLAIMED",
+    "UNIVERSAL_C11_APPLICABILITY": "NOT_CLAIMED",
+    "NEW_C11_GATE": "NOT_OPENED",
+    "TW4": "NOT_OPENED",
+    "REPAIR": "NOT_STARTED",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "next_action": "No new scientific gate. For future C11 applications, use polynomial pure-interface discovery first, then separately audit any additional C11 semantic restrictions and transfer mechanism.",
+  "stop": true,
+  "supersedes": {
+    "path": "research/TRUMP_EXACT_CHANNEL_DECOMPOSITION_APPLICATION_CONTRACT_2026-09-20_v1.0.json",
+    "commit": "66837289255661c9b8ad61a819b01a47d88f6c11",
+    "blob": "d50bfa25e6c90a9d6e3885be60b68c542d9440c1"
+  },
+  "new_authority": {
+    "polynomial_discovery": {
+      "path": "research/TRUMP_EXACT_CHANNEL_DECOMPOSITION_POLYNOMIAL_DISCOVERY_THEOREM_2026-09-20_v1.0.json",
+      "commit": "fa80da76f3fdc0178032a2bc8d70df76cbbcde56",
+      "status": "PASS_EXACT_CHANNEL_DECOMPOSITION_POLYNOMIAL_DISCOVERY"
+    }
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "artifact_id": "HA10-BGS-OGC-INTERSECTION-GATE-RUN-001-2026-08-22-v1.0",
+  "schema": "janus.meta_registry.bgs_ha10_intersection_receipt.v1",
+  "date": "2026-08-22",
+  "status": "NEGATIVE_PUBLIC_OGC_COVERAGE_GATE__COMPLETE",
+  "controller": "Hawkar-usls/Janus-Demiurge",
+  "source_run": {
+    "run_id": "32570250375",
+    "result_path": "scout_swarm/outbox/bgs_ha10_intersection/32570250375/RESULT.json",
+    "result_sha256": "71725ef1629c451eb9699612310858a4c0fbd5d5a3671193737b568ea961c05d"
+  },
+  "targets": {
+    "H10N1": {"latitude": -7.845673, "longitude": -14.480230},
+    "H10S2": {"latitude": -8.959100, "longitude": -14.645310}
+  },
+  "bgs_collections_tested": [
+    {
+      "id": "offshore-survey-overview",
+      "role": "survey_polygons",
+      "declared_extent_crs84": [-9.0, 49.5, 3.0, 61.0],
+      "H10N1_number_matched": 0,
+      "H10S2_number_matched": 0
+    },
+    {
+      "id": "offshore-geophysical-survey-lines",
+      "role": "seismic_sonar_geophysical_lines",
+      "declared_extent_crs84": [-9.0, 49.5, 3.0, 61.0],
+      "H10N1_number_matched": 0,
+      "H10S2_number_matched": 0
+    },
+    {
+      "id": "offshorebackscatterareas",
+      "role": "backscatter_polygons",
+      "declared_extent_crs84": [-9.0, 49.5, 3.0, 61.0],
+      "H10N1_number_matched": 0,
+      "H10S2_number_matched": 0
+    },
+    {
+      "id": "offshore-sea-doc-event-area",
+      "role": "SEA_multibeam_backscatter_sidescan_polygons",
+      "declared_extent_crs84": [-9.0, 49.5, 3.0, 61.0],
+      "H10N1_number_matched": 0,
+      "H10S2_number_matched": 0
+    }
+  ],
+  "verdict": "BGS_OGC_HA10_POINTS_OUTSIDE_DECLARED_OFFSHORE_COLLECTION_EXTENTS",
+  "interpretation": {
+    "what_is_closed": "The tested public BGS Offshore OGC API collections do not declare spatial coverage at either HA10 target and direct ~1 km bbox queries returned zero features.",
+    "what_is_not_closed": "This does not prove that no marine survey, bathymetry, backscatter, seismic, sonar or other geophysical data exist around Ascension Island. The tested BGS collections are spatially declared for the Britain offshore domain.",
+    "claim_ceiling": "PUBLIC_BGS_OGC_COLLECTION_COVERAGE_NEGATIVE_ONLY"
+  },
+  "evidence": [
+    {
+      "url": "https://ogcapi.bgs.ac.uk/collections?f=json",
+      "role": "authoritative collection catalogue and declared extents"
+    },
+    {
+      "url": "https://ogcapi.bgs.ac.uk/collections/offshore-survey-overview/items?bbox=-14.490230,-7.855673,-14.470230,-7.835673&limit=100&f=json",
+      "target": "H10N1",
+      "result": "0 matched / 0 returned"
+    },
+    {
+      "url": "https://ogcapi.bgs.ac.uk/collections/offshore-geophysical-survey-lines/items?bbox=-14.490230,-7.855673,-14.470230,-7.835673&limit=100&f=json",
+      "target": "H10N1",
+      "result": "0 matched / 0 returned"
+    },
+    {
+      "url": "https://ogcapi.bgs.ac.uk/collections/offshore-survey-overview/items?bbox=-14.655310,-8.969100,-14.635310,-8.949100&limit=100&f=json",
+      "target": "H10S2",
+      "result": "0 matched / 0 returned"
+    },
+    {
+      "url": "https://ogcapi.bgs.ac.uk/collections/offshore-geophysical-survey-lines/items?bbox=-14.655310,-8.969100,-14.635310,-8.949100&limit=100&f=json",
+      "target": "H10S2",
+      "result": "0 matched / 0 returned"
+    }
+  ],
+  "next_gate": {
+    "id": "HA10_SOURCE_CRUISE_TRACKLINE_INTERSECTION_GATE",
+    "priority": [
+      "BODC_JR53_AMT11",
+      "BODC_JR287",
+      "BODC_JR15001",
+      "BODC_OR_BAS_JR16_NG",
+      "BGS_CUSTODIAN_REPLY_FOR_NON_PUBLIC_OR_NON_UK_HOLDINGS"
+    ],
+    "goal": "target point -> source cruise -> native track/swath/line -> instrument -> raw-data pointer"
+  },
+  "lineage": {
+    "previous": "data/HA10-ASCENSION-INDEPENDENT-SCOUT-SWARM-RUN-002-2026-08-22-v1.0.json",
+    "pointing_council": "data/JANUS-FULL-SYSTEM-POINTING-COUNCIL-RUN-001-2026-08-22-v1.0.json",
+    "next": "CONTINUE_AS_APPEND_ONLY_SPIRAL_PUBLIC_RESEARCH"
+  },
+  "hard_rules": [
+    "OUTSIDE_COLLECTION_EXTENT_ZERO_RESULT_IS_NOT_GLOBAL_DATA_ABSENCE",
+    "NEGATIVE_RESULT_IS_PRESERVED",
+    "NO_POINT_TO_LINE_CLAIM_WITHOUT_GEOMETRY",
+    "NO_CUSTODIAN_HOLDING_CLAIM_WITHOUT_SOURCE",
+    "BGS_OGC_NEGATIVE_REDIRECTS_SEARCH_TO_SOURCE_CRUISE_LINEAGE"
+  ]
+}

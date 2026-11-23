@@ -1,0 +1,68 @@
+{
+  "schema": "janus.hrain.backend_stateless_ai_mutation_firewall.v1_0",
+  "artifact_id": "JANUS-HRAIN-BACKEND-STATELESS-AI-MUTATION-FIREWALL-v1.0",
+  "status": "IMPLEMENTED_CODE_CONTRACT_AWAITING_CI_AND_RUNTIME_DEPLOYMENT",
+  "purpose": "Separate public HRaiN/iNaiHR model inference from all persistent JANUS/HRaiN/device state mutation and fail closed when mutation authority is not explicitly configured.",
+  "server": "server.py",
+  "public_routes": {
+    "hrain_sync": "/api/hrain/sync",
+    "hrain_state_read": "/api/hrain/state",
+    "janus_action_nonpersistent_ack": "/api/janus/action"
+  },
+  "stateless_ai": {
+    "route": "/api/hrain/sync",
+    "provider_adapter": "OLLAMA_COMPATIBLE",
+    "provider_url_source": "JANUS_OLLAMA_URL_SERVER_ENV_OR_LOCAL_CANDIDATES",
+    "model_source": "JANUS_OLLAMA_MODEL_SERVER_ENV_OR_FIRST_INSTALLED_MODEL",
+    "browser_provider_secret_required": false,
+    "persistent_write": false,
+    "registry_mutation": false,
+    "hrain_state_mutation": false,
+    "device_state_mutation": false,
+    "rate_limited_per_client": true,
+    "prompt_size_bounded": true,
+    "backend_unavailable_response": "HTTP_503_EXPLICIT_NO_MUTATION",
+    "frontend_expected_fallback": "LOCAL_SEMANTIC_FALLBACK"
+  },
+  "persistent_mutation": {
+    "token_env": "JANUS_MUTATION_TOKEN",
+    "anonymous_public_access": false,
+    "fail_closed_without_server_token": true,
+    "protected_handlers": [
+      "handle_save_state",
+      "handle_hrain_event",
+      "handle_device_data",
+      "handle_device_command_get",
+      "handle_device_command_post"
+    ],
+    "frontend_receives_token": false,
+    "token_may_be_committed_to_repository": false
+  },
+  "cors": {
+    "public_github_pages_origin": "https://hawkar-usls.github.io",
+    "public_cross_origin_scope": [
+      "/api/hrain/sync",
+      "/api/hrain/state",
+      "/api/janus/action"
+    ],
+    "persistent_mutation_routes_are_public_browser_cors_surface": false
+  },
+  "deployment": {
+    "running_backend_updated_by_git_merge": false,
+    "requires_runtime_checkout_or_deploy": true,
+    "requires_backend_process_restart": true,
+    "requires_ollama_reachable_from_server": true,
+    "requires_mutation_token_provisioning_before_internal_mutation_clients_are_reenabled": true,
+    "must_not_restart_unrelated_protected_services": true
+  },
+  "claim_ceiling": [
+    "MERGED_SERVER_CODE != RUNNING_BACKEND_DEPLOYED",
+    "STATELESS_INFERENCE != REGISTRY_WRITE_AUTHORITY",
+    "PUBLIC_AI_ROUTE != PUBLIC_MUTATION_ROUTE",
+    "LOCAL_SEMANTIC_FALLBACK != LLM_OUTPUT",
+    "MUTATION_TOKEN != USER_LOGIN_TOKEN",
+    "NO_BROWSER_SECRET != NO_SERVER_SIDE_SECRET",
+    "BACKEND_CODE_PASS != REMOTE_MODEL_AVAILABILITY"
+  ],
+  "next_gate": "Pass CI, merge, then deploy only the HRaiN backend process with server-side JANUS_MUTATION_TOKEN and reachable Ollama; verify /api/hrain/sync remotely without restarting unrelated protected services."
+}

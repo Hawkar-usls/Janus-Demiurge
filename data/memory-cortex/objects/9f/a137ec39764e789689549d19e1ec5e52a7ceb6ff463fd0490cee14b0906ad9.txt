@@ -1,0 +1,110 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1C4-SOURCE-ANNOTATED-SELECTOR-NAE-HARDNESS-COMPATIBILITY-PREREG-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "FROZEN_PREREG__AUTHORIZED",
+  "gate": "R5_B1B1C4_SOURCE_ANNOTATED_SELECTOR_NAE_HARDNESS_COMPATIBILITY_GATE_V1",
+  "external_control": {
+    "source": "Golovach-Paulusma-Song, Closing complexity gaps for coloring problems on H-free graphs",
+    "result": "List 4-Coloring is NP-complete on P6-free graphs via Positive/Not-All-Equal 3-SAT.",
+    "hard_family_JI": [
+      "one variable vertex x_i per variable, list {1,2}",
+      "two P5 clause gadgets a-b-a-b-a per clause",
+      "b-type list {3,4}",
+      "a-type lists in first copy {2,4},{2,3,4},{2,3}; second copy {1,4},{1,3,4},{1,3}",
+      "every variable is adjacent to every b-type vertex",
+      "each clause occurrence x_{i_h} is adjacent to the corresponding a_{j,h} and a'_{j,h}",
+      "J_I is P6-free"
+    ],
+    "control_interpretation": "Taking all a-type vertices as the stable selector side gives a known NP-hard P6-free mixed 2/3-list family with no 4-list selector."
+  },
+  "local_expressiveness_control": {
+    "statement": "For any nonempty M subseteq [4], a singleton residual component C={z} with base list B_C(z)=M has mu_C(F)=1 iff M is not a subset of F, hence MIN_BAD(C)={M}.",
+    "consequence": "MIN_BAD/stable-selector syntax alone does not restrict individual selector lists."
+  },
+  "frozen_inverse_candidate": {
+    "color_permutation": "pi: 1->2, 2->3, 3->1, 4->4",
+    "reason": "After permutation, variable lists become {2,3} and b-type lists become {1,4}; each can be realized by one source-seed color plus one X0 anchor color.",
+    "constant_source_scaffold": {
+      "seed_initial": {
+        "s1": 1,
+        "s2": 2
+      },
+      "support_edges": [
+        "s1-s2",
+        "s1-p",
+        "p-m",
+        "m-n0",
+        "n0-s2"
+      ],
+      "support_colors": {
+        "p": 3,
+        "m": 2,
+        "n0": 4
+      },
+      "seed_two_vertices": {
+        "a1": 1,
+        "a2": 3
+      },
+      "selection_edges": [
+        "s2-a1",
+        "s2-a2",
+        "a1-w",
+        "a2-w"
+      ],
+      "note": "This is the already source-valid 111/Q/seed-two scaffold used in the sealed VI-failure lineage."
+    },
+    "X0_anchors": {
+      "vertices": {
+        "x0c1": 1,
+        "x0c2": 2,
+        "x0c3": 3,
+        "x0c4": 4
+      },
+      "internal_edges": "none",
+      "seed_edges": "none"
+    },
+    "hard_core_reverse_compilation": {
+      "variables": [
+        "one dynamic x_i for each NAE variable",
+        "adjacent to s1 and x0c4",
+        "source L_P(x_i)={2,3,4}; exact extension list A(x_i)={2,3}=pi({1,2})"
+      ],
+      "b_vertices": [
+        "one dynamic b for each b-type vertex of J_I",
+        "adjacent to s2 and x0c3",
+        "source L_P(b)={1,3,4}; exact extension list A(b)={1,4}=pi({3,4})"
+      ],
+      "dynamic_edges": "copy all variable-b edges of J_I exactly",
+      "residual_components": [
+        "for each a-type vertex h of J_I create singleton Y0 component C_h={z_h}",
+        "D_{C_h}=N_{J_I}(h) on variable/b dynamic vertices",
+        "let M_h=pi(L_J(h)); connect z_h to X0 anchor x0c_alpha exactly for alpha in [4]\\M_h, so B_{C_h}(z_h)=M_h",
+        "no edges among z_h"
+      ]
+    },
+    "intended_C3_recompile": "After C0+C3, each singleton z_h produces exactly one selector h with list M_h and neighborhood D_{C_h}; the nonconstant hard core is pi(J_I)."
+  },
+  "ordered_checks": [
+    "1_SOURCE_AXIOMS_I_V",
+    "2_Q_111_ANCESTRY_AND_POST_Q_LEMMA10",
+    "3_SEED_TWO_NORMAL_SUBCASE",
+    "4_VI_HARD_STATE",
+    "5_FULL_SOURCE_GRAPH_P7_FREE",
+    "6_SELECTOR_RECOMPILATION",
+    "7_NAE_SEMANTICS"
+  ],
+  "stop_rule": "STOP AT FIRST FAILED CHECK. Do not repair or mutate J_I/the inverse candidate after a failure inside this gate.",
+  "terminals": {
+    "PASS_SOURCE_NAE_SELECTOR_EMBEDDING": "All seven ordered checks pass; exact Part-B source domain contains the Golovach Positive-NAE hard core under polynomial exact reconstruction.",
+    "BLOCKED_BY_EXACT_SOURCE_LAW": "A first exact failed source/P7 obligation is identified and frozen as the next structural theorem target.",
+    "OPEN_SOURCE_COMPATIBILITY": "Evidence is insufficient to decide the next ordered check."
+  },
+  "scientific_ceiling": {
+    "PURE_SELECTOR_NORMAL_FORM_TRACTABILITY": "REJECTED_AS_UNSUPPORTED",
+    "SOURCE_ANNOTATED_HARDNESS_COMPATIBILITY": "OPEN_AT_PREREG",
+    "FULL_L2_REPAIR": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  }
+}

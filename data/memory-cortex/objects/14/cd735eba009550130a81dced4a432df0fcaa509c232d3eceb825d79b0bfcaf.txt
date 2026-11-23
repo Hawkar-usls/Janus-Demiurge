@@ -1,0 +1,106 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1C5B2A-COMPONENT-BOUNDARY-REACHABILITY-AND-TRANSITION-QUOTIENT-PREREG-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "FROZEN_PREREG__AUTHORIZED",
+  "gate": "R5_B1B1C5B2A_COMPONENT_BOUNDARY_REACHABILITY_AND_TRANSITION_QUOTIENT_V1",
+  "purpose": "Close reachability exactly for component-mediated B-C and C-X0 transitions using only P7-free List-3 calls on proper color masks; do not claim closure of dynamic-core UNKNOWN classes.",
+  "binds": {
+    "C0_message_seal_blob": "0dbebe81f52a5b8411199fc44614bf8c17b6dd95",
+    "C2_full_dynamic_quotient_seal_blob": "33d6b365728c703c43371b966d9ed26020f12b98",
+    "B2_classifier_seal_fund_commit": "34b7320e302b3942dcd8d1e9adbefba4dcd1795d",
+    "B2_classifier_seal_meta_commit": "90da0696c9c2a25853d1488164c2be77e517a804",
+    "B2_classifier_seal_blob": "1fc517db23bdc51ed9e18ca5d204677cb3290fea",
+    "exact_interface_result_blob": "b8e177c483821517add138a632bc3e94499f1889",
+    "repaired_B1_checker_blob": "819ad7921be539d0fc66f0cf9a3304ad803e63ed"
+  },
+  "external_backend": {
+    "theorem": "Bonomo-Chudnovsky-Maceli-Schaudt-Stein-Zhong: List 3-Coloring is polynomial-time solvable on P7-free graphs and returns an explicit coloring.",
+    "use": "Only on induced subgraphs G[D] or G[C] with every current list contained in one palette F of size at most 3.",
+    "no_list4": true
+  },
+  "primary_definitions": {
+    "exact_mask_reachability": {
+      "notation": "rho_D(F)",
+      "definition": "rho_D(F)=1 iff G[D] has a proper coloring phi with phi(v) in A(v) cap F for all v and colors(phi(D))=F exactly.",
+      "domain": "F subseteq [4].",
+      "proper_mask_compilation": [
+        "If D is empty, rho_D(empty)=1 and rho_D(F)=0 for nonempty F.",
+        "If D is nonempty, rho_D(empty)=0.",
+        "For nonempty proper F with |F|<=3, enumerate one distinct witness vertex w_c in D for every c in F, force w_c=c, restrict every other list to A(v) cap F, and call P7-free List-3.",
+        "rho_D(F)=1 iff at least one witness tuple succeeds; an exact coloring certificate is retained."
+      ],
+      "witness_tuple_bound": "At most |D|^|F| <= |D|^3 tuples per proper nonempty F.",
+      "full_mask_firewall": "rho_D([4]) is not computed by List-4. It is only queried when a theorem proves it irrelevant."
+    },
+    "component_boundary_relation": "For a component C and complete-neighbor set D, R_C(gamma)=mu_C({gamma(v):v in D}) on proper list-respecting colorings of the relevant boundary graph."
+  },
+  "theorem_targets": {
+    "PROPER_MASK_BOUNDARY_REACHABILITY_V1": {
+      "statement": "For every induced P7-free boundary graph G[D] and every proper F subsetneq [4], rho_D(F) is decidable constructively in polynomial time using only P7-free List-3 calls, with an explicit exact-mask coloring witness when reachable.",
+      "complexity": "O(sum_{proper F} |D|^|F| * T_L3(|D|)) = O(|D|^3*T_L3(|D|)) up to a constant 15-mask factor."
+    },
+    "B_C_REACHABILITY_AWARE_NEUTRALITY_IFF_V1": {
+      "setup": "For component C and dynamic b, let D^- be the common baseline complete-neighbor set excluding b. Compare state0 D0=D^- and state1 D1=D^- union {b}, with fixed mu_C and all other boundary/list data frozen.",
+      "source_consistency_guard": "If D^- is empty, state0 would leave residual C uncoupled, contradicting sealed C2 in the final source state. Therefore this pair is not a two-sided source-consistent B-C transition and no mu_C(empty) / List-4 query is permitted.",
+      "exact_delta": "Delta_BC(C,b)={(F,alpha): rho_{D^-}(F)=1, alpha in A(b), mu_C(F)!=mu_C(F union {alpha})}.",
+      "monotonicity_fact": "Any distinguishing pair has alpha notin F and necessarily mu_C(F)=1, mu_C(F union {alpha})=0.",
+      "local_legality": "For a distinguishing pair alpha notin F, any exact-F coloring of D^- together with b=alpha is proper on G[D^- union {b}] regardless of b-D^- edges, because no vertex of D^- uses alpha.",
+      "iff": "Delta_BC is empty iff the two states induce the same local component-boundary feasibility relation on every proper list-respecting coloring of D^- union {b}.",
+      "nonneutral_certificate": "When Delta_BC is nonempty, retain F, alpha, an exact-F coloring witness of D^-, the C0 witness for the mu=1 side, and the sealed mu=0 table entry for the other side.",
+      "ceiling": "PROVED_NONNEUTRAL is for the local component-boundary relation, not automatically for existence of a coloring of the entire dynamic U-core."
+    },
+    "C_X0_RECOMPILED_MESSAGE_REACHABILITY_IFF_V1": {
+      "setup": "Compare two component base-list systems Bsys_C^0,Bsys_C^1 differing only by one selected C-X0 identity incidence; D_C is unchanged and nonempty.",
+      "compilation": "Run the sealed C0 compiler separately on both base systems for all nonempty masks. This uses at most 15 P7-free List-3 calls per state.",
+      "full_mask_fact": "For nonempty C, mu_C^0([4])=mu_C^1([4])=0 because every list B_C(u)\\[4] is empty. Hence [4] can never distinguish the two messages.",
+      "exact_delta": "Delta_CX0={F proper subset [4]: rho_{D_C}(F)=1 and mu_C^0(F)!=mu_C^1(F)}.",
+      "iff": "Delta_CX0 is empty iff the two base-system states induce the same local component-boundary feasibility relation on all reachable boundary masks.",
+      "nonneutral_certificate": "Retain reachable F with exact boundary coloring witness, plus C0 pass witness for the good state and bad table entry for the other."
+    },
+    "COMPONENT_TRANSITION_SIGNATURE_V1": {
+      "B_C_signature": "rho proper-mask bits (15 canonical positions; empty bit is zero under two-sided source-consistency), message_type_id, A(b), and a 64-slot delta bitset indexed by (F,alpha), with irrelevant/full-mask slots fixed zero.",
+      "C_X0_signature": "rho proper-mask bits, message_type_id before/after, and a 15-slot reachable-message-difference bitset.",
+      "adequacy": "For the local component-boundary feasibility query, equal signatures imply equal classified transition behavior. Reconstruction after solving retains a pointer to the actual source state and uses that state's C0 witness table; witnesses need not be identical across neutral states."
+    }
+  },
+  "lifecycle": {
+    "per_boundary_mask": "At most |D|^3 List-3 calls in the worst |F|=3 case.",
+    "per_BC_pair": "Constantly many proper masks, hence polynomial.",
+    "all_BC_pairs": "At most O(n^2) component/dynamic candidate pairs, giving a crude polynomial O(n^5*T_L3(n)) bound before caching/shared computations.",
+    "C_X0": "Recompile each affected component state with <=15 List-3 calls plus one rho signature; even O(n^2) candidate identity transitions remain polynomial.",
+    "cache_allowed": "rho_D and message compilations may be memoized, but polynomiality does not rely on memoization."
+  },
+  "explicit_nonclaims": [
+    "No List-4 call.",
+    "No claim that all B2 UNKNOWN classes are resolved.",
+    "B-X0 with a genuinely new forbidden color remains dynamic-core reachability OPEN.",
+    "B-B with overlapping exact palettes remains dynamic-core reachability OPEN.",
+    "Unsupported S-* and other pair classes remain OPEN/UNKNOWN.",
+    "Local boundary PROVED_NONNEUTRAL does not imply a globally source-valid whole-U distinguishing coloring.",
+    "No global kappa transition quotient is sealed by this gate.",
+    "C5C remains globally locked."
+  ],
+  "terminals": {
+    "PASS_PROPER_MASK_BOUNDARY_REACHABILITY": "rho_D(F) is polynomially constructible for every proper mask F with exact witnesses.",
+    "PASS_BC_REACHABILITY_AWARE_IFF": "Every two-sided source-consistent B-C transition is exactly classified NEUTRAL/NONNEUTRAL at local component-boundary level.",
+    "PASS_CX0_RECOMPILED_MESSAGE_IFF": "Every C-X0 component-base transition in scope is exactly classified at local component-boundary level.",
+    "PASS_COMPONENT_TRANSITION_SIGNATURE": "Constant-size exact-interface signatures are proved adequate for the declared local component-transition query/reconstruction contract.",
+    "OPEN_DYNAMIC_CORE_REACHABILITY": "Non-component-mediated B2 UNKNOWN classes remain unresolved."
+  },
+  "falsifiers": [
+    "A distinguishing B-C pair requires F=[4].",
+    "Exact proper-mask reachability cannot be reduced to polynomially many common-palette List-3 instances.",
+    "A two-sided source-consistent B-C transition exists with D^-=empty.",
+    "C-X0 messages differ only at F=[4].",
+    "Equal proposed signatures can induce different local component-boundary feasibility or reconstruction obligations."
+  ],
+  "locks": {
+    "C5C": "LOCKED_GLOBALLY",
+    "global_kappa": "OPEN",
+    "FULL_L2_REPAIR": "OPEN",
+    "LEMMA11_P7_LIFT": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  }
+}

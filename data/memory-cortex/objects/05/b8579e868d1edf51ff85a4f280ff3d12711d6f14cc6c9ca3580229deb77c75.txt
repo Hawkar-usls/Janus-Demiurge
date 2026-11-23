@@ -1,0 +1,49 @@
+{
+  "artifact_uuid": "JANUS-CULTURAL-MECHANICS-R5B-TRUE-INDEPENDENT-RAW-EVENT-ENCODER-KIT-v1.0",
+  "timestamp": "2026-09-07T18:00:00+03:00",
+  "version": "v1.0",
+  "node_type": "sealed_independent_encoder_kit",
+  "status": "READY_FOR_GENUINELY_SEPARATE_ENCODER",
+  "blindness_contract": {
+    "encoder_must_not_receive": ["PM06 name or chain","frozen mapper","R5A or R5A2 scores","prior strict/partial/fail labels","desired target pattern","which scenarios are negative controls"],
+    "encoder_task": "Represent each source independently as a minimal causal event graph. Do not compare sources and do not infer what a downstream classifier might seek.",
+    "manual_correction_after_return": "FORBIDDEN_BEFORE_PACKAGE_HASH_FREEZE"
+  },
+  "raw_event_contract": {
+    "allowed_fields": ["blind_id","events[].i","events[].actor_id","events[].verb_phrase","events[].object_id","events[].before_state","events[].after_state","events[].causes"],
+    "rules": ["Use neutral actor IDs such as A, B, C, GROUP, SYSTEM, ENV.","verb_phrase should describe only the event supported by the source.","before_state and after_state may be null when the source does not establish them.","causes contains only earlier event indices directly supported as causal dependencies.","Do not create event-category tags.","Do not use machine, loop, verification, recurrence, attractor, pass, fail, or classifier terminology.","Do not complete missing transitions.","Encode each source separately."],
+    "output_schema": {"blind_id":"X001","events":[{"i":1,"actor_id":"A","verb_phrase":"neutral source-supported action","object_id":"B","before_state":null,"after_state":null,"causes":[]}]}
+  },
+  "real_sources": [
+    {"blind_id":"X001","title":"The Martian","source_url":"https://www.20thcenturystudios.com/movies/the-martian"},
+    {"blind_id":"X002","title":"Finding Nemo","source_url":"https://www.pixar.com/finding-nemo"},
+    {"blind_id":"X003","title":"Gone Girl","source_url":"https://www.20thcenturystudios.com/movies/gone-girl"},
+    {"blind_id":"X004","title":"Searching","source_url":"https://www.sonypictures.com/movies/searching"},
+    {"blind_id":"X005","title":"Flightplan","source_url":"https://imagine-entertainment.com/film/flight-plan/"},
+    {"blind_id":"X006","title":"Changeling","source_url":"https://www.universalpicturesathome.com/movies/changeling"},
+    {"blind_id":"X007","title":"Buried","source_url":"https://infoicaa.mcu.es/CatalogoICAA/en-us/Peliculas/Detalle?Pelicula=157409"},
+    {"blind_id":"X008","title":"Captain Phillips","source_url":"https://www.sonypictures.com/movies/captainphillips"},
+    {"blind_id":"X009","title":"Apollo 13","source_url":"https://www.nasa.gov/missions/apollo/apollo-13-mission-details/"},
+    {"blind_id":"X010","title":"Prisoners","source_url":"https://en.wikipedia.org/wiki/Prisoners_(2013_film)"},
+    {"blind_id":"X011","title":"Contact","source_url":"https://www.dfi.dk/viden-om-film/filmdatabasen/film/contact-0"},
+    {"blind_id":"X012","title":"Moneyball","source_url":"https://www.sonypictures.com/movies/moneyball"}
+  ],
+  "hidden_control_scenarios": [
+    {"blind_id":"X013","source_text":"A person is injured in an accident and emergency responders immediately confirm the person is safe after treatment."},
+    {"blind_id":"X014","source_text":"A person disappears. Others know the location is unknown, but nobody searches, contacts, investigates, or reviews evidence."},
+    {"blind_id":"X015","source_text":"A researcher searches for a misplaced object and finds it by checking the last known room. No person is endangered."},
+    {"blind_id":"X016","source_text":"After an accident, responders perform one check and immediately receive a reliable confirmation of the person's condition."},
+    {"blind_id":"X017","source_text":"A historian reviews evidence about a fully resolved past event and publishes a conclusion. No current target state is unknown."},
+    {"blind_id":"X018","source_text":"A missing person is found automatically by a location beacon before anyone asks, searches, or reconstructs what happened."},
+    {"blind_id":"X019","source_text":"A report first announces a rescue, then reviews evidence, then asks about the person's status, and only afterward describes the original accident."},
+    {"blind_id":"X020","source_text":"A person disappears. Searchers repeatedly ask where the person is, but they never examine clues, traces, records, or prior events."},
+    {"blind_id":"X021","source_text":"A person disappears. Investigators examine a physical trace and find the person, but no status inquiry or search request is made."},
+    {"blind_id":"X022","source_text":"After an injury, a medical check immediately confirms the person is safe. Later a committee reviews the accident only for prevention lessons."}
+  ],
+  "return_contract": {
+    "required_top_level": {"encoder_identifier":"free text identifying independent human/model/workflow","encoder_blindness_attestation":"statement that target machine/classifier/results were not provided","graphs":"array of all X001-X022 graph objects"},
+    "forbidden_in_return": ["scores","classifier guesses","machine labels","title-based similarity judgments"],
+    "next_step_on_return": "Freeze exact returned package hash before any mapping or scoring."
+  },
+  "integrity": {"canonical_json_sha256":"64e5a0d2bd2d9de207b05f21c571cbbfec4315ec8e4afd8d3d265d15a423dbfa"}
+}

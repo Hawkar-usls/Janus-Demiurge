@@ -1,0 +1,94 @@
+{
+  "schema": "janus.meta_registry.architecture_checkpoint.v1",
+  "id": "ADV-ELITE-Q26-INTERACTIVE-MODES-RADIO-TAMAGOTCHI-ALIEN-2026-08-27",
+  "date": "2026-08-27",
+  "project": "ADV_Elite",
+  "status": "RESOLVED_ARCHITECTURE__IMPLEMENTATION_PENDING",
+  "decision": "FOREGROUND_INTERACTIVE_MODES_OVER_ALWAYS_ALIVE_JANUS_CORE",
+  "global_controls": {
+    "ESC": "return HOME from every foreground mode",
+    "ENTER": "absolute audio mute/unmute across BrainWave, radio, game, pet and alerts",
+    "-": "global master volume down",
+    "+": "global master volume up",
+    "[": "shared display+enabled-LED brightness down",
+    "]": "shared display+enabled-LED brightness up",
+    "L": "LED physical gate only",
+    "J": "manual LoRa ON/OFF",
+    "1488": "exclusive manual full M2R gate",
+    "112269": "House mode"
+  },
+  "foreground_modes": {
+    "O": {
+      "name": "OSCILLOSCOPE_KALEIDOSCOPE_DESK_MODE",
+      "sources": ["ENV", "MOTION", "SWARM", "PREDICTOR", "SELF", "KALEIDOSCOPE"],
+      "left_right": "cycle sources",
+      "up_down": "presentation-only gain/time-scale/detail",
+      "long_press": "toggle optional idle-auto-visualizer policy",
+      "truth_boundary": "KALEIDOSCOPE_IS_VISUALIZATION_NOT_EVIDENCE"
+    },
+    "Z": {
+      "name": "ZIM_RESOURCE_VIEW",
+      "shows": ["primary mission", "side quests", "budgets", "deferred/refused work", "reason", "queue/storage/radio pressure", "promotion state"],
+      "long_press": "toggle compact read-only resource overlay",
+      "boundary": "does not control or mutate canonical Zim"
+    },
+    "R": {
+      "name": "INTERNET_RADIO",
+      "directory": "Radio Browser API preferred",
+      "left_right": "previous/next station",
+      "up": "increase local preference score",
+      "down": "decrease local preference score",
+      "space": "play/pause",
+      "long_press": "refresh cached online catalogue",
+      "ranking": "local user ranking independent of public votes",
+      "identity": "stationuuid",
+      "cache": "bounded SD cache",
+      "audio_policy": "radio owns renderer while playing; BrainWave state estimation continues; absolute ENTER mute wins",
+      "resource_policy": "bounded side quest; yields before P0/P1 core"
+    },
+    "D": {
+      "name": "ENV_TAMAGOTCHI",
+      "classification": "SIMULATED_FICTIONAL",
+      "needs": ["hunger", "thirst", "cleanliness", "sleep_energy", "mood_comfort", "health", "age", "play_interaction"],
+      "env_coupling": "real ENV influences bounded comfort only; stale ENV remains UNKNOWN",
+      "persistence": "reboot-surviving with flash-wear guards",
+      "controls": "left/right action, up/down item/page, Space execute, long-D history/stats"
+    },
+    "A": {
+      "name": "ALIEN_SURVIVAL_ROGUELIKE",
+      "classification": "FICTIONAL_ENTERTAINMENT",
+      "style": "top-down horde survival / Alien Shooter-inspired roguelike",
+      "controls": "arrows/WASD movement, Space primary action, long-A pause/status, ESC HOME",
+      "features_allowed": ["waves", "hordes", "procedural arena/rooms", "pickups", "leveling", "perks", "bosses", "local scores", "persistent unlocks"],
+      "boundary": "game state cannot influence anomaly, M2R, sensor truth or OBSERVED_REAL"
+    }
+  },
+  "long_press_rule": "recognized long press consumes its corresponding short press; timing centralized in one input router",
+  "primary_mission_rule": "foreground modes are BOUNDED_SIDE_QUESTS and never suspend sensor freshness, anomaly, Witness, trusted swarm health or protected local cognition",
+  "resource_priority": [
+    "P0 truth/clock/sensors/anomaly/Witness/user controls",
+    "P1 local cognition/prediction/swarm model",
+    "P2 trusted swarm communications",
+    "P3 Buzz/corpus bounded work",
+    "P4 foreground entertainment/visualization/audio",
+    "P5 external catalogue refresh/archive/heavy optional work"
+  ],
+  "source_note": "The code pasted in the design discussion is a JANUS/Beacon/ADV sketch and does not contain an Alien Shooter implementation. No nonexistent game code is claimed as available for transplant.",
+  "security_note": "Do not copy Wi-Fi credentials or other secrets from pasted legacy sketches into the public repository.",
+  "implementation_refs": [
+    "Hawkar-usls/janus-distributed-ai-swarm:docs/ADV_ELITE_INTERACTIVE_MODES_V1.md",
+    "Hawkar-usls/janus-distributed-ai-swarm:firmware/adv_elite/ADV_Elite_mode_contract.h"
+  ],
+  "acceptance_tests": [
+    "ESC returns HOME from O/Z/R/D/A",
+    "ENTER mutes every audio producer",
+    "+/- are one shared master volume",
+    "foreground mode never blocks core sensor/anomaly/Witness loops",
+    "radio Up/Down persists only local preference ranking",
+    "tamagotchi is never OBSERVED_REAL",
+    "Alien game state never enters anomaly/M2R/predictor truth",
+    "O kaleidoscope never becomes evidence",
+    "P4 modes degrade before P0/P1 under resource pressure"
+  ],
+  "next_gate": "IMPLEMENT_CENTRAL_INPUT_ROUTER_AND_MODE_MANAGER_THEN_BUILD_O_AND_R_FIRST"
+}

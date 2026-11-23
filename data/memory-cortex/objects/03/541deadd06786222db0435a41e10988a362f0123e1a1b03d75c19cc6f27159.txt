@@ -1,0 +1,106 @@
+{
+  "schema": "JANUS/test-report/precognitive-semantic-return-gate/v0.2.0",
+  "artifact_uuid": "JANUS-PRECOGNITIVE-SEMANTIC-RETURN-GATE-REDTEAM-REPORT-V0.2",
+  "timestamp_utc": "2026-08-07T04:41:00Z",
+  "status": "PASS_AFTER_HARDENING_WITH_V0_1_REDTEAM_FINDINGS",
+  "subject": "data/JANUS-PRECOGNITIVE-SEMANTIC-RETURN-GATE-v0.1.json",
+  "suite_summary": {
+    "cases_total": 23,
+    "v0_2_correct": 23,
+    "v0_1_false_accepts": [
+      "clock_step_attack",
+      "monotonic_counter_attack",
+      "time_anchor_missing",
+      "rng_seed_or_influence_attack",
+      "posthoc_candidate_selection",
+      "unanchored_preassignment_record",
+      "canonicalization_changed_after_target",
+      "target_dependent_decoder"
+    ],
+    "interpretation": "v0.1 cryptographic identity logic was sound but methodological timing/selection/RNG/commitment gates were incomplete; v0.2 rejects all injected attacks."
+  },
+  "monte_carlo": {
+    "class_only": {
+      "trials": 1000000,
+      "matches": 31217,
+      "rate": 0.031217,
+      "expected": 0.03125,
+      "z_approx": -0.18966319894026457
+    },
+    "full_bundle_256bit": {
+      "trials": 2000000,
+      "matches": 0,
+      "expected_per_trial": 2.698802673467014e-79
+    },
+    "reduced_16bit_surrogate": {
+      "trials": 10000000,
+      "matches": 5,
+      "expected_matches": 4.76837158203125,
+      "expected_per_trial": 4.76837158203125e-07
+    },
+    "multiple_testing_class_only_at_least_one_match": {
+      "1": 0.03125,
+      "10": 0.27202384332787144,
+      "100": 0.9582004552833966,
+      "1000": 0.9999999999999837
+    }
+  },
+  "hash_tamper_sanity": {
+    "sha256_original": "3dddb54dc80fb3cdcad04b0e8ca42fa407fb7436712ba80c2334486dbba0af79",
+    "sha256_bitflip": "1109f77d0693f1fca8ff70fec32b34115f7d7e21b59417f93bfd1db2523b73ab",
+    "digest_hamming_bits": 132,
+    "equal": false
+  },
+  "redteam_findings": [
+    {
+      "id": "RT-01",
+      "severity": "HIGH",
+      "finding": "v0.1 can false-accept a negative-J record produced by a clock step/timestamp integrity failure because same_local_clock alone does not prove clock integrity.",
+      "fix": "require clock_integrity_valid, monotonic_counter_valid, no_clock_step_in_window and independent_time_anchor_valid"
+    },
+    {
+      "id": "RT-02",
+      "severity": "HIGH",
+      "finding": "v0.1 does not explicitly prevent choosing a matching candidate post hoc from many pre-SEND records.",
+      "fix": "freeze a single preregistered candidate slot before target assignment; preserve all null records"
+    },
+    {
+      "id": "RT-03",
+      "severity": "HIGH",
+      "finding": "independent CSPRNG wording is insufficient unless seed/entropy independence from the tested channel and candidate record is audited.",
+      "fix": "require rng_independence_audited; preferably dual independent entropy sources or externally committed randomness"
+    },
+    {
+      "id": "RT-04",
+      "severity": "MEDIUM",
+      "finding": "hash validity alone does not prove the commitment existed before assignment.",
+      "fix": "require preassignment_commitment_anchored and frozen canonicalization"
+    },
+    {
+      "id": "RT-05",
+      "severity": "MEDIUM",
+      "finding": "target-dependent decoding can reintroduce post-selection even when raw bytes are preserved.",
+      "fix": "freeze decoder/parser before the run and require target_independent_decoding"
+    }
+  ],
+  "v0_2_required_additions": [
+    "clock_integrity_valid",
+    "monotonic_counter_valid",
+    "no_clock_step_in_window",
+    "independent_time_anchor_valid",
+    "rng_independence_audited",
+    "candidate_slot_frozen_before_assignment",
+    "single_preregistered_candidate_slot",
+    "preassignment_commitment_anchored",
+    "canonicalization_frozen",
+    "target_independent_decoding"
+  ],
+  "admission": {
+    "PROTOCOL_V0_1_UNHARDENED": false,
+    "PROTOCOL_V0_2_LOGIC_REDTEAM_PASS": true,
+    "PHYSICAL_RETROCAUSALITY": false,
+    "PHYSICAL_TACHYON": false,
+    "NEGATIVE_J_PHYSICAL_TEST": "BLOCKED_NO_ESTABLISHED_CHANNEL"
+  },
+  "epistemic_boundary": "Synthetic/red-team validation demonstrates gate behavior only. It is not evidence for tachyons, FTL, precognition or physical retrocausality."
+}

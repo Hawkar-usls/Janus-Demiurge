@@ -1,0 +1,197 @@
+{
+  "schema": "hawkar.topa.spider.watchers_of_what_is_happening.v1_2",
+  "artifact_id": "WATCHERS-OF-WHAT-IS-HAPPENING-2026-08-26-28-v1.2",
+  "title": "WATCHERS OF WHAT IS HAPPENING",
+  "generated_date_utc": "2026-08-28",
+  "status": "OPEN_INCIDENT_CORRELATION_DOSSIER_APPEND_ONLY_UPDATE",
+  "lineage": {
+    "parent": "data/WATCHERS-OF-WHAT-IS-HAPPENING-2026-08-26-28-v1.1.json",
+    "update_policy": "APPEND_ONLY_NEW_EVIDENCE_DO_NOT_REWRITE_PARENTS"
+  },
+  "publication_scope": {
+    "included": "External public evidence, GitHub staff statements, public repository controls, witness comparisons, falsifiers, and calibrated hypotheses.",
+    "excluded": "Internal JANUS implementation, maintenance, debugging, cleanup, and local engineering diagnostics not required to reproduce external evidence."
+  },
+  "breakthrough": {
+    "finding": "GitHub staff publicly confirmed a January 2026 server-side schedule registration/synchronization failure with the same broad symptom family.",
+    "importance": "This turns 'stale or lost schedule registration' from a purely community-level hypothesis into a previously demonstrated GitHub-side failure mechanism, while not proving that the August case has the identical root cause."
+  },
+  "github_staff_confirmed_precedent": {
+    "period": "2026-01-23/2026-01-31",
+    "primary_sources": [
+      "https://github.com/orgs/community/discussions/185024",
+      "https://github.com/orgs/community/discussions/185081",
+      "https://github.com/orgs/community/discussions/185212",
+      "https://github.com/orgs/community/discussions/185355",
+      "https://github.com/actions/runner/issues/4210"
+    ],
+    "staff_statements": [
+      {
+        "handle": "TingluoHuang",
+        "role": "GitHub/actions runner team participant",
+        "finding": "A recently enabled server-side feature flag caused the issue for newly created scheduled workflows. The flag was disabled; pushing a new change to the repository was expected to repair affected schedule workflows."
+      },
+      {
+        "handle": "SrRyan",
+        "role": "GitHub staff/community responder",
+        "finding": "GitHub identified a related change from the previous week and rolled it back. A commit pushed to the default branch would resync impacted scheduled workflows."
+      },
+      {
+        "handle": "SrRyan",
+        "role": "GitHub staff/community responder",
+        "finding": "When a scheduled job is dropped early enough, there is currently no visible evidence because processing has not advanced far enough to create the underlying artifacts shown to users; GitHub described this as a UX gap and said work was underway to improve it."
+      }
+    ],
+    "mechanistic_model_supported_by_precedent": [
+      "schedule definition exists and workflow is visible/active",
+      "schedule registration or synchronization becomes stale/broken server-side",
+      "workflow_dispatch and push can remain healthy because they use different trigger paths",
+      "no run object/artifact may appear for a scheduled fire that is dropped before deeper processing",
+      "default-branch activity can cause schedule metadata to be resynchronized after the underlying server-side problem is removed"
+    ],
+    "claim_ceiling": "THIS_IS_A_CONFIRMED_PRECEDENT_NOT_PROOF_THAT_AUGUST_2026_USED_THE_SAME_FEATURE_FLAG_OR_EXACT_CODE_PATH"
+  },
+  "january_2026_witness_cohort": [
+    {
+      "handle": "adam-uk",
+      "discussion": 185081,
+      "role": "FIRST_HAND_PUBLIC_AND_PRIVATE_SCHEDULE_WITNESS",
+      "observations": [
+        "New repositories on an established Free personal account were tested as both private and public.",
+        "Manual execution worked while scheduled execution never fired initially.",
+        "The thread accumulated independent reports from multiple users with the same trigger-path split."
+      ],
+      "common_with_august_cohort": [
+        "schedule-specific failure",
+        "manual trigger remains healthy",
+        "new repository/workflow registration is implicated",
+        "recovery can occur after server-side rollback and re-registration"
+      ],
+      "evidence_strength": "VERY_HIGH_MULTI_USER_PRECEDENT"
+    },
+    {
+      "handle": "Ducanger",
+      "discussion": 185081,
+      "role": "FIRST_HAND_CORROBORATOR",
+      "observations": [
+        "Actions had worked for almost a year.",
+        "For roughly three days new workflows stopped triggering, while workflows that had successfully triggered before the issue continued to run."
+      ],
+      "relevance": "Points specifically toward creation/registration state rather than generic runner unavailability.",
+      "evidence_strength": "HIGH"
+    },
+    {
+      "handle": "becky3",
+      "discussion": 185081,
+      "role": "FIRST_HAND_CORROBORATOR",
+      "observations": [
+        "schedule failed for more than 24 hours while workflow_dispatch and push worked.",
+        "After GitHub-side rollback, editing YAML to re-register and running again restored scheduling."
+      ],
+      "evidence_strength": "HIGH_POSTFIX_CORROBORATION"
+    },
+    {
+      "handle": "Hzaatiti",
+      "issue": "actions/runner#4210",
+      "role": "FIRST_HAND_SELF_HOSTED_SCHEDULE_WITNESS",
+      "repository_context": "self-hosted Windows 11 runner",
+      "observations": [
+        "A minimal */5 scheduled workflow never triggered.",
+        "No job logs or runner diagnostic evidence existed because the scheduled trigger itself never occurred."
+      ],
+      "common_with_august_cohort": "Failure occurs before runner participation, showing GitHub-hosted runner capacity is not required for this failure class.",
+      "evidence_strength": "HIGH"
+    }
+  ],
+  "july_2026_public_repository_control": {
+    "handle": "GurunathBhandarkavathe",
+    "discussion": 203473,
+    "source_url": "https://github.com/orgs/community/discussions/203473",
+    "repository": "GurunathBhandarkavathe/NewsAgent",
+    "visibility": "public",
+    "default_branch": "main",
+    "reported_workflows": [
+      ".github/workflows/publish-instagram.yml",
+      ".github/workflows/cron-heartbeat.yml"
+    ],
+    "reported_fingerprint": [
+      "push worked",
+      "workflow_dispatch worked",
+      "schedule created no workflow run",
+      "workflows were active on main",
+      "multiple non-top-of-hour cron expressions were tested"
+    ],
+    "timeline": [
+      "At approximately 15:19 UTC on 2026-07-30 the public Actions API still showed total_count=0 for event=schedule.",
+      "The first scheduled run was later observed around 17:05 UTC without a repository-side explanation for the earlier absence.",
+      "Current API history for 2026-07-30 through 2026-07-31 contains 27 scheduled runs, confirming recovery rather than a permanently invalid workflow."
+    ],
+    "current_repository_check_2026_08_28": {
+      "workflow_present": ".github/workflows/publish-instagram.yml",
+      "current_triggers": ["push on main", "workflow_dispatch", "schedule 0 */3 * * *"],
+      "runner": "ubuntu-latest",
+      "uses_github_pages": true
+    },
+    "common_with_janus_reference": [
+      "public repository",
+      "GitHub-hosted ubuntu-latest",
+      "scheduled and non-scheduled trigger paths coexist",
+      "GitHub Pages is part of the workflow surface",
+      "the decisive symptom is absence/delay before user job execution"
+    ],
+    "evidence_strength": "VERY_HIGH_PUBLIC_REPRODUCIBLE_CONTROL"
+  },
+  "additional_july_2026_control": {
+    "handle": "Smartercarter01",
+    "discussion": 203353,
+    "source_url": "https://github.com/orgs/community/discussions/203353",
+    "repository": "PRIVATE_UNDISCLOSED",
+    "observations": [
+      "One workflow fired successfully once at 2026-07-28 22:45:16 UTC and then missed eight or more expected cron matches.",
+      "A second workflow had never scheduled despite five or more expected matches.",
+      "workflow_dispatch worked repeatedly for both workflows.",
+      "Touching both workflow files did not immediately restore expected scheduling.",
+      "Scheduling later partially recovered on its own but only intermittently, roughly one fire every several hours rather than the configured hourly cadence."
+    ],
+    "relevance": "A degradation path of healthy -> missing schedules -> partial spontaneous recovery predates the August incident and resembles the later delay/escalation pattern more closely than a never-registered new repository alone.",
+    "evidence_strength": "VERY_HIGH_PREINCIDENT_DEGRADATION_CONTROL"
+  },
+  "interpretive_update": {
+    "previous_model": "August 26 may have left residual damage in scheduled-workflow materialization.",
+    "new_model": "GitHub has at least two documented schedule failure mechanisms that can look identical from outside: high-load dropping before user-visible artifacts, and server-side registration/synchronization bugs affecting schedules while other trigger paths remain healthy. The August cohort may involve either, a combination, or another related implementation defect.",
+    "why_august_is_still_special": [
+      "JANUS and drakedog-kr show escalation from tens-of-minutes delays to multi-hour delays rather than only first-registration failure.",
+      "shinkunda shows a previously functioning repository losing all schedule run creation after August 26.",
+      "GitHub officially reported trigger-database saturation and a later incident in which some workflow runs failed to trigger.",
+      "The August timing supports amplification by platform stress, but does not identify the exact schedule-registration code path."
+    ]
+  },
+  "updated_hypotheses": [
+    {
+      "hypothesis": "No-run-object scheduled failures are impossible unless user YAML is wrong.",
+      "state": "REFUTED_BY_GITHUB_STAFF_STATEMENTS_AND_PUBLIC_PRECEDENTS"
+    },
+    {
+      "hypothesis": "A GitHub-side stale/lost schedule registration state is technically possible.",
+      "state": "CONFIRMED_AS_A_HISTORICAL_FAILURE MECHANISM"
+    },
+    {
+      "hypothesis": "A dropped schedule can leave no user-visible run evidence.",
+      "state": "CONFIRMED_BY_GITHUB_STAFF_AS_A_CURRENT_UX_AND_PROCESSING_GAP"
+    },
+    {
+      "hypothesis": "The August 26 event used exactly the same January feature-flag bug.",
+      "state": "NOT_ESTABLISHED"
+    },
+    {
+      "hypothesis": "August 26 stress amplified an existing scheduler-registration/materialization weakness.",
+      "state": "NOW_MORE_PLAUSIBLE_BUT_STILL_NOT_PROVEN"
+    }
+  ],
+  "next_collection_gates": [
+    "Search GitHub staff replies and changelogs between January and August for later scheduler-registration changes or rollbacks.",
+    "Build a dated cohort separating NEW_WORKFLOW_REGISTRATION, PREVIOUSLY_HEALTHY_THEN_STOPPED, MULTIHOUR_DELAY, and EARLY_DROP_NO_ARTIFACT.",
+    "Check whether August witnesses recover after a default-branch commit or schedule rewrite; treat recovery as a discriminator, not an automatic fix recommendation.",
+    "Continue to keep cross-provider and Russian-service observations separate unless a technical common dependency or IOC appears."
+  ]
+}

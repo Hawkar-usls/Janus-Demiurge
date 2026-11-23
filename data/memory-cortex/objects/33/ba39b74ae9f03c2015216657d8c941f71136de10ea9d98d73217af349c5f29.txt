@@ -1,0 +1,25 @@
+{
+  "id":"EYE-R4.5-PALOMAR-XE325-ADVERSARIAL-EXPANSION-v1",
+  "requirements":{"max_expansion_rounds":4,"max_vertices":32},
+  "base_problem":{
+    "id":"EYE-R4.4-PALOMAR-XE325-ROBUST-v1",
+    "cause_classes":[
+      {"id":"short_duration_sky_flash","target_class":"DISTANT_OR_SKY_OPTICAL","prior":0.25},
+      {"id":"near_field_reflection_or_glint","target_class":"NEAR_FIELD_OPTICAL","prior":0.25},
+      {"id":"intrinsic_emulsion_or_copy_defect","target_class":"PLATE_MATERIAL","prior":0.25},
+      {"id":"charged_particle_plate_interaction","target_class":"PLATE_INTERACTION","prior":0.25}
+    ],
+    "requirements":{"confidence_threshold":0.95,"robust_objective":"minimax_expected_cost","require_common_outcome_support":true},
+    "tests":[
+      {"id":"archival_morphology","cost":0,"available":true,"decision_usable":false,"calibrated":false},
+      {"id":"multi_observatory_parallax_1950","cost":1,"available":false,"decision_usable":false,"calibrated":false}
+    ],
+    "model_set":[
+      {"id":"optical_conservative_sensitivity","weight":0.5,"provenance":"Declared sensitivity envelope only; not an empirical prior.","prior_by_cause":{"short_duration_sky_flash":0.4,"near_field_reflection_or_glint":0.2,"intrinsic_emulsion_or_copy_defect":0.2,"charged_particle_plate_interaction":0.2}},
+      {"id":"plate_conservative_sensitivity","weight":0.5,"provenance":"Declared sensitivity envelope only; not an empirical prior.","prior_by_cause":{"short_duration_sky_flash":0.2,"near_field_reflection_or_glint":0.2,"intrinsic_emulsion_or_copy_defect":0.4,"charged_particle_plate_interaction":0.2}}
+    ]
+  },
+  "uncertainty_envelope":{"type":"DECLARED_FINITE_VERTEX_SET","vertex_models":[
+    {"id":"particle_conservative_sensitivity","weight":1,"provenance":"Declared sensitivity envelope only; not an empirical prior.","prior_by_cause":{"short_duration_sky_flash":0.2,"near_field_reflection_or_glint":0.2,"intrinsic_emulsion_or_copy_defect":0.2,"charged_particle_plate_interaction":0.4}}
+  ]}
+}

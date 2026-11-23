@@ -1,0 +1,91 @@
+{
+  "schema": "janus.epistemic.witness_coverage_uniform_polynomial_resolver_ladder.v1",
+  "artifact_id": "JANUS-WITNESS-COVERAGE-UNIFORM-POLYNOMIAL-RESOLVER-LADDER-2026-09-02-v1.0",
+  "date": "2026-09-02",
+  "status": "CANONICAL_EPISTEMIC_MECHANISM",
+  "extends": {
+    "artifact": "JANUS-EXISTENTIAL-WITNESS-TO-UNIVERSAL-COVERAGE-BRIDGE-2026-09-02-v1.0",
+    "commit": "f3f369f775146cf2ca7eea98e216c627fb7136bb"
+  },
+  "purpose": "Make the proof obligations between an observed local witness, all-domain coverage, a single uniform resolver, and a worst-case polynomial uniform resolver explicit and monotonic. No lower level may be promoted to a higher level by sampling, benchmark speedup, search exhaustion, or finite exactness.",
+  "levels": {
+    "L1_LOCAL_WITNESS_OR_FINITE_INSTANCE_EXACTNESS": {
+      "formula": "EXISTS y : V(z,x0,y)=1",
+      "meaning": "One particular admissible case is discharged. For exact SAT decision experiments this level may also contain replayably exact finite-instance results, including UNSAT results with their independent verification path.",
+      "does_not_prove": ["UNIVERSAL_COVERAGE", "UNIFORM_RESOLVER", "POLYNOMIAL_RESOLVER", "SAT_IN_P", "P_EQUALS_NP"]
+    },
+    "L2_UNIVERSAL_COVERAGE": {
+      "formula": "FOR ALL x in D_z, EXISTS y : V(z,x,y)=1",
+      "meaning": "Every admissible input in the declared domain is discharged by an explicit exhaustive proof or a stronger theorem that entails the whole domain.",
+      "does_not_prove": ["POLYTIME_WITNESS_SEARCH", "POLYNOMIAL_UNIFORM_RESOLVER", "SAT_IN_P"]
+    },
+    "L3_UNIFORM_RESOLVER": {
+      "formula": "EXISTS G, FOR ALL x in D_z : V(z,x,G(z,x))=1",
+      "meaning": "One fixed resolver G constructs or decides the required per-input result for every admissible x. G is fixed before the adversarial input x is chosen.",
+      "does_not_prove": ["POLYNOMIAL_RUNTIME", "SAT_IN_P"]
+    },
+    "L4_POLYNOMIAL_UNIFORM_RESOLVER": {
+      "formula": "EXISTS G, EXISTS polynomial p, FOR ALL x in D_z : Time_G(z,x)<=p(|z|+|x|) AND V(z,x,G(z,x))=1",
+      "meaning": "One fixed all-input correct resolver has a proved worst-case polynomial resource bound under the declared representation and accounting model.",
+      "sat_specialization": "For one fixed algorithm A over arbitrary encoded 3-CNF, prove FOR ALL phi: A terminates, A(phi) is correct, and Time_A(phi)<=p(|phi|) for one fixed polynomial p. Together with the standard NP-completeness reduction theorem, 3SAT in P entails P=NP.",
+      "release_boundary": "The reduction theorem and every algorithmic premise remain separate proof obligations; finite benchmarking is never a substitute."
+    }
+  },
+  "monotonic_transition_gates": [
+    "L1 -> L2 REQUIRES OUTER UNIVERSAL QUANTIFIER DISCHARGE",
+    "L2 -> L3 REQUIRES ONE FIXED INPUT-INDEPENDENT RESOLVER DESCRIPTION",
+    "L3 -> L4 REQUIRES WORST-CASE POLYNOMIAL BOUNDS FOR THE SAME FIXED RESOLVER",
+    "NO LEVEL MAY BE SKIPPED BY EMPIRICAL SUCCESS"
+  ],
+  "trump_sat_release_gate": {
+    "domain": "ARBITRARY FINITELY ENCODED 3-CNF, NOT A FROZEN HOLDOUT OR FINITE FAMILY",
+    "required": [
+      "DOMAIN_AND_ENCODING_CLOSED",
+      "ONE_FIXED_ALGORITHM_IDENTIFIED_BEFORE_INPUT",
+      "ALL_INPUT_TERMINATION_PROVED",
+      "ALL_INPUT_CORRECTNESS_PROVED",
+      "BUILD_WORST_CASE_POLYNOMIAL_BOUND_PROVED",
+      "COMPOSE_OR_TRANSFORM_WORST_CASE_POLYNOMIAL_BOUND_PROVED",
+      "SEARCH_OR_STEP_COUNT_WORST_CASE_POLYNOMIAL_BOUND_PROVED",
+      "TERMINAL_DECISION_WORST_CASE_POLYNOMIAL_BOUND_PROVED",
+      "RECOVERY_OR_CERTIFICATE_VERIFICATION_WORST_CASE_POLYNOMIAL_BOUND_PROVED",
+      "NO_HIDDEN_EXPONENTIAL_PRECOMPUTATION_ADVICE_ENUMERATION_OR_UNCHARGED_ORACLE",
+      "BIT_COMPLEXITY_AND_REPRESENTATION_GROWTH_ACCOUNTED",
+      "INDEPENDENT_REPLAYABLE_CORRECTNESS_ARGUMENT"
+    ],
+    "current_status": "OPEN"
+  },
+  "application_to_current_trump_lineage": {
+    "highest_admissible_claim": "L1_LOCAL_FINITE_INSTANCE_OR_FINITE_BOUNDARY_EVIDENCE_ONLY",
+    "R36_note": "A unique contract survived a declared finite strict sweep and achieved 4/4 local strict coverage. This is finite boundary evidence, not universal 3-CNF coverage.",
+    "R37_note": "A fresh exposed RUP stall showed that existing proof-carrying operators can reactivate each other. The sealed result explicitly did not prove that the cycle reaches a deciding terminal on every 3-CNF.",
+    "R37B_note": "Polynomial descent/termination of a fixed restart controller, even if proved, is not decision completeness: a controller may terminate at STALLED_PORTFOLIO_FIXPOINT. A successful exposed execution is still L1 until universal decision coverage is proved.",
+    "L2_universal_3cnf_coverage_proved": false,
+    "L3_one_uniform_total_trump_resolver_proved": false,
+    "L4_worst_case_polynomial_total_trump_resolver_proved": false,
+    "SAT_in_P_proved": false,
+    "P_equals_NP_proved": false,
+    "P_VS_NP": "OPEN"
+  },
+  "firewalls": [
+    "ONE WITNESS != UNIVERSAL COVERAGE",
+    "MANY FINITE WITNESSES != UNBOUNDED CLASS COVERAGE",
+    "NO COUNTEREXAMPLE FOUND != UNIVERSAL COVERAGE",
+    "UNIVERSAL COVERAGE != UNIFORM RESOLVER",
+    "UNIFORM RESOLVER != POLYNOMIAL UNIFORM RESOLVER",
+    "SHORT WITNESS EXISTENCE != POLYTIME WITNESS SEARCH",
+    "POLYNOMIAL TERMINATION != DECISION COMPLETENESS",
+    "FINITE EXACTNESS != TOTALITY",
+    "BENCHMARK SPEEDUP != WORST_CASE POLYNOMIAL BOUND",
+    "BENCHMARK SPEEDUP != P_EQUALS_NP",
+    "EMPIRICAL SCALING CURVE != ASYMPTOTIC THEOREM",
+    "FORALL x EXISTS y != EXISTS y FORALL x",
+    "P_VS_NP = OPEN UNTIL ALL RELEASE OBLIGATIONS ARE PROVED"
+  ],
+  "captain_obvious_seal": [
+    "A WITNESS PROVES A CASE.",
+    "COVERAGE PROVES THE DOMAIN.",
+    "A UNIFORM POLYNOMIAL RESOLVER PROVES THE ALGORITHM."
+  ],
+  "canonical_pipeline": "LOCAL EXACTNESS -> OPEN COVERAGE OBLIGATION -> UNIVERSAL COVERAGE -> OPEN UNIFORMIZATION OBLIGATION -> ONE FIXED RESOLVER -> OPEN POLYNOMIALITY OBLIGATION -> WORST-CASE POLYNOMIAL RESOLVER -> ONLY THEN ALGORITHM-CLASS RELEASE GATE"
+}

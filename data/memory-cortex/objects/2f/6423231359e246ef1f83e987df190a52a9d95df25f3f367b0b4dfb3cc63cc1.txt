@@ -1,0 +1,153 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-R3B-1-ALTERNATE-EDITORIAL-OVERLAP-FREEZE-SPEC-2026-08-14-v0.1",
+  "timestamp": "2026-08-14T14:59:00+03:00",
+  "version": "v0.1",
+  "title": "JANUS Linear A R3B-1 alternate editorial overlap freeze",
+  "observer": "Oleksandr Ahapov / Hawkar + JANUS",
+  "node_type": "frozen_precontent_overlap_gate",
+  "status": "FROZEN_BEFORE_ANY_ALTERNATE_EDITORIAL_TRANSCRIPTION_CONTENT_IS_INSPECTED",
+  "scientific_claim_bearing": false,
+  "parents": {
+    "R3B_0_acquisition_protocol": {
+      "path": "data/JANUS-LINEAR-A-R3B-0-SOURCE-ACQUISITION-PROTOCOL-2026-08-14-v0.1.json",
+      "commit": "d3fa752e552e9a3f14e5daec0e75d7f86386ed61"
+    },
+    "transcription_substrate": {
+      "path": "data/JANUS-LINEAR-A-TRANSCRIPTION-SUBSTRATE-SPEC-2026-08-14-v1.0.json",
+      "commit": "55ca1e8d26d521b85b23f18e007ae50a20471f0c"
+    }
+  },
+  "purpose": "Freeze which alternate-editorial documents overlap the existing JANUS document universe and reserve a disjoint scientific holdout before transcription strings, sign sequences, candidate identities or prior near-misses can influence document selection.",
+  "required_inputs": {
+    "acquisition_receipt": {
+      "required_state_prefix": "ACQUIRED_BYTES_FROZEN_",
+      "must_include": [
+        "source identity and edition",
+        "exact acquired file SHA-256 values",
+        "byte lengths",
+        "page/coverage identity",
+        "acquisition route",
+        "provenance classification",
+        "usage constraints"
+      ]
+    },
+    "identity_only_document_inventory": {
+      "required_top_level": ["source_id", "edition_id", "content_firewall", "documents"],
+      "content_firewall_required_value": "TRANSCRIPTION_CONTENT_NOT_INSPECTED_OR_INCLUDED",
+      "allowed_document_fields": [
+        "source_document_id",
+        "bridge_key",
+        "bridge_evidence",
+        "site",
+        "artifact_class",
+        "surface_labels",
+        "page_refs",
+        "catalogue_id",
+        "bibliographic_locator"
+      ],
+      "forbidden_field_name_fragments_case_insensitive": [
+        "transcription",
+        "reading",
+        "transliteration",
+        "sequence",
+        "sign_id",
+        "signs",
+        "word",
+        "token",
+        "gloss",
+        "meaning",
+        "candidate",
+        "ku-ro",
+        "si"
+      ],
+      "rule": "The inventory may use document-level bibliographic/layout identity only. If transcription-bearing content is necessary to decide whether two document IDs correspond, that document remains UNRESOLVED and is excluded from the collision-free overlap freeze."
+    }
+  },
+  "identity_bridge_rules": {
+    "bridge_key": "A source-neutral document identity key frozen from catalogue/document naming metadata only.",
+    "duplicate_source_document_id": "FAIL_CLOSED",
+    "duplicate_bridge_key_with_multiple_source_documents": "COLLISION_EXCLUDE_AND_RECORD",
+    "missing_bridge_key": "UNRESOLVED_EXCLUDE_AND_RECORD",
+    "known_JANUS_document_universe": "Bridge keys are compared only against a separately frozen identity list; transcription content from mwenge/SigLA is not loaded by this gate.",
+    "cross_source_content_agreement_used_for_identity": false
+  },
+  "deterministic_partition": {
+    "namespace": "JANUS-R3B1-ALTERNATE-EDITORIAL-OVERLAP-v0.1",
+    "dataset_binding": "selection hash includes source_id, edition_id and SHA-256 of canonical sorted acquired-file SHA list",
+    "score": "SHA256(namespace + '|' + dataset_binding + '|' + bridge_key)",
+    "minimum_collision_free_overlap_for_partition": 10,
+    "adapter_validation_count": "max(3, floor(0.20 * collision_free_overlap_count))",
+    "adapter_validation_selection": "lowest hexadecimal selection hashes",
+    "scientific_holdout": "all remaining collision-free overlap documents",
+    "replacement": false,
+    "resampling": false,
+    "posthoc_rebalancing_by_site_or_artifact": false
+  },
+  "partition_semantics": {
+    "ADAPTER_VALIDATION": {
+      "content_access_after_freeze": "Allowed only under separately frozen R3B-2 source-adapter grammar/validation spec.",
+      "scientific_candidate_scoring": false,
+      "purpose": "Learn whether the source-specific adapter losslessly represents notation, uncertainty, damage, layout and token typing."
+    },
+    "SCIENTIFIC_HOLDOUT": {
+      "content_access_after_freeze": "Forbidden until R3B-2 adapter is frozen and a later claim-bearing replication spec explicitly unlocks a deterministic subset.",
+      "scientific_candidate_scoring": false,
+      "purpose": "Prevent adapter development and overlap selection from consuming the same alternate-editorial readings later used as replication evidence."
+    }
+  },
+  "manual_transcription_branch": {
+    "selection_is_frozen_before_transcription": true,
+    "adapter_validation_pool_may_be_transcribed_after_R3B_2_spec": true,
+    "scientific_holdout_transcription_remains_blinded": true,
+    "transcriber_must_not_receive_prior_JANUS_candidate_or_near_miss_list": true,
+    "double_entry_or_independent_verification_required": true,
+    "source_native_uncertainty_damage_numeric_and_punctuation_notation_preserved": true
+  },
+  "machine_readable_branch": {
+    "adapter_validation_pool_may_be_parsed_after_R3B_2_spec": true,
+    "scientific_holdout_raw_records_must_not_be loaded_by_adapter_development_tests": true,
+    "schema_or_global_metadata_may_be_read_if_not_document_transcription_bearing": true
+  },
+  "output_receipt_required": [
+    "source and edition identity",
+    "dataset binding hash",
+    "acquired source file SHA list",
+    "identity inventory SHA-256",
+    "collision-free overlap count",
+    "collision list",
+    "unresolved identity list",
+    "ordered selection hashes",
+    "ADAPTER_VALIDATION bridge keys",
+    "SCIENTIFIC_HOLDOUT bridge keys",
+    "content firewall audit",
+    "claim ceiling"
+  ],
+  "readiness_states": [
+    "BLOCKED_NO_ACQUIRED_SOURCE_RECEIPT",
+    "BLOCKED_IDENTITY_INVENTORY_MISSING",
+    "BLOCKED_CONTENT_FIREWALL_VIOLATION",
+    "BLOCKED_OVERLAP_BELOW_TECHNICAL_MINIMUM",
+    "OVERLAP_FROZEN_READY_FOR_R3B_2_ADAPTER_SPEC"
+  ],
+  "forbidden": [
+    "do not inspect alternate-source transcription to choose overlap documents",
+    "do not search alternate source for ku-ro, si, AB41 or any prior JANUS near-miss before holdout is frozen",
+    "do not use mwenge/SigLA reading agreement to resolve document identity collisions",
+    "do not replace failed or inconvenient adapter-validation documents",
+    "do not move a scientific-holdout document into adapter validation after content is observed",
+    "do not call R3B-1 external replication; it freezes identity and blindness only"
+  ],
+  "next_if_successful": {
+    "id": "R3B_2_SOURCE_SPECIFIC_ADAPTER_FREEZE_AND_VALIDATION",
+    "action": "Freeze the acquired source's notation/tokenization/layout grammar and implement an adapter into JANUS-LINEAR-TRANSCRIPTION-IR-v1.0 using only the ADAPTER_VALIDATION pool. The SCIENTIFIC_HOLDOUT remains inaccessible to adapter tuning."
+  },
+  "claim_ceiling": {
+    "overlap_freeze_spec_frozen": true,
+    "overlap_documents_frozen": false,
+    "alternate_editorial_adapter_validated": false,
+    "external_transcription_replication_established": false,
+    "new_anchor_established": false,
+    "decipherment_established": false,
+    "promotion": "BLOCKED"
+  }
+}

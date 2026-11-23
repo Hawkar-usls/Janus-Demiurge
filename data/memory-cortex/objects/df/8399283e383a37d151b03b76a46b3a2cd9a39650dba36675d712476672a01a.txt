@@ -1,0 +1,174 @@
+{
+  "artifact_uuid": "JANUS-C2-METABOLIC-DUPLEX-SIM-v0.1",
+  "timestamp": "2026-08-09T07:47:00+03:00",
+  "version": "v0.1",
+  "title": "JANUS C2 Metabolic Duplex — electricity / CO2 / C2 simulation",
+  "observer": "Oleksandr Ahapov / Hawkar",
+  "node_type": "computational_thought_experiment",
+  "status": "SIMULATION_ONLY_NOT_BIOLOGICALLY_VALIDATED",
+  "registry_classification": ["T3", "S1", "R1"],
+  "classification_note": "Self-classified for registry navigation as a useful conceptual design pattern plus speculative thought experiment requiring external biological/engineering review; this is not an independent audit classification.",
+  "parent_concept": "data/SKYBU-SKINGPT-CIRCULAR-BIOMANUFACTURING-CONCEPT-v1.0.json",
+  "purpose": "Explore a hypothetical electricity -> CO2 -> C2 carrier -> virtual metabolism architecture while keeping a separate luminal/gut-signal proxy and a non-authoritative ESP32 TWAI/CAN telemetry layer.",
+  "repo_binding": {
+    "janus_genesis": {
+      "repository": "https://github.com/Hawkar-usls/Janus_Genesis",
+      "exact_commit": "98699273bc4dfc08d4eda795869b4bcfe1134b72",
+      "role": "authoritative local simulation-state semantics"
+    },
+    "esp32_twai_can": {
+      "repository": "https://github.com/Hawkar-usls/ESP32-TWAI-CAN",
+      "exact_commit": "5781b0644209b8aa26fcb8a50ccc29e8cf67a828",
+      "role": "transport / telemetry abstraction only",
+      "base_authorship_claimed_by_hawkar": false,
+      "upstream": "https://github.com/handmade0octopus/ESP32-TWAI-CAN"
+    }
+  },
+  "claim_ceiling": [
+    "This is a deterministic architectural simulation, not a human-feeding experiment.",
+    "Acetate or another C2 carrier is not claimed to be complete nutrition.",
+    "The selected efficiencies are assumptions, not measured efficiencies of an integrated biological system.",
+    "The gut_proxy variable is dimensionless and has no clinical calibration or validated biological timescale.",
+    "No human dose, infusion rate, medical-device control, or clinical recommendation is encoded.",
+    "A stable result inside the model is not evidence that a corresponding real organism would remain healthy or viable."
+  ],
+  "core_hypothesis": "Food-like support can be decomposed into at least two independent modeled functions: a material/energy carrier channel and a luminal signaling channel. The simulation asks whether an electricity-to-C2 architecture can satisfy an abstract energy demand while the signaling channel is evaluated independently.",
+  "model_assumptions": {
+    "time_step_seconds": 60,
+    "duration_hours": 24,
+    "abstract_metabolic_demand_w": 100.0,
+    "electricity_to_c2_efficiency": 0.35,
+    "c2_to_abstract_metabolic_efficiency": 0.70,
+    "baseline_electric_power_w": 420.0,
+    "c2_buffer_initial_kj": 300.0,
+    "c2_buffer_capacity_kj": 1500.0,
+    "abstract_reserve_initial_kj": 1500.0,
+    "gut_proxy_initial": 0.80,
+    "gut_proxy_tau_hours": 6.0,
+    "baseline_luminal_signal": 0.80
+  },
+  "derived_architectural_thresholds": {
+    "steady_state_minimum_electric_power_w_under_assumptions": 408.163,
+    "baseline_margin_w": 11.837,
+    "estimated_c2_buffer_at_hour_8_kj": 419.314,
+    "outage_support_from_c2_buffer_h": 0.815,
+    "outage_support_from_abstract_reserve_h": 4.167,
+    "total_outage_endurance_from_hour_8_h": 4.982,
+    "boundary": "These values are consequences of the selected simulation parameters only and are not physiological predictions."
+  },
+  "can_profile": {
+    "bus": "TWAI/CAN",
+    "frame_format": "standard_11_bit",
+    "payload_bytes": 8,
+    "nominal_speed_kbps": 500,
+    "telemetry_period_seconds": 60,
+    "frames": [
+      {"id_hex": "0x300", "name": "POWER"},
+      {"id_hex": "0x301", "name": "C2_BUFFER"},
+      {"id_hex": "0x302", "name": "METABOLIC_DEMAND"},
+      {"id_hex": "0x303", "name": "RESERVE"},
+      {"id_hex": "0x304", "name": "GUT_PROXY"},
+      {"id_hex": "0x305", "name": "SAFETY"},
+      {"id_hex": "0x30F", "name": "HEARTBEAT"}
+    ],
+    "authority_rule": "TWAI/CAN telemetry is non-authoritative; missing frames must not invent or mutate local simulation state."
+  },
+  "scenario_results": [
+    {
+      "id": "S0_BASELINE_24H",
+      "input": "420 W for 24 h; luminal proxy intact",
+      "classification": "STABLE_IN_MODEL",
+      "final_c2_buffer_kj": 657.943,
+      "final_abstract_reserve_kj": 1500.0,
+      "final_gut_proxy": 0.80,
+      "first_energy_failure_h": null
+    },
+    {
+      "id": "S1_POWER_LOSS_4H",
+      "input": "420 W except outage from hour 8 to 12",
+      "classification": "STABLE_IN_MODEL",
+      "final_c2_buffer_kj": 178.971,
+      "final_abstract_reserve_kj": 353.52,
+      "final_gut_proxy": 0.80,
+      "first_energy_failure_h": null
+    },
+    {
+      "id": "S2_POWER_LOSS_8H",
+      "input": "420 W except outage from hour 8 to 16",
+      "classification": "ENERGY_CHAIN_FAILURE_IN_MODEL",
+      "final_c2_buffer_kj": 119.314,
+      "final_abstract_reserve_kj": 0.0,
+      "final_gut_proxy": 0.80,
+      "first_energy_failure_h": 12.982
+    },
+    {
+      "id": "S3_LUMINAL_SIGNAL_LOSS",
+      "input": "420 W for 24 h; luminal signal proxy set to zero",
+      "classification": "ENERGY_STABLE_BUT_SIGNAL_PROXY_LOST",
+      "final_c2_buffer_kj": 657.943,
+      "final_abstract_reserve_kj": 1500.0,
+      "final_gut_proxy": 0.01457,
+      "first_gut_proxy_below_0_20_h": 8.313
+    },
+    {
+      "id": "S4_C2_OVERPRODUCTION_CLAMP",
+      "input": "900 W for 24 h",
+      "classification": "STABLE_WITH_C2_CURTAILMENT",
+      "final_c2_buffer_kj": 1500.0,
+      "final_abstract_reserve_kj": 1500.0,
+      "final_gut_proxy": 0.80
+    },
+    {
+      "id": "S5_CAN_TELEMETRY_LOSS",
+      "input": "420 W for 24 h; deterministic 20% frame-drop probability during hour 4 to 8",
+      "classification": "LOCAL_STATE_STABLE_TELEMETRY_DEGRADED",
+      "can_frames_total": 10080,
+      "can_frames_dropped": 339,
+      "can_drop_percent": 3.363,
+      "final_c2_buffer_kj": 657.943,
+      "final_abstract_reserve_kj": 1500.0
+    }
+  ],
+  "interpretation": {
+    "primary_result": "Inside the chosen model, an energy PASS is not sufficient for a whole-system PASS because the independent luminal-signal proxy can fail while the abstract energy channel remains stable.",
+    "minimal_gate": "SYSTEM_PASS := ENERGY_PASS AND SIGNAL_PASS AND MATERIAL_BALANCE_PASS AND SAFETY_PASS",
+    "what_was_not_tested": [
+      "real human physiology",
+      "complete amino-acid or nitrogen balance",
+      "essential fatty-acid balance",
+      "vitamin and mineral sufficiency",
+      "immune or endocrine safety",
+      "actual acetate pharmacokinetics",
+      "actual CO2-to-acetate integrated reactor performance"
+    ]
+  },
+  "evidence_basis": [
+    {
+      "claim_supported": "Acetate is a real human metabolic substrate but is not thereby complete nutrition.",
+      "identifier": "PMID: 9611145"
+    },
+    {
+      "claim_supported": "CO2-derived acetate can serve as an intermediate substrate in engineered bioproduction systems.",
+      "identifier": "Nature Communications (2025), CO2-to-acetate / engineered yeast starch production"
+    },
+    {
+      "claim_supported": "Enteral/luminal deprivation can affect intestinal mucosal and barrier biology.",
+      "identifier": "reviewed parenteral-vs-enteral nutrition literature; current clinical interpretation requires primary-source review"
+    }
+  ],
+  "source_artifact_integrity": {
+    "full_generated_file_name": "JANUS_C2_METABOLIC_DUPLEX_SIM_v0.1.json",
+    "full_generated_file_sha256": "a0a5bb424960cca7f6e885f80f78fbbcf856ab1f53b87e56e33c0555edc1b1d6",
+    "embedded_simulation_content_sha256": "128f052591da14d1d17460c52894dbae4365148f7018b4438dd5552a657a0f50",
+    "registry_record_is_compact_summary": true
+  },
+  "next_gate": "Replace assumed efficiencies and qualitative signal proxy with literature-bounded ranges, uncertainty propagation, mass-balance constraints, and explicit nitrogen/essential-nutrient channels before making any stronger biological interpretation.",
+  "interpretation_rules": [
+    "SIMULATION_PASS != BIOLOGICAL_PASS",
+    "ENERGY_PASS != COMPLETE_NUTRITION",
+    "ACETATE != COMPLETE_FOOD",
+    "MODEL_THRESHOLD != HUMAN_THRESHOLD",
+    "CAN_TELEMETRY != BIOLOGICAL_AUTHORITY",
+    "HYPOTHESIS != RESULT"
+  ]
+}

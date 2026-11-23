@@ -1,0 +1,105 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1C3-COMPONENT-MESSAGE-SELECTOR-COMPILATION-RESULT-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "PASS_COMPONENT_MESSAGE_SELECTOR_COMPILATION",
+  "gate": "R5_B1B1C3_COMPONENT_MESSAGE_SELECTOR_COMPILATION_V1",
+  "binds": {
+    "prereg_fund_commit": "bb46c321bdec80f137b06e66225d5ab9e7b477b3",
+    "prereg_meta_commit": "893ea5d4f38f9b114b33c820ed736fac96a1d008",
+    "prereg_blob": "3b44b4ca3b2651e4d9fe7a56b0e8d743128fc5b5",
+    "C0_message_seal_blob": "0dbebe81f52a5b8411199fc44614bf8c17b6dd95",
+    "C2_QALL_seal_blob": "33d6b365728c703c43371b966d9ed26020f12b98"
+  },
+  "theorem": {
+    "name": "COMPONENT_MESSAGE_SELECTOR_COMPILATION_V1",
+    "input": "Final post-seed-two state with fixed S,X0 and all residual Y0 components compiled by C0.",
+    "exact_outside_lists": {
+      "definition": "For each dynamic u in U=X union Y, A(u)=[4]\\f(N(u) intersect (S union X0)).",
+      "reason": "These are the exact colors compatible with already fixed vertices. Source L_P(u) remains provenance/classification metadata only and is not substituted for A(u), preserving the B1B0 firewall."
+    },
+    "selector_graph_Hstar": {
+      "vertices": "U plus h_{C,M} for every residual component C and every M in MIN_BAD(C)",
+      "edges": [
+        "H*[U]=G[U] exactly",
+        "selectors form a stable set",
+        "N(h_{C,M})=D_C"
+      ],
+      "lists": [
+        "L*(u)=A(u) for u in U",
+        "L*(h_{C,M})=M"
+      ],
+      "size": "At most |U|+6*#components <= 7|V(G)| vertices."
+    },
+    "local_selector_equivalence": {
+      "statement": "For fixed outside coloring c of U, selector h_{C,M} can be colored iff M is not a subset of F_C(c).",
+      "proof": "h_{C,M} needs a color alpha in M absent from colors(D_C)=F_C(c), so it is colorable iff M\\F_C(c) is nonempty."
+    },
+    "component_equivalence": {
+      "statement": "For fixed outside coloring c, all selectors belonging to C can be colored iff mu_C(F_C(c))=1.",
+      "proof": [
+        "C0 gives a monotone good-mask down-set and MIN_BAD(C), the inclusion-minimal bad masks.",
+        "A mask F is bad iff it contains at least one M in MIN_BAD(C).",
+        "Thus F is good iff for every M in MIN_BAD(C), M is not a subset of F.",
+        "By the local selector equivalence, this is exactly simultaneous colorability of all selectors of C."
+      ]
+    },
+    "global_equivalence": {
+      "statement": "The original final seeded-precoloring has an extension iff the selector list instance (H*,L*) has a list-coloring.",
+      "forward": [
+        "Restrict an original extension to U.",
+        "For every C and M in MIN_BAD(C), original component extendability gives M not subseteq F_C, so choose any selector color alpha in M\\F_C.",
+        "Selectors are independent, yielding a list-coloring of H*."
+      ],
+      "reverse": [
+        "Take any list-coloring c* of H* and restrict it to U.",
+        "For each C compute the actual nonempty F_C(c*) from D_C.",
+        "Selector properness implies every M in MIN_BAD(C) is not contained in F_C, hence mu_C(F_C)=1.",
+        "Fetch the explicit C0 witness coloring stored for this allowed reachable nonempty mask.",
+        "The witness respects X0 through B_C, seed is anticomplete to C, complete dynamic neighbors avoid F_C colors by construction, and anticomplete dynamic vertices impose no constraint.",
+        "Distinct residual Y0 components are anticomplete, so all stored component witnesses combine with c*|U and fixed S union X0 into one original extension."
+      ],
+      "reconstruction_runtime": "Polynomial: compute each F_C by scanning D_C and retrieve one of at most 15 stored witnesses per component."
+    },
+    "p7_preservation": {
+      "base": "C2 proves Q_ALL is P7-free.",
+      "transformation": [
+        "If MIN_BAD(C)=empty, delete [C].",
+        "Otherwise replace [C] by the independent false-twin class {h_{C,M}: M in MIN_BAD(C)}; every twin has exactly neighborhood D_C."
+      ],
+      "false_twin_lemma": "An induced path with at least four vertices contains at most one vertex from an independent false-twin class. If two occur at distance at least three, the path-neighbor of one is adjacent to the other and creates a chord; if at distance two, a second path-neighbor of one twin creates a chord to the other.",
+      "lift_back": "Any induced P7 in H* therefore uses at most one selector from each C; collapse each used selector to [C] to obtain the same induced P7 in the corresponding induced subgraph of Q_ALL, contradiction.",
+      "conclusion": "H* is P7-free."
+    },
+    "four_list_selector": {
+      "statement": "If [4] is in MIN_BAD(C), then MIN_BAD(C)={[4]}.",
+      "proof": "MIN_BAD(C) is an antichain and every other mask is a proper subset of [4].",
+      "semantics": "The unique 4-list selector is colorable iff at least one of the four colors is absent from D_C: a NO_ALL_FOUR_COLORS constraint."
+    }
+  },
+  "normal_form": {
+    "internal_Y0_structure": "COMPILED_AWAY",
+    "residual_object": "One P7-free list-coloring graph H* with original dynamic vertices plus a stable selector side.",
+    "selector_count_per_component": "<=6",
+    "selector_lists": "nonempty subsets of [4], with the only size-4 case being the singleton NO_ALL_FOUR selector for its component.",
+    "original_dynamic_lists": "exact A(u) including fixed X0 effects; source X/Y list classes retained only as metadata."
+  },
+  "firewalls": [
+    "H* P7-free does not imply List-4-Coloring is polynomial on H*.",
+    "Different size-3 selector lists need not lie in one common 3-color palette.",
+    "List 4-Coloring is known NP-complete already on P6-free graphs, so this is a normal form rather than a solver.",
+    "No promotion of a semantic equivalence between this selector normal form and source axioms (vi)-(viii) beyond the exact extension equivalence proved above."
+  ],
+  "scientific_ceiling": {
+    "COMPONENT_MESSAGE_SELECTOR_COMPILATION": "PROVED",
+    "P7_FREE_SELECTOR_GRAPH": "PROVED",
+    "RESIDUAL_Y0_INTERNAL_STRUCTURE_NEEDED_FOR_JOINT_COMPOSITION": "NO_AFTER_COMPILATION",
+    "P7_FREE_SELECTOR_LIST_STRUCTURE": "NEW_FRONTIER",
+    "FULL_L2_REPAIR": "OPEN",
+    "LEMMA11_P7_LIFT": "OPEN",
+    "P7_FREE_4_COLOR_IN_P": "NOT_PROVED",
+    "P_VS_NP": "OPEN"
+  },
+  "stop": true,
+  "return_to_HQ": true
+}

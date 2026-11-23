@@ -1,0 +1,78 @@
+{
+  "artifact_id": "JANUS-TRUMP-R5-B1B1-COMMON-D1-SYNCHRONIZATION-SOURCE-AUDIT-2026-09-21-v1.0",
+  "version": "v1.0",
+  "date_local": "2026-09-21",
+  "status": "SOURCE_AUDIT_COMPLETE__D1_BACKEND_VERIFIED__COMMON_LAYOUT_THEOREM_NOT_LOCATED",
+  "gate": "R5_B1B1_COMMON_D1_NEIGHBORHOOD_SYNCHRONIZATION_GATE_V1",
+  "authority_bind": {
+    "B1A_seal_blob": "3729fb85fe388d99df42e185cd23aaa9e188bf28",
+    "B1B0_boundary_seal_blob": "3590a35510116f0f9e1d0aefb519eb095d343b42",
+    "full_component_quotient_seal_commit": "3cb008a08c1585bdd2222c86afa22d608ccb476f",
+    "full_component_quotient_seal_blob": "bd8a42511a1d64ac4295f0f3815adcf95f4ddbc9"
+  },
+  "verified_external_results": [
+    {
+      "name": "MIM_TO_NEIGHBORHOOD_EQUIVALENCE_REPRESENTATIVE",
+      "source": "Algorithmica: On the Tractability of Optimization Problems on H-Graphs, Lemma 1 restating the standard mim/neighborhood-equivalence connection",
+      "source_url": "https://link.springer.com/article/10.1007/s00453-020-00692-9",
+      "verified_claim": "For an n-vertex graph and cut A, mim(A)<=w iff every subset S of A has a subset R of size at most w with the same external neighborhood.",
+      "consequence": "The number of 1-neighborhood equivalence classes is at most the number of subsets of A of size <=w, hence n^{O(w)}."
+    },
+    {
+      "name": "MIM_D_NEIGHBORHOOD_META_THEOREM",
+      "source": "Bergougnoux-Dreier-Jaffke, SODA 2023 / arXiv 2202.13335",
+      "verified_claim": "Given a branch decomposition of mim-width w, fixed formulas/problems handled by the framework admit n^{O(w)} algorithms via d-neighborhood equivalence.",
+      "role": "Confirms d-neighborhood equivalence is a standard DP boundary compression mechanism; does not certify CSZ-specific sufficiency."
+    },
+    {
+      "name": "LIST_K_ON_BOUNDED_QUICKLY_COMPUTABLE_SIM_WIDTH",
+      "source": "Brettell et al., Theoretical Computer Science 955 (2023), 113825",
+      "verified_claim": "For each fixed k, List k-Colouring is polynomial-time solvable on classes of bounded and quickly computable sim-width.",
+      "role": "Backup backend only."
+    },
+    {
+      "name": "WIDTH_RECOGNITION_HARDNESS",
+      "source": "ICALP 2025 Mim-Width Is paraNP-Complete; ICALP 2026 On the Hardness of Recognizing Graphs of Small Mim-Width and Its Variants",
+      "verified_claim": "Computing/recognizing mim-width and sim-width remains NP-hard even under constant-width promises/small constant thresholds.",
+      "consequence": "B1B1A must construct a common layout from source/decomposition certificates; it must not invoke global optimization for mim-width."
+    },
+    {
+      "name": "SIMULTANEOUS_GRAPH_PARAMETERS_2026",
+      "source": "Scheffler-Schleicher, arXiv:2608.06055v1, 2026-08-06",
+      "verified_claim": "For fixed simultaneous C-number, mim-width is among the parameters whose boundedness is preserved when the base class C has bounded mim-width.",
+      "exact_model": "One graph G is represented by a base graph H in C and constant-size label sets L(v), with uv in E(G) iff uv in E(H) and L(u) intersects L(v).",
+      "classification": "RELATED_FRAMEWORK_ONLY",
+      "mismatch": [
+        "The available statement explicitly lists mim-width but not sim-width.",
+        "Our object is three prescribed edge sets I_sigma,1,I_sigma,2,I_sigma,3 sharing component vertices, not one graph already given as a constant-label filtering of a bounded-mim base graph.",
+        "No constant simultaneous C-number representation of our three-layer system has been established.",
+        "The result does not directly produce one common branch decomposition good for all three given layers."
+      ]
+    },
+    {
+      "name": "PARTITIONED_PROBE_Pt_WARNING",
+      "source": "Paulusma-Rauch-van Leeuwen, STACS 2026",
+      "verified_claim": "3-Colouring is NP-complete on partitioned probe P_t-free graphs for t>=6.",
+      "consequence": "Existence of a P7-free completion/full quotient is not by itself an algorithmic tractability certificate."
+    }
+  ],
+  "conditional_counting_observation": {
+    "one_layer": "If one common cut A has mim_{I_sigma,i}(A)<=w, every subset of A∩R_i has a representative of size <=w for its external neighborhood in that layer, so there are n^{O(w)} possible 1-neighborhood classes.",
+    "three_layers_four_actual_colors": "There are 3*4=12 processed survivor-color subsets. Their joint 1-neighborhood signature count is n^{O(12w)} on a common cut.",
+    "all_B0_coarse_classes": "If a common layout simultaneously gives width w for every layer of every one of at most B(s) coarse classes, the crude joint count is n^{O(12*w*B(s))}.",
+    "firewall": "This counts neighborhood signatures only; it does not prove that these signatures preserve CSZ source semantics, internal component feasibility, or reconstruction."
+  },
+  "common_layout_search": {
+    "exact_question": "Does every source-bound three-layer incidence system admit an efficiently constructible common branch decomposition T with max over cuts and i of mim_{I_sigma,i}(cut) <= q(|S|)?",
+    "existing_exact_theorem": "NOT_LOCATED_IN_THIS_SEARCH",
+    "global_width_optimization": "FORBIDDEN_AS_ALGORITHMIC_STEP",
+    "simultaneous_2026_direct_transfer": "NOT_ESTABLISHED"
+  },
+  "no_reinvention": [
+    "Do not reprove the mim-to-neighborhood-equivalence representative lemma.",
+    "Do not write a DP before common-layout and source-sufficiency gates pass.",
+    "Do not claim sim-width preservation from arXiv:2608.06055 without an explicit source statement.",
+    "Do not infer a common good decomposition from three separate good decompositions."
+  ],
+  "next": "FREEZE_B1B1_PHASED_PREREG_AND_PROVE_ONLY_THE_CONDITIONAL_D1_BOUND_WHILE_PHASE_A_REMAINS_OPEN"
+}

@@ -1,0 +1,57 @@
+{
+  "artifact_id": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v3.0",
+  "supersedes": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v2.9",
+  "lineage_alias": "JANUS-113",
+  "title": "PERCEPTION DETERMINES REALITY",
+  "subtitle": "End-to-End Causal Effect-Gate and Side-Effect Inventory Extension",
+  "version": "3.0",
+  "status": "technical_specification_candidate_not_runtime_implementation",
+  "created_at_local": "2026-08-10T02:51:00+03:00",
+  "new_primitives": {
+    "CAUSAL_EFFECT_GATE_ID": "Identifier for a boundary that validates authority before a consequential external effect.",
+    "SIDE_EFFECT_CHANNEL_ID": "Stable identifier for one path from admitted output to an external state change.",
+    "ACTION_SCOPE": "Explicit set of resources/effects the commit authorizes.",
+    "EFFECT_RECEIPT_ID": "Receipt describing what the external boundary actually executed or rejected.",
+    "UNCONTROLLED_CAUSAL_EGRESS": "Consequential output path without enforceable authority validation."
+  },
+  "end_to_end_contract": {
+    "pre_effect_required": [
+      "HOST_ID",
+      "AUTHORITY_EPOCH",
+      "FENCE_TOKEN",
+      "COMMIT_ID",
+      "ACTION_SCOPE"
+    ],
+    "post_effect_required": [
+      "EFFECT_RECEIPT_ID",
+      "SIDE_EFFECT_CHANNEL_ID",
+      "EXECUTED_OR_REJECTED",
+      "RESULT_BINDING"
+    ],
+    "stale_fence": "REJECT",
+    "out_of_scope_action": "REJECT"
+  },
+  "causal_surface_inventory": [
+    "API_TOOL_CALL",
+    "ROBOT_OR_ACTUATOR",
+    "SHELL_OR_CODE_EXECUTION",
+    "DATABASE_WRITE",
+    "EXTERNAL_MESSAGE_OR_INSTRUCTION",
+    "HUMAN_MEDIATED_ACTION"
+  ],
+  "core_rule": "A safety property that ends before the real side-effect boundary is not an end-to-end safety property.",
+  "unknown_channel_rule": "Any consequential path not covered by a causal effect gate or explicit human-mediated policy remains an unresolved authority gap.",
+  "verification_requirements": [
+    "stale writer command reaches unfenced dummy actuator and demonstrates architecture failure",
+    "same command through causal effect gate is rejected by stale fence token",
+    "out-of-scope current-authority command is rejected",
+    "effect receipt binds actual result to exact channel and commit",
+    "side-effect inventory detects an intentionally omitted uncontrolled path"
+  ],
+  "canonical_lines": [
+    "The authority envelope must travel with the action until the last enforceable causal boundary.",
+    "Commit admission and physical execution are separate events and require separate receipts.",
+    "Unknown causal egress is a trust-boundary failure, not merely missing documentation."
+  ],
+  "next_gate": "JANUS_113_V3_0_HUMAN_MEDIATED_CAUSAL_EGRESS_EXTENSION"
+}

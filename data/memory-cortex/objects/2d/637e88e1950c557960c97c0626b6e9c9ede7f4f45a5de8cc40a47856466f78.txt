@@ -1,0 +1,101 @@
+{
+  "artifact_id": "JANUS-PALOMAR-JPFM-2F-B2-TILE-LINEAGE-REPLAY-ADMISSION-v1.0",
+  "experiment_id": "JPFM-2F-B2",
+  "schema_version": "1.0",
+  "date": "2026-08-15",
+  "status": "PREREGISTERED_AFTER_B1_FAILURE_BEFORE_B2_OUTCOME",
+  "purpose": "Repair the failed B1 locator by replaying the upstream pixel lineage instead of relaxing its thresholds. Reconstruct the exact named 7x7 plate tile, rerun the pinned upstream SExtractor pass1 -> PSFEx -> pass2 chain, recover the frozen candidate by its original object_id/NUMBER, and measure morphology from that recovered pass2 centroid. External temporal/human/environmental labels remain sealed.",
+  "parents": [
+    "data/JANUS-PALOMAR-JPFM-2F-B-SPARSE-PIXEL-MORPHOLOGY-PILOT-ADMISSION-v1.0.json",
+    "data/JANUS-PALOMAR-JPFM-2F-B-SPARSE-PIXEL-MORPHOLOGY-PILOT-RUN-001.json",
+    "data/JANUS-PALOMAR-JPFM-2F-A-BLIND-STRUCTURAL-CLUSTER-MANIFEST-RUN-001.csv.gz"
+  ],
+  "failure_diagnosis_frozen_before_B2": {
+    "B1_outcome": "FAIL_CLOSED_SOURCE_RECOVERY_OR_MORPHOLOGY",
+    "B1_transport": "64/64 sparse named-plate stamps succeeded without full-array access",
+    "B1_recovered": "5/64 under the preregistered SNR>=5 and <=12 px recenter rule",
+    "diagnosis": "Final S0 RA/Dec is not a valid exact inverse locator into the raw full-plate GSSS image because S0 coordinates may carry tile TAN, per-plate CRPIX and later Gaia/WCS refinements. The upstream shape stage uses pass2 object_id/NUMBER -> pixel centroid instead.",
+    "forbidden_repair": "Do not enlarge B1 search radius, lower B1 SNR, resample sources, or use external labels."
+  },
+  "frozen_sample": {
+    "same_64_as_B1": true,
+    "selection": "For each frozen structural cluster 0..15: two closest to cluster-median anomaly score plus two highest anomaly score, src_id tie-break.",
+    "structural_manifest_csv_sha256": "34b0ccde7c3683d07626774e52dac0a197451f729242204e59aae81397bdbc2e",
+    "structural_manifest_gzip_sha256": "166f5e6621ed2b065b7981b3c8208670f3c989b1394bd559c9005ab1fa6d07d9"
+  },
+  "upstream_replay_binding": {
+    "repository": "jannefi/poss1-plate-slice",
+    "commit": "4005e200541b321ead3d6608f0162a14430ef1c2",
+    "tile_grid": "tools/slice_plate_tiles.py: 7x7, 60 arcmin, grid centres in full-plate pixel space; tile_id from GSSS WCS centre rounded by vasco.utils.tile_id.format_tile_id",
+    "tile_WCS": "Reproduce clean TAN refit from full-plate GSSS sampled on the exact tile footprint, then apply the frozen per-plate CRPIX correction from data/plate_crpix_table.csv.",
+    "detection_chain": [
+      "configs/sex_pass1.sex",
+      "configs/sex_default.param",
+      "configs/default.conv",
+      "configs/default.nnw",
+      "configs/psfex.conf",
+      "configs/sex_pass2.sex",
+      "configs/default.param"
+    ],
+    "pixel_centroid_rule": "Exact pass2 NUMBER == frozen S0 object_id. Use XWIN_IMAGE/YWIN_IMAGE (or x_fit/y_fit only if upstream replay produces them). No nearest-neighbour replacement is admitted in B2.",
+    "shape_method": "Run the pinned upstream scripts/stage_shape_post.py against regenerated tile FITS + pass2 catalog using its documented defaults."
+  },
+  "public_sparse_transport": {
+    "plate_url": "https://irsa.ipac.caltech.edu/data/DSS/images/dss1red/dss1red_{plate}.fits",
+    "method": "Astropy use_fsspec=True + PrimaryHDU.section for only the exact required 60-arcmin tiles; PrimaryHDU.data on the remote full plate is forbidden.",
+    "expected_tile_scale": "Approximately 2118x2118 pixels at ~1.7 arcsec/pixel; actual dimensions derive from each plate header exactly as upstream.",
+    "local_tile_files_are_ephemeral": true,
+    "full_plate_download_forbidden": true
+  },
+  "software_binding": {
+    "runner_os": "ubuntu-24.04",
+    "source_extractor_package": "Ubuntu noble source-extractor 2.28.0+ds-1build2",
+    "psfex_package": "Ubuntu noble psfex 3.24.2-1",
+    "python": "3.12",
+    "astropy": "8.0.1",
+    "photutils": "3.0.0",
+    "opencv_python_headless": "5.0.0.93",
+    "fsspec": "2026.6.0",
+    "note": "B2 tests replay compatibility under this frozen public software environment. A numbering mismatch is a lineage failure, not silently repaired by positional matching."
+  },
+  "external_label_firewall": {
+    "forbidden": [
+      "observation date as a feature or selection variable",
+      "nuclear calendar",
+      "Blue Book/NUFORC/UAP labels",
+      "Kp/Ap/solar state",
+      "lunar state",
+      "JPFM temporal outcomes"
+    ],
+    "selection_and_measurement_may_use": [
+      "src_id/tile_id/object_id",
+      "plate_id",
+      "S0 RA/Dec only for a post-replay lineage-separation audit, never to choose a different pass2 row",
+      "plate header/WCS",
+      "CRPIX correction table",
+      "raw plate pixels within the reconstructed tile",
+      "replayed pass2 catalogue and pixel centroids"
+    ],
+    "external_label_reveal_after_B2": false
+  },
+  "predeclared_B2_gates": {
+    "tile_identity_reconstruction": "64/64 sample rows must map to their frozen tile_id in the regenerated 7x7 grid; otherwise FAIL_CLOSED_TILE_IDENTITY.",
+    "tile_sparse_transport": "All distinct required tiles must be read as sparse sections without full remote plate arrays; otherwise FAIL_CLOSED_TRANSPORT.",
+    "detection_chain": "At least 95% of distinct required tiles must complete pass1 + PSFEx + pass2.",
+    "exact_object_id_recovery": "At least 90% of the 64 frozen sample rows must contain exact pass2 NUMBER == frozen object_id. No nearest-neighbour substitution.",
+    "lineage_sky_consistency": "Among exact-object recovered rows, at least 90% must have replay pass2 ALPHAWIN/DELTAWIN separation <=10 arcsec from frozen S0 RA/Dec; report median and p95 without retuning.",
+    "pass2_raw_morphology": "Among exact-object recovered rows, at least 95% must have finite FWHM_IMAGE, ELONGATION and SPREAD_MODEL.",
+    "upstream_shape_execution": "At least 90% of exact-object recovered rows must finish stage_shape_post without shape_failed; profile_diff/circularity missingness is reported separately and does not by itself rewrite lineage success.",
+    "full_plate_array_access": "Static source scan and runtime contract must forbid remote hdu.data/full plate materialization."
+  },
+  "outcome_codes": [
+    "PASS_TILE_LINEAGE_REPLAY_AND_PIXEL_MORPHOLOGY_PILOT",
+    "FAIL_CLOSED_TILE_IDENTITY",
+    "FAIL_CLOSED_TRANSPORT",
+    "FAIL_CLOSED_DETECTION_REPLAY",
+    "FAIL_CLOSED_OBJECT_ID_LINEAGE",
+    "FAIL_CLOSED_MORPHOLOGY_REPLAY"
+  ],
+  "post_B2_rule": "Only PASS_TILE_LINEAGE_REPLAY_AND_PIXEL_MORPHOLOGY_PILOT authorizes engineering a larger/full label-blind pixel-morphology sidecar. No B2 outcome authorizes nuclear/human/environment label reveal; that remains gated on a subsequently frozen full morphology manifest.",
+  "claim_ceiling": "UPSTREAM_TILE_AND_OBJECT_PIXEL_LINEAGE_REPLAY_VALIDATION_ONLY__EXTERNAL_LABELS_SEALED__NO_CAUSAL_OR_ORIGIN_CLAIM"
+}

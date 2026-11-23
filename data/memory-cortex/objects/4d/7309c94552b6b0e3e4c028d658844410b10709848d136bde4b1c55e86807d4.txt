@@ -1,0 +1,59 @@
+{
+  "artifact_uuid": "JANUS-BLUEBOOK-PUBLIC-CASE-INDEX-PARSER-CORRECTIVE-AUDIT-v1.0",
+  "title": "JANUS Blue Book — Public Case Index Parser Corrective Audit",
+  "version": "v1.0",
+  "timestamp": "2026-08-15T09:50:00+03:00",
+  "status": "CORRECTIVE_AUDIT__DATE_AND_NARRATIVE_MORPHOLOGY_PROVISIONALLY_USABLE__MIRROR_DISPOSITION_REJECTED",
+  "purpose": "Preserve the parser defects discovered during the Blue Book exact-date reconstruction and prevent contaminated presentation-layer labels from entering scientific inference.",
+  "lineage": {
+    "superseded_pilot_runner": "research/uap_poss1/janus_bluebook_public_case_index_v0_1.py",
+    "active_runner": "research/uap_poss1/janus_bluebook_public_case_index_v0_2.py",
+    "full_index_workflow_run": 31869957662,
+    "full_index_artifact_id": 9243186827,
+    "blind_index_sha256": "f3beb68121a11bab9cfe63699edbad69e027e472e1f137ad34b4373a1d16841c",
+    "current_authority_changed": false
+  },
+  "defects": [
+    {
+      "id": "BB_PARSER_D1_FIXED_FORM_VOCABULARY_LEAK",
+      "severity": "MATERIAL",
+      "discovered_in": "v0.1 pilot",
+      "problem": "The rendered/transcribed case page contains fixed Project 10073 record-card vocabulary such as Ground-Radar, Astronomical and Formation even when those entries are merely form options. Whole-page keyword screening therefore produces false phenotype positives.",
+      "correction": "v0.2 computes STARLIKE, COMPACT_LIGHT, FORMATION, RADAR and RESOLVED_CRAFTLIKE only from the narrative Summary section. The v0.1 pilot phenotype counts are rejected and may not be used.",
+      "status": "CORRECTED_IN_v0.2"
+    },
+    {
+      "id": "BB_PARSER_D2_PRESENTATION_DISPOSITION_CONTAMINATION",
+      "severity": "MATERIAL_FOR_DISPOSITION_ONLY",
+      "problem": "The convenience mirror's top-level Unidentified / Insufficient Data presentation labels do not reliably encode the underlying Air Force case disposition. Individual narratives can state mundane conclusions such as aircraft, star, balloon or meteor while the page header still carries a generic unresolved label.",
+      "correction": "All disposition_screen values produced by v0.2 are excluded from the matched temporal specificity inference and from any claim about the fraction of Blue Book cases that were unidentified. A future disposition extractor must bind directly to record-card conclusion fields or independently verified NARA metadata.",
+      "status": "REJECTED_FROM_INFERENCE"
+    },
+    {
+      "id": "BB_PARSER_D3_MIRROR_POPULATION_SCOPE",
+      "severity": "MATERIAL_FOR_DENOMINATOR",
+      "problem": "The 5,144 discovered public mirror pages have not been demonstrated to constitute all 12,618 historical Project Blue Book reports or an unbiased sample of them.",
+      "correction": "Results are labelled reconstructed public-case archive temporal specificity. They cannot estimate population reporting incidence, anomaly fraction, or person-observation risk without an independent complete denominator.",
+      "status": "OPEN_SCOPE_BOUNDARY"
+    }
+  ],
+  "retained_fields_for_current_test": {
+    "nara_naid": "PROVISIONALLY_RETAINED_AS_PROVENANCE_BINDING",
+    "occurrence_date": "PROVISIONALLY_RETAINED_PENDING_DETERMINISTIC_NARA_SPOTCHECK",
+    "narrative_summary_sha256": "RETAINED",
+    "STARLIKE": "PROVISIONALLY_RETAINED_PENDING_BLIND_MANUAL_SPOTCHECK",
+    "COMPACT_LIGHT": "PROVISIONALLY_RETAINED_PENDING_VALIDATION",
+    "FORMATION": "PROVISIONALLY_RETAINED_PENDING_VALIDATION",
+    "RADAR": "PROVISIONALLY_RETAINED_PENDING_VALIDATION",
+    "RESOLVED_CRAFTLIKE": "PROVISIONALLY_RETAINED_PENDING_VALIDATION",
+    "disposition_screen": "REJECTED"
+  },
+  "inference_boundary": "The preregistered matched-control runner uses occurrence date and narrative morphology only; it does not use disposition_screen. Therefore D2 does not invalidate the temporal specificity computation, but it prevents any inference that the reconstructed 2,091-row study subset is uniformly unidentified/insufficient or representative of all Blue Book case outcomes.",
+  "required_next_validation": [
+    "Use the deterministic 12 STARLIKE + 12 non-STARLIKE blind spot-check manifest derived solely from the blind-index SHA-256.",
+    "Verify NARA NAID and occurrence date against underlying source scans or an independent NARA-linked mirror.",
+    "Verify STARLIKE membership against narrative/record-card wording without changing sample membership.",
+    "Record every failure; do not silently replace failed validation cases."
+  ],
+  "claim_ceiling": "PARSER_CORRECTION_ONLY__NO_CHANGE_TO_CURRENT_AUTHORITY__TEMPORAL_RESULT_REMAINS_OPEN_PENDING_VALIDATION"
+}

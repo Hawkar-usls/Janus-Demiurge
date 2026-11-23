@@ -1,0 +1,984 @@
+{
+  "artifact_id": "JANUS-PALOMAR-JPFM-2D-OPEN-TEMPORAL-ASSOCIATION-RUN-001",
+  "experiment_id": "JPFM-2D",
+  "schema_version": "1.1",
+  "date": "2026-08-15",
+  "status": "EXECUTED",
+  "claim_ceiling": "PUBLIC_ONLY_INDEPENDENT_TEMPORAL_ASSOCIATION_TEST__S0_CANDIDATES_ARE_NOT_CONFIRMED_TRANSIENTS__NO_NUCLEAR_CAUSALITY_OR_ORIGIN_CLAIM",
+  "parents": [
+    "data/JANUS-PALOMAR-JPFM-2C-OPEN-RECONSTRUCTION-ADMISSION-v1.0.json"
+  ],
+  "bindings": {
+    "poss_repository": "jannefi/poss1-plate-slice",
+    "poss_commit": "4005e200541b321ead3d6608f0162a14430ef1c2",
+    "poss_release": "results/s0-642-20260814",
+    "release_hashes": {
+      "stage_S0_gz_sha256": "f19cf987756c62a68f55a472992d860e73ae63b3a4664189092b0e1fda77f7bb",
+      "stage_S0_csv_sha256": "2ff92f2210acb387ef9ef4b88d561595d3883e9aab27065042627272b96590f0",
+      "tile_manifest_gz_sha256": "a1652db2d15470a9e8630a1a2ac3a055e49be65880ca615126a9aaa8cc2da02d",
+      "tile_manifest_csv_sha256": "5dcb90dc5d98550e5a60246aced2b097922a267c69e81f27d45d16a288142a99",
+      "repaired_astrometry_tiles_sha256": "8492e16077c83daa13a7449b9ae6b0a472aee9d2dcff0ab1c739b78779da222e",
+      "plate_crpix_table_sha256": "ff1938ba2a4689ddf85d58239035b9dea5111c2e2add4512290f134b3b09c373"
+    },
+    "nuclear_repository": "data-is-plural/nuclear-explosions",
+    "nuclear_meta": {
+      "source_url": "https://raw.githubusercontent.com/data-is-plural/nuclear-explosions/056ac3db13b392cb69be9f787e235738167e7fb1/data/sipri-report-explosions.csv",
+      "source_sha256": "1bdfb18cc41741e6c45c5bdfa3d70d8d0739e08b406c647aa1913ce013ee5b95",
+      "source_commit": "056ac3db13b392cb69be9f787e235738167e7fb1",
+      "records_in_window": 128,
+      "all_unique_dates": 125,
+      "non_uw_unique_dates": 123,
+      "physical_unique_dates": 121,
+      "same_day_duplicate_dates": [
+        "1955-03-29",
+        "1956-05-27",
+        "1956-06-11"
+      ],
+      "type_census": {
+        "AIRDROP": 24,
+        "ATMOSPH": 26,
+        "BARGE": 10,
+        "CRATER": 2,
+        "SHIP": 1,
+        "SURFACE": 25,
+        "TOWER": 38,
+        "UW": 2
+      },
+      "physical_allowed_types_frozen": [
+        "AIRDROP",
+        "ATMOSPH",
+        "BALLOON",
+        "BARGE",
+        "ROCKET",
+        "SHIP",
+        "SURFACE",
+        "TOWER"
+      ],
+      "types_excluded_from_physical_arm": [
+        "CRATER",
+        "UW"
+      ],
+      "paper_reported_124": "NOT_EXECUTED_MEMBERSHIP_UNRESOLVED"
+    }
+  },
+  "io_gate": {
+    "full_plate_image_arrays_downloaded": false,
+    "fits_header_workers": 10,
+    "header_range_requested_bytes": 131072,
+    "header_per_plate_safety_cap_bytes": 1048576,
+    "headers_total_bytes": 7395840,
+    "header_http_status_census": {
+      "206": 642
+    },
+    "exposure_keyword": "EXPOSURE",
+    "exposure_unit": "minutes"
+  },
+  "cohort": {
+    "released_stage_S0_rows": 122820,
+    "released_tile_manifest_rows": 31458,
+    "released_footprint_plates": 642,
+    "released_unique_nights_all_dates": 313,
+    "released_first_date": "1949-11-19",
+    "released_last_date": "1957-12-19",
+    "study_window": [
+      "1949-11-19",
+      "1957-04-28"
+    ],
+    "analyzed_plates": 640,
+    "analyzed_unique_nights": 312,
+    "analyzed_first_date": "1949-11-19",
+    "analyzed_last_date": "1957-04-28",
+    "analyzed_final_candidate_count": 122511,
+    "analyzed_pre_dedup_count": 129789,
+    "all_122820_release_rows_joined_to_plate": true,
+    "tiles_per_plate_census_analyzed": {
+      "49": 640
+    },
+    "repaired_tile_plates_in_analyzed_scope": [
+      "XE011",
+      "XE027",
+      "XE077",
+      "XE110",
+      "XE192"
+    ],
+    "wcs_divergent_gt_1p5_plates_analyzed": 207,
+    "wcs_threshold_arcsec_frozen": 1.5,
+    "exposure_min_summary_analyzed": {
+      "min": 40.0,
+      "median": 45.0,
+      "max": 70.0
+    }
+  },
+  "paper_reported_124_arm": {
+    "status": "NOT_EXECUTED_MEMBERSHIP_UNRESOLVED",
+    "reason": "The paper reports 124 above-ground test dates but does not publish a frozen machine-readable membership list. JANUS does not guess the discordant date."
+  },
+  "analysis_contract": {
+    "primary_outcome": "globally deduplicated stage_S0 candidate_count",
+    "primary_units": [
+      "observed plate",
+      "observed night"
+    ],
+    "opportunity": "processed tile count",
+    "unobserved_calendar_days_treated_as_scientific_zero": false,
+    "nuclear_window": "test_date +/- 1 day",
+    "primary_model": "NB2 count model with log(tile_count) offset and frozen nuisance covariates",
+    "nuisance_covariates": [
+      "continuous WCS correction magnitude",
+      "EXPOSURE minutes",
+      "plate centre declination",
+      "absolute galactic latitude",
+      "annual sine/cosine season"
+    ],
+    "sensitivity_arms": [
+      "pre-dedup count",
+      "exclude five plates containing repaired WCS tiles if they fall in temporal scope",
+      "exhaustive circular calendar shift",
+      "intentionally confounded all-calendar 2x2 diagnostic"
+    ]
+  },
+  "calendar_arms": {
+    "OPEN_ALL_REPORTED_125": {
+      "calendar_arm": "OPEN_ALL_REPORTED_125",
+      "nuclear_unique_dates": 125,
+      "window_days_each_side": 1,
+      "plate_level": {
+        "final_s0_rate": {
+          "exposed_units": 112,
+          "unexposed_units": 528,
+          "exposed_count": 21649,
+          "unexposed_count": 100862,
+          "exposed_opportunity": 5488.0,
+          "unexposed_opportunity": 25872.0,
+          "rate_exposed": 3.944788629737609,
+          "rate_unexposed": 3.898500309214595,
+          "crude_rate_ratio": 1.0118733658718984
+        },
+        "final_s0_nb_adjusted": {
+          "n": 640,
+          "outcome": "candidate_count",
+          "opportunity": "tile_count",
+          "converged": true,
+          "log_likelihood": -3804.9471365951076,
+          "aic": 7627.894273190215,
+          "alpha": 0.3148590919185829,
+          "nuclear_beta": -0.0649195725933405,
+          "nuclear_se": 0.061091370056435945,
+          "nuclear_p_two_sided": 0.28793455319946004,
+          "irr": 0.9371428323141713,
+          "irr_ci95": [
+            0.8313898524037714,
+            1.0563476155243041
+          ],
+          "covariates": [
+            "wcs_z",
+            "exposure_z",
+            "dec_z",
+            "abs_gal_b_z",
+            "season_sin",
+            "season_cos"
+          ],
+          "scalers": {
+            "wcs_offset_arcsec": {
+              "mean": 0.7644671963389786,
+              "median": 0.029982812133718402,
+              "sd": 1.0584648974943676
+            },
+            "exposure_min": {
+              "mean": 47.4375,
+              "median": 45.0,
+              "sd": 4.445415475520821
+            },
+            "plate_dec_deg": {
+              "mean": 32.15185203993055,
+              "median": 29.82926388888889,
+              "sd": 22.748714105764456
+            },
+            "abs_galactic_b_deg": {
+              "mean": 32.72780533999766,
+              "median": 30.246719416309737,
+              "sd": 21.339687728921863
+            }
+          }
+        },
+        "pre_dedup_rate": {
+          "exposed_units": 112,
+          "unexposed_units": 528,
+          "exposed_count": 22929,
+          "unexposed_count": 106860,
+          "exposed_opportunity": 5488.0,
+          "unexposed_opportunity": 25872.0,
+          "rate_exposed": 4.178024781341108,
+          "rate_unexposed": 4.130333951762523,
+          "crude_rate_ratio": 1.0115464827143659
+        },
+        "pre_dedup_nb_adjusted": {
+          "n": 640,
+          "outcome": "candidate_count_pre_dedup",
+          "opportunity": "tile_count",
+          "converged": true,
+          "log_likelihood": -3844.0031865874726,
+          "aic": 7706.006373174945,
+          "alpha": 0.31843523536299706,
+          "nuclear_beta": -0.06553307139822599,
+          "nuclear_se": 0.06138437269279234,
+          "nuclear_p_two_sided": 0.2857074890743846,
+          "irr": 0.936568072631756,
+          "irr_ci95": [
+            0.830402935868471,
+            1.0563061819570652
+          ],
+          "covariates": [
+            "wcs_z",
+            "exposure_z",
+            "dec_z",
+            "abs_gal_b_z",
+            "season_sin",
+            "season_cos"
+          ],
+          "scalers": {
+            "wcs_offset_arcsec": {
+              "mean": 0.7644671963389786,
+              "median": 0.029982812133718402,
+              "sd": 1.0584648974943676
+            },
+            "exposure_min": {
+              "mean": 47.4375,
+              "median": 45.0,
+              "sd": 4.445415475520821
+            },
+            "plate_dec_deg": {
+              "mean": 32.15185203993055,
+              "median": 29.82926388888889,
+              "sd": 22.748714105764456
+            },
+            "abs_galactic_b_deg": {
+              "mean": 32.72780533999766,
+              "median": 30.246719416309737,
+              "sd": 21.339687728921863
+            }
+          }
+        }
+      },
+      "night_level": {
+        "n_observed_nights": 312,
+        "final_s0_rate": {
+          "exposed_units": 52,
+          "unexposed_units": 260,
+          "exposed_count": 21649,
+          "unexposed_count": 100862,
+          "exposed_opportunity": 5488.0,
+          "unexposed_opportunity": 25872.0,
+          "rate_exposed": 3.944788629737609,
+          "rate_unexposed": 3.898500309214595,
+          "crude_rate_ratio": 1.0118733658718984
+        },
+        "final_s0_nb_adjusted": {
+          "n": 312,
+          "outcome": "candidate_count",
+          "opportunity": "tile_count",
+          "converged": true,
+          "log_likelihood": -2011.2197590600908,
+          "aic": 4040.4395181201817,
+          "alpha": 0.25588316377579623,
+          "nuclear_beta": -0.01047016759323771,
+          "nuclear_se": 0.07969923157577427,
+          "nuclear_p_two_sided": 0.8954818300327777,
+          "irr": 0.9895844538135039,
+          "irr_ci95": [
+            0.8464723083327128,
+            1.1568924128873663
+          ],
+          "covariates": [
+            "wcs_z",
+            "exposure_z",
+            "dec_z",
+            "abs_gal_b_z",
+            "season_sin",
+            "season_cos"
+          ],
+          "scalers": {
+            "wcs_offset_arcsec": {
+              "mean": 0.7667788284231231,
+              "median": 0.09710316492990656,
+              "sd": 0.8939738112924226
+            },
+            "exposure_min": {
+              "mean": 47.69658119658119,
+              "median": 45.0,
+              "sd": 4.67954523243856
+            },
+            "plate_dec_deg": {
+              "mean": 31.2398304328195,
+              "median": 29.5438125,
+              "sd": 19.857020246179033
+            },
+            "abs_galactic_b_deg": {
+              "mean": 32.85915411713611,
+              "median": 28.42033015919411,
+              "sd": 19.62555749453159
+            }
+          }
+        },
+        "fisher_any_candidate_observed_nights_only": {
+          "table_exposed_unexposed_by_any_none": [
+            [
+              52,
+              0
+            ],
+            [
+              260,
+              0
+            ]
+          ],
+          "status": "SATURATED_OR_NO_VARIATION"
+        },
+        "schedule_preserving_shift": {
+          "method": "exhaustive_circular_shift_of_entire_nuclear_calendar_against_fixed_observation_schedule",
+          "n_nonzero_shifts": 2717,
+          "score_observed": -0.11981966520582042,
+          "null_mean": 0.009356453103570663,
+          "null_sd": 1.3412862916664028,
+          "empirical_p_two_sided": 0.9260485651214128,
+          "preserves": [
+            "Palomar observation dates",
+            "nuclear-event spacing",
+            "nuisance-only expected count surface"
+          ]
+        }
+      },
+      "all_calendar_diagnostic": {
+        "status": "INTENTIONALLY_SCHEDULE_CONFOUNDED_DIAGNOSTIC_NOT_PRIMARY_EVIDENCE",
+        "unobserved_calendar_days_encoded_as_zero_only_here": true,
+        "table_exposed_unexposed_by_any_none": [
+          [
+            52,
+            299
+          ],
+          [
+            260,
+            2107
+          ]
+        ],
+        "odds_ratio": 1.4093645484949833,
+        "p_two_sided": 0.03907987968450547,
+        "observed_nights": 312,
+        "calendar_days": 2718
+      },
+      "exclude_repaired_plate_sensitivity": {
+        "n_plates": 635,
+        "final_s0_nb_adjusted": {
+          "n": 635,
+          "outcome": "candidate_count",
+          "opportunity": "tile_count",
+          "converged": true,
+          "log_likelihood": -3776.8691087168427,
+          "aic": 7571.738217433685,
+          "alpha": 0.31676566126192607,
+          "nuclear_beta": -0.06395479564680735,
+          "nuclear_se": 0.061547842297186406,
+          "nuclear_p_two_sided": 0.2987549615605237,
+          "irr": 0.9380474023984147,
+          "irr_ci95": [
+            0.831448141356107,
+            1.058313664290868
+          ],
+          "covariates": [
+            "wcs_z",
+            "exposure_z",
+            "dec_z",
+            "abs_gal_b_z",
+            "season_sin",
+            "season_cos"
+          ],
+          "scalers": {
+            "wcs_offset_arcsec": {
+              "mean": 0.7625217622545694,
+              "median": 0.0296762675494572,
+              "sd": 1.0580762483941406
+            },
+            "exposure_min": {
+              "mean": 47.41732283464567,
+              "median": 45.0,
+              "sd": 4.457040692031368
+            },
+            "plate_dec_deg": {
+              "mean": 31.879141076115488,
+              "median": 29.70225,
+              "sd": 22.591216195668537
+            },
+            "abs_galactic_b_deg": {
+              "mean": 32.8829688427001,
+              "median": 30.527919817708224,
+              "sd": 21.337965807123762
+            }
+          }
+        }
+      }
+    },
+    "OPEN_NON_UW_123": {
+      "calendar_arm": "OPEN_NON_UW_123",
+      "nuclear_unique_dates": 123,
+      "window_days_each_side": 1,
+      "plate_level": {
+        "final_s0_rate": {
+          "exposed_units": 111,
+          "unexposed_units": 529,
+          "exposed_count": 21477,
+          "unexposed_count": 101034,
+          "exposed_opportunity": 5439.0,
+          "unexposed_opportunity": 25921.0,
+          "rate_exposed": 3.948703805846663,
+          "rate_unexposed": 3.8977662898807917,
+          "crude_rate_ratio": 1.0130683863981564
+        },
+        "final_s0_nb_adjusted": {
+          "n": 640,
+          "outcome": "candidate_count",
+          "opportunity": "tile_count",
+          "converged": true,
+          "log_likelihood": -3804.997224737362,
+          "aic": 7627.994449474724,
+          "alpha": 0.3149053326954366,
+          "nuclear_beta": -0.06212524473682732,
+          "nuclear_se": 0.061294853974949035,
+          "nuclear_p_two_sided": 0.3107987296747373,
+          "irr": 0.9397651787775927,
+          "irr_ci95": [
+            0.8333838397209631,
+            1.0597260819679242
+          ],
+          "covariates": [
+            "wcs_z",
+            "exposure_z",
+            "dec_z",
+            "abs_gal_b_z",
+            "season_sin",
+            "season_cos"
+          ],
+          "scalers": {
+            "wcs_offset_arcsec": {
+              "mean": 0.7644671963389786,
+              "median": 0.029982812133718402,
+              "sd": 1.0584648974943676
+            },
+            "exposure_min": {
+              "mean": 47.4375,
+              "median": 45.0,
+              "sd": 4.445415475520821
+            },
+            "plate_dec_deg": {
+              "mean": 32.15185203993055,
+              "median": 29.82926388888889,
+              "sd": 22.748714105764456
+            },
+            "abs_galactic_b_deg": {
+              "mean": 32.72780533999766,
+              "median": 30.246719416309737,
+              "sd": 21.339687728921863
+            }
+          }
+        },
+        "pre_dedup_rate": {
+          "exposed_units": 111,
+          "unexposed_units": 529,
+          "exposed_count": 22745,
+          "unexposed_count": 107044,
+          "exposed_opportunity": 5439.0,
+          "unexposed_opportunity": 25921.0,
+          "rate_exposed": 4.18183489612061,
+          "rate_unexposed": 4.129624628679449,
+          "crude_rate_ratio": 1.0126428603410031
+        },
+        "pre_dedup_nb_adjusted": {
+          "n": 640,
+          "outcome": "candidate_count_pre_dedup",
+          "opportunity": "tile_count",
+          "converged": true,
+          "log_likelihood": -3844.0514475553814,
+          "aic": 7706.102895110763,
+          "alpha": 0.31848069362509296,
+          "nuclear_beta": -0.06285173665141792,
+          "nuclear_se": 0.061588548347621064,
+          "nuclear_p_two_sided": 0.30748659382623866,
+          "irr": 0.9390826949131191,
+          "irr_ci95": [
+            0.8322993782365335,
+            1.0595662221372744
+          ],
+          "covariates": [
+            "wcs_z",
+            "exposure_z",
+            "dec_z",
+            "abs_gal_b_z",
+            "season_sin",
+            "season_cos"
+          ],
+          "scalers": {
+            "wcs_offset_arcsec": {
+              "mean": 0.7644671963389786,
+              "median": 0.029982812133718402,
+              "sd": 1.0584648974943676
+            },
+            "exposure_min": {
+              "mean": 47.4375,
+              "median": 45.0,
+              "sd": 4.445415475520821
+            },
+            "plate_dec_deg": {
+              "mean": 32.15185203993055,
+              "median": 29.82926388888889,
+              "sd": 22.748714105764456
+            },
+            "abs_galactic_b_deg": {
+              "mean": 32.72780533999766,
+              "median": 30.246719416309737,
+              "sd": 21.339687728921863
+            }
+          }
+        }
+      },
+      "night_level": {
+        "n_observed_nights": 312,
+        "final_s0_rate": {
+          "exposed_units": 51,
+          "unexposed_units": 261,
+          "exposed_count": 21477,
+          "unexposed_count": 101034,
+          "exposed_opportunity": 5439.0,
+          "unexposed_opportunity": 25921.0,
+          "rate_exposed": 3.948703805846663,
+          "rate_unexposed": 3.8977662898807917,
+          "crude_rate_ratio": 1.0130683863981564
+        },
+        "final_s0_nb_adjusted": {
+          "n": 312,
+          "outcome": "candidate_count",
+          "opportunity": "tile_count",
+          "converged": true,
+          "log_likelihood": -2011.2270779977503,
+          "aic": 4040.4541559955005,
+          "alpha": 0.2558972568136347,
+          "nuclear_beta": -0.004058544692458119,
+          "nuclear_se": 0.08028268714921845,
+          "nuclear_p_two_sided": 0.9596815764192258,
+          "irr": 0.9959496800694354,
+          "irr_ci95": [
+            0.8509433510893716,
+            1.165666038709354
+          ],
+          "covariates": [
+            "wcs_z",
+            "exposure_z",
+            "dec_z",
+            "abs_gal_b_z",
+            "season_sin",
+            "season_cos"
+          ],
+          "scalers": {
+            "wcs_offset_arcsec": {
+              "mean": 0.7667788284231231,
+              "median": 0.09710316492990656,
+              "sd": 0.8939738112924226
+            },
+            "exposure_min": {
+              "mean": 47.69658119658119,
+              "median": 45.0,
+              "sd": 4.67954523243856
+            },
+            "plate_dec_deg": {
+              "mean": 31.2398304328195,
+              "median": 29.5438125,
+              "sd": 19.857020246179033
+            },
+            "abs_galactic_b_deg": {
+              "mean": 32.85915411713611,
+              "median": 28.42033015919411,
+              "sd": 19.62555749453159
+            }
+          }
+        },
+        "fisher_any_candidate_observed_nights_only": {
+          "table_exposed_unexposed_by_any_none": [
+            [
+              51,
+              0
+            ],
+            [
+              261,
+              0
+            ]
+          ],
+          "status": "SATURATED_OR_NO_VARIATION"
+        },
+        "schedule_preserving_shift": {
+          "method": "exhaustive_circular_shift_of_entire_nuclear_calendar_against_fixed_observation_schedule",
+          "n_nonzero_shifts": 2717,
+          "score_observed": -0.04172417855482635,
+          "null_mean": 0.0101095447835098,
+          "null_sd": 1.3514088483383115,
+          "empirical_p_two_sided": 0.9768211920529801,
+          "preserves": [
+            "Palomar observation dates",
+            "nuclear-event spacing",
+            "nuisance-only expected count surface"
+          ]
+        }
+      },
+      "all_calendar_diagnostic": {
+        "status": "INTENTIONALLY_SCHEDULE_CONFOUNDED_DIAGNOSTIC_NOT_PRIMARY_EVIDENCE",
+        "unobserved_calendar_days_encoded_as_zero_only_here": true,
+        "table_exposed_unexposed_by_any_none": [
+          [
+            51,
+            296
+          ],
+          [
+            261,
+            2110
+          ]
+        ],
+        "odds_ratio": 1.392901522211867,
+        "p_two_sided": 0.0473991375238558,
+        "observed_nights": 312,
+        "calendar_days": 2718
+      },
+      "exclude_repaired_plate_sensitivity": {
+        "n_plates": 635,
+        "final_s0_nb_adjusted": {
+          "n": 635,
+          "outcome": "candidate_count",
+          "opportunity": "tile_count",
+          "converged": true,
+          "log_likelihood": -3776.9181837934616,
+          "aic": 7571.836367586923,
+          "alpha": 0.31681233849961205,
+          "nuclear_beta": -0.061128779465575406,
+          "nuclear_se": 0.06175466114176992,
+          "nuclear_p_two_sided": 0.32224009446258817,
+          "irr": 0.9407020888630327,
+          "irr_ci95": [
+            0.833463231467259,
+            1.0617390024913602
+          ],
+          "covariates": [
+            "wcs_z",
+            "exposure_z",
+            "dec_z",
+            "abs_gal_b_z",
+            "season_sin",
+            "season_cos"
+          ],
+          "scalers": {
+            "wcs_offset_arcsec": {
+              "mean": 0.7625217622545694,
+              "median": 0.0296762675494572,
+              "sd": 1.0580762483941406
+            },
+            "exposure_min": {
+              "mean": 47.41732283464567,
+              "median": 45.0,
+              "sd": 4.457040692031368
+            },
+            "plate_dec_deg": {
+              "mean": 31.879141076115488,
+              "median": 29.70225,
+              "sd": 22.591216195668537
+            },
+            "abs_galactic_b_deg": {
+              "mean": 32.8829688427001,
+              "median": 30.527919817708224,
+              "sd": 21.337965807123762
+            }
+          }
+        }
+      }
+    },
+    "PHYSICAL_ATMOSPHERIC_SURFACE": {
+      "calendar_arm": "PHYSICAL_ATMOSPHERIC_SURFACE",
+      "nuclear_unique_dates": 121,
+      "window_days_each_side": 1,
+      "plate_level": {
+        "final_s0_rate": {
+          "exposed_units": 97,
+          "unexposed_units": 543,
+          "exposed_count": 18493,
+          "unexposed_count": 104018,
+          "exposed_opportunity": 4753.0,
+          "unexposed_opportunity": 26607.0,
+          "rate_exposed": 3.890805806858826,
+          "rate_unexposed": 3.9094223324688993,
+          "crude_rate_ratio": 0.9952380367156913
+        },
+        "final_s0_nb_adjusted": {
+          "n": 640,
+          "outcome": "candidate_count",
+          "opportunity": "tile_count",
+          "converged": true,
+          "log_likelihood": -3804.907501665918,
+          "aic": 7627.815003331836,
+          "alpha": 0.31482133004513424,
+          "nuclear_beta": -0.07039965678365777,
+          "nuclear_se": 0.06392010280683294,
+          "nuclear_p_two_sided": 0.27073583937207846,
+          "irr": 0.9320212568444186,
+          "irr_ci95": [
+            0.822274698902517,
+            1.056415361398384
+          ],
+          "covariates": [
+            "wcs_z",
+            "exposure_z",
+            "dec_z",
+            "abs_gal_b_z",
+            "season_sin",
+            "season_cos"
+          ],
+          "scalers": {
+            "wcs_offset_arcsec": {
+              "mean": 0.7644671963389786,
+              "median": 0.029982812133718402,
+              "sd": 1.0584648974943676
+            },
+            "exposure_min": {
+              "mean": 47.4375,
+              "median": 45.0,
+              "sd": 4.445415475520821
+            },
+            "plate_dec_deg": {
+              "mean": 32.15185203993055,
+              "median": 29.82926388888889,
+              "sd": 22.748714105764456
+            },
+            "abs_galactic_b_deg": {
+              "mean": 32.72780533999766,
+              "median": 30.246719416309737,
+              "sd": 21.339687728921863
+            }
+          }
+        },
+        "pre_dedup_rate": {
+          "exposed_units": 97,
+          "unexposed_units": 543,
+          "exposed_count": 19576,
+          "unexposed_count": 110213,
+          "exposed_opportunity": 4753.0,
+          "unexposed_opportunity": 26607.0,
+          "rate_exposed": 4.11866189774879,
+          "rate_unexposed": 4.142255797346563,
+          "crude_rate_ratio": 0.9943040940125218
+        },
+        "pre_dedup_nb_adjusted": {
+          "n": 640,
+          "outcome": "candidate_count_pre_dedup",
+          "opportunity": "tile_count",
+          "converged": true,
+          "log_likelihood": -3843.9500432052337,
+          "aic": 7705.900086410467,
+          "alpha": 0.3183838231314158,
+          "nuclear_beta": -0.07183691860589805,
+          "nuclear_se": 0.06422701742909624,
+          "nuclear_p_two_sided": 0.26336015518548195,
+          "irr": 0.9306826604616086,
+          "irr_ci95": [
+            0.8205999502492377,
+            1.0555328625365126
+          ],
+          "covariates": [
+            "wcs_z",
+            "exposure_z",
+            "dec_z",
+            "abs_gal_b_z",
+            "season_sin",
+            "season_cos"
+          ],
+          "scalers": {
+            "wcs_offset_arcsec": {
+              "mean": 0.7644671963389786,
+              "median": 0.029982812133718402,
+              "sd": 1.0584648974943676
+            },
+            "exposure_min": {
+              "mean": 47.4375,
+              "median": 45.0,
+              "sd": 4.445415475520821
+            },
+            "plate_dec_deg": {
+              "mean": 32.15185203993055,
+              "median": 29.82926388888889,
+              "sd": 22.748714105764456
+            },
+            "abs_galactic_b_deg": {
+              "mean": 32.72780533999766,
+              "median": 30.246719416309737,
+              "sd": 21.339687728921863
+            }
+          }
+        }
+      },
+      "night_level": {
+        "n_observed_nights": 312,
+        "final_s0_rate": {
+          "exposed_units": 47,
+          "unexposed_units": 265,
+          "exposed_count": 18493,
+          "unexposed_count": 104018,
+          "exposed_opportunity": 4753.0,
+          "unexposed_opportunity": 26607.0,
+          "rate_exposed": 3.890805806858826,
+          "rate_unexposed": 3.9094223324688993,
+          "crude_rate_ratio": 0.9952380367156913
+        },
+        "final_s0_nb_adjusted": {
+          "n": 312,
+          "outcome": "candidate_count",
+          "opportunity": "tile_count",
+          "converged": true,
+          "log_likelihood": -2011.1989125736295,
+          "aic": 4040.397825147259,
+          "alpha": 0.25584932016345574,
+          "nuclear_beta": -0.02011792104299749,
+          "nuclear_se": 0.08266855682912784,
+          "nuclear_p_two_sided": 0.8077293289480246,
+          "irr": 0.9800830940716001,
+          "irr_ci95": [
+            0.833480214369539,
+            1.1524723139487478
+          ],
+          "covariates": [
+            "wcs_z",
+            "exposure_z",
+            "dec_z",
+            "abs_gal_b_z",
+            "season_sin",
+            "season_cos"
+          ],
+          "scalers": {
+            "wcs_offset_arcsec": {
+              "mean": 0.7667788284231231,
+              "median": 0.09710316492990656,
+              "sd": 0.8939738112924226
+            },
+            "exposure_min": {
+              "mean": 47.69658119658119,
+              "median": 45.0,
+              "sd": 4.67954523243856
+            },
+            "plate_dec_deg": {
+              "mean": 31.2398304328195,
+              "median": 29.5438125,
+              "sd": 19.857020246179033
+            },
+            "abs_galactic_b_deg": {
+              "mean": 32.85915411713611,
+              "median": 28.42033015919411,
+              "sd": 19.62555749453159
+            }
+          }
+        },
+        "fisher_any_candidate_observed_nights_only": {
+          "table_exposed_unexposed_by_any_none": [
+            [
+              47,
+              0
+            ],
+            [
+              265,
+              0
+            ]
+          ],
+          "status": "SATURATED_OR_NO_VARIATION"
+        },
+        "schedule_preserving_shift": {
+          "method": "exhaustive_circular_shift_of_entire_nuclear_calendar_against_fixed_observation_schedule",
+          "n_nonzero_shifts": 2717,
+          "score_observed": -0.22893780305620604,
+          "null_mean": 0.010109639589955415,
+          "null_sd": 1.349852782651141,
+          "empirical_p_two_sided": 0.8568800588668138,
+          "preserves": [
+            "Palomar observation dates",
+            "nuclear-event spacing",
+            "nuisance-only expected count surface"
+          ]
+        }
+      },
+      "all_calendar_diagnostic": {
+        "status": "INTENTIONALLY_SCHEDULE_CONFOUNDED_DIAGNOSTIC_NOT_PRIMARY_EVIDENCE",
+        "unobserved_calendar_days_encoded_as_zero_only_here": true,
+        "table_exposed_unexposed_by_any_none": [
+          [
+            47,
+            296
+          ],
+          [
+            265,
+            2110
+          ]
+        ],
+        "odds_ratio": 1.264278429372769,
+        "p_two_sided": 0.17397241139256903,
+        "observed_nights": 312,
+        "calendar_days": 2718
+      },
+      "exclude_repaired_plate_sensitivity": {
+        "n_plates": 635,
+        "final_s0_nb_adjusted": {
+          "n": 635,
+          "outcome": "candidate_count",
+          "opportunity": "tile_count",
+          "converged": true,
+          "log_likelihood": -3776.8297663050507,
+          "aic": 7571.659532610101,
+          "alpha": 0.3167255544176398,
+          "nuclear_beta": -0.06947535798848595,
+          "nuclear_se": 0.06443977746811123,
+          "nuclear_p_two_sided": 0.28096950842541857,
+          "irr": 0.9328831212179359,
+          "irr_ci95": [
+            0.8221972074193793,
+            1.0584698050542245
+          ],
+          "covariates": [
+            "wcs_z",
+            "exposure_z",
+            "dec_z",
+            "abs_gal_b_z",
+            "season_sin",
+            "season_cos"
+          ],
+          "scalers": {
+            "wcs_offset_arcsec": {
+              "mean": 0.7625217622545694,
+              "median": 0.0296762675494572,
+              "sd": 1.0580762483941406
+            },
+            "exposure_min": {
+              "mean": 47.41732283464567,
+              "median": 45.0,
+              "sd": 4.457040692031368
+            },
+            "plate_dec_deg": {
+              "mean": 31.879141076115488,
+              "median": 29.70225,
+              "sd": 22.591216195668537
+            },
+            "abs_galactic_b_deg": {
+              "mean": 32.8829688427001,
+              "median": 30.527919817708224,
+              "sd": 21.337965807123762
+            }
+          }
+        }
+      }
+    }
+  },
+  "aggregate_verdict": {
+    "robust_across_executed_calendar_arms": false,
+    "code": "OPEN_TEMPORAL_ASSOCIATION_NOT_ROBUST_ACROSS_FROZEN_CONTROLS",
+    "interpretation": "Robustness requires common direction plus p<0.05 in both adjusted nightly NB and schedule-preserving circular-shift tests for every executed public calendar arm. Association never implies causality or origin."
+  },
+  "integrity": {
+    "canonical_payload_sha256_without_integrity": "f30464a373625dcb0deea280891e358ff23bede808c0829c3f2f2c6500e73b7a"
+  }
+}

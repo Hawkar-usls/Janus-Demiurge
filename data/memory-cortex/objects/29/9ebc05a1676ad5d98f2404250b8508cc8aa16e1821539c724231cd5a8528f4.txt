@@ -1,0 +1,124 @@
+{
+  "schema": "janus.meta_registry.cousteau.argo_source_protocol.v1",
+  "artifact_id": "JANUS-COUSTEAU-ARGO-SOUTHERN-OCEAN-CORE-PREREG-2026-11-09-v1.0",
+  "record_date": "2026-11-09",
+  "project": "JANUS_ECHO_COUSTEAU",
+  "protocol": {
+    "schema": "janus.cousteau.southern_ocean.argo_protocol.v1",
+    "artifact_id": "JANUS-COUSTEAU-SOUTHERN-ARGO-CORE-PREREG-2026-11-09",
+    "created_date": "2026-11-09",
+    "project": "JANUS_ECHO_COUSTEAU",
+    "status": "PREREGISTERED_BEFORE_GDAC_PROFILE_RUN",
+    "primary_source": {
+      "name": "Argo GDAC core-profile index and profile NetCDF",
+      "doi": "https://doi.org/10.17882/42182",
+      "official_gdac": [
+        "https://data-argo.ifremer.fr/",
+        "https://nrlgodae1.nrlmry.navy.mil/pub/outgoing/argo/"
+      ],
+      "source_index": "ar_index_global_prof.txt",
+      "netcdf_path": "dac/{dac}/{wmo}/profiles/{profile}.nc",
+      "attribution": "International Argo Program and contributing national programs; Argo GDAC DOI 10.17882/42182; CC BY 4.0",
+      "snapshot_method": "hash source index and each successfully downloaded profile file; do not assume upstream immutable"
+    },
+    "region": {
+      "lat_max": -50,
+      "lat_min": -90,
+      "lon_min": -180,
+      "lon_max": 180
+    },
+    "profile_period": [
+      "2022-01-01",
+      "2025-01-01"
+    ],
+    "selection": {
+      "kind": "D-core profiles from official index; one profile per WMO platform; deterministic hash ordering; max 100 profiles",
+      "min_usable_profiles": 24,
+      "limit_request_failures": "up to 150 candidates and 25min max CI; refuse to claim training without minimum data",
+      "bias_warning": "Deliberately D-only WMO-selection is a limited convenience sample, not an exhaustive Southern Ocean atlas"
+    },
+    "quality": {
+      "data_mode": "D",
+      "position_qc": [
+        "1"
+      ],
+      "adjusted_variables": [
+        "PRES_ADJUSTED",
+        "TEMP_ADJUSTED",
+        "PSAL_ADJUSTED"
+      ],
+      "required_adjusted_qc": [
+        "1"
+      ],
+      "selected_pressure_levels_dbar": [
+        10,
+        100,
+        300,
+        600,
+        1000
+      ],
+      "under_ice_position_qc_8": "record count, exclude from geographically precise modeling; not a rejection of physical temperature data",
+      "raw_qc": "store rejected counts and exact per-file SHA256"
+    },
+    "test": {
+      "float_holdout": "WMO-disjoint 25% of usable profiles by deterministic hash",
+      "targets": [
+        "TEMP_ADJUSTED",
+        "PSAL_ADJUSTED"
+      ],
+      "baseline": "training-only mean at each chosen pressure level",
+      "model": "fixed ridge features pressure, latitude, longitude, seasonal phase and linear interactions; alpha=10",
+      "metrics": [
+        "RMSE",
+        "MAE"
+      ],
+      "model_promotion": "forbidden; scientific test only",
+      "limits": [
+        "not a causal forecast",
+        "sparse convenience sample",
+        "D-only selection bias",
+        "not a sonar survey"
+      ]
+    },
+    "future_lanes": [
+      {
+        "type": "Deep Argo",
+        "state": "NOT_TRAINED",
+        "requirement": "separate depth >2000 dbar quality gate"
+      },
+      {
+        "type": "BGC Argo",
+        "state": "NOT_TRAINED",
+        "requirement": "Sprof index, PARAMETER_DATA_MODE and BGC QC incl adjusted errors"
+      },
+      {
+        "type": "under-ice",
+        "state": "NOT_TRAINED",
+        "requirement": "position uncertainty and withheld trajectory/ice satellite geolocation bridge"
+      }
+    ],
+    "protocol_correction": {
+      "date": "2026-11-09",
+      "reason": "originally pointed to nonexistent argo_profile_index.txt, updated to documented official GDAC ar_index_global_prof.txt; other prereg criteria unchanged",
+      "earlier_failed_run": "42585110195"
+    }
+  },
+  "provenance": {
+    "protocol_source_repo": "Hawkar-usls/Janus-Cosmos",
+    "protocol_blob_sha": "78eafd3232cbe13209e93696a5de77f40c138881",
+    "protocol_source_branch": "experiment/cousteau-southern-ocean-20261109",
+    "code_path": "workspace/cousteau_southern_ocean_argo_gdac.py",
+    "workflow_path": ".github/workflows/cousteau-southern-argo-gdac.yml",
+    "research_pr": "https://github.com/Hawkar-usls/Janus-Cosmos/pull/49",
+    "source_doi": "https://doi.org/10.17882/42182"
+  },
+  "observed_status_at_entry": "GITHUB_CI_RETRY_IN_PROGRESS__REAL_PROFILE_TRAINING_NOT_YET_VERIFIED",
+  "verification_run": "https://github.com/Hawkar-usls/Janus-Cosmos/actions/runs/42585534673",
+  "known_failed_predecessor_runs": [
+    "42584983408",
+    "42585110195",
+    "42585217091",
+    "42585244142"
+  ],
+  "evidence_contract": "When actual data and metrics are confirmed, write new append-only JSON evidence, not overwrite this preregistration."
+}

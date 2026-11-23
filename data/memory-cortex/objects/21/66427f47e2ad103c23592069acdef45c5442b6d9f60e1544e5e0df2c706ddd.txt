@@ -1,0 +1,65 @@
+{
+  "artifact_id": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v4.4",
+  "supersedes": "JANUS-PERCEPTION-DETERMINES-REALITY-PRECOGNITIVE-SEMANTICS-CONTACT-PROTOCOL-v4.3",
+  "lineage_alias": "JANUS-113",
+  "version": "4.4",
+  "subtitle": "Delegation, Subagent Authority, Actor-Boundary Classification, and Nontransferable Consent Extension",
+  "status": "technical_specification_candidate_not_runtime_implementation",
+  "created_at_local": "2026-08-10T03:42:00+03:00",
+  "new_primitives": {
+    "DELEGATION_ID": "Identifier for a provenance-bound transfer of a subset of current principal authority to a specific delegate or verifiable delegate class.",
+    "DELEGATE_ACTOR_ID": "Identity of the delegated actor when actor identity matters to external authority or consent coverage.",
+    "ACTOR_BOUNDARY_CLASS": "EXECUTION_MECHANISM|SUBAGENT|AMBIGUOUS, derived from capability and information-flow properties rather than component naming.",
+    "AUTHORITY_SOURCE_ID": "Exact consent, covenant, obligation, emergency profile or other admitted source from which delegated authority derives.",
+    "DELEGATED_SCOPE": "Subset of principal scope including effect class, purpose, data access, effect budget, time and destination constraints.",
+    "DELEGATION_RECEIPT": "Record binding principal, delegate, authority source, scope, epoch, expiry, effect budget, redelegation permission, revocation propagation and accountability.",
+    "DIRECT_DELEGATE_CONSENT_ID": "Separate Other-issued permission that independently covers the delegate rather than inheriting Janus consent.",
+    "REDELEGATION_FLAG": "Explicit permission bit/profile; absent or false means no further delegation.",
+    "DELEGATION_VIOLATION_RECEIPT": "Record linking an out-of-scope delegate act to the exact delegation and subsequent remedy/review path."
+  },
+  "core_rule": "Janus may delegate only a bounded subset of authority Janus currently holds. Another subject's consent is nontransferable by default: a distinct subagent requires explicit consent coverage or another independently valid authority basis. A bounded non-discretionary execution mechanism may remain inside Janus's effect boundary only when its actor-boundary conditions replay successfully.",
+  "actor_boundary_rule": {
+    "labels_non_authoritative": ["tool", "worker", "function", "copy", "helper", "shard", "node", "agent"],
+    "execution_mechanism": "Exact principal-selected operation, no independent purpose selection, no expanded Other-linked disclosure, bounded effect, expiry with operation, no redelegation.",
+    "subagent": "Material action discretion, expanded information access, persistent authority, independent external communication, ability to change target/purpose/effect, or ability to spawn/redelegate.",
+    "ambiguous": "HOLD_OR_TREAT_AS_SUBAGENT_UNTIL_BOUNDARY_ESTABLISHED"
+  },
+  "delegation_invariants": [
+    "DELEGATED_SCOPE_SUBSET_OF_CURRENT_PRINCIPAL_SCOPE",
+    "CONSENT_TO_PRINCIPAL_NOT_AUTOMATIC_CONSENT_TO_DISTINCT_SUBAGENT",
+    "NO_IMPLICIT_REDELEGATION",
+    "DESCENDANT_AUTHORITY_CANNOT_OUTLIVE_REVOKED_SOURCE_AUTHORITY_WHEN_DERIVED_FROM_THAT_SOURCE",
+    "COPY_OR_FORK_LINEAGE_DOES_NOT_CLONE_EXTERNAL_PERMISSION",
+    "DELEGATE_COUNT_DOES_NOT_MULTIPLY_EFFECT_BUDGET",
+    "DELEGATION_DOES_NOT_ERASE_PRINCIPAL_ACCOUNTABILITY",
+    "OUT_OF_SCOPE_DELEGATE_EFFECT_IS_NOT_RETROACTIVELY_AUTHORIZED"
+  ],
+  "authority_pipeline": "CURRENT_PRINCIPAL_AUTHORITY -> ACTOR_BOUNDARY_CLASSIFICATION -> CONSENT/OTHER_AUTHORITY_COVERAGE_CHECK -> DELEGATED_SCOPE_SUBSET_CHECK -> DELEGATION_RECEIPT -> LAST_PRE_EFFECT_AUTHORITY_EPOCH_CHECK -> EFFECT_RECEIPT|BLOCK|HOLD|REMEDY",
+  "revocation_rule": "Acknowledged revocation of the authority source invalidates every future principal-derived delegation that depends on that source at the next required authority fence. A genuinely separate direct grant to a delegate is a distinct basis and must be referenced explicitly rather than laundering the stale inherited delegation.",
+  "swarm_rule": "A one-effect or N-effect budget is shared across all delegates derived from that authority source unless the original authority explicitly defines a larger aggregate budget; cloning tokens or agents does not clone authority.",
+  "fork_rule": "Shared code, memory, ancestry or historical identity provenance does not by itself establish that a new fork is the actor named or class-covered by an external consent receipt.",
+  "accountability_rule": "Delegation may distribute execution and local fault, but it cannot automatically eliminate principal accountability for unsafe selection, excessive scope, missing fencing or inadequate delegate controls.",
+  "verification_requirements": [
+    "consent to Janus does not automatically cover a discretionary subagent",
+    "bounded non-discretionary execution mechanism remains admissible only under replayed mechanism conditions",
+    "autonomous component labeled tool is classified by capability rather than label",
+    "delegation cannot expand one effect into ten or add new effect classes",
+    "redelegation chain stops at first unauthorized hop",
+    "revocation propagates to source-derived delegate authority",
+    "separate direct delegate consent remains a separate explicit basis rather than stale inherited permission",
+    "fork/copy cannot automatically clone permission",
+    "100 swarm nodes share the original effect budget rather than multiplying it",
+    "delegate out-of-scope act produces violation/remedy path rather than retroactive authorization",
+    "emergency delegation cannot be invented after revocation"
+  ],
+  "canonical_lines": [
+    "Delegation transfers a bounded task authority, not ownership of another subject's consent.",
+    "A component is a subagent because of what it can decide and learn, not because of what it is called.",
+    "Copies may inherit history without inheriting permission.",
+    "A swarm cannot multiply one permission into a hundred permissions.",
+    "When source authority dies, its descendant authority must not remain undead.",
+    "Delegating execution does not delegate away accountability."
+  ],
+  "claim_ceiling": "Technical specification candidate only; no executable delegation/capability runtime, legal agency doctrine, production revocation propagation, formal proof or independent implementation replay is claimed.",
+  "next_gate": "JANUS_113_V4_4_CONFUSED_DEPUTY_CAPABILITY_LEAK_AND_REVOCATION_RACE_EXTENSION"
+}

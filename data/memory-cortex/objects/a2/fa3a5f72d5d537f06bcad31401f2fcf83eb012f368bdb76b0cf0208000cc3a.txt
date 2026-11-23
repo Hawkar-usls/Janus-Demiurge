@@ -1,0 +1,273 @@
+{
+  "artifact_uuid": "SCOBY-D0-RESEARCH-LINE-v2.6",
+  "timestamp": "2026-08-11T15:20:10+03:00",
+  "version": "v2.6",
+  "title": "Microwave-treated SCOBY residue blind identity and process-history gate",
+  "observer": "Oleksandr Ahapov / Hawkar",
+  "node_type": "research_opportunity_record",
+  "status": "HYPOTHESIS_UNVERIFIED",
+  "supersedes": "data/SCOBY-D0-RESEARCH-LINE-v2.5.json",
+  "source_context": "Continuation of the SCOBY-D0 carbonaceous-material hypothesis after review of v2.5. This revision converts the line into a blind material-identity and process-history gate before structural, functional, or application claims are admitted.",
+  "scope": "Materials-science hypothesis generation and evidence-gating only; not a validated synthesis protocol, device recipe, agricultural recommendation, food product, or safety-approved procedure.",
+  "working_material_class": "UNKNOWN_MATERIAL_PENDING_BLIND_IDENTITY",
+  "core_pipeline": [
+    "OBSERVATION",
+    "UNKNOWN_MATERIAL",
+    "BLIND_MATERIAL_IDENTITY",
+    "STRUCTURE",
+    "FUNCTION",
+    "REPRODUCIBILITY",
+    "APPLICATION_SPECIFIC_VALIDATION",
+    "CLAIM"
+  ],
+  "central_invariant": "APPLICATION_CLASSIFICATION_MUST_NOT_PRECEDE_MATERIAL_IDENTITY",
+  "material_identity_gate": {
+    "state_machine": [
+      "UNKNOWN_SAMPLE",
+      "MATERIAL_IDENTITY",
+      "STRUCTURE",
+      "FUNCTION",
+      "APPLICATION"
+    ],
+    "admission_rule": "No application class may be assigned as an accepted material property before blind material-identity characterization is completed.",
+    "identity_outputs": [
+      "material_class",
+      "composition",
+      "mass_balance",
+      "thermal_transformation_state",
+      "ash_or_mineral_fraction",
+      "confidence_level",
+      "alternative_hypotheses_rejected_or_remaining"
+    ],
+    "blindness_rule": "Where feasible, analysts performing identity characterization must not be given the originating application hypothesis or expected performance ranking before primary identity measurements are recorded.",
+    "anti_confirmation_bias_rule": "Application-specific tests may begin only after the identity gate records a provisional material class and preserves competing explanations."
+  },
+  "process_history_gate": {
+    "thermal_history": {
+      "required_fields": [
+        "peak_temperature_c",
+        "heating_rate_c_per_min",
+        "dwell_time_s",
+        "cooling_rate_c_per_min",
+        "spatial_temperature_variation_c"
+      ],
+      "claim_rule": "Thermal history must be measured or independently reconstructed where possible; nominal equipment settings are not substitutes for sample temperature history."
+    },
+    "microwave_metadata": {
+      "required_fields": [
+        "nominal_power_w",
+        "exposure_time_s",
+        "duty_cycle",
+        "sample_mass_g",
+        "sample_geometry",
+        "initial_moisture_fraction_or_water_content",
+        "container_material",
+        "container_geometry",
+        "atmosphere",
+        "visible_arcing",
+        "smoke_or_gas_release",
+        "ignition_or_flame",
+        "cooling_conditions"
+      ],
+      "claim_rule": "Microwave treatment conditions must be treated as experimental variables, not as a generic category of exposure."
+    },
+    "atmosphere_rule": "CONTROL_AND_RECORD_ATMOSPHERE",
+    "atmosphere_metadata": [
+      "oxygen_availability",
+      "sealed_or_open_system",
+      "inert_gas_if_used",
+      "measured_or_assumed_atmosphere",
+      "pressure_if_relevant"
+    ]
+  },
+  "characterization_gate": {
+    "identity": {
+      "required": [
+        "precursor_composition",
+        "initial_water_content",
+        "pre_treatment_mass",
+        "post_treatment_mass",
+        "mass_yield",
+        "elemental_composition_if_available",
+        "ash_or_mineral_fraction"
+      ]
+    },
+    "structure": {
+      "required": [
+        "Raman",
+        "SEM",
+        "bulk_density",
+        "BET_surface_area",
+        "pore_volume",
+        "pore_size_distribution"
+      ],
+      "conditional": [
+        "TEM",
+        "XRD",
+        "XPS",
+        "FTIR"
+      ]
+    },
+    "BET_reproducibility": {
+      "required_metadata": [
+        "adsorption_gas",
+        "degassing_temperature_c",
+        "degassing_time_h",
+        "BET_fit_region",
+        "pore_size_model",
+        "pore_volume_convention"
+      ],
+      "claim_rule": "BET surface area and pore metrics are inadmissible as portable comparison values without method metadata sufficient to reproduce the measurement."
+    },
+    "electrical": {
+      "required": [
+        "dc_conductivity_or_resistivity"
+      ],
+      "recommended": [
+        "four_point_probe",
+        "electrochemical_impedance"
+      ]
+    },
+    "chemical_environment": {
+      "required": [
+        "pH",
+        "electrical_conductivity",
+        "soluble_fraction",
+        "leachables",
+        "residual_organics"
+      ]
+    }
+  },
+  "reproducibility_gate": {
+    "minimum_exploratory_replication": "At least three independently prepared samples per treatment condition before making comparative material claims.",
+    "required_tracking": [
+      "precursor_batch_id",
+      "fermentation_matrix_metadata",
+      "initial_moisture_or_water_content",
+      "pre_treatment_mass",
+      "microwave_and_thermal_history",
+      "post_treatment_mass",
+      "storage_history"
+    ],
+    "rule": "n=3 is a minimum exploratory replication gate and must not be represented as sufficient statistical evidence for strong quantitative generalization."
+  },
+  "application_lanes": {
+    "ELECTROCHEMICAL": {
+      "status": "BLOCKED_PENDING_MATERIAL_IDENTITY_AND_STRUCTURE",
+      "functional_gate": {
+        "required_metrics": [
+          "specific_capacitance",
+          "energy_density",
+          "power_density",
+          "coulombic_efficiency",
+          "cycle_retention"
+        ],
+        "measurement_methods": [
+          "cyclic_voltammetry",
+          "galvanostatic_charge_discharge",
+          "electrochemical_impedance_where_appropriate"
+        ],
+        "basis_normalization_required": true,
+        "basis_definition_examples": [
+          "active_material_mass",
+          "electrode_mass",
+          "cell_level"
+        ],
+        "claim_rule": "Every electrochemical performance claim must state the normalization basis, electrode configuration, mass loading, current density or scan rate, voltage window, electrolyte and relevant controls.",
+        "controls": [
+          "unprocessed_bacterial_cellulose_or_SCOBY",
+          "controlled_non_microwave_thermal_carbonization_reference",
+          "commercial_activated_carbon_benchmark_if_available"
+        ]
+      }
+    },
+    "ARTISTIC_CARBON": {
+      "status": "BLOCKED_PENDING_MATERIAL_IDENTITY",
+      "working_class": "CARBONACEOUS_ARTISTIC_MATERIAL_CANDIDATE",
+      "required_metrics": [
+        "colorimetric_characterization",
+        "particle_or_fragment_size",
+        "binder_compatibility",
+        "wash_fastness_or_water_stability",
+        "lightfastness",
+        "basic_contaminant_and_inhalation_safety_assessment"
+      ],
+      "controls": [
+        "conventional_charcoal",
+        "commercial_artist_pigment_or_carbon_black_benchmark"
+      ]
+    },
+    "SOIL_CARBON": {
+      "status": "BLOCKED_PENDING_MATERIAL_IDENTITY_AND_LEACHABLES",
+      "working_class": "CARBONACEOUS_SOIL_AMENDMENT_CANDIDATE",
+      "biochar_status": "HYPOTHESIS_ONLY",
+      "required_metrics": [
+        "pH",
+        "electrical_conductivity",
+        "ash_or_mineral_fraction",
+        "water_holding_and_release",
+        "leachable_organic_and_inorganic_content",
+        "plant_growth_response_with_controls",
+        "mass_balance"
+      ],
+      "controls": [
+        "untreated_soil",
+        "known_reference_biochar",
+        "unprocessed_bacterial_cellulose_or_SCOBY"
+      ]
+    }
+  },
+  "claim_corrections": [
+    "The term carbonized is not admitted as a material identity until supported by characterization.",
+    "A glassy or brittle appearance does not establish an aerogel, nanoporous carbon, activated carbon, graphite-like carbon, or biochar.",
+    "Kitchen-microwave exposure normally occurs in air unless oxygen conditions are deliberately controlled; absence of oxygen must never be assumed.",
+    "Microwave settings are not equivalent to sample temperature history.",
+    "SCOBY composition varies with fermentation conditions and is not interchangeable with purified bacterial cellulose without qualification."
+  ],
+  "safety_boundary": {
+    "microwave_warning": "Do not treat this record as an instruction to microwave wet biological material. Rapid heating, steam generation, arcing, ignition and uncontrolled thermal decomposition are possible.",
+    "powder_warning": "Carbonaceous powders may present inhalation hazards and require appropriate laboratory containment and handling.",
+    "electrochemical_warning": "Improvised electrochemical cells are not validated batteries and require appropriate electrical, electrolyte and containment controls.",
+    "soil_warning": "Plant-use claims require testing for pH, salts, organics, ash and contaminants before application.",
+    "food_boundary": "This branch is not a food, beverage or human-consumption pathway."
+  },
+  "decision_logic": {
+    "gate_1": "UNKNOWN_SAMPLE -> do not assign application class.",
+    "gate_2": "BLIND_MATERIAL_IDENTITY -> identify composition and transformation state while preserving competing hypotheses.",
+    "gate_3": "STRUCTURE -> characterize morphology, porosity, density and surface chemistry without importing application expectations.",
+    "gate_4": "FUNCTION -> test electrical, artistic or soil-relevant functions only with application-appropriate controls.",
+    "gate_5": "REPRODUCIBILITY -> replicate independent preparations and preserve treatment metadata.",
+    "gate_6": "APPLICATION_SPECIFIC_VALIDATION -> compare against relevant benchmarks and report normalized metrics.",
+    "gate_7": "CLAIM -> elevate claim level only when evidence crosses the relevant gate."
+  },
+  "invariants": [
+    "APPLICATION_CLASSIFICATION_MUST_NOT_PRECEDE_MATERIAL_IDENTITY",
+    "BLIND_MATERIAL_IDENTITY_MUST_PRECEDE_APPLICATION_TESTING",
+    "UNKNOWN_MATERIAL_IS_NOT_A_FAILURE_STATE",
+    "COMPETING_MATERIAL_HYPOTHESES_MUST_BE_PRESERVED_UNTIL_DISCRIMINATED",
+    "CONTROL_AND_RECORD_ATMOSPHERE",
+    "THERMAL_HISTORY_MUST_BE_MEASURED_OR_EXPLICITLY_UNRESOLVED",
+    "MICROWAVE_METADATA_MUST_BE_RECORDED",
+    "VISUAL_APPEARANCE_IS_NOT_MATERIAL_IDENTITY",
+    "BET_RESULTS_REQUIRE_METHOD_METADATA",
+    "ELECTROCHEMICAL_METRICS_REQUIRE_EXPLICIT_BASIS_NORMALIZATION",
+    "N_EQUALS_3_IS_EXPLORATORY_REPLICATION_NOT_PROOF",
+    "BIOCHAR_IS_A_HYPOTHESIS_UNTIL_MATERIAL_CRITERIA_ARE_MET",
+    "HASH_IS_INTEGRITY_NOT_TRUTH"
+  ],
+  "evidence_map": {
+    "controlled_bacterial_cellulose_to_porous_carbon": "SUPPORTED_BY_LITERATURE",
+    "bacterial_cellulose_derived_supercapacitor_electrodes": "SUPPORTED_BY_LITERATURE",
+    "uncontrolled_microwave_SCOBY_to_nanoporous_aerogel": "NOT_ESTABLISHED",
+    "microwave_treated_SCOBY_residue_material_identity": "UNRESOLVED",
+    "microwave_treated_SCOBY_as_supercapacitor_electrode": "UNVERIFIED",
+    "microwave_treated_SCOBY_as_artistic_carbon": "UNVERIFIED",
+    "microwave_treated_SCOBY_as_soil_amendment": "UNVERIFIED"
+  },
+  "next_gate": "EXECUTE_OR_REGISTER_A_BLIND_MATERIAL_IDENTITY_AND_PROCESS-HISTORY DATASET WITHOUT APPLICATION-BASED EXPECTATION; REQUIRE COMPLETE THERMAL/MICROWAVE METADATA; THEN ADMIT STRUCTURE CHARACTERIZATION; ONLY AFTER IDENTITY AND STRUCTURE GATES PASS MAY APPLICATION-SPECIFIC FUNCTIONAL TESTING PROCEED.",
+  "authority_rule": "This record supersedes neither v2.5 evidence nor earlier SCOBY-D0 claims. It is a process and admission gate that constrains future evidence interpretation and prevents application classification from preceding material identity.",
+  "registry_links": [
+    "data/SCOBY-D0-RESEARCH-LINE-v2.5.json",
+    "https://github.com/Hawkar-usls/SCOBY-D0"
+  ]
+}

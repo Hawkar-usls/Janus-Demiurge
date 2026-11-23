@@ -1,0 +1,45 @@
+{
+  "schema": "janus.neural_link.chatgpt_session_contract.v1",
+  "status": "ACTIVE_APPEND_ONLY_VISIBLE_SESSION_MEMORY",
+  "root": "data/JANUS-NEURAL-LINK/chatgpt-events/",
+  "scope": "CURRENT_CHATGPT_CONVERSATION_VISIBLE_WORK",
+  "capture": [
+    "visible_user_directives",
+    "visible_assistant_decisions_and_status",
+    "repository_mutation_receipts",
+    "workflow_run_receipts",
+    "verified_state_transitions"
+  ],
+  "excluded": [
+    "passwords",
+    "tokens",
+    "private_keys",
+    "credentials",
+    "other_secrets",
+    "hidden_chain_of_thought",
+    "private_tool_internals_not_needed_for_provenance"
+  ],
+  "event_model": {
+    "append_only": true,
+    "create_only_event_files": true,
+    "correction_creates_new_event": true,
+    "old_event_is_never_rewritten": true
+  },
+  "automation_boundary": {
+    "github_can_read_chatgpt_conversation_autonomously": false,
+    "assistant_writes_visible_session_receipts_during_active_work": true
+  },
+  "authority": {
+    "session_memory_is_command_authority": false,
+    "session_memory_is_world_truth": false,
+    "session_memory_is_scientific_evidence": false,
+    "session_memory_grants_external_effect_authority": false
+  },
+  "laws": [
+    "VISIBLE_SESSION_MEMORY != HIDDEN_REASONING",
+    "MEMORY != TRUTH",
+    "CHAT_EVENT != COMMAND_AUTHORITY",
+    "CORRECTION != REWRITE_HISTORY",
+    "SECRETS MUST NOT ENTER PUBLIC SESSION MEMORY"
+  ]
+}

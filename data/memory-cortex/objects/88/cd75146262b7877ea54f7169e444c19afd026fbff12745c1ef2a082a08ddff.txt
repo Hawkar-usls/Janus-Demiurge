@@ -1,0 +1,87 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-R3C-1D-EXTERNAL-PARSER-FAMILY-FINGERPRINT-SPEC-2026-08-14-v0.1",
+  "timestamp": "2026-08-14T17:22:00+03:00",
+  "version": "v0.1",
+  "title": "Briakos parser archaeology using a pre-existing external MDP parser family",
+  "observer": "Oleksandr Ahapov / Hawkar + JANUS",
+  "node_type": "preexecution_same_lineage_parser_family_fingerprint_spec",
+  "status": "FROZEN_BEFORE_EXECUTION",
+  "historical_source": {
+    "repository": "mwenge/lineara.xyz",
+    "commit": "568f452c7a5ec80fa292cb307ead2fc6f65d07fb",
+    "path": "LinearAInscriptions.js",
+    "bytes": 1609122,
+    "sha256": "b7b383b93db55b504eb00c552a8b18c19a588e83bba7ff0ab93ca32277d8bfe2"
+  },
+  "external_parser_family": {
+    "repository": "souldriver007/mdp-ancient-scripts",
+    "commit": "154f572fc8ef29e3d49859b5089d90d92c8d3044",
+    "path": "lineara_mdp_v2.py",
+    "git_blob_sha": "fdce5be99661c31879d31690954f83d605834e3f",
+    "classification": "PRE_EXISTING_SAME_DIGITAL_LINEAGE_EXTERNAL_IMPLEMENTATION",
+    "parser_semantics_to_replay_exactly": [
+      "regex find every occurrence matching [double-quoted-name, { across the entire JS text",
+      "for each match, locate the next opening brace with raw.index",
+      "naive character-level brace depth scan without string/comment awareness until depth returns to zero",
+      "json.loads(object substring)",
+      "on failure retry json.loads after global single-quote to double-quote replacement",
+      "on second failure silently skip the record",
+      "store successful values in a Python dict keyed by name, so later duplicate names replace earlier values"
+    ],
+    "fixed_register_map": {
+      "LEDGER": ["Tablet", "Lames (short thin tablet)", "3-sided bar", "4-sided bar"],
+      "NODULE": ["Nodule", "Sealing"],
+      "ROUNDEL": ["Roundel"],
+      "RITUAL": ["Stone vessel", "Metal object", "Stone object", "Clay vessel"],
+      "OTHER_explicit": ["Inked inscription", "Architecture", "Graffito", "Label"],
+      "unmapped": "OTHER"
+    }
+  },
+  "Briakos_published_fingerprint": {
+    "whole_corpus_tablets": 419,
+    "site_histogram": {
+      "Haghia Triada": 185,
+      "Khania": 103,
+      "Zakros": 44,
+      "Phaistos": 41,
+      "Knossos": 11,
+      "OTHER_TEN_SITES_COMBINED": 35
+    },
+    "site_count_total": 15,
+    "content_documents": 336,
+    "register_content_partition": {
+      "administrative_clay_tablets": 299,
+      "ceremonial_stone_vessels": 37
+    },
+    "source": "Briakos thesis pages 22, 33, and 48"
+  },
+  "predeclared_comparisons": [
+    "external parser successful-record count versus 419",
+    "external parser LEDGER count versus 419",
+    "site histogram of all successful records versus Briakos published 419-site histogram",
+    "site histogram of external LEDGER subset versus Briakos published 419-site histogram",
+    "support histogram of each candidate population",
+    "whether candidate population can contain 37 source support == Stone vessel records",
+    "ID-set SHA256 for reproducibility"
+  ],
+  "classification_rule": {
+    "STRONG_CORPUS_IDENTITY_CANDIDATE": "A fixed external candidate population matches 419 and the five named site counts, has exactly 15 sites with the residual ten-site total 35, and is not structurally incompatible with the published 299/37 support partition.",
+    "COUNT_ONLY_COLLISION": "A candidate equals 419 but fails the site fingerprint or cannot structurally contain the published ceremonial group.",
+    "NO_MATCH": "No fixed external population equals 419 and site fingerprint fails.",
+    "NO_DIRECT_BRIAKOS_CODE_IDENTITY_CLAIM": true
+  },
+  "contamination": {
+    "external_MDP_reports_LEDGER_419_known_before_execution": true,
+    "therefore_count_419_has_no_blind_credit": true,
+    "site_histogram_match_not_previously_observed": true,
+    "register_structural_compatibility_not_previously_observed": true,
+    "no_candidate_parameter_tuning_after_target_access": true
+  },
+  "claim_ceiling": {
+    "same_lineage_parser_family_comparison_only": true,
+    "Briakos_code_identity_may_not_be_claimed": true,
+    "R3B_effect": "NONE",
+    "new_anchor": false,
+    "decipherment": false
+  }
+}

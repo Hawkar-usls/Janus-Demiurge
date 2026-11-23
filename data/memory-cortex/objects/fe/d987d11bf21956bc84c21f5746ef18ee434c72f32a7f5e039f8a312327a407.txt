@@ -1,0 +1,48 @@
+{
+  "id": "EYE-R4.2-ADAPTIVE-WITNESS-PLANNER-CONTRACT-2026-09-02-v1.0",
+  "schema_version": "1.0",
+  "created_at": "2026-09-02",
+  "status": "ACTIVE_EXECUTABLE_RESEARCH_CONTRACT",
+  "program": "EYE",
+  "stage": "R4.2",
+  "title": "Adaptive Witness Planner",
+  "canonical_question": "Given rival cause classes, calibrated test outcomes, costs, dependencies and priors, which test should be acquired next so that the expected total cost to cause-class identifiability is minimized?",
+  "relationship_to_r4_1": "R4.1 returns a minimum fixed witness set. R4.2 returns a contingent policy tree whose next test depends on earlier outcomes and stops as soon as the target cause class is identified.",
+  "bellman_recurrence": "V(s)=0 when all causes in C_s share one target_class; otherwise V(s)=min_t [cost(t)+sum_o P(o|s,t)V(s_o)] over admissible tests whose dependencies are satisfied.",
+  "policy_objective": [
+    "minimum expected cost to target-class identifiability",
+    "then minimum worst-case cost",
+    "then deterministic test-id tie break"
+  ],
+  "model_requirements": [
+    "every decision-usable available test declares one deterministic outcome for every candidate cause",
+    "priors are explicit and normalized",
+    "dependencies and failure domains are explicit",
+    "uncalibrated soft evidence uses decision_usable=false",
+    "unavailable historical or counterfactual tests use available=false"
+  ],
+  "exactness": {
+    "adaptive_policy": "Dynamic programming is exact under the declared deterministic outcome/prior model while resource ceilings are not exceeded.",
+    "nonadaptive_baseline": "A fixed-set comparator is exhaustively enumerated under the same declared model.",
+    "resource_rule": "If exact search exceeds a declared ceiling, verdict is UNKNOWN_RESOURCE_LIMIT rather than an approximate optimality claim."
+  },
+  "outputs": ["adaptive_policy_receipt.json", "policy_tree.json", "next_test_ranking.json", "policy_summary.json"],
+  "firewalls": [
+    "ADAPTIVE_POLICY != CAUSAL_TRUTH",
+    "PRIOR != EVIDENCE",
+    "EXPECTED_COST_OPTIMUM != WORST_CASE_OPTIMUM",
+    "DETERMINISTIC_OUTCOME_MODEL != TRUE_WORLD",
+    "SOFT_UNCALIBRATED_TEST != BINARY_DISCRIMINATOR",
+    "GREEDY_NEXT_TEST != OPTIMAL_POLICY",
+    "NON_IDENTIFIABLE != FALSE",
+    "UNKNOWN_RESOURCE_LIMIT != NON_IDENTIFIABLE"
+  ],
+  "benchmarks": {
+    "synthetic_adaptive_advantage": "t_root first; adaptive expected cost 4 versus exact fixed cost 5.",
+    "search_proof_adaptive": "provenance_hash_audit first; adaptive expected cost 2.8 versus exact fixed cost 4.",
+    "palomar_xe325_adaptive": "NON_IDENTIFIABLE because current soft historical evidence is not promoted into deterministic decision outcomes."
+  },
+  "authority_ceiling": "PASS establishes exact policy optimality only inside the declared planning model. Empirical outcome calibration, priors and domain failure-mode assumptions remain independently falsifiable.",
+  "next_stage": "EYE-R4.3-STOCHASTIC-WITNESS-PLANNER",
+  "next_stage_goal": "Replace deterministic cause-to-outcome maps with calibrated P(outcome|cause,test), posterior updates, risk thresholds and model-uncertainty stress tests."
+}

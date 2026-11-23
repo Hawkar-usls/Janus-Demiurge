@@ -1,0 +1,115 @@
+{
+  "artifact_id": "JANUS-RAMANUJAN-ADAPTIVE-PRECISION-GATE-2026-08-25-v1.0",
+  "status": "REMOTE_CI_GUARDED_PASS",
+  "priority": "P0_NUMERICAL_TRUST_GATE",
+  "implementation": {
+    "repository": "Hawkar-usls/Janus-Demiurge",
+    "path": "restored/ramanujan_adaptive_precision.py",
+    "commit": "5c92b7fc05f3c504134560ea8608b138ed7f5228",
+    "test_path": "tests/test_ramanujan_adaptive_precision.py",
+    "test_commit": "b786a89e2c5c5c60d17918e9c0b47b66aa352409"
+  },
+  "contract": {
+    "input": "named restored theta/q-series evaluator plus requested abs_tol/rel_tol and hard term budget",
+    "adaptive_action": "increase truncation depth geometrically until convergence receipt or budget exhaustion",
+    "success": "CONVERGED",
+    "failure": "NOT_CONVERGED_WITHIN_BUDGET",
+    "default_abs_tol": 1e-12,
+    "default_rel_tol": 1e-12,
+    "default_stable_steps": 2,
+    "max_terms": 4096
+  },
+  "supported_single_sequences": [
+    "phi",
+    "phi_product",
+    "psi",
+    "psi_product",
+    "theta2",
+    "theta3",
+    "theta4",
+    "mock_theta_f",
+    "mock_theta_omega",
+    "ramanujan_f",
+    "ramanujan_f_product"
+  ],
+  "supported_cross_identity_gates": [
+    "phi direct vs Jacobi-product representation",
+    "psi direct vs product representation",
+    "Ramanujan general theta f(a,b) direct vs Jacobi triple product"
+  ],
+  "promotion_rule": {
+    "single_sequence": "stable_steps consecutive truncation deltas <= abs_tol + rel_tol*max(1,abs(value))",
+    "cross_identity": "both representations independently stable for stable_steps and identity residual <= requested threshold",
+    "budget_exhaustion": "must fail closed as NOT_CONVERGED_WITHIN_BUDGET"
+  },
+  "evidence_boundary": {
+    "CONVERGED_means": "empirical Cauchy-style finite-truncation convergence receipt under the stated schedule and budget",
+    "CONVERGED_does_not_mean": "formal analytic tail-error proof for the infinite series/product",
+    "formal_error_bound": false
+  },
+  "verification_cases": [
+    {
+      "case": "theta3 q=0.2",
+      "expected": "CONVERGED before hard budget"
+    },
+    {
+      "case": "theta3 complex q=0.6*exp(0.3i)",
+      "expected": "CONVERGED"
+    },
+    {
+      "case": "phi identity q=0.99",
+      "expected": "CONVERGED with adaptive term growth"
+    },
+    {
+      "case": "phi identity q=0.999 with abs_tol=1e-14 and max_terms=256",
+      "expected": "NOT_CONVERGED_WITHIN_BUDGET"
+    },
+    {
+      "case": "general Ramanujan f(a,b) complex direct/product pair",
+      "expected": "CONVERGED"
+    },
+    {
+      "case": "mock_theta_f authority ceiling",
+      "expected": "CONVERGED math receipt with all runtime authority false"
+    }
+  ],
+  "remote_ci": {
+    "workflow": "Restoration Probation CI",
+    "run_id": 32859166792,
+    "run_number": 18,
+    "head_sha": "b786a89e2c5c5c60d17918e9c0b47b66aa352409",
+    "conclusion": "success",
+    "python_matrix": {
+      "3.11": "PASS",
+      "3.12": "PASS",
+      "3.13": "PASS"
+    },
+    "verified_steps": [
+      "Compile restored probation code",
+      "Run restoration probation tests"
+    ]
+  },
+  "authority": {
+    "network": false,
+    "filesystem_mutation": false,
+    "scheduler": false,
+    "runtime_admission": false,
+    "mining_or_submit": false,
+    "proof_acceptance": false,
+    "automatic_control": false
+  },
+  "laws_added": [
+    "FIXED_TRUNCATION_NE_PRECISION_CLAIM",
+    "CONVERGED_MEANS_NUMERICAL_RECEIPT_NOT_FORMAL_TAIL_PROOF",
+    "BUDGET_EXHAUSTION_MUST_RETURN_NOT_CONVERGED",
+    "DIRECT_AND_PRODUCT_REPRESENTATIONS_MUST_STABILIZE_INDEPENDENTLY",
+    "PRECISION_GATE_NE_RUNTIME_AUTHORITY",
+    "REQUESTED_TOLERANCE_MUST_BE_RETURNED_WITH_THE_RESULT"
+  ],
+  "next_frontier": [
+    "add analytic tail bounds where available so selected families can upgrade from empirical convergence receipt to certified error bound",
+    "add adaptive precision to Borwein cubic-theta radius rather than fixed radius",
+    "add mock-theta completion/shadow only after source-backed executable mathematics is recovered or independently reimplemented with explicit attribution",
+    "benchmark work/precision tradeoff near |q| -> 1 and choose algorithms by mathematical representation rather than fixed global term count"
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "schema": "janus.meta_registry.owner_nas_sqlite_wal_recovery_triplet_inventory.v1",
+  "artifact_id": "JANUS-NAS-JULY-2026-PRIVATE-SQLITE-WAL-METADATA-2026-10-31",
+  "recorded_date_utc": "2026-10-31",
+  "title": "JANUS owner NAS SQLite WAL recovery copies — metadata only, no private row extraction",
+  "source": "owner authorized NAS /Janus/_backups",
+  "evidence_class": "READONLY_WINDOWS_SMB_FILE_LENGTH_OBSERVATION",
+  "observed_groups": [
+    {
+      "group": "sqlite_wal_diag_20260705_202750",
+      "db_bytes": 325210112,
+      "shm_bytes": 2392064,
+      "wal_bytes": 1221909632,
+      "provenance": "HISTORIC_DIAGNOSTIC_SNAPSHOT"
+    },
+    {
+      "group": "sqlite_wal_live_recovery_20260705_205227",
+      "db_bytes": 325210112,
+      "shm_bytes": 2392064,
+      "wal_bytes": 1221996152,
+      "provenance": "HISTORIC_LIVE_RECOVERY"
+    },
+    {
+      "group": "clean_db_smb_deploy_20260705_214510",
+      "db_bytes": 349675520,
+      "wal_bytes": 1224159152,
+      "parked_shm_bytes": 2392064,
+      "parked_wal_bytes": 1224200352,
+      "provenance": "HISTORIC_DEPLOY_PREPARATION"
+    }
+  ],
+  "scope": {
+    "size_metadata_only": true,
+    "sqlite_headers_verified": false,
+    "wal_frame_alignment_verified": false,
+    "sqlite_integrity_check_performed": false,
+    "wal_recovery_or_checkpoint_performed": false,
+    "consistent_backup_proven": false,
+    "raw_rows_or_vault_data_exported": false,
+    "source_db_or_wal_files_modified": false,
+    "full_hashes_calculated": false,
+    "reason": "At least three WAL files exceed 1.2GB; reading whole WAL would impose avoidable NAS I/O."
+  },
+  "code_preflight": {
+    "repository": "Hawkar-usls/janus-meta-registry",
+    "path": "scripts/legacy_sqlite_wal_header_preflight.py",
+    "header_read_bound_total_bytes": 132,
+    "tested_only_on_synthetic_files": true,
+    "guarantees": "Detects basic SQLite and WAL header structure, page-size agreement and complete frame layout without reading rows.",
+    "does_not_guarantee": "Checksum validity, transaction consistency, recoverability, safe automatic restore or private data integrity."
+  },
+  "restoration_gates": [
+    "Never treat archived SHM as authoritative or replace a live SQLite DB using byte copies alone.",
+    "Validate WAL/DB pairing on a private, consistent immutable copy; handle SQLite WAL checkpoint semantics in a disposable local environment.",
+    "Do not execute the historical db_guard that defaults full restoration enabled on QNAP.",
+    "Do not publish raw private memories, chat_history, key vaults or DB rows in GitHub.",
+    "Only consider repair after backup verification, rollback plan and explicit owner approval."
+  ],
+  "status": "INVENTORIED_PRIVATE_NO_AUTORESTORE"
+}

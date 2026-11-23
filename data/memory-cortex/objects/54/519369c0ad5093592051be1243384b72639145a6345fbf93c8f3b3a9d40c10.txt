@@ -1,0 +1,33 @@
+{
+  "artifact_id": "JANUS-TRUMP-FIXED-PALETTE-THREE-VERTEX-SEPARATOR-LIST-FACTORIZATION-RESULT-2026-09-20-v1.0",
+  "version": "v1.0",
+  "date": "2026-09-20",
+  "status": "PASS_FIXED_PALETTE_THREE_VERTEX_SEPARATOR_LIST_FACTORIZATION",
+  "theorem": {
+    "input": "Graph C with exact lists L(v) subseteq [4] and a vertex separator S of size 3.",
+    "separator_assignments": "Col_L(S) is the set of assignments psi:S->[4] that respect exact lists and are proper on C[S].",
+    "components": "Let Q_1,...,Q_t be the connected components of C-S.",
+    "boundary_lists": "For psi in Col_L(S), define L_i^psi(x)=L(x) minus colors psi(s) over separator neighbors sx in E(C).",
+    "equivalence": "C is list-colorable iff there exists psi in Col_L(S) such that every (Q_i,L_i^psi) is list-colorable.",
+    "proof": {
+      "forward": "Restrict any list-coloring of C to S and to each component; every component restriction respects the boundary-deleted lists.",
+      "reverse": "For one proper list-respecting psi on S, independently color every Q_i under L_i^psi and glue the colorings with psi; no edges join distinct Q_i."
+    },
+    "reconstruction": "Union all independently reconstructed component colorings with psi on S.",
+    "complexity_overhead": "At most 4^3=64 raw separator assignments, plus polynomial component construction/list restriction and downstream terminal calls."
+  },
+  "proof_carrying_certificate": {
+    "separator": "Verify |S|=3 and C-S is disconnected.",
+    "component_partition": "Verify components partition V(C)\\S and no edge joins distinct components.",
+    "per_psi": "Verify psi is list-respecting/proper on C[S], propagate exact boundary restrictions, preserve downstream certificates.",
+    "branch_logic": "A psi branch is SAT iff every component is SAT; any exact contradiction/UNSAT component rejects the branch."
+  },
+  "oracle_use": false,
+  "scientific_ceiling": {
+    "THREE_VERTEX_SEPARATOR_FACTORIZATION": "VERIFIED",
+    "DOWNSTREAM_SOLVABILITY": "DEPENDS_ONLY_ON_AUTHORIZED_COMPONENT_TERMINALS",
+    "SEPARATOR_SIZE_4": "NOT_OPENED",
+    "REPAIR": "NOT_STARTED"
+  },
+  "stop": true
+}

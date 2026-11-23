@@ -1,0 +1,43 @@
+{
+  "id": "EYE-R4.2-PALOMAR-XE325-ADAPTIVE-v1",
+  "source_registry_record": "data/PALOMAR-XE325-OBSERVER-EVIDENCE-2026-09-01-v1.0.json",
+  "cause_classes": [
+    {"id": "short_duration_sky_flash", "target_class": "DISTANT_OR_SKY_OPTICAL"},
+    {"id": "near_field_reflection_or_glint", "target_class": "NEAR_FIELD_OPTICAL"},
+    {"id": "intrinsic_emulsion_or_copy_defect", "target_class": "PLATE_MATERIAL"},
+    {"id": "charged_particle_plate_interaction", "target_class": "PLATE_INTERACTION"}
+  ],
+  "already_acquired": ["physical_glass_trace_confirmation"],
+  "tests": [
+    {
+      "id": "physical_glass_trace_confirmation",
+      "cost": 0,
+      "failure_domains": ["historical_plate:XE325"],
+      "outcome_by_cause": {
+        "short_duration_sky_flash": "TRACE_PRESENT",
+        "near_field_reflection_or_glint": "TRACE_PRESENT",
+        "intrinsic_emulsion_or_copy_defect": "TRACE_PRESENT",
+        "charged_particle_plate_interaction": "TRACE_PRESENT"
+      }
+    },
+    {
+      "id": "original_plate_psf_morphology",
+      "cost": 2,
+      "available": true,
+      "decision_usable": false,
+      "failure_domains": ["historical_plate:XE325", "microscopy_model"],
+      "note": "Current evidence is soft and does not deterministically separate flash from emulsion defect."
+    },
+    {
+      "id": "population_level_plate_defect_statistics",
+      "cost": 4,
+      "available": true,
+      "decision_usable": false,
+      "failure_domains": ["archive_population_model"],
+      "note": "May shift plausibility but is not calibrated as a deterministic outcome model."
+    },
+    {"id": "simultaneous_second_site_plate_1950", "cost": 10, "available": false, "failure_domains": ["second_observatory"]},
+    {"id": "simultaneous_multisite_parallax_1950", "cost": 12, "available": false, "failure_domains": ["multisite_astrometry"]}
+  ],
+  "expected": {"status": "NON_IDENTIFIABLE_UNDER_CURRENT_MEASUREMENT_MODEL"}
+}

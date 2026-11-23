@@ -1,0 +1,112 @@
+{
+  "artifact_id": "JANUS-BEACON-BUILD-AND-SECURITY-HARDENING-LEDGER-v1.0",
+  "status": "security_blocked_pending_secret_rotation_and_firmware_hardening",
+  "secret_material": {
+    "embedded_secret_classes": [
+      "Wi-Fi SSID",
+      "Wi-Fi password",
+      "private-LAN HTTP endpoint"
+    ],
+    "affected_file_counts": {
+      "ssid": 5,
+      "password": 4,
+      "serverUrl": 4
+    },
+    "affected_roles": {
+      "ssid": [
+        "source",
+        "ArtMoney table",
+        "Cardputer ELF",
+        "Cardputer application binary",
+        "Cardputer merged binary"
+      ],
+      "password": [
+        "source",
+        "Cardputer ELF",
+        "Cardputer application binary",
+        "Cardputer merged binary"
+      ],
+      "serverUrl": [
+        "source",
+        "Cardputer ELF",
+        "Cardputer application binary",
+        "Cardputer merged binary"
+      ]
+    },
+    "values_reproduced": false,
+    "required_action": "Rotate the Wi-Fi password, remove all embedded network configuration, and rebuild every firmware artifact before any source or binary publication."
+  },
+  "hardening_findings": [
+    {
+      "id": "BEACON-H1",
+      "severity": "critical",
+      "finding": "Network credentials and a private HTTP endpoint are compiled into source and firmware artifacts.",
+      "gate": "PUBLICATION_FORBIDDEN_UNTIL_ROTATED_AND_REBUILT"
+    },
+    {
+      "id": "BEACON-H2",
+      "severity": "high",
+      "finding": "LORA_MOSI and GPS_TX_PIN are both assigned GPIO 14.",
+      "gate": "PIN_MAP_REVIEW_REQUIRED"
+    },
+    {
+      "id": "BEACON-H3",
+      "severity": "high",
+      "finding": "The flash-sync routine can remove the local log after a partial transfer or connection failure.",
+      "gate": "ACKNOWLEDGED_TRANSACTIONAL_SYNC_REQUIRED"
+    },
+    {
+      "id": "BEACON-H4",
+      "severity": "high",
+      "finding": "Telemetry and location data use plain HTTP; UDP and LoRa messages have no observed authentication or integrity tag.",
+      "gate": "AUTHENTICATED_ENCRYPTED_TRANSPORT_REQUIRED"
+    },
+    {
+      "id": "BEACON-H5",
+      "severity": "medium",
+      "finding": "Cardputer build metadata combines FlashSize=4M and PartitionScheme=default_8MB; its partition table reaches 0x800000 while flash arguments declare 4MB.",
+      "gate": "FLASH_LAYOUT_RECONCILIATION_REQUIRED"
+    },
+    {
+      "id": "BEACON-H6",
+      "severity": "medium",
+      "finding": "LittleFS mount failure is configured to permit formatting, which can destroy retained logs.",
+      "gate": "NONDESTRUCTIVE_RECOVERY_PATH_REQUIRED"
+    },
+    {
+      "id": "BEACON-H7",
+      "severity": "medium",
+      "finding": "Three standalone Cardputer binaries expose version markers but have no corresponding source in the archive.",
+      "gate": "SOURCE_TO_BINARY_REPRODUCIBILITY_REQUIRED"
+    }
+  ],
+  "duplicate_build_artifacts": {
+    "duplicate_groups": [
+      [
+        "build/esp32.esp32.m5stack_cardputer/boot_app0.bin",
+        "build/esp32.esp32.m5stack_stamp_s3/boot_app0.bin"
+      ],
+      [
+        "build/esp32.esp32.m5stack_cardputer/flash_args",
+        "build/esp32.esp32.m5stack_stamp_s3/flash_args"
+      ],
+      [
+        "build/esp32.esp32.m5stack_cardputer/Janus_Beacon.ino.bootloader.bin",
+        "build/esp32.esp32.m5stack_stamp_s3/Janus_Beacon.ino.bootloader.bin"
+      ],
+      [
+        "build/esp32.esp32.m5stack_cardputer/sdkconfig",
+        "build/esp32.esp32.m5stack_stamp_s3/sdkconfig"
+      ]
+    ],
+    "duplicate_copies": 4,
+    "unique_content_count": 23
+  },
+  "publication_decision": {
+    "raw_ino": "EXCLUDE_SECRET_BEARING",
+    "elf_map_and_build_metadata": "EXCLUDE_OPERATIONAL_PATHS_AND_SECRET_BEARING",
+    "firmware_bins": "EXCLUDE_SECRET_BEARING_OR_UNREPRODUCIBLE",
+    "artmoney_table": "EXCLUDE_PRIVATE_OPERATIONAL_ARTIFACT",
+    "normalized_architecture_and_hashes": "ADMIT"
+  }
+}

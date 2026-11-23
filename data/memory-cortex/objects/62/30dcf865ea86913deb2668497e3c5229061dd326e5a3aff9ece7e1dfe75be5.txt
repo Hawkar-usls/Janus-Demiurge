@@ -1,0 +1,70 @@
+{
+  "schema": "janus.meta_registry.owner_allstar_sqlite_homeostasis_safe_reuse.v1",
+  "id": "JANUS-ALLSTAR-SQLITE-WINDOWS-HOMEOSTASIS-2026-10-27",
+  "date": "2026-10-27",
+  "status": "FIXES_MERGED_PRIVATE_BACKUP_VERIFIED_NUMERIC_VALIDATOR_RESEARCH_ONLY",
+  "researchSource": "OWNER_LOCAL_ALLSTAR",
+  "source": {
+    "legacyGenesisProtocolSha256": "03a495bded40e1a01c51738946fd0312f03a921afcd8002fe8adc821ca0544f1",
+    "originalSqliteBeforeSha256": "c947f46159eff170f47348714e71c56ac80ffa3eb90b99cdbae793b7e83d1ea6",
+    "ownerLocalSqliteAfterSha256": "581fa2a856c745456a92ab4c2942879b2d6fa007e509861f0823ef72dbc1f084",
+    "originalLegacyGenesisFullyImported": false,
+    "originalPrivateDatabaseOpened": false,
+    "originalNeuralGraphMutated": false,
+    "sourceTelemetryUploaded": false
+  },
+  "sqlite": {
+    "productionDeadlockFix": "https://github.com/Hawkar-usls/Janus-Demiurge/pull/338",
+    "windowsRegressionFix": "https://github.com/Hawkar-usls/Janus-Demiurge/pull/339",
+    "result": "3/3 PASS under owner Windows Python 3.14 and GitHub windows-latest Python 3.14 / Ubuntu Python 3.12",
+    "ci": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/40532183221",
+    "windowsRepoCheckoutBarrier": "Historical unrelated file golden_artifact_P=NP:Proof.json invalid as NTFS path",
+    "portableWorkaround": "Use ubuntu-latest to package exactly janus_db.py + synthetic test, deliver via GitHub Actions artifact to Windows runner",
+    "researchArtifactRenamedOrDeleted": false,
+    "localCodeBackupRelative": "artifacts/audits/backups/janus_db_before_batch_deadlock_fix_c947f46159eff170.py",
+    "privateDBModified": false
+  },
+  "genesis": {
+    "originalPureFunctionsExamined": [
+      "is_valid_metrics",
+      "is_unstable"
+    ],
+    "astOnlyOriginalProbeResult": {
+      "NaNScoreAcceptedByOriginal": true,
+      "NaNGradMaxNotFlagged": true,
+      "negativeInfiniteGradMaxNotFlagged": true,
+      "finiteMaxGradientAbove100Flagged": true
+    },
+    "newResearchModule": "tools/janus_legacy_homeostasis_guard.py",
+    "repository": "Hawkar-usls/Janus-Demiurge",
+    "pullRequest": "https://github.com/Hawkar-usls/Janus-Demiurge/pull/340",
+    "mergedCommit": "8698968fbab3c2aae200791825f36bbd4b3a62ec",
+    "localOwnerWindowsNumericTests": "5/5 PASS",
+    "ci": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/40532857169",
+    "linuxPython312Pass": true,
+    "windowsPython314Pass": true,
+    "logic": [
+      "Reject nonnumeric and non-finite score/loss/validation/diversity/MI/grad_mean/grad_max",
+      "Reject negative gradient norms or mean greater than maximum",
+      "Gradient maximum >100 is untested legacy heuristic alert, not evidence of training outcome",
+      "Do not disclose extra private input fields",
+      "No file read/write, no import of full Genesis, no GPU/torch/model call"
+    ],
+    "productionIntegrated": false,
+    "topaVerdict": "NOT_TOPA_ADJUDICATED",
+    "pEqualsNpClaim": false,
+    "modelMutationAuthority": false,
+    "externalProviderRequests": false
+  },
+  "ownerLocalEvidence": {
+    "relative": "artifacts/audits/JANUS-SQLITE-WINDOWS-AND-GENESIS-HOMEOSTASIS-2026-10-27-v1.json",
+    "sha256": "cb3e9564ca3e199b05fb8a02322bd3f89f72f74138d621a58c418bed9b284c13",
+    "privacy": "LOCAL_PRIVATE_ONLY_NOT_COPIED_TO_GITHUB"
+  },
+  "nextGates": [
+    "Review whether original metrics telemetry fields have established units/semantics before production integration; no test data leakage",
+    "Test source SQL connection closing and failed-transaction behavior safely on Windows synthetic temp DB",
+    "Require separate authorization and versioned writes before modifying All Star HRAiN live graph",
+    "Keep science hypothesis evaluation separate in TOPA and don't infer P=NP from simulation metric scores"
+  ]
+}

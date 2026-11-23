@@ -1,0 +1,102 @@
+{
+  "artifact_uuid": "JANUS-LINEAR-A-R7-C0-POSITIONAL-FUNCTIONAL-ROLE-SPEC-2026-08-16-v0.1",
+  "version": "v0.1",
+  "node_type": "frozen_cross_fitted_positional_functional_role_spec",
+  "parent_canonical_target": "v2.27",
+  "objective": "Blindly discover concrete lexical source words that are disproportionately concentrated in preregistered document/row/numeric-block structural roles and reproduce that concentration on heldout documents.",
+  "source": {
+    "repository": "Hawkar-usls/lineara.xyz",
+    "frozen_commit": "43fe7cf1abc8e6bb1ea3228c3a1bd5938709620a",
+    "source_labels_hidden_until_all_scoring_complete": true,
+    "translations_used": false,
+    "external_dictionaries_used": false,
+    "Linear_B_supervision_used": false,
+    "Notti_readings_used": false
+  },
+  "status_policy": {
+    "source_statuses_preserved_as_descriptors": true,
+    "none_or_doubtful_is_never_reinterpreted_as_certain": true,
+    "candidate_selection_does_not_filter_on_human_readable_label": true
+  },
+  "roles": {
+    "DOCUMENT_HEADER": "first lexical source word in a mechanically parsed document",
+    "DOCUMENT_CLOSER": "last lexical source word in a mechanically parsed document",
+    "ROW_HEADER": "first lexical source word among words assigned unambiguously to the same source row",
+    "ROW_CLOSER": "last lexical source word among words assigned unambiguously to the same source row",
+    "NUMERIC_BLOCK_INTRODUCER": "lexical source word immediately before a contiguous run of at least two exact numeric-only source words",
+    "NUMERIC_BLOCK_CLOSER": "lexical source word immediately after a contiguous run of at least two exact numeric-only source words"
+  },
+  "role_domains": {
+    "DOCUMENT_HEADER": "all lexical source-word occurrences in document",
+    "DOCUMENT_CLOSER": "all lexical source-word occurrences in document",
+    "ROW_HEADER": "all lexical occurrences with exactly one source row assignment",
+    "ROW_CLOSER": "all lexical occurrences with exactly one source row assignment",
+    "NUMERIC_BLOCK_INTRODUCER": "all lexical source-word occurrences in document",
+    "NUMERIC_BLOCK_CLOSER": "all lexical source-word occurrences in document"
+  },
+  "cross_fitting": {
+    "folds": 5,
+    "unit": "document_id",
+    "operator": "reuse JANUS-LINA-R5-0-CV-v0.1 document folds",
+    "candidate_selection_train_only": true,
+    "heldout_documents_never_used_for_candidate_selection": true
+  },
+  "train_candidate_gate": {
+    "minimum_eligible_occurrences": 6,
+    "minimum_role_hits": 4,
+    "minimum_role_hit_documents": 4,
+    "minimum_role_precision": 0.60,
+    "minimum_absolute_precision_lift_over_role_background": 0.25,
+    "manual_candidate_addition_forbidden": true,
+    "manual_candidate_removal_forbidden": true,
+    "top_k_truncation": false
+  },
+  "heldout_candidate_gate": {
+    "minimum_selected_folds": 2,
+    "minimum_heldout_eligible_occurrences": 6,
+    "minimum_heldout_documents": 4,
+    "minimum_heldout_role_hit_documents": 3,
+    "minimum_heldout_role_precision": 0.60,
+    "multiple_testing": "Benjamini-Hochberg",
+    "FDR_q_max": 0.05,
+    "null": "cross-fitted Poisson-binomial upper tail; every heldout eligible occurrence uses the corresponding train fold role-background probability for the same preregistered role"
+  },
+  "postscore_descriptors": {
+    "include": [
+      "source word label after scoring",
+      "role",
+      "heldout document IDs and regions",
+      "source-status distribution",
+      "heldout eligible occurrences",
+      "heldout role hits",
+      "heldout role-hit document IDs",
+      "heldout role precision",
+      "per-fold role background probabilities"
+    ],
+    "descriptors_are_semantics": false
+  },
+  "positive_ladder": {
+    "R7_C0": "cross-fitted concrete positional-role candidate",
+    "R7_C1": "unchanged candidate survives full region holdout where support permits",
+    "R7_C2": "candidate advantage collapses under structure-destroying position/order null",
+    "R7_C3": "probable positional functional-role candidate may be admitted; exact lexical meaning and translation remain forbidden",
+    "EXTERNAL": "independent editorial source required before external replication credit"
+  },
+  "claim_ceiling": {
+    "allowed": [
+      "cross-fitted concrete positional-role candidate",
+      "source word disproportionately concentrated in a preregistered document/row/numeric-block structural role",
+      "candidate-specific heldout positional constraint"
+    ],
+    "forbidden": [
+      "probable function before R7-C1 and R7-C2",
+      "exact word meaning",
+      "translation",
+      "phonetic assignment",
+      "language-family identification",
+      "new anchor",
+      "Linear A decipherment",
+      "R3B external replication"
+    ]
+  }
+}

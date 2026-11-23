@@ -1,0 +1,47 @@
+{
+  "artifact_id": "JANUS-NETWORK-AUTHORITY-GAP-CERTIFICATE-2026-08-25-v1.0",
+  "status": "BINDING_VERIFIED_AUTHORITY_STILL_BLOCKED",
+  "components": [
+    "Janus-Demiurge/restored/hrain_event_outbox.py",
+    "Janus-Demiurge/restored/transport_failover_planner.py",
+    "Janus-Demiurge/restored/sender_request_envelope.py",
+    "Demi_Head/probes/sovereign_lock_gate.py",
+    "Demi_Head/probes/network_sender_approval_binding.py"
+  ],
+  "new_verifier": {
+    "repository": "Hawkar-usls/Demi_Head",
+    "path": "probes/network_sender_approval_binding.py",
+    "commit": "ff04a85d16ecd72519abd9436ff213de4c44dd00",
+    "test_path": "tests/test_network_sender_approval_binding.py",
+    "test_commit": "e9263fc1fb1f782f930e95efd49c23f361670f38",
+    "targeted_local_logic": "3/3 PASS"
+  },
+  "verified_properties": [
+    "sender envelope internal hash integrity",
+    "canonical envelope proposal hash binding",
+    "exact network target binding",
+    "Sovereign approval receipt integrity",
+    "expiry rejection",
+    "replay rejection"
+  ],
+  "still_not_proved": [
+    "cryptographic identity of approved_by_label",
+    "that the approver has authority to grant network writes",
+    "network write authority",
+    "permission to execute a request simply because binding_valid is true"
+  ],
+  "decision": {
+    "binding_valid_can_be_true": true,
+    "network_authorized": false,
+    "executor_creation_as_live_authority": "BLOCKED",
+    "reason": "identity/authority proof remains external to Sovereign Lock v2"
+  },
+  "next_gate": "EXTERNAL_AUTHORITY_OR_CRYPTOGRAPHIC_IDENTITY_PROOF_THAT_EXPLICITLY_GRANTS_ONE_NETWORK_ATTEMPT",
+  "laws": [
+    "HASH_BINDING_NE_IDENTITY_PROOF",
+    "IDENTITY_LABEL_NE_CRYPTOGRAPHIC_IDENTITY",
+    "APPROVAL_RECEIPT_NE_NETWORK_WRITE_AUTHORITY",
+    "BINDING_VALID_NE_AUTHORIZED",
+    "DO_NOT_BUILD_EXECUTOR_PAST_AN_UNRESOLVED_AUTHORITY_GATE"
+  ]
+}

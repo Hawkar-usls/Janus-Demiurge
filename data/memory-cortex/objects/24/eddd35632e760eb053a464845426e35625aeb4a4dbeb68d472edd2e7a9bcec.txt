@@ -1,0 +1,121 @@
+{
+  "artifact_uuid": "JANUS-INFINITY-STONES-SCHEDULER-INSTRUMENT-v1.0",
+  "version": "1.0",
+  "date": "2026-08-25",
+  "status": "ACTIVE_SHARED_INSTRUMENT_CONTRACT",
+  "project": "JANUS Record Drift Observatory / Federated Organism",
+  "name": "JANUS Infinity Stones — Scheduler Instrument",
+  "motto": "NOT_A_BUG_BUT_A_MEASURED_FEATURE",
+  "purpose": "Convert recurring GitHub Actions schedule-event materialization latency into five bounded, testable JANUS capabilities without confusing scheduler timing with record drift or inferring undocumented platform internals.",
+  "source_instrument": {
+    "protocol": "data/JANUS-RECORD-DRIFT-OBSERVATORY-v0.2.json",
+    "control": "C28_SCHEDULER_LATENCY",
+    "historical_audit": "registry/audit/JANUS-RECORD-DRIFT-SCHEDULER-LATENCY-AUDIT-2026-08-16.json",
+    "latest_seed_journal": "registry/record_drift/JANUS-RECORD-DRIFT-JOURNAL-20260825T054909Z.json",
+    "required_timestamps": [
+      "expected_schedule_utc",
+      "run_created_at_utc",
+      "run_started_at_utc",
+      "observer_start_utc"
+    ],
+    "required_derived_metrics": [
+      "scheduler_materialization_delay_seconds",
+      "runner_queue_after_creation_seconds",
+      "observer_start_after_creation_seconds"
+    ],
+    "scheduler_classes": [
+      "S0_WITHIN_5_MIN",
+      "S1_SCHEDULE_DELAY_5_TO_30_MIN",
+      "S2_SCHEDULE_DELAY_30_TO_120_MIN",
+      "S3_SCHEDULE_DELAY_OVER_120_MIN"
+    ]
+  },
+  "stones": [
+    {
+      "stone_id": "STONE_01_MIND",
+      "feature": "SCHEDULER_STATE_SENSOR",
+      "benefit": "Treat schedule materialization latency as a longitudinal black-box sensor of scheduler state rather than discarding it as noise.",
+      "inputs": ["C28 samples", "UTC timestamps", "clock-quality state", "workflow identity"],
+      "outputs": ["latency time series", "distribution", "regime candidates", "change-point candidates"],
+      "activation": "Every schedule-triggered run contributes one immutable sample when clock quality and timestamp fields are available.",
+      "claim_boundary": "Observed latency structure does not identify GitHub's internal mechanism by itself."
+    },
+    {
+      "stone_id": "STONE_02_SPACE",
+      "feature": "INDEPENDENT_TRIGGER_CONTRAST",
+      "benefit": "Use a second independently timed trigger path for critical tasks so GitHub schedule delay becomes a contrast channel and single-scheduler dependence is reduced.",
+      "inputs": ["scheduled trigger", "independent trigger", "shared experiment identity", "deduplication key"],
+      "outputs": ["path-specific start latency", "contrast receipt", "failover evidence"],
+      "activation": "For critical time-sensitive work, keep the GitHub schedule channel observable and pair it with a distinguishable independent trigger where authorized and available.",
+      "claim_boundary": "Two trigger paths improve localization and resilience; they do not create independent empirical evidence when they observe the same underlying source."
+    },
+    {
+      "stone_id": "STONE_03_REALITY",
+      "feature": "BLACK_BOX_CHARACTERIZATION_EXPERIMENT",
+      "benefit": "Systematically vary preregistered scheduling factors one at a time to map where and when latency regimes occur.",
+      "factors": ["minute_of_hour", "hour_of_day", "day_of_week", "repository", "minimal_vs_full_workflow"],
+      "outputs": ["factor-by-delay matrix", "matched controls", "reproducibility packet", "null results"],
+      "activation": "Use frozen test cells and matched minimal workflows; change one factor at a time unless a factorial design is preregistered.",
+      "claim_boundary": "Characterization describes externally visible behavior only; undocumented root-cause claims require independent evidence."
+    },
+    {
+      "stone_id": "STONE_04_POWER",
+      "feature": "PREDICTIVE_COMPENSATION_AND_RESILIENCE",
+      "benefit": "For operational tasks, use historical delay distributions to select earlier trigger windows or failover thresholds while keeping scientific measurement channels uncompensated.",
+      "inputs": ["historical C28 distribution", "desired execution window", "service tolerance", "confidence rule"],
+      "outputs": ["recommended lead time", "failover threshold", "miss-risk estimate", "compensation receipt"],
+      "activation": "Allowed for production/reliability paths after sufficient historical data; forbidden on the primary measurement channel when compensation would erase the phenomenon being measured.",
+      "claim_boundary": "Compensation is an engineering control, not a claim that future delays are deterministic."
+    },
+    {
+      "stone_id": "STONE_05_TIME",
+      "feature": "TEMPORAL_PROVENANCE_LAYER",
+      "benefit": "Attach declared time, platform materialization time, runner acquisition time and actual observation time to every time-sensitive JANUS result so temporal uncertainty is explicit and auditable.",
+      "canonical_chain": [
+        "DECLARED_OR_EXPECTED_TIME",
+        "PLATFORM_MATERIALIZATION_TIME",
+        "RUNNER_OR_EXECUTOR_START_TIME",
+        "OBSERVATION_TIME"
+      ],
+      "outputs": ["TEMPORAL_CONTEXT_PACKET", "timing uncertainty", "localization result", "causal-ordering guard"],
+      "activation": "Any JANUS organ making a time-sensitive comparison must preserve the temporal context packet alongside the result.",
+      "claim_boundary": "Scheduler delay is operational timing evidence and never substitutes for R0-R10 record-drift classification or causal-mechanism evidence."
+    }
+  ],
+  "organism_policy": {
+    "scope": "JANUS_FEDERATED_ORGANISM",
+    "shared_capability": true,
+    "default_route": "memory -> gateway/orchestrator -> relevant organ -> memory",
+    "universal_rule": "Any organ that schedules, measures, compares, reports, simulates or reasons over wall-clock-sensitive events must accept and preserve TEMPORAL_CONTEXT_PACKET when present.",
+    "primary_roles": {
+      "memory": ["archive samples", "preserve lineage", "publish time-series receipts"],
+      "gateway": ["route temporal context without authority inflation"],
+      "orchestrator": ["dispatch characterization cells", "apply operational compensation only where permitted"],
+      "measurement_bench": ["measure path-specific latency", "maintain matched controls"],
+      "causal_witness": ["use temporal provenance when grading causal order"],
+      "guardian_cortex": ["reject overclaims", "separate scheduler timing from record drift"],
+      "proof_spine": ["formalize thresholds and falsifiers", "preserve negative results"],
+      "anomaly_lab": ["generate competing hypotheses and falsifiers for latency regimes"],
+      "hypothesis_metabolism": ["rank scheduler hypotheses without promoting ranking to evidence"],
+      "sensorimotor_mesh": ["supply independent device-side timing when available"],
+      "observatory_and_domain_labs": ["attach temporal context to time-sensitive experiments"],
+      "operator_hands": ["authorize external/failover triggers when external effects are required"]
+    }
+  },
+  "hard_boundaries": [
+    "SCHEDULER_DRIFT != RECORD_DRIFT",
+    "MEASUREMENT != MECHANISM",
+    "CORRELATION_IN_DELAY_SERIES != PLATFORM_ROOT_CAUSE",
+    "DUAL_TRIGGER != INDEPENDENT_SOURCE",
+    "COMPENSATED_OPERATIONAL_PATH != UNCOMPENSATED_MEASUREMENT_PATH",
+    "NO_ATTEMPT_TO_EXPLOIT_OR_DEGRADE_GITHUB_INFRASTRUCTURE",
+    "NEGATIVE_RESULTS_AND_NULL_EFFECTS_MUST_BE_PRESERVED"
+  ],
+  "success_criteria": {
+    "stone_01": "At least 30 immutable C28 samples with clock quality and workflow identity.",
+    "stone_02": "At least one authorized dual-trigger trial with path-specific timestamps and deduplication.",
+    "stone_03": "Preregistered matched characterization matrix spanning multiple minute offsets and at least one control repository/workflow.",
+    "stone_04": "Prospective operational compensation rule evaluated against an untouched holdout period.",
+    "stone_05": "TEMPORAL_CONTEXT_PACKET propagated into every new time-sensitive JANUS experiment that adopts this contract."
+  }
+}
