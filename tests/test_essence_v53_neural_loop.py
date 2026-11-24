@@ -228,5 +228,31 @@ class RegistryHomeostasisTests(unittest.TestCase):
             self.assertEqual(json.loads((root/"old.json").read_text()),json.loads((root/"new.json").read_text()))
             print("R67_EXISTING_PLANNER_INVARIANT Hawkar-usls/Janus-Demiurge")
 
+
+class RegistryContinuityTests(unittest.TestCase):
+    def test_existing_planner_reopens_current_git_context(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+        from unittest.mock import patch
+        from tools import registry_continuity_r68 as c
+        repo="Hawkar-usls/Janus-Demiurge"
+        _,_,_,ptr=c.load(repo)
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d)
+            for sid in m.TRAIN:
+                init_repo(root/sid,fixture(sid))
+            mem=root/"memory.json";mem.write_text("{}")
+            common=["planner","plan","--state",str(root/"state"),"--sources",str(root),"--holdout-commit","c"*40,"--memory",str(mem)]
+            with patch.object(m,"verify_memory",return_value=memory()):
+                with patch("sys.argv",common+["--out",str(root/"old.json")]):
+                    m.main()
+                stream=StringIO()
+                with redirect_stdout(stream),patch("sys.argv",common+["--out",str(root/"new.json"),"--registry-continuity"]):
+                    m.main()
+            self.assertIn("R68_WAKE ",stream.getvalue())
+            self.assertIn(ptr["context_receipt"],stream.getvalue())
+            self.assertEqual(json.loads((root/"old.json").read_text()),json.loads((root/"new.json").read_text()))
+            print("R68_EXISTING_PLANNER "+repo+" generation="+str(ptr["generation"])+" receipt="+ptr["context_receipt"])
+
 if __name__=="__main__":
     unittest.main()
