@@ -6,6 +6,7 @@ on:
       - 'tools/essence_v53_neural_loop.py'
       - 'tests/test_essence_v53_neural_loop.py'
       - 'research/essence/peer_v53/FROZEN_LOCK.json'
+      - 'tools/registry_living_memory_r69.py'
       - '.github/workflows/essence-v53-neural-loop.yml'
   push:
     branches: [main]
@@ -13,6 +14,7 @@ on:
       - 'tools/essence_v53_neural_loop.py'
       - 'tests/test_essence_v53_neural_loop.py'
       - 'research/essence/peer_v53/FROZEN_LOCK.json'
+      - 'tools/registry_living_memory_r69.py'
       - '.github/workflows/essence-v53-neural-loop.yml'
   # Poll source commits every five minutes; train only on a new, verified cohort.
   # Offset from minute 0 reduces GitHub Actions scheduled-run congestion.
@@ -36,6 +38,51 @@ env:
   OMP_NUM_THREADS: '4'
 
 jobs:
+  r69-memory-canary:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            tools/registry_living_memory_r69.py
+          sparse-checkout-cone-mode: false
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: ee02a190e408ca065def1af65c6faba0d3b93122
+          path: verified-r68
+          persist-credentials: false
+          sparse-checkout: |
+            tools/registry_boot_r64.py
+            tools/registry_update_r65.py
+            tools/registry_lineage_r66.py
+            tools/registry_homeostasis_r67.py
+            tools/registry_continuity_r68.py
+            .janus/essence/registry_boot_r64_seed.json
+            .janus/essence/registry_lineage_r66_archive.json
+            .janus/essence/registry_homeostasis_r67_evidence.json
+            .janus/essence/registry_homeostasis_r67_current.json
+            .janus/essence/registry_continuity_r68_evidence.json
+            .janus/essence/registry_continuity_r68_current.json
+            .janus/essence/registry_continuity_r68_previous.json
+          sparse-checkout-cone-mode: false
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: ecf61e5aec2bc7ffb370c28b5a2f8cd7a277dd2c
+          path: evidence-r69
+          persist-credentials: false
+          sparse-checkout: |
+            data/autonomy_map/JANUS-R69-LIVING-MEMORY-EVIDENCE.json
+          sparse-checkout-cone-mode: false
+      - name: Verify reviewed memory, recover disposable cache, report candidate only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tools/registry_living_memory_r69.py --verified verified-r68 --evidence evidence-r69
+
   offline-contract:
     runs-on: ubuntu-24.04
     timeout-minutes: 6
