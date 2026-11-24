@@ -132,5 +132,32 @@ class NeuralLoopTests(unittest.TestCase):
                 m.safe_source(p,"Hawkar-usls/Demi_Head")
 
 
+
+class RegistryBootIntegrationTests(unittest.TestCase):
+    def test_existing_planner_cli_consumes_boot_without_decision_change(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+        from unittest.mock import patch
+        from tools import registry_boot_r64 as boot
+        repo="Hawkar-usls/Janus-Demiurge"
+        p=boot.packet(boot.read(Path(boot.SEED).read_bytes()),repo)
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d)
+            context=root/"boot.json"
+            context.write_bytes(boot.canonical(boot.wake(p,boot.dependencies(p))))
+            for sid in m.TRAIN:
+                init_repo(root/sid,fixture(sid))
+            mem=root/"memory.json";mem.write_text("{}")
+            common=["planner","plan","--state",str(root/"state"),"--sources",str(root),"--holdout-commit","c"*40,"--memory",str(mem)]
+            with patch.object(m,"verify_memory",return_value=memory()):
+                with patch("sys.argv",common+["--out",str(root/"old.json")]):
+                    m.main()
+                stream=StringIO()
+                with redirect_stdout(stream), patch("sys.argv",common+["--out",str(root/"new.json"),"--registry-boot",str(context)]):
+                    m.main()
+            self.assertIn("R64_PLANNER_BOOT",stream.getvalue())
+            self.assertEqual(json.loads((root/"old.json").read_text()),json.loads((root/"new.json").read_text()))
+            print("R64_EXISTING_PLANNER_DECISION_INVARIANT "+repo)
+
 if __name__=="__main__":
     unittest.main()
