@@ -481,7 +481,14 @@ def main():
     a.add_argument("--exam")
     a.add_argument("--memory")
     a.add_argument("--out")
+    a.add_argument("--registry-boot",help="Optional verified historical Registry Mind sidecar; advisory only")
     x=a.parse_args()
+    if x.phase=="plan" and x.registry_boot:
+        if __package__:
+            from . import registry_boot_r64 as registry_boot
+        else:
+            import registry_boot_r64 as registry_boot
+        registry_boot.consume_boot(x.registry_boot,"Hawkar-usls/Janus-Demiurge",Path(__file__).resolve().parents[1])
     lock=load_lock(x.lock)
     if x.phase=="plan":
         memory=verify_memory(state.load(x.memory))
