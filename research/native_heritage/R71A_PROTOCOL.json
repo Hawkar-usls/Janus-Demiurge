@@ -1,0 +1,55 @@
+{
+  "schema": "janus.native.heritage.r71a.v1",
+  "status": "FROZEN_BASELINE_PREREGISTERED",
+  "parent": {
+    "commit": "cbc87263d318dc944b91de91c2473cc4fe81197e",
+    "path": "janus_model/checkpoints/promoted.pt",
+    "git_blob": "ca774f8e440be4aa7277eea89fb9a2b80c8d4f98",
+    "sha256": "06d7e6228ca9aef2dc58eb55fe1c805aa3b66e4f8fb90b0e946ce6af47b1a662",
+    "bytes": 1798547,
+    "parameters": 446208,
+    "config": {
+      "vocab_size": 258,
+      "context_length": 128,
+      "d_model": 128,
+      "n_heads": 4,
+      "n_layers": 2,
+      "ff_mult": 4,
+      "dropout": 0.1
+    }
+  },
+  "exam": {
+    "seed": 202611242130,
+    "synthetic_cases": 64,
+    "groups": [
+      "lookup",
+      "addition",
+      "comparison",
+      "missing"
+    ],
+    "cases_per_group": 16,
+    "real_historical_diagnostics": 8,
+    "scope": "Prospective synthetic fixtures generated after the parent snapshot; historical diagnostics derived from pinned state and manifest, not asserted unseen in previous training. Same-owner public protocol, no external blinded examiner.",
+    "modes": [
+      "native forced A/B/C/D choice",
+      "native free greedy short answer",
+      "same frozen model with JSON replaced by empty object",
+      "same architecture random-init control",
+      "deterministic JSON parser and exact operations"
+    ],
+    "counterfactual": "Each nonmissing synthetic task has a modified JSON with changed answer, same question and answer options; report paired both-correct.",
+    "context": "No truncation; all prompts plus max generation fit 128 byte token context.",
+    "scoring": "Exact answer, per group, paired wins/losses; forced-choice is not open-ended generation. No learning or tuning on this cohort. Compare pinned parent with baseline controls; future candidates must use genuinely new task cohorts for gain; disclosed baseline only regression."
+  },
+  "next": {
+    "stage": "R7.1B",
+    "design": "Separate historical Meta Registry training sources and independently labeled tasks; equal CPU optimizer budgets; frozen parent, balanced learning, L2 anchor and logit distillation with replay; retain original checkpoint and compare exact functional regression and fixed language loss. Use new sealed evaluation cohort; no automatic admission."
+  },
+  "boundaries": {
+    "production_changed": false,
+    "training_executed": false,
+    "automatic_promotion": false,
+    "action_authority": false,
+    "external_blind": false
+  }
+}
