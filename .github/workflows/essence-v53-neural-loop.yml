@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - 'tools/essence_v53_neural_loop.py'
+      - 'tools/registry_boot_r64.py'
+      - '.janus/essence/registry_boot_r64_seed.json'
       - 'tests/test_essence_v53_neural_loop.py'
       - 'research/essence/peer_v53/FROZEN_LOCK.json'
       - '.github/workflows/essence-v53-neural-loop.yml'
@@ -11,6 +13,8 @@ on:
     branches: [main]
     paths:
       - 'tools/essence_v53_neural_loop.py'
+      - 'tools/registry_boot_r64.py'
+      - '.janus/essence/registry_boot_r64_seed.json'
       - 'tests/test_essence_v53_neural_loop.py'
       - 'research/essence/peer_v53/FROZEN_LOCK.json'
       - '.github/workflows/essence-v53-neural-loop.yml'
@@ -53,6 +57,25 @@ jobs:
           python -m py_compile tools/essence_v53_neural_loop.py tests/test_essence_v53_neural_loop.py
           python -m unittest -v tests.test_essence_v53_neural_loop
 
+      - name: Verify reviewed seed and relevant-change controls
+        run: python tools/registry_boot_r64.py test
+      - name: Observe live source metadata (no Registry document checkout)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python tools/registry_boot_r64.py wake --out "$RUNNER_TEMP/r64-observed.json"
+
+  r64-reopen-reviewed-seed:
+    needs: offline-contract
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+      - name: Fresh runner reopens the same committed seed without registry access
+        run: python tools/registry_boot_r64.py replay --out "$RUNNER_TEMP/r64-reopened.json"
+
   preregister-new-source:
     needs: offline-contract
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.ESSENCE_EVOLUTION_PAUSED != 'true' && vars.ESSENCE_V53_PAUSED != 'true'
@@ -85,6 +108,11 @@ jobs:
           git clone --quiet --depth 1 --filter=blob:none --sparse https://github.com/Hawkar-usls/janus-distributed-ai-swarm.git "$ROOT/sources/swarm"
           git -C "$ROOT/sources/swarm" sparse-checkout set --no-cone PROJECT_STATUS.json
           git ls-remote https://github.com/Hawkar-usls/TOPA.git HEAD | awk '{print $1}' > "$ROOT/holdout-commit.txt"
+      - name: R6.4 compare only relevant Registry Mind source metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python -m tools.registry_boot_r64 wake --out "$ROOT/registry-boot.json"
       - name: Seal at most one new factual cohort against current parent and future TOPA SHA
         id: freeze
         run: |
@@ -94,6 +122,7 @@ jobs:
             --sources "$ROOT/sources" \
             --holdout-commit "$(cat "$ROOT/holdout-commit.txt")" \
             --memory "$ROOT/state/research/essence/peer_v48_state/ledger.json" \
+            --registry-boot "$ROOT/registry-boot.json" \
             --out "$ROOT/plan.json"
           python - <<'PY' >> "$GITHUB_OUTPUT"
           import json
