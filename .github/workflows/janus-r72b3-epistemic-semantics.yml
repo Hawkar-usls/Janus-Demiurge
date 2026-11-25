@@ -1,0 +1,191 @@
+name: R7.2B3 epistemic semantics
+on:
+  pull_request:
+    paths:
+      - 'research/native_heritage/R72B3_*.json'
+      - 'research/native_heritage/native_r72b3_*.py'
+      - '.github/workflows/janus-r72b3-epistemic-semantics.yml'
+permissions:
+  contents: read
+jobs:
+  train:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    outputs:
+      seal: ${{ steps.seal.outputs.receipt }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            research/native_heritage/R72B3_TRAIN.json
+            research/native_heritage/native_r72b3_common.py
+            research/native_heritage/native_r72b2_common.py
+            research/native_heritage/native_r72b_common.py
+            research/native_heritage/native_r72a_common.py
+            research/native_heritage/native_r71d7_common.py
+            research/native_heritage/native_r71d6_common.py
+            research/native_heritage/native_r71d5_common.py
+            research/native_heritage/native_r71d4c_common.py
+            research/native_heritage/native_r71d4b_common.py
+            research/native_heritage/native_r71d4_common.py
+            research/native_heritage/native_r71d3c_common.py
+            research/native_heritage/native_r71d3_common.py
+            research/native_heritage/native_r71d2_common.py
+            research/native_heritage/native_r71d_common.py
+            research/native_heritage/native_r71c_common.py
+            research/native_heritage/native_r71b_common.py
+            research/native_heritage/R71B_TRAIN.json
+            research/native_heritage/native_r72b3_train.py
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          repository: Hawkar-usls/Janus-Demiurge
+          ref: cbc87263d318dc944b91de91c2473cc4fe81197e
+          path: frozen-native
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            janus_model/__init__.py
+            janus_model/model.py
+            janus_model/checkpoint_admission.py
+            janus_model/checkpoints/promoted.pt
+            janus_model/state/JANUS_MODEL_STATE.json
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: 81bdf5adcfa2ad02ab76bdc122942d47d50849ad
+          path: registry-train
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            data/JANUS-COSMOS-SETI-R42A5-COMBINED-SCORE-2026-11-21.json
+            data/JANUS-TACHYON-DEMIHEAD-R5B-WITNESS-ANTI-SHORTCUT-2026-11-22.json
+            data/essence/v13/JANUS_ESSENCE_GITHUB_PEER_LINEAGE_2026-11-14.json
+            data/essence/v17/JANUS_ESSENCE_REAL_MODEL_ADMISSION_HOLD_2026-11-14.json
+            data/JANUS-COSMOS-SETI-R42A6-SIGNAL-PRESERVATION-2026-11-21.json
+            data/JANUS-TACHYON-DEMIHEAD-R5C-OBSERVATION-NATIVE-2026-11-22.json
+            data/essence/v16/JANUS_ESSENCE_REAL_CHECKPOINT_QUANT_RESULTS_2026-11-14.json
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+      - name: Train native and byte semantic heads
+        run: |
+          mkdir "$RUNNER_TEMP/r72b3"
+          python research/native_heritage/native_r72b3_train.py frozen-native registry-train "$RUNNER_TEMP/r72b3"
+      - name: Seal
+        id: seal
+        run: python -c 'import os,json; print("receipt="+json.load(open(os.environ["RUNNER_TEMP"]+"/r72b3/RECEIPT.json"))["receipt_sha256"])' >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r72b3-frozen-candidates
+          path: ${{ runner.temp }}/r72b3/
+          if-no-files-found: error
+          retention-days: 30
+  exam:
+    permissions:
+      contents: read
+      actions: read
+    needs: train
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            research/native_heritage/R72B3_TRAIN.json
+            research/native_heritage/native_r72b3_common.py
+            research/native_heritage/native_r72b2_common.py
+            research/native_heritage/native_r72b_common.py
+            research/native_heritage/native_r72a_common.py
+            research/native_heritage/native_r71d7_common.py
+            research/native_heritage/native_r71d6_common.py
+            research/native_heritage/native_r71d5_common.py
+            research/native_heritage/native_r71d4c_common.py
+            research/native_heritage/native_r71d4b_common.py
+            research/native_heritage/native_r71d4_common.py
+            research/native_heritage/native_r71d3c_common.py
+            research/native_heritage/native_r71d3_common.py
+            research/native_heritage/native_r71d2_common.py
+            research/native_heritage/native_r71d_common.py
+            research/native_heritage/native_r71c_common.py
+            research/native_heritage/native_r71b_common.py
+            research/native_heritage/R72B3_EXAM.json
+            research/native_heritage/R71D4_EXAM.json
+            research/native_heritage/R71C_TRAIN.json
+            research/native_heritage/R71C_EXAM.json
+            research/native_heritage/native_r72b3_eval.py
+            research/native_heritage/native_r71c_eval.py
+            research/native_heritage/native_r71b_eval.py
+            research/native_heritage/native_baseline_r71a.py
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          repository: Hawkar-usls/Janus-Demiurge
+          ref: cbc87263d318dc944b91de91c2473cc4fe81197e
+          path: frozen-native
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            janus_model/__init__.py
+            janus_model/model.py
+            janus_model/checkpoint_admission.py
+            janus_model/checkpoints/promoted.pt
+            janus_model/state/JANUS_MODEL_STATE.json
+            janus_model/eval/JANUS_ANCHOR_EVAL-v1.txt
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          repository: Hawkar-usls/Janus-Demiurge
+          ref: 86ecef47d1ceab2c96e0ace2c7a0e83a62b74038
+          path: historical-manifest
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            janus_model/state/LAST_CORPUS_MANIFEST.json
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: bbbac33b39eff686c1e9fbd2c7cf9fa99cb466d6
+          path: holdout
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            JANUS-COUSTEAU-SR004-GEOPHYSICS-AND-MARINE-ANALOG-GATE-2026-09-26-v1.0.json
+            JANUS-EGY-NAHMAN-SMITHSONIAN-SOURCE-AUDIT-2026-10-15-v1.0.json
+            JANUS-OSIRIS-QH207-PHYSICAL-DATA-SURFACE-PATINA-GATE-2026-09-16-v1.3.json
+            JANUS-OSIRIS-QH207-XRAY-ARCHIVE-GATE-2026-09-16-v1.4.json
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: 81bdf5adcfa2ad02ab76bdc122942d47d50849ad
+          path: registry-exam
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            data/JANUS-COSMOS-SETI-R42A7B-INDEPENDENT-ONOFF-2026-11-21.json
+            data/essence/v13/JANUS_ESSENCE_GITHUB_PEER_DELIVERY_2026-11-14.json
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+      - uses: actions/download-artifact@v4
+        with:
+          name: r72b3-frozen-candidates
+          path: ${{ runner.temp }}/r72b3
+      - uses: actions/download-artifact@v4
+        with:
+          name: r72b2-frozen-candidates
+          run-id: 45615474595
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/r72b2-baseline
+      - name: Held-out registry semantic role exam
+        env:
+          EXPECTED_SEAL: ${{ needs.train.outputs.seal }}
+        run: python research/native_heritage/native_r72b3_eval.py frozen-native holdout historical-manifest registry-exam "$RUNNER_TEMP/r72b3" "$RUNNER_TEMP/r72b2-baseline" "$EXPECTED_SEAL" "$RUNNER_TEMP/R72B3_RESULT.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r72b3-results
+          path: ${{ runner.temp }}/R72B3_RESULT.json
+          if-no-files-found: error
