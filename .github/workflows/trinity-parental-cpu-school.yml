@@ -1,0 +1,155 @@
+name: JANUS Trinity Parental CPU School
+
+on:
+  pull_request:
+    paths: ['tools/trinity_parental_*.py', 'tests/test_trinity_parental_school.py', '.github/workflows/trinity-parental-cpu-school.yml']
+  push:
+    branches: [research/trinity-parental-school-cpu-20261123]
+    paths: ['.github/workflows/trinity-parental-cpu-school.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+concurrency:
+  group: trinity-parental-cpu-school
+  cancel-in-progress: false
+env:
+  HF_HUB_DISABLE_TELEMETRY: '1'
+  TOKENIZERS_PARALLELISM: 'false'
+  OMP_NUM_THREADS: '4'
+  HF_HUB_DOWNLOAD_TIMEOUT: '120'
+
+jobs:
+  contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify independent teaching, source pins and no promotion
+        run: |
+          set -euo pipefail
+          python -m py_compile tools/trinity_parental_contract.py tools/trinity_parental_cpu.py
+          python -m unittest -v tests.test_trinity_parental_school
+
+  teach-and-shadow:
+    needs: contracts
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/research/trinity-parental-school-cpu-20261123'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    permissions:
+      contents: read
+    outputs:
+      student_ready: ${{ steps.check.outputs.student_ready }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned CPU-only Python inference stack
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 safetensors==0.5.3
+      - name: Get 24 train-only Qwen proposals, SmolLM veto and exact arithmetic oracle
+        run: |
+          mkdir -p runtime/trinity
+          python -m tools.trinity_parental_cpu teach --out runtime/trinity/teacher.json
+      - name: Train native JANUS shadow from original SHA-verified weights
+        run: |
+          python -m tools.trinity_parental_cpu train \
+            --teacher runtime/trinity/teacher.json \
+            --incumbent janus_model/checkpoints/promoted.pt \
+            --out runtime/trinity/child.pt \
+            --receipt runtime/trinity/train.json --steps 36
+      - name: Refuse candidate when teaching insufficient or lineage drifted
+        id: check
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+          from tools import trinity_parental_contract as c
+          t=c.checked_seal(json.loads(Path('runtime/trinity/teacher.json').read_text()))
+          s=c.checked_seal(json.loads(Path('runtime/trinity/train.json').read_text()))
+          assert t["schema"]==c.TEACH_SCHEMA and s["schema"]==c.TRAIN_SCHEMA
+          assert t["production_promotion"] is False and s["production_promotion"] is False
+          ready=s["status"]=="SEALED_NATIVE_SHADOW_EXAM_PENDING"
+          assert ready==Path('runtime/trinity/child.pt').exists()
+          print("student_ready="+str(ready).lower())
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trinity-parental-school-training-${{ github.run_id }}
+          path: runtime/trinity/
+          if-no-files-found: warn
+          retention-days: 30
+
+  separated-first-look-exam:
+    needs: teach-and-shadow
+    if: ${{ needs['teach-and-shadow'].outputs.student_ready == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: trinity-parental-school-training-${{ github.run_id }}
+          path: runtime/trinity
+      - name: Read 64 frozen Genesis cases only after shadow was sealed
+        run: |
+          set -euo pipefail
+          git clone --quiet --depth 1 \
+            --branch research/essence-g9-frozen-functional-exam-20261123 \
+            https://github.com/Hawkar-usls/Janus_Genesis.git runtime/trinity/genesis
+          python - <<'PY'
+          from tools import trinity_parental_contract as c
+          assert len(c.read_verified_cases('runtime/trinity/genesis'))==64
+          print('GENESIS_FROZEN_EXAM_VERIFIED_AFTER_TRAINING')
+          PY
+      - name: Install CPU-only eval dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check --no-cache-dir transformers==4.48.3 safetensors==0.5.3
+      - name: Compare real CPU Qwen, SmolLM, native incumbent and native child
+        run: |
+          set -euo pipefail
+          python -m tools.trinity_parental_cpu exam \
+            --teacher runtime/trinity/teacher.json \
+            --train-receipt runtime/trinity/train.json \
+            --student runtime/trinity/child.pt \
+            --incumbent janus_model/checkpoints/promoted.pt \
+            --genesis runtime/trinity/genesis \
+            --out runtime/trinity/final_exam.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from tools import trinity_parental_contract as c
+          e=c.checked_seal(json.loads(Path('runtime/trinity/final_exam.json').read_text()))
+          assert e["cases"]==64 and e["production_promotion"] is False
+          assert e["may_promote_native_model"] is False
+          assert set(e["scores"])=={"qwen","smollm","janus_incumbent","janus_candidate"}
+          assert e["status"] in ("HOLD_PARENTS_NOT_SURPASSED", "ELIGIBLE_FOR_HUMAN_REVIEW_NOT_PRODUCTION")
+          print("TRINITY_REAL_CPU_FIRST_LOOK=" + e["status"])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trinity-parental-school-first-look-${{ github.run_id }}
+          path: runtime/trinity/final_exam.json
+          if-no-files-found: warn
+          retention-days: 90
