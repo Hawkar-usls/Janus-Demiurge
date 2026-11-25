@@ -2,6 +2,10 @@ from native_r72b3_common import *
 from native_r72b3_common import SemanticHead as B3Head,synthetic as b3_synthetic,features as old_features
 from native_r72b2_common import SemanticHead as B2Head
 GROUP_NAMES=("evidence_statement","hypothesis_plan","epistemic_limit","other")
+
+def groups(y):
+    return torch.tensor(GROUP,dtype=torch.long,device=y.device)[y]
+
 CUES=(r"\b(no|not|never|without|unavailable|missing|undefined|cannot|could not|did not|has not|have not|lack|unverified)\b",r"\b(will|plan|planned|propos\w*|next|future|schedule\w*|intend\w*|await\w*|may|might)\b",r"\b(passed|success\w*|reproduc\w*|confirm\w*|verif\w*|matched|completed|recorded|observed|authenticated|established)\b",r"not[_ ]established|not[_ ]supported|not[_ ]observed|hold|not[_ ]tested",r"[_ ]verified|[_ ]passed|[_ ]unchanged|[_ ]preserved|[_ ]completed",r"claim|caveat|limit|boundary|independen|external|blind",r"next|objective|proposal|remaining|future",r"checksum|digest|sha256|commit|artifact|receipt",r"true|false|null",r"\btest\b|\baudit\b|\breplay\b|\breplication\b")
 def cue_features(rows,mode="full"):
     vals=[]
