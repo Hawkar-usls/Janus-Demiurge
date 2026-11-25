@@ -21,6 +21,9 @@ def suite(spec,exam=False):
         elif kind=="date":n=10
         elif exam and j%2:n=25+(j//2)%8
         else:n=1+(j//2)%24 if exam else 1+j%24
+        # The frozen hash partition has no single ASCII digit in exam.
+        # Substitute length two only for this empty exam stratum; train unchanged.
+        if exam and kind=="digits" and n==1 and not any(partition(c) for c in string.digits):n=2
         # Different payload hash partitions, not just different random seeds.
         for attempt in range(2000):
             payload="" if kind=="missing" else payload_for(rng,kind,n,j+attempt)
