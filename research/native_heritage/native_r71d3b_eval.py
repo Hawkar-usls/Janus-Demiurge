@@ -6,7 +6,7 @@ def eval_suite(m,rows,T):
     present=[]
     for i,r in enumerate(rows):
         for target in r["targets"]:
-            verb="Locate" if i%2 else "Read";style=i%2
+            verb="Locate" if (i//32)%2 else "Read";style=(i//64)%2
             frames["normal"].append(frame(r["doc"],target,T,verb,style))
             frames["erased"].append(frame(r["doc"],target,T,verb,style,True))
             frames["reordered"].append(frame(dict(reversed(list(r["doc"].items()))),target,T,verb,style))
