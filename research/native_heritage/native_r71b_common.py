@@ -55,11 +55,19 @@ def build(spec,root,exam=False):
                 for v in rng.sample(["?","0","1",str(a),str(b),str(a+b),str(a+1),str(b+1),"99999"],9):
                     if v not in opts:opts.append(v)
                     if len(opts)==4:break
-                req(len(opts)==4,"OPTIONS");opts.remove(gold);rng.shuffle(opts);opts.insert(i%4,gold)
+                req(len(opts)==4,"OPTIONS");opts.remove(gold);rng.shuffle(opts);opts.insert((i//2)%4,gold)
                 r={"group":group,"doc":doc,"q":q,"gold":gold,"options":opts,"other":other,"alt":alt,"sources":src,"real_projection":real}
                 identity=sha(canonical([doc,q]))
                 if identity not in seen:seen.add(identity);rows.append(r);break
             else:raise ValueError("UNIQUE_TASKS")
+    for r in rows:
+        def exact(doc):
+            a,b=doc.values()
+            if r["group"]=="lookup":return str(a)
+            if r["group"]=="addition":return str(a+b)
+            if r["group"]=="comparison":return str(int(a>b))
+            return str(doc.get("absent","?"))
+        req(exact(r["doc"])==r["gold"] and (r["other"] is None or exact(r["other"])==r["alt"]),"EXACT_REFERENCE")
     return rows
 def prompt(r,doc,forced):
     t="JSON:"+json.dumps(doc,separators=(",",":"))+"\nQ:"+r["q"]
