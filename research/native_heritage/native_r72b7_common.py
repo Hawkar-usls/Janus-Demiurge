@@ -63,14 +63,19 @@ def training_pool():
             out.append((f"{f} for the {sub}: {target}.",4,4,"other"))
     return text_rows(out,"teacher_train")
 def admitted_train():
-    pool=training_pool();accepted=[];reject=collections.Counter()
+    generated=training_pool();unique={}
+    for row in generated:
+        key=row["value"]
+        if key in unique: req((unique[key]["event"],unique[key]["outcome"])==(row["event"],row["outcome"]),"CONFLICTING_TRAIN_LABEL")
+        else: unique[key]=row
+    pool=list(unique.values());accepted=[];reject=collections.Counter()
     for r in pool:
         a,b,route,_=locked_scope(r,-1,-1)
         if (a,b)==(r["event"],r["outcome"]):
             accepted.append(r)
         else:reject[route]+=1
     req(len(accepted)>0,"EMPTY_TEACHER")
-    return accepted,{"pool":len(pool),"admitted":len(accepted),"rejected":len(pool)-len(accepted),"rejected_routes":dict(reject),"by_cohort":dict(collections.Counter(r["cohort"] for r in accepted))}
+    return accepted,{"generated":len(generated),"duplicate_texts_removed":len(generated)-len(pool),"pool":len(pool),"admitted":len(accepted),"rejected":len(pool)-len(accepted),"rejected_routes":dict(reject),"by_cohort":dict(collections.Counter(r["cohort"] for r in accepted))}
 def new_exam():
     # Novel construction and content; intentionally includes teacher blind spots.
     # One text per item, no padding by repeated metadata paths.
