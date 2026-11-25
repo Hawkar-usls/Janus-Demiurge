@@ -5,7 +5,7 @@ import torch.nn.functional as F
 def frozen_digest(m):
     h=hashlib.sha256()
     for name,t in sorted(m.state_dict().items()):
-        h.update(name.encode());h.update(str(t.dtype).encode());h.update(str(tuple(t.shape)).encode());h.update(t.detach().cpu().contiguous().numpy().tobytes())
+        h.update(name.encode());h.update(str(t.dtype).encode());h.update(str(tuple(t.shape)).encode());h.update(bytes(t.detach().cpu().contiguous().reshape(-1).view(torch.uint8).tolist()))
     return h.hexdigest()
 class RoutedAdapter(nn.Module):
     """Explicit task-mode residual at final hidden state; never alters native weights."""
