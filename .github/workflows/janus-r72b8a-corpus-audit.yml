@@ -1,0 +1,44 @@
+name: R7.2B8A real corpus audit
+on:
+  pull_request:
+    paths:
+      - 'research/native_heritage/R72B8A_PROTOCOL.json'
+      - 'research/native_heritage/native_r72b8a_corpus_audit.py'
+      - '.github/workflows/janus-r72b8a-corpus-audit.yml'
+permissions:
+  contents: read
+jobs:
+  corpus:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: 81bdf5adcfa2ad02ab76bdc122942d47d50849ad
+          path: registry-audit
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /data/JANUS-COSMOS-SETI-*.json
+            /data/JANUS-COSMOS-OSIRIS-SPEAR-*.json
+            /data/JANUS-TACHYON-DEMIHEAD-*.json
+            /data/JANUS-TACHYON-SIMPTOMAT-*.json
+            /data/essence/
+            /data/experiments/*OCEAN*.json
+            /data/experiments/*CAUSALITY-CONTROLS*.json
+            /data/JANUS-OCEAN-*.json
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Audit and prepare unlabeled candidate queue
+        run: python research/native_heritage/native_r72b8a_corpus_audit.py registry-audit "$RUNNER_TEMP/r72b8a"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r72b8a-corpus-audit
+          path: ${{ runner.temp }}/r72b8a/
+          if-no-files-found: error
+          retention-days: 30
