@@ -46,7 +46,7 @@ def make_pairs(spec,nums=None,exam=False):
     keys=keys_exam if exam else keys_train
     for i in range(spec["pairs"]):
         archive=not exam and i<spec["archive_pairs"]
-        absent=i%4==0;ood=exam and i%2==1
+        absent=(i//2)%4==0;ood=exam and i%2==1
         for _ in range(2000):
             n=3+(i%2)
             names=rng.sample(keys,n+1)
@@ -54,12 +54,14 @@ def make_pairs(spec,nums=None,exam=False):
                 chosen=rng.sample(nums,n);values=[x[2] for x in chosen];sources=[list(x) for x in chosen]
             else:
                 values=[rng.randrange(1000,10000) if ood else rng.randrange(0,1000) for _ in range(n)];sources=[]
-            if i%5==0:values[1]=values[0] # duplicate-valued decoy
+            if i%5==0:
+                values[1]=values[0] # duplicate-valued decoy
+                if archive:sources[1]=list(sources[0])
             doc=dict(zip(names[:n],values));doc=shuffled(doc,rng)
             a,b=rng.sample(names[:n],2)
             if absent:b=names[-1]
-            if i%2:a,b=b,a
-            verb=("Locate" if i%2 else "Find") if not exam else ("Read" if i%2 else "Find")
+            if (i//16)%2:a,b=b,a
+            verb=("Locate" if (i//8)%2 else "Find") if not exam else ("Read" if (i//8)%2 else "Find")
             ident=sha(canonical([doc,sorted([a,b]),verb]))
             if ident not in seen:seen.add(ident);break
         else:raise ValueError("PAIR_UNIQUE")
