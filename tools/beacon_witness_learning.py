@@ -40,13 +40,13 @@ def features(a,k):
     unknown=sum(v["status"] not in KNOWN for j,v in a["lines"].items() if j!=k)
     bucket=min(6,int(age//60))
     return {"line":(k,),"age":(k,bucket),"swarm":(k,bucket,min(2,other),int(unknown>0))}
-def examples(rows):
+def examples(rows,min_minutes=30,max_minutes=120):
     # A label is the next actual confirmed observation 30–120m later,
     # never a guessed missed trigger. UNKNOWN/active endpoints are excluded.
     out=[]
     for a,b in zip(rows,rows[1:]):
         h=(b["time"]-a["time"])/60
-        if not 30<=h<=120:continue
+        if not min_minutes<=h<=max_minutes:continue
         for k in LINES:
             x=a["lines"][k];y=b["lines"][k]
             if x["status"] not in KNOWN or y["status"] not in KNOWN:continue
@@ -107,7 +107,10 @@ def timing(rows,cutoff):
                 for m,v in (("last",gaps[-1]),("mean12",statistics.mean(gaps[-12:])),("beacon",ema)):
                     errors[m].append(abs(y-v))
             history.append((z["completed"],a["time"]))
-        report[k]={"distinct_observed_completions":len(history),"test_n":len(errors["beacon"]),"mae_seconds":{m:statistics.mean(v) if v else None for m,v in errors.items()}}
+        gaps=[v[0]-u[0] for u,v in zip(history,history[1:])]
+        ema=gaps[0] if gaps else None
+        for g in gaps[1:]:ema=.7*ema+.3*g
+        report[k]={"distinct_observed_completions":len(history),"test_n":len(errors["beacon"]),"mae_seconds":{m:statistics.mean(v) if v else None for m,v in errors.items()},"learned_state":{"last_completion_epoch":history[-1][0] if history else None,"last_observed_epoch":history[-1][1] if history else None,"ewma_gap_seconds":ema,"last_gap_seconds":gaps[-1] if gaps else None,"recent_gaps_seconds":gaps[-12:],"next_observed_completion_epoch":round(history[-1][0]+ema) if ema is not None else None}}
     return report
 def external_crosscheck(rows,ext):
     at=stamp(ext["observed_at_utc"]);prior=[x for x in rows if x["time"]<=at]
@@ -131,8 +134,11 @@ def main():
     if len(rows)<10 or len(rows)>4096 or any(a["time"]>=b["time"] for a,b in zip(rows,rows[1:])):raise ValueError("ARCHIVE_BOUND_OR_ORDER")
     cut=rows[len(rows)*7//10]["time"]
     ext=json.loads(a.external.read_text())
-    report={"schema":"janus.beacon.witness.learning.v1","receipts":len(rows),"first":rows[0]["time"],"last":rows[-1]["time"],"cutoff":cut,"receipt_chain_sha256":digest([z["sha"] for z in rows]),"status_counts":dict(counts),"quarantine_count":len(quarantine),"quarantine_examples":quarantine[:12],"risk":evaluate(examples(rows),cut),"timing":timing(rows,cut),"external_crosscheck":external_crosscheck(rows,ext),"scope":"Trusted internal archive training, external snapshot audit only; no alert selection bias in archive, no proof of complete run history; no external outage claim.","dispatch_authorized":False,"production":False}
+    report={"schema":"janus.beacon.witness.learning.v1","receipts":len(rows),"first":rows[0]["time"],"last":rows[-1]["time"],"cutoff":cut,"receipt_chain_sha256":digest([z["sha"] for z in rows]),"status_counts":dict(counts),"quarantine_count":len(quarantine),"quarantine_examples":quarantine[:12],"risk":evaluate(examples(rows),cut),"risk_long_horizon_exploratory":evaluate(examples(rows,120,720),cut),"timing":timing(rows,cut),"external_crosscheck":external_crosscheck(rows,ext),"scope":"Trusted internal archive training, external snapshot audit only; no proof of complete run history. Long-horizon next-observation risk 120–720m is exploratory after short-horizon coverage failure, not a fixed 60-minute forecast. No external outage claim.","dispatch_authorized":False,"production":False}
     a.out.mkdir(parents=True,exist_ok=True);(a.out/"quarantine.json").write_text(json.dumps(quarantine,sort_keys=True,indent=2)+"\n");(a.out/"report.json").write_text(json.dumps(report,sort_keys=True,indent=2)+"\n")
-    (a.out/"checkpoint.json").write_text(json.dumps(report["risk"]["checkpoint"],sort_keys=True,indent=2)+"\n")
+    ck={"schema":"janus.beacon.witness.combined_checkpoint.v1","receipt_chain_sha256":report["receipt_chain_sha256"],"observed_through":report["last"],"short_risk":report["risk"]["checkpoint"],"long_risk_exploratory":report["risk_long_horizon_exploratory"]["checkpoint"],"timing":{k:v["learned_state"] for k,v in report["timing"].items()},"scope":"Shadow estimates for next observed archive completion; no external-origin training labels or authority.","production":False}
+    ck["sha256"]=digest(ck);report["checkpoint_sha256"]=ck["sha256"]
+    (a.out/"checkpoint.json").write_text(json.dumps(ck,sort_keys=True,indent=2)+"\n")
+    (a.out/"report.json").write_text(json.dumps(report,sort_keys=True,indent=2)+"\n")
     print("BEACON_WITNESS_LEARNING",json.dumps(report,sort_keys=True),flush=True)
 if __name__=="__main__":main()
