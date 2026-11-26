@@ -1,0 +1,55 @@
+name: EYE R3.5 Sentinel homeostasis read-only witness
+on:
+  push:
+    branches: [research/eye-r32-sentinel-effective-pulse]
+    paths: ['.github/workflows/eye-r35-homeostasis.yml']
+  pull_request:
+    paths: ['.github/workflows/eye-r35-homeostasis.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  witness:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run native Sentinel and CAS regression tests
+        run: |
+          python -m unittest discover -s tests -p 'test_janus_sentinel_mesh*.py' -v
+      - name: Audit three actual pulse histories and evaluate plans without dispatch
+        env:
+          GH_READ_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p r35
+          python - <<'PY'
+          import json,os
+          from datetime import datetime,timezone
+          from pathlib import Path
+          from tools import janus_sentinel_mesh as m
+          token=os.environ['GH_READ_TOKEN'];now=datetime.now(timezone.utc)
+          peers={};history={}
+          for role,repo in m.ROLES.items():
+              try:
+                  rows=m.get_runs(repo,token)
+                  peers[role]=m.health(rows,now)
+                  history[role]=[{'id':x['id'],'event':x['event'],'status':x['status'],'conclusion':x.get('conclusion'),'created_at':x['created_at'],'effective_at':x.get('effective_at'),'run_attempt':x.get('run_attempt')} for x in rows]
+              except Exception as e:
+                  peers[role]={'status':'UNKNOWN_PEER_API_HOLD','error_class':type(e).__name__,'reason':str(e)[:120]}
+          plans={role:m.decide(repo,now,peers) for role,repo in m.ROLES.items()}
+          r={'schema':'janus.eye.r35.homeostasis_witness.v1','run_id':os.environ['GITHUB_RUN_ID'],'observed_utc':m.iso(now),'peers':peers,'history':history,'hypothetical_plans':plans,'remote_dispatch_performed':False,'credential_values_accessed':False,'production_authority':False}
+          Path('r35/receipt.json').write_text(json.dumps(r,indent=2)+'\n')
+          print(json.dumps(r,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eye-r35-homeostasis
+          path: r35/
+          retention-days: 90

@@ -1,0 +1,41 @@
+name: EYE R3.5 CAS dry-run discovery witness
+on:
+  push:
+    branches: [research/eye-r32-sentinel-effective-pulse]
+    paths: ['.github/workflows/eye-r35-cas-dry-run-discovery.yml']
+  pull_request:
+    paths: ['.github/workflows/eye-r35-cas-dry-run-discovery.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  witness:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Find exact main diagnostic run and jobs
+        env:
+          GH_READ_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request,time
+          base='https://api.github.com/repos/Hawkar-usls/Janus-Demiurge/actions/'
+          headers={'Authorization':'Bearer '+os.environ['GH_READ_TOKEN'],'Accept':'application/vnd.github+json'}
+          sha='67d9d8d29534ad39c338f23183cf6eaabf354c72'
+          def get(path):
+              with urllib.request.urlopen(urllib.request.Request(base+path,headers=headers),timeout=12) as r:
+                  raw=r.read(1000001)
+              assert len(raw)<=1000000
+              return json.loads(raw)
+          rows=[]
+          for _ in range(4):
+              data=get('workflows/janus-dispatch-credential-probe.yml/runs?branch=main&head_sha='+sha+'&per_page=10')
+              rows=[x for x in data['workflow_runs'] if x['head_sha']==sha and x['head_branch']=='main']
+              if rows:break
+              time.sleep(4)
+          out=[]
+          for row in rows:
+              jobs=get('runs/'+str(row['id'])+'/jobs?per_page=20')['jobs']
+              out.append({'id':row['id'],'status':row['status'],'conclusion':row['conclusion'],'jobs':[{'id':x['id'],'name':x['name'],'status':x['status'],'conclusion':x['conclusion']} for x in jobs]})
+          print('DISPATCH_PROBE_DISCOVERY='+json.dumps(out))
+          PY

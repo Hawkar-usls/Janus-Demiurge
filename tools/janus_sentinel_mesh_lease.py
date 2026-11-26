@@ -6,7 +6,7 @@ write to Meta Registry state branch, JANUS_MESH_DISPATCH_TOKEN with actions
 write to three approved receivers. No secrets -> HOLD, never fake success.
 """
 from __future__ import annotations
-import argparse,base64,json,os,subprocess,tempfile
+import argparse,base64,json,os,subprocess,tempfile,urllib.error
 from datetime import datetime,timezone
 from pathlib import Path
 from tools import janus_sentinel_mesh as m
@@ -83,9 +83,25 @@ def git(args,env):
                      stderr=subprocess.PIPE,timeout=40)
     return p.returncode==0
 
+def classify_push_failure(stdout,stderr):
+    # Never include raw output, URLs, account names, or credential values.
+    data=(stdout[-65536:]+b"\n"+stderr[-65536:]).lower()
+    if any(x in data for x in (b"gh013",b"gh006",b"protected branch",b"repository rule violations")):
+        return "HOLD_CAS_PUSH_BRANCH_POLICY"
+    if any(x in data for x in (b"write access to repository not granted",b"permission to ",b"403",b"resource not accessible")):
+        return "HOLD_CAS_PUSH_PERMISSION_DENIED"
+    if any(x in data for x in (b"authentication failed",b"invalid username or token",b"401",b"could not read username")):
+        return "HOLD_CAS_PUSH_AUTHENTICATION_FAILED"
+    if any(x in data for x in (b"non-fast-forward",b"fetch first",b"cannot lock ref",b"stale info")):
+        return "HOLD_CAS_PUSH_REF_CONFLICT"
+    if any(x in data for x in (b"could not resolve host",b"connection timed out",b"connection reset",b"502",b"503")):
+        return "HOLD_CAS_PUSH_NETWORK_FAILURE"
+    return "HOLD_CAS_PUSH_UNCLASSIFIED"
+
 def claim(o,token,now):
     require(type(token) is str and 24<len(token)<4096,"STATE_TOKEN_REQUIRED")
-    header=base64.b64encode(("x-access-token:"+token).encode()).decode()
+    credential_pair = ":".join(("x-access-token", token))
+    header=base64.b64encode(credential_pair.encode()).decode()
     env=os.environ.copy()
     env.update(GIT_CONFIG_COUNT="2",
       GIT_CONFIG_KEY_0="http.https://github.com/.extraheader",
@@ -114,9 +130,12 @@ def claim(o,token,now):
         if not git(["-C",str(root),"commit","-m",
                     "SENTINEL CAS lease "+o["run_id"]],env):
             return "HOLD_CAS_GIT_COMMIT"
-        if not git(["-C",str(root),"push","origin",
-                    "HEAD:refs/heads/"+BRANCH],env):
-            return "HOLD_CAS_LOST_NO_DISPATCH"
+        # Keep raw Git output private; publish only a fixed diagnostic code.
+        result=subprocess.run(["git","-C",str(root),"push","origin",
+                              "HEAD:refs/heads/"+BRANCH],env=env,
+                              stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=40)
+        if result.returncode:
+            return classify_push_failure(result.stdout,result.stderr)
         return "CAS_WON"
 
 def execute(o,state_token,dispatch_token,read_token,now=None,
@@ -145,6 +164,10 @@ def execute(o,state_token,dispatch_token,read_token,now=None,
                                       dispatch_token)
             report["dispatch_accepted"]=(report["status"]==
                          "REMOTE_DISPATCH_SUBMITTED_NOT_RECOVERY_PROOF")
+    except urllib.error.HTTPError as e:
+        # Emit the numeric HTTP status only. Never emit body, URL or headers.
+        report["status"]="HOLD_HTTP_"+str(e.code) if type(e.code) is int and 400<=e.code<=599 else "HOLD_HTTP_UNKNOWN"
+        report["http_failure_stage"]="DISPATCH" if report["claim_won"] else "PRECLAIM"
     except (ValueError,TypeError,KeyError,subprocess.SubprocessError,
             TimeoutError,OSError) as e:
         report["status"]="HOLD_"+type(e).__name__
