@@ -99,6 +99,41 @@ jobs:
         run: |
           sudo unshare --net --setgid "$(id -g)" --setuid "$(id -u)" -- "$(command -v python)" -m tools.essence_adaptive_learning_executor --queue "$RUNNER_TEMP/state.json" --state lineage-preflight/data/essence-adaptive-repair/h38n5.json --approved research/essence/h38n5/APPROVED.json --pulse-id 45851971143 --run-id "$GITHUB_RUN_ID" --cortex cortex-preflight/data/memory-cortex --out "$RUNNER_TEMP/must-not-exist.json" --validate-only --anchor first-step/data/essence-adaptive-repair/h38n5.json --lineage-dir lineage-preflight/data/essence-adaptive-repair/lineage
           test ! -e "$RUNNER_TEMP/must-not-exist.json"
+          test "$(git hash-object research/essence/h38n5/APPROVED.json)" = 439b751a56f7831f586e2b58f3cabcf478eb3d37
+      - name: Exercise lineage refusal and rollback with actual First Step (no fit)
+        run: |
+          python - <<'PY'
+          import json,tempfile
+          from pathlib import Path
+          from tools.essence_adaptive_learning_executor import read,check,seal,digest,verify_first_step,verify_transition,verify_lineage,score,predict,FIRST_STEP_TEXT
+          root=Path("research/essence/h38n5")
+          plan=read(root/"APPROVED.json")
+          a=read(Path("first-step/data/essence-adaptive-repair/h38n5.json"))
+          body=verify_first_step(a)
+          m=plan["batches"][1];bank=read(root/m["id"]/"TRAIN.json");exam=read(root/m["id"]/"EXAM.json")
+          prior=score(body["weights"],body["replay_exams"])
+          r={"parent_state_sha256":a["sha256"],"parent_weights_sha256":digest(body["weights"]),"candidate_weights_sha256":"f"*64,"bank_sha256":m["bank_sha256"],"exam_sha256":m["exam_sha256"],"training_executed":True,"production":False,"wake_origin":"LIVE_PARENT","parent_event":"schedule","parent_run_attempt":1,"parent_job_id":"99","pulse_id":"98","run_id":"97","decision":"ROLLBACK_KEEP_FROZEN","inheritance":{"prior_exam_total":len(prior),"prior_parent_correct":1,"prior_retained_correct":1,"prior_lost":0,"first_step_prediction":15,"durable_weights_sha256":digest(body["weights"])}}
+          child=seal({**body,"records":body["records"]+[r],"replay_exams":body["replay_exams"]+exam,"attempted_texts":sorted(set(body["attempted_texts"])|{z["text"] for z in bank})})
+          assert verify_transition(a,child,plan,root)["prior_retained_correct"]==1
+          with tempfile.TemporaryDirectory() as t:
+              d=Path(t)
+              (d/"attempt-002.json").write_text(json.dumps(child))
+              assert verify_lineage(a,child,d,plan,root)["attempts"]==2
+              for label,mutate in [
+                  ("lost_weights",lambda b:b.update(weights=[[0.0]*128 for _ in range(9)])),
+                  ("changed_first_record",lambda b:b["records"][0].update(wrong=99)),
+                  ("wrong_parent",lambda b:b["records"][-1].update(parent_state_sha256="0"*64)),
+                  ("manual_wake",lambda b:b["records"][-1].update(parent_event="push")),
+                  ("lost_exam",lambda b:b.update(replay_exams=b["replay_exams"][1:]))]:
+                  b=json.loads(json.dumps(check(child)));mutate(b)
+                  try:verify_transition(a,seal(b),plan,root)
+                  except ValueError:pass
+                  else:raise AssertionError(label)
+              try:verify_lineage(a,child,d/"missing",plan,root)
+              except (ValueError,OSError):pass
+              else:raise AssertionError("missing snapshot")
+          print("H38N7_LINEAGE_GUARDS_PASS 7 NO_FIT")
+          PY
       - name: Verify exact-path staging against ignored JSON files
         run: |
           set -euo pipefail
@@ -227,7 +262,7 @@ jobs:
         run: |
           set -euo pipefail
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PULSE_ID" > "$RUNNER_TEMP/parent-run.json"
-          jq -e --arg repo "$GITHUB_REPOSITORY" '.name == "ESSENCE v2.3 continuous bounded evolutionary pulse" and .head_repository.full_name == $repo and .head_branch == "main" and .conclusion == "success" and .event == "schedule" and .run_attempt == 1' "$RUNNER_TEMP/parent-run.json" >/dev/null
+          jq -e --arg repo "$GITHUB_REPOSITORY" '.name == "ESSENCE v2.3 continuous bounded evolutionary pulse" and .head_repository.full_name == $repo and .head_branch == "main" and .conclusion == "success" and .event == "schedule" and .run_attempt == 1 and .created_at > "2026-11-26T17:37:50Z"' "$RUNNER_TEMP/parent-run.json" >/dev/null
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PULSE_ID/jobs" --paginate --jq '.jobs[] | select(.name == "pulse" and .conclusion == "success") | .id' > "$RUNNER_TEMP/pulse-jobs"
           if [ "$(wc -l < "$RUNNER_TEMP/pulse-jobs")" != 1 ]; then echo 'ready=false' >> "$GITHUB_OUTPUT"; exit 0; fi
           echo 'ready=true' >> "$GITHUB_OUTPUT"
@@ -241,6 +276,7 @@ jobs:
           PARENT_JOB_ID: ${{ steps.parent.outputs.parent_job_id }}
           RUN_ID: ${{ github.run_id }}
         run: |
+          test "$(git hash-object research/essence/h38n5/APPROVED.json)" = 439b751a56f7831f586e2b58f3cabcf478eb3d37
           sudo unshare --net --setgid "$(id -g)" --setuid "$(id -u)" -- "$(command -v python)" -m tools.essence_adaptive_learning_executor --queue state/data/essence-adaptive-repair/queue.json --state state/data/essence-adaptive-repair/h38n5.json --approved research/essence/h38n5/APPROVED.json --pulse-id "$PULSE_ID" --run-id "$RUN_ID" --cortex cortex/data/memory-cortex --out "$RUNNER_TEMP/h38n5.json" --wake-origin LIVE_PARENT --anchor first-step/data/essence-adaptive-repair/h38n5.json --lineage-dir state/data/essence-adaptive-repair/lineage --parent-job-id "$PARENT_JOB_ID"
           if [ ! -f "$RUNNER_TEMP/h38n5.json" ]; then exit 0; fi
           if cmp -s "$RUNNER_TEMP/h38n5.json" state/data/essence-adaptive-repair/h38n5.json; then exit 0; fi
