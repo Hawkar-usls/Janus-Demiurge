@@ -1,0 +1,106 @@
+{
+  "schema": "janus.eye.organ_capability.v1",
+  "organ_id": "JANUS_EYE",
+  "status": "OPEN_RESEARCH",
+  "role": "coordinate-aware spatial perception and visualization",
+  "engine": {
+    "repository": "Hawkar-usls/Janus_Genesis",
+    "ref": "6426b70f140fbe887f9e08def0d409ffa9c6ca80",
+    "module": "janus_genesis.spatial_eye",
+    "scene_schema": "janus.eye.heightfield.v1",
+    "receipt_schema": "janus.eye.scene_receipt.v1",
+    "native_exam": {
+      "run_id": 45832986100,
+      "tests": 7,
+      "regression": 17
+    },
+    "kusto_exam": {
+      "run_id": 45833030382,
+      "artifact_id": 15123013441,
+      "receipt_path": "experiments/janus-eye/r1/2026-11-26-run-45833030382.json",
+      "authority": "MODELLED"
+    }
+  },
+  "sources": {
+    "registry": {
+      "repository": "Hawkar-usls/janus-meta-registry",
+      "path": "experiments/janus-eye/r1/2026-11-26-run-45833030382.json",
+      "ref": "777156992f0fd60da864c9c4a308291f548be262"
+    },
+    "portal": {
+      "repository": "Hawkar-usls/Janus-Portal",
+      "ref": "10425c2927ea6efb70ab951206c4602923973338",
+      "module": "src/providers.js",
+      "function": "probeMerged360",
+      "role": "public panorama metadata only; no photo depth claim; no private visit history or credentials"
+    },
+    "public_dem": {
+      "url": "https://api.open-meteo.com/v1/elevation",
+      "documentation": "https://open-meteo.com/en/docs/elevation-api",
+      "attribution": "Copernicus DEM GLO-90 2021 / Open-Meteo",
+      "authority": "MODELLED"
+    }
+  },
+  "routes": [
+    {
+      "consumer": "Janus-Cosmos",
+      "role": "scientific fields",
+      "status": "R1_TRANSFER_PASS"
+    },
+    {
+      "consumer": "Janus-Portal",
+      "role": "public panorama references and open terrain",
+      "status": "R2_EXAM_PENDING"
+    },
+    {
+      "consumer": "Janus",
+      "role": "organ discovery",
+      "status": "PROPOSED"
+    },
+    {
+      "consumer": "janus-meta-registry",
+      "role": "provenance and immutable receipts",
+      "status": "REGISTERED"
+    },
+    {
+      "consumer": "Janus-Demiurge",
+      "role": "read-only scene facts for reasoning",
+      "status": "DISCOVERY_ONLY"
+    },
+    {
+      "consumer": "Demi_Head",
+      "role": "review claims and uncertainty",
+      "status": "DISCOVERY_ONLY"
+    },
+    {
+      "consumer": "janus-lapis",
+      "role": "Beetle / memory receipt routing",
+      "status": "DISCOVERY_ONLY"
+    },
+    {
+      "consumer": "Memory Cortex",
+      "role": "verified scene facts",
+      "status": "DISCOVERY_ONLY"
+    },
+    {
+      "consumer": "ESSENCE",
+      "role": "boot context reference",
+      "status": "DISCOVERY_ONLY"
+    },
+    {
+      "consumer": "-Terminal-for-Janus",
+      "role": "read-only receipt display",
+      "status": "DISCOVERY_ONLY"
+    }
+  ],
+  "policy": {
+    "read_only_data": true,
+    "external_peer_consent_required": true,
+    "no_external_code_execution": true,
+    "no_private_history": true,
+    "no_sensor_access_claim": true,
+    "no_geometry_from_panorama_only": true,
+    "production_promotion": false,
+    "transport_authority": "NONE; existing JFP admission and verification remain required"
+  }
+}
