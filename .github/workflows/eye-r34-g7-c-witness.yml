@@ -1,0 +1,87 @@
+name: EYE R3.4 G7 and Sentinel C witness
+on:
+  push:
+    branches: [research/eye-r32-sentinel-effective-pulse]
+    paths: ['.github/workflows/eye-r34-g7-c-witness.yml']
+  pull_request:
+    paths: ['.github/workflows/eye-r34-g7-c-witness.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  witness:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: memory-cortex-state
+          path: memory-copy
+          sparse-checkout: data/memory-cortex
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate active spatial knowledge and search on native index
+        run: |
+          mkdir -p r34
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          from janus_model import memory_cortex_growth as g
+          root=Path('memory-copy/data/memory-cortex')
+          st=g.load_state(root)
+          sha='9f7b6b1e48edc9a4cb403fbdac7d1dc90f6b5d1b0142e0f9bf9dbb97018b2064'
+          assert st['generation']>=7 and sha in st['active']
+          raw=g.read_object(root,sha,st['records'][sha]['size'])
+          assert g.digest(raw)==sha and json.loads(raw)['comparison']['exact_review_match']
+          query=g.query(root,'KUSTO_ZERO_NODE',limit=8)
+          r={'schema':'janus.eye.r34.g7_witness.v1','run_id':os.environ['GITHUB_RUN_ID'],'generation':st['generation'],'state_commit':g.git_head(Path('memory-copy')),'target_sha256':sha,'target_active':True,'object_sha256_verified':True,'query_status':query['status'],'target_in_query_results':any(x['sha256']==sha for x in query['citations']),'indexed_documents':query['indexed_documents'],'verified_unique_source_bytes':query['verified_unique_source_bytes'],'sqlite_integrity':query['sqlite_integrity'],'query_citations':query['citations'],'production_write':False}
+          Path('r34/memory.json').write_text(json.dumps(r,indent=2)+'\n')
+          print(json.dumps(r,indent=2))
+          PY
+      - name: Observe real main-branch C history beyond skipped-run flood
+        env:
+          GH_READ_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request,urllib.parse
+          from pathlib import Path
+          from datetime import datetime,timezone,timedelta
+          from tools import janus_sentinel_mesh as m
+          token=os.environ['GH_READ_TOKEN'];now=datetime.now(timezone.utc)
+          repo='Hawkar-usls/janus-meta-registry'
+          base='https://api.github.com/repos/'+repo
+          def get(path,params=None):
+              url=base+path+('?' + urllib.parse.urlencode(params) if params else '')
+              req=urllib.request.Request(url,headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json'})
+              with urllib.request.urlopen(req,timeout=15) as a:raw=a.read(2000001)
+              if len(raw)>2000000:raise ValueError('response cap')
+              return json.loads(raw)
+          def hist(wf,status=None,event=None,limit=20):
+              q={'branch':'main','per_page':limit,'created':'>='+ (now-timedelta(hours=48)).isoformat().replace('+00:00','Z')}
+              if status:q['status']=status
+              if event:q['event']=event
+              rows=get('/actions/workflows/'+wf+'/runs',q)['workflow_runs']
+              assert len(rows)<=limit
+              return rows
+          def details(row):
+              jobs=get('/actions/runs/'+str(row['id'])+'/jobs',{'per_page':30})['jobs']
+              return {'id':row['id'],'event':row['event'],'created_at':row['created_at'],'updated_at':row['updated_at'],'run_attempt':row.get('run_attempt'),'status':row['status'],'conclusion':row['conclusion'],'jobs':[{'id':j['id'],'name':j['name'],'conclusion':j['conclusion'],'steps':[{ 'name':s['name'],'conclusion':s['conclusion']} for s in j.get('steps',[]) if 'Observe peer' in s['name'] or 'Acquire one shared' in s['name'] or s['conclusion']=='failure']} for j in jobs]}
+          r={'schema':'janus.eye.r34.c_history.v1','run_id':os.environ['GITHUB_RUN_ID'],'observed_utc':now.isoformat(),'queries':{},'remote_wake_performed':False}
+          for label,wf,status,event,limit in [('recent','janus-sentinel-mesh.yml',None,None,15),('success','janus-sentinel-mesh.yml','success',None,12),('scheduled','janus-sentinel-mesh.yml',None,'schedule',8),('guardian','janus-autonomy-bounded-wake-guardian.yml',None,'schedule',5)]:
+              try:r['queries'][label]=[details(x) for x in hist(wf,status,event,limit)]
+              except Exception as e:r['queries'][label]={'status':'HOLD','error_type':type(e).__name__}
+          Path('r34/c-history.json').write_text(json.dumps(r,indent=2)+'\n')
+          print(json.dumps(r,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eye-r34-g7-c-witness
+          path: r34/
+          retention-days: 90
