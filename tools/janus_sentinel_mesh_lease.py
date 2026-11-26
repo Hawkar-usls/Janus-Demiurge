@@ -6,7 +6,7 @@ write to Meta Registry state branch, JANUS_MESH_DISPATCH_TOKEN with actions
 write to three approved receivers. No secrets -> HOLD, never fake success.
 """
 from __future__ import annotations
-import argparse,base64,json,os,subprocess,tempfile
+import argparse,base64,json,os,subprocess,tempfile,urllib.error
 from datetime import datetime,timezone
 from pathlib import Path
 from tools import janus_sentinel_mesh as m
@@ -85,7 +85,8 @@ def git(args,env):
 
 def claim(o,token,now):
     require(type(token) is str and 24<len(token)<4096,"STATE_TOKEN_REQUIRED")
-    header=base64.b64encode(("x-access-token:"+token).encode()).decode()
+    credential_pair = ":".join(("x-access-token", token))
+    header=base64.b64encode(credential_pair.encode()).decode()
     env=os.environ.copy()
     env.update(GIT_CONFIG_COUNT="2",
       GIT_CONFIG_KEY_0="http.https://github.com/.extraheader",
@@ -145,6 +146,10 @@ def execute(o,state_token,dispatch_token,read_token,now=None,
                                       dispatch_token)
             report["dispatch_accepted"]=(report["status"]==
                          "REMOTE_DISPATCH_SUBMITTED_NOT_RECOVERY_PROOF")
+    except urllib.error.HTTPError as e:
+        # Emit the numeric HTTP status only. Never emit body, URL or headers.
+        report["status"]="HOLD_HTTP_"+str(e.code) if type(e.code) is int and 400<=e.code<=599 else "HOLD_HTTP_UNKNOWN"
+        report["http_failure_stage"]="DISPATCH" if report["claim_won"] else "PRECLAIM"
     except (ValueError,TypeError,KeyError,subprocess.SubprocessError,
             TimeoutError,OSError) as e:
         report["status"]="HOLD_"+type(e).__name__
