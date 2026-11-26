@@ -53,6 +53,31 @@ class GrowthTests(unittest.TestCase):
     def scan(self, fetch=lambda u: self.fail("unexpected network fetch")):
         return g.collect(self.root, self.source, None, self.policy, fetch=fetch)
 
+    def test_priority_error_memory_once_and_exact_bytes(self):
+        import hashlib
+        def seal(x):
+            return {**x, "sha256": hashlib.sha256(json.dumps(x,sort_keys=True,separators=(",",":")).encode()).hexdigest()}
+        prior=seal({"schema":"h38n3.error_memory.v1","production":False,"errors":[1]})
+        memory=seal({"schema":"h38n4.error_memory.v1","production":False,"previous":prior})
+        self.put(g.ERROR_MEMORY_PATH,json.dumps(memory))
+        self.commit()
+        raw=(self.source/g.ERROR_MEMORY_PATH).read_bytes()
+        with patch.object(g,"ERROR_MEMORY_SOURCE_SHA",g.digest(raw)), patch.object(g,"ERROR_MEMORY_SEAL",memory["sha256"]):
+            first=self.scan()
+            self.assertEqual(first["generation"],1)
+            self.assertTrue(first["error_memory"]["active"])
+            self.assertEqual(g.read_object(self.root,g.digest(raw),len(raw)),raw)
+            second=self.scan()
+            self.assertEqual(second["generation"],1)
+            self.assertFalse(second["error_memory"]["publish_requested"])
+
+    def test_priority_error_memory_wrong_hash_never_publishes(self):
+        self.put(g.ERROR_MEMORY_PATH,'{"production":false}')
+        self.commit()
+        with self.assertRaisesRegex(g.Hold,"ERROR_MEMORY_SOURCE_PIN_MISMATCH"):
+            self.scan()
+        self.assertEqual(g.load_state(self.root)["generation"],0)
+
     def test_unchanged_run_is_noop_and_does_not_rebuild_or_read_old_text(self):
         self.scan()
         before = (self.root / "STATE.json").read_bytes()
