@@ -19,7 +19,7 @@ PRIMARY={"A":"C","B":"A","C":"B"}
 WORKFLOW="janus-sentinel-mesh.yml"
 MAX_AGE=40*60
 MIN_FAILED_AGE=6*60
-MAX_RUNS=8
+MAX_RUNS=12
 RUN_ID=re.compile(r"^[1-9][0-9]{0,19}$")
 
 def require(ok,why):
@@ -45,7 +45,7 @@ def get_runs(repo,token,opener=urllib.request.urlopen):
     require(repo in REPO_ROLES,"UNAUTHORIZED_REPOSITORY")
     require(type(token) is str and 16<len(token)<4096,"NO_READ_TOKEN")
     url=("https://api.github.com/repos/"+repo+
-         "/actions/workflows/"+WORKFLOW+"/runs?per_page=8")
+         "/actions/workflows/"+WORKFLOW+"/runs?per_page=12")
     req=urllib.request.Request(url,headers={
         "Accept":"application/vnd.github+json",
         "Authorization":"Bearer "+token,
@@ -53,14 +53,39 @@ def get_runs(repo,token,opener=urllib.request.urlopen):
         "X-GitHub-Api-Version":"2022-11-28"})
     with opener(req,timeout=15) as response:
         require(response.status==200,"PEER_READ_STATUS_NOT_200")
-        raw=response.read(128001)
-    require(len(raw)<=128000,"PEER_RESPONSE_OVERSIZED")
+        raw=response.read(512001)
+    require(len(raw)<=512000,"PEER_RESPONSE_OVERSIZED")
     data=json.loads(raw)
     require(isinstance(data,dict) and
             isinstance(data.get("workflow_runs"),list) and
             len(data["workflow_runs"])<=MAX_RUNS,
             "INVALID_PEER_RUN_INVENTORY")
-    return data["workflow_runs"]
+    rows=data["workflow_runs"]
+    # GitHub may report a successful workflow when its conditional job skipped.
+    # Require evidence of actual work before counting a completed success as pulse.
+    for index,row in enumerate(rows):
+        if row.get("event")=="pull_request" or row.get("status")!="completed" or row.get("conclusion")!="success":
+            continue
+        rid=row.get("id")
+        require(type(rid) is int and rid>0,"INVALID_RUN_ID")
+        jobs_url=f"https://api.github.com/repos/{repo}/actions/runs/{rid}/jobs?per_page=30"
+        jobs_req=urllib.request.Request(jobs_url,headers=dict(req.header_items()))
+        with opener(jobs_req,timeout=15) as response:
+            require(response.status==200,"PEER_JOB_READ_STATUS_NOT_200")
+            job_raw=response.read(512001)
+        require(len(job_raw)<=512000,"PEER_JOB_RESPONSE_OVERSIZED")
+        jobs=json.loads(job_raw)
+        require(isinstance(jobs.get("jobs"),list) and len(jobs["jobs"])<=30
+                and jobs.get("total_count")==len(jobs["jobs"]),"INCOMPLETE_JOB_INVENTORY")
+        expected=[j for j in jobs["jobs"] if j.get("name")=="observe-and-bounded-wake"]
+        require(len(expected)==1,"MISSING_OR_AMBIGUOUS_HEARTBEAT_JOB")
+        j=expected[0]
+        require(j.get("status")=="completed" and j.get("conclusion") in ("success","skipped","neutral"),"INCONSISTENT_RUN_JOB_RESULT")
+        if j["conclusion"]!="success":
+            row=dict(row)
+            row["conclusion"]="skipped"
+            rows[index]=row
+    return rows
 
 def health(rows,now):
     require(type(rows) is list and len(rows)<=MAX_RUNS,"BAD_PEER_RUN_LIST")
@@ -76,6 +101,8 @@ def health(rows,now):
                 and item.get("conclusion") in (None,"success","failure","cancelled","timed_out","skipped","neutral"),
                 "INVALID_PEER_RUN_METADATA")
         seen.add(item["id"])
+        if item["status"]=="completed" and item.get("conclusion") in ("skipped","neutral"):
+            continue
         created=clock(item["created_at"])
         age=(now-created).total_seconds()
         require(-60<=age<=30*86400,"PEER_CLOCK_UNTRUSTWORTHY")
