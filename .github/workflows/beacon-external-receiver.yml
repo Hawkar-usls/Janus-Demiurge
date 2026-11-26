@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'tools/beacon_external_receiver.py'
+      - 'tools/beacon_sensory_feedback.py'
+      - 'tests/test_beacon_sensory_feedback.py'
       - 'tests/test_beacon_external_receiver.py'
       - '.github/workflows/beacon-external-receiver.yml'
   push:
@@ -44,13 +46,28 @@ jobs:
           ref: beacon-external-receiver-state
           path: receiver-state
           persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: c82533225962b5763992788c8ce951bf6447a57c
+          path: baseline
+          sparse-checkout: |
+            data/JANUS-BEACON-EXTERNAL-WITNESS-LEARNING-REPORT-2026-11-26-v1.json
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: python -m unittest discover -v -s tests -p test_beacon_external_receiver.py
+      - run: |
+          python -m unittest discover -v -s tests -p test_beacon_external_receiver.py
+          python -m unittest discover -v -s tests -p test_beacon_sensory_feedback.py
       - name: Validate mailbox data offline
         run: |
           sudo unshare --net --setgid "$(id -g)" --setuid "$(id -u)" -- "$(command -v python)" -m tools.beacon_external_receiver --mailbox inbox/data/beacon-external-inbox --archive registry/data/witness_importer --state receiver-state/data/beacon-external-receiver/state.json --out "$RUNNER_TEMP/beacon-external"
+      - name: Learn from newly corroborated completion times only
+        run: |
+          test "$(git -C baseline hash-object data/JANUS-BEACON-EXTERNAL-WITNESS-LEARNING-REPORT-2026-11-26-v1.json)" = 37506764f703897ce5ca26fde031d8fd6f434da3
+          sudo unshare --net --setgid "$(id -g)" --setuid "$(id -u)" -- "$(command -v python)" -m tools.beacon_sensory_feedback --receiver "$RUNNER_TEMP/beacon-external/state.json" --base baseline/data/JANUS-BEACON-EXTERNAL-WITNESS-LEARNING-REPORT-2026-11-26-v1.json --state receiver-state/data/beacon-external-receiver/feedback-state.json --out "$RUNNER_TEMP/beacon-external/feedback"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -84,8 +101,10 @@ jobs:
           mkdir -p data/beacon-external-receiver
           cp "$RUNNER_TEMP/beacon-external/state.json" data/beacon-external-receiver/state.json
           cp "$RUNNER_TEMP/beacon-external/report.json" data/beacon-external-receiver/report.json
-          git add -f -- data/beacon-external-receiver/state.json data/beacon-external-receiver/report.json
-          test -z "$(git diff --cached --name-only | grep -Fxv -e data/beacon-external-receiver/state.json -e data/beacon-external-receiver/report.json || true)"
+          cp "$RUNNER_TEMP/beacon-external/feedback/state.json" data/beacon-external-receiver/feedback-state.json
+          cp "$RUNNER_TEMP/beacon-external/feedback/report.json" data/beacon-external-receiver/feedback-report.json
+          git add -f -- data/beacon-external-receiver/state.json data/beacon-external-receiver/report.json data/beacon-external-receiver/feedback-state.json data/beacon-external-receiver/feedback-report.json
+          test -z "$(git diff --cached --name-only | grep -Fxv -e data/beacon-external-receiver/state.json -e data/beacon-external-receiver/report.json -e data/beacon-external-receiver/feedback-state.json -e data/beacon-external-receiver/feedback-report.json || true)"
           if git diff --cached --quiet; then exit 0; fi
           git -c user.name=janus-beacon -c user.email=41898282+github-actions[bot]@users.noreply.github.com commit -m 'Persist validated external witness evidence'
           git push origin HEAD:refs/heads/beacon-external-receiver-state
