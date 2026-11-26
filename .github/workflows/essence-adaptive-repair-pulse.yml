@@ -69,6 +69,24 @@ jobs:
                   seen.add(t)
           print("H38N5_APPROVED_BANKS",len(p["batches"]),len(seen))
           PY
+      - name: Verify exact-path staging against ignored JSON files
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          git init -q "$tmp"
+          cd "$tmp"
+          printf '*.json\\n' > .gitignore
+          mkdir -p data/essence-adaptive-repair
+          for f in queue.json h38n5.json unrelated.json; do printf '{}\\n' > "data/essence-adaptive-repair/$f"; done
+          git check-ignore data/essence-adaptive-repair/queue.json data/essence-adaptive-repair/h38n5.json
+          for f in queue.json h38n5.json; do
+            p="data/essence-adaptive-repair/$f"
+            git add -f -- "$p"
+            test "$(git diff --cached --name-only)" = "$p"
+            git rm -q --cached -- "$p"
+          done
+          test -z "$(git diff --cached --name-only)"
+          echo H38N5B_EXACT_PATH_STAGING_PASS
   persist:
     needs: validate
     if: >-
@@ -114,7 +132,8 @@ jobs:
           mkdir -p state/data/essence-adaptive-repair
           cp "$RUNNER_TEMP/queue.json" state/data/essence-adaptive-repair/queue.json
           cd state
-          git add -- data/essence-adaptive-repair/queue.json
+          git add -f -- data/essence-adaptive-repair/queue.json
+          test -z "$(git diff --cached --name-only | grep -Fxv 'data/essence-adaptive-repair/queue.json' || true)"
           if git diff --cached --quiet; then exit 0; fi
           git -c user.name=janus-essence -c user.email=41898282+github-actions[bot]@users.noreply.github.com commit -m 'Persist bounded adaptive research request'
           git push origin HEAD:refs/heads/essence-adaptive-repair-state
@@ -178,7 +197,8 @@ jobs:
           mkdir -p state/data/essence-adaptive-repair
           cp "$RUNNER_TEMP/h38n5.json" state/data/essence-adaptive-repair/h38n5.json
           cd state
-          git add -- data/essence-adaptive-repair/h38n5.json
+          git add -f -- data/essence-adaptive-repair/h38n5.json
+          test -z "$(git diff --cached --name-only | grep -Fxv 'data/essence-adaptive-repair/h38n5.json' || true)"
           if git diff --cached --quiet; then exit 0; fi
           git -c user.name=janus-essence -c user.email=41898282+github-actions[bot]@users.noreply.github.com commit -m 'Persist bounded shadow learning lineage'
           git push origin HEAD:refs/heads/essence-adaptive-repair-state
