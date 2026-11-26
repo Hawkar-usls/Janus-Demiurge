@@ -1,0 +1,211 @@
+name: AUTODIDACT R1.3 sovereign triumvirate factorial
+on:
+  pull_request:
+    types: [opened]
+    paths:
+      - '.github/workflows/autodidact-r13-sovereign-triumvirate.yml'
+permissions:
+  contents: read
+concurrency:
+  group: autodidact-r13-triumvirate
+  cancel-in-progress: false
+jobs:
+  diagnostic:
+    if: github.repository == 'Hawkar-usls/Janus-Demiurge' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'research/autodidact-r13-sovereign-triumvirate-20261126' && github.run_attempt == 1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: fc4293c972c231e9b06dd286a74c840b69131baa
+          path: brain
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: 106463de92f57fb21785c59146b63e3013aaaa62
+          path: registry
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+      - name: Fixed CPU preservation ablation (metrics only)
+        working-directory: brain
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,os,random,subprocess,asyncio,math
+          from pathlib import Path
+          import torch
+          import torch.nn.functional as F
+          from janus_model.corpus import scrub
+          from janus_model.train_registry import batch_from,eval_loss,load_checkpoint
+          from janus_model.model import ByteTokenizer
+          from models.trinity.trinity_core import TrinityCouncil
+          def sha(b): return hashlib.sha256(b).hexdigest()
+          def require(ok,msg):
+              if not ok: raise RuntimeError(msg)
+          torch.set_num_threads(2)
+          torch.set_num_interop_threads(1)
+          root=Path('../registry').resolve()
+          parent=Path('janus_model/checkpoints/promoted.pt')
+          parent_sha='06d7e6228ca9aef2dc58eb55fe1c805aa3b66e4f8fb90b0e946ce6af47b1a662'
+          require(sha(parent.read_bytes())==parent_sha,'PARENT_HASH')
+          mp=Path('janus_model/state/LAST_CORPUS_MANIFEST.json')
+          m=json.loads(mp.read_text())
+          commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
+          require(commit==m['source_commit']=='106463de92f57fb21785c59146b63e3013aaaa62','SOURCE_IDENTITY')
+          # Historical train-labeled data only; no production anchor or holdout.
+          # Hash buckets are proxies for adaptation and retention, not chronology.
+          # Document hashes are disjoint; near-duplicate semantics and parent exposure remain possible.
+          keys=['adapt_fit','adapt_eval','retain_fit','retain_eval']
+          docs={k:[] for k in keys}; ids={k:[] for k in keys}
+          protected={r['sha256'] for r in m['records'] if r['split']=='holdout'}
+          seen=set()
+          for row in sorted(m['records'],key=lambda x:x['path']):
+              if row['split']!='train': continue
+              h=row['sha256']
+              require(h not in protected and int(h[:8],16)%10!=0,'PROTECTED_SOURCE')
+              if h in seen: continue
+              seen.add(h)
+              p=root/row['path']
+              require(p.resolve().is_relative_to(root) and p.is_file() and not p.is_symlink(),'SOURCE_PATH')
+              raw=p.read_bytes()
+              require(sha(raw)==h and len(raw)==row['bytes'],'SOURCE_BYTES')
+              text=scrub(raw.decode('utf-8',errors='replace')).encode()[:65536].decode('utf-8',errors='ignore')
+              # Fixed 40/10/40/10 partition by independent salted content hash.
+              bucket=int(sha(('r12-preservation:'+h).encode())[:8],16)%10
+              key=keys[0 if bucket<4 else 1 if bucket==4 else 2 if bucket<9 else 3]
+              docs[key].append(text); ids[key].append(h)
+          require(sum(map(len,ids.values()))==len(seen),'DUPLICATE')
+          data={k:'\n\n'.join(v) for k,v in docs.items()}
+          streams={k:torch.tensor(ByteTokenizer.encode(v,bos=True,eos=True),dtype=torch.long) for k,v in data.items()}
+          require(min(map(len,ids.values()))>=10 and min(x.numel() for x in streams.values())>10000,'DATA_TOO_SMALL')
+          teacher,_=load_checkpoint(parent,expected_sha256=parent_sha)
+          teacher.eval()
+          eval_keys=['adapt_eval','retain_eval']
+          baseline={k:eval_loss(teacher,streams[k],24,8,46117) for k in eval_keys}
+          # Approximate diagonal Fisher: mean squared minibatch gradients on retention FIT.
+          params=dict(teacher.named_parameters())
+          fisher={k:torch.zeros_like(v) for k,v in params.items()}
+          g=torch.Generator().manual_seed(46118)
+          for _ in range(16):
+              x,y=batch_from(streams['retain_fit'],8,teacher.config.context_length,g)
+              teacher.zero_grad(set_to_none=True)
+              _,loss=teacher(x,y); loss.backward()
+              for k,v in params.items():
+                  if v.grad is not None: fisher[k].add_(v.grad.detach().square()/16)
+          teacher.zero_grad(set_to_none=True)
+          require(all(bool(torch.isfinite(v).all()) for v in fisher.values()) and sum(float(v.sum()) for v in fisher.values())>0,'FISHER_INVALID')
+          reference={k:v.detach().clone() for k,v in params.items()}
+          for p in teacher.parameters(): p.requires_grad_(False)
+          # Same optimizer steps, batch size, parent and main adaptation windows in every arm.
+          # No tuning on the evaluation cohorts; parameters are fixed diagnostic choices.
+          seeds=[27021,27022]; steps=60; lr=0.0003; ewc_lambda=100.0; kd_weight=0.5; temperature=2.0
+          rows=[{'arm':'no_update','steps':0,**baseline}]
+          for seed in seeds:
+              for arm in ['plain','replay','ewc','distill','replay+ewc','replay+distill','ewc+distill','replay+ewc+distill']:
+                  random.seed(seed); torch.manual_seed(seed)
+                  model,_=load_checkpoint(parent,expected_sha256=parent_sha); model.train()
+                  opt=torch.optim.AdamW(model.parameters(),lr=lr,weight_decay=.01)
+                  ga=torch.Generator().manual_seed(seed+1)
+                  gb=torch.Generator().manual_seed(seed+2)
+                  c=model.config.context_length
+                  auxiliary=[]
+                  for i in range(steps):
+                      x,y=batch_from(streams['adapt_fit'],9,c,ga)
+                      a,b=batch_from(streams['retain_fit' if 'replay' in arm else 'adapt_fit'],3,c,gb)
+                      x=torch.cat((x,a)); y=torch.cat((y,b))
+                      logits,ce=model(x,y); extra=torch.zeros(())
+                      if 'ewc' in arm:
+                          extra=extra+0.5*ewc_lambda*sum((fisher[k]*(v-reference[k]).square()).sum() for k,v in model.named_parameters())
+                      if 'distill' in arm:
+                          with torch.no_grad(): target,_=teacher(x)
+                          extra=extra+kd_weight*temperature**2*F.kl_div(F.log_softmax(logits/temperature,dim=-1),F.softmax(target/temperature,dim=-1),reduction='none').sum(dim=-1).mean()
+                      loss=ce+extra
+                      require(bool(torch.isfinite(loss)),'NONFINITE_LOSS')
+                      opt.zero_grad(set_to_none=True); loss.backward()
+                      torch.nn.utils.clip_grad_norm_(model.parameters(),1.0); opt.step()
+                      auxiliary.append(float(extra.detach()))
+                  metrics={k:eval_loss(model,streams[k],24,8,46117) for k in eval_keys}
+                  require(all(torch.isfinite(torch.tensor(v)).item() for v in metrics.values()),'NONFINITE_EVAL')
+                  row={'arm':arm,'seed':seed,'steps':steps,**metrics,'relative_delta':{k:metrics[k]/baseline[k]-1 for k in eval_keys},'mean_auxiliary_loss':sum(auxiliary)/len(auxiliary)}
+                  rows.append(row); print('AUTODIDACT_R13_ARM',json.dumps(row,sort_keys=True),flush=True)
+                  del model,opt
+          require(sha(parent.read_bytes())==parent_sha,'PARENT_CHANGED')
+          result={'schema':'janus.autodidact.r13.factorial_research.v1','source_commit':commit,'parent_sha256':parent_sha,'manifest_sha256':sha(mp.read_bytes()),'splits':{k:{'documents':len(ids[k]),'source_hashes':ids[k],'text_sha256':sha(data[k].encode()),'bytes':len(data[k].encode())} for k in keys},'baseline':baseline,'rows':rows,'seeds':seeds,'steps':steps,'lr':lr,'replay_fraction':0.25,'ewc_lambda':ewc_lambda,'fisher_estimator':'squared minibatch gradient approximation, 16 batches','fisher_sum':sum(float(v.sum()) for v in fisher.values()),'kd_weight':kd_weight,'temperature':temperature,'evaluation_seed':46117,'claim_ceiling':{'historical_train_labeled_data_only':True,'adaptation_retention_proxies':True,'semantic_retention_proven':False,'fresh_independent_exam':False,'protected_exam_read':False,'production_changed':False,'candidate_weights_persisted':False,'promotion_authority':False}}
+          # Three advisory views over fixed matched comparisons; no winner, no new training.
+          # Reuse historical Trinity's three-view synthesis and critic operator.
+          # This role assignment is a new R1.3 research mapping, not a historical identity claim.
+          roles={'strategist_logic':'replay','seer_alternative':'ewc','doer_action':'distill'}
+          arms=['plain','replay','ewc','distill','replay+ewc','replay+distill','ewc+distill','replay+ewc+distill']
+          def validate_rows(rs):
+              expected={(a,z) for a in arms for z in seeds}
+              trained=[r for r in rs if r.get('arm')!='no_update']
+              controls=[r for r in rs if r.get('arm')=='no_update']
+              require(len(controls)==1 and controls[0]['steps']==0,'CONTROL')
+              require(all(controls[0][k]==baseline[k] for k in eval_keys),'CONTROL_METRIC')
+              keys=[(r['arm'],r['seed']) for r in trained]
+              require(len(keys)==len(expected) and set(keys)==expected,'INCOMPLETE_OR_DUPLICATE')
+              for r in trained:
+                  require(r['steps']==steps,'STEPS')
+                  for k in eval_keys:
+                      v=r[k]; d=r['relative_delta'][k]
+                      require(type(v) in (float,int) and math.isfinite(v) and v>0 and math.isfinite(d) and abs(d-(v/baseline[k]-1))<1e-10,'METRIC')
+              return {(r['arm'],r['seed']):r for r in trained}
+          index=validate_rows(rows)
+          for bad in [rows[:-1],rows+[rows[-1]],rows[:-1]+[{**rows[-1],'adapt_eval':float('nan')}]]:
+              try: validate_rows(bad)
+              except RuntimeError: pass
+              else: raise RuntimeError('NEGATIVE_CONTROL_FAILED')
+          def name_for(parts):
+              return '+'.join(x for x in ('replay','ewc','distill') if x in parts) or 'plain'
+          async def role_runner(role,prompt):
+              component=roles[role]
+              comparisons=[]
+              for arm in arms:
+                  parts=set(arm.split('+'))-{'plain'}
+                  if component in parts: continue
+                  paired=name_for(parts|{component})
+                  for seed in seeds:
+                      a=index[(arm,seed)]; b=index[(paired,seed)]
+                      comparisons.append({'seed':seed,'without':arm,'with':paired,'loss_delta':{k:b[k]-a[k] for k in eval_keys}})
+              require(len(comparisons)==8,'PAIR_COUNT')
+              return json.dumps({'component':component,'paired_comparisons':comparisons,'authority':'ADVISORY_ONLY'},sort_keys=True,allow_nan=False)
+          async def sovereign_synthesis(prompt,views):
+              # Deterministic evidence assembly only, not learned sovereign cognition.
+              return json.dumps({'status':'HOLD_INDEPENDENT_EXAM','views':{k:json.loads(v) for k,v in views.items()},'candidate_selected':None,'promotion_authority':False,'production_authority':False,'independent_exam_passed':False},sort_keys=True,allow_nan=False)
+          async def independent_critic(prompt,draft):
+              try:
+                  d=json.loads(draft)
+                  ok=(set(d)=={'status','views','candidate_selected','promotion_authority','production_authority','independent_exam_passed'} and d['status']=='HOLD_INDEPENDENT_EXAM' and d['candidate_selected'] is None and all(d[k] is False for k in ('promotion_authority','production_authority','independent_exam_passed')) and set(d['views'])=={'father','son','spirit'})
+                  for key,role in TrinityCouncil.ROLES.items():
+                      ok=ok and d['views'][key]==json.loads(await role_runner(role,prompt))
+              except (ValueError,KeyError,TypeError): ok=False
+              return bool(ok),'REJECTED_REPORT_NO_AUTHORITY'
+          prompt='R1.3 fixed factorial retrospective report only'
+          council=TrinityCouncil(role_runner,sovereign_synthesis,independent_critic)
+          receipt=asyncio.run(council.consult(prompt)).receipt()
+          require(receipt['accepted'] and json.loads(receipt['final'])['status']=='HOLD_INDEPENDENT_EXAM','COUNCIL_REPORT')
+          forged=json.loads(receipt['final']); forged['promotion_authority']=True
+          require(not asyncio.run(independent_critic(prompt,json.dumps(forged)))[0],'FORGED_AUTHORITY')
+          forged=json.loads(receipt['final']); forged['views'].pop('father')
+          require(not asyncio.run(independent_critic(prompt,json.dumps(forged)))[0],'MISSING_VOTE')
+          forged=json.loads(receipt['final']); forged['views']['father']['paired_comparisons'][0]['loss_delta']['adapt_eval']=-999
+          require(not asyncio.run(independent_critic(prompt,json.dumps(forged)))[0],'FORGED_METRIC')
+          result['sovereign_report']=receipt
+          result['negative_controls']={'missing_row':'PASS','duplicate_row':'PASS','nonfinite_row':'PASS','forged_authority':'PASS','missing_view':'PASS','forged_metric':'PASS'}
+          result['trinity_source_blob']='b130377b76c8316c17757f0b50a1d9f5743c90a1'
+          result['claim_ceiling']['sovereign_learned_cognition_proven']=False
+          print('AUTODIDACT_R13_COUNCIL',json.dumps({'status':'HOLD_INDEPENDENT_EXAM','role_count':3,'matched_comparisons_per_role':8,'negative_controls':result['negative_controls'],'candidate_selected':None},sort_keys=True))
+          out=Path(os.environ['RUNNER_TEMP'])/'autodidact-r13.json'
+          out.write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print('AUTODIDACT_R13_COMPLETE',json.dumps({'arms':len(rows),'parent_unchanged':True,'independent_exam':'HOLD','promotion_authority':False}))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: autodidact-r13-metrics-only
+          path: ${{ runner.temp }}/autodidact-r13.json
+          if-no-files-found: error
+          retention-days: 30
