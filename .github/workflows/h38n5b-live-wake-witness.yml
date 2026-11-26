@@ -1,0 +1,45 @@
+name: H38N5B live wake read-only witness
+on:
+  pull_request:
+    types: [opened]
+    paths:
+      - '.github/workflows/h38n5b-live-wake-witness.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  witness:
+    if: github.repository == 'Hawkar-usls/Janus-Demiurge' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Read actual main workflow runs and job decisions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          export REPO="$GITHUB_REPOSITORY"
+          for file in essence-v23-continuous-pulse.yml essence-adaptive-repair-pulse.yml; do
+            gh api "repos/$REPO/actions/workflows/$file/runs?branch=main&per_page=12" > "$RUNNER_TEMP/$file.json"
+          done
+          python - <<'PY'
+          import json,os,subprocess
+          from pathlib import Path
+          root=Path(os.environ["RUNNER_TEMP"]); repo=os.environ["REPO"]
+          report={}
+          for f in ("essence-v23-continuous-pulse.yml","essence-adaptive-repair-pulse.yml"):
+              x=json.loads((root/(f+".json")).read_text())
+              rows=[]
+              for r in x["workflow_runs"][:8]:
+                  j=json.loads(subprocess.check_output(["gh","api",f"repos/{repo}/actions/runs/{r['id']}/jobs?per_page=50"]))
+                  rows.append({"id":r["id"],"event":r["event"],"status":r["status"],"conclusion":r["conclusion"],"created_at":r["created_at"],"head_sha":r["head_sha"],"jobs":[{"id":z["id"],"name":z["name"],"status":z["status"],"conclusion":z["conclusion"],"steps":[{"name":s["name"],"conclusion":s["conclusion"]} for s in z.get("steps",[]) if s["conclusion"] in ("failure","skipped")]} for z in j["jobs"]]})
+              report[f]={"total":x["total_count"],"runs":rows}
+          print("H38N5B_LIVE_WITNESS",json.dumps(report,sort_keys=True))
+          (root/"witness.json").write_text(json.dumps(report,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: h38n5b-live-wake-witness
+          path: ${{ runner.temp }}/witness.json
+          if-no-files-found: error
+          retention-days: 30
