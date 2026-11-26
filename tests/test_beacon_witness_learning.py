@@ -15,6 +15,10 @@ class WitnessLearning(unittest.TestCase):
         self.assertEqual(len(examples([a,b])),4)
     def test_wrong_age_label_refused(self):
         with self.assertRaisesRegex(ValueError,"AGE_LABEL"):validate(fixture(0,age=360))
+    def test_invalid_label_quarantined_not_trained(self):
+        q=[];a=validate(fixture(0,age=360),q)
+        self.assertEqual(len(q),5)
+        self.assertEqual(len(examples([a,validate(fixture(1))])),0)
     def test_forward_only(self):
         rows=[validate(fixture(i)) for i in range(20)]
         ex=examples(rows);cut=rows[14]["time"]
