@@ -85,7 +85,7 @@ def cycle(state,queue,manifest,bank,exam,pulse_id,run_id):
     nextstate=seal({**s,"records":s["records"]+[rec],"training_rows":replay if accept else s["training_rows"],"attempted_texts":sorted(oldb|b),"replay_exams":tests,"weights":child if accept else s["weights"]})
     return nextstate,rec
 def main():
-    p=argparse.ArgumentParser();p.add_argument("--queue",type=Path,required=True);p.add_argument("--state",type=Path,required=True);p.add_argument("--approved",type=Path,required=True);p.add_argument("--pulse-id",required=True);p.add_argument("--run-id",required=True);p.add_argument("--out",type=Path,required=True);p.add_argument("--cortex",type=Path,required=True);a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument("--queue",type=Path,required=True);p.add_argument("--state",type=Path,required=True);p.add_argument("--approved",type=Path,required=True);p.add_argument("--pulse-id",required=True);p.add_argument("--run-id",required=True);p.add_argument("--out",type=Path,required=True);p.add_argument("--cortex",type=Path,required=True);p.add_argument("--validate-only",action="store_true");p.add_argument("--wake-origin",choices=("LIVE_PARENT","RECOVERY_REPLAY"),default="LIVE_PARENT");a=p.parse_args()
     if not a.approved.is_file() or not a.queue.is_file():
         print("H38N5_EXECUTOR",json.dumps({"status":"WAIT_APPROVED_BANK_OR_QUEUE","training_executed":False,"production":False}));return
     if not re.fullmatch(r"[1-9][0-9]{0,19}",a.pulse_id) or not re.fullmatch(r"[1-9][0-9]{0,19}",a.run_id):raise ValueError("RUN_ID")
@@ -115,9 +115,13 @@ def main():
     if not re.fullmatch(r"batch-00[1-3]",bid):raise ValueError("BATCH_ID")
     folder=a.approved.parent/bid
     bank=read(folder/"TRAIN.json");exam=read(folder/"EXAM.json")
+    if a.validate_only:
+        rows(bank);rows(exam)
+        if digest(bank)!=m["bank_sha256"] or digest(exam)!=m["exam_sha256"]:raise ValueError("DATA_PIN")
+        print("H38N6_RUNTIME_PREFLIGHT",json.dumps({"generation":ptr["generation"],"manifest":ptr["manifest_sha256"],"memory_source_sha256":key,"queue_state_sha256":queue["sha256"],"batch":bid,"training_executed":False,"production":False},sort_keys=True));return
     new,r=cycle(old,queue,m,bank,exam,a.pulse_id,a.run_id)
     if r.get("training_executed"):
-        body=check(new);r.update(cortex_generation=ptr["generation"],cortex_manifest_sha256=ptr["manifest_sha256"],memory_source_sha256=key,queue_state_sha256=queue["sha256"]);body["records"][-1]=r;new=seal(body)
+        body=check(new);r.update(wake_origin=a.wake_origin,cortex_generation=ptr["generation"],cortex_manifest_sha256=ptr["manifest_sha256"],memory_source_sha256=key,queue_state_sha256=queue["sha256"]);body["records"][-1]=r;new=seal(body)
     a.out.parent.mkdir(parents=True,exist_ok=True);a.out.write_text(json.dumps(new,sort_keys=True,indent=2)+"\n")
     print("H38N5_EXECUTOR",json.dumps({**r,"state_sha256":new["sha256"],"cycles":len(new["records"]),"production":False},sort_keys=True))
 if __name__=="__main__":main()
