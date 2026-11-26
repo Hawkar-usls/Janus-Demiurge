@@ -16,7 +16,7 @@ def stamp(s):
     t=datetime.fromisoformat(s.replace("Z","+00:00"))
     if t.tzinfo is None:raise ValueError("TIMEZONE")
     return int(t.timestamp())
-def validate(r):
+def validate(r,quarantine=None):
     if r.get("receipt_sha256")!=digest({k:v for k,v in r.items() if k!="receipt_sha256"}):raise ValueError("RECEIPT_HASH")
     if r["schema"]!="janus.external_witness.import_receipt.v1" or r["collector"]["type"]!="TRUSTED_META_REGISTRY_IMPORTER_NOT_EXTERNAL_WITNESS":raise ValueError("ORIGIN")
     a=r["authority"]
@@ -28,7 +28,10 @@ def validate(r):
         if st not in KNOWN:out[k]={"status":st};continue
         if x.get("repository")!=repo or x.get("workflow")!=name or x.get("active_schedule_run"):raise ValueError("LINE_BINDING")
         run=x["last_schedule_run"];t=stamp(run["completed_at"]);age=(now-t)/60
-        if not 0<=age or abs(age-x["age_minutes"])>.025 or KNOWN[st]!=int(age>=360):raise ValueError("AGE_LABEL")
+        if not 0<=age or abs(age-x["age_minutes"])>.025 or KNOWN[st]!=int(age>=360):
+            if quarantine is None:raise ValueError("AGE_LABEL")
+            quarantine.append({"receipt_sha256":r["receipt_sha256"],"observed_at":r["observed_at_utc"],"line":k,"declared_status":st,"declared_age_minutes":x["age_minutes"],"recomputed_age_minutes":age,"completed_at":run["completed_at"],"reason":"AGE_LABEL_MISMATCH"})
+            out[k]={"status":"QUARANTINED_AGE_LABEL"};continue
         if type(run["run_id"]) is not int or run["run_id"]<=0:raise ValueError("RUN_ID")
         out[k]={"status":st,"age":age,"run_id":run["run_id"],"completed":t}
     return {"time":now,"lines":out,"sha":r["receipt_sha256"],"collector_id":str(r["collector"]["run_id"])+":"+str(r["collector"]["run_attempt"])}
@@ -114,7 +117,7 @@ def main():
     p=argparse.ArgumentParser();p.add_argument("--archive",type=Path,required=True);p.add_argument("--external",type=Path,required=True);p.add_argument("--out",type=Path,required=True);a=p.parse_args()
     rows=[];seen=set();counts=Counter();quarantine=[]
     for path in sorted((a.archive/"observations").glob("*/*.json")):
-        r=json.loads(path.read_text());z=validate(r)
+        r=json.loads(path.read_text());z=validate(r,quarantine)
         if z["collector_id"] in seen:raise ValueError("DUPLICATE_RECEIPT")
         seen.add(z["collector_id"]);rows.append(z)
         for k,v in z["lines"].items():counts[k+":"+v["status"]]+=1
@@ -122,7 +125,7 @@ def main():
     if len(rows)<10 or len(rows)>4096 or any(a["time"]>=b["time"] for a,b in zip(rows,rows[1:])):raise ValueError("ARCHIVE_BOUND_OR_ORDER")
     cut=rows[len(rows)*7//10]["time"]
     ext=json.loads(a.external.read_text())
-    report={"schema":"janus.beacon.witness.learning.v1","receipts":len(rows),"first":rows[0]["time"],"last":rows[-1]["time"],"cutoff":cut,"receipt_chain_sha256":digest([z["sha"] for z in rows]),"status_counts":dict(counts),"risk":evaluate(examples(rows),cut),"timing":timing(rows,cut),"external_crosscheck":external_crosscheck(rows,ext),"scope":"Trusted internal archive training, external snapshot audit only; no alert selection bias in archive, no proof of complete run history; no external outage claim.","dispatch_authorized":False,"production":False}
-    a.out.mkdir(parents=True,exist_ok=True);(a.out/"report.json").write_text(json.dumps(report,sort_keys=True,indent=2)+"\n")
+    report={"schema":"janus.beacon.witness.learning.v1","receipts":len(rows),"first":rows[0]["time"],"last":rows[-1]["time"],"cutoff":cut,"receipt_chain_sha256":digest([z["sha"] for z in rows]),"status_counts":dict(counts),"quarantine_count":len(quarantine),"quarantine_examples":quarantine[:12],"risk":evaluate(examples(rows),cut),"timing":timing(rows,cut),"external_crosscheck":external_crosscheck(rows,ext),"scope":"Trusted internal archive training, external snapshot audit only; no alert selection bias in archive, no proof of complete run history; no external outage claim.","dispatch_authorized":False,"production":False}
+    a.out.mkdir(parents=True,exist_ok=True);(a.out/"quarantine.json").write_text(json.dumps(quarantine,sort_keys=True,indent=2)+"\n");(a.out/"report.json").write_text(json.dumps(report,sort_keys=True,indent=2)+"\n")
     print("BEACON_WITNESS_LEARNING",json.dumps(report,sort_keys=True),flush=True)
 if __name__=="__main__":main()
