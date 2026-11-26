@@ -1,0 +1,134 @@
+name: AUTODIDACT R1.5 Akinator question engine
+on:
+  pull_request:
+    types: [opened]
+    paths:
+      - '.github/workflows/autodidact-r15-akinator-question-engine.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  question-engine:
+    if: github.repository == 'Hawkar-usls/Janus-Demiurge' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'research/autodidact-r15-akinator-question-engine-20261126' && github.run_attempt == 1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          repository: Hawkar-usls/Janus-Demiurge
+          run-id: 45884698747
+          name: autodidact-r14-evidence-only
+          path: evidence
+      - name: Fixed question-engine control exam
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import copy,hashlib,itertools,json,math
+          from pathlib import Path
+          def require(ok,msg):
+              if not ok: raise ValueError(msg)
+          def seal(x): return hashlib.sha256(json.dumps(x,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
+          witness=json.loads(r'''{"captain":"ADMIT_REPORT_ONLY","negative_controls_passed":["forged_answer","forged_authority","root_drift","unknown_question","missing_row","duplicate_row","forged_metric","nonfinite"],"proposal":{"candidate_selected":null,"contrasts":{"distill":{"adapt_better":0,"both_worse":8,"mean_delta":[0.013109933097865095,0.022046130469177153],"n":8,"retain_better":0},"ewc":{"adapt_better":8,"both_worse":0,"mean_delta":[-0.00010490596288412202,-0.00005789737939322637],"n":8,"retain_better":8},"replay":{"adapt_better":6,"both_worse":2,"mean_delta":[-0.0018398692715971,0.004895650092380563],"n":8,"retain_better":2}},"decision":"OPEN_INDEPENDENT_EXAM","promotion_authority":false,"root_sha256":"4f959cbb02c1dda922c222bc1126ca72b856a14b15c81c659248565c3adae29c","trace":[{"answer":false,"question":"ANY_DUAL_GAIN_OVER_PARENT","witness_count":0},{"answer":true,"question":"DISTILL_UNIFORMLY_WORSE_MATCHED"},{"answer":true,"question":"EWC_EFFECT_BELOW_DESCRIPTIVE_0_05_PP"},{"answer":true,"question":"REPLAY_MEAN_TRADEOFF"},{"answer":"OPEN","question":"CAUSE_OF_STAGNATION_ESTABLISHED","reason":"two seeds; historical proxy cohorts; no causal root or semantic exam"}],"training_allowed":false},"root_preserved":true,"schema":"janus.autodidact.r14.akinator_replay.v1","scope":"Retrospective structural question replay on already disclosed R1.3 metrics; no new training, no independent semantic exam or authority.","source_artifact_id":15147728828,"source_file_sha256":"82d35017759f7940a0c9f94e7b2bfffb164bff440a868a683e18bdf465943019","source_job":140129867245,"source_run":45883940735,"sovereign":"OPEN_INDEPENDENT_EXAM"}''')
+          raw=Path('evidence/r14-report.json').read_bytes()
+          require(len(raw)<100000,'ARTIFACT_SIZE')
+          source=json.loads(raw)
+          require(source==witness,'R14_LOG_WITNESS')
+          require(source['root_preserved'] is True and source['captain']=='ADMIT_REPORT_ONLY' and source['sovereign']=='OPEN_INDEPENDENT_EXAM','R14_IDENTITY')
+          require(source['proposal']['training_allowed'] is False and source['proposal']['promotion_authority'] is False,'AUTHORITY')
+          root=seal(source)
+          # Hypothesis bits are abstract outcome patterns, NOT exhaustive causal explanations.
+          # Uniform counting prior and ordinal cost proxies are predeclared design assumptions.
+          axes=('gradient_conflict','ewc_strength','replay_mix','distill_weight')
+          states=tuple(itertools.product((0,1),repeat=4))
+          scope={'parent_sha256':'06d7e6228ca9aef2dc58eb55fe1c805aa3b66e4f8fb90b0e946ce6af47b1a662','registry_commit':'106463de92f57fb21785c59146b63e3013aaaa62','partition':'r12-preservation historical train-labeled proxies','steps':60,'lr':.0003,'seeds':[27021,27022],'evaluation':'retrospective development only'}
+          questions=[
+           {'id':'GRADIENT_COSINE','axis':0,'cost_proxy':1,'requires_fit':False,'design':{'measure':'paired adaptation/retention gradients at same frozen parent','batches_per_seed':16,'criterion':'record cosine, norms, uncertainty; inconclusive if zero norm or conflicting seeds'}},
+           {'id':'EWC_STRENGTH','axis':1,'cost_proxy':2,'requires_fit':True,'design':{'lambda_grid':[0,100,1000],'comparison':'same seeds, data, steps; separate retention and adaptation losses'}},
+           {'id':'REPLAY_RATIO','axis':2,'cost_proxy':2,'requires_fit':True,'design':{'fractions':[0,.125,.25,.5],'comparison':'matched total token budget; record adaptation exposure'}},
+           {'id':'DISTILL_WEIGHT','axis':3,'cost_proxy':2,'requires_fit':True,'design':{'weights':[0,.05,.1,.5],'temperature':2,'comparison':'same paired inputs and frozen teacher'}},
+          ]
+          for q in questions: q['fingerprint']=seal({'scope':scope,'question':q})
+          require(len({q['fingerprint'] for q in questions})==4,'CATALOG_IDENTITY')
+          # Keep negative observations as scope-bound, not a ban on a whole method.
+          history=[{'id':'R13_DISTILL_0_5_T2','scope':scope,'status':'OBSERVED_WORSE_BOTH_8_OF_8_MATCHED','evidence_root':root,'general_method_refuted':False},
+           {'id':'R13_EWC_100','scope':scope,'status':'OBSERVED_TINY_IMPROVEMENT_8_OF_8_MATCHED','evidence_root':root,'general_method_refuted':False},
+           {'id':'R13_REPLAY_0_25','scope':scope,'status':'OBSERVED_MEAN_TRADEOFF','evidence_root':root,'general_method_refuted':False}]
+          def partition(remaining,q):
+              return [tuple(s for s in remaining if s[q['axis']]==out) for out in (0,1)]
+          def rank(remaining,completed):
+              require(bool(remaining),'NO_CONSISTENT_STATES')
+              require(len(set(remaining))==len(remaining) and set(remaining)<=set(states),'STATE_SET')
+              out=[]
+              for q in questions:
+                  if q['fingerprint'] in completed: continue
+                  bins=partition(remaining,q); n=len(remaining)
+                  entropy=-sum((len(b)/n)*math.log2(len(b)/n) for b in bins if b)
+                  if entropy<=0: continue
+                  out.append({'id':q['id'],'fingerprint':q['fingerprint'],'information_bits':entropy,'worst_case_eliminated':n-max(map(len,bins)),'cost_proxy':q['cost_proxy'],'score':entropy/q['cost_proxy'],'requires_fit':q['requires_fit']})
+              return sorted(out,key=lambda x:(-x['score'],-x['worst_case_eliminated'],x['id']))
+          def propose(remaining,completed):
+              ranks=rank(remaining,completed)
+              return {'root':root,'state_sha256':seal({'states':remaining,'completed':sorted(completed)}),'ranking':ranks,'next_question':ranks[0]['id'] if ranks else None,'disposition':'ADVISORY_ONLY' if ranks else 'OPEN_NO_DISTINGUISHING_QUESTION','training_allowed':False,'promotion_authority':False}
+          def captain(remaining,completed,p):
+              try:
+                  require(p==propose(remaining,completed),'PROPOSAL')
+                  # Alternate closed-form score from reduction in expected log cardinality.
+                  for a in p['ranking']:
+                      q=next(q for q in questions if q['id']==a['id'])
+                      n=len(remaining)
+                      counts=[sum(s[q['axis']]==o for s in remaining) for o in (0,1)]
+                      oracle=math.log2(n)-sum(c/n*math.log2(c) for c in counts if c)
+                      require(abs(a['score']-oracle/q['cost_proxy'])<1e-12,'ORACLE')
+                  return 'ADMIT_REPORT_ONLY'
+              except (ValueError,KeyError,TypeError,StopIteration): return 'REJECT'
+          def synthetic_update(remaining,completed,q,outcome,evidence_scope):
+              # This transition is for fixture outcomes ONLY. Real observations require new reviewed evidence.
+              require(evidence_scope==scope,'SCOPE_MISMATCH')
+              require(q in questions and q['fingerprint'] not in completed,'UNKNOWN_OR_REPEATED')
+              require(outcome in (0,1,'INCONCLUSIVE'),'OUTCOME')
+              if outcome=='INCONCLUSIVE': return remaining,completed|{q['fingerprint']}
+              nxt=tuple(s for s in remaining if s[q['axis']]==outcome)
+              require(bool(nxt),'CONTRADICTION')
+              return nxt,completed|{q['fingerprint']}
+          real=propose(states,set())
+          require(captain(states,set(),real)=='ADMIT_REPORT_ONLY','REAL_CAPTAIN')
+          # Exhaustive finite synthetic controls: each possible outcome pattern.
+          traces=[]
+          for truth in states:
+              remaining=states; completed=set(); trace=[]
+              while len(remaining)>1:
+                  p=propose(remaining,completed)
+                  require(captain(remaining,completed,p)=='ADMIT_REPORT_ONLY','SYNTH_CAPTAIN')
+                  q=next(q for q in questions if q['id']==p['next_question'])
+                  remaining,completed=synthetic_update(remaining,completed,q,truth[q['axis']],scope)
+                  trace.append(q['id'])
+                  require(truth in remaining and len(trace)<=4,'FALSE_ELIMINATION_OR_LOOP')
+              require(remaining==(truth,) and propose(remaining,completed)['next_question'] is None,'RECOVERY')
+              traces.append({'truth':truth,'questions':trace,'recovered':True})
+          # Adaptive order skips already-resolved axes; compare with full fixed four-question sequence.
+          partial=tuple(s for s in states if s[0]==1 and s[2]==0)
+          require(propose(partial,set())['next_question'] in ('EWC_STRENGTH','DISTILL_WEIGHT'),'RESOLVED_AXIS')
+          require(len(rank(partial,set()))==2,'RESOLVED_COUNT')
+          q=questions[0]
+          remaining,completed=synthetic_update(states,set(),q,'INCONCLUSIVE',scope)
+          require(remaining==states and q['id'] not in [a['id'] for a in rank(remaining,completed)],'INCONCLUSIVE')
+          require(propose(states,{q['fingerprint'] for q in questions})['next_question'] is None,'EXHAUSTED')
+          negative=[]
+          for label,edit in [('forged_score',lambda p:p['ranking'][0].update(score=999)),('forged_authority',lambda p:p.update(training_allowed=True)),('root_drift',lambda p:p.update(root='0'*64)),('unknown_question',lambda p:p.update(next_question='UNKNOWN'))]:
+              bad=copy.deepcopy(real); edit(bad); require(captain(states,set(),bad)=='REJECT',label); negative.append(label)
+          for label,args in [('repeat',(states,{q['fingerprint']},q,1,scope)),('scope_drift',(states,set(),q,1,{**scope,'lr':1.0})),('invalid_outcome',(states,set(),q,'YES',scope)),('contradiction',(tuple(s for s in states if s[0]==0),set(),q,1,scope))]:
+              try: synthetic_update(*args)
+              except ValueError: negative.append(label)
+              else: raise ValueError(label)
+          require(seal(source)==root,'SOURCE_MUTATION')
+          result={'schema':'janus.autodidact.r15.question_engine.v1','source_run':45884698747,'source_artifact_id':15148409356,'source_file_sha256':hashlib.sha256(raw).hexdigest(),'root':root,'scope':scope,'catalog':questions,'history':history,'proposal':real,'captain':'ADMIT_REPORT_ONLY','sovereign':'OPEN_RESEARCH_PROPOSAL_ONLY','synthetic':{'recovered':len(traces),'total':len(states),'traces':traces,'full_fixed_questions':4,'no_speedup_claim':True,'partial_state_questions_remaining':2},'negative_controls':negative,'inconclusive_preserves_states':True,'root_preserved':True,'claim_ceiling':{'information_scores_are_model_assumptions':True,'costs_are_not_measured_runtime':True,'real_hypothesis_truth_established':False,'gradient_measured':False,'new_training_executed':False,'independent_exam_passed':False,'production_changed':False,'promotion_authority':False}}
+          Path('r15-report.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print('AUTODIDACT_R15_RESULT',json.dumps(result,sort_keys=True,allow_nan=False))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: autodidact-r15-evidence-only
+          path: r15-report.json
+          if-no-files-found: error
+          retention-days: 30
