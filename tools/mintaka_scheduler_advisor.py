@@ -65,7 +65,7 @@ def main():
     p=argparse.ArgumentParser();p.add_argument("--runs",type=Path,required=True);p.add_argument("--state",type=Path,required=True);p.add_argument("--out",type=Path,required=True);p.add_argument("--queue-ready",action="store_true");p.add_argument("--active-memory",action="store_true");p.add_argument("--remaining",type=int,required=True);p.add_argument("--paused",action="store_true");p.add_argument("--round",type=int,required=True);a=p.parse_args()
     s=json.loads(a.state.read_text()) if a.state.exists() else initial()
     s=append(s,extract(json.loads(a.runs.read_text())))
-    r=assess(s,a.queue_ready,a.active_memory,a.remaining,a.paused,a.round)
+    r=assess(s,a.queue_ready,a.active_memory,a.remaining,a.paused,sum(z["stage"]=="wake" for z in verified(s)["observations"]))
     a.out.mkdir(parents=True,exist_ok=True)
     (a.out/"state.json").write_text(json.dumps(s,sort_keys=True,indent=2)+"\n")
     (a.out/"advice.json").write_text(json.dumps(r,sort_keys=True,indent=2)+"\n")
