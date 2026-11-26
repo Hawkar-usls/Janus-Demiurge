@@ -1,0 +1,203 @@
+name: AUTODIDACT R1.7 learning step geometry
+on:
+  pull_request:
+    types: [opened]
+    paths:
+      - '.github/workflows/autodidact-r17-learning-step-geometry.yml'
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: autodidact-r17-geometry
+  cancel-in-progress: false
+jobs:
+  diagnostic:
+    if: github.repository == 'Hawkar-usls/Janus-Demiurge' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'research/autodidact-r17-learning-step-geometry-20261126' && github.run_attempt == 1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: fc4293c972c231e9b06dd286a74c840b69131baa
+          path: brain
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: 106463de92f57fb21785c59146b63e3013aaaa62
+          path: registry
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          repository: Hawkar-usls/Janus-Demiurge
+          run-id: 45886857861
+          name: autodidact-r15-evidence-only
+          path: question-evidence
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          repository: Hawkar-usls/Janus-Demiurge
+          run-id: 45888341165
+          name: autodidact-r16a-metrics-only
+          path: gradient-evidence
+      - name: Reversible fixed-direction probes (metrics only)
+        working-directory: brain
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,os,random,subprocess,math,statistics,time
+          from pathlib import Path
+          import torch
+          import torch.nn.functional as F
+          from janus_model.corpus import scrub
+          from janus_model.train_registry import batch_from,eval_loss,load_checkpoint
+          from janus_model.model import ByteTokenizer
+          def sha(b): return hashlib.sha256(b).hexdigest()
+          def require(ok,msg):
+              if not ok: raise RuntimeError(msg)
+          torch.set_num_threads(2)
+          torch.set_num_interop_threads(1)
+          root=Path('../registry').resolve()
+          parent=Path('janus_model/checkpoints/promoted.pt')
+          parent_sha='06d7e6228ca9aef2dc58eb55fe1c805aa3b66e4f8fb90b0e946ce6af47b1a662'
+          require(sha(parent.read_bytes())==parent_sha,'PARENT_HASH')
+          mp=Path('janus_model/state/LAST_CORPUS_MANIFEST.json')
+          m=json.loads(mp.read_text())
+          commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
+          require(commit==m['source_commit']=='106463de92f57fb21785c59146b63e3013aaaa62','SOURCE_IDENTITY')
+          # Historical train-labeled data only; no production anchor or holdout.
+          # Hash buckets are proxies for adaptation and retention, not chronology.
+          # Document hashes are disjoint; near-duplicate semantics and parent exposure remain possible.
+          keys=['adapt_fit','adapt_eval','retain_fit','retain_eval']
+          docs={k:[] for k in keys}; ids={k:[] for k in keys}
+          protected={r['sha256'] for r in m['records'] if r['split']=='holdout'}
+          seen=set()
+          for row in sorted(m['records'],key=lambda x:x['path']):
+              if row['split']!='train': continue
+              h=row['sha256']
+              require(h not in protected and int(h[:8],16)%10!=0,'PROTECTED_SOURCE')
+              if h in seen: continue
+              seen.add(h)
+              p=root/row['path']
+              require(p.resolve().is_relative_to(root) and p.is_file() and not p.is_symlink(),'SOURCE_PATH')
+              raw=p.read_bytes()
+              require(sha(raw)==h and len(raw)==row['bytes'],'SOURCE_BYTES')
+              text=scrub(raw.decode('utf-8',errors='replace')).encode()[:65536].decode('utf-8',errors='ignore')
+              # Fixed 40/10/40/10 partition by independent salted content hash.
+              bucket=int(sha(('r12-preservation:'+h).encode())[:8],16)%10
+              key=keys[0 if bucket<4 else 1 if bucket==4 else 2 if bucket<9 else 3]
+              docs[key].append(text); ids[key].append(h)
+          require(sum(map(len,ids.values()))==len(seen),'DUPLICATE')
+          data={k:'\n\n'.join(v) for k,v in docs.items()}
+          streams={k:torch.tensor(ByteTokenizer.encode(v,bos=True,eos=True),dtype=torch.long) for k,v in data.items()}
+          require(min(map(len,ids.values()))>=10 and min(x.numel() for x in streams.values())>10000,'DATA_TOO_SMALL')
+          teacher,_=load_checkpoint(parent,expected_sha256=parent_sha)
+          teacher.eval()
+          question_raw=Path('../question-evidence/r15-report.json').read_bytes()
+          question=json.loads(question_raw)
+          require(question['schema']=='janus.autodidact.r15.question_engine.v1' and question['root']=='1f84a30d18544bba266bbfb08c6db4674b53375a8065fffdda6066b5c59ac350','QUESTION_IDENTITY')
+          require(question['proposal']['next_question']=='GRADIENT_COSINE' and question['captain']=='ADMIT_REPORT_ONLY' and question['proposal']['training_allowed'] is False,'QUESTION_SCOPE')
+          require(question['proposal']['ranking'][0]['fingerprint']=='b7052e63b171197e65b2930f7cf350d85157606de773090a63a5b3b90f436356','QUESTION_FINGERPRINT')
+          require(question['scope']['parent_sha256']==parent_sha and question['scope']['registry_commit']==commit and question['scope']['seeds']==[27021,27022],'QUESTION_SOURCE')
+          # Read-only autograd. No optimizer, no backward accumulation, no checkpoint output.
+          params=dict(teacher.named_parameters())
+          require(all(v.requires_grad for v in params.values()),'GRADIENT_PARAMS')
+          # Hash logical tensor bytes directly via PyTorch, without NumPy or serialization metadata.
+          def tensor_digest(state):
+              h=hashlib.sha256()
+              for k,v in sorted(state.items()):
+                  t=v.detach().cpu().contiguous()
+                  meta=json.dumps([k,str(t.dtype),list(t.shape)],separators=(',',':')).encode()
+                  raw=bytes(t.reshape(-1).view(torch.uint8).tolist())
+                  h.update(len(meta).to_bytes(8,'big')); h.update(meta)
+                  h.update(len(raw).to_bytes(8,'big')); h.update(raw)
+              return h.hexdigest()
+          def state_digest(): return tensor_digest(teacher.state_dict())
+          hash_control=torch.tensor([0.,1.],dtype=torch.float32)
+          require(tensor_digest({'x':hash_control})==tensor_digest({'x':hash_control.clone()}),'HASH_STABLE')
+          changed=hash_control.clone(); changed[0]=2.
+          require(tensor_digest({'x':hash_control})!=tensor_digest({'x':changed}),'HASH_MUTATION')
+          require(tensor_digest({'x':hash_control})!=tensor_digest({'x':hash_control.reshape(1,2)}),'HASH_SHAPE')
+          require(tensor_digest({'x':hash_control})!=tensor_digest({'y':hash_control}),'HASH_NAME')
+          before=state_digest()
+          prior_raw=Path('../gradient-evidence/autodidact-r16a.json').read_bytes()
+          prior=json.loads(prior_raw)
+          require(prior['schema']=='janus.autodidact.r16.gradient_conflict.v1' and prior['parent_sha256']==parent_sha and prior['registry_commit']==commit,'GRADIENT_IDENTITY')
+          require(prior['decision']=='NONNEGATIVE_ALIGNMENT_OBSERVED' and prior['state_digest']==before and prior['question_fingerprint']==question['proposal']['ranking'][0]['fingerprint'],'GRADIENT_SCOPE')
+          require(prior['claim_ceiling']['weights_changed'] is False and prior['claim_ceiling']['optimizer_steps']==0,'GRADIENT_AUTHORITY')
+          require(all(sha(data[k].encode())==prior['splits'][k]['text_sha256'] for k in keys),'COHORT_IDENTITY')
+          # Fixed averaged adaptation gradient; analytic first-step AdamW direction
+          # at zero optimizer moments with standard clip, eps, and decoupled weight decay.
+          # This is not the trajectory of 60/240/320 stochastic optimizer updates.
+          saved={k:v.detach().clone() for k,v in teacher.state_dict().items()}
+          refs={k:v.detach().clone() for k,v in params.items()}
+          seeds=[27021,27022]
+          grid=[-0.0003,0.,0.000003,0.00001,0.00003,0.0001,0.0002,0.0003,0.0004,0.001,0.003,0.01]
+          eval_keys=['adapt_fit','adapt_eval','retain_eval']
+          eval_seed=46117
+          baseline={k:eval_loss(teacher,streams[k],24,8,eval_seed) for k in eval_keys}
+          require(all(math.isfinite(v) and v>0 for v in baseline.values()),'BASELINE')
+          rows=[]; directions=[]
+          started=time.monotonic()
+          def l2(vs): return math.sqrt(sum(float((v.double().square()).sum()) for v in vs))
+          for seed in seeds:
+              g=torch.Generator().manual_seed(seed+1)
+              sums={k:torch.zeros_like(v,dtype=torch.float64) for k,v in params.items()}
+              for _ in range(16):
+                  x,y=batch_from(streams['adapt_fit'],8,teacher.config.context_length,g)
+                  _,loss=teacher(x,y)
+                  gs=torch.autograd.grad(loss,tuple(params.values()),allow_unused=False)
+                  require(bool(torch.isfinite(loss)) and all(bool(torch.isfinite(v).all()) for v in gs),'NONFINITE_GRAD')
+                  for k,v in zip(params,gs): sums[k].add_(v.detach().double()/16)
+              gn=l2(sums.values())
+              require(math.isfinite(gn) and gn>1e-12,'ZERO_GRADIENT')
+              clip=min(1.0,1.0/(gn+1e-6))
+              # Direction corresponds to a mathematical fresh AdamW first step using
+              # the averaged gradient, not actual accumulated moments.
+              direction={k:-(v*clip/((v*clip).abs()+1e-8)+.01*refs[k].double()) for k,v in sums.items()}
+              dn=l2(direction.values())
+              require(math.isfinite(dn) and dn>0,'DIRECTION')
+              dot=sum(float((direction[k]*sums[k]).sum()) for k in params)
+              require(dot<0,'NOT_DESCENT_DIRECTION')
+              directions.append({'seed':seed,'gradient_norm':gn,'clip_factor':clip,'direction_norm':dn,'gradient_dot_direction':dot})
+              for lr in grid:
+                  try:
+                      with torch.no_grad():
+                          for k,p in params.items(): p.copy_((refs[k].double()+lr*direction[k]).to(p.dtype))
+                      require(all(bool(torch.isfinite(v).all()) for v in params.values()),'NONFINITE_PROBE')
+                      displacement=l2((v.detach().double()-refs[k].double()) for k,v in params.items())
+                      measured={k:eval_loss(teacher,streams[k],24,8,eval_seed) for k in eval_keys}
+                      require(all(math.isfinite(v) and v>0 for v in measured.values()),'NONFINITE_METRIC')
+                      if lr==0:
+                          require(state_digest()==before and all(abs(measured[k]-baseline[k])<1e-10 for k in eval_keys),'ZERO_STEP_CONTROL')
+                      row={'seed':seed,'lr':lr,'parameter_l2_displacement':displacement,'loss':measured,'relative_delta':{k:measured[k]/baseline[k]-1 for k in eval_keys}}
+                      rows.append(row)
+                      print('AUTODIDACT_R17_POINT',json.dumps(row,sort_keys=True,allow_nan=False),flush=True)
+                  finally:
+                      teacher.load_state_dict(saved,strict=True)
+                      require(state_digest()==before and sha(parent.read_bytes())==parent_sha,'RESTORE_FAILURE')
+              require(all(v.grad is None for v in params.values()),'GRADIENT_ACCUMULATION')
+          # No grid point is admitted or exported. Descriptive local geometry only.
+          require(len(rows)==len(seeds)*len(grid),'POINT_COUNT')
+          require(state_digest()==before and sha(parent.read_bytes())==parent_sha,'PARENT_CHANGED')
+          positive=[r for r in rows if r['lr']>0]
+          summary=[]
+          for lr in grid:
+              rs=[r for r in rows if r['lr']==lr]
+              summary.append({'lr':lr,'mean_relative_delta':{k:statistics.mean(r['relative_delta'][k] for r in rs) for k in eval_keys},'dual_gain_seed_count':sum(r['relative_delta']['adapt_eval']<0 and r['relative_delta']['retain_eval']<0 for r in rs),'mean_l2_displacement':statistics.mean(r['parameter_l2_displacement'] for r in rs)})
+          result={'schema':'janus.autodidact.r17.learning_step_geometry.v1','prior_run':45888341165,'prior_sha256':sha(prior_raw),'parent_sha256':parent_sha,'state_digest':before,'registry_commit':commit,'manifest_sha256':sha(mp.read_bytes()),'splits':{k:sha(data[k].encode()) for k in keys},'direction':'analytic fresh AdamW first-step direction of 16-batch averaged adapt_fit gradient, eval mode, clip 1, eps 1e-8, weight decay .01','grid':grid,'seeds':seeds,'eval_seed':eval_seed,'eval_batches':24,'eval_batch_size':8,'baseline':baseline,'directions':directions,'rows':rows,'summary':summary,'hash_controls':4,'restored_probes':len(rows),'elapsed_seconds':time.monotonic()-started,'decision':'OPEN_CAUSAL_ROOT_AND_INDEPENDENT_EXAM','claim_ceiling':{'historical_proxy_cohorts':True,'local_fixed_direction_only':True,'causal_root_proven':False,'global_optimum_proven':False,'optimizer_steps':0,'parent_weights_changed':False,'checkpoint_exported':False,'production_changed':False,'independent_exam_passed':False,'promotion_authority':False}}
+          out=Path(os.environ['RUNNER_TEMP'])/'autodidact-r17.json'
+          out.write_text(json.dumps(result,indent=2,sort_keys=True,allow_nan=False)+'\n')
+          print('AUTODIDACT_R17_RESULT',json.dumps({k:v for k,v in result.items() if k!='rows'},sort_keys=True,allow_nan=False))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: autodidact-r17-metrics-only
+          path: ${{ runner.temp }}/autodidact-r17.json
+          if-no-files-found: error
+          retention-days: 30
