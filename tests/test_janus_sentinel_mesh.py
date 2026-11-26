@@ -44,4 +44,28 @@ class MeshContract(unittest.TestCase):
         self.assertIsNone(m.decide(m.ROLES["A"],NOW,unknown)["target"])
         with self.assertRaises(ValueError):m.decide("attacker/repository",NOW,unknown)
         with self.assertRaises(ValueError):m.send("A",m.ROLES["A"],"123","x"*50)
+    def test_skipped_and_neutral_do_not_mask_stale_success(self):
+        rows=[row(4,1,conclusion="skipped"),row(3,2,conclusion="neutral"),row(2,60)]
+        h=m.health(rows,NOW)
+        self.assertEqual(h["status"],"STALE_SILENT")
+        self.assertEqual(h["last_run_id"],2)
+        self.assertEqual(m.health(rows[:2],NOW)["status"],"UNKNOWN_NO_PEER_EVIDENCE")
+    def test_workflow_success_with_skipped_job_is_not_a_pulse(self):
+        import json
+        class Resp:
+            status=200
+            def __init__(self,data):self.data=json.dumps(data).encode()
+            def __enter__(self):return self
+            def __exit__(self,*args):pass
+            def read(self,n):return self.data[:n]
+        def fetch(req,timeout):
+            url=req.full_url
+            if "/workflows/" in url:
+                return Resp({"workflow_runs":[row(2,1),row(1,65)]})
+            if "/runs/2/jobs" in url:
+                return Resp({"total_count":1,"jobs":[{"name":"observe-and-bounded-wake","status":"completed","conclusion":"skipped"}]})
+            return Resp({"total_count":1,"jobs":[{"name":"observe-and-bounded-wake","status":"completed","conclusion":"success"}]})
+        data=m.get_runs(m.ROLES["A"],"x"*30,opener=fetch)
+        self.assertEqual(m.health(data,NOW)["status"],"STALE_SILENT")
+        self.assertEqual(m.health(data,NOW)["last_run_id"],1)
 if __name__=="__main__":unittest.main()
