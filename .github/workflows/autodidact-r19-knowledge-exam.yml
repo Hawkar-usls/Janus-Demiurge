@@ -1,0 +1,361 @@
+name: AUTODIDACT R1.9 novel fact and retention exam
+on:
+  pull_request:
+    types: [opened]
+    paths:
+      - '.github/workflows/autodidact-r19-knowledge-exam.yml'
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: autodidact-r19-exam
+  cancel-in-progress: false
+jobs:
+  diagnostic:
+    if: github.repository == 'Hawkar-usls/Janus-Demiurge' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'research/autodidact-r19-knowledge-exam-20261126' && github.run_attempt == 1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: fc4293c972c231e9b06dd286a74c840b69131baa
+          path: brain
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: 106463de92f57fb21785c59146b63e3013aaaa62
+          path: registry
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          repository: Hawkar-usls/Janus-Demiurge
+          run-id: 45886857861
+          name: autodidact-r15-evidence-only
+          path: question-evidence
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          repository: Hawkar-usls/Janus-Demiurge
+          run-id: 45888341165
+          name: autodidact-r16a-metrics-only
+          path: gradient-evidence
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          repository: Hawkar-usls/Janus-Demiurge
+          run-id: 45888778318
+          name: autodidact-r17-metrics-only
+          path: geometry-evidence
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          repository: Hawkar-usls/Janus-Demiurge
+          run-id: 45891500794
+          name: autodidact-r18-metrics-only
+          path: trust-evidence
+      - name: Equal-work bounded novel-fact exam (metrics only)
+        working-directory: brain
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,os,random,subprocess,math,statistics,time,copy
+          from pathlib import Path
+          import torch
+          import torch.nn.functional as F
+          from janus_model.corpus import scrub
+          from janus_model.train_registry import batch_from,eval_loss,load_checkpoint
+          from janus_model.model import ByteTokenizer
+          def sha(b): return hashlib.sha256(b).hexdigest()
+          def require(ok,msg):
+              if not ok: raise RuntimeError(msg)
+          torch.set_num_threads(2)
+          torch.set_num_interop_threads(1)
+          root=Path('../registry').resolve()
+          parent=Path('janus_model/checkpoints/promoted.pt')
+          parent_sha='06d7e6228ca9aef2dc58eb55fe1c805aa3b66e4f8fb90b0e946ce6af47b1a662'
+          require(sha(parent.read_bytes())==parent_sha,'PARENT_HASH')
+          mp=Path('janus_model/state/LAST_CORPUS_MANIFEST.json')
+          m=json.loads(mp.read_text())
+          commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
+          require(commit==m['source_commit']=='106463de92f57fb21785c59146b63e3013aaaa62','SOURCE_IDENTITY')
+          # Historical train-labeled data only; no production anchor or holdout.
+          # Hash buckets are proxies for adaptation and retention, not chronology.
+          # Document hashes are disjoint; near-duplicate semantics and parent exposure remain possible.
+          keys=['adapt_fit','adapt_eval','retain_fit','retain_eval']
+          docs={k:[] for k in keys}; ids={k:[] for k in keys}
+          protected={r['sha256'] for r in m['records'] if r['split']=='holdout'}
+          seen=set()
+          for row in sorted(m['records'],key=lambda x:x['path']):
+              if row['split']!='train': continue
+              h=row['sha256']
+              require(h not in protected and int(h[:8],16)%10!=0,'PROTECTED_SOURCE')
+              if h in seen: continue
+              seen.add(h)
+              p=root/row['path']
+              require(p.resolve().is_relative_to(root) and p.is_file() and not p.is_symlink(),'SOURCE_PATH')
+              raw=p.read_bytes()
+              require(sha(raw)==h and len(raw)==row['bytes'],'SOURCE_BYTES')
+              text=scrub(raw.decode('utf-8',errors='replace')).encode()[:65536].decode('utf-8',errors='ignore')
+              # Fixed 40/10/40/10 partition by independent salted content hash.
+              bucket=int(sha(('r12-preservation:'+h).encode())[:8],16)%10
+              key=keys[0 if bucket<4 else 1 if bucket==4 else 2 if bucket<9 else 3]
+              docs[key].append(text); ids[key].append(h)
+          require(sum(map(len,ids.values()))==len(seen),'DUPLICATE')
+          data={k:'\n\n'.join(v) for k,v in docs.items()}
+          streams={k:torch.tensor(ByteTokenizer.encode(v,bos=True,eos=True),dtype=torch.long) for k,v in data.items()}
+          require(min(map(len,ids.values()))>=10 and min(x.numel() for x in streams.values())>10000,'DATA_TOO_SMALL')
+          teacher,_=load_checkpoint(parent,expected_sha256=parent_sha)
+          teacher.eval()
+          question_raw=Path('../question-evidence/r15-report.json').read_bytes()
+          question=json.loads(question_raw)
+          require(question['schema']=='janus.autodidact.r15.question_engine.v1' and question['root']=='1f84a30d18544bba266bbfb08c6db4674b53375a8065fffdda6066b5c59ac350','QUESTION_IDENTITY')
+          require(question['proposal']['next_question']=='GRADIENT_COSINE' and question['captain']=='ADMIT_REPORT_ONLY' and question['proposal']['training_allowed'] is False,'QUESTION_SCOPE')
+          require(question['proposal']['ranking'][0]['fingerprint']=='b7052e63b171197e65b2930f7cf350d85157606de773090a63a5b3b90f436356','QUESTION_FINGERPRINT')
+          require(question['scope']['parent_sha256']==parent_sha and question['scope']['registry_commit']==commit and question['scope']['seeds']==[27021,27022],'QUESTION_SOURCE')
+          # Read-only autograd. No optimizer, no backward accumulation, no checkpoint output.
+          params=dict(teacher.named_parameters())
+          require(all(v.requires_grad for v in params.values()),'GRADIENT_PARAMS')
+          # Hash logical tensor bytes directly via PyTorch, without NumPy or serialization metadata.
+          def tensor_digest(state):
+              h=hashlib.sha256()
+              for k,v in sorted(state.items()):
+                  t=v.detach().cpu().contiguous()
+                  meta=json.dumps([k,str(t.dtype),list(t.shape)],separators=(',',':')).encode()
+                  raw=bytes(t.reshape(-1).view(torch.uint8).tolist())
+                  h.update(len(meta).to_bytes(8,'big')); h.update(meta)
+                  h.update(len(raw).to_bytes(8,'big')); h.update(raw)
+              return h.hexdigest()
+          def state_digest(): return tensor_digest(teacher.state_dict())
+          hash_control=torch.tensor([0.,1.],dtype=torch.float32)
+          require(tensor_digest({'x':hash_control})==tensor_digest({'x':hash_control.clone()}),'HASH_STABLE')
+          changed=hash_control.clone(); changed[0]=2.
+          require(tensor_digest({'x':hash_control})!=tensor_digest({'x':changed}),'HASH_MUTATION')
+          require(tensor_digest({'x':hash_control})!=tensor_digest({'x':hash_control.reshape(1,2)}),'HASH_SHAPE')
+          require(tensor_digest({'x':hash_control})!=tensor_digest({'y':hash_control}),'HASH_NAME')
+          before=state_digest()
+          prior_raw=Path('../gradient-evidence/autodidact-r16a.json').read_bytes()
+          prior=json.loads(prior_raw)
+          require(prior['schema']=='janus.autodidact.r16.gradient_conflict.v1' and prior['parent_sha256']==parent_sha and prior['registry_commit']==commit,'GRADIENT_IDENTITY')
+          require(prior['decision']=='NONNEGATIVE_ALIGNMENT_OBSERVED' and prior['state_digest']==before and prior['question_fingerprint']==question['proposal']['ranking'][0]['fingerprint'],'GRADIENT_SCOPE')
+          require(prior['claim_ceiling']['weights_changed'] is False and prior['claim_ceiling']['optimizer_steps']==0,'GRADIENT_AUTHORITY')
+          require(all(sha(data[k].encode())==prior['splits'][k]['text_sha256'] for k in keys),'COHORT_IDENTITY')
+          geometry_raw=Path('../geometry-evidence/autodidact-r17.json').read_bytes()
+          geometry=json.loads(geometry_raw)
+          require(geometry['schema']=='janus.autodidact.r17.learning_step_geometry.v1' and geometry['parent_sha256']==parent_sha and geometry['state_digest']==before and geometry['registry_commit']==commit,'GEOMETRY_IDENTITY')
+          require(geometry['restored_probes']==24 and geometry['claim_ceiling']['parent_weights_changed'] is False,'GEOMETRY_SCOPE')
+          require(all(geometry['splits'][k]==sha(data[k].encode()) for k in keys),'GEOMETRY_COHORTS')
+          # Document-level train/gate split within historical fit pools; R17 eval pools
+          # never used to choose steps. They are retrospective, not independent new knowledge.
+          subdocs={}; subids={}
+          for cohort in ('adapt_fit','retain_fit'):
+              for suffix in ('train','gate'):
+                  subdocs[cohort+'_'+suffix]=[]; subids[cohort+'_'+suffix]=[]
+              for doc,h in zip(docs[cohort],ids[cohort]):
+                  suffix='gate' if int(sha(('r18-gate:'+h).encode())[:8],16)%5==0 else 'train'
+                  subdocs[cohort+'_'+suffix].append(doc); subids[cohort+'_'+suffix].append(h)
+          for k in ('adapt_eval','retain_eval'):
+              subdocs[k]=docs[k]; subids[k]=ids[k]
+          all_ids=[h for v in subids.values() for h in v]
+          require(len(all_ids)==len(set(all_ids)) and len(all_ids)==len(seen),'COHORT_OVERLAP')
+          streams18={k:torch.tensor(ByteTokenizer.encode('\n\n'.join(v),bos=True,eos=True),dtype=torch.long) for k,v in subdocs.items()}
+          require(min(map(len,subids.values()))>=10 and min(v.numel() for v in streams18.values())>10000,'GATE_TOO_SMALL')
+          r18_raw=Path('../trust-evidence/autodidact-r18.json').read_bytes()
+          r18=json.loads(r18_raw)
+          require(r18['schema']=='janus.autodidact.r18.adaptive_trust_region.v1' and r18['parent_sha256']==parent_sha and r18['parent_state_digest']==before and r18['registry_commit']==commit,'R18_IDENTITY')
+          require(r18['sovereign']=='HOLD_INDEPENDENT_EXAM' and r18['claim_ceiling']['promotion_authority'] is False,'R18_AUTHORITY')
+          require(all(x['dual_gain_seeds']==2 for x in r18['summary'] if x['arm'] in ('fixed_1e-4','trust_region')),'R18_DUAL_GAIN')
+          require(all(r18['cohorts'][k]['id_digest']==sha('\n'.join(sorted(v)).encode()) for k,v in subids.items()),'R18_COHORTS')
+          # Novel synthetic associations, created from a fixed post-parent world seed.
+          # Not real-world factual knowledge. Exam asks for taught facts in unused prompt forms.
+          seeds=[37031,37032]; n_facts=32; trials=120; seq=64; batch=8
+          menu=[.0001,.00003,.00001]; step_radius=.07; total_radius=.5
+          old_seed=78131; old_batches=2
+          arms=('fixed_bounded','adaptive_bounded')
+          def make_world(seed):
+              rng=random.Random(seed+99191)
+              names=set()
+              while len(names)<n_facts:
+                  names.add('z'+''.join(rng.choice('abcdefghijklmnopqrstuvwxyz') for _ in range(7)))
+              labels=[0,1]*(n_facts//2); rng.shuffle(labels)
+              return list(zip(sorted(names),labels))
+          def make_row(prompt,answer,other,tag,entity):
+              require(answer!=other and len(answer.encode())==len(other.encode())==1,'CHOICES')
+              ids=ByteTokenizer.encode(prompt,bos=True)
+              require(len(ids)<=seq,'PROMPT_LENGTH')
+              return {'prompt':prompt,'answer':ord(answer),'other':ord(other),'tag':tag,'entity':entity}
+          def fact_rows(world,forms):
+              return [make_row(form.format(name=name),str(label),str(1-label),'novel',name) for name,label in world for form in forms]
+          train_forms=('Archive: {name} has code ','Entry {name}. Code: ')
+          gate_forms=('Code assigned to {name}: ',)
+          exam_forms=('For {name}, the recorded code is ','Lookup {name} -> code ')
+          require(len(set(train_forms+gate_forms+exam_forms))==5,'TEMPLATE_OVERLAP')
+          def pack(rows):
+              encoded=[ByteTokenizer.encode(r['prompt'],bos=True) for r in rows]
+              return (torch.tensor([v+[0]*(seq-len(v)) for v in encoded]),torch.tensor([len(v)-1 for v in encoded]),torch.tensor([[r['answer'],r['other']] for r in rows]))
+          def logits2(model,packed):
+              x,pos,opts=packed
+              logits,_=model(x)
+              return logits[torch.arange(len(x)),pos].gather(1,opts)
+          def loss2(model,packed):
+              out=logits2(model,packed)
+              return F.cross_entropy(out,torch.zeros(len(out),dtype=torch.long))
+          @torch.no_grad()
+          def gate(model,packed):
+              model.eval()
+              new=float(loss2(model,packed))
+              old=eval_loss(model,streams18['retain_fit_gate'],old_batches,8,old_seed)
+              require(all(math.isfinite(v) and v>0 for v in (new,old)),'GATE_NONFINITE')
+              return {'new':new,'old':old}
+          def distance(a,b):
+              return math.sqrt(sum(float((a[k].detach().double()-b[k].detach().double()).square().sum()) for k in a))
+          def opt_seal(opt):
+              ts={}
+              def encode(v,p):
+                  if isinstance(v,torch.Tensor):
+                      ts[p]=v; return {'tensor':p}
+                  if isinstance(v,dict): return {str(k):encode(x,p+'/'+str(k)) for k,x in sorted(v.items(),key=lambda a:str(a[0]))}
+                  if isinstance(v,(list,tuple)): return [encode(x,p+'/'+str(i)) for i,x in enumerate(v)]
+                  return v
+              obj=encode(opt.state_dict(),'optimizer')
+              return sha((json.dumps(obj,sort_keys=True,allow_nan=False)+tensor_digest(ts)).encode())
+          def valid_geom(step,total):
+              return math.isfinite(step) and math.isfinite(total) and 0<=step<=step_radius and 0<=total<=total_radius
+          def adaptive_admit(cur,cand,par,step,total):
+              return valid_geom(step,total) and cand['new']<=cur['new']*(1-1e-6) and cand['new']<=par['new'] and cand['old']<=min(cur['old'],par['old'])
+          def captain(cur,cand,par,step,total,proposal):
+              verdict=(0<=step<=step_radius and 0<=total<=total_radius and cur['new']-cand['new']>=cur['new']*1e-6 and cand['new']<=par['new'] and cand['old']<=cur['old'] and cand['old']<=par['old'])
+              require(verdict==proposal,'CAPTAIN_DISAGREE')
+              return verdict
+          require(adaptive_admit({'new':1,'old':1},{'new':.9,'old':.9},{'new':1,'old':1},.03,.3),'CONTROL_PASS')
+          require(not adaptive_admit({'new':1,'old':1},{'new':.9,'old':1.1},{'new':1,'old':1},.03,.3),'CONTROL_RETENTION')
+          require(not adaptive_admit({'new':1,'old':1},{'new':.9,'old':.9},{'new':1,'old':1},.08,.3),'CONTROL_STEP')
+          require(not adaptive_admit({'new':1,'old':1},{'new':.9,'old':.9},{'new':1,'old':1},.03,.6),'CONTROL_RADIUS')
+          trained=[]; rows=[]; started=time.monotonic()
+          for seed in seeds:
+              world=make_world(seed)
+              train=fact_rows(world,train_forms); gates=fact_rows(world,gate_forms)
+              require(not set(r['prompt'] for r in train)&set(r['prompt'] for r in gates),'TRAIN_GATE_OVERLAP')
+              packed_gate=pack(gates)
+              base_gate=gate(teacher,packed_gate)
+              rng=random.Random(seed+1)
+              schedule=[rng.sample(range(len(train)),batch) for _ in range(trials)]
+              for arm in arms:
+                  model,_=load_checkpoint(parent,expected_sha256=parent_sha)
+                  model.eval(); ps=dict(model.named_parameters())
+                  require(tensor_digest(model.state_dict())==before,'ARM_PARENT')
+                  ref={k:p.detach().clone() for k,p in ps.items()}
+                  opt=torch.optim.AdamW(model.parameters(),lr=menu[0],weight_decay=.01)
+                  current=dict(base_gate); ix=0; accepted=0; rejected=0; history=[]
+                  for t,indices in enumerate(schedule):
+                      lr=menu[ix] if arm=='adaptive_bounded' else menu[0]
+                      opt.zero_grad(set_to_none=True)
+                      objective=loss2(model,pack([train[i] for i in indices]))
+                      require(bool(torch.isfinite(objective)),'TRAIN_NONFINITE')
+                      objective.backward()
+                      torch.nn.utils.clip_grad_norm_(model.parameters(),1,error_if_nonfinite=True)
+                      old={k:v.detach().clone() for k,v in model.state_dict().items()}
+                      oldp={k:v.detach().clone() for k,v in ps.items()}
+                      oo=copy.deepcopy(opt.state_dict()); oh=tensor_digest(old); oo_hash=opt_seal(opt)
+                      for group in opt.param_groups: group['lr']=lr
+                      opt.step()
+                      require(all(bool(torch.isfinite(p).all()) for p in ps.values()),'TRIAL_NONFINITE')
+                      step=distance(ps,oldp); total=distance(ps,ref)
+                      # Same forward/backward and gate-forward counts in BOTH arms.
+                      # Fixed uses gate evaluations only for accounting, never for step admission.
+                      cand=gate(model,packed_gate)
+                      if arm=='adaptive_bounded':
+                          admit=captain(current,cand,base_gate,step,total,adaptive_admit(current,cand,base_gate,step,total))
+                      else: admit=valid_geom(step,total)
+                      if admit:
+                          accepted+=1; current=cand
+                          if arm=='adaptive_bounded': ix=max(0,ix-1)
+                      else:
+                          model.load_state_dict(old,strict=True); opt.load_state_dict(copy.deepcopy(oo))
+                          require(tensor_digest(model.state_dict())==oh and opt_seal(opt)==oo_hash,'ROLLBACK')
+                          rejected+=1
+                          if arm=='adaptive_bounded': ix=min(len(menu)-1,ix+1)
+                      history.append({'trial':t,'lr':lr,'accepted':admit,'step_l2':step,'total_l2_proposed':total,'gate':cand})
+                  opt.zero_grad(set_to_none=True)
+                  final_radius=distance(ps,ref)
+                  require(final_radius<=total_radius and accepted+rejected==trials,'FINAL_BOUND')
+                  require(sha(parent.read_bytes())==parent_sha and state_digest()==before,'PARENT_MUTATION')
+                  row={'seed':seed,'arm':arm,'accepted':accepted,'rejected_verified_rollbacks':rejected,'trial_optimizer_steps':trials,'train_forward_backward_tokens':trials*batch*seq,'gate_forward_tokens':trials*(n_facts*seq+old_batches*8*128),'final_radius':final_radius,'final_gate':current,'history':history,'schedule_sha256':sha(json.dumps(schedule).encode()),'world_sha256':sha(json.dumps(world).encode())}
+                  trained.append((seed,arm,model,row))
+                  print('AUTODIDACT_R19_TRAIN',json.dumps({k:v for k,v in row.items() if k!='history'},sort_keys=True,allow_nan=False),flush=True)
+                  del opt
+          # Freeze every arm before creating exam prompts. No training or model selection below.
+          frozen=[tensor_digest(m.state_dict()) for _,_,m,_ in trained]
+          def old_rows(seed):
+              rng=random.Random(seed+37221); out=[]
+              # Rule-verifiable continuation panels; only parent-correct items count as retained abilities.
+              for i in range(16):
+                  a=rng.randrange(0,5); b=rng.randrange(0,5); c=a+b
+                  out.append(make_row(f'{a} + {b} = ',str(c),str((c+1+rng.randrange(8))%10),'addition',str(i)))
+              for i in range(16):
+                  a=rng.randrange(0,9)
+                  out.append(make_row(f'{a}, {a+1}, ' if a<8 else '6, 7, ',str(a+2 if a<8 else 8),str((a+3 if a<8 else 9)%10),'sequence',str(i)))
+              words=('apple','house','water','green','world','music','night','table','river','stone','light','bread','clock','earth','plant','chair')
+              for i,w in enumerate(words):
+                  a=w[-1]; b=chr(97+(ord(a)-97+1+rng.randrange(25))%26)
+                  out.append(make_row('Complete the word: '+w[:-1],a,b,'word_completion',str(i)))
+              for i in range(16):
+                  name='field'+str(i)
+                  # Given a complete one-field JSON object except its closing brace.
+                  out.append(make_row('{"'+name+'":'+str(rng.randrange(10)),'}',']','json_closure',str(i)))
+              return out
+          @torch.no_grad()
+          def exam(model,items):
+              model.eval()
+              out=[]
+              for start in range(0,len(items),8):
+                  x=logits2(model,pack(items[start:start+8]))
+                  require(bool(torch.isfinite(x).all()),'EXAM_NONFINITE')
+                  # Tie is not correct. Exact forced-choice scoring, not open generation.
+                  out.extend(bool(z) for z in (x[:,0]>x[:,1]).tolist())
+              return out
+          panels=[]
+          for seed in seeds:
+              world=make_world(seed)
+              new=fact_rows(world,exam_forms)
+              old=old_rows(seed)
+              train_prompts={r['prompt'] for r in fact_rows(world,train_forms)+fact_rows(world,gate_forms)}
+              require(not train_prompts&{r['prompt'] for r in new+old},'EXAM_PROMPT_OVERLAP')
+              parent_new=exam(teacher,new); parent_old=exam(teacher,old)
+              def both(v): return [v[i] and v[i+1] for i in range(0,len(v),2)]
+              p_entities=both(parent_new)
+              for z,arm,m,row in trained:
+                  if z!=seed: continue
+                  n=exam(m,new); o=exam(m,old); entities=both(n)
+                  gained=sum(not a and b for a,b in zip(p_entities,entities))
+                  lost_new=sum(a and not b for a,b in zip(p_entities,entities))
+                  lost_old=sum(a and not b for a,b in zip(parent_old,o))
+                  old_gained=sum(not a and b for a,b in zip(parent_old,o))
+                  categories={tag:{'n':sum(r['tag']==tag for r in old),'parent_correct':sum(v and r['tag']==tag for v,r in zip(parent_old,old)),'candidate_correct':sum(v and r['tag']==tag for v,r in zip(o,old)),'lost':sum(a and not b and r['tag']==tag for a,b,r in zip(parent_old,o,old))} for tag in sorted({r['tag'] for r in old})}
+                  # Strong exploratory criterion: both paraphrases correct for >=20/32
+                  # entities and >=4 net new entity wins; zero parent-correct old item lost.
+                  passed=sum(entities)>=20 and sum(entities)-sum(p_entities)>=4 and lost_old==0 and sum(parent_old)>=32
+                  panel={'seed':seed,'arm':arm,'novel_entities':n_facts,'parent_novel_both':sum(p_entities),'candidate_novel_both':sum(entities),'parent_novel_prompt_correct':sum(parent_new),'candidate_novel_prompt_correct':sum(n),'novel_entities_gained':gained,'novel_entities_lost':lost_new,'old_items':len(old),'old_parent_correct':sum(parent_old),'old_candidate_correct':sum(o),'old_lost':lost_old,'old_gained':old_gained,'categories':categories,'exploratory_gate':passed,'novel_correctness_parent':parent_new,'novel_correctness_candidate':n,'old_correctness_parent':parent_old,'old_correctness_candidate':o}
+                  panels.append(panel)
+                  print('AUTODIDACT_R19_EXAM',json.dumps({k:v for k,v in panel.items() if 'correctness_' not in k},sort_keys=True,allow_nan=False),flush=True)
+          require(frozen==[tensor_digest(m.state_dict()) for _,_,m,_ in trained] and state_digest()==before and sha(parent.read_bytes())==parent_sha,'EXAM_MUTATION')
+          require(len(panels)==4,'PANEL_COUNT')
+          for seed in seeds:
+              rr=[r for _,_,_,r in trained if r['seed']==seed]
+              require(len(rr)==2 and all(rr[0][k]==rr[1][k] for k in ('trial_optimizer_steps','train_forward_backward_tokens','gate_forward_tokens','schedule_sha256','world_sha256')),'BUDGET_MISMATCH')
+          result={'schema':'janus.autodidact.r19.novel_fact_exam.v1','prior_run':45891500794,'prior_sha256':sha(r18_raw),'parent_sha256':parent_sha,'parent_state_digest':before,'registry_commit':commit,'design':{'seeds':seeds,'trials':trials,'step_radius':step_radius,'total_radius':total_radius,'menu':menu,'sequence_length':seq,'batch':batch,'train_forms':list(train_forms),'gate_forms':list(gate_forms),'exam_forms':list(exam_forms),'budget':'equal training forward/backward token counts, optimizer trials and gate forward token counts; wall time and rollback overhead may differ','adaptive_variant':'one proposal per trial, reduce next trial LR on reject, increase on accept; not identical R18 retry loop'},'runs':[r for _,_,_,r in trained],'panels':panels,'controls':4,'elapsed_seconds':time.monotonic()-started,'sovereign':'HOLD_EXTERNAL_INDEPENDENT_EXAM','claim_ceiling':{'synthetic_novel_associations':True,'fresh_prompt_forms_not_used_in_fit_or_gate':True,'external_blind_exam':False,'real_world_knowledge_proven':False,'general_semantic_retention_proven':False,'open_generation_tested':False,'parent_weights_changed':False,'candidate_exported':False,'production_changed':False,'promotion_authority':False}}
+          out=Path(os.environ['RUNNER_TEMP'])/'autodidact-r19.json'
+          out.write_text(json.dumps(result,indent=2,sort_keys=True,allow_nan=False)+'\n')
+          print('AUTODIDACT_R19_RESULT',json.dumps({k:v for k,v in result.items() if k not in ('runs','panels')},sort_keys=True,allow_nan=False))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: autodidact-r19-metrics-only
+          path: ${{ runner.temp }}/autodidact-r19.json
+          if-no-files-found: error
+          retention-days: 30
