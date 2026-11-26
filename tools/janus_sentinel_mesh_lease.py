@@ -100,7 +100,8 @@ def classify_push_failure(stdout,stderr):
 
 def claim(o,token,now):
     require(type(token) is str and 24<len(token)<4096,"STATE_TOKEN_REQUIRED")
-    header=base64.b64encode(("x-access-token:"+token).encode()).decode()
+    credential_pair = ":".join(("x-access-token", token))
+    header=base64.b64encode(credential_pair.encode()).decode()
     env=os.environ.copy()
     env.update(GIT_CONFIG_COUNT="2",
       GIT_CONFIG_KEY_0="http.https://github.com/.extraheader",
