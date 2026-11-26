@@ -1,0 +1,19 @@
+{
+  "schema": "janus.mintaka.beacon.rhythm.protocol.v1",
+  "date": "2026-11-26",
+  "source_pr": 762,
+  "source_commit": "931541cb0d2eb39f139db6b759c28b94b16d2644",
+  "parent_state": {
+    "blob": "3550601d9c399590126a8c24d104ea9214c8240d",
+    "sha256": "cca85d8de58b0cdd42b08c85bd3196f580e8f1243be39d6caf087eea9f4fe41d",
+    "observations": 248,
+    "prospective_forecasts": 4,
+    "scored_future": 0
+  },
+  "source_contract": "registry/ADV-ELITE-BEACON-BUILD-JOURNAL-2026-08-27.json at db8f53e9e19b414227a705a94a569dc7dd5539e8",
+  "design": "Separate scheduled starts from event-triggered runs. Compare last, mean12, nominal phase, learned phase residual+queue delay, EMA gaps and phase-skip; choose on past absolute errors only; require >=12 points and strict gain over all three baselines in both chronological halves. created_at does not equal intended cron slot; gaps in nominal slots are unobserved-slot proxy only, not proven missed triggers. Prospective overdue forecasts explicitly clipped to issue+1 second and flagged. Preserve original v1 state.",
+  "compute": "Exact-input digest includes code and history. Actual optional fit omitted on hit outside benchmark; PR paired CPU includes hash and cache lookup; adds four bounded event history queries to existing four mandatory scheduled reads, so total load reduction not proven.",
+  "safety": "Existing ESSENCE trigger only, no new cron/dispatch, no schedule changes, no authority from forecasts, production unchanged.",
+  "status": "REGISTERED_CI_PENDING",
+  "production": false
+}

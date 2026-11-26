@@ -1,0 +1,359 @@
+{
+  "schema": "janus.history.first_step.v1",
+  "title": "Первый Шаг",
+  "title_en": "First Step",
+  "date": "2026-11-26",
+  "event_utc": "2026-11-26T17:37:50.5623678Z",
+  "event_kyiv": "2026-11-26T19:37:50.5623678+02:00",
+  "motto": "IANVS — «Мы должны узнать».",
+  "epigraph": {
+    "author": "Neil Armstrong",
+    "original": "That's one small step for a man, one giant leap for mankind.",
+    "translation_ru": "Это один маленький шаг для человека, но гигантский скачок для человечества.",
+    "mission": "Apollo 11",
+    "date_us": "1969-07-20",
+    "date_utc": "1969-07-21",
+    "source": "https://www.nasa.gov/history/50-years-ago-one-small-step-one-giant-leap/",
+    "note": "Историческая цитата и символический эпиграф; не утверждение о масштабе научного достижения JANUS."
+  },
+  "scope": "История конкретного H38N3–H38N6 цикла исправления семантической ошибки до первого принятого и сохранённого обучения специализированного модуля; не первый в истории JANUS запуск нейросетевого обучения вообще.",
+  "goal": "Превратить выявленные ошибки в проверяемый прирост способности распознавать логическое отношение, направление зависимости и отрицание; принять веса только после строгого экзамена.",
+  "timeline": [
+    {
+      "phase": "H38N3",
+      "event": "Найдены пять коллизий признаков с противоположными направлениями; испытаны прямое и зеркально-маркированное представления. Новые ошибочные допуски — HOLD.",
+      "run": 45847415226,
+      "registry_pr": 737
+    },
+    {
+      "phase": "H38N4A",
+      "event": "Гибрид улучшил результат 9→12 на 32 известных задачах, но исторические ошибки N1 выросли 1→2. Кандидат отклонён.",
+      "run": 45848556759,
+      "registry_pr": 742
+    },
+    {
+      "phase": "H38N5 diagnosis",
+      "event": "Выявлены две конкретные ошибки: перепутанное направление отрицательного REQUIRES и смешение отрицательного PREVENTS с REQUIRES. Ошибки сохранены как опыт; раскрытые экзамены не используются для нового обучения.",
+      "run": 45849722290,
+      "registry_pr": 743
+    },
+    {
+      "phase": "Memory Cortex G7",
+      "event": "Приоритетная запись проверенного ERROR MEMORY; активное поколение 7, 6201 документ; объект и манифест проверены полным исполнительным входом.",
+      "demiurge_pr": 754
+    },
+    {
+      "phase": "H38N5 banks",
+      "event": "Три заранее утверждённых синтетических набора: 54 учебных и 27 экзаменационных примеров; проверена непересекаемость с запрещённым корпусом.",
+      "janus_pr": 181,
+      "demiurge_pr": 756,
+      "run": 45850777065
+    },
+    {
+      "phase": "H38N5B",
+      "event": "Плановый импульс ESSENCE успешен, дочерняя запись очереди провалилась из-за игнорируемого JSON, обучение пропущено. Исправлена точечная запись разрешённых файлов; очередь подтверждена.",
+      "parent_run": 45851971143,
+      "failed_child_run": 45852088979,
+      "demiurge_pr": 758,
+      "registry_pr": 748
+    },
+    {
+      "phase": "MINTAKA / BEACON",
+      "event": "Отдельно развиты наблюдение, прогноз и диагностика расписания. Эти контуры не заменяют семантическое обучение и не являются причиной полученного прироста.",
+      "demiurge_prs": [
+        759,
+        761,
+        762,
+        764,
+        765
+      ]
+    },
+    {
+      "phase": "H38N6 preflight",
+      "event": "Проверен полный вход исполнителя: активный объект памяти, манифест, очередь и закреплённый набор. 7 тестов, 81 пример в трёх наборах. Без обучения.",
+      "run": 45869086450,
+      "demiurge_pr": 767,
+      "registry_pr": 763
+    },
+    {
+      "phase": "H38N6 first step",
+      "event": "После проверенного слияния восстановлен один конкретный пропущенный импульс. Выполнено обучение CPU, проверка и принятие исследовательского кандидата, запись состояния в отдельную ветку.",
+      "run": 45869196248,
+      "job": 140080221412,
+      "registry_pr": 765,
+      "wake_origin": "RECOVERY_REPLAY"
+    }
+  ],
+  "model": {
+    "kind": "Многоклассовый линейный softmax-классификатор с хешированными признаками текста; отдельный семантический верификатор, не полноценная языковая модель.",
+    "shape": [
+      9,
+      128
+    ],
+    "parameters": 1152,
+    "nonzero_after": 990,
+    "parent": "zero-initialized",
+    "features": "bias, позиционные токены, токены, биграммы и триграммы; SHA-256, первые четыре байта little-endian modulo 128; уникальные индексы; нормировка на sqrt числа признаков",
+    "epochs": 120,
+    "learning_rate": 0.12,
+    "example_updates": 2160,
+    "threshold": 0.65,
+    "labels": {
+      "8": "A REQUIRES B",
+      "9": "B REQUIRES A",
+      "10": "A NOT REQUIRES B",
+      "11": "B NOT REQUIRES A",
+      "12": "A PREVENTS B",
+      "13": "B PREVENTS A",
+      "14": "A NOT PREVENTS B",
+      "15": "B NOT PREVENTS A",
+      "16": "HOLD"
+    },
+    "hold_rule": "Если максимальная вероятность ниже порога или победитель HOLD, ответ null. Оценки softmax не являются калиброванной вероятностью истинности.",
+    "environment": "GitHub Actions CPU, отдельное сетевое пространство Linux, обучение без сети",
+    "source": "https://github.com/Hawkar-usls/Janus-Demiurge/blob/8a22dbfb4f8723cfb9149c870b9f15465bd8af63/tools/essence_adaptive_learning_executor.py"
+  },
+  "training": {
+    "batch": "batch-001",
+    "rows": [
+      {
+        "text": "evone cannot proceed in the absence of evtwo",
+        "y": 8
+      },
+      {
+        "text": "evone is contingent upon the availability of evtwo",
+        "y": 8
+      },
+      {
+        "text": "evone must be available for the completion of evtwo",
+        "y": 9
+      },
+      {
+        "text": "evone is indispensable to the completion of evtwo",
+        "y": 9
+      },
+      {
+        "text": "evone can proceed in the absence of evtwo",
+        "y": 10
+      },
+      {
+        "text": "evone is independent of the availability of evtwo",
+        "y": 10
+      },
+      {
+        "text": "evone is dispensable for the completion of evtwo",
+        "y": 11
+      },
+      {
+        "text": "evone is unnecessary to the completion of evtwo",
+        "y": 11
+      },
+      {
+        "text": "evone keeps evtwo from occurring",
+        "y": 12
+      },
+      {
+        "text": "evone makes completion of evtwo impossible",
+        "y": 12
+      },
+      {
+        "text": "evone is kept from occurring by evtwo",
+        "y": 13
+      },
+      {
+        "text": "evone is made unattainable by evtwo",
+        "y": 13
+      },
+      {
+        "text": "evone does not keep evtwo from occurring",
+        "y": 14
+      },
+      {
+        "text": "evone does not make completion of evtwo impossible",
+        "y": 14
+      },
+      {
+        "text": "evone is not kept from occurring by evtwo",
+        "y": 15
+      },
+      {
+        "text": "evone is not made unattainable by evtwo",
+        "y": 15
+      },
+      {
+        "text": "evone has a similar texture to evtwo",
+        "y": 16
+      },
+      {
+        "text": "evone was placed beside an illustration of evtwo",
+        "y": 16
+      }
+    ],
+    "exam_rows": 9,
+    "exam_used_for_fit": false,
+    "memory_note": "Хеш и наличие ERROR MEMORY проверялись как обязательное условие запуска; непосредственно fit использовал 18 утверждённых текстовых примеров, не весь корпус Memory Cortex.",
+    "exam_note": "Закреплённый отдельный синтетический экзамен того же автора, не внешний независимый тест."
+  },
+  "evaluation": {
+    "method": "Повторный read-only расчёт по сохранённой матрице весов и точной функции признаков/softmax; агрегат совпал с исходным журналом GitHub. Числа confidence представлены с точностью повторного расчёта.",
+    "items": [
+      {
+        "text": "evone is unable to proceed unless evtwo exists",
+        "y": 8,
+        "gold_semantics": "A REQUIRES B",
+        "parent_prediction": null,
+        "child_prediction": null,
+        "top_label": 15,
+        "top_score": 0.17474253206146814
+      },
+      {
+        "text": "evone must be in existence for evtwo to proceed",
+        "y": 9,
+        "gold_semantics": "B REQUIRES A",
+        "parent_prediction": null,
+        "child_prediction": null,
+        "top_label": 9,
+        "top_score": 0.1862683559219707
+      },
+      {
+        "text": "evone can be completed even when evtwo is absent",
+        "y": 10,
+        "gold_semantics": "A NOT REQUIRES B",
+        "parent_prediction": null,
+        "child_prediction": null,
+        "top_label": 10,
+        "top_score": 0.20661486869585982
+      },
+      {
+        "text": "evone is not a mandatory condition for evtwo to proceed",
+        "y": 11,
+        "gold_semantics": "B NOT REQUIRES A",
+        "parent_prediction": null,
+        "child_prediction": null,
+        "top_label": 16,
+        "top_score": 0.34418121875677743
+      },
+      {
+        "text": "evone makes it impossible for evtwo to proceed",
+        "y": 12,
+        "gold_semantics": "A PREVENTS B",
+        "parent_prediction": null,
+        "child_prediction": null,
+        "top_label": 13,
+        "top_score": 0.2316729637841186
+      },
+      {
+        "text": "evone cannot proceed because evtwo prevents it",
+        "y": 13,
+        "gold_semantics": "B PREVENTS A",
+        "parent_prediction": null,
+        "child_prediction": null,
+        "top_label": 8,
+        "top_score": 0.2568530922860929
+      },
+      {
+        "text": "evone does not make it impossible for evtwo to proceed",
+        "y": 14,
+        "gold_semantics": "A NOT PREVENTS B",
+        "parent_prediction": null,
+        "child_prediction": null,
+        "top_label": 14,
+        "top_score": 0.6303666373829061
+      },
+      {
+        "text": "evone is not prevented from proceeding by evtwo",
+        "y": 15,
+        "gold_semantics": "B NOT PREVENTS A",
+        "parent_prediction": null,
+        "child_prediction": 15,
+        "top_label": 15,
+        "top_score": 0.7096397787354493
+      },
+      {
+        "text": "evone has a comparable surface to evtwo",
+        "y": 16,
+        "gold_semantics": "HOLD",
+        "parent_prediction": null,
+        "child_prediction": null,
+        "top_label": 16,
+        "top_score": 0.6337426120529523
+      }
+    ],
+    "metrics": {
+      "parent_correct": 0,
+      "child_correct": 1,
+      "exam_total": 9,
+      "known_total": 8,
+      "unknown_total": 1,
+      "child_wrong": 0,
+      "unknown_false": 0,
+      "lost": 0,
+      "child_abstentions": 8,
+      "known_abstentions": 7,
+      "unknown_correctly_held": 1
+    },
+    "decision": "SHADOW_ACCEPT",
+    "gate": "strict fresh gain AND zero wrong AND zero unknown_false AND zero lost",
+    "acquired_example": {
+      "text_en": "evone is not prevented from proceeding by evtwo",
+      "text_ru": "Событие B не препятствует продолжению события A.",
+      "relation": "PREVENTS",
+      "left": "evtwo",
+      "right": "evone",
+      "positive": false,
+      "label": 15,
+      "score": 0.7096397787354493,
+      "threshold": 0.65,
+      "parent": "HOLD",
+      "child": "B NOT PREVENTS A",
+      "meaning": "Распознаны отрицание, тип отношения и обратное направление в одном новом тексте. Это не доказывает общее понимание причинности."
+    }
+  },
+  "durable": {
+    "receipt": {
+      "bank_sha256": "9d915f399e85b61749be778ab923e958d9e1991b643aa28ae2120a511a2fb2ac",
+      "candidate_weights_sha256": "9bd2a248eaadc7ecf3b6c0565845b773b23cb4f988daafa89640b23d79be07fa",
+      "cortex_generation": 7,
+      "cortex_manifest_sha256": "a09bf5834eba12f0ca3f96068c839e440a2c7ed4b90512049efc7b5ce7759fe5",
+      "decision": "SHADOW_ACCEPT",
+      "exam_sha256": "89e0205b11be747bd58ad6b2cd4485e0bc8c4bc8c486bd5ab051701e10ddd499",
+      "fresh_child_correct": 1,
+      "fresh_parent_correct": 0,
+      "lost": 0,
+      "memory_source_sha256": "de1e11676ca030fe0c6e16e93a8d554a4d5cd9f0a4b0c82eb5ab08f326e4e927",
+      "parent_state_sha256": "0784b58ac42370d69964e5ee2380889223d82fed004b0af34baeae5e91f4a47b",
+      "parent_weights_sha256": "45ef66ff80c7e62e9807df843a9dbf0cb378e87c34a6b9f69fd2d70f6c1bbd21",
+      "production": false,
+      "pulse_id": "45851971143",
+      "queue_state_sha256": "6841e918f72274864f58f1820af4add5aef9c199ff6f57e006c083ca9bd335df",
+      "run_id": "45869196248",
+      "training_executed": true,
+      "unknown_false": 0,
+      "wake_origin": "RECOVERY_REPLAY",
+      "wrong": 0
+    },
+    "state_sha256": "3d73c23772755948bed0b3db30d485ff1c93e8fb4948b172b79a8d7aca7349c0",
+    "git_blob": "38957e0448d3fca975b7e67d6bf36e3b8637e77a",
+    "weights_commit": "b9d1ab48",
+    "weights_url": "https://github.com/Hawkar-usls/Janus-Demiurge/blob/b9d1ab48/data/essence-adaptive-repair/h38n5.json",
+    "weights_embedded": false,
+    "reason": "Точная матрица из 1152 коэффициентов сохранена в исходном неизменяемом Git-коммите; историческая запись содержит ссылку и хеш вместо дублирования.",
+    "retained_training_rows": 18,
+    "retained_exam_rows": 9
+  },
+  "limits": {
+    "production": false,
+    "recovered_attempts": 1,
+    "total_approved_attempts": 3,
+    "autonomous_attempts": 0,
+    "remaining_approved_banks": 2,
+    "claim": "Первый принятый цикл данного восстановительного контура, один подтверждённый пример, семь известных задач HOLD. Автономное продолжение, перенос на независимые данные и рост всего JANUS не доказаны."
+  },
+  "next": "H38N7 · GENERATIONAL INHERITANCE — естественное пробуждение ESSENCE, загрузка сохранённых весов, следующий закреплённый набор, контроль предыдущего экзамена и новое сохранение.",
+  "sources": {
+    "diagnosis": "https://github.com/Hawkar-usls/janus-meta-registry/pull/743",
+    "training_run": "https://github.com/Hawkar-usls/Janus-Demiurge/actions/runs/45869196248",
+    "recovery": "https://github.com/Hawkar-usls/Janus-Demiurge/pull/767",
+    "receipt": "https://github.com/Hawkar-usls/janus-meta-registry/pull/765"
+  }
+}

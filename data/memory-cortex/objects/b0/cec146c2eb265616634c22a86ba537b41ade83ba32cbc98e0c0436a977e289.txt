@@ -1,0 +1,24 @@
+{
+  "schema": "janus.mintaka.beacon.protocol.v1",
+  "date": "2026-11-26",
+  "source_pr": 761,
+  "source_commit": "26a3da9f0b662f0558ffc3f860cf8920ad56bbdd",
+  "source_contract": {
+    "repository": "Hawkar-usls/janus-meta-registry",
+    "commit": "db8f53e9e19b414227a705a94a569dc7dd5539e8",
+    "path": "registry/ADV-ELITE-BEACON-BUILD-JOURNAL-2026-08-27.json",
+    "principle": "PREDICT_FUTURE_STATE_FROM_PAST_AND_CURRENT_REAL_METRICS",
+    "validation": "rolling holdout, last value and moving average baselines, repeat gains on future observations"
+  },
+  "streams": {
+    "ESSENCE": "Hawkar-usls/Janus-Demiurge/.github/workflows/essence-v23-continuous-pulse.yml",
+    "BEETLE": "Hawkar-usls/janus-lapis/.github/workflows/universal-beetle-hourly.yml",
+    "COSMOS": "Hawkar-usls/Janus-Cosmos/.github/workflows/cosmos-rowan-ecosystem-witness.yml",
+    "MEMORY_CORTEX": "Hawkar-usls/Janus-Demiurge/.github/workflows/janus-memory-cortex-growth.yml"
+  },
+  "method": "Independent online exponential smoothing candidates alpha 0.1/0.3/0.6, select by past absolute error only; chronological test begins after four intervals, require at least 12 held-out gaps and strict MAE gain against both baselines in both chronological halves. Bounded 100 recent scheduled runs per collection, gaps <60s or >7days excluded. Prospective prediction only if estimated start after issue time; store next observed future event and error. Separate source-read HOLD.",
+  "compute": "Real paired runner process CPU nanoseconds, optional forecast recompute vs exact-input cache keyed by code and history; same snapshot repeat parity check. Both arms execute in test; not evidence of reduced total system compute or billing.",
+  "safety": "All four source reads mandatory and unchanged. Shadow only, no dispatch or new cron, no production change. Trusted main persists two allowlisted files on dedicated mintaka-beacon-state branch.",
+  "status": "REGISTERED_CI_PENDING",
+  "production": false
+}
