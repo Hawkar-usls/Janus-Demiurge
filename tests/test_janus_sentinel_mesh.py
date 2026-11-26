@@ -64,8 +64,32 @@ class MeshContract(unittest.TestCase):
                 return Resp({"workflow_runs":[row(2,1),row(1,65)]})
             if "/runs/2/jobs" in url:
                 return Resp({"total_count":1,"jobs":[{"name":"observe-and-bounded-wake","status":"completed","conclusion":"skipped"}]})
-            return Resp({"total_count":1,"jobs":[{"name":"observe-and-bounded-wake","status":"completed","conclusion":"success"}]})
+            return Resp({"total_count":1,"jobs":[{"name":"observe-and-bounded-wake","status":"completed","conclusion":"success","completed_at":row(1,65)["created_at"],"steps":[{"name":"Observe peer workflows and optionally submit one bounded remote wake","conclusion":"success"}]}]})
         data=m.get_runs(m.ROLES["A"],"x"*30,opener=fetch)
+        self.assertEqual(m.health(data,NOW)["status"],"STALE_SILENT")
+        self.assertEqual(m.health(data,NOW)["last_run_id"],1)
+    def test_old_active_run_blocks_newer_success(self):
+        self.assertEqual(m.health([row(2,60),row(1,90,status="in_progress",conclusion=None)],NOW)["status"],"BUSY_OR_PENDING_HOLD")
+    def test_retry_uses_effective_completion_not_original_creation(self):
+        old=row(1,300)
+        old["effective_at"]=row(1,2)["created_at"]
+        self.assertEqual(m.health([old],NOW)["status"],"HEALTHY")
+    def test_filtered_history_recovers_success_hidden_by_skipped_runs(self):
+        import json
+        class Resp:
+            status=200
+            def __init__(self,data):self.data=json.dumps(data).encode()
+            def __enter__(self):return self
+            def __exit__(self,*args):pass
+            def read(self,n):return self.data[:n]
+        def fetch(req,timeout):
+            url=req.full_url
+            if "/workflows/" in url:
+                rows=([row(1,65)] if "status=success" in url else
+                      [] if "&status=" in url else [row(i,1,conclusion="skipped") for i in range(10,22)])
+                return Resp({"workflow_runs":rows})
+            return Resp({"total_count":1,"jobs":[{"name":"observe-and-bounded-wake","status":"completed","conclusion":"success","completed_at":row(1,65)["created_at"],"steps":[{"name":"Observe peer workflows and optionally submit one bounded remote wake","conclusion":"success"}]}]})
+        data=m.get_runs(m.ROLES["C"],"x"*30,opener=fetch)
         self.assertEqual(m.health(data,NOW)["status"],"STALE_SILENT")
         self.assertEqual(m.health(data,NOW)["last_run_id"],1)
 if __name__=="__main__":unittest.main()
