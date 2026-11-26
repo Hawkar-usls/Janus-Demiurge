@@ -21,7 +21,7 @@ class Rhythm(unittest.TestCase):
         self.assertEqual(r["organs"]["ESSENCE"]["model"]["scheduled_starts"],20)
         self.assertEqual(r["organs"]["ESSENCE"]["model"]["event_counts"]["workflow_run"],1)
     def test_future_error(self):
-        x=snapshot(3,8000);s,r=advance(initial(),x,"x")
+        x=snapshot(3,11000);s,r=advance(initial(),x,"x")
         t,q=advance(s,snapshot(10,40000),"x")
         self.assertEqual(q["organs"]["COSMOS"]["prospective_n"],1)
         self.assertFalse(q["dispatch_authorized"])
