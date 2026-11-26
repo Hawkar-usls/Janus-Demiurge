@@ -1,0 +1,27 @@
+{
+  "id": "JANUS-CHRONO-DNA-R9C-HEARTBEAT",
+  "status": "FROZEN_BEFORE_EXECUTION",
+  "date": "2026-11-26",
+  "parent": "experiments/chrono_dna/r9b/summary.json",
+  "activation": "Owner explicitly authorized implementation in original repositories/main. Only synthetic bounded trial; no other production changes.",
+  "nodes": {
+    "A": "Hawkar-usls/Janus",
+    "B": "Hawkar-usls/janus-meta-registry"
+  },
+  "state_branches": {
+    "A": "research/chrono-dna-r9c-state-a",
+    "B": "research/chrono-dna-r9c-state-b"
+  },
+  "schedule": {
+    "A": "7,22,37,52 * 26-28 11 *",
+    "B": "12,27,42,57 * 26-28 11 *",
+    "utc": true,
+    "deadline": "2026-11-29T00:00:00Z",
+    "note": "Cron day/month limits trial window; year guard prevents writes in later years; disable workflow or repository variable CHRONO_R9C_ENABLED=false or policy enabled=false. No automatic extension."
+  },
+  "design": "Read-only push preflight; actual write only event=schedule on main, at most one of versions 13-16 per tick, writer parity, no force push, source attestation verify repo/ref/workflow/source digest, GitHub run metadata and pinned code/workflow blobs, R9B anchor exact commits, re-audit graph, ACK digest of prior record; final subsequent A schedule audit. Verify missing peer as no-op, conflict/gap fail closed. No secret provisioning, no untrusted code execution, no self-modification or production graph access.",
+  "gate": "Four genuine successful scheduled writer runs (two per repo), no intermediate manual trigger commits, final scheduled read-only A audit, exact graph, four new attested records and controls; deployment or preflight alone not PASS.",
+  "limits": [
+    "Schedule delivery can be delayed or absent; no wait promise. No indefinite operation, external peer, production learning or native JFP integration. R9C is a fixed synthetic graph continuation, not R7 repair. Trust GitHub and reviewed source policy. Retry means next scheduled tick re-observes immutable record, not separately injected lost ACK test unless exercised."
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "JANUS-CHRONO-DNA-R9B-IMMORTAL-LINEAGE",
+  "status": "FROZEN_BEFORE_EXECUTION",
+  "date": "2026-11-26",
+  "parent": "experiments/chrono_dna/r9/summary.json",
+  "identity": "GitHub artifact attestations via Sigstore/OIDC; verify exact repository, signer workflow, source ref and GitHub-hosted runner. No persistent Ed25519 private key; stable workload identity under trusted repository/branch administration. Public synthetic graph only.",
+  "design": "Anchor to immutable R9A final journals in both repos. Four distinct write-capable Actions runs A9 B10 A11 B12, each retrieves and verifies every prior R9B attested record from expected peer branch and own history, reconstructs graph from R9A, verifies owner/parity, hashes, and previous record digest as ACK, applies exactly one deterministic edge mutation pair, audits BFS vs Floyd-Warshall, attests record before committing it to own branch. Separate A read-only audit verifies through 12. Trigger commits may be manual in pilot; scheduler not enabled. Records persist across runners; no key provisioning or private data.",
+  "gate": "4 distinct successful writer runs, two per repo, same workload identity policy, four verified records, final A read-only audit, negative tamper and wrong repo verification. Record failures without relaxing. No claim of same permanent signing key, autonomous recurring schedule, or native JFP integration.",
+  "scheduler": "Prepare opt-in reviewed default-branch proposal only after bounded pilot; no automatic merging, no indefinite recurring jobs. No production changes.",
+  "limits": [
+    "Both repos same operator; trust in GitHub and Sigstore and branch access; not independent peer",
+    "Historical R9A Ed25519 keys unavailable; transition explicitly anchors to pinned R9A state rather than pretending key continuity",
+    "Synthetic fixture, not real memory or R7 repair"
+  ]
+}

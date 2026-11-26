@@ -1,0 +1,14 @@
+{
+  "id": "JANUS-CHRONO-DNA-R9A-AUTONOMOUS-REPLICATION",
+  "date": "2026-11-26",
+  "status": "FROZEN_BEFORE_EXECUTION",
+  "parent": "experiments/chrono_dna/r8/summary.json",
+  "scope": "Bounded research-only session; two concurrent Actions jobs discover peer data by polling pinned repository and research branch without interstitial operator commits. Eight graph versions, alternating writer by parity; only one writer allowed per version. Both publish public Ed25519 session keys; private keys only in runner temp directory, never persisted. Public key fingerprint and peer binding durable in own branch. No permanent signing key claim.",
+  "transport": "Own branch commit per accepted version/outbox/ACK; fetch peer branch using public Git; data only; persistent journal, deterministic initial graph, parent hash, before/after graph hash, packet ID, signed ACK. Simulate lost ACK at v1: B durably applies once, withholds ACK until A publishes retry marker; duplicate delivery must not change graph or reapply. Bounded poll and retry; no schedule or production deployment.",
+  "exam": "8 alternating signed versions, 8 signed ACKs, identical graph hashes, version and chain hashes at both nodes, each version independently audited by BFS versus Floyd-Warshall, duplicate/retry evidence, own state reloaded from git by separate audit job. Reject wrong owner, stale or gap version and invalid signatures (negative unit controls if implemented); report actual checks. Both sync and audit jobs success required. Permanent identity and unattended scheduled recurrence remain HOLD until secret provisioning and reviewed default-branch workflows.",
+  "limits": [
+    "Two repos same operator; public synthetic graph only",
+    "Trust anchor is operator-controlled peer repository branch, first-seen key pinned, not independent identity or long-lived signing capability",
+    "No external dispatch, production or automatic merge, no indefinite polling"
+  ]
+}

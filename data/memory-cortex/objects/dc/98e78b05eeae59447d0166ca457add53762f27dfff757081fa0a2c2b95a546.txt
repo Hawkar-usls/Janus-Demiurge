@@ -1,0 +1,48 @@
+{
+  "id": "JANUS-CHRONO-DNA-R2-SELECTIVE-REPLICATION",
+  "date": "2026-11-26",
+  "parent": "experiments/chrono_dna/r1/result.json",
+  "status": "FROZEN_BEFORE_EXECUTION",
+  "hypothesis": "Selective activation of reverse reachability trees on observed target reuse may reduce charged work vs per-query filtered forward and strong cached baselines.",
+  "design": {
+    "families": [
+      "balanced",
+      "forward_fanout",
+      "reverse_fanout",
+      "dense",
+      "chain",
+      "cyclic",
+      "tree_like",
+      "bottleneck"
+    ],
+    "graphs_per_family": 16,
+    "seed_rule": "91001+1000*family_index+case_index",
+    "queries_per_graph": 24,
+    "workloads": [
+      "unique_mixed",
+      "shared_source",
+      "shared_target",
+      "mixed_reuse"
+    ],
+    "assignment": "case_index modulo 4; 4 graphs of each workload per family; deterministic query generation independent of reachability",
+    "total_queries": 3072,
+    "graph_contract": "immutable per workload, R1 generator with fresh seeds, arbitrary source/target including identical endpoints; all methods same graph and same online query order",
+    "methods": {
+      "filtered_forward": "R1 best single-query filter, BFS from source stop at discovery",
+      "cached_forward": "incremental forward BFS tree per source; reuse unfinished frontier, resume exactly when needed",
+      "cached_reverse": "incremental reverse BFS per target; reverse index built once",
+      "selective": "start with cached forward; activate reverse index on third observed occurrence of a target if target occurrence exceeds current source occurrence, prefer already-built reverse tree when condition holds; no lookahead; one reverse index per graph",
+      "pair_cache": "filtered forward with exact per-pair memoization"
+    },
+    "cost": "Charge raw edge visits for index build, admissible insertions, inspected edges, discovered-node and expanded-node operations, cache and route lookups, witness edge replay; separate index/search/cache costs and total. Count retained tree nodes as space proxy. Reference oracle cost excluded equally. No wall-clock claim.",
+    "oracle": "Repeated relaxation on raw edges from query source, validate each path; null and zero-length accepted only when reference matches",
+    "primary_gate": "All 3072 answers correct per method and zero invalid paths",
+    "secondary_gate": "Selective <=80% of filtered_forward total charged work and no worse than strongest non-selective baseline across full workload; family/workload regressions disclosed.",
+    "limits": [
+      "Native PHYSARIUS/ROWAN/5D not executed; architectural proxies only",
+      "No external independent data or production modifications",
+      "Repeated queries benefit any caching baseline; not evidence of physical reversal or DNA computation",
+      "No future queries visible to routing decisions"
+    ]
+  }
+}

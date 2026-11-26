@@ -1,0 +1,110 @@
+{
+  "id": "JANUS-CHRONO-DNA-R6A-HOMEOSTASIS",
+  "date": "2026-11-26",
+  "status": "CORRECTNESS_PASS__PERFORMANCE_HOLD",
+  "protocol_commit": "2f3b10b5e2c7a425bffae967adb2c525423e384c",
+  "local_code_sha256": "c4aa32379b76ab90f098e02ccf8ca63830c6b5b1efb6ed4718e462a380ea8b01",
+  "primary": true,
+  "secondary": false,
+  "environment": {
+    "python": "3.13.5",
+    "networkx": "3.6.1",
+    "platform": "Linux x86_64"
+  },
+  "design": {
+    "graphs": 8,
+    "workloads": 32,
+    "queries_per_method": 2048,
+    "mutations": 448,
+    "timing": "sum of 32 per-workload median wall-clock times, 3 repeats, audit excluded",
+    "memory": "max tracemalloc peak over workloads, separate run, not total RSS"
+  },
+  "totals": {
+    "plain": {
+      "correct": 2048,
+      "bad": 0,
+      "ms": 16.57377,
+      "peak_alloc_bytes": 138096,
+      "peak_nodes_sum": 0
+    },
+    "R4": {
+      "correct": 2048,
+      "bad": 0,
+      "ms": 14.682432,
+      "peak_alloc_bytes": 157192,
+      "peak_nodes_sum": 3271,
+      "audited_distances": 368814
+    },
+    "R5": {
+      "correct": 2048,
+      "bad": 0,
+      "ms": 11.547618,
+      "peak_alloc_bytes": 157192,
+      "peak_nodes_sum": 2642,
+      "audited_distances": 254828
+    },
+    "R6": {
+      "correct": 2048,
+      "bad": 0,
+      "ms": 13.281081,
+      "peak_alloc_bytes": 157192,
+      "peak_nodes_sum": 2642,
+      "audited_distances": 254628,
+      "switches": 42
+    }
+  },
+  "workload_ms": {
+    "shared_source": {
+      "plain": 3.50544,
+      "R4": 2.2346,
+      "R5": 1.834366,
+      "R6": 2.308169
+    },
+    "shared_target": {
+      "plain": 4.300536,
+      "R4": 1.822728,
+      "R5": 1.832686,
+      "R6": 2.439059
+    },
+    "mixed_reuse": {
+      "plain": 4.310691,
+      "R4": 8.138765,
+      "R5": 5.583582,
+      "R6": 5.984426
+    },
+    "phase_shift": {
+      "plain": 4.457103,
+      "R4": 2.486339,
+      "R5": 2.296984,
+      "R6": 2.549427
+    }
+  },
+  "dataset_reference": "https://networkx.org/documentation/networkx-3.6/reference/generators.html",
+  "graph_hashes": {
+    "karate": "bf4d98d9358e8f7ef25ac843113c3a7757f14f0ec086b1d1ffe88f566fdef962",
+    "davis": "244e74d4a8de70996e47ecead91a0f7ed70199ffad9b515921b78b4914991a30",
+    "florentine": "641452d074ddf9d3725510d97cc35dbed720ab88eaaa9dd15b52065cea78029c",
+    "les_miserables": "99460efd9c26f6bf6b69675bc25704dcbb69c7552dbfa3f9c7771ed38ed4d067",
+    "directed_ER": "b2858e96d9849afcba96e525cc258309ee5abf59c534aee7167aa276878ee052",
+    "preferential": "1e6922c16e39af141a7b114f6d0709a4dbad6a29492a6ebb4e7faf6a9c080067",
+    "grid": "5482eccde97b9b94ae0e5a2c9749aece657b9f9bb960ec56afb53b4cb8bcbb5c",
+    "SBM": "a632d9ed57ab336fd38d6fde160eca99ddb3f153000862bf57f81030c04504a7"
+  },
+  "jfp": {
+    "gateway": "https://github.com/Hawkar-usls/Janus/pull/79",
+    "public_discovery": "https://github.com/Hawkar-usls/janus-meta-registry/issues/665",
+    "mode": "DESIGN_ONLY_NO_DISPATCH",
+    "external_peer_verified": false
+  },
+  "donors": {
+    "slime": "data/JANUS-SLIME-QUANTIZATION-LINEAGE-2026-08-25-v1.0.json",
+    "jgp": "reports/2026-11-15/ESSENCE-V37-JGPT-CODEX-DONOR-RESEARCH.json"
+  },
+  "limits": [
+    "Python port rather than original JS, small public topologies, synthetic mutations and workloads",
+    "Tracemalloc not RAM RSS, no claim of statistically significant timing result",
+    "Local full result and script provided as separate downloadable artifacts; only summary and protocol in GitHub",
+    "No native JANUS module execution or JFP dispatch; no independent custodian; no production change"
+  ],
+  "decision": "Keep R5 research reference. R6B incremental rolling counters, evaluate routing only per block or on miss; independent frozen larger workload before promotion."
+}

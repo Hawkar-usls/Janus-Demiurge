@@ -1,0 +1,9 @@
+{
+  "id": "JANUS-CHRONO-DNA-R7-HEREDITY",
+  "status": "FROZEN_BEFORE_EXECUTION",
+  "date": "2026-11-26",
+  "parent": "experiments/chrono_dna/r6b/summary.json",
+  "design": "Two local SQLite nodes, same initial directed graph; alternating authorized writer, signed delta with global version, parent chain hash, before/after graph digest, ordered edge changes. Atomic transaction persists graph, head, replay ID; in-memory R5 cache staged and swapped only after commit; restart rebuilds cache from durable graph. No concurrent writers; stale/conflicting packet rejected, no automatic merge.",
+  "exam": "8 synthetic graphs (64-256 nodes), 24 accepted batches per graph, 1-4 operations each, 8 queries per node after each batch; 3072 query answers; compare independent NetworkX shortest path and cache audit, graph digest and version after every batch. Full snapshot comparator canonical graph+version bytes, delta size includes signature and metadata. Negative tests replay, stale/new ID, future gap, wrong parent, wrong before/after digest, invalid edge operation mid-batch, bad signature, untrusted key, wrong recipient, expired, restart, injected transaction failure; check unchanged durable state and cache on every rejection.",
+  "gate": "All 192 batches converge, 3072 exact queries, zero cache audit errors and all adversarial tests pass. Report wire bytes vs unsigned snapshot separately, no speed claim. No actual remote JFP dispatch, no PR79 changes; local new capability prototype only, separate process/repo not verified. No production changes."
+}

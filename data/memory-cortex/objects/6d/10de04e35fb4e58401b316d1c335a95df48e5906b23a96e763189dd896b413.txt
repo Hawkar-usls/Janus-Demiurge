@@ -1,0 +1,18 @@
+{
+  "id": "JANUS-CHRONO-DNA-R8-MITOSIS",
+  "date": "2026-11-26",
+  "status": "FROZEN_BEFORE_EXECUTION",
+  "parent": "experiments/chrono_dna/r7/summary.json",
+  "nodes": {
+    "A": "Hawkar-usls/Janus:research/chrono-dna-r8-node-a",
+    "B": "Hawkar-usls/janus-meta-registry:research/chrono-dna-r8-node-b"
+  },
+  "design": "Research branches only. A runner creates a signed 12-delta fixture and publishes durable outbox on its own branch; B runner fetches exact immutable A commit via public Git transport, pins key via reviewed commit, applies ordered graph deltas to durable SQLite; simulates delayed/offline node by closing DB after v4, rejecting v8, recovering v5-v12; duplicate, conflicting signed version, wrong parent, invalid operation and injected rollback; B emits signed receipt of final state. A must separately verify receipt tied to outbox and pinned B commit. No external operators, no long-lived keys, no deployment to main. Ed25519 test capability, not wire-compatible with existing JFP PR79.",
+  "gate": "Actual Actions runs in both repos and A acknowledgement verification required for cross-repo PASS. Local simulation, commit existence or queued runs do not count. No automatic scheduling; manual coordination/pinned commits may be used in this pilot. No production changes.",
+  "security": "Synthetic graph only, no secrets in committed files. Ephemeral keys never committed; public keys bound to immutable commit as pilot trust anchor, not independent identity. Only isolated research branch writes, bounded steps, no execution of received content.",
+  "limits": [
+    "Existing PR79 fixture capability cannot accept graph packets; R8 separate research extension",
+    "Offline/recovery simulated via durable state, not actual multi-day outage",
+    "Single sequenced writer, no automatic conflict merge or autonomous remote dispatch"
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "id": "JANUS-CHRONO-DNA-R0",
+  "date": "2026-11-26",
+  "status": "FROZEN_SYNTHETIC_PROTOCOL",
+  "question": "Does bidirectional traversal reduce work in causal path recovery without sacrificing shortest-path correctness?",
+  "methods": [
+    "forward_bfs",
+    "single_5d_ordered_bfs_proxy",
+    "double_helix_bidirectional_bfs"
+  ],
+  "families": [
+    "balanced",
+    "forward_fanout",
+    "reverse_fanout",
+    "dense",
+    "chain",
+    "cyclic"
+  ],
+  "cases_per_family": 24,
+  "seeds": "26001 + family_index*1000 + case_index; fixed before execution",
+  "positive": "even case index; planted valid path",
+  "negative": "odd case index; disconnected by layer cut (cyclic: same cut)",
+  "graph": "Synthetic directed graphs with edge admissibility flag and node metadata; all methods receive identical graphs and filter; cycles included only in cyclic family.",
+  "five_d_scope": "Order candidates within BFS using temporal distance, homolog category match, abstraction distance, semantic distance and provenance rank. This is a limited 5D-inspired proxy, not full recursive Origin Prime implementation.",
+  "double_scope": "Two full BFS frontiers meet at an exact common node; expand smaller frontier (ties forward); reconstruct directed path; independently replay every returned path. No learned model or time reversal.",
+  "oracle": "Independent Bellman-Ford-style repeated relaxation over raw admissible edges, not either tested search.",
+  "metrics": [
+    "correct reachability and shortest path length",
+    "edge inspections",
+    "expanded nodes",
+    "rank evaluations and sort comparisons",
+    "index build edge passes (forward common; reverse additional)",
+    "path witness verification"
+  ],
+  "primary_gate": "144/144 exact oracle matches for each method and zero invalid witnesses",
+  "secondary_gate": "Double helix at least 20% fewer search edge inspections vs forward BFS aggregate, with index cost and adverse families separately disclosed. No wall-clock claim.",
+  "limits": [
+    "Synthetic generator authored with protocol; not independent external or blinded dataset",
+    "No production change; no proof of novel algorithm or physical time reversal",
+    "Work counters not runtime; index reuse reported separately",
+    "No actual DNA or human data"
+  ]
+}

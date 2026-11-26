@@ -1,0 +1,51 @@
+{
+  "id": "JANUS-CHRONO-DNA-R5-EPIGENESIS",
+  "date": "2026-11-26",
+  "parent": "experiments/chrono_dna/r4/summary.json",
+  "status": "FROZEN_BEFORE_EXECUTION",
+  "design": {
+    "families": [
+      "balanced",
+      "forward_fanout",
+      "reverse_fanout",
+      "dense",
+      "chain",
+      "cyclic",
+      "tree_like",
+      "bottleneck"
+    ],
+    "graphs_per_family": 16,
+    "seeds": "201001+1000*family_index+case_index",
+    "queries_per_graph": 64,
+    "mutations_per_graph": 14,
+    "queries": 8192,
+    "mutations": 1792,
+    "workloads": [
+      "shared_source",
+      "shared_target",
+      "mixed_reuse",
+      "phase_shift"
+    ],
+    "budget": "2N resident tree distance entries per graph; fixed shards N+N or shared global 2N; temporary trees and index excluded"
+  },
+  "methods": {
+    "plain": "uncached early-stop forward BFS",
+    "chromosome": "R4 fixed shards and previous-query router",
+    "global_r4": "R4 router with global LRU and shared 2N budget",
+    "freq_fixed": "fixed shards, recent-frequency router, admit all misses",
+    "freq_global": "shared global LRU, recent-frequency router, admit all misses",
+    "selective_fixed": "fixed shards, recent-frequency router and repeat admission",
+    "selective_global": "shared global LRU, recent-frequency router and repeat admission",
+    "epigenesis": "selective_global plus small-graph bypass (N<=16); cache hits first, otherwise compare occurrences of source/target in previous 8 queries, tie lower root degree, then reverse; on miss only build complete tree if chosen root previously appeared, otherwise early-stop exact BFS. Small graphs use early-stop BFS without caching."
+  },
+  "rules": "All tree caches use same R3 exact repair and version stamp. Global eviction removes least recently used tree across both shards, with monotonic touch clock; fixed shards use LRU. Online only, no labels or future queries. Recent frequency counts maintained by bounded history scan, charged explicitly. For small bypass no history scan. Same graph and event order for all methods.",
+  "audit": "Independent repeated relaxation on current graph per query and every retained tree at each event; zero stale distances, invalid witnesses, stale stamps, budget breaches.",
+  "cost": "R4 abstract counters with explicit recent-history scan, degree comparisons, global eviction selection, cache touch/clock update, graph index and mutation cost; report resident peaks and pre-eviction peaks. Not RAM or wall time.",
+  "primary": "8192/8192 per method, zero invalid/stale/budget violations",
+  "secondary": "Epigenesis total charged work <= R4 by 10% and <= strongest of five predeclared bounded dual-direction competitors; chain and mixed_reuse total work each <= R4; report all outcomes even failure. Memory peak no greater than R4 by more than 20%.",
+  "limits": [
+    "Author-generated same-lineage graphs; independent exam pending",
+    "No native Rowan/Physarius or production integration",
+    "No biological claims"
+  ]
+}

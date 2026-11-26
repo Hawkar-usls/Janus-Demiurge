@@ -1,0 +1,81 @@
+{
+  "id": "JANUS-CHRONO-DNA-R8-MITOSIS",
+  "date": "2026-11-26",
+  "status": "CROSS_REPO_SIGNED_FIXTURE_PASS__AUTONOMY_HOLD",
+  "protocol_commit": "ab5d29c4800acf1160065938dc73ad7207b8d045",
+  "gates": {
+    "actual_A_actions": true,
+    "actual_B_actions": true,
+    "actual_A_ack_actions": true,
+    "all_12_packets": true,
+    "oracle_audit": true,
+    "recovery_checks": true,
+    "production_admission": false
+  },
+  "nodes": {
+    "A": {
+      "repository": "Hawkar-usls/Janus",
+      "branch": "research/chrono-dna-r8-node-a",
+      "generator_commit": "0aac7df0af6ca51d6b3d03c0d6004dcc4de0d949",
+      "run": "https://github.com/Hawkar-usls/Janus/actions/runs/45791002363",
+      "outbox_commit": "479cebfe4c6bdb4b6bbb58ec1ab9b2eec538df41",
+      "outbox_blob": "dc086e14ff2db2b9a800b11301483cfefc7db1a4",
+      "ack_checker_commit": "0052f1d130d2ed6d7cac5aad971e6e96cc62db97",
+      "ack_run": "https://github.com/Hawkar-usls/Janus/actions/runs/45791228830",
+      "ack_job": 139810466624,
+      "ack_log_status": "ACK_VERIFIED"
+    },
+    "B": {
+      "repository": "Hawkar-usls/janus-meta-registry",
+      "branch": "research/chrono-dna-r8-node-b",
+      "receiver_commit": "bc13b77816608d0bbb71f7488fab472c6f2b3517",
+      "run": "https://github.com/Hawkar-usls/janus-meta-registry/actions/runs/45791121493",
+      "job": 139810103556,
+      "ack_commit": "6ad914cfad21edd9b792b86231fede68f6e0d835",
+      "ack_blob": "745c81a955218b6367f0305603266d3040b58f5a"
+    }
+  },
+  "fixture": {
+    "nodes": 32,
+    "versions": 12,
+    "edge_operations": 24,
+    "accepted": 12,
+    "audited_distances": 12288,
+    "discrepancies": 0,
+    "outbox_bytes": 7699,
+    "bundle_sha256": "10a589f3e4a35951c427a0867249f6b893c30f801da08cc46aa908790020dd04",
+    "graph_sha256": "179590749153b7fa9fc52b0bbc4e098382ea11e7a22585324ddd443edd336b6f",
+    "head_sha256": "5af560bbccd36b6206906b6ff3479ea06a8524563e0fdae77656334234f50041",
+    "ack_sha256": "e4d6ba633aa0582a4f8f400f76dc4ea1c9707ae898f1f0f9db1b5a3ca9a3c77a",
+    "tests": {
+      "conflicting_version": true,
+      "converged_after_restart": true,
+      "invalid_mid_batch": true,
+      "missing_versions": true,
+      "offline_restart": true,
+      "persistent_replay": true,
+      "replay": true,
+      "tampered": true,
+      "transaction_rollback": true,
+      "wrong_parent": true
+    }
+  },
+  "authority": {
+    "capability": "chrono.memory.graph.delta.r8.fixture",
+    "existing_jfp_pr79_modified": false,
+    "production": false,
+    "network_transport": "public Git fetch of pinned immutable commits; Actions-generated outbox and ACK pushed only to own research branch",
+    "identity": "ephemeral Ed25519 public keys bound by manually pinned Git commits, no independently provisioned persistent identity",
+    "autonomous_dispatch": false,
+    "manual_coordination": true
+  },
+  "limitations": [
+    "Actual Actions runs and cross-repository Git reads verified, but handoffs coordinated by assistant committing pinned source/ACK refs; no autonomous dispatch, retries or polling.",
+    "One 32-node synthetic graph and one sequenced writer, B returns ACK only, not reverse graph updates. No concurrency, merge, actual prolonged outage or crash kill tested.",
+    "B SQLite state persisted across reopen inside same Actions job, not across separate runners; durable graph replay from outbox is possible but not independently tested across runs.",
+    "R8 standalone graph transport fixture verifies BFS against relaxation; R7 cached local repair not integrated into R8 and no performance claim.",
+    "ACK checker count corrected from nine to exact ten named tests before ACK run; no gate lowered. No key lifetime/TTL mechanism in this fixed immutable fixture, no persistent operator identity.",
+    "Existing production JFP PR79 remains separate; no production changes, independent external operators or peer federation."
+  ],
+  "next": "R9 AUTONOMOUS REPLICATION: reviewed bounded scheduled polling with explicit persistent identities, durable cursor/ACK journal across runs, idempotent retry and independent rejoin; then two-way graph deltas under single-writer lease. Integrate R7 repair after transport admission."
+}

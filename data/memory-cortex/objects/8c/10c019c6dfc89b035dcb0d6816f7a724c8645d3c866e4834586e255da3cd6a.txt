@@ -1,0 +1,46 @@
+{
+  "id": "JANUS-CHRONO-DNA-R3-TELOMERE-MEMORY",
+  "date": "2026-11-26",
+  "parent": "experiments/chrono_dna/r2/result.json",
+  "status": "FROZEN_BEFORE_EXECUTION",
+  "design": {
+    "families": [
+      "balanced",
+      "forward_fanout",
+      "reverse_fanout",
+      "dense",
+      "chain",
+      "cyclic",
+      "tree_like",
+      "bottleneck"
+    ],
+    "graphs_per_family": 12,
+    "seeds": "121001+1000*family_index+case_index",
+    "epochs": 8,
+    "queries_per_epoch": 8,
+    "total_queries": 6144,
+    "updates_per_transition": 2,
+    "total_updates": 1344,
+    "workloads": [
+      "shared_source",
+      "shared_target",
+      "mixed_reuse"
+    ],
+    "assignment": "case_index mod 3",
+    "mutations": "alternating delete existing admissible edge and insert currently absent edge; deterministic selection from current graph without oracle or method output; arbitrary insertions may introduce cycles and shortcuts; queries include arbitrary endpoints and identical endpoints"
+  },
+  "methods": {
+    "plain": "filtered forward BFS per query; early target discovery",
+    "reset_forward": "complete forward BFS tree cached per source; clear all on each mutation",
+    "reset_reverse": "same per target, reverse graph",
+    "selective_forward": "complete forward trees; retain on deletion unless removed edge is a chosen parent; retain on insertion unless distance improves; invalidate affected roots and rebuild on demand",
+    "selective_reverse": "same on reversed graph",
+    "repair_forward": "complete forward trees; on parent-edge deletion invalidate descendants, seed from unaffected incoming boundary, then relax within invalid set; on insertion propagate strict distance decreases; all cached trees updated",
+    "repair_reverse": "same on reversed graph"
+  },
+  "cost": "All methods share identical mutable admissible graph with both adjacency directions (two inserts/deletes charged; initial raw scans and two admissible inserts charged). Count query/cache accesses, tree-node initialization, BFS discoveries/expansions, edge inspections, mutation checks per root, invalidation/repair node operations, queue operations represented by node events, path replay edge count. Report graph-common and algorithm costs separately; no wall-time or actual RAM claim. No oracle cost included equally. Explicitly count deletion invalidation traversal and incoming-boundary scan.",
+  "oracle": "After each update query shortest distance by independent repeated relaxation on raw admissible edges. Validate every path against current graph. Additionally compare all cached tree distances against oracle for every node after every mutation, including retained trees, outside charged benchmark cost.",
+  "primary_gate": "All 6144 answers per method exact and valid; zero stale tree distance mismatches",
+  "secondary_gate": "At least one of the two predeclared repair variants reduces total counted work >=20% relative to its same-direction reset baseline AND beats best same-direction selective invalidation baseline; report all comparisons and strongest global baseline; neither result implies external admission.",
+  "safety_scope": "Synthetic immutable-version timeline only; no actual DNA, human data, paid Rowan, or production integration; PHYSARIUS and telomere/repair concepts are engineering metaphors; independent evaluation pending."
+}

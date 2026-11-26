@@ -1,0 +1,51 @@
+{
+  "id": "JANUS-CHRONO-DNA-R4-CHROMOSOME",
+  "date": "2026-11-26",
+  "parent": "experiments/chrono_dna/r3/result.json",
+  "status": "FROZEN_BEFORE_EXECUTION",
+  "design": {
+    "families": [
+      "balanced",
+      "forward_fanout",
+      "reverse_fanout",
+      "dense",
+      "chain",
+      "cyclic",
+      "tree_like",
+      "bottleneck"
+    ],
+    "graphs_per_family": 16,
+    "seeds": "161001+1000*family_index+case_index",
+    "epochs": 8,
+    "queries_per_epoch": 8,
+    "queries": 8192,
+    "mutations": "R3 alternating admissible deletion and arbitrary insertion; deterministic, no oracle feedback",
+    "workloads": [
+      "shared_source",
+      "shared_target",
+      "mixed_reuse",
+      "phase_shift"
+    ],
+    "assignment": "case_index mod 4; phase_shift first 4 epochs shared source, next 4 shared target",
+    "methods": {
+      "plain": "uncached early-stop forward BFS",
+      "r3_reverse": "unbounded reverse repair from R3",
+      "selective_reverse": "unbounded reverse selective invalidation",
+      "lru_reset": "2N reverse resident-node budget, full reset on mutation",
+      "lru_selective": "2N reverse budget, selective invalidation",
+      "lru_repair": "2N reverse budget, R3 repair",
+      "chromosome": "two root-keyed LRU shards, forward and reverse each N resident nodes; use cached side if present, tie reverse; otherwise forward if source equals preceding query source and target differs from preceding target, reverse otherwise. Repair both shards after each mutation; evict oldest entries until shard cap holds; version stamp each surviving tree, verify before query"
+    },
+    "definition": "Chromosomes are separate root-keyed cache shards with per-entry graph versions, NOT independent connected components or literal biological chromosomes.",
+    "cost": "R3 counters plus explicit cache lookup, route decision, LRU touch, eviction and version updates; common graph index identical; retained node count excludes metadata and temporary allocations. Measure sum of per-graph resident peaks at mutation/query boundaries and separately observed pre-eviction peak. Not actual RAM/time.",
+    "audit": "Independent relaxation for every query and every retained tree after every event; check path validity and graph-version stamp. Audit costs excluded equally. Require zero stale distances, zero stale stamps and zero budget violations after committed events.",
+    "primary": "All 8192 queries exact for every method, zero invalid paths, zero stale audits and zero committed budget violations.",
+    "secondary": "Predeclared chromosome candidate: >=30% reduction in summed resident-node peaks vs r3_reverse and total charged work <= r3_reverse AND <= strongest of three same-budget LRU baselines. Report lru_repair separately without changing gate. Report per-workload/family losses.",
+    "limits": [
+      "Fresh synthetic seeds not independent external custody",
+      "No production changes or native Rowan/Physarius execution",
+      "Budget counts cached distance entries, not bytes; no claim of total process memory cap",
+      "No biological or physical time claim"
+    ]
+  }
+}

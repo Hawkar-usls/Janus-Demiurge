@@ -1,0 +1,51 @@
+{
+  "id": "JANUS-CHRONO-DNA-R6B-METABOLISM",
+  "status": "FROZEN_BEFORE_EXECUTION",
+  "date": "2026-11-26",
+  "parent": "experiments/chrono_dna/r6/summary.json",
+  "design": {
+    "graphs": [
+      "grid 24x24",
+      "directed ER 600 p=.008",
+      "directed preferential attachment 800",
+      "SBM 4x150",
+      "directed random geometric 600 radius .075",
+      "Barabasi-Albert 900 m=3"
+    ],
+    "seeds": [
+      260611,
+      260612,
+      260613,
+      260614,
+      260615,
+      260616
+    ],
+    "workloads": [
+      "shared_source",
+      "shared_target",
+      "mixed_reuse",
+      "phase_shift"
+    ],
+    "queries_per_workload": 96,
+    "epochs": 12,
+    "mutations_per_transition": 2,
+    "total_queries": 2304,
+    "total_mutations": 528,
+    "methods": [
+      "R5",
+      "R6",
+      "R5_COUNTER",
+      "R6B"
+    ],
+    "R5_COUNTER": "R5 with exact last-8 rolling counters and incremental shard sizes, no strategy switching",
+    "R6B": "same optimized bookkeeping; check mode only every 8 queries using max recent source/target frequency >=6; otherwise R5, small graph bypass; cache repair unchanged"
+  },
+  "comparison": "same graph, events, budget 2N, reference NetworkX, audit every retained tree after each mutation and query correctness every query; separate non-audit timed runs, 5 paired repeats with rotated order; median per scenario; tracemalloc in separate run; no actual RSS claim",
+  "gate": "2304 correct per method, zero audit errors; R6B total median <=95% R5 and <= R5_COUNTER, max traced peak <=110% R5; report all negatives",
+  "transport": "Local JFP-inspired new capability fixture, not existing gateway capability: Ed25519 pinned ephemeral identities, canonical payload hash, monotonically increasing version and parent hash, SQLite atomic acceptance/replay; local files two nodes, no network. Test valid roundtrip, replay, stale, gap, wrong parent, tampering, untrusted signer, expiry, wrong recipient, persistence; no execution authority. Existing PR79 exact fixture capability cannot accept arbitrary memory packets; no change to PR.",
+  "limits": [
+    "Synthetic larger graphs; no real external dataset in R6B",
+    "No independent custody, local Python not GitHub Actions timing",
+    "No production changes, no remote JFP execution"
+  ]
+}

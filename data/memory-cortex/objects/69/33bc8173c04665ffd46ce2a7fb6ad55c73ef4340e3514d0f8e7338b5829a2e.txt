@@ -1,0 +1,27 @@
+{
+  "id": "JANUS-CHRONO-DNA-R6A-HOMEOSTASIS",
+  "status": "FROZEN_PILOT_BEFORE_EXECUTION",
+  "date": "2026-11-26",
+  "scope": "External topology pilot, local Python port of R4/R5 cache policies (not original JS runtime); new online switching candidate",
+  "datasets": [
+    "NetworkX 3.6.1 karate club",
+    "Davis Southern Women",
+    "Florentine families",
+    "Les Miserables (literary coappearance)",
+    "directed Erdos-Renyi",
+    "directed preferential attachment",
+    "grid",
+    "stochastic block graph"
+  ],
+  "design": "8 graphs x 4 workloads x 64 queries = 2048 per method; 14 arc mutations per workload, 448 total. Undirected edges become two directed arcs; weights ignored. Synthetic mutations and queries, not historical observations. Four workload seeds fixed 260601+100*graph index+workload index. Shared source/target, mixed reuse, phase shift.",
+  "methods": [
+    "plain early-stop forward BFS",
+    "R4 fixed N+N shards, previous-query router, complete-tree cache",
+    "R5 shared 2N, last-8 frequency, repeat admission, <=16 bypass",
+    "R6 R4/R5 online switch: when last 8 queries have >=6 occurrences of current source or target, use R4 fixed shards, otherwise R5 shared; <=16 bypass; trim shards when switching; no lookahead"
+  ],
+  "repair": "Exact shortest-path tree maintenance by deletion descendant invalidation and boundary relaxation, insertion strict decrease propagation; version stamps and full audit; same implementation across policies.",
+  "metrics": "NetworkX shortest path oracle per event, validate all emitted query paths and every retained tree distance and version at every event in untimed correctness runs. Timed runs exclude oracle, include graph construction, all cache routing and updates. Three repeats in same local process, median wall clock; separate tracemalloc peak run (Python allocations, not process RSS); resident cache entry peaks. Budget <=2N committed cached distance entries; fixed mode <=N each.",
+  "gates": "2048/2048 per method, zero stale/version/budget/path failures; R6 median total wall time >=5% lower than R4 and R5, peak allocation <=110% of R5, disclose per workload losses. No selection after test.",
+  "limits": "Small public topology pilot, no independent custodian, Python port not native JS, no production promotion, no JFP dispatch or paid calls. External dataset provenance is not independent evaluation."
+}

@@ -1,0 +1,96 @@
+{
+  "id": "JANUS-CHRONO-DNA-R7-HEREDITY",
+  "date": "2026-11-26",
+  "status": "LOCAL_HEREDITY_PASS__REMOTE_HOLD",
+  "protocol_commit": "caa1e23471f9eb7cf5078fd940e25519faaca010",
+  "code_sha256": "9d257043c6e017486cef2b6a4e6b004cc6a5940726cf4455cbb1e1c92c1d1170",
+  "base_sha256": "c4aa32379b76ab90f098e02ccf8ca63830c6b5b1efb6ed4718e462a380ea8b01",
+  "graphs": 8,
+  "batches": 192,
+  "converged": 192,
+  "operations": 480,
+  "queries": 3072,
+  "correct": 3072,
+  "audited_distances": 105344,
+  "audit_errors": 0,
+  "delta_bytes": 122154,
+  "unsigned_snapshot_bytes": 885271,
+  "wire_reduction": 0.8620151343486909,
+  "negative_tests": {
+    "replay": true,
+    "stale_new_id": true,
+    "gap": true,
+    "parent": true,
+    "before": true,
+    "after": true,
+    "invalid_mid_batch": true,
+    "bad_signature": true,
+    "untrusted_sender": true,
+    "wrong_recipient": true,
+    "expiry": true,
+    "tampered_payload": true,
+    "transaction_failure": true,
+    "replay_after_restart": true,
+    "restart_convergence": true
+  },
+  "by_graph": [
+    {
+      "n": 64,
+      "delta": 15234,
+      "snapshot": 44285
+    },
+    {
+      "n": 80,
+      "delta": 15245,
+      "snapshot": 60494
+    },
+    {
+      "n": 96,
+      "delta": 15243,
+      "snapshot": 66417
+    },
+    {
+      "n": 112,
+      "delta": 15252,
+      "snapshot": 92297
+    },
+    {
+      "n": 128,
+      "delta": 15276,
+      "snapshot": 108014
+    },
+    {
+      "n": 160,
+      "delta": 15283,
+      "snapshot": 128800
+    },
+    {
+      "n": 192,
+      "delta": 15306,
+      "snapshot": 164707
+    },
+    {
+      "n": 256,
+      "delta": 15315,
+      "snapshot": 220257
+    }
+  ],
+  "implementation": {
+    "capability": "chrono.memory.graph.delta.fixture.v1",
+    "transport": "local JSON files, two SQLite databases, pinned ephemeral Ed25519 keys",
+    "cache": "R5 exact repair from R6A Python module; staged copy before transaction commit",
+    "oracle": "NetworkX",
+    "jfp_PR79_wire_compatible": false,
+    "network": false,
+    "production": false
+  },
+  "limitations": [
+    "Synthetic graphs, alternating single writer; no concurrent writes, split-brain merge or cross-node atomic commit tested",
+    "Node-local transaction rollback tested, no actual process-kill crash window tested; cache rebuilt after restart",
+    "Cache internal mutation counter is distinct from durable packet version",
+    "Unsigned full snapshot comparator, no compression or transport overhead benchmark",
+    "No timing or RAM claim; staging copies entire cache, not a proven performance improvement",
+    "Local source and full result attachments, protocol and summary committed to registry; no external peer or native PHYSARIUS/TRINITY runtime"
+  ],
+  "decision": "R7 local gate PASS; remote/production HOLD. Next reviewed independent repository transport, acknowledged delivery/retry and reconciliation; then constrained concurrency and crash recovery."
+}
