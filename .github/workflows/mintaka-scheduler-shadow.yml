@@ -1,0 +1,117 @@
+name: MINTAKA adaptive scheduler health (shadow)
+on:
+  pull_request:
+    paths:
+      - 'tools/mintaka_scheduler_advisor.py'
+      - 'tests/test_mintaka_scheduler_advisor.py'
+      - '.github/workflows/mintaka-scheduler-shadow.yml'
+  workflow_run:
+    workflows: ['ESSENCE v2.3 continuous bounded evolutionary pulse']
+    types: [completed]
+  push:
+    branches: [main]
+    paths: ['.github/workflows/mintaka-scheduler-shadow.yml']
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: mintaka-scheduler-shadow
+  cancel-in-progress: false
+jobs:
+  observe:
+    if: github.repository == 'Hawkar-usls/Janus-Demiurge'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: mintaka-scheduler-state
+          path: mintaka-state
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m unittest discover -v -s tests -p test_mintaka_scheduler_advisor.py
+      - name: Collect bounded observed outcomes, verify state and run shadow advisor
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PAUSED: ${{ vars.SENTINEL_PAUSED == 'true' || vars.ESSENCE_EVOLUTION_PAUSED == 'true' }}
+        run: |
+          python - <<'PY'
+          import json,os,subprocess,hashlib
+          from pathlib import Path
+          from tools.mintaka_scheduler_advisor import verified
+          root=Path(os.environ["RUNNER_TEMP"]);repo=os.environ["GITHUB_REPOSITORY"]
+          def api(p):
+              return json.loads(subprocess.check_output(["gh","api",f"repos/{repo}/{p}"]))
+          def file(path,ref):
+              import base64
+              p=subprocess.run(["gh","api",f"repos/{repo}/contents/{path}?ref={ref}"],capture_output=True)
+              if p.returncode:
+                  if b"HTTP 404" in p.stderr:return None
+                  raise RuntimeError("STATE_READ_FAILED")
+              return json.loads(base64.b64decode(json.loads(p.stdout)["content"]))
+          q=file("data/essence-adaptive-repair/queue.json","essence-adaptive-repair-state")
+          s=file("data/essence-adaptive-repair/h38n5.json","essence-adaptive-repair-state")
+          c=file("data/memory-cortex/CURRENT.json","memory-cortex-state")
+          m=file("data/memory-cortex/"+c["manifest_path"],"memory-cortex-state")
+          active="de1e11676ca030fe0c6e16e93a8d554a4d5cd9f0a4b0c82eb5ab08f326e4e927" in m["documents"]
+          queue_ready=bool(q and verified(q)["records"])
+          records=verified(s)["records"] if s else []
+          successful={str(z["run_id"]) for z in records if z.get("training_executed") is True}
+          runs={}
+          for key,path in (("essence","essence-v23-continuous-pulse.yml"),("repair","essence-adaptive-repair-pulse.yml")):
+              rs=api(f"actions/workflows/{path}/runs?branch=main&per_page=16")["workflow_runs"]
+              out=[]
+              for r in rs:
+                  if r["status"]!="completed":continue
+                  j=api(f"actions/runs/{r['id']}/jobs?per_page=30")["jobs"]
+                  out.append({**{k:r[k] for k in ("id","event","status","created_at","head_sha")},"jobs":[{"id":z["id"],"name":z["name"],"conclusion":z["conclusion"],"training_executed":str(r["id"]) in successful} for z in j]})
+              runs[key]=out
+          (root/"mintaka-runs.json").write_text(json.dumps(runs))
+          args=["python","-m","tools.mintaka_scheduler_advisor","--runs",str(root/"mintaka-runs.json"),"--state","mintaka-state/data/mintaka/state.json","--out",str(root/"mintaka"),"--remaining",str(max(0,3-len(records))),"--round",str(len(records))]
+          if queue_ready:args.append("--queue-ready")
+          if active:args.append("--active-memory")
+          if os.environ["PAUSED"]=="true":args.append("--paused")
+          subprocess.run(args,check=True)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mintaka-shadow-report
+          path: ${{ runner.temp }}/mintaka
+          if-no-files-found: error
+          retention-days: 60
+  persist:
+    needs: observe
+    if: >-
+      ${{ github.repository == 'Hawkar-usls/Janus-Demiurge' &&
+          github.ref == 'refs/heads/main' &&
+          (github.event_name == 'push' ||
+           (github.event_name == 'workflow_run' &&
+            github.event.workflow_run.head_repository.full_name == github.repository &&
+            github.event.workflow_run.head_branch == 'main' &&
+            github.event.workflow_run.conclusion == 'success')) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: mintaka-scheduler-state
+      - uses: actions/download-artifact@v4
+        with:
+          name: mintaka-shadow-report
+          path: ${{ runner.temp }}/mintaka
+      - run: |
+          mkdir -p data/mintaka
+          cp "$RUNNER_TEMP/mintaka/state.json" data/mintaka/state.json
+          cp "$RUNNER_TEMP/mintaka/advice.json" data/mintaka/advice.json
+          git add -f -- data/mintaka/state.json data/mintaka/advice.json
+          test -z "$(git diff --cached --name-only | grep -Fxv -e data/mintaka/state.json -e data/mintaka/advice.json || true)"
+          if git diff --cached --quiet; then exit 0; fi
+          git -c user.name=janus-mintaka -c user.email=41898282+github-actions[bot]@users.noreply.github.com commit -m 'Persist MINTAKA shadow observations'
+          git push origin HEAD:refs/heads/mintaka-scheduler-state
