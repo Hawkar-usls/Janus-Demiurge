@@ -1,4 +1,5 @@
 import unittest
+import urllib.error
 from datetime import datetime,timezone,timedelta
 from tools import janus_sentinel_mesh as m
 from tools import janus_sentinel_mesh_lease as z
@@ -79,4 +80,27 @@ class CrossRepoLeaseContract(unittest.TestCase):
         self.assertFalse(x["claim_won"])
         self.assertFalse(x["dispatch_accepted"])
 
+    def test_http_failure_after_claim_is_classified_without_response_details(self):
+        for code in (401,403,404,422,429,503):
+            def fail(*args):
+                raise urllib.error.HTTPError("https://example.invalid",code,"private diagnostic text",{},None)
+            result=z.execute(observation(),"a"*50,"b"*50,"c"*50,NOW,fetch=fresh,
+                             claim_fn=lambda *a:"CAS_WON",dispatch=fail)
+            self.assertEqual(result["status"],"HOLD_HTTP_"+str(code))
+            self.assertEqual(result["http_failure_stage"],"DISPATCH")
+            self.assertTrue(result["claim_won"])
+            self.assertFalse(result["dispatch_accepted"])
+            self.assertFalse(result["actual_recovery_verified"])
+            self.assertNotIn("private diagnostic text",str(result))
+            self.assertNotIn("example.invalid",str(result))
+    def test_http_failure_before_claim_never_dispatches(self):
+        called=[]
+        def fail(*args):
+            raise urllib.error.HTTPError("https://example.invalid",403,"private",{},None)
+        result=z.execute(observation(),"a"*50,"b"*50,"c"*50,NOW,fetch=fail,
+                         claim_fn=lambda *a:called.append("claim"),dispatch=lambda *a:called.append("dispatch"))
+        self.assertEqual(result["status"],"HOLD_HTTP_403")
+        self.assertEqual(result["http_failure_stage"],"PRECLAIM")
+        self.assertFalse(result["claim_won"])
+        self.assertFalse(called)
 if __name__=="__main__":unittest.main()
