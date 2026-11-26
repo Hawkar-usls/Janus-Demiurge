@@ -1,0 +1,119 @@
+name: MINTAKA BEACON predictor shadow
+on:
+  pull_request:
+    paths:
+      - 'tools/mintaka_beacon_predictor.py'
+      - 'tests/test_mintaka_beacon_predictor.py'
+      - '.github/workflows/mintaka-beacon-predictor.yml'
+  workflow_run:
+    workflows: ['ESSENCE v2.3 continuous bounded evolutionary pulse']
+    types: [completed]
+  push:
+    branches: [main]
+    paths: ['.github/workflows/mintaka-beacon-predictor.yml']
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: mintaka-beacon-shadow
+  cancel-in-progress: false
+jobs:
+  observe:
+    if: github.repository == 'Hawkar-usls/Janus-Demiurge'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: mintaka-beacon-state
+          path: beacon-state
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m unittest discover -v -s tests -p test_mintaka_beacon_predictor.py
+      - name: Read four bounded scheduled workflow streams
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json,os,subprocess,urllib.request,urllib.error
+          from datetime import datetime,timezone
+          from pathlib import Path
+          root=Path(os.environ["RUNNER_TEMP"])
+          sources={
+              "ESSENCE":("Hawkar-usls/Janus-Demiurge","essence-v23-continuous-pulse.yml"),
+              "MEMORY_CORTEX":("Hawkar-usls/Janus-Demiurge","janus-memory-cortex-growth.yml"),
+              "BEETLE":("Hawkar-usls/janus-lapis","universal-beetle-hourly.yml"),
+              "COSMOS":("Hawkar-usls/Janus-Cosmos","cosmos-rowan-ecosystem-witness.yml")}
+          # All four required reads happen regardless of the learned forecast.
+          out={}
+          for k,(repo,file) in sources.items():
+              path=f"repos/{repo}/actions/workflows/{file}/runs?branch=main&event=schedule&per_page=100"
+              try:
+                  p=subprocess.run(["gh","api",path],capture_output=True,timeout=30)
+                  if p.returncode==0:
+                      data=json.loads(p.stdout);transport="SCOPED_GITHUB_TOKEN"
+                  elif repo!=os.environ["GITHUB_REPOSITORY"]:
+                      # Only public allowlisted sources; no credential in fallback.
+                      req=urllib.request.Request("https://api.github.com/"+path,headers={"Accept":"application/vnd.github+json","User-Agent":"JANUS-MINTAKA-BEACON"})
+                      with urllib.request.urlopen(req,timeout=25) as res:data=json.load(res)
+                      transport="PUBLIC_READ"
+                  else:raise RuntimeError("SOURCE_READ_FAILED")
+                  runs=[{"id":r["id"],"event":r["event"],"started_at":r["run_started_at"]} for r in data["workflow_runs"] if r["event"]=="schedule" and r["status"] in ("completed","in_progress") and r.get("run_started_at")]
+                  out[k]={"status":"OK","runs":runs,"source":repo+"/"+file,"transport":transport,"page_limit":100,"total_count":data["total_count"]}
+              except (ValueError,KeyError,RuntimeError,subprocess.TimeoutExpired,urllib.error.URLError) as e:
+                  out[k]={"status":"HOLD_"+type(e).__name__,"runs":[],"source":repo+"/"+file}
+          snap={"schema":"janus.mintaka.beacon.snapshot.v1","observed_at":datetime.now(timezone.utc).isoformat(),"organs":out}
+          (root/"beacon-snapshot.json").write_text(json.dumps(snap,sort_keys=True,indent=2)+"\n")
+          print("BEACON_SOURCE_COUNTS",json.dumps({k:{a:v for a,v in z.items() if a!="runs"}|{"runs":len(z["runs"])} for k,z in out.items()},sort_keys=True))
+          PY
+      - name: Forecast and measure paired actual runner CPU
+        run: |
+          python -m tools.mintaka_beacon_predictor --snapshot "$RUNNER_TEMP/beacon-snapshot.json" --state beacon-state/data/mintaka-beacon/state.json --out "$RUNNER_TEMP/beacon"
+          echo BEACON_REPEAT_SAME_SNAPSHOT
+          python -m tools.mintaka_beacon_predictor --snapshot "$RUNNER_TEMP/beacon-snapshot.json" --state "$RUNNER_TEMP/beacon/state.json" --out "$RUNNER_TEMP/beacon-repeat"
+          cmp "$RUNNER_TEMP/beacon/state.json" "$RUNNER_TEMP/beacon-repeat/state.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mintaka-beacon-live-report
+          path: |
+            ${{ runner.temp }}/beacon-snapshot.json
+            ${{ runner.temp }}/beacon/
+            ${{ runner.temp }}/beacon-repeat/
+          if-no-files-found: error
+          retention-days: 60
+  persist:
+    needs: observe
+    if: >-
+      ${{ github.repository == 'Hawkar-usls/Janus-Demiurge' &&
+          github.ref == 'refs/heads/main' &&
+          (github.event_name == 'push' ||
+           (github.event_name == 'workflow_run' &&
+            github.event.workflow_run.head_repository.full_name == github.repository &&
+            github.event.workflow_run.head_branch == 'main' &&
+            github.event.workflow_run.conclusion == 'success')) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: mintaka-beacon-state
+      - uses: actions/download-artifact@v4
+        with:
+          name: mintaka-beacon-live-report
+          path: ${{ runner.temp }}/beacon-artifact
+      - run: |
+          mkdir -p data/mintaka-beacon
+          cp "$RUNNER_TEMP/beacon-artifact/beacon/state.json" data/mintaka-beacon/state.json
+          cp "$RUNNER_TEMP/beacon-artifact/beacon/report.json" data/mintaka-beacon/report.json
+          git add -f -- data/mintaka-beacon/state.json data/mintaka-beacon/report.json
+          test -z "$(git diff --cached --name-only | grep -Fxv -e data/mintaka-beacon/state.json -e data/mintaka-beacon/report.json || true)"
+          if git diff --cached --quiet; then exit 0; fi
+          git -c user.name=janus-beacon -c user.email=41898282+github-actions[bot]@users.noreply.github.com commit -m 'Persist BEACON predictive shadow state'
+          git push origin HEAD:refs/heads/mintaka-beacon-state
