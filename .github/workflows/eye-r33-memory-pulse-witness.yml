@@ -1,0 +1,115 @@
+name: EYE R3.3 Memory and effective pulse recovery witness
+on:
+  pull_request:
+    paths: ['.github/workflows/eye-r33-memory-pulse-witness.yml']
+  push:
+    branches: [research/eye-r32-sentinel-effective-pulse]
+    paths: ['.github/workflows/eye-r33-memory-pulse-witness.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: memory-cortex-state
+          path: state-copy
+          sparse-checkout: data/memory-cortex
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: 7b6e6a11be771113f5ad9b81d3c8fb43140b1991
+          path: registry-source
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Native memory replay with original thresholds, local state only
+        run: |
+          mkdir -p r33
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          from janus_model import memory_cortex_growth as g
+          root=Path('state-copy/data/memory-cortex');src=Path('registry-source')
+          p=Path('r33');target='9f7b6b1e48edc9a4cb403fbdac7d1dc90f6b5d1b0142e0f9bf9dbb97018b2064'
+          rel='experiments/janus-eye/cosmos-demihead/2026-11-26-cross-review-result.json'
+          policy=json.loads(Path('beetle/MEMORY_CORTEX_GROWTH.json').read_text())
+          st=g.load_state(root);raw=g.raw_from_tree(src,rel,g.MAX_DOC)
+          assert g.digest(raw)==target
+          old=g.git_head(Path('state-copy'));new=g.git_head(src)
+          def membership():
+              loc='ACTIVE' if target in st['active'] else 'PENDING' if target in st['pending'] else 'ABSENT'
+              verified=False
+              if target in st['records']:
+                  assert g.read_object(root,target,st['records'][target]['size'])==raw
+                  verified=True
+              return {'location':loc,'object_verified':verified,'generation':st['generation'],
+                      'active_count':len(st['active']),'pending_count':len(st['pending']),
+                      'pending_bytes':sum(st['records'][x]['size'] for x in st['pending'])}
+          before=membership()
+          scan=g.collect_registry(root,st,src,policy['max_registry_documents_per_scan'])
+          after=membership()
+          threshold=after['pending_bytes']>=policy['publish_new_bytes'] or after['pending_count']>=policy['publish_new_documents'] or (bool(st['pending']) and scan.get('capacity_admission_paused',False))
+          pub=None
+          if threshold:
+              pub=g.publish(root,st,'NOVEL_VERIFIED_TEXT_THRESHOLD_REACHED')
+          g.write_json(root/'STATE.json',g.sealed(st))
+          st=g.load_state(root)
+          final=membership()
+          replay=g.collect_registry(root,st,src,policy['max_registry_documents_per_scan'])
+          r={'schema':'janus.eye.r33.memory_replay.v1','run_id':os.environ['GITHUB_RUN_ID'],'state_source_commit':old,'registry_source_commit':new,'target_sha256':target,'before':before,'after_native_scan':after,'after_local_publish_gate':final,'collector':scan,'repeat_scan':replay,'threshold_met':threshold,'threshold_policy':{'bytes':policy['publish_new_bytes'],'documents':policy['publish_new_documents']},'isolated_publication':pub is not None,'active_production_state_written':False,'scientific_authority_granted':False}
+          (p/'memory.json').write_text(json.dumps(r,indent=2)+'\n')
+          print(json.dumps(r,indent=2))
+          PY
+      - name: Effective live pulse audit using corrected native Sentinel; no dispatch
+        env:
+          GH_READ_TOKEN: ${{ github.token }}
+          LOCAL_SENTINEL_PAUSED: ${{ vars.SENTINEL_PAUSED }}
+          LOCAL_EVOLUTION_PAUSED: ${{ vars.ESSENCE_EVOLUTION_PAUSED }}
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request,urllib.parse
+          from pathlib import Path
+          from datetime import datetime,timezone
+          from tools import janus_sentinel_mesh as m
+          p=Path('r33');p.mkdir(exist_ok=True)
+          token=os.environ['GH_READ_TOKEN'];now=datetime.now(timezone.utc)
+          r=m.run(os.environ['GITHUB_REPOSITORY'],os.environ['GITHUB_RUN_ID'],token,recovery_only=True,now=now)
+          assert r['plan']['target'] is None and not r['actual_recovery_verified']
+          def inventory(workflow):
+              url='https://api.github.com/repos/Hawkar-usls/Janus-Demiurge/actions/workflows/'+workflow+'/runs?branch=main&per_page=8'
+              req=urllib.request.Request(url,headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json'})
+              with urllib.request.urlopen(req,timeout=20) as a:
+                  raw=a.read(512001)
+              assert len(raw)<=512000
+              rows=json.loads(raw)['workflow_runs']
+              result=[]
+              for row in rows:
+                  if row['event']=='pull_request':continue
+                  req=urllib.request.Request('https://api.github.com/repos/Hawkar-usls/Janus-Demiurge/actions/runs/'+str(row['id'])+'/jobs?per_page=30',headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json'})
+                  with urllib.request.urlopen(req,timeout=20) as a:raw=a.read(512001)
+                  assert len(raw)<=512000
+                  jobs=json.loads(raw)['jobs']
+                  result.append({'run_id':row['id'],'created_at':row['created_at'],'event':row['event'],'status':row['status'],'conclusion':row['conclusion'],'jobs':[{'name':j['name'],'conclusion':j['conclusion'],'failed_steps':[s['name'] for s in j.get('steps',[]) if s['conclusion']=='failure']} for j in jobs]})
+              return result
+          try:collector=inventory('janus-memory-cortex-growth.yml')
+          except Exception as e:collector={'status':'HOLD','error_type':type(e).__name__}
+          result={'schema':'janus.eye.r33.effective_pulse_audit.v1','run_id':os.environ['GITHUB_RUN_ID'],'native_observation':r,'local_pause_flags':{'sentinel':os.environ.get('LOCAL_SENTINEL_PAUSED')=='true','evolution':os.environ.get('LOCAL_EVOLUTION_PAUSED')=='true'},'memory_collector_runs':collector,'remote_wake_performed':False,'production_promotion':False}
+          (p/'pulse.json').write_text(json.dumps(result,indent=2)+'\n')
+          print(json.dumps(result,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eye-r33-memory-pulse
+          path: r33/
+          retention-days: 90
