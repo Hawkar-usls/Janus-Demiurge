@@ -6,8 +6,16 @@ on:
   pull_request:
     paths:
       - 'tools/essence_adaptive_repair_pulse.py'
+      - 'tools/essence_adaptive_learning_executor.py'
+      - 'tests/test_essence_adaptive_learning_executor.py'
+      - 'research/essence/h38n5/**'
       - 'tests/test_essence_adaptive_repair_pulse.py'
       - '.github/workflows/essence-adaptive-repair-pulse.yml'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/essence-adaptive-repair-pulse.yml'
+      - 'research/essence/h38n5/APPROVED.json'
   workflow_dispatch:
 permissions:
   contents: read
@@ -26,7 +34,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: python -m unittest discover -v -s tests -p test_essence_adaptive_repair_pulse.py
+      - run: |
+          python -m unittest discover -v -s tests -p test_essence_adaptive_repair_pulse.py
+          python -m unittest discover -v -s tests -p test_essence_adaptive_learning_executor.py
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: Hawkar-usls/janus-meta-registry
@@ -39,6 +49,26 @@ jobs:
       - run: |
           python tools/essence_adaptive_repair_pulse.py --state "$RUNNER_TEMP/state.json" --registry registry/data/JANUS-R84-H38N3-ADAPTIVE-REPAIR-EXECUTION-2026-11-26-v1.json --source-commit ba4decb5a721f77c9a02cc6f22c7e9f270953289 --out "$RUNNER_TEMP/state.json"
           python tools/essence_adaptive_repair_pulse.py --state "$RUNNER_TEMP/state.json" --registry registry/data/JANUS-R84-H38N3-ADAPTIVE-REPAIR-EXECUTION-2026-11-26-v1.json --source-commit ba4decb5a721f77c9a02cc6f22c7e9f270953289 --out "$RUNNER_TEMP/state.json"
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          from tools.essence_adaptive_learning_executor import digest, rows
+          root=Path("research/essence/h38n5")
+          p=json.loads((root/"APPROVED.json").read_text())
+          q=json.loads((Path(os.environ["RUNNER_TEMP"])/"state.json").read_text())
+          assert p["queue_state_sha256"]==q["sha256"] and len(p["batches"])==3
+          import hashlib
+          seen=set()
+          for b in p["batches"]:
+              train=rows(json.loads((root/b["id"]/"TRAIN.json").read_text()))
+              exam=rows(json.loads((root/b["id"]/"EXAM.json").read_text()))
+              assert digest(train)==b["bank_sha256"] and digest(exam)==b["exam_sha256"]
+              for z in train+exam:
+                  t=z["text"]
+                  assert t not in seen and hashlib.sha256(t.encode()).hexdigest() not in b["preflight"]["forbidden_normalized_sha256"]
+                  seen.add(t)
+          print("H38N5_APPROVED_BANKS",len(p["batches"]),len(seen))
+          PY
   persist:
     needs: validate
     if: >-
@@ -46,16 +76,17 @@ jobs:
           github.ref == 'refs/heads/main' &&
           vars.SENTINEL_PAUSED != 'true' &&
           vars.ESSENCE_EVOLUTION_PAUSED != 'true' &&
-          (github.event_name == 'workflow_dispatch' ||
+          (github.event_name == 'workflow_dispatch' || github.event_name == 'push' ||
            (github.event_name == 'workflow_run' &&
             github.event.workflow_run.head_repository.full_name == github.repository &&
             github.event.workflow_run.head_branch == 'main' &&
             github.event.workflow_run.conclusion == 'success' &&
-            (github.event.workflow_run.event == 'schedule' || github.event.workflow_run.event == 'push'))) }}
+            (github.event.workflow_run.event == 'schedule' || github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_run'))) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: write
+      actions: read
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -86,4 +117,67 @@ jobs:
           git add -- data/essence-adaptive-repair/queue.json
           if git diff --cached --quiet; then exit 0; fi
           git -c user.name=janus-essence -c user.email=41898282+github-actions[bot]@users.noreply.github.com commit -m 'Persist bounded adaptive research request'
+          git push origin HEAD:refs/heads/essence-adaptive-repair-state
+  execute-research:
+    needs: persist
+    if: >-
+      ${{ needs.persist.result == 'success' &&
+          github.repository == 'Hawkar-usls/Janus-Demiurge' &&
+          github.ref == 'refs/heads/main' &&
+          github.event_name == 'workflow_run' &&
+          github.event.workflow_run.head_repository.full_name == github.repository &&
+          github.event.workflow_run.head_branch == 'main' &&
+          github.event.workflow_run.conclusion == 'success' &&
+          (github.event.workflow_run.event == 'schedule' || github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_run') &&
+          vars.SENTINEL_PAUSED != 'true' &&
+          vars.ESSENCE_EVOLUTION_PAUSED != 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: essence-adaptive-repair-state
+          path: state
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: memory-cortex-state
+          path: cortex
+          persist-credentials: false
+          sparse-checkout: |
+            data/memory-cortex/CURRENT.json
+            data/memory-cortex/generations
+            data/memory-cortex/objects/de/1e11676ca030fe0c6e16e93a8d554a4d5cd9f0a4b0c82eb5ab08f326e4e927.txt
+          sparse-checkout-cone-mode: false
+      - name: Verify parent actually executed its pulse job
+        id: parent
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PULSE_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PULSE_ID/jobs" --paginate --jq '.jobs[] | select(.name == "pulse" and .conclusion == "success") | .id' > "$RUNNER_TEMP/pulse-jobs"
+          if [ "$(wc -l < "$RUNNER_TEMP/pulse-jobs")" = 1 ]; then echo 'ready=true' >> "$GITHUB_OUTPUT"; else echo 'ready=false' >> "$GITHUB_OUTPUT"; fi
+      - name: Execute at most one reviewed shadow training bank
+        if: steps.parent.outputs.ready == 'true'
+        env:
+          PULSE_ID: ${{ github.event.workflow_run.id }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          sudo unshare --net --setgid "$(id -g)" --setuid "$(id -u)" -- "$(command -v python)" -m tools.essence_adaptive_learning_executor --queue state/data/essence-adaptive-repair/queue.json --state state/data/essence-adaptive-repair/h38n5.json --approved research/essence/h38n5/APPROVED.json --pulse-id "$PULSE_ID" --run-id "$RUN_ID" --cortex cortex/data/memory-cortex --out "$RUNNER_TEMP/h38n5.json"
+          if [ ! -f "$RUNNER_TEMP/h38n5.json" ]; then exit 0; fi
+          mkdir -p state/data/essence-adaptive-repair
+          cp "$RUNNER_TEMP/h38n5.json" state/data/essence-adaptive-repair/h38n5.json
+          cd state
+          git add -- data/essence-adaptive-repair/h38n5.json
+          if git diff --cached --quiet; then exit 0; fi
+          git -c user.name=janus-essence -c user.email=41898282+github-actions[bot]@users.noreply.github.com commit -m 'Persist bounded shadow learning lineage'
           git push origin HEAD:refs/heads/essence-adaptive-repair-state
