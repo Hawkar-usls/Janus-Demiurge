@@ -1,0 +1,120 @@
+name: AUTODIDACT R1.4 Akinator retrospective gate
+on:
+  pull_request:
+    types: [opened]
+    paths:
+      - '.github/workflows/autodidact-r14-akinator-epistemic-gate.yml'
+permissions:
+  actions: read
+  contents: read
+jobs:
+  replay:
+    if: github.repository == 'Hawkar-usls/Janus-Demiurge' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'research/autodidact-r14-akinator-epistemic-gate-20261126' && github.run_attempt == 1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          repository: Hawkar-usls/Janus-Demiurge
+          run-id: 45883940735
+          name: autodidact-r13-metrics-only
+          path: evidence
+      - name: Replay fixed structural questions and Captain veto
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import copy,hashlib,itertools,json,math
+          from pathlib import Path
+          # R1.3 exact metric rows witnessed independently in job 140129867245.
+          witnessed=json.loads(r'''[{"adapt_eval":0.9945897335807482,"arm":"plain","mean_auxiliary_loss":0,"relative_delta":{"adapt_eval":0.009495793236101946,"retain_eval":-0.05352497376695664},"retain_eval":0.9264467904965082,"seed":27021,"steps":60},{"adapt_eval":0.9932617942492167,"arm":"replay","mean_auxiliary_loss":0,"relative_delta":{"adapt_eval":0.008147951886455562,"retain_eval":-0.05250091763511977},"retain_eval":0.9274491767088572,"seed":27021,"steps":60},{"adapt_eval":0.9944454605380694,"arm":"ewc","mean_auxiliary_loss":0.000504668682697229,"relative_delta":{"adapt_eval":0.009349357952542992,"retain_eval":-0.053608559829896096},"retain_eval":0.9263649731874466,"seed":27021,"steps":60},{"adapt_eval":1.007364772260189,"arm":"distill","mean_auxiliary_loss":0.26185440669457116,"relative_delta":{"adapt_eval":0.022462293261086286,"retain_eval":-0.03108205751173765},"retain_eval":0.9484147951006889,"seed":27021,"steps":60},{"adapt_eval":0.9931260372201601,"arm":"replay+ewc","mean_auxiliary_loss":0.000504471914973692,"relative_delta":{"adapt_eval":0.008010160247242437,"retain_eval":-0.05257717621658242},"retain_eval":0.9273745318253835,"seed":27021,"steps":60},{"adapt_eval":1.002376874287923,"arm":"replay+distill","mean_auxiliary_loss":0.26047524685661,"relative_delta":{"adapt_eval":0.01739964094316493,"retain_eval":-0.03187817010622396},"retain_eval":0.9476355289419492,"seed":27021,"steps":60},{"adapt_eval":1.0072778016328812,"arm":"ewc+distill","mean_auxiliary_loss":0.2622393392026424,"relative_delta":{"adapt_eval":0.022374019192454853,"retain_eval":-0.031119966064626747},"retain_eval":0.9483776887257894,"seed":27021,"steps":60},{"adapt_eval":1.0022998253504436,"arm":"replay+ewc+distill","mean_auxiliary_loss":0.26086026802659035,"relative_delta":{"adapt_eval":0.017321437262156847,"retain_eval":-0.03191038007067937},"retain_eval":0.9476040005683899,"seed":27021,"steps":60},{"adapt_eval":0.9886108289162318,"arm":"plain","mean_auxiliary_loss":0,"relative_delta":{"adapt_eval":0.003427281865831411,"retain_eval":-0.05920314268170379},"retain_eval":0.9208887765804926,"seed":27022,"steps":60},{"adapt_eval":0.9866809174418449,"arm":"replay","mean_auxiliary_loss":0,"relative_delta":{"adapt_eval":0.001468446530082046,"retain_eval":-0.05002236911623659},"retain_eval":0.9298752769827843,"seed":27022,"steps":60},{"adapt_eval":0.9884794354438782,"arm":"ewc","mean_auxiliary_loss":0.000520160536992383,"relative_delta":{"adapt_eval":0.0032939191805743118,"retain_eval":-0.05927261167160425},"retain_eval":0.9208207776149114,"seed":27022,"steps":60},{"adapt_eval":1.0019957572221756,"arm":"distill","mean_auxiliary_loss":0.2589187656839689,"relative_delta":{"adapt_eval":0.017012812021035106,"retain_eval":-0.037181457659949624},"retain_eval":0.9424444635709127,"seed":27022,"steps":60},{"adapt_eval":0.9865731373429298,"arm":"replay+ewc","mean_auxiliary_loss":0.0004981253814548836,"relative_delta":{"adapt_eval":0.0013590511152936635,"retain_eval":-0.05010593234422678},"retain_eval":0.9297934820254644,"seed":27022,"steps":60},{"adapt_eval":1.00296550989151,"arm":"replay+distill","mean_auxiliary_loss":0.2584839468201002,"relative_delta":{"adapt_eval":0.01799709851336395,"retain_eval":-0.027006483390116798},"retain_eval":0.9524041265249252,"seed":27022,"steps":60},{"adapt_eval":1.001919778684775,"arm":"ewc+distill","mean_auxiliary_loss":0.2593232236802578,"relative_delta":{"adapt_eval":0.016935694782346244,"retain_eval":-0.03722099256866518},"retain_eval":0.9424057652552923,"seed":27022,"steps":60},{"adapt_eval":1.002897856136163,"arm":"replay+ewc+distill","mean_auxiliary_loss":0.2588714043299357,"relative_delta":{"adapt_eval":0.017928430821436914,"retain_eval":-0.02704713213690979},"retain_eval":0.9523643379410108,"seed":27022,"steps":60}]''')
+          p=Path('evidence/autodidact-r13.json')
+          assert p.is_file() and not p.is_symlink() and p.stat().st_size<200000
+          raw=p.read_bytes()
+          source=json.loads(raw)
+          components=('replay','ewc','distill')
+          seeds=(27021,27022)
+          arms=['plain','replay','ewc','distill','replay+ewc','replay+distill','ewc+distill','replay+ewc+distill']
+          metrics=('adapt_eval','retain_eval')
+          parent='06d7e6228ca9aef2dc58eb55fe1c805aa3b66e4f8fb90b0e946ce6af47b1a662'
+          def seal(o):
+              return hashlib.sha256(json.dumps(o,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
+          def require(ok,why):
+              if not ok: raise ValueError(why)
+          def canonical(a): return '+'.join(c for c in components if c in a) or 'plain'
+          def validate(s):
+              require(s['schema']=='janus.autodidact.r13.factorial_research.v1' and s['parent_sha256']==parent,'IDENTITY')
+              require(s['source_commit']=='106463de92f57fb21785c59146b63e3013aaaa62','SOURCE')
+              require(s['seeds']==list(seeds) and s['steps']==60 and s['lr']==.0003 and s['replay_fraction']==.25 and s['ewc_lambda']==100 and s['kd_weight']==.5 and s['temperature']==2,'PROFILE')
+              r=s['rows']; require(len(r)==17,'COUNT')
+              trained=[a for a in r if a['arm']!='no_update']
+              controls=[a for a in r if a['arm']=='no_update']
+              require(len(controls)==1 and controls[0]['steps']==0,'CONTROL')
+              b=s['baseline']; require(all(math.isfinite(b[k]) and b[k]>0 and controls[0][k]==b[k] for k in metrics),'BASELINE')
+              keys=[(a['arm'],a['seed']) for a in trained]
+              require(len(set(keys))==16 and set(keys)==set(itertools.product(arms,seeds)),'PAIRS')
+              for a in trained:
+                  require(a['steps']==60,'STEPS')
+                  for k in metrics:
+                      require(math.isfinite(a[k]) and a[k]>0 and math.isfinite(a['relative_delta'][k]) and abs(a[k]/b[k]-1-a['relative_delta'][k])<1e-10,'METRIC')
+              require(sorted(trained,key=lambda a:(a['arm'],a['seed']))==sorted(witnessed,key=lambda a:(a['arm'],a['seed'])),'LOG_WITNESS')
+              cap=s['claim_ceiling']
+              require(all(cap[k] is False for k in ('semantic_retention_proven','fresh_independent_exam','production_changed','candidate_weights_persisted','promotion_authority')),'AUTHORITY')
+              return {(a['arm'],a['seed']):a for a in trained}
+          def propose(s):
+              ix=validate(s); trace=[]
+              both=sum(all(a['relative_delta'][k]<0 for k in metrics) for a in ix.values())
+              trace.append({'question':'ANY_DUAL_GAIN_OVER_PARENT','answer':both>0,'witness_count':both})
+              contrasts={}
+              for c in components:
+                  ds=[]
+                  for a,z in ix:
+                      subset=set(a.split('+'))-{'plain'}
+                      if c in subset: continue
+                      b=canonical(subset|{c})
+                      ds.append([ix[b,z]['relative_delta'][k]-ix[a,z]['relative_delta'][k] for k in metrics])
+                  require(len(ds)==8,'MATCHED_CONTRASTS')
+                  contrasts[c]={'n':len(ds),'adapt_better':sum(x[0]<0 for x in ds),'retain_better':sum(x[1]<0 for x in ds),'both_worse':sum(x[0]>0 and x[1]>0 for x in ds),'mean_delta':[sum(x[i] for x in ds)/len(ds) for i in range(2)]}
+              trace.append({'question':'DISTILL_UNIFORMLY_WORSE_MATCHED','answer':contrasts['distill']['both_worse']==8})
+              trace.append({'question':'EWC_EFFECT_BELOW_DESCRIPTIVE_0_05_PP','answer':all(abs(x)<.0005 for x in contrasts['ewc']['mean_delta'])})
+              trace.append({'question':'REPLAY_MEAN_TRADEOFF','answer':contrasts['replay']['mean_delta'][0]<0<contrasts['replay']['mean_delta'][1]})
+              trace.append({'question':'CAUSE_OF_STAGNATION_ESTABLISHED','answer':'OPEN','reason':'two seeds; historical proxy cohorts; no causal root or semantic exam'})
+              return {'root_sha256':seal(s),'trace':trace,'contrasts':contrasts,'decision':'OPEN_INDEPENDENT_EXAM','candidate_selected':None,'training_allowed':False,'promotion_authority':False}
+          def captain(s,proposal):
+              # Recompute observations by grouping each component's matched +/- arms;
+              # verify exact evidence record, root, and advisory-only disposition.
+              try:
+                  ix=validate(s)
+                  require(proposal['root_sha256']==seal(s),'ROOT')
+                  require(proposal==propose(s),'PROPOSAL')
+                  for c in components:
+                      minus=[(a,z) for a,z in ix if c not in a.split('+')]
+                      plus=[(a,z) for a,z in ix if c in a.split('+')]
+                      key=lambda q:(tuple(sorted(set(q[0].split('+'))-{'plain',c})),q[1])
+                      pairs=list(zip(sorted(minus,key=key),sorted(plus,key=key)))
+                      require(len(pairs)==8 and all(key(a)==key(b) for a,b in pairs),'MATCH')
+                      delta=[tuple(ix[b]['relative_delta'][k]-ix[a]['relative_delta'][k] for k in metrics) for a,b in pairs]
+                      v=proposal['contrasts'][c]
+                      require(v['adapt_better']==sum(x<0 for x,y in delta) and v['retain_better']==sum(y<0 for x,y in delta) and v['both_worse']==sum(x>0 and y>0 for x,y in delta),'RECHECK')
+                      require(all(abs(v['mean_delta'][i]-sum(d[i] for d in delta)/8)<1e-12 for i in range(2)),'RECHECK_MEAN')
+                  return 'ADMIT_REPORT_ONLY'
+              except (ValueError,TypeError,KeyError,OverflowError): return 'REJECT'
+          original=seal(source)
+          proposal=propose(source)
+          require(captain(source,proposal)=='ADMIT_REPORT_ONLY','CAPTAIN')
+          bad=[]
+          for label,edit in [('forged_answer',lambda x:x['trace'][0].update(answer=True)),('forged_authority',lambda x:x.update(promotion_authority=True)),('root_drift',lambda x:x.update(root_sha256='0'*64)),('unknown_question',lambda x:x['trace'].append({'question':'UNREGISTERED','answer':True}))]:
+              a=copy.deepcopy(proposal); edit(a); require(captain(source,a)=='REJECT',label); bad.append(label)
+          for label,edit in [('missing_row',lambda x:x['rows'].pop()),('duplicate_row',lambda x:x['rows'].append(x['rows'][-1])),('forged_metric',lambda x:x['rows'][-1].update(adapt_eval=.00001)),('nonfinite',lambda x:x['rows'][-1].update(adapt_eval=float('nan')))]:
+              a=copy.deepcopy(source); edit(a); require(captain(a,proposal)=='REJECT',label); bad.append(label)
+          require(seal(source)==original,'MUTATION')
+          result={'schema':'janus.autodidact.r14.akinator_replay.v1','source_run':45883940735,'source_job':140129867245,'source_artifact_id':15147728828,'source_file_sha256':hashlib.sha256(raw).hexdigest(),'proposal':proposal,'captain':'ADMIT_REPORT_ONLY','negative_controls_passed':bad,'sovereign':'OPEN_INDEPENDENT_EXAM','root_preserved':True,'scope':'Retrospective structural question replay on already disclosed R1.3 metrics; no new training, no independent semantic exam or authority.'}
+          Path('r14-report.json').write_text(json.dumps(result,sort_keys=True,indent=2)+'\n')
+          print('AUTODIDACT_R14_RESULT',json.dumps(result,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: autodidact-r14-evidence-only
+          path: r14-report.json
+          if-no-files-found: error
+          retention-days: 30
