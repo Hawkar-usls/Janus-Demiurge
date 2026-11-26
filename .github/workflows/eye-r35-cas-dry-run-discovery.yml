@@ -1,4 +1,4 @@
-name: EYE R3.5 CAS dry-run discovery witness
+name: EYE R3.5A main Sentinel discovery witness
 on:
   push:
     branches: [research/eye-r32-sentinel-effective-pulse]
@@ -21,7 +21,7 @@ jobs:
           import json,os,urllib.request,time
           base='https://api.github.com/repos/Hawkar-usls/Janus-Demiurge/actions/'
           headers={'Authorization':'Bearer '+os.environ['GH_READ_TOKEN'],'Accept':'application/vnd.github+json'}
-          sha='67d9d8d29534ad39c338f23183cf6eaabf354c72'
+          sha='37449b14123128d5cb38ee010ddefef1bb467a65'
           def get(path):
               with urllib.request.urlopen(urllib.request.Request(base+path,headers=headers),timeout=12) as r:
                   raw=r.read(1000001)
@@ -29,7 +29,7 @@ jobs:
               return json.loads(raw)
           rows=[]
           for _ in range(4):
-              data=get('workflows/janus-dispatch-credential-probe.yml/runs?branch=main&head_sha='+sha+'&per_page=10')
+              data=get('workflows/janus-sentinel-mesh.yml/runs?branch=main&head_sha='+sha+'&per_page=10')
               rows=[x for x in data['workflow_runs'] if x['head_sha']==sha and x['head_branch']=='main']
               if rows:break
               time.sleep(4)
@@ -37,5 +37,5 @@ jobs:
           for row in rows:
               jobs=get('runs/'+str(row['id'])+'/jobs?per_page=20')['jobs']
               out.append({'id':row['id'],'status':row['status'],'conclusion':row['conclusion'],'jobs':[{'id':x['id'],'name':x['name'],'status':x['status'],'conclusion':x['conclusion']} for x in jobs]})
-          print('DISPATCH_PROBE_DISCOVERY='+json.dumps(out))
+          print('R35A_MAIN_DISCOVERY='+json.dumps(out))
           PY
