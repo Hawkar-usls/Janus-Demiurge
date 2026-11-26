@@ -82,7 +82,13 @@ def evaluate(ex,cutoff):
     n=sum(test.values());scores={m:loss[m]/n if n else None for m in names}
     # Fixed, preregistered swarm model; comparison includes persistence/age and univariate learned baseline.
     gate=n>=30 and cm["swarm"]["tp"]+cm["swarm"]["fn"]>=5 and all(scores["swarm"]<scores[m] for m in names if m!="swarm") and cm["swarm"]["fn"]<=cm["persist"]["fn"] and cm["swarm"]["fp"]<=cm["persist"]["fp"]
-    return {"training_counts":dict(train),"test_counts":dict(test),"test_n":n,"brier":scores,"confusion":{m:dict(cm[m]) for m in names},"per_line_brier":{k:{m:v/test[k] for m,v in byline[k].items()} for k in test},"gate":"SHADOW_PASS" if gate else "HOLD"}
+    # After the scored exam, consume only labels actually observed by the final archive timestamp.
+    for z in pending:
+        for m,counts in model.items():
+            n0=counts[z["features"][m]];n0[0]+=z["y"];n0[1]+=1
+    checkpoint={"schema":"janus.beacon.witness.checkpoint.v1","trained_through":max((z["label_at"] for z in ex),default=None),"counts":{m:[{"key":list(k),"silence":v[0],"total":v[1]} for k,v in sorted(counts.items())] for m,counts in model.items()},"production":False}
+    checkpoint["sha256"]=digest(checkpoint)
+    return {"checkpoint":checkpoint,"training_counts":dict(train),"test_counts":dict(test),"test_n":n,"brier":scores,"confusion":{m:dict(cm[m]) for m in names},"per_line_brier":{k:{m:v/test[k] for m,v in byline[k].items()} for k in test},"gate":"SHADOW_PASS" if gate else "HOLD"}
 def timing(rows,cutoff):
     # Only distinct observed successful completions; intermediary successes may
     # have been missed by polling. Score next *observed* completion, not next actual run.
@@ -127,5 +133,6 @@ def main():
     ext=json.loads(a.external.read_text())
     report={"schema":"janus.beacon.witness.learning.v1","receipts":len(rows),"first":rows[0]["time"],"last":rows[-1]["time"],"cutoff":cut,"receipt_chain_sha256":digest([z["sha"] for z in rows]),"status_counts":dict(counts),"quarantine_count":len(quarantine),"quarantine_examples":quarantine[:12],"risk":evaluate(examples(rows),cut),"timing":timing(rows,cut),"external_crosscheck":external_crosscheck(rows,ext),"scope":"Trusted internal archive training, external snapshot audit only; no alert selection bias in archive, no proof of complete run history; no external outage claim.","dispatch_authorized":False,"production":False}
     a.out.mkdir(parents=True,exist_ok=True);(a.out/"quarantine.json").write_text(json.dumps(quarantine,sort_keys=True,indent=2)+"\n");(a.out/"report.json").write_text(json.dumps(report,sort_keys=True,indent=2)+"\n")
+    (a.out/"checkpoint.json").write_text(json.dumps(report["risk"]["checkpoint"],sort_keys=True,indent=2)+"\n")
     print("BEACON_WITNESS_LEARNING",json.dumps(report,sort_keys=True),flush=True)
 if __name__=="__main__":main()
