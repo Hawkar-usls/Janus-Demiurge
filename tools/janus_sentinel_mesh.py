@@ -118,6 +118,10 @@ def health(rows,now):
     trusted.sort(key=lambda x:(x[0],x[1]["id"]),reverse=True)
     if not trusted:
         return {"status":"UNKNOWN_NO_PEER_EVIDENCE","last_run_id":None}
+    active=[(t,x) for t,x in trusted if x["status"]!="completed"]
+    if active:
+        t,x=active[0]
+        return {"status":"BUSY_OR_PENDING_HOLD","last_run_id":x["id"],"last_event":x["event"],"age_seconds":round((now-t).total_seconds())}
     created,last=trusted[0]
     age=(now-created).total_seconds()
     prior=any(x.get("status")=="completed" and
