@@ -79,4 +79,26 @@ class CrossRepoLeaseContract(unittest.TestCase):
         self.assertFalse(x["claim_won"])
         self.assertFalse(x["dispatch_accepted"])
 
+    def test_push_diagnostics_are_fixed_codes(self):
+        cases=[
+            (b"remote: Write access to repository not granted. secret-example", "HOLD_CAS_PUSH_PERMISSION_DENIED"),
+            (b"GH013: Repository rule violations", "HOLD_CAS_PUSH_BRANCH_POLICY"),
+            (b"fatal: Authentication failed", "HOLD_CAS_PUSH_AUTHENTICATION_FAILED"),
+            (b"[rejected] (non-fast-forward)", "HOLD_CAS_PUSH_REF_CONFLICT"),
+            (b"Could not resolve host", "HOLD_CAS_PUSH_NETWORK_FAILURE"),
+            (b"opaque secret-example", "HOLD_CAS_PUSH_UNCLASSIFIED"),
+        ]
+        for raw,expected in cases:
+            with self.subTest(expected=expected):
+                self.assertEqual(z.classify_push_failure(b"",raw),expected)
+    def test_classified_push_failures_never_dispatch(self):
+        called=[]
+        for code in ("HOLD_CAS_PUSH_PERMISSION_DENIED","HOLD_CAS_PUSH_BRANCH_POLICY",
+                     "HOLD_CAS_PUSH_AUTHENTICATION_FAILED","HOLD_CAS_PUSH_REF_CONFLICT",
+                     "HOLD_CAS_PUSH_NETWORK_FAILURE","HOLD_CAS_PUSH_UNCLASSIFIED"):
+            r=z.execute(observation(),"a"*50,"b"*50,"c"*50,NOW,fetch=fresh,
+                        claim_fn=lambda *a:code,dispatch=lambda *a:called.append(a))
+            self.assertEqual(r["status"],code)
+            self.assertFalse(r["claim_won"])
+        self.assertFalse(called)
 if __name__=="__main__":unittest.main()
