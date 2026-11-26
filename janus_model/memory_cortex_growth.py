@@ -176,6 +176,40 @@ def bootstrap(root: Path, state: dict, catalog: Path, source: Path):
     publish(root, state, reason="MIGRATED_R3_BASELINE_NOT_NEW_INFORMATION")
 
 
+# One-time, exact-byte research memory admission. Never training authority.
+ERROR_MEMORY_PATH = "data/JANUS-R84-H38N4A-ERROR-MEMORY-2026-11-26-v1.json"
+ERROR_MEMORY_SOURCE_SHA = "de1e11676ca030fe0c6e16e93a8d554a4d5cd9f0a4b0c82eb5ab08f326e4e927"
+ERROR_MEMORY_SEAL = "083c41bc09ee1f86a2c142790df4a6ae5fe37e01b36d8dc7b7316037a3dd1c0d"
+
+def priority_error_memory(root: Path, state: dict, source: Path):
+    key = ERROR_MEMORY_SOURCE_SHA
+    if key in state["active"]:
+        read_object(root, key, state["records"][key]["size"])
+        return {"status": "ACTIVE", "source_sha256": key, "publish_requested": False}
+    matches = [(blob, size) for path, blob, size in git_files(source) if path == ERROR_MEMORY_PATH]
+    if not matches:
+        return {"status": "NOT_PRESENT", "publish_requested": False}
+    blob, size = matches[0]
+    raw = raw_from_tree(source, ERROR_MEMORY_PATH, MAX_DOC)
+    if digest(raw) != key or len(raw) != size or hashlib.sha1(b"blob " + str(size).encode() + b"\0" + raw).hexdigest() != blob:
+        raise Hold("ERROR_MEMORY_SOURCE_PIN_MISMATCH")
+    mem = json.loads(raw)
+    def check_seal(x):
+        body = {k:v for k,v in x.items() if k != "sha256"}
+        return hashlib.sha256(json.dumps(body, sort_keys=True, separators=(",",":"), ensure_ascii=True, allow_nan=False).encode()).hexdigest() == x.get("sha256")
+    if (mem.get("schema") != "h38n4.error_memory.v1" or mem.get("production") is not False
+            or mem.get("sha256") != ERROR_MEMORY_SEAL or not check_seal(mem)
+            or not check_seal(mem["previous"]) or mem["previous"].get("production") is not False):
+        raise Hold("ERROR_MEMORY_SEAL_MISMATCH")
+    try:
+        add_text(root, state, raw, {"repository": REGISTRY, "commit": git_head(source),
+                 "path": ERROR_MEMORY_PATH, "git_blob": blob,
+                 "kind": "VERIFIED_RESEARCH_ERROR_MEMORY_NOT_TRAINING_AUTHORITY"})
+    except CapacityHold:
+        return {"status": "CAPACITY_HOLD", "source_sha256": key, "publish_requested": False}
+    state["seen_registry_blobs"][blob] = "VERIFIED_OR_CONTENT_DUPLICATE"
+    return {"status": "PENDING", "source_sha256": key, "publish_requested": key in state["pending"]}
+
 def collect_registry(root: Path, state: dict, source: Path, max_documents=512):
     commit = git_head(source)
     if state["last_sources"].get("registry") == commit:
@@ -498,15 +532,16 @@ def collect(root: Path, source: Path, beetle: Path | None, policy: dict,
             raise Hold("GROWTH_BASELINE_MIGRATION_REQUIRED")
         bootstrap(root, state, baseline_catalog, baseline_source)
     old_generation = state["generation"]
+    priority = priority_error_memory(root, state, source)
     registry = collect_registry(root, state, source, policy["max_registry_documents_per_scan"])
     beetle_scan = read_beetle_leads(state, beetle) if beetle else {"available": False}
     beetle_read = consume_beetle(root, state, policy["max_primary_fetches_per_scan"], fetch=fetch)
     pending_bytes = sum(state["records"][s]["size"] for s in state["pending"])
     capacity_paused = registry.get("capacity_admission_paused", False) or beetle_read.get("capacity_admission_paused", False)
-    if (pending_bytes >= policy["publish_new_bytes"] or
+    if (priority["publish_requested"] or pending_bytes >= policy["publish_new_bytes"] or
             len(state["pending"]) >= policy["publish_new_documents"] or
             (state["pending"] and capacity_paused)):
-        publish(root, state, "NOVEL_VERIFIED_TEXT_THRESHOLD_REACHED")
+        publish(root, state, "VERIFIED_ERROR_MEMORY_PRIORITY" if priority["publish_requested"] else "NOVEL_VERIFIED_TEXT_THRESHOLD_REACHED")
     changed = canonical(sealed(state)) != before
     if changed:
         write_json(root / "STATE.json", sealed(state))
@@ -524,6 +559,7 @@ def collect(root: Path, source: Path, beetle: Path | None, policy: dict,
                     "source_storage_budget_bytes": MAX_CORPUS_BYTES,
                     "corpus_byte_goal_met": active_bytes >= TARGET,
                     "observed_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
+                    "error_memory": {**priority, "active": ERROR_MEMORY_SOURCE_SHA in state["active"]},
                     "registry": registry, "beetle_scan": beetle_scan, "beetle_read": beetle_read,
                     "intake_health": intake_health(state),
                     "model_weights_updated": False, "independent_qa_passed": False,
