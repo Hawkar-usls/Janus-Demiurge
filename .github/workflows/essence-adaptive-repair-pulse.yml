@@ -6,6 +6,9 @@ on:
   pull_request:
     paths:
       - 'tools/essence_adaptive_repair_pulse.py'
+      - 'tools/essence_adaptive_learning_executor.py'
+      - 'tests/test_essence_adaptive_learning_executor.py'
+      - 'research/essence/h38n5/**'
       - 'tests/test_essence_adaptive_repair_pulse.py'
       - '.github/workflows/essence-adaptive-repair-pulse.yml'
   workflow_dispatch:
@@ -26,7 +29,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: python -m unittest discover -v -s tests -p test_essence_adaptive_repair_pulse.py
+      - run: |
+          python -m unittest discover -v -s tests -p test_essence_adaptive_repair_pulse.py
+          python -m unittest discover -v -s tests -p test_essence_adaptive_learning_executor.py
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: Hawkar-usls/janus-meta-registry
@@ -86,4 +91,48 @@ jobs:
           git add -- data/essence-adaptive-repair/queue.json
           if git diff --cached --quiet; then exit 0; fi
           git -c user.name=janus-essence -c user.email=41898282+github-actions[bot]@users.noreply.github.com commit -m 'Persist bounded adaptive research request'
+          git push origin HEAD:refs/heads/essence-adaptive-repair-state
+  execute-research:
+    needs: persist
+    if: >-
+      ${{ needs.persist.result == 'success' &&
+          github.repository == 'Hawkar-usls/Janus-Demiurge' &&
+          github.ref == 'refs/heads/main' &&
+          github.event_name == 'workflow_run' &&
+          github.event.workflow_run.head_repository.full_name == github.repository &&
+          github.event.workflow_run.head_branch == 'main' &&
+          github.event.workflow_run.conclusion == 'success' &&
+          (github.event.workflow_run.event == 'schedule' || github.event.workflow_run.event == 'push') &&
+          vars.SENTINEL_PAUSED != 'true' &&
+          vars.ESSENCE_EVOLUTION_PAUSED != 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: essence-adaptive-repair-state
+          path: state
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Execute at most one reviewed shadow training bank
+        env:
+          PULSE_ID: ${{ github.event.workflow_run.id }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          sudo unshare --net --setgid "$(id -g)" --setuid "$(id -u)" -- "$(command -v python)" -m tools.essence_adaptive_learning_executor --queue state/data/essence-adaptive-repair/queue.json --state state/data/essence-adaptive-repair/h38n5.json --approved research/essence/h38n5/APPROVED.json --pulse-id "$PULSE_ID" --run-id "$RUN_ID" --out "$RUNNER_TEMP/h38n5.json"
+          if [ ! -f "$RUNNER_TEMP/h38n5.json" ]; then exit 0; fi
+          mkdir -p state/data/essence-adaptive-repair
+          cp "$RUNNER_TEMP/h38n5.json" state/data/essence-adaptive-repair/h38n5.json
+          cd state
+          git add -- data/essence-adaptive-repair/h38n5.json
+          if git diff --cached --quiet; then exit 0; fi
+          git -c user.name=janus-essence -c user.email=41898282+github-actions[bot]@users.noreply.github.com commit -m 'Persist bounded shadow learning lineage'
           git push origin HEAD:refs/heads/essence-adaptive-repair-state
