@@ -1,0 +1,78 @@
+name: MINTAKA adaptive homeostasis replay
+on:
+  pull_request:
+    types: [opened]
+    paths:
+      - 'tools/mintaka_homeostasis_replay.py'
+      - 'tests/test_mintaka_homeostasis_replay.py'
+      - '.github/workflows/mintaka-homeostasis-replay.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  replay:
+    if: github.repository == 'Hawkar-usls/Janus-Demiurge' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m unittest discover -v -s tests -p test_mintaka_homeostasis_replay.py
+      - name: Capture fixed historical window and actual job completion timestamps
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import os,json,subprocess,base64
+          from pathlib import Path
+          from tools.mintaka_scheduler_advisor import verified
+          repo=os.environ["GITHUB_REPOSITORY"];root=Path(os.environ["RUNNER_TEMP"])
+          start="2026-11-23T15:55:00Z";end="2026-11-26T15:55:00Z"
+          def api(p):return json.loads(subprocess.check_output(["gh","api",f"repos/{repo}/{p}"]))
+          streams={"wake":[],"persist":[],"learn":[]}
+          recent=[]
+          for file,kind in (("essence-v23-continuous-pulse.yml","wake"),("essence-adaptive-repair-pulse.yml","repair")):
+              runs=[]
+              for page in range(1,4):
+                  z=api(f"actions/workflows/{file}/runs?branch=main&per_page=100&page={page}")["workflow_runs"]
+                  runs.extend(z)
+                  if len(z)<100 or z[-1]["created_at"]<start:break
+              else:raise RuntimeError("TRACE_TRUNCATED")
+              for r in runs:
+                  if r["status"]!="completed" or r["event"]=="pull_request":continue
+                  if r["created_at"]>=end:
+                      if kind=="repair" and len(recent)<5:
+                          j=api(f"actions/runs/{r['id']}/jobs?per_page=50")["jobs"]
+                          recent.append({"run_id":r["id"],"event":r["event"],"conclusion":r["conclusion"],"jobs":[{"name":v["name"],"id":v["id"],"conclusion":v["conclusion"]} for v in j]})
+                      continue
+                  # Include runs started before window but finishing within it.
+                  if r["updated_at"]<start:continue
+                  jobs=api(f"actions/runs/{r['id']}/jobs?per_page=50")["jobs"]
+                  for j in jobs:
+                      stage={"pulse":"wake"}.get(j["name"]) if kind=="wake" else {"persist":"persist","execute-research":"learn"}.get(j["name"])
+                      if stage and j["conclusion"] in ("success","failure","timed_out") and start<=j["completed_at"]<end:
+                          streams[stage].append({"id":j["id"],"run_id":r["id"],"event":r["event"],"conclusion":j["conclusion"],"completed_at":j["completed_at"]})
+          p=subprocess.run(["gh","api",f"repos/{repo}/contents/data/essence-adaptive-repair/h38n5.json?ref=essence-adaptive-repair-state"],capture_output=True)
+          if p.returncode==0:
+              state=verified(json.loads(base64.b64decode(json.loads(p.stdout)["content"])))
+              learning=state["records"]
+          elif b"HTTP 404" in p.stderr:learning=[]
+          else:raise RuntimeError("STATE_READ_FAILED")
+          # Learning job completion is an audit event, not a confirmed successful training.
+          trace={"schema":"janus.mintaka.live_trace.v1","start":start,"end":end,"streams":streams,"recent_repair_runs":recent,"durable_learning_records":learning}
+          (root/"trace.json").write_text(json.dumps(trace,sort_keys=True,indent=2)+"\n")
+          print("MINTAKA_TRACE",json.dumps({"counts":{k:len(v) for k,v in streams.items()},"recent_repair_runs":recent,"durable_learning_records":learning},sort_keys=True))
+          PY
+      - run: python -m tools.mintaka_homeostasis_replay --trace "$RUNNER_TEMP/trace.json" --out "$RUNNER_TEMP/replay"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mintaka-homeostasis-replay
+          path: |
+            ${{ runner.temp }}/trace.json
+            ${{ runner.temp }}/replay/report.json
+          if-no-files-found: error
+          retention-days: 60
