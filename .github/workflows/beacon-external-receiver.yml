@@ -1,0 +1,91 @@
+name: BEACON external nervous system receiver
+on:
+  pull_request:
+    paths:
+      - 'tools/beacon_external_receiver.py'
+      - 'tests/test_beacon_external_receiver.py'
+      - '.github/workflows/beacon-external-receiver.yml'
+  push:
+    branches: [main]
+    paths: ['.github/workflows/beacon-external-receiver.yml']
+  workflow_run:
+    workflows: ['ESSENCE v2.3 continuous bounded evolutionary pulse']
+    types: [completed]
+permissions:
+  contents: read
+concurrency:
+  group: beacon-external-receiver
+  cancel-in-progress: false
+jobs:
+  validate:
+    if: github.repository == 'Hawkar-usls/Janus-Demiurge'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: beacon-external-witness-inbox
+          path: inbox
+          sparse-checkout: data/beacon-external-inbox
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: main
+          path: registry
+          sparse-checkout: data/witness_importer
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: beacon-external-receiver-state
+          path: receiver-state
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m unittest discover -v -s tests -p test_beacon_external_receiver.py
+      - name: Validate mailbox data offline
+        run: |
+          sudo unshare --net --setgid "$(id -g)" --setuid "$(id -u)" -- "$(command -v python)" -m tools.beacon_external_receiver --mailbox inbox/data/beacon-external-inbox --archive registry/data/witness_importer --state receiver-state/data/beacon-external-receiver/state.json --out "$RUNNER_TEMP/beacon-external"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: beacon-external-receiver
+          path: ${{ runner.temp }}/beacon-external
+          if-no-files-found: error
+          retention-days: 60
+  persist:
+    needs: validate
+    if: >-
+      ${{ github.repository == 'Hawkar-usls/Janus-Demiurge' &&
+          github.ref == 'refs/heads/main' &&
+          (github.event_name == 'push' ||
+           (github.event_name == 'workflow_run' &&
+            github.event.workflow_run.head_repository.full_name == github.repository &&
+            github.event.workflow_run.head_branch == 'main' &&
+            github.event.workflow_run.conclusion == 'success')) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: beacon-external-receiver-state
+      - uses: actions/download-artifact@v4
+        with:
+          name: beacon-external-receiver
+          path: ${{ runner.temp }}/beacon-external
+      - run: |
+          mkdir -p data/beacon-external-receiver
+          cp "$RUNNER_TEMP/beacon-external/state.json" data/beacon-external-receiver/state.json
+          cp "$RUNNER_TEMP/beacon-external/report.json" data/beacon-external-receiver/report.json
+          git add -f -- data/beacon-external-receiver/state.json data/beacon-external-receiver/report.json
+          test -z "$(git diff --cached --name-only | grep -Fxv -e data/beacon-external-receiver/state.json -e data/beacon-external-receiver/report.json || true)"
+          if git diff --cached --quiet; then exit 0; fi
+          git -c user.name=janus-beacon -c user.email=41898282+github-actions[bot]@users.noreply.github.com commit -m 'Persist validated external witness evidence'
+          git push origin HEAD:refs/heads/beacon-external-receiver-state
