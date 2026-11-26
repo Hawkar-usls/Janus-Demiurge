@@ -1,0 +1,42 @@
+name: BEACON external witness learning
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - 'tools/beacon_witness_learning.py'
+      - 'tests/test_beacon_witness_learning.py'
+      - 'research/beacon/witness/**'
+      - '.github/workflows/beacon-witness-learning.yml'
+permissions:
+  contents: read
+jobs:
+  train-and-audit:
+    if: github.repository == 'Hawkar-usls/Janus-Demiurge' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Hawkar-usls/janus-meta-registry
+          ref: 26f77518e2df3aef891d18679cfbe1cd8e9109ce
+          path: registry
+          sparse-checkout: data/witness_importer
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m unittest discover -v -s tests -p test_beacon_witness_learning.py
+      - name: Verify archive endpoint and train with network disabled
+        run: |
+          test "$(git -C registry rev-parse HEAD)" = 26f77518e2df3aef891d18679cfbe1cd8e9109ce
+          test "$(git -C registry hash-object data/witness_importer/LATEST.json)" = 703b2efb4683152ab5c1a27bfc042cd3a1a4d822
+          sudo unshare --net --setgid "$(id -g)" --setuid "$(id -u)" -- "$(command -v python)" -m tools.beacon_witness_learning --archive registry/data/witness_importer --external research/beacon/witness/external-review-2026-11-26.json --out "$RUNNER_TEMP/beacon-witness"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: beacon-witness-learning
+          path: ${{ runner.temp }}/beacon-witness
+          if-no-files-found: error
+          retention-days: 60
