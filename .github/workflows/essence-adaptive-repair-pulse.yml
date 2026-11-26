@@ -79,10 +79,61 @@ jobs:
             data/memory-cortex/generations
             data/memory-cortex/objects/de/1e11676ca030fe0c6e16e93a8d554a4d5cd9f0a4b0c82eb5ab08f326e4e927.txt
           sparse-checkout-cone-mode: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: b9d1ab489cc7d8db8c1ae76f1c3f30f571f55410
+          path: first-step
+          persist-credentials: false
+          sparse-checkout: |
+            data/essence-adaptive-repair/h38n5.json
+          sparse-checkout-cone-mode: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: essence-adaptive-repair-state
+          path: lineage-preflight
+          persist-credentials: false
+          sparse-checkout: |
+            data/essence-adaptive-repair
+          sparse-checkout-cone-mode: false
       - name: Exercise actual runtime admission without training
         run: |
-          sudo unshare --net --setgid "$(id -g)" --setuid "$(id -u)" -- "$(command -v python)" -m tools.essence_adaptive_learning_executor --queue "$RUNNER_TEMP/state.json" --state "$RUNNER_TEMP/nonexistent-learner.json" --approved research/essence/h38n5/APPROVED.json --pulse-id 45851971143 --run-id "$GITHUB_RUN_ID" --cortex cortex-preflight/data/memory-cortex --out "$RUNNER_TEMP/must-not-exist.json" --validate-only
+          sudo unshare --net --setgid "$(id -g)" --setuid "$(id -u)" -- "$(command -v python)" -m tools.essence_adaptive_learning_executor --queue "$RUNNER_TEMP/state.json" --state lineage-preflight/data/essence-adaptive-repair/h38n5.json --approved research/essence/h38n5/APPROVED.json --pulse-id 45851971143 --run-id "$GITHUB_RUN_ID" --cortex cortex-preflight/data/memory-cortex --out "$RUNNER_TEMP/must-not-exist.json" --validate-only --anchor first-step/data/essence-adaptive-repair/h38n5.json --lineage-dir lineage-preflight/data/essence-adaptive-repair/lineage
           test ! -e "$RUNNER_TEMP/must-not-exist.json"
+          test "$(git hash-object research/essence/h38n5/APPROVED.json)" = 439b751a56f7831f586e2b58f3cabcf478eb3d37
+      - name: Exercise lineage refusal and rollback with actual First Step (no fit)
+        run: |
+          python - <<'PY'
+          import json,tempfile
+          from pathlib import Path
+          from tools.essence_adaptive_learning_executor import read,check,seal,digest,verify_first_step,verify_transition,verify_lineage,score,predict,FIRST_STEP_TEXT
+          root=Path("research/essence/h38n5")
+          plan=read(root/"APPROVED.json")
+          a=read(Path("first-step/data/essence-adaptive-repair/h38n5.json"))
+          body=verify_first_step(a)
+          m=plan["batches"][1];bank=read(root/m["id"]/"TRAIN.json");exam=read(root/m["id"]/"EXAM.json")
+          prior=score(body["weights"],body["replay_exams"])
+          r={"parent_state_sha256":a["sha256"],"parent_weights_sha256":digest(body["weights"]),"candidate_weights_sha256":"f"*64,"bank_sha256":m["bank_sha256"],"exam_sha256":m["exam_sha256"],"training_executed":True,"production":False,"wake_origin":"LIVE_PARENT","parent_event":"schedule","parent_run_attempt":1,"parent_job_id":"99","pulse_id":"98","run_id":"97","decision":"ROLLBACK_KEEP_FROZEN","inheritance":{"prior_exam_total":len(prior),"prior_parent_correct":1,"prior_retained_correct":1,"prior_lost":0,"first_step_prediction":15,"durable_weights_sha256":digest(body["weights"])}}
+          child=seal({**body,"records":body["records"]+[r],"replay_exams":body["replay_exams"]+exam,"attempted_texts":sorted(set(body["attempted_texts"])|{z["text"] for z in bank})})
+          assert verify_transition(a,child,plan,root)["prior_retained_correct"]==1
+          with tempfile.TemporaryDirectory() as t:
+              d=Path(t)
+              (d/"attempt-002.json").write_text(json.dumps(child))
+              assert verify_lineage(a,child,d,plan,root)["attempts"]==2
+              for label,mutate in [
+                  ("lost_weights",lambda b:b.update(weights=[[0.0]*128 for _ in range(9)])),
+                  ("changed_first_record",lambda b:b["records"][0].update(wrong=99)),
+                  ("wrong_parent",lambda b:b["records"][-1].update(parent_state_sha256="0"*64)),
+                  ("manual_wake",lambda b:b["records"][-1].update(parent_event="push")),
+                  ("lost_exam",lambda b:b.update(replay_exams=b["replay_exams"][1:]))]:
+                  b=json.loads(json.dumps(check(child)));mutate(b)
+                  try:verify_transition(a,seal(b),plan,root)
+                  except ValueError:pass
+                  else:raise AssertionError(label)
+              try:verify_lineage(a,child,d/"missing",plan,root)
+              except (ValueError,OSError):pass
+              else:raise AssertionError("missing snapshot")
+          print("H38N7_LINEAGE_GUARDS_PASS 7 NO_FIT")
+          PY
       - name: Verify exact-path staging against ignored JSON files
         run: |
           set -euo pipefail
@@ -157,12 +208,13 @@ jobs:
       ${{ needs.persist.result == 'success' &&
           github.repository == 'Hawkar-usls/Janus-Demiurge' &&
           github.ref == 'refs/heads/main' &&
-          ((github.event_name == 'workflow_run' &&
-            github.event.workflow_run.head_repository.full_name == github.repository &&
-            github.event.workflow_run.head_branch == 'main' &&
-            github.event.workflow_run.conclusion == 'success' &&
-            (github.event.workflow_run.event == 'schedule' || github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_run')) ||
-           github.event_name == 'push') &&
+          github.event_name == 'workflow_run' &&
+          github.event.workflow_run.head_repository.full_name == github.repository &&
+          github.event.workflow_run.head_branch == 'main' &&
+          github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.event == 'schedule' &&
+          github.event.workflow_run.run_attempt == 1 &&
+          github.run_attempt == 1 &&
           vars.ESSENCE_PULSE_PAUSED != 'true' &&
           vars.SENTINEL_PAUSED != 'true' &&
           vars.ESSENCE_EVOLUTION_PAUSED != 'true' }}
@@ -194,46 +246,50 @@ jobs:
             data/memory-cortex/generations
             data/memory-cortex/objects/de/1e11676ca030fe0c6e16e93a8d554a4d5cd9f0a4b0c82eb5ab08f326e4e927.txt
           sparse-checkout-cone-mode: false
-      - name: Verify actual parent pulse or pinned recovery replay
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: b9d1ab489cc7d8db8c1ae76f1c3f30f571f55410
+          path: first-step
+          persist-credentials: false
+          sparse-checkout: |
+            data/essence-adaptive-repair/h38n5.json
+          sparse-checkout-cone-mode: false
+      - name: Verify fresh first-attempt scheduled parent
         id: parent
         env:
           GH_TOKEN: ${{ github.token }}
-          LIVE_PULSE_ID: ${{ github.event.workflow_run.id }}
-          EVENT: ${{ github.event_name }}
+          PULSE_ID: ${{ github.event.workflow_run.id }}
         run: |
           set -euo pipefail
-          if [ "$EVENT" = push ]; then
-            PULSE_ID=45851971143
-            ORIGIN=RECOVERY_REPLAY
-            gh api "repos/$GITHUB_REPOSITORY/actions/runs/45852088979" > "$RUNNER_TEMP/failed-child.json"
-            jq -e '.name == "ESSENCE adaptive repair research pulse" and .event == "workflow_run" and .head_branch == "main" and .conclusion == "failure"' "$RUNNER_TEMP/failed-child.json" >/dev/null
-            gh api "repos/$GITHUB_REPOSITORY/actions/runs/45852088979/jobs" --jq '[.jobs[] | select(.name == "persist" and .conclusion == "failure")] | length' | grep -x 1
-          else
-            PULSE_ID="$LIVE_PULSE_ID"
-            ORIGIN=LIVE_PARENT
-          fi
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PULSE_ID" > "$RUNNER_TEMP/parent-run.json"
-          jq -e --arg repo "$GITHUB_REPOSITORY" '.name == "ESSENCE v2.3 continuous bounded evolutionary pulse" and .head_repository.full_name == $repo and .head_branch == "main" and .conclusion == "success" and (.event == "schedule" or .event == "push" or .event == "workflow_run")' "$RUNNER_TEMP/parent-run.json" >/dev/null
+          jq -e --arg repo "$GITHUB_REPOSITORY" '.name == "ESSENCE v2.3 continuous bounded evolutionary pulse" and .head_repository.full_name == $repo and .head_branch == "main" and .conclusion == "success" and .event == "schedule" and .run_attempt == 1 and .created_at > "2026-11-26T17:37:50Z"' "$RUNNER_TEMP/parent-run.json" >/dev/null
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PULSE_ID/jobs" --paginate --jq '.jobs[] | select(.name == "pulse" and .conclusion == "success") | .id' > "$RUNNER_TEMP/pulse-jobs"
           if [ "$(wc -l < "$RUNNER_TEMP/pulse-jobs")" != 1 ]; then echo 'ready=false' >> "$GITHUB_OUTPUT"; exit 0; fi
           echo 'ready=true' >> "$GITHUB_OUTPUT"
           echo "pulse_id=$PULSE_ID" >> "$GITHUB_OUTPUT"
-          echo "origin=$ORIGIN" >> "$GITHUB_OUTPUT"
-          echo "H38N6_WAKE $ORIGIN $PULSE_ID"
+          echo "parent_job_id=$(cat "$RUNNER_TEMP/pulse-jobs")" >> "$GITHUB_OUTPUT"
+          echo "H38N7_SCHEDULED_PARENT $PULSE_ID $(cat "$RUNNER_TEMP/pulse-jobs")"
       - name: Execute at most one reviewed shadow training bank
         if: steps.parent.outputs.ready == 'true'
         env:
           PULSE_ID: ${{ steps.parent.outputs.pulse_id }}
-          WAKE_ORIGIN: ${{ steps.parent.outputs.origin }}
+          PARENT_JOB_ID: ${{ steps.parent.outputs.parent_job_id }}
           RUN_ID: ${{ github.run_id }}
         run: |
-          sudo unshare --net --setgid "$(id -g)" --setuid "$(id -u)" -- "$(command -v python)" -m tools.essence_adaptive_learning_executor --queue state/data/essence-adaptive-repair/queue.json --state state/data/essence-adaptive-repair/h38n5.json --approved research/essence/h38n5/APPROVED.json --pulse-id "$PULSE_ID" --run-id "$RUN_ID" --cortex cortex/data/memory-cortex --out "$RUNNER_TEMP/h38n5.json" --wake-origin "$WAKE_ORIGIN"
+          test "$(git hash-object research/essence/h38n5/APPROVED.json)" = 439b751a56f7831f586e2b58f3cabcf478eb3d37
+          sudo unshare --net --setgid "$(id -g)" --setuid "$(id -u)" -- "$(command -v python)" -m tools.essence_adaptive_learning_executor --queue state/data/essence-adaptive-repair/queue.json --state state/data/essence-adaptive-repair/h38n5.json --approved research/essence/h38n5/APPROVED.json --pulse-id "$PULSE_ID" --run-id "$RUN_ID" --cortex cortex/data/memory-cortex --out "$RUNNER_TEMP/h38n5.json" --wake-origin LIVE_PARENT --anchor first-step/data/essence-adaptive-repair/h38n5.json --lineage-dir state/data/essence-adaptive-repair/lineage --parent-job-id "$PARENT_JOB_ID"
           if [ ! -f "$RUNNER_TEMP/h38n5.json" ]; then exit 0; fi
-          mkdir -p state/data/essence-adaptive-repair
+          if cmp -s "$RUNNER_TEMP/h38n5.json" state/data/essence-adaptive-repair/h38n5.json; then exit 0; fi
+          N="$(jq '.records | length' "$RUNNER_TEMP/h38n5.json")"
+          test "$N" = 2 || test "$N" = 3
+          SNAPSHOT="$(printf 'data/essence-adaptive-repair/lineage/attempt-%03d.json' "$N")"
+          mkdir -p state/data/essence-adaptive-repair/lineage
+          test ! -e "state/$SNAPSHOT"
+          cp "$RUNNER_TEMP/h38n5.json" "state/$SNAPSHOT"
           cp "$RUNNER_TEMP/h38n5.json" state/data/essence-adaptive-repair/h38n5.json
           cd state
-          git add -f -- data/essence-adaptive-repair/h38n5.json
-          test -z "$(git diff --cached --name-only | grep -Fxv 'data/essence-adaptive-repair/h38n5.json' || true)"
+          git add -f -- data/essence-adaptive-repair/h38n5.json "$SNAPSHOT"
+          test -z "$(git diff --cached --name-only | grep -Fxv -e 'data/essence-adaptive-repair/h38n5.json' -e "$SNAPSHOT" || true)"
           if git diff --cached --quiet; then exit 0; fi
           git -c user.name=janus-essence -c user.email=41898282+github-actions[bot]@users.noreply.github.com commit -m 'Persist bounded shadow learning lineage'
           git push origin HEAD:refs/heads/essence-adaptive-repair-state
