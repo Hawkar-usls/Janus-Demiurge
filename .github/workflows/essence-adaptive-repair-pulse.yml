@@ -69,6 +69,20 @@ jobs:
                   seen.add(t)
           print("H38N5_APPROVED_BANKS",len(p["batches"]),len(seen))
           PY
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: memory-cortex-state
+          path: cortex-preflight
+          persist-credentials: false
+          sparse-checkout: |
+            data/memory-cortex/CURRENT.json
+            data/memory-cortex/generations
+            data/memory-cortex/objects/de/1e11676ca030fe0c6e16e93a8d554a4d5cd9f0a4b0c82eb5ab08f326e4e927.txt
+          sparse-checkout-cone-mode: false
+      - name: Exercise actual runtime admission without training
+        run: |
+          sudo unshare --net --setgid "$(id -g)" --setuid "$(id -u)" -- "$(command -v python)" -m tools.essence_adaptive_learning_executor --queue "$RUNNER_TEMP/state.json" --state "$RUNNER_TEMP/nonexistent-learner.json" --approved research/essence/h38n5/APPROVED.json --pulse-id 45851971143 --run-id "$GITHUB_RUN_ID" --cortex cortex-preflight/data/memory-cortex --out "$RUNNER_TEMP/must-not-exist.json" --validate-only
+          test ! -e "$RUNNER_TEMP/must-not-exist.json"
       - name: Verify exact-path staging against ignored JSON files
         run: |
           set -euo pipefail
@@ -143,11 +157,13 @@ jobs:
       ${{ needs.persist.result == 'success' &&
           github.repository == 'Hawkar-usls/Janus-Demiurge' &&
           github.ref == 'refs/heads/main' &&
-          github.event_name == 'workflow_run' &&
-          github.event.workflow_run.head_repository.full_name == github.repository &&
-          github.event.workflow_run.head_branch == 'main' &&
-          github.event.workflow_run.conclusion == 'success' &&
-          (github.event.workflow_run.event == 'schedule' || github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_run') &&
+          ((github.event_name == 'workflow_run' &&
+            github.event.workflow_run.head_repository.full_name == github.repository &&
+            github.event.workflow_run.head_branch == 'main' &&
+            github.event.workflow_run.conclusion == 'success' &&
+            (github.event.workflow_run.event == 'schedule' || github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_run')) ||
+           github.event_name == 'push') &&
+          vars.ESSENCE_PULSE_PAUSED != 'true' &&
           vars.SENTINEL_PAUSED != 'true' &&
           vars.ESSENCE_EVOLUTION_PAUSED != 'true' }}
     runs-on: ubuntu-24.04
@@ -178,21 +194,40 @@ jobs:
             data/memory-cortex/generations
             data/memory-cortex/objects/de/1e11676ca030fe0c6e16e93a8d554a4d5cd9f0a4b0c82eb5ab08f326e4e927.txt
           sparse-checkout-cone-mode: false
-      - name: Verify parent actually executed its pulse job
+      - name: Verify actual parent pulse or pinned recovery replay
         id: parent
         env:
           GH_TOKEN: ${{ github.token }}
-          PULSE_ID: ${{ github.event.workflow_run.id }}
+          LIVE_PULSE_ID: ${{ github.event.workflow_run.id }}
+          EVENT: ${{ github.event_name }}
         run: |
+          set -euo pipefail
+          if [ "$EVENT" = push ]; then
+            PULSE_ID=45851971143
+            ORIGIN=RECOVERY_REPLAY
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/45852088979" > "$RUNNER_TEMP/failed-child.json"
+            jq -e '.name == "ESSENCE adaptive repair research pulse" and .event == "workflow_run" and .head_branch == "main" and .conclusion == "failure"' "$RUNNER_TEMP/failed-child.json" >/dev/null
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/45852088979/jobs" --jq '[.jobs[] | select(.name == "persist" and .conclusion == "failure")] | length' | grep -x 1
+          else
+            PULSE_ID="$LIVE_PULSE_ID"
+            ORIGIN=LIVE_PARENT
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PULSE_ID" > "$RUNNER_TEMP/parent-run.json"
+          jq -e --arg repo "$GITHUB_REPOSITORY" '.name == "ESSENCE v2.3 continuous bounded evolutionary pulse" and .head_repository.full_name == $repo and .head_branch == "main" and .conclusion == "success" and (.event == "schedule" or .event == "push" or .event == "workflow_run")' "$RUNNER_TEMP/parent-run.json" >/dev/null
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PULSE_ID/jobs" --paginate --jq '.jobs[] | select(.name == "pulse" and .conclusion == "success") | .id' > "$RUNNER_TEMP/pulse-jobs"
-          if [ "$(wc -l < "$RUNNER_TEMP/pulse-jobs")" = 1 ]; then echo 'ready=true' >> "$GITHUB_OUTPUT"; else echo 'ready=false' >> "$GITHUB_OUTPUT"; fi
+          if [ "$(wc -l < "$RUNNER_TEMP/pulse-jobs")" != 1 ]; then echo 'ready=false' >> "$GITHUB_OUTPUT"; exit 0; fi
+          echo 'ready=true' >> "$GITHUB_OUTPUT"
+          echo "pulse_id=$PULSE_ID" >> "$GITHUB_OUTPUT"
+          echo "origin=$ORIGIN" >> "$GITHUB_OUTPUT"
+          echo "H38N6_WAKE $ORIGIN $PULSE_ID"
       - name: Execute at most one reviewed shadow training bank
         if: steps.parent.outputs.ready == 'true'
         env:
-          PULSE_ID: ${{ github.event.workflow_run.id }}
+          PULSE_ID: ${{ steps.parent.outputs.pulse_id }}
+          WAKE_ORIGIN: ${{ steps.parent.outputs.origin }}
           RUN_ID: ${{ github.run_id }}
         run: |
-          sudo unshare --net --setgid "$(id -g)" --setuid "$(id -u)" -- "$(command -v python)" -m tools.essence_adaptive_learning_executor --queue state/data/essence-adaptive-repair/queue.json --state state/data/essence-adaptive-repair/h38n5.json --approved research/essence/h38n5/APPROVED.json --pulse-id "$PULSE_ID" --run-id "$RUN_ID" --cortex cortex/data/memory-cortex --out "$RUNNER_TEMP/h38n5.json"
+          sudo unshare --net --setgid "$(id -g)" --setuid "$(id -u)" -- "$(command -v python)" -m tools.essence_adaptive_learning_executor --queue state/data/essence-adaptive-repair/queue.json --state state/data/essence-adaptive-repair/h38n5.json --approved research/essence/h38n5/APPROVED.json --pulse-id "$PULSE_ID" --run-id "$RUN_ID" --cortex cortex/data/memory-cortex --out "$RUNNER_TEMP/h38n5.json" --wake-origin "$WAKE_ORIGIN"
           if [ ! -f "$RUNNER_TEMP/h38n5.json" ]; then exit 0; fi
           mkdir -p state/data/essence-adaptive-repair
           cp "$RUNNER_TEMP/h38n5.json" state/data/essence-adaptive-repair/h38n5.json
