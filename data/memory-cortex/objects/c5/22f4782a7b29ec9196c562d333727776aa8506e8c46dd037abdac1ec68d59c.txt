@@ -1,0 +1,92 @@
+{
+  "id": "JANUS-R4B11-TANGENT-IDENTIFIABILITY-PRECOMMIT-CHECKLIST",
+  "status": "DESIGN_DRAFT__EXECUTION_BLOCKED",
+  "date": "2026-11-27",
+  "parent_dual_hold": "registry/physics/JANUS_SINGULARITY_GPT_DSS_DUAL_HOLD_2026-11-27.json",
+  "parent_statistical_run": 46035084112,
+  "prerequisite_audit": {
+    "run_id": 46039098460,
+    "branch": "janus-singularity-gpt-r4b10a-route-audit",
+    "protocol_blob": "c25941cf7c6415a78e0da5fbe231ddcec414df4b",
+    "source_run": 46035084112,
+    "status_at_record": "in_progress",
+    "required": "completed artifact cross-tab archived before scientific R4B11 execution"
+  },
+  "physical_margin": {
+    "status": "UNRESOLVED__BLOCKS_FINAL_PRECOMMIT",
+    "inherited_synthetic_drift_margin": 0.012,
+    "definition": "Use log scale s and fractional instantaneous frequency change |d|/f across a specified normalized log span; compare against separately justified tolerable period variation and numerical discretization uncertainty from independent reference convergence, not Ricci 2% or an arbitrary copied threshold.",
+    "rule": "Do not select margin from R4B10/R4B11 observed sensitivity; establish scientific justification and lock value before final confirmatory experiment. If no justification, only synthetic diagnostic claim permitted."
+  },
+  "proposed_diagnostic_design": {
+    "sensitivity_matrix": {
+      "coordinates": [
+        "log gap",
+        "log frequency",
+        "envelope exponent",
+        "phase",
+        "quadratic drift"
+      ],
+      "scaling": "dimensionless parameter columns scaled by explicitly frozen perturbation sizes; report singular values and condition number with and without coherent nuisance directions; whiten only using training-estimated noise; compare finite differences",
+      "criterion": "draft: rank loss at sigma_min/sigma_max <=1e-8 is numerical degeneracy flag, not statistical identifiability; practical identifiability requires calibrated set excludes observationally admissible incompatible hypotheses"
+    },
+    "segments": {
+      "windows": "three overlapping windows [0,.5], [.25,.75], [.5,1] in common reconstructed log coordinate, compare drift in same full-span units; independent refits not independent evidence",
+      "draft_synthetic_threshold": "max pairwise absolute drift discrepancy <= .012, diagnostic only; do not use for physical claims"
+    },
+    "ensemble": {
+      "fixed_candidates": [
+        "constant log-frequency",
+        "quadratic log-phase",
+        "cubic log-phase",
+        "sinusoidal phase modulation with frozen frequency grid"
+      ],
+      "validation": "same held blocks and matched nuisance budgets; compare observationally admissible rivals; no post hoc model additions"
+    },
+    "mixed_tangent": {
+      "backgrounds": [
+        "iid",
+        "long_memory",
+        "narrowband"
+      ],
+      "amplitude_levels": [
+        0.0001,
+        0.001,
+        0.01
+      ],
+      "missing": [
+        0,
+        0.3
+      ],
+      "tangent_to_background_rms_ratios": [
+        0,
+        0.25,
+        1,
+        4
+      ],
+      "note": "background plus injected tangent; same latent trajectories and seeds paired; exact mimic separate; noise magnitude explicitly logged"
+    },
+    "exact_mimic": {
+      "rule": "Identical observed arrays and inference inputs must have identical outputs. Under preregistered nuisance allowance containing both explanations, 100% must be AMBIGUOUS/nonidentified; no truth label or mimic flag enters inference; evaluate identical arrays on both labels.",
+      "caveat": "No deterministic method can label both correctly; without an explicit admissible nuisance class a guarantee is not meaningful."
+    },
+    "gates": {
+      "positive_sensitivity_min": 0.9,
+      "positive_ambiguity_max": 0.05,
+      "negative_dss_max": 0.05,
+      "truth_inclusion_min": 0.95,
+      "scope": "each ordinary and mixed stress stratum separately; exact mimic excluded from sensitivity gate and subject to mandatory abstention; report uncertainty and independent seeds; final N and numeric physical margin must be frozen before run"
+    }
+  },
+  "forbidden": [
+    "modify R4B10 historical results",
+    "change R4B5A.2 or Ricci tolerance",
+    "train router further",
+    "physical DSS admission",
+    "early-stop",
+    "production merge"
+  ],
+  "scientific_hold": true,
+  "identifiability_hold": true,
+  "critical_bracket_hold": true
+}
