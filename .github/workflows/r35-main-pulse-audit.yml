@@ -1,0 +1,35 @@
+name: R3.5 main pulse audit
+on:
+  pull_request:
+    paths: ['.github/workflows/r35-main-pulse-audit.yml']
+permissions:
+  actions: read
+  contents: read
+jobs:
+  witness:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Read current Sentinel runs after HTTP diagnostic admission
+        env:
+          GH_READ_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import os,json,urllib.request,urllib.error
+          h={'Authorization':'Bearer '+os.environ['GH_READ_TOKEN'],'Accept':'application/vnd.github+json'}
+          out={}
+          for repo in ('Janus-Demiurge','Janus_Genesis','janus-meta-registry'):
+              base='https://api.github.com/repos/Hawkar-usls/'+repo+'/actions/'
+              def get(path):
+                  with urllib.request.urlopen(urllib.request.Request(base+path,headers=h),timeout=12) as r:
+                      return json.loads(r.read(4000000))
+              try:
+                  runs=get('workflows/janus-sentinel-mesh.yml/runs?branch=main&per_page=12')['workflow_runs']
+                  out[repo]=[]
+                  for run in runs[:8]:
+                      row={k:run.get(k) for k in ('id','head_sha','event','status','conclusion','created_at','run_attempt')}
+                      row['jobs']=[{k:j.get(k) for k in ('id','name','status','conclusion','completed_at')} for j in get('runs/'+str(run['id'])+'/jobs?per_page=10')['jobs']]
+                      out[repo].append(row)
+              except urllib.error.HTTPError as e:out[repo]={'http_status':e.code}
+          print('R35_MAIN_PULSE_AUDIT='+json.dumps(out))
+          PY
